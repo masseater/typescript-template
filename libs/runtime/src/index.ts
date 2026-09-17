@@ -14,6 +14,7 @@ export function createRuntime(
   const telemetry = createInstrumentation({
     serviceName: audience,
     endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
+    release: config.APP_RELEASE,
     headers: config.otelHeaders,
     routes,
   });

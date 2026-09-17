@@ -14,7 +14,7 @@ import path from "node:path";
 import { expect, test } from "vitest";
 import { loadArtifacts } from "./artifacts.ts";
 
-test("uploads all server chunks but excludes private client source maps", async () => {
+test("uploads server chunks with their source maps but excludes private client source maps", async () => {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), "template-artifacts-")));
   try {
     const client = path.join(root, "apps/user/dist/client");
@@ -34,11 +34,15 @@ test("uploads all server chunks but excludes private client source maps", async 
       'export { default } from "./chunks/handler.js";',
     );
     await writeFile(path.join(server, "chunks/handler.js"), "export default {};");
+    await writeFile(path.join(server, "index.js.map"), "{}");
+    await writeFile(path.join(server, "orphan.js.map"), "{}");
     const artifacts = await loadArtifacts(root, "user");
-    expect(artifacts.modules.map((module) => module.name)).toEqual([
-      "chunks/handler.js",
-      "index.js",
+    expect(artifacts.modules.map((module) => [module.name, module.contentType])).toEqual([
+      ["chunks/handler.js", "application/javascript+module"],
+      ["index.js", "application/javascript+module"],
+      ["index.js.map", "application/source-map"],
     ]);
+    expect(artifacts.release).toMatch(/^[0-9a-f]{16}$/);
     expect(await readdir(artifacts.clientDirectory)).toEqual(["app.js", "styles.css"]);
     expect(await readFile(path.join(client, "app.js.map"), "utf8")).toBe("private source map");
     expect((await loadArtifacts(root, "user")).clientDirectory).toBe(artifacts.clientDirectory);
@@ -52,7 +56,13 @@ test("uploads all server chunks but excludes private client source maps", async 
     await expect(loadArtifacts(root, "user")).rejects.toThrow("artifact_staging_link_forbidden");
     expect(await readFile(protectedFile, "utf8")).toBe("do not overwrite");
     await writeFile(path.join(client, "app.js"), "export const publicValue = 2;");
-    expect((await loadArtifacts(root, "user")).clientDirectory).not.toBe(artifacts.clientDirectory);
+    const changedClient = await loadArtifacts(root, "user");
+    expect(changedClient.clientDirectory).not.toBe(artifacts.clientDirectory);
+    expect(changedClient.release).not.toBe(artifacts.release);
+    await writeFile(path.join(server, "index.js.map"), '{"version":3}');
+    expect((await loadArtifacts(root, "user")).release).toBe(changedClient.release);
+    await writeFile(path.join(server, "chunks/handler.js"), "export default { changed: true };");
+    expect((await loadArtifacts(root, "user")).release).not.toBe(changedClient.release);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

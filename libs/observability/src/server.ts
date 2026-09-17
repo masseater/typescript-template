@@ -13,14 +13,15 @@ import {
 import type { Attributes, Correlation, ServiceName, Signal } from "./protocol.ts";
 import { parseBrowserEvents } from "./events.ts";
 import { externalAttributes } from "./external.ts";
-import { errorAttributes } from "./errors.ts";
+import { errorAttributes, errorFingerprint } from "./errors.ts";
 
 export type { Correlation, ServiceName } from "./protocol.ts";
 export type ExecutionContext = { waitUntil(promise: Promise<unknown>): void };
 export type RequestContext = Correlation & { traceparent: string };
 export type InstrumentationOptions = {
   serviceName: ServiceName;
-  endpoint: string;
+  endpoint: string | undefined;
+  release: string;
   headers?: Readonly<Record<string, string>>;
   routes: Readonly<Record<string, string>>;
 };
@@ -45,15 +46,17 @@ class ExportError extends Error {
 }
 
 export function createInstrumentation(options: InstrumentationOptions) {
-  const endpoint = new URL(options.endpoint);
+  const endpoint = options.endpoint === undefined ? undefined : new URL(options.endpoint);
   if (
-    !["http:", "https:"].includes(endpoint.protocol) ||
-    endpoint.username ||
-    endpoint.password ||
-    endpoint.search ||
-    endpoint.hash
+    endpoint &&
+    (!["http:", "https:"].includes(endpoint.protocol) ||
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash)
   )
     throw new Error("Invalid OTLP endpoint");
+  if (!/^[a-zA-Z0-9._-]{1,64}$/.test(options.release)) throw new Error("Invalid release");
   if (!["user", "admin", "wiki"].includes(options.serviceName))
     throw new Error("Invalid telemetry service");
   validateRoutes(options.routes);
@@ -64,6 +67,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
   let exportFailures = 0;
 
   function enqueue(signal: Signal, records: TelemetryRecord[], runtime: "browser" | "server") {
+    if (!endpoint) return;
     if (queue.length >= 192) {
       droppedRecords += records.length;
       console.error(
@@ -78,8 +82,8 @@ export function createInstrumentation(options: InstrumentationOptions) {
     queue.push({ signal, records, runtime });
   }
 
-  async function exportBatch(batch: Batch, body: string, timeout: number) {
-    const response = await fetch(`${endpoint.href.replace(/\/$/, "")}/v1/${batch.signal}`, {
+  async function exportBatch(target: URL, batch: Batch, body: string, timeout: number) {
+    const response = await fetch(`${target.href.replace(/\/$/, "")}/v1/${batch.signal}`, {
       method: "POST",
       headers: { ...options.headers, "content-type": "application/json" },
       body,
@@ -121,6 +125,8 @@ export function createInstrumentation(options: InstrumentationOptions) {
   }
 
   function flush(): Promise<void> {
+    if (!endpoint) return Promise.resolve();
+    const target = endpoint;
     if (active) return active;
     active = (async () => {
       const deadline = Date.now() + 20_000;
@@ -146,7 +152,12 @@ export function createInstrumentation(options: InstrumentationOptions) {
         let delivered = false;
         for (let attempt = 0; attempt < 3 && Date.now() < deadline; attempt += 1) {
           try {
-            await exportBatch(batch, body, Math.max(1, Math.min(3000, deadline - Date.now())));
+            await exportBatch(
+              target,
+              batch,
+              body,
+              Math.max(1, Math.min(3000, deadline - Date.now())),
+            );
             delivered = true;
             break;
           } catch (error) {
@@ -256,6 +267,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
       JSON.stringify({
         event: "http.server.request",
         service: `${options.serviceName}-server`,
+        release: options.release,
         request_id: context.requestId,
         trace_id: context.traceId,
         span_id: context.spanId,
@@ -495,10 +507,33 @@ export function createInstrumentation(options: InstrumentationOptions) {
           "http.request.method": event.method,
           "http.response.status_code": event.status,
         });
+      if (event.kind === "exception")
+        Object.assign(values, {
+          "error.type": event.errorType,
+          "error.locations": event.locations,
+          "error.fingerprint": errorFingerprint(event.errorType, event.locations),
+        });
       const failed =
         event.kind === "exception" ||
         (event.kind === "http" && (event.status === 0 || event.status >= 400));
       const end = event.start + event.duration;
+      if (!endpoint) {
+        (failed ? console.error : console.log)(
+          JSON.stringify({
+            event: event.name,
+            service: `${options.serviceName}-browser`,
+            release: options.release,
+            request_id: event.requestId,
+            trace_id: event.traceId,
+            span_id: event.spanId,
+            ...values,
+            duration_ms: event.duration,
+            measurement_value: event.value,
+            start: new Date(event.start).toISOString(),
+          }),
+        );
+        continue;
+      }
       enqueue(
         "logs",
         [
@@ -567,6 +602,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
       JSON.stringify({
         event: "application.error",
         service: `${options.serviceName}-server`,
+        release: options.release,
         request_id: context.requestId,
         trace_id: context.traceId,
         span_id: context.spanId,

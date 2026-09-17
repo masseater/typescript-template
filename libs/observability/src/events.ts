@@ -1,8 +1,9 @@
+import { errorTypes, validErrorLocations } from "./errors.ts";
+import type { ErrorType } from "./errors.ts";
 import { validRequestId, validSpanId, validTraceId } from "./protocol.ts";
 import type { Correlation } from "./protocol.ts";
 
-export type BrowserEvent = Correlation & {
-  kind: "http" | "exception" | "vital";
+type EventFields = Correlation & {
   route: string;
   start: number;
   duration: number;
@@ -19,8 +20,12 @@ export type BrowserEvent = Correlation & {
     | "TTFB";
   value: number;
 };
+type HttpEvent = EventFields & { kind: "http" };
+type VitalEvent = EventFields & { kind: "vital" };
+type ExceptionEvent = EventFields & { kind: "exception"; errorType: ErrorType; locations: string };
+export type BrowserEvent = HttpEvent | VitalEvent | ExceptionEvent;
 
-const keys: ReadonlyArray<keyof BrowserEvent> = [
+const keys: ReadonlyArray<keyof EventFields | "kind"> = [
   "kind",
   "route",
   "start",
@@ -33,6 +38,7 @@ const keys: ReadonlyArray<keyof BrowserEvent> = [
   "spanId",
   "requestId",
 ];
+const exceptionKeys = [...keys, "errorType", "locations"];
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 const finite = (value: unknown, max: number): value is number =>
@@ -46,10 +52,11 @@ export function parseBrowserEvents(
   if (!Array.isArray(input) || input.length < 1 || input.length > 32)
     throw new Error("Invalid telemetry batch");
   return input.map((item: unknown): BrowserEvent => {
+    const expected = record(item) && item["kind"] === "exception" ? exceptionKeys : keys;
     if (
       !record(item) ||
-      Object.keys(item).length !== keys.length ||
-      keys.some((key) => !Object.hasOwn(item, key))
+      Object.keys(item).length !== expected.length ||
+      expected.some((key) => !Object.hasOwn(item, key))
     )
       throw new Error("Invalid telemetry fields");
     const {
@@ -98,10 +105,14 @@ export function parseBrowserEvents(
         spanId,
         requestId,
       };
+    const errorType = errorTypes.find((candidate) => candidate === item["errorType"]);
+    const { locations } = item;
     if (
       kind === "exception" &&
       (name === "browser.error" || name === "browser.unhandledrejection") &&
-      status === 0
+      status === 0 &&
+      errorType &&
+      validErrorLocations(locations)
     )
       return {
         kind,
@@ -115,6 +126,8 @@ export function parseBrowserEvents(
         traceId,
         spanId,
         requestId,
+        errorType,
+        locations,
       };
     if (
       kind === "vital" &&

@@ -154,6 +154,32 @@ test("browser ingress rejects PII, arbitrary fields, forged labels and unbounded
   ).toThrow("batch");
 });
 
+test("browser exceptions carry only a known error type and bounded stack locations", () => {
+  const labels = new Set(["home"]);
+  const exception = {
+    ...event,
+    kind: "exception",
+    name: "browser.error",
+    status: 0,
+    method: "GET",
+    value: 1,
+    errorType: "TypeError",
+    locations: "/assets/index-abc.js:1:234\n/assets/auth-def.js:5:6",
+  };
+  expect(parseBrowserEvents([exception], labels, now)).toEqual([exception]);
+  expect(() => parseBrowserEvents([{ ...exception, errorType: "Custom" }], labels, now)).toThrow(
+    "event",
+  );
+  expect(() =>
+    parseBrowserEvents([{ ...exception, locations: "private@example.com" }], labels, now),
+  ).toThrow("event");
+  const { errorType: _type, locations: _locations, ...withoutDetails } = exception;
+  expect(() => parseBrowserEvents([withoutDetails], labels, now)).toThrow("fields");
+  expect(() => parseBrowserEvents([{ ...event, errorType: "TypeError" }], labels, now)).toThrow(
+    "fields",
+  );
+});
+
 test("route matching accepts terminal wildcards, prioritizes exact paths and never emits captured paths", () => {
   const routes = { "/api/*": "api", "/api/auth/*": "auth", "/api/auth/sign-in": "signin" };
   validateRoutes(routes);

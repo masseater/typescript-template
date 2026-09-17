@@ -17,14 +17,6 @@ const origin = v.pipe(
     );
   }),
 );
-const httpsUrl = v.pipe(
-  v.string(),
-  v.url(),
-  v.check((value) => {
-    const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash;
-  }),
-);
 const sharedSchema = v.object({
   accountId: id,
   zoneId: id,
@@ -37,7 +29,6 @@ const sharedSchema = v.object({
     v.check((value) => new URL(value).hostname.endsWith(".cloudflareaccess.com")),
   ),
   adminEmails: v.pipe(v.array(v.pipe(v.string(), v.email())), v.minLength(1), v.maxLength(50)),
-  otelEndpoint: httpsUrl,
   mailFrom: v.pipe(v.string(), v.email()),
   budget: v.object({
     budgetJpy: positive,
@@ -80,26 +71,6 @@ export function parseSharedConfig(input: unknown): SharedConfig {
 export function validateAuthSecret(secret: string): string {
   if (secret.length < 32 || secret.trim() !== secret) throw new Error("auth_secret_invalid");
   return secret;
-}
-
-export function validateOtelHeaders(value: string): string {
-  try {
-    const input: unknown = JSON.parse(value);
-    const result = v.safeParse(
-      v.record(
-        v.pipe(v.string(), v.regex(/^[!#$%&'*+.^_`|~0-9a-zA-Z-]+$/)),
-        v.pipe(
-          v.string(),
-          v.check((item) => !/[\r\n]/.test(item)),
-        ),
-      ),
-      input,
-    );
-    if (!result.success) throw new Error("invalid");
-    return JSON.stringify(result.output);
-  } catch {
-    throw new Error("otel_headers_invalid");
-  }
 }
 
 export function appPolicy(config: SharedConfig, target: AppTarget) {

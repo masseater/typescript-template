@@ -4,19 +4,11 @@ import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
 import { workerObservability } from "./observability.ts";
-import {
-  parseSharedConfig,
-  selectReadPermission,
-  validateAuthSecret,
-  validateOtelHeaders,
-} from "./config.ts";
+import { parseSharedConfig, selectReadPermission, validateAuthSecret } from "./config.ts";
 
 const config = new pulumi.Config();
 const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
 export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-export const otelHeaders = (config.getSecret("otelHeaders") ?? pulumi.secret("{}")).apply(
-  validateOtelHeaders,
-);
 const budgetContent = await readFile(budgetWorkerArtifact);
 if (budgetContent.length === 0) throw new Error("budget_worker_artifact_empty");
 const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");

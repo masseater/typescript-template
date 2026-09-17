@@ -6,7 +6,6 @@ import {
   parseDeploymentCommand,
   selectReadPermission,
   validateAuthSecret,
-  validateOtelHeaders,
 } from "./config.ts";
 
 const settings = {
@@ -18,7 +17,6 @@ const settings = {
   wikiOrigin: "https://wiki.example.com",
   accessIssuer: "https://team.cloudflareaccess.com",
   adminEmails: ["admin@example.com"],
-  otelEndpoint: "https://telemetry.example.com/otlp",
   mailFrom: "mail@example.com",
   budget: {
     budgetJpy: 5000,
@@ -60,21 +58,21 @@ test("user and admin are distinct deployments with all alternative public URLs d
   });
 });
 
-test("the wiki reads its runtime settings without authentication or database bindings", () => {
+test("the wiki reads its production settings without authentication, database or OTLP bindings", () => {
   const config = parseSharedConfig(settings);
   const runtime = readWikiConfig({
     APP_ORIGIN: appPolicy(config, "wiki").origin,
-    OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
-    OTEL_EXPORTER_OTLP_HEADERS: "{}",
+    APP_RELEASE: "0123456789abcdef",
     ASSETS: { fetch: () => Promise.resolve(new Response()) },
   });
   expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
+  expect(runtime.APP_RELEASE).toBe("0123456789abcdef");
+  expect(runtime.OTEL_EXPORTER_OTLP_ENDPOINT).toBeUndefined();
   expect(runtime.AI).toBeNull();
   const ai = { run: () => Promise.resolve({ data: [] }) };
   expect(
     readWikiConfig({
       APP_ORIGIN: appPolicy(config, "wiki").origin,
-      OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
       ASSETS: { fetch: () => Promise.resolve(new Response()) },
       AI: ai,
     }).AI,
@@ -117,14 +115,7 @@ test("selects Billing Read only and refuses substituted write scopes", () => {
   expect(() => selectReadPermission([read, read])).toThrow("billing_read_permission_unavailable");
 });
 
-test("secret and exporter validation errors do not include their inputs", () => {
+test("secret validation errors do not include their inputs", () => {
   expect(() => validateAuthSecret("private-value")).toThrow("auth_secret_invalid");
   expect(validateAuthSecret("x".repeat(32))).toBe("x".repeat(32));
-  expect(validateOtelHeaders('{"Authorization":"Bearer sample"}')).toBe(
-    '{"Authorization":"Bearer sample"}',
-  );
-  expect(() => validateOtelHeaders('{"Authorization":"bad\\nheader"}')).toThrow(
-    "otel_headers_invalid",
-  );
-  expect(() => validateOtelHeaders("private-not-json")).toThrow("otel_headers_invalid");
 });

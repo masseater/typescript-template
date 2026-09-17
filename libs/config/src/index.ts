@@ -2,6 +2,7 @@ import type { D1Database } from "@cloudflare/workers-types";
 import * as v from "valibot";
 
 const absoluteUrl = v.pipe(v.string(), v.url());
+const release = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,64}$/));
 const origin = v.pipe(
   absoluteUrl,
   v.check((value) => new URL(value).origin === value, "An origin without a path is required"),
@@ -9,8 +10,9 @@ const origin = v.pipe(
 const scalarSchema = v.object({
   APP_ORIGIN: origin,
   AUTH_SECRET: v.pipe(v.string(), v.minLength(32)),
-  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
+  OTEL_EXPORTER_OTLP_ENDPOINT: v.optional(absoluteUrl),
   OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
+  APP_RELEASE: v.optional(release, "local"),
   EMAIL_FROM: v.pipe(v.string(), v.email()),
   MAILPIT_URL: v.optional(origin),
 });
@@ -118,8 +120,9 @@ export async function sendVerificationEmail(
 
 const wikiSchema = v.object({
   APP_ORIGIN: origin,
-  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
+  OTEL_EXPORTER_OTLP_ENDPOINT: v.optional(absoluteUrl),
   OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
+  APP_RELEASE: v.optional(release, "local"),
   ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
   AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
 });
@@ -132,6 +135,7 @@ export function readWikiConfig(input: unknown) {
     ASSETS: config.ASSETS,
     AI: config.AI ?? null,
     OTEL_EXPORTER_OTLP_ENDPOINT: config.OTEL_EXPORTER_OTLP_ENDPOINT,
+    APP_RELEASE: config.APP_RELEASE,
     otelHeaders:
       config.OTEL_EXPORTER_OTLP_HEADERS === undefined
         ? {}

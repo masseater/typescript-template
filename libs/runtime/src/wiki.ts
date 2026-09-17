@@ -12,6 +12,7 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
   const telemetry = createInstrumentation({
     serviceName: "wiki",
     endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
+    release: config.APP_RELEASE,
     headers: config.otelHeaders,
     routes,
   });
