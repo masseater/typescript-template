@@ -1,0 +1,15 @@
+{
+  "title": "LLM ガイドライン",
+  "pages": [
+    "principles",
+    "writing-code",
+    "tests",
+    "documents",
+    "enforcement",
+    "review-findings",
+    "placement-and-tools",
+    "infrastructure",
+    "observability",
+    "secrets-and-permissions"
+  ]
+}

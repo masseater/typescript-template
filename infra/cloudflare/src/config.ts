@@ -24,11 +24,6 @@ const sharedSchema = v.object({
   userOrigin: origin,
   adminOrigin: origin,
   wikiOrigin: origin,
-  accessIssuer: v.pipe(
-    origin,
-    v.check((value) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true),
-  ),
-  adminEmails: v.pipe(v.array(v.pipe(v.string(), v.email())), v.minLength(1), v.maxLength(50)),
   mailFrom: v.pipe(v.string(), v.email()),
   budget: v.object({
     budgetJpy: positive,

@@ -2,17 +2,16 @@ import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
-import { localRuntimeToolsOnLoopback, previewDevVars } from "@template/config/vite";
+import { previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { defineConfig } from "vite-plus";
-import { adminDevAccess } from "./dev-access.ts";
+import { devBoundary } from "@template/dev-boundary";
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
-    localRuntimeToolsOnLoopback(),
     previewDevVars(fileURLToPath(new URL(".", import.meta.url))),
-    adminDevAccess(),
+    devBoundary("admin"),
     cloudflare({
       config: {
         name: "template-admin",

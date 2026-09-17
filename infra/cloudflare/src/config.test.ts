@@ -16,8 +16,6 @@ const settings = {
   userOrigin: "https://user.example.com",
   adminOrigin: "https://admin.example.com",
   wikiOrigin: "https://wiki.example.com",
-  accessIssuer: "https://team.cloudflareaccess.com",
-  adminEmails: ["admin@example.com"],
   mailFrom: "mail@example.com",
   budget: {
     budgetJpy: 5000,
@@ -59,24 +57,24 @@ test("user and admin are distinct deployments with all alternative public URLs d
   });
 });
 
-test("the wiki reads its production settings without authentication or database bindings", () => {
+test("the wiki reads authentication, database and optional AI bindings", () => {
   const config = parseSharedConfig(settings);
-  const runtime = readWikiConfig({
+  const bindings = {
     APP_ORIGIN: appPolicy(config, "wiki").origin,
+    AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
     APP_RELEASE: "0123456789abcdef",
+    EMAIL_FROM: config.mailFrom,
     ASSETS: { fetch: () => Promise.resolve(new Response()) },
-  });
+    DB: { prepare: () => undefined, batch: () => Promise.resolve([]) },
+    EMAIL: { send: () => Promise.resolve() },
+  };
+  const runtime = readWikiConfig(bindings);
   expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
   expect(runtime.APP_RELEASE).toBe("0123456789abcdef");
   expect(runtime.AI).toBeNull();
   const ai = { run: () => Promise.resolve({ data: [] }) };
-  expect(
-    readWikiConfig({
-      APP_ORIGIN: appPolicy(config, "wiki").origin,
-      ASSETS: { fetch: () => Promise.resolve(new Response()) },
-      AI: ai,
-    }).AI,
-  ).toBe(ai);
+  expect(readWikiConfig({ ...bindings, AI: ai }).AI).toBe(ai);
+  expect(() => readWikiConfig({ ...bindings, DB: undefined })).toThrow("Invalid type");
 });
 
 test.each([
@@ -92,12 +90,9 @@ test.each([
   );
 });
 
-test("rejects same origins and empty management allowlists", () => {
+test("rejects same origins", () => {
   expect(() => parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })).toThrow(
     "app_origins_must_differ",
-  );
-  expect(() => parseSharedConfig({ ...settings, adminEmails: [] })).toThrow(
-    "cloudflare_settings_invalid",
   );
 });
 

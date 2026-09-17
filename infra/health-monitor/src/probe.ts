@@ -5,7 +5,6 @@ type HealthService = "user" | "admin" | "wiki";
 export interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
-  readonly guard: string | null;
 }
 
 export interface ProbeResult {
@@ -35,13 +34,6 @@ export async function probeService(target: HealthTarget): Promise<ProbeResult> {
     });
   } catch {
     return result(false, "unreachable");
-  }
-  if (target.guard) {
-    const location = response.headers.get("location");
-    const destination = location ? URL.parse(location, target.origin) : null;
-    return response.status >= 300 && response.status < 400 && destination?.origin === target.guard
-      ? result(true, "access_guarded")
-      : result(false, `unguarded_${response.status}`);
   }
   if (!response.ok) return result(false, `status_${response.status}`);
   let body: unknown;

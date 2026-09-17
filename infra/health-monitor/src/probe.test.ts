@@ -8,12 +8,6 @@ import type { HealthTarget, ProbeResult } from "./probe.ts";
 const userTarget: HealthTarget = {
   service: "user",
   origin: "https://app.example.com",
-  guard: null,
-};
-const adminTarget: HealthTarget = {
-  service: "admin",
-  origin: "https://admin.example.com",
-  guard: "https://team.cloudflareaccess.com",
 };
 
 async function probe(target: HealthTarget, resolver: HttpResponseResolver): Promise<ProbeResult> {
@@ -54,39 +48,6 @@ test.each([
 ])("an application $name is unhealthy", async ({ resolver, detail }) => {
   expect(await probe(userTarget, resolver)).toEqual({
     service: "user",
-    healthy: false,
-    detail,
-  });
-});
-
-test("a guarded application is healthy while Cloudflare Access redirects anonymous probes", async () => {
-  expect(
-    await probe(
-      adminTarget,
-      () =>
-        new HttpResponse(null, {
-          status: 302,
-          headers: { location: "https://team.cloudflareaccess.com/cdn-cgi/access/login/admin" },
-        }),
-    ),
-  ).toEqual({ service: "admin", healthy: true, detail: "access_guarded" });
-});
-
-test.each([
-  {
-    name: "answering anonymous requests itself",
-    resolver: () => HttpResponse.json({ ok: true, service: "admin", release: "0123456789abcdef" }),
-    detail: "unguarded_200",
-  },
-  {
-    name: "redirecting somewhere other than the Access issuer",
-    resolver: () =>
-      new HttpResponse(null, { status: 302, headers: { location: "https://phish.example/" } }),
-    detail: "unguarded_302",
-  },
-])("a guarded application $name is unhealthy", async ({ resolver, detail }) => {
-  expect(await probe(adminTarget, resolver)).toEqual({
-    service: "admin",
     healthy: false,
     detail,
   });

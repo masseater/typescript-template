@@ -4,14 +4,16 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
-import { localRuntimeToolsOnLoopback, previewDevVars } from "@template/config/vite";
+import { previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
+import { localDatabase, localDatabasePersistence } from "@template/db/local";
+import { devBoundary } from "@template/dev-boundary";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
-    localRuntimeToolsOnLoopback(),
     previewDevVars(fileURLToPath(new URL(".", import.meta.url))),
+    devBoundary("wiki"),
     cloudflare({
       config: {
         name: "template-wiki",
@@ -19,8 +21,10 @@ export default defineConfig(({ command, isPreview }) => ({
         compatibility_date: workerCompatibility.date,
         compatibility_flags: [...workerCompatibility.flags],
         assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
+        d1_databases: [localDatabase],
       },
       viteEnvironment: { name: "ssr" },
+      persistState: { path: localDatabasePersistence },
       inspectorPort: false,
     }),
     fumadocsMdx(),

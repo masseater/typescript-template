@@ -13,10 +13,6 @@ const schema = v.object({
   USER_ORIGIN: origin,
   ADMIN_ORIGIN: origin,
   WIKI_ORIGIN: origin,
-  ACCESS_ISSUER: v.pipe(
-    origin,
-    v.check((value) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true),
-  ),
   ALERT_FROM: v.pipe(v.string(), v.email()),
   ALERT_TO: v.pipe(
     v.string(),
@@ -40,8 +36,8 @@ export function parseHealthMonitorConfig(input: unknown): HealthMonitorConfig {
 
 export function healthTargets(config: HealthMonitorConfig) {
   return [
-    { service: "user", origin: config.USER_ORIGIN, guard: null },
-    { service: "admin", origin: config.ADMIN_ORIGIN, guard: config.ACCESS_ISSUER },
-    { service: "wiki", origin: config.WIKI_ORIGIN, guard: null },
+    { service: "user", origin: config.USER_ORIGIN },
+    { service: "admin", origin: config.ADMIN_ORIGIN },
+    { service: "wiki", origin: config.WIKI_ORIGIN },
   ] as const;
 }

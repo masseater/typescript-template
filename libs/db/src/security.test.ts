@@ -2,9 +2,17 @@ import { eq } from "drizzle-orm";
 import { expect, test as baseTest } from "vite-plus/test";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { getProfile, updateProfile } from "./index.ts";
-import type { Database, Role } from "./index.ts";
-import { account, session, user } from "./schema.ts";
-import { getSessionSecurity } from "./security.ts";
+import type { Audience, Database, Role } from "./index.ts";
+import {
+  account,
+  oauthAccessToken,
+  oauthClient,
+  oauthConsent,
+  oauthRefreshToken,
+  session,
+  user,
+} from "./schema.ts";
+import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
 import { createTestDatabase } from "./testing.ts";
 
 const test = baseTest.extend<{ db: Database }>({
@@ -30,7 +38,7 @@ async function addUser(db: Database, id: string, role: Role = "user") {
   });
 }
 
-async function addSession(db: Database, userId: string, audience: "user" | "admin", strong = true) {
+async function addSession(db: Database, userId: string, audience: Audience, strong = true) {
   const id = crypto.randomUUID();
   const [owner] = await db.select().from(user).where(eq(user.id, userId));
   if (!owner) throw new Error("USER_REQUIRED");
@@ -79,6 +87,87 @@ test("role change invalidates both audiences immediately", async ({ db }) => {
   await setUserRole(db, actor, "target", "user");
   expect(await getSessionSecurity(db, targetAdmin, "admin")).toBeNull();
   expect(await getSessionSecurity(db, targetUser, "user")).toBeNull();
+});
+
+async function addOAuthGrant(db: Database, userId: string) {
+  const clientId = `client-${userId}`;
+  await db.insert(oauthClient).values({ id: clientId, clientId, redirectUris: "[]" });
+  await db.insert(oauthRefreshToken).values({
+    id: `refresh-${userId}`,
+    token: `refresh-token-${userId}`,
+    clientId,
+    userId,
+    scopes: '["wiki:read"]',
+  });
+  await db.insert(oauthAccessToken).values({
+    id: `access-${userId}`,
+    token: `access-token-${userId}`,
+    clientId,
+    userId,
+    refreshId: `refresh-${userId}`,
+    scopes: '["wiki:read"]',
+  });
+  await db.insert(oauthConsent).values({
+    id: `consent-${userId}`,
+    clientId,
+    userId,
+    scopes: '["wiki:read"]',
+  });
+}
+
+async function oauthGrantCounts(db: Database, userId: string) {
+  return {
+    access: (await db.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)))
+      .length,
+    refresh: (await db.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)))
+      .length,
+    consent: (await db.select().from(oauthConsent).where(eq(oauthConsent.userId, userId))).length,
+  };
+}
+
+test("role change revokes wiki reading and every OAuth grant of the user", async ({ db }) => {
+  await addUser(db, "actor", "admin");
+  await addUser(db, "reader", "admin");
+  const actor = await addSession(db, "actor", "admin");
+  await addOAuthGrant(db, "reader");
+  expect(await findWikiReader(db, "reader")).toEqual({ id: "reader" });
+  await setUserRole(db, actor, "reader", "user");
+  expect(await findWikiReader(db, "reader")).toBeNull();
+  expect(await oauthGrantCounts(db, "reader")).toEqual({ access: 0, refresh: 0, consent: 0 });
+});
+
+test("revoking sessions also revokes OAuth tokens but keeps consent", async ({ db }) => {
+  await addUser(db, "reader", "admin");
+  const wiki = await addSession(db, "reader", "wiki");
+  await addOAuthGrant(db, "reader");
+  await revokeUserSessions(db, "reader");
+  expect(await getSessionSecurity(db, wiki, "wiki")).toBeNull();
+  expect(await oauthGrantCounts(db, "reader")).toEqual({ access: 0, refresh: 0, consent: 1 });
+});
+
+test("deleting a user removes OAuth grants", async ({ db }) => {
+  await addUser(db, "actor", "admin");
+  await addUser(db, "reader");
+  const actor = await addSession(db, "actor", "admin");
+  await addOAuthGrant(db, "reader");
+  await deleteUser(db, actor, "reader");
+  expect(await oauthGrantCounts(db, "reader")).toEqual({ access: 0, refresh: 0, consent: 0 });
+});
+
+test("wiki reading requires a verified administrator", async ({ db }) => {
+  await addUser(db, "member");
+  await db.insert(user).values({
+    id: "unverified",
+    name: "unverified",
+    email: "unverified@example.com",
+    role: "admin",
+    emailVerified: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  expect(await findWikiReader(db, "member")).toBeNull();
+  expect(await findWikiReader(db, "unverified")).toBeNull();
+  expect(await findWikiReader(db, "missing")).toBeNull();
 });
 
 test("protects final administrator and credentials during deletion", async ({ db }) => {

@@ -108,20 +108,10 @@ export async function sendVerificationEmail(
   await config.EMAIL.send(email);
 }
 
-const wikiSchema = v.object({
-  APP_ORIGIN: origin,
-  APP_RELEASE: v.optional(release, "local"),
-  ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
-  AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
-});
-
 export function readWikiConfig(input: unknown) {
-  const config = v.parse(wikiSchema, input);
-  requireSecureOrigin(config.APP_ORIGIN);
-  return {
-    APP_ORIGIN: config.APP_ORIGIN,
-    ASSETS: config.ASSETS,
-    AI: config.AI ?? null,
-    APP_RELEASE: config.APP_RELEASE,
-  };
+  const { AI } = v.parse(
+    v.object({ AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))) }),
+    input,
+  );
+  return { ...readConfig(input), AI: AI ?? null };
 }
