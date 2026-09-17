@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { chmod, mkdir } from "node:fs/promises";
+import { chmod, lstat, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -12,11 +12,6 @@ export const enabledButton = (name: string) => [
   "--fn",
   `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\\s+/g, "") === ${JSON.stringify(name.replace(/\s+/g, ""))})`,
 ];
-
-const socketDirectory = join(
-  tmpdir(),
-  `ab-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`,
-);
 
 const rateLimitWindow = 11_000;
 const rateLimitRetries = 3;
@@ -36,7 +31,16 @@ export class Browser {
   }
 
   private async execute(...commands: string[][]) {
+    const socketDirectory = join(
+      tmpdir(),
+      `ab-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`,
+    );
     await mkdir(socketDirectory, { recursive: true, mode: 0o700 });
+    const entry = await lstat(socketDirectory);
+    ensure(
+      entry.isDirectory() && entry.uid === process.getuid?.(),
+      "E2E_BROWSER_SOCKET_DIRECTORY_NOT_OWNED",
+    );
     await chmod(socketDirectory, 0o700);
     const output = await run(
       "agent-browser",

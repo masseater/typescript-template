@@ -1,6 +1,6 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { chmod, mkdir, open, readFile, stat } from "node:fs/promises";
+import { chmod, lstat, mkdir, open, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,7 +13,6 @@ const local = new URL("../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const rootHash = createHash("sha256").update(root).digest("hex").slice(0, 12);
-const browserSocket = join(tmpdir(), `ab-${rootHash}`);
 const socket = `template-${rootHash}`;
 const apps = ["user", "admin", "wiki"] as const;
 type App = (typeof apps)[number];
@@ -100,10 +99,20 @@ async function readCredentials() {
   return v.parse(credentialSchema, JSON.parse(await readFile(credentialsFile, "utf8")) as unknown);
 }
 
+async function browserSocketDirectory() {
+  const directory = join(tmpdir(), `ab-${rootHash}`);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const entry = await lstat(directory);
+  if (!entry.isDirectory() || entry.uid !== process.getuid?.())
+    throw new Error("Browser socket directory must be a directory owned by the current user");
+  await chmod(directory, 0o700);
+  return directory;
+}
+
 async function setup() {
   await mkdir(local, { recursive: true, mode: 0o700 });
   await mkdir(new URL("logs/", local), { recursive: true, mode: 0o700 });
-  await mkdir(browserSocket, { recursive: true, mode: 0o700 });
+  await browserSocketDirectory();
   await replacePrivateFile(browserConfig, browserSettings);
   const exists = await stat(credentialsFile).then(
     () => true,
@@ -227,11 +236,11 @@ async function stop(app: App) {
 }
 
 async function browser(app: App) {
-  await mkdir(browserSocket, { recursive: true, mode: 0o700 });
+  const socketDirectory = await browserSocketDirectory();
   await replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
   const args = ["--config", fileURLToPath(browserConfig), "--session", session];
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: browserSocket };
+  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   if (app === "admin") {
     const credentials = await readCredentials();
     const child = spawn("agent-browser", [...args, "batch", "--bail", "--json"], {
@@ -267,12 +276,13 @@ async function browser(app: App) {
 
 async function browserCommand(app: App, args: string[]) {
   if (args.length === 0) throw new Error("A browser command is required");
+  const socketDirectory = await browserSocketDirectory();
   const child = spawn(
     "agent-browser",
     ["--config", fileURLToPath(browserConfig), "--session", `template-local-${app}`, ...args],
     {
       cwd: root,
-      env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: browserSocket },
+      env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
       stdio: "inherit",
     },
   );

@@ -4,26 +4,17 @@ const config: KnipConfig = {
   ignoreBinaries: ["fish", "tailscale"],
   workspaces: {
     ".": {
-      entry: ["vite.config.ts", "knip.ts", "tools/quality/rules.ts", "tools/quality/**/*.test.ts"],
       project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],
     },
     "apps/*": {
-      entry: ["vite.config.ts", "src/router.tsx!", "src/server.ts!", "src/**/*.test.ts"],
-      project: ["vite.config.ts", "src/**/*.{ts,tsx}!"],
+      project: ["src/**/*.{ts,tsx}!"],
     },
     "apps/wiki": {
-      entry: ["vite.config.ts", "src/router.tsx!", "src/server.ts!", "src/**/*.test.ts"],
-      project: ["vite.config.ts", "src/**/*.{ts,tsx}!"],
-      ignoreDependencies: ["tailwindcss"],
+      project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
     "libs/db": {
-      entry: [
-        "src/bootstrap-local.ts!",
-        "src/remote-cli.ts!",
-        "src/**/*.test.ts",
-        "drizzle.config.ts",
-      ],
-      project: ["src/**/*.ts!", "drizzle.config.ts"],
+      entry: ["src/bootstrap-local.ts!", "src/remote-cli.ts!"],
+      project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
       entry: [
@@ -36,12 +27,11 @@ const config: KnipConfig = {
         "src/check-artifacts.ts!",
         "src/engine-check.ts!",
         "src/database.ts!",
-        "src/**/*.test.ts",
       ],
       project: ["src/**/*.ts!"],
     },
     "infra/bootstrap": {
-      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!", "src/**/*.test.ts"],
+      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
@@ -50,17 +40,16 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {
-      entry: ["src/cli.ts!", "src/verify.ts!", "src/**/*.test.ts"],
+      entry: ["src/cli.ts!", "src/verify.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/budget-monitor": {
-      entry: ["src/worker.ts!", "src/inspect.ts!", "src/**/*.test.ts"],
+      entry: ["src/worker.ts!", "src/inspect.ts!"],
       project: ["src/**/*.ts!"],
       ignoreDependencies: ["cloudflare"],
     },
     "tools/e2e": {
-      entry: ["e2e.config.ts", "src/**/*.test.ts"],
-      project: ["src/**/*.ts", "e2e.config.ts"],
+      project: ["src/**/*.ts"],
     },
   },
 };
