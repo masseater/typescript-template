@@ -1,5 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "lib": ["ES2025", "DOM"] },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "compilerOptions": {
+    "lib": ["ES2025", "DOM"],
+    "types": ["vite-plus/client", "node"]
+  },
+  "include": [".storybook/**/*.ts", "src/**/*.ts", "src/**/*.tsx"]
 }
