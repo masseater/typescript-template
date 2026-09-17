@@ -15,11 +15,8 @@ export async function runRemoteDatabaseCommand(args: readonly string[], input: u
       migrations: migrations.map((item) => ({ hash: item.hash, createdAt: item.folderMillis })),
       remoteStateVerified: false,
     };
-  const executor = remoteExecutor({
-    accountId: target.accountId,
-    databaseId: target.databaseId,
-    apiToken: target.apiToken,
-  });
+  if (!target.apiToken) throw new Error("REMOTE_INPUT_INVALID");
+  const executor = remoteExecutor({ ...target, apiToken: target.apiToken });
   if (operation === "migrate") {
     const applied = await migrateDatabase(executor, migrations);
     return { ok: true, event: "database.remote_migrated", databaseId: target.databaseId, applied };

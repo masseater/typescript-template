@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { expect, test as baseTest } from "vite-plus/test";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { getProfile, updateProfile } from "./index.ts";
-import type { Audience, Database, Role } from "./index.ts";
+import type { Application, Role } from "@template/config";
+import type { Database } from "./index.ts";
 import {
   account,
   oauthAccessToken,
@@ -38,7 +39,7 @@ async function addUser(db: Database, id: string, role: Role = "user") {
   });
 }
 
-async function addSession(db: Database, userId: string, audience: Audience, strong = true) {
+async function addSession(db: Database, userId: string, audience: Application, strong = true) {
   const id = crypto.randomUUID();
   const [owner] = await db.select().from(user).where(eq(user.id, userId));
   if (!owner) throw new Error("USER_REQUIRED");

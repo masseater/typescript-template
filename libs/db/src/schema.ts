@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { applications, authenticationMethods, roles } from "@template/config";
 
 export const user = sqliteTable(
   "user",
@@ -12,9 +13,7 @@ export const user = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
-    role: text("role", { enum: ["user", "admin"] })
-      .notNull()
-      .default("user"),
+    role: text("role", { enum: roles }).notNull().default("user"),
     securityVersion: integer("security_version").notNull().default(0),
     profile: text("profile").notNull().default(""),
   },
@@ -34,11 +33,9 @@ export const session = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-    audience: text("audience", { enum: ["user", "admin", "wiki"] }).notNull(),
+    audience: text("audience", { enum: applications }).notNull(),
     securityVersion: integer("security_version").notNull(),
-    authenticationMethod: text("authentication_method", {
-      enum: ["password", "password_totp", "passkey_uv", "recovery"],
-    })
+    authenticationMethod: text("authentication_method", { enum: authenticationMethods })
       .notNull()
       .default("password"),
     authenticatedAt: integer("authenticated_at", { mode: "timestamp_ms" }),
@@ -74,7 +71,7 @@ export const verification = sqliteTable(
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    audience: text("audience", { enum: ["user", "admin", "wiki"] }).notNull(),
+    audience: text("audience", { enum: applications }).notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
@@ -107,7 +104,7 @@ export const passkey = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    audience: text("audience", { enum: ["user", "admin", "wiki"] }).notNull(),
+    audience: text("audience", { enum: applications }).notNull(),
     credentialID: text("credential_id").notNull().unique(),
     counter: integer("counter").notNull(),
     deviceType: text("device_type").notNull(),

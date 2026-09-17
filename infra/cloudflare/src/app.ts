@@ -1,30 +1,23 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
-import { workerCompatibility } from "@template/config/worker";
+import type { Application } from "@template/config";
 import { fileURLToPath } from "node:url";
-import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
-import type { AppTarget } from "./config.ts";
+import { parseSharedConfig, validateAuthSecret } from "./config.ts";
 import { loadArtifacts } from "./artifacts.ts";
 import { archiveSourceMaps } from "./source-maps.ts";
-import { workerObservability } from "./observability.ts";
+import { deployWorker } from "./worker.ts";
 
-export async function deployApplication(target: AppTarget) {
+export async function deployApplication(target: Application) {
   const config = new pulumi.Config();
   const shared = new pulumi.StackReference(config.require("sharedStack"));
   const rawSettings = await shared.getOutputDetails("applicationSettings");
   const settings = parseSharedConfig(rawSettings.value);
-  const policy = appPolicy(settings, target);
+  const origin = settings.origins[target];
   const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
   const artifacts = await loadArtifacts(repositoryRoot, target);
   await archiveSourceMaps(repositoryRoot, target, artifacts.release);
-  const worker = new cloudflare.Worker(`${target}-worker`, {
-    accountId: settings.accountId,
-    name: policy.name,
-    subdomain: policy.subdomain,
-    observability: workerObservability,
-  });
   const plaintext = {
-    APP_ORIGIN: policy.origin,
+    APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     EMAIL_FROM: settings.mailFrom,
   };
@@ -42,21 +35,15 @@ export async function deployApplication(target: AppTarget) {
     { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
     ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
   ];
-  const version = new cloudflare.WorkerVersion(`${target}-version`, {
+  const { worker, deployment } = deployWorker(target, {
     accountId: settings.accountId,
-    workerId: worker.id,
-    compatibilityDate: workerCompatibility.date,
-    compatibilityFlags: [...workerCompatibility.flags],
-    mainModule: artifacts.mainModule,
-    modules: artifacts.modules,
-    assets: { directory: artifacts.clientDirectory, config: policy.assets },
-    bindings: [...bindings, { type: "assets", name: "ASSETS" }],
-  });
-  const deployment = new cloudflare.WorkersDeployment(`${target}-deployment`, {
-    accountId: settings.accountId,
-    scriptName: worker.name,
-    strategy: "percentage",
-    versions: [{ versionId: version.id, percentage: 100 }],
+    name: `${settings.prefix}-${target}`,
+    version: {
+      mainModule: artifacts.mainModule,
+      modules: artifacts.modules,
+      assets: { directory: artifacts.clientDirectory, config: { runWorkerFirst: true } },
+      bindings: [...bindings, { type: "assets", name: "ASSETS" }],
+    },
   });
   const domain = new cloudflare.WorkersCustomDomain(
     `${target}-domain`,
@@ -64,7 +51,7 @@ export async function deployApplication(target: AppTarget) {
       accountId: settings.accountId,
       zoneId: settings.zoneId,
       service: worker.name,
-      hostname: new URL(policy.origin).hostname,
+      hostname: new URL(origin).hostname,
     },
     { dependsOn: [deployment] },
   );
