@@ -14,8 +14,15 @@
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.9.0",
+      "onFail": "error"
+    }
+  },
   "engines": {
-    "node": ">=24.11.0"
+    "node": ">=26.9.0"
   },
   "packageManager": "pnpm@12.4.1"
 }
