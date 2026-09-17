@@ -1,8 +1,19 @@
-import { HTTP_OK, PASSWORD, enableTotp } from "./browser-client.ts";
-import { object, parse, string } from "valibot";
-import type { AuthFixture } from "./auth-test-fixture.ts";
-import type { BrowserClient } from "./browser-client.ts";
-import { expect } from "vite-plus/test";
+import { BrowserClient, origins } from "./browser-client.ts";
+import { Effect, Schema } from "effect";
+import {
+  Fixture,
+  HTTP_CREATED,
+  HTTP_FOUND,
+  HTTP_OK,
+  PASSWORD,
+  bootstrapVerifiedAdmin,
+  decodeOrDie,
+  enableTotp,
+  signInAs,
+} from "./auth-test-fixture.ts";
+import { Auth } from "./auth.ts";
+import { assert } from "@effect/vitest";
+import { authorizeMcpRequest } from "./mcp.ts";
 
 interface AuthorizationFlow {
   readonly clientId: string;
@@ -10,173 +21,153 @@ interface AuthorizationFlow {
   readonly verifier: string;
 }
 
-type McpResult =
-  | Readonly<{ headers: Readonly<Pick<Headers, "get">>; status: number }>
-  | Readonly<{ userId: string }>;
-
-const HTTP_CREATED = 201;
-const HTTP_FOUND = 302;
-const VERIFIER_BYTES = 32;
-const OWNER_EMAIL = "owner@example.com";
+const wikiOrigin = origins.wiki;
 const redirectUri = "http://127.0.0.1:43123/callback";
-const redirectSchema = object({ url: string() });
+const VERIFIER_BYTES = 32;
+const Redirect = Schema.Struct({ url: Schema.String });
+const Registration = Schema.Struct({ client_id: Schema.String });
+const Tokens = Schema.Struct({ access_token: Schema.String });
 
-function base64url(bytes: readonly number[]): string {
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function base64url(bytes: Readonly<Uint8Array>): string {
   return Buffer.from(bytes).toString("base64url");
 }
 
-async function wikiAdministrator(fixture: AuthFixture): Promise<BrowserClient> {
-  await fixture.registerAdmin(OWNER_EMAIL);
-  const admin = fixture.client("admin");
-  await admin.request("/sign-in/email", { email: OWNER_EMAIL, password: PASSWORD });
-  const { authenticator } = await enableTotp(admin);
-  const wiki = fixture.client("wiki");
-  const signIn = await wiki.request("/sign-in/email", { email: OWNER_EMAIL, password: PASSWORD });
-  await expect(signIn.json()).resolves.toMatchObject({ twoFactorRedirect: true });
-  const verified = await wiki.request("/two-factor/verify-totp", {
+function responseStatus(value: unknown): number | undefined {
+  return value instanceof Response ? value.status : undefined;
+}
+
+const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
+  email: string,
+) {
+  yield* bootstrapVerifiedAdmin(email);
+  const { authenticator } = yield* enableTotp(yield* signInAs("admin", email));
+  const wiki = new BrowserClient((yield* Fixture).wiki);
+  const challenge = yield* wiki.json("/sign-in/email", { email, password: PASSWORD });
+  assert.deepInclude(challenge.body, { twoFactorRedirect: true });
+  const verified = yield* wiki.request("/two-factor/verify-totp", {
     code: authenticator.generate(),
   });
-  expect(verified.status).toBe(HTTP_OK);
+  assert.strictEqual(verified.status, HTTP_OK);
   return wiki;
-}
+});
 
-async function registerClient(fixture: AuthFixture): Promise<string> {
-  const registration = await fixture.client("wiki").request("/oauth2/register", {
-    client_name: "Test MCP client",
-    grant_types: ["authorization_code", "refresh_token"],
-    redirect_uris: [redirectUri],
-    response_types: ["code"],
-    token_endpoint_auth_method: "none",
-  });
-  expect(registration.status).toBe(HTTP_CREATED);
-  return parse(object({ client_id: string() }), await registration.json()).client_id;
-}
+const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifier: string) {
+  const digest = yield* Effect.promise(async () =>
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
+  );
+  return base64url(new Uint8Array(digest));
+});
 
-async function codeChallenge(verifier: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-  return base64url([...new Uint8Array(digest)]);
-}
-
-async function authorizationUrl(
-  wikiOrigin: string,
-  clientId: string,
-  verifier: string,
-): Promise<string> {
+function authorizeUrl(clientId: string, challenge: string): URL {
   const authorize = new URL(`${wikiOrigin}/api/auth/oauth2/authorize`);
-  authorize.search = new URLSearchParams({
+  for (const [key, value] of Object.entries({
     client_id: clientId,
-    code_challenge: await codeChallenge(verifier),
+    code_challenge: challenge,
     code_challenge_method: "S256",
     redirect_uri: redirectUri,
     resource: `${wikiOrigin}/mcp`,
     response_type: "code",
     scope: "wiki:read offline_access",
     state: "state-value",
-  }).toString();
-  return authorize.href;
+  })) {
+    authorize.searchParams.set(key, value);
+  }
+  return authorize;
 }
 
-async function startAuthorization(fixture: AuthFixture): Promise<AuthorizationFlow> {
-  const wikiOrigin = fixture.origin("wiki");
-  const clientId = await registerClient(fixture);
-  const random = crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES));
-  const verifier = base64url([...random]);
-  const redirect = await fixture
-    .client("wiki")
-    .navigate(await authorizationUrl(wikiOrigin, clientId, verifier));
-  expect(redirect.status).toBe(HTTP_FOUND);
+const registerClient = Effect.fn("registerClient")(function* registerClient(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  anonymous: Readonly<BrowserClient>,
+) {
+  const registration = yield* anonymous.json("/oauth2/register", {
+    client_name: "Test MCP client",
+    grant_types: ["authorization_code", "refresh_token"],
+    redirect_uris: [redirectUri],
+    response_types: ["code"],
+    token_endpoint_auth_method: "none",
+  });
+  assert.strictEqual(registration.status, HTTP_CREATED);
+  return (yield* decodeOrDie(Registration, registration.body)).client_id;
+});
+
+const startAuthorization = Effect.fn("startAuthorization")(function* startAuthorization() {
+  const anonymous = new BrowserClient((yield* Fixture).wiki);
+  const clientId = yield* registerClient(anonymous);
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES)));
+  const authorize = authorizeUrl(clientId, yield* pkceChallenge(verifier));
+  const redirect = yield* anonymous.navigate(authorize.href);
+  assert.strictEqual(redirect.status, HTTP_FOUND);
   const login = new URL(redirect.headers.get("location") ?? "", wikiOrigin);
-  expect(login.pathname).toBe("/login");
-  return { clientId, oauthQuery: login.search.slice(1), verifier };
-}
+  assert.strictEqual(login.pathname, "/login");
+  const flow: AuthorizationFlow = { clientId, oauthQuery: login.search.slice(1), verifier };
+  return flow;
+});
 
-async function continueToConsent(
-  fixture: AuthFixture,
+const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   wiki: Readonly<BrowserClient>,
   oauthQuery: string,
-): Promise<string> {
-  const continued = await wiki.request("/oauth2/continue", {
+) {
+  const continued = yield* wiki.json("/oauth2/continue", {
     oauth_query: oauthQuery,
     postLogin: true,
   });
-  expect(continued.status).toBe(HTTP_OK);
-  const next = new URL(parse(redirectSchema, await continued.json()).url, fixture.origin("wiki"));
-  expect(next.pathname).toBe("/consent");
-  return next.search.slice(1);
-}
-
-async function grantAuthorization(
-  fixture: AuthFixture,
-  wiki: Readonly<BrowserClient>,
-  oauthQuery: string,
-): Promise<string> {
-  const consentQuery = await continueToConsent(fixture, wiki, oauthQuery);
-  const consented = await wiki.request("/oauth2/consent", {
+  assert.strictEqual(continued.status, HTTP_OK);
+  const next = new URL((yield* decodeOrDie(Redirect, continued.body)).url, wikiOrigin);
+  assert.strictEqual(next.pathname, "/consent");
+  const consented = yield* wiki.json("/oauth2/consent", {
     accept: true,
-    oauth_query: consentQuery,
+    oauth_query: next.search.slice(1),
   });
-  expect(consented.status).toBe(HTTP_OK);
-  const callback = new URL(parse(redirectSchema, await consented.json()).url);
-  expect({
-    state: callback.searchParams.get("state"),
-    target: `${callback.origin}${callback.pathname}`,
-  }).toStrictEqual({ state: "state-value", target: redirectUri });
-  const code = callback.searchParams.get("code");
-  if (code === null) {
-    throw new Error("AUTHORIZATION_CODE_MISSING");
-  }
-  return code;
-}
+  assert.strictEqual(consented.status, HTTP_OK);
+  const callback = new URL((yield* decodeOrDie(Redirect, consented.body)).url);
+  assert.strictEqual(`${callback.origin}${callback.pathname}`, redirectUri);
+  assert.strictEqual(callback.searchParams.get("state"), "state-value");
+  return callback.searchParams.get("code") ?? "";
+});
 
-async function exchangeCode(
-  fixture: AuthFixture,
+const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
   flow: AuthorizationFlow,
   code: string,
-): Promise<string> {
-  const wikiOrigin = fixture.origin("wiki");
-  const response = await fixture.auth("wiki").handler(
-    new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
-      body: new URLSearchParams({
-        client_id: flow.clientId,
-        code,
-        code_verifier: flow.verifier,
-        grant_type: "authorization_code",
-        redirect_uri: redirectUri,
-        resource: `${wikiOrigin}/mcp`,
-      }),
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      method: "POST",
-    }),
+) {
+  const { wiki } = yield* Fixture;
+  const body = new URLSearchParams({
+    client_id: flow.clientId,
+    code,
+    code_verifier: flow.verifier,
+    grant_type: "authorization_code",
+    redirect_uri: redirectUri,
+    resource: `${wikiOrigin}/mcp`,
+  });
+  const request = new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
+    body,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST",
+  });
+  const response = yield* Effect.promise(async () => wiki.instance.handler(request));
+  assert.strictEqual(response.status, HTTP_OK);
+  return yield* decodeOrDie(
+    Tokens,
+    yield* Effect.promise(async (): Promise<unknown> => response.json()),
   );
-  expect(response.status).toBe(HTTP_OK);
-  return parse(object({ access_token: string() }), await response.json()).access_token;
-}
+});
 
-async function issuedToken(
-  fixture: AuthFixture,
-): Promise<Readonly<{ token: string; wiki: BrowserClient }>> {
-  const flow = await startAuthorization(fixture);
-  const wiki = await wikiAdministrator(fixture);
-  const code = await grantAuthorization(fixture, wiki, flow.oauthQuery);
-  return { token: await exchangeCode(fixture, flow, code), wiki };
-}
+const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(token?: string) {
+  const { wiki } = yield* Fixture;
+  const request = new Request(`${wikiOrigin}/mcp`, {
+    headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+    method: "POST",
+  });
+  return yield* authorizeMcpRequest(request, wikiOrigin).pipe(Effect.provideService(Auth, wiki));
+});
 
-function mcpStatus(result: McpResult): number {
-  return "status" in result ? result.status : HTTP_OK;
-}
-
-function mcpUser(result: McpResult): string {
-  if ("status" in result) {
-    throw new TypeError(`MCP_ACCESS_DENIED_${result.status}`);
-  }
-  return result.userId;
-}
-
-function mcpChallenge(result: McpResult): string | null {
-  if (!("headers" in result)) {
-    throw new Error("CHALLENGE_EXPECTED");
-  }
-  return result.headers.get("www-authenticate");
-}
-
-export { OWNER_EMAIL, issuedToken, mcpChallenge, mcpStatus, mcpUser, startAuthorization };
+export {
+  exchangeCode,
+  grantAuthorization,
+  mcpRequest,
+  responseStatus,
+  startAuthorization,
+  wikiAdministrator,
+  wikiOrigin,
+};

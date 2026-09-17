@@ -1,6 +1,10 @@
-import { literal, object, pipe, regex, safeParse, string } from "valibot";
+import { Effect, Option, Schema } from "effect";
 import type { Application as HealthService } from "@template/config";
-import type { HealthTarget } from "./config.ts";
+
+interface HealthTarget {
+  readonly service: HealthService;
+  readonly origin: string;
+}
 
 interface ProbeResult {
   readonly service: HealthService;
@@ -12,59 +16,55 @@ type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
-const payload = object({
-  ok: literal(true),
-  release: pipe(string(), regex(/^[a-zA-Z0-9._-]{1,64}$/u)),
-  service: string(),
+const HealthPayload = Schema.Struct({
+  ok: Schema.Literal(true),
+  release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u)),
+  service: Schema.String,
 });
 
 function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
   return { detail, healthy, service: target.service };
 }
 
-async function requestHealth(target: HealthTarget): Promise<ProbeResponse | undefined> {
-  try {
-    return await fetch(`${target.origin}/api/health`, {
-      headers: { accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-  } catch {
-    return undefined;
-  }
+function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
+  return Effect.tryPromise(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    async (signal): Promise<ProbeResponse> =>
+      fetch(`${target.origin}/api/health`, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+      }),
+  ).pipe(Effect.option);
 }
 
-async function readBody(response: ProbeResponse): Promise<unknown> {
-  try {
-    const body: unknown = await response.json();
-    return body;
-  } catch {
-    return undefined;
-  }
-}
-
-async function payloadResult(target: HealthTarget, response: ProbeResponse): Promise<ProbeResult> {
-  const body = await readBody(response);
-  if (body === undefined) {
+const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
+  target: HealthTarget,
+  response: ProbeResponse,
+) {
+  const body = yield* Effect.tryPromise(async (): Promise<unknown> => response.json()).pipe(
+    Effect.option,
+  );
+  if (Option.isNone(body)) {
     return probeResult(target, false, "body_unreadable");
   }
-  const parsed = safeParse(payload, body);
-  if (!parsed.success || parsed.output.service !== target.service) {
+  const payload = yield* Schema.decodeUnknownEffect(HealthPayload)(body.value).pipe(Effect.option);
+  if (Option.isNone(payload) || payload.value.service !== target.service) {
     return probeResult(target, false, "payload_invalid");
   }
-  return probeResult(target, true, `release_${parsed.output.release}`);
-}
+  return probeResult(target, true, `release_${payload.value.release}`);
+});
 
-async function probeService(target: HealthTarget): Promise<ProbeResult> {
-  const response = await requestHealth(target);
-  if (response === undefined) {
+const probeService = Effect.fn("probeService")(function* probeService(target: HealthTarget) {
+  const response = yield* requestHealth(target);
+  if (Option.isNone(response)) {
     return probeResult(target, false, "unreachable");
   }
-  if (!response.ok) {
-    return probeResult(target, false, `status_${response.status}`);
+  if (!response.value.ok) {
+    return probeResult(target, false, `status_${response.value.status}`);
   }
-  return payloadResult(target, response);
-}
+  return yield* payloadResult(target, response.value);
+});
 
 export { probeService };
 export type { ProbeResult };

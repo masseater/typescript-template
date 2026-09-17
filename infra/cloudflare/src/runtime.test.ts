@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { applyPlan } from "./stacks.ts";
+import { stackNames } from "./stacks.ts";
 
 const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/Pulumi.yaml"], {
   eager: true,
@@ -12,7 +12,7 @@ describe("pulumi runtime", () => {
     expect(new Set(Object.keys(projects))).toStrictEqual(
       new Set([
         "../../bootstrap/Pulumi.yaml",
-        ...applyPlan().map(({ stack }) => `../${stack}/Pulumi.yaml`),
+        ...stackNames.map((stack) => `../${stack}/Pulumi.yaml`),
       ]),
     );
   });

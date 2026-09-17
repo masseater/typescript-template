@@ -9,11 +9,13 @@
     "inspect": "node src/inspect.ts"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@template/monitor": "workspace:*",
-    "valibot": "catalog:"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

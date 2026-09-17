@@ -1,22 +1,34 @@
+import { Effect } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
 import { loadArtifacts } from "./artifacts.ts";
 
-try {
-  const root = `${import.meta.dirname}/../../..`;
-  const verified = await Promise.all(
-    applications.map(async (target) => {
-      const artifacts = await loadArtifacts(root, target);
-      return {
-        event: "artifacts.verified",
-        mainModule: artifacts.mainModule,
-        modules: artifacts.modules.length,
-        privateAssetsExcluded: true,
-        target,
-      } as const;
-    }),
-  );
-  process.stdout.write(verified.map((entry) => `${JSON.stringify(entry)}\n`).join(""));
-} catch {
-  process.stderr.write(`${JSON.stringify({ event: "artifacts.invalid" })}\n`);
-  process.exitCode = 1;
-}
+NodeRuntime.runMain(
+  Effect.gen(function* program() {
+    const root = fileURLToPath(new URL("../../../", import.meta.url));
+    for (const target of applications) {
+      const artifacts = yield* loadArtifacts(root, target);
+      // oxlint-disable-next-line no-console
+      console.log(
+        JSON.stringify({
+          event: "artifacts.verified",
+          mainModule: artifacts.mainModule,
+          modules: artifacts.modules.length,
+          privateAssetsExcluded: true,
+          target,
+        }),
+      );
+    }
+  }).pipe(
+    Effect.catchCause(() =>
+      Effect.sync(() => {
+        // oxlint-disable-next-line no-console
+        console.error(JSON.stringify({ event: "artifacts.invalid" }));
+        process.exitCode = 1;
+      }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

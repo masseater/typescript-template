@@ -1,52 +1,47 @@
+import { Effect, Schema } from "effect";
 import { applicationPorts, applications, loopbackHosts } from "@template/config";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-import { minLength, object, parse, picklist, pipe, record, string } from "valibot";
+import { failure, fileIo } from "./failure.ts";
 import type { Application } from "@template/config";
-import type { InferOutput } from "valibot";
+import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
+type App = Application;
+type RouteName = App | "mailpit";
+
+const ROOT_HASH_LENGTH = 12;
+const AUTH_SECRET_MINIMUM_LENGTH = 32;
+const MAILPIT_PORT = 8025;
+
 // oxlint-disable-next-line typescript/strict-void-return
-const run = promisify(execFile);
+const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
-const rootHashLength = 12;
-const hexadecimalRadix = 16;
-const hexadecimalByteLength = 2;
 const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(root));
-const rootHash = Array.from(new Uint8Array(rootDigest), (byte) =>
-  byte.toString(hexadecimalRadix).padStart(hexadecimalByteLength, "0"),
-)
-  .join("")
-  .slice(0, rootHashLength);
-// oxlint-disable-next-line node/no-process-env
-const inheritedEnvironment = parse(record(string(), string()), process.env);
+const rootHash = Buffer.from(rootDigest).toString("hex").slice(0, ROOT_HASH_LENGTH);
 const socket = `template-${rootHash}`;
-const apps = applications;
-const appSchema = picklist(apps);
-const authSecretMinimumLength = 32;
-const credentialSchema = object({
-  authSecret: pipe(string(), minLength(authSecretMinimumLength)),
+const AppName = Schema.Literals(applications);
+const CredentialsFile = Schema.Struct({
+  authSecret: Schema.String.check(Schema.isMinLength(AUTH_SECRET_MINIMUM_LENGTH)),
 });
-const MAILPIT_PORT = 8025;
-const ports = applicationPorts;
-const routes = { ...ports, mailpit: MAILPIT_PORT };
+const routes = { ...applicationPorts, mailpit: MAILPIT_PORT };
 const routeNames = [...applications, "mailpit"] as const;
 const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 
-type App = Application;
-type RouteName = (typeof routeNames)[number];
-type Credentials = InferOutput<typeof credentialSchema>;
+type Credentials = typeof CredentialsFile.Type;
 
 function lanHostname(name: RouteName): string {
   return `template-${name}.local`;
@@ -56,11 +51,6 @@ function lanOrigin(name: RouteName): string {
   return `https://${lanHostname(name)}`;
 }
 
-const origins = {
-  admin: lanOrigin("admin"),
-  user: lanOrigin("user"),
-  wiki: lanOrigin("wiki"),
-};
 const browserSettings = `${JSON.stringify({
   allowedDomains: [...loopbackHosts, ...routeNames.map((name) => lanHostname(name))],
   restoreSave: "never",
@@ -70,49 +60,68 @@ function logFileUrl(name: string): URL {
   return new URL(`logs/${name}.log`, local);
 }
 
-async function running(session: string): Promise<boolean> {
-  try {
-    await run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root });
-    return true;
-  } catch {
-    return false;
-  }
+function run(
+  file: string,
+  args: readonly string[],
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  options: Parameters<typeof execFileAsync>[2],
+): Effect.Effect<unknown, LocalCommandFailure> {
+  return Effect.tryPromise({
+    catch: () => failure("process_failed"),
+    try: async () => execFileAsync(file, args, options),
+  });
 }
 
-async function readCredentials(): Promise<Credentials> {
-  await assertOwnerOnly(credentialsFile);
-  return parse(credentialSchema, JSON.parse(await readFile(credentialsFile, "utf-8")) as unknown);
+function running(session: string): Effect.Effect<boolean> {
+  return run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root }).pipe(
+    Effect.match({ onFailure: () => false, onSuccess: () => true }),
+  );
 }
 
-async function browserSocketDirectory(): Promise<string> {
-  const directory = `${tmpdir()}/ab-${rootHash}`;
-  await mkdir(directory, { mode: privateDirectoryMode, recursive: true });
-  const entry = await lstat(directory);
-  if (!entry.isDirectory() || entry.uid !== process.getuid?.()) {
-    throw new Error("Browser socket directory must be a directory owned by the current user");
-  }
-  await chmod(directory, privateDirectoryMode);
-  return directory;
+function application(value: string | undefined): Effect.Effect<App, LocalCommandFailure> {
+  return Schema.decodeUnknownEffect(AppName)(value).pipe(
+    Effect.mapError(() => failure("app_invalid")),
+  );
 }
 
-async function refreshBrowserConfig(): Promise<string> {
-  const directory = await browserSocketDirectory();
-  await replacePrivateFile(browserConfig, browserSettings);
-  return directory;
-}
+const readCredentials = Effect.fn("readCredentials")(function* readCredentials() {
+  yield* assertOwnerOnly(credentialsFile);
+  const text = yield* fileIo(async () => readFile(credentialsFile, "utf-8"));
+  const json = yield* Effect.try({
+    catch: () => failure("credentials_invalid"),
+    try: (): unknown => JSON.parse(text),
+  });
+  return yield* Schema.decodeUnknownEffect(CredentialsFile)(json).pipe(
+    Effect.mapError(() => failure("credentials_invalid")),
+  );
+});
+
+const browserSocketDirectory = Effect.fn("browserSocketDirectory")(
+  function* browserSocketDirectory() {
+    const directory = path.join(tmpdir(), `ab-${rootHash}`);
+    yield* fileIo(async () => mkdir(directory, { mode: privateDirectoryMode, recursive: true }));
+    const entry = yield* fileIo(async () => lstat(directory));
+    if (!entry.isDirectory() || entry.uid !== process.getuid?.()) {
+      return yield* failure("browser_socket_directory_invalid");
+    }
+    yield* fileIo(async () => chmod(directory, privateDirectoryMode));
+    return directory;
+  },
+);
+
+const refreshBrowserConfig = Effect.fn("refreshBrowserConfig")(function* refreshBrowserConfig() {
+  const socketDirectory = yield* browserSocketDirectory();
+  yield* replacePrivateFile(browserConfig, browserSettings);
+  return socketDirectory;
+});
 
 export {
-  appSchema,
-  apps,
+  application,
   browserConfig,
-  browserSocketDirectory,
   credentialsFile,
-  inheritedEnvironment,
   lanOrigin,
   local,
   logFileUrl,
-  origins,
-  ports,
   readCredentials,
   readyPaths,
   refreshBrowserConfig,

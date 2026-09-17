@@ -1,7 +1,8 @@
 import { D1Database } from "@pulumi/cloudflare";
+import { Effect } from "effect";
 import { consumeSettings } from "./reference.ts";
 
-const { settings } = await consumeSettings("database", "settings");
+const { settings } = await Effect.runPromise(consumeSettings("database", "settings"));
 const database = new D1Database(
   "database",
   {
@@ -11,6 +12,4 @@ const database = new D1Database(
   { protect: true },
 );
 
-const databaseId = database.id;
-
-export { databaseId };
+export const databaseId = database.id;

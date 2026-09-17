@@ -1,4 +1,4 @@
-import { array, literal, looseObject, parse, string } from "valibot";
+import { Effect, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
 import type { Application } from "@template/config";
@@ -50,37 +50,68 @@ interface MapLookup extends ParsedLocation, MapCandidate {
   readonly location: string;
 }
 
+class SourceMapFailure extends Schema.TaggedError<SourceMapFailure>()("SourceMapFailure", {
+  reason: Schema.Literals(["source_map_unreadable", "source_map_invalid"]),
+}) {}
+
 const sourceMapVersion = 3;
-const payload = looseObject({
-  mappings: string(),
-  names: array(string()),
-  sources: array(string()),
-  version: literal(sourceMapVersion),
+const Payload = Schema.Struct({
+  mappings: Schema.String,
+  names: Schema.Array(Schema.String),
+  sources: Schema.Array(Schema.String),
+  version: Schema.Literal(sourceMapVersion),
 });
 
-async function directoryEntries(directory: string): Promise<Dirent[]> {
-  try {
-    return await readdir(directory, { withFileTypes: true });
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return [];
-    }
-    throw error;
-  }
+function unreadable(): SourceMapFailure {
+  return new SourceMapFailure({ reason: "source_map_unreadable" });
 }
 
-async function findMap(directory: string, filename: string): Promise<string | undefined> {
-  const entries = await directoryEntries(directory);
-  const found = await Promise.all(
-    entries.map(async (entry: DirectoryEntry) => {
-      const candidate = path.join(directory, entry.name);
-      if (entry.isFile() && entry.name === `${filename}.map`) {
-        return candidate;
-      }
-      return entry.isDirectory() ? findMap(candidate, filename) : undefined;
+function invalid(): SourceMapFailure {
+  return new SourceMapFailure({ reason: "source_map_invalid" });
+}
+
+function isMissing(cause: unknown): boolean {
+  return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
+}
+
+function directoryEntries(directory: string): Effect.Effect<Dirent[], SourceMapFailure> {
+  return Effect.tryPromise({
+    catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isMissing(cause) }),
+    try: async () => readdir(directory, { withFileTypes: true }),
+  }).pipe(
+    Effect.matchEffect({
+      onFailure: ({ missing }) => (missing ? Effect.succeed([]) : Effect.fail(unreadable())),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      onSuccess: (entries) => Effect.succeed(entries),
     }),
   );
-  return found.find((candidate) => candidate !== undefined);
+}
+
+function entryMap(
+  directory: string,
+  entry: DirectoryEntry,
+  filename: string,
+): Effect.Effect<string | undefined, SourceMapFailure> {
+  const candidate = path.join(directory, entry.name);
+  if (entry.isFile() && entry.name === `${filename}.map`) {
+    return Effect.succeed(candidate);
+  }
+  // oxlint-disable-next-line typescript/no-use-before-define
+  return entry.isDirectory() ? findMap(candidate, filename) : Effect.undefined;
+}
+
+function findMap(
+  directory: string,
+  filename: string,
+): Effect.Effect<string | undefined, SourceMapFailure> {
+  return directoryEntries(directory).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap((entries) =>
+      Effect.forEach(entries, (entry: DirectoryEntry) => entryMap(directory, entry, filename)),
+    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((found) => found.find((candidate) => candidate !== undefined)),
+  );
 }
 
 function parseLocation(location: string): ParsedLocation | undefined {
@@ -99,18 +130,31 @@ function parseLocation(location: string): ParsedLocation | undefined {
   };
 }
 
-async function loadSourceMap(mapFile: string, filename: string): Promise<SourceMap> {
-  const parsed = parse(payload, JSON.parse(await readFile(mapFile, "utf-8")));
-  return new SourceMap({
-    file: filename,
-    mappings: parsed.mappings,
-    names: parsed.names,
-    sourceRoot: "",
-    sources: parsed.sources,
-    sourcesContent: [],
-    version: parsed.version,
+const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
+  mapFile: string,
+  filename: string,
+) {
+  const text = yield* Effect.tryPromise({
+    catch: unreadable,
+    try: async () => readFile(mapFile, "utf-8"),
   });
-}
+  const parsed = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Payload))(text).pipe(
+    Effect.mapError(invalid),
+  );
+  return yield* Effect.try({
+    catch: invalid,
+    try: () =>
+      new SourceMap({
+        file: filename,
+        mappings: parsed.mappings,
+        names: [...parsed.names],
+        sourceRoot: "",
+        sources: [...parsed.sources],
+        sourcesContent: [],
+        version: parsed.version,
+      }),
+  });
+});
 
 function repositorySource(request: Symbolication, lookup: MapLookup, fileName: string): string {
   const builtFile = path.join(
@@ -126,19 +170,20 @@ function repositorySource(request: Symbolication, lookup: MapLookup, fileName: s
     .replaceAll(path.sep, "/");
 }
 
-async function resolveWithMap(request: Symbolication, lookup: MapLookup): Promise<Frame> {
+const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
+  request: Symbolication,
+  lookup: MapLookup,
+) {
   const { column, line, location } = lookup;
-  const map = await loadSourceMap(lookup.mapFile, lookup.filename);
+  const map = yield* loadSourceMap(lookup.mapFile, lookup.filename);
   const entry = map.findEntry(line - 1, column - 1);
-  if (!("generatedLine" in entry) || entry.generatedLine !== line - 1) {
-    return { location, reason: "mapping_missing", resolved: false };
-  }
   const origin = map.findOrigin(line, column);
-  if (!("fileName" in origin)) {
-    return { location, reason: "mapping_missing", resolved: false };
+  if (!("generatedLine" in entry) || entry.generatedLine !== line - 1 || !("fileName" in origin)) {
+    const missing: Frame = { location, reason: "mapping_missing", resolved: false };
+    return missing;
   }
   const name: string = origin.name ?? "";
-  return {
+  const frame: Frame = {
     column: origin.columnNumber,
     line: origin.lineNumber,
     location,
@@ -146,27 +191,33 @@ async function resolveWithMap(request: Symbolication, lookup: MapLookup): Promis
     resolved: true,
     source: repositorySource(request, lookup, origin.fileName),
   };
-}
+  return frame;
+});
 
-async function findCandidate(
+function findCandidate(
   releaseDirectory: string,
   parsed: ParsedLocation,
-): Promise<MapCandidate | undefined> {
+): Effect.Effect<MapCandidate | undefined, SourceMapFailure> {
   const runtimes: readonly Runtime[] = parsed.client ? ["client"] : ["server", "client"];
-  const candidates = await Promise.all(
-    runtimes.map(async (runtime): Promise<MapCandidate | undefined> => {
-      const runtimeDirectory = path.join(releaseDirectory, runtime);
-      const mapFile = await findMap(runtimeDirectory, parsed.filename);
-      return mapFile === undefined ? undefined : { mapFile, runtime, runtimeDirectory };
-    }),
-  );
-  return candidates.find((candidate) => candidate !== undefined);
+  return Effect.forEach(runtimes, (runtime) => {
+    const runtimeDirectory = path.join(releaseDirectory, runtime);
+    return findMap(runtimeDirectory, parsed.filename).pipe(
+      Effect.map((mapFile): MapCandidate | undefined =>
+        mapFile === undefined ? undefined : { mapFile, runtime, runtimeDirectory },
+      ),
+    );
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  }).pipe(Effect.map((candidates) => candidates.find((candidate) => candidate !== undefined)));
 }
 
-async function symbolicateLocation(request: Symbolication, location: string): Promise<Frame> {
+const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolicateLocation(
+  request: Symbolication,
+  location: string,
+) {
   const parsed = parseLocation(location);
   if (parsed === undefined) {
-    return { location, reason: "location_invalid", resolved: false };
+    const invalidLocation: Frame = { location, reason: "location_invalid", resolved: false };
+    return invalidLocation;
   }
   const releaseDirectory = path.join(
     request.repositoryRoot,
@@ -176,15 +227,21 @@ async function symbolicateLocation(request: Symbolication, location: string): Pr
     "releases",
     request.release,
   );
-  const match = await findCandidate(releaseDirectory, parsed);
+  const match = yield* findCandidate(releaseDirectory, parsed);
   if (match === undefined) {
-    return { location, reason: "source_map_missing", resolved: false };
+    const missing: Frame = { location, reason: "source_map_missing", resolved: false };
+    return missing;
   }
-  return resolveWithMap(request, { ...parsed, ...match, location });
-}
+  return yield* resolveWithMap(request, { ...parsed, ...match, location });
+});
 
-async function symbolicate(request: Symbolication, locations: readonly string[]): Promise<Frame[]> {
-  return Promise.all(locations.map(async (location) => symbolicateLocation(request, location)));
+function symbolicate(
+  request: Symbolication,
+  locations: readonly string[],
+): Effect.Effect<Frame[], SourceMapFailure> {
+  return Effect.forEach(locations, (location) => symbolicateLocation(request, location), {
+    concurrency: "unbounded",
+  });
 }
 
 export { symbolicate };

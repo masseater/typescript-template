@@ -7,10 +7,11 @@
   },
   "dependencies": {
     "@template/monitor": "workspace:*",
-    "valibot": "catalog:"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

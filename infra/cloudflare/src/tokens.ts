@@ -1,25 +1,19 @@
 import { AccountToken, getAccountApiTokenPermissionGroupsListOutput } from "@pulumi/cloudflare";
-import type { AccountPermission } from "./config.ts";
+import { Effect } from "effect";
 import type { Output } from "@pulumi/pulumi";
 import { consumeSettings } from "./reference.ts";
 import { secret } from "@pulumi/pulumi";
 import { selectAccountPermission } from "./config.ts";
 
-type PermissionGroups = readonly Readonly<{
-  id: string;
-  name: string;
-  scopes: readonly string[];
-}>[];
-
-const { settings } = await consumeSettings("tokens", "settings");
+const { settings } = await Effect.runPromise(consumeSettings("tokens", "settings"));
 const permissions = getAccountApiTokenPermissionGroupsListOutput({
   accountId: settings.accountId,
 });
 
-function accountToken(name: string, permission: AccountPermission): Output<string> {
-  const permissionId = permissions.results.apply((groups: PermissionGroups) =>
-    selectAccountPermission(groups, permission),
-  );
+function accountToken(
+  name: string,
+  permission: Parameters<typeof selectAccountPermission>[1],
+): Output<string> {
   const token = new AccountToken(
     name,
     {
@@ -28,7 +22,14 @@ function accountToken(name: string, permission: AccountPermission): Output<strin
       policies: [
         {
           effect: "allow",
-          permissionGroups: [{ id: permissionId }],
+          permissionGroups: [
+            {
+              // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+              id: permissions.results.apply(async (groups) =>
+                Effect.runPromise(selectAccountPermission(groups, permission)),
+              ),
+            },
+          ],
           resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
         },
       ],

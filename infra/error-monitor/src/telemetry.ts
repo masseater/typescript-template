@@ -1,15 +1,5 @@
-import {
-  array,
-  boolean,
-  literal,
-  looseObject,
-  number,
-  object,
-  optional,
-  safeParse,
-  string,
-  union,
-} from "valibot";
+import { Effect, Schema } from "effect";
+import { ErrorMonitorFailure } from "./config.ts";
 
 interface ErrorGroup {
   readonly fingerprint: string;
@@ -26,27 +16,27 @@ interface QueryWindow {
   readonly to: number;
 }
 
-type GroupValue = Readonly<{ key: string; value: string | number | boolean }>;
-type Aggregate = Readonly<{ count: number; groups?: readonly GroupValue[] | undefined }>;
-type Calculation = Readonly<{ aggregates: readonly Aggregate[] }>;
-
 const REQUEST_TIMEOUT_MS = 15_000;
 const QUERY_LIMIT = 50;
 const groupKeys = ["error.fingerprint", "service", "event", "error.type"] as const;
-const scalar = union([string(), number(), boolean()]);
-const groupValue = object({ key: string(), value: scalar });
-const aggregate = looseObject({ count: number(), groups: optional(array(groupValue)) });
-const calculation = looseObject({ aggregates: array(aggregate) });
-const calculations = array(calculation);
-const envelope = object({
-  result: looseObject({ calculations: optional(calculations, []) }),
-  success: literal(true),
+const Scalar = Schema.Union([Schema.String, Schema.Finite, Schema.Boolean]);
+const GroupValue = Schema.Struct({ key: Schema.String, value: Scalar });
+const GroupValues = Schema.Array(GroupValue);
+const Aggregate = Schema.Struct({ count: Schema.Finite, groups: Schema.optionalKey(GroupValues) });
+const Calculation = Schema.Struct({ aggregates: Schema.Array(Aggregate) });
+const noCalculations = Effect.succeed([]);
+const Calculations = Schema.Array(Calculation).pipe(Schema.withDecodingDefaultKey(noCalculations));
+const QueryEnvelope = Schema.Struct({
+  result: Schema.Struct({ calculations: Calculations }),
+  success: Schema.Literal(true),
 });
 
-function errorGroup(item: Aggregate): ErrorGroup[] {
-  const values = new Map(
-    (item.groups ?? []).map((entry: GroupValue) => [entry.key, String(entry.value)]),
-  );
+function failure(code: ErrorMonitorFailure["code"]): () => ErrorMonitorFailure {
+  return () => new ErrorMonitorFailure({ code });
+}
+
+function errorGroup(item: typeof Aggregate.Type): ErrorGroup[] {
+  const values = new Map((item.groups ?? []).map((entry) => [entry.key, String(entry.value)]));
   const fingerprint = values.get("error.fingerprint");
   if (fingerprint === undefined || !/^[0-9a-f]{8}$/u.test(fingerprint)) {
     return [];
@@ -77,36 +67,49 @@ function queryBody(window: QueryWindow): string {
   });
 }
 
-async function fetchErrorGroups(window: QueryWindow): Promise<ErrorGroup[]> {
-  if (!/^[a-f0-9]{32}$/u.test(window.accountId)) {
-    throw new Error("telemetry_account_invalid");
-  }
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
-    {
-      body: queryBody(window),
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${window.token}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      redirect: "manual",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    },
-  );
-  if (!response.ok) {
-    throw new Error("telemetry_http_failed");
-  }
-  const body: unknown = await response.json();
-  const parsed = safeParse(envelope, body);
-  if (!parsed.success) {
-    throw new Error("telemetry_response_invalid");
-  }
-  return parsed.output.result.calculations.flatMap((entry: Calculation) =>
-    entry.aggregates.flatMap((item: Aggregate) => errorGroup(item)),
-  );
+function queryTelemetry(window: QueryWindow): Effect.Effect<Response, ErrorMonitorFailure> {
+  return Effect.tryPromise({
+    catch: failure("telemetry_http_failed"),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    try: async (signal) =>
+      fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
+        {
+          body: queryBody(window),
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${window.token}`,
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+          redirect: "manual",
+          signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+        },
+      ),
+  });
 }
+
+const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroups(
+  window: QueryWindow,
+) {
+  if (!/^[a-f0-9]{32}$/u.test(window.accountId)) {
+    return yield* failure("telemetry_account_invalid")();
+  }
+  const response = yield* queryTelemetry(window);
+  if (!response.ok) {
+    return yield* failure("telemetry_http_failed")();
+  }
+  const body = yield* Effect.tryPromise({
+    catch: failure("telemetry_response_invalid"),
+    try: async (): Promise<unknown> => response.json(),
+  });
+  const parsed = yield* Schema.decodeUnknownEffect(QueryEnvelope)(body).pipe(
+    Effect.mapError(failure("telemetry_response_invalid")),
+  );
+  return parsed.result.calculations.flatMap((entry) =>
+    entry.aggregates.flatMap((item) => errorGroup(item)),
+  );
+});
 
 export { fetchErrorGroups };
 export type { ErrorGroup };

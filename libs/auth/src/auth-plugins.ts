@@ -2,11 +2,11 @@ import { assertEligibleUser, deny } from "./policy.ts";
 import { jwt, twoFactor } from "better-auth/plugins";
 import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
-import type { Database } from "@template/db";
+import type { Run } from "./runner.ts";
 import { findPasskeyUser } from "@template/db/security";
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
-import { wikiScopes } from "./mcp.ts";
+import { wikiScopes } from "./scopes.ts";
 
 type AuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
 
@@ -28,8 +28,7 @@ function verificationAudiencePlugin(audience: Application): AuthPlugin {
 
 function passkeyPlugin(
   origin: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  database: Database,
+  run: Run,
   audience: Application,
 ): ReturnType<typeof passkey> {
   return passkey({
@@ -44,7 +43,8 @@ function passkeyPlugin(
         if (!verification.authenticationInfo.userVerified) {
           deny("PASSKEY_UV_REQUIRED");
         }
-        assertEligibleUser(await findPasskeyUser(database, clientData.id, audience), audience);
+        const user = await run(findPasskeyUser(clientData.id, audience));
+        assertEligibleUser(user ?? undefined, audience);
       },
     },
     authenticatorSelection: { userVerification: "required" },
@@ -69,16 +69,15 @@ function wikiAuthorizationServer(origin: string): AuthPlugin[] {
   ];
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function authPlugins({
   audience,
-  database,
   origin,
-}: Readonly<{ audience: Application; database: Database; origin: string }>): AuthPlugin[] {
+  run,
+}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] {
   return [
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
-    passkeyPlugin(origin, database, audience),
+    passkeyPlugin(origin, run, audience),
     ...(audience === "wiki" ? wikiAuthorizationServer(origin) : []),
   ];
 }

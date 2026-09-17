@@ -1,0 +1,31 @@
+import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
+import { Context, Effect, Layer } from "effect";
+import type { Application } from "@template/config";
+import { AuthFailure } from "./auth-failure.ts";
+import { Database } from "@template/db";
+import { createAuth } from "./create-auth.ts";
+
+interface AuthShape {
+  readonly audience: Application;
+  readonly instance: BetterAuthInstance;
+}
+
+class Auth extends Context.Service<Auth, AuthShape>()("@template/auth/Auth") {
+  public static layer(options: AuthOptions): Layer.Layer<Auth, AuthFailure, Database> {
+    return Layer.effect(
+      Auth,
+      Effect.gen(function* authLayer() {
+        const database = yield* Database;
+        const context = yield* Effect.context<Database>();
+        const instance = createAuth(options, database, Effect.runPromiseWith(context));
+        yield* Effect.tryPromise({
+          catch: (cause) => new AuthFailure({ cause }),
+          try: async () => instance.$context,
+        });
+        return Auth.of({ audience: options.audience, instance });
+      }),
+    );
+  }
+}
+
+export { Auth };

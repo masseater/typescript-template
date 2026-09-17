@@ -1,41 +1,40 @@
+import { Effect } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
 import { parseDeploymentCommand } from "./config.ts";
 import { runWithState } from "@template/infra-bootstrap/state";
 
-type DeploymentCommand = ReturnType<typeof parseDeploymentCommand>;
-
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
-function writeEvent(stream: Readonly<Pick<NodeJS.WriteStream, "write">>, event: unknown): void {
-  stream.write(`${JSON.stringify(event)}\n`);
-}
-
-async function applyStacks(
-  operation: DeploymentCommand["operation"],
-  targets: readonly DeploymentCommand["targets"][number][],
-): Promise<number> {
-  const [next, ...rest] = targets;
-  if (next === undefined) {
-    return 0;
-  }
-  writeEvent(process.stdout, {
-    dependencies: next.dependencies,
-    event: "cloudflare.stack_started",
-    stack: next.stack,
-  });
-  const code = await runWithState([operation, "--cwd", `${import.meta.dirname}/../${next.stack}`]);
-  if (code !== 0) {
-    writeEvent(process.stderr, { event: "cloudflare.stack_failed", stack: next.stack });
-    return code;
-  }
-  return applyStacks(operation, rest);
-}
-
-try {
-  const { operation, targets } = parseDeploymentCommand(
-    process.argv.slice(FIRST_USER_ARGUMENT_INDEX),
-  );
-  process.exitCode = await applyStacks(operation, targets);
-} catch {
-  process.stderr.write(`${JSON.stringify({ event: "cloudflare.command_failed" })}\n`);
-  process.exitCode = 1;
-}
+NodeRuntime.runMain(
+  Effect.gen(function* program() {
+    const { operation, targets } = yield* parseDeploymentCommand(
+      process.argv.slice(FIRST_USER_ARGUMENT_INDEX),
+    );
+    for (const { stack, dependencies } of targets) {
+      // oxlint-disable-next-line no-console
+      console.info(JSON.stringify({ dependencies, event: "cloudflare.stack_started", stack }));
+      const code = yield* runWithState([
+        operation,
+        "--cwd",
+        fileURLToPath(new URL(`../${stack}`, import.meta.url)),
+      ]);
+      if (code !== 0) {
+        // oxlint-disable-next-line no-console
+        console.error(JSON.stringify({ event: "cloudflare.stack_failed", stack }));
+        process.exitCode = code;
+        return;
+      }
+    }
+  }).pipe(
+    Effect.catchCause(() =>
+      Effect.sync(() => {
+        // oxlint-disable-next-line no-console
+        console.error(JSON.stringify({ event: "cloudflare.command_failed" }));
+        process.exitCode = 1;
+      }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

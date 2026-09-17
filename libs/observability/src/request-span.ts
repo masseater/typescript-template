@@ -1,3 +1,5 @@
+import { Cause, Effect } from "effect";
+import { errorAttributes, errorFingerprint } from "./errors.ts";
 import {
   httpMethod,
   parentContext,
@@ -6,56 +8,49 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
-import type { Application } from "@template/config";
-import type { Correlation } from "./protocol.ts";
-import type { LogSink } from "./log.ts";
-import { errorAttributes } from "./errors.ts";
+import { CurrentRequest } from "./current-request.ts";
+import type { ErrorAttributes } from "./errors.ts";
+import type { RequestContext } from "./current-request.ts";
+import { Telemetry } from "./telemetry.ts";
 import { httpStatus } from "./http-status.ts";
-import { writeLog } from "./log.ts";
+import { isRecord } from "./structured-logs.ts";
 
-interface RequestContext extends Correlation {
-  readonly traceparent: string;
-}
-interface Telemetry {
-  readonly log: LogSink;
-  readonly release: string;
-  readonly routes: Readonly<Record<string, string>>;
-  readonly serviceName: Application;
-}
-type RequestHandler = (
+type RequestHandler<Requirements> = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
-  context: RequestContext,
-) => Response | Promise<Response>;
-interface Completion {
-  readonly context: RequestContext;
-  readonly status: number;
-  readonly timer: number;
+) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
+type FailureAttributes = ErrorAttributes & { readonly "error.tag"?: string };
+
+const tagPattern = /^[A-Za-z]{1,64}$/u;
+const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
+
+function failureTag(error: unknown): string | undefined {
+  const tag = isRecord(error) ? error["_tag"] : undefined;
+  return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
 }
 
-function correlationFields(telemetry: Telemetry, context: Correlation): Record<string, string> {
-  return {
-    release: telemetry.release,
-    request_id: context.requestId,
-    service: `${telemetry.serviceName}-server`,
-    span_id: context.spanId,
-    trace_id: context.traceId,
-  };
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
+  const error = Cause.squash(cause);
+  const attributes = errorAttributes(error);
+  const tag = failureTag(error);
+  if (tag === undefined) {
+    return attributes;
+  }
+  const fingerprint = errorFingerprint(
+    attributes["error.type"],
+    `${tag}\n${attributes["error.locations"]}`,
+  );
+  return { ...attributes, "error.fingerprint": fingerprint, "error.tag": tag };
 }
 
-function reportError(telemetry: Telemetry, context: RequestContext, error: unknown): void {
-  writeLog(telemetry.log, "error", {
-    event: "application.error",
-    ...correlationFields(telemetry, context),
-    ...errorAttributes(error),
-  });
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
+  return Effect.logError("application.error", failureAttributes(cause));
 }
 
-function incomingContext(request: {
-  readonly headers: Readonly<Pick<Headers, "get">>;
-}): RequestContext {
-  const traceId =
-    parentContext(request.headers.get("traceparent"))?.traceId ?? randomHex(traceIdBytes);
+function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContext {
+  const traceId = parentContext(headers.get("traceparent"))?.traceId ?? randomHex(traceIdBytes);
   const spanId = randomHex(spanIdBytes);
   return {
     requestId: crypto.randomUUID(),
@@ -77,43 +72,67 @@ function correlatedResponse(response: Response, context: RequestContext): Respon
   });
 }
 
-function recordRequest(
-  telemetry: Telemetry,
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function failureResponse(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> {
+  return reportFailure(cause).pipe(
+    Effect.as(
+      Response.json(
+        { error: failureMessage },
+        { headers: { "cache-control": "no-store" }, status: httpStatus.internalServerError },
+      ),
+    ),
+  );
+}
+
+const recordRequest = Effect.fn("recordRequest")(function* recordRequest(
   request: Readonly<Pick<Request, "method" | "url">>,
-  completion: Completion,
-): void {
-  const { context, status } = completion;
-  const level = status >= httpStatus.internalServerError ? "error" : "info";
-  writeLog(telemetry.log, level, {
-    event: "http.server.request",
-    ...correlationFields(telemetry, context),
-    duration_ms: performance.now() - completion.timer,
+  status: number,
+  start: number,
+) {
+  const telemetry = yield* Telemetry;
+  const attributes = {
+    duration_ms: performance.now() - start,
     method: httpMethod(request.method),
     route: routeLabel(new URL(request.url).pathname, telemetry.routes),
     status,
+  };
+  yield* status >= httpStatus.internalServerError
+    ? Effect.logError("http.server.request", attributes)
+    : Effect.logInfo("http.server.request", attributes);
+});
+
+function respond<Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  request: Request,
+  context: RequestContext,
+  handler: RequestHandler<Requirements>,
+): Effect.Effect<Response, never, Exclude<Requirements, CurrentRequest> | Telemetry> {
+  return Effect.gen(function* respondProgram() {
+    const start = performance.now();
+    const response = yield* handler(request).pipe(
+      Effect.provideService(CurrentRequest, context),
+      Effect.catchCause(failureResponse),
+    );
+    yield* recordRequest(request, response.status, start);
+    return correlatedResponse(response, context);
   });
 }
 
-async function wrapRequest(
-  telemetry: Telemetry,
+function observeRequest<Requirements>(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
-  handler: RequestHandler,
-): Promise<Response> {
-  const timer = performance.now();
-  const context = incomingContext(request);
-  const observed: { status: number } = { status: httpStatus.internalServerError };
-  try {
-    const response = await handler(request, context);
-    observed.status = response.status;
-    return correlatedResponse(response, context);
-  } catch (error) {
-    reportError(telemetry, context, error);
-    throw error;
-  } finally {
-    recordRequest(telemetry, request, { context, status: observed.status, timer });
-  }
+  handler: RequestHandler<Requirements>,
+): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> {
+  return Effect.suspend(() => {
+    const context = incomingContext(request.headers);
+    return respond(request, context, handler).pipe(
+      Effect.annotateLogs({
+        request_id: context.requestId,
+        span_id: context.spanId,
+        trace_id: context.traceId,
+      }),
+    );
+  });
 }
 
-export { reportError, wrapRequest };
-export type { RequestContext, RequestHandler, Telemetry };
+export { observeRequest, reportFailure };

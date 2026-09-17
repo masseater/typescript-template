@@ -3,10 +3,10 @@ import { controlClassName, errorClassName, fieldClassName, labelClassName } from
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 
 type TextareaFieldProps = Readonly<
-  Pick<
-    ComponentProps<"input">,
-    "maxLength" | "name" | "onChange" | "readOnly" | "required" | "value"
-  > & { label: string }
+  Pick<ComponentProps<"textarea">, "maxLength" | "name" | "readOnly" | "required" | "value"> & {
+    label: string;
+    onValueChange?: (value: string) => void;
+  }
 >;
 
 const textarea = <textarea />;
@@ -15,7 +15,7 @@ function TextareaField({
   label,
   maxLength,
   name,
-  onChange,
+  onValueChange,
   readOnly,
   required,
   value,
@@ -30,7 +30,7 @@ function TextareaField({
         maxLength={maxLength}
         readOnly={readOnly}
         required={required}
-        onChange={onChange}
+        onValueChange={onValueChange}
         className={`block field-sizing-content min-h-16 ${controlClassName}`}
       />
       <FieldPrimitive.Error className={errorClassName} />

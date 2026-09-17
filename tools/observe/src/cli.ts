@@ -1,38 +1,33 @@
-import {
-  integer,
-  maxValue,
-  minValue,
-  number,
-  object,
-  optional,
-  parse,
-  picklist,
-  pipe,
-  regex,
-  string,
-} from "valibot";
+import { Effect, Schema } from "effect";
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
-import type { InferOutput } from "valibot";
+import { NodeRuntime } from "@effect/platform-node";
 import { applicationPorts } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
+
+class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
+  reason: Schema.Literals(["arguments_invalid"]),
+}) {}
 
 const commands = ["logs", "traces", "trace", "request"] as const;
 const minutesPerDay = 1440;
 const maxQueryLimit = 500;
 const millisecondsPerMinute = 60_000;
 
-const traceIdSchema = pipe(string(), regex(/^[0-9a-f]{32}$/u));
-const inputSchema = object({
-  command: picklist(commands),
-  level: optional(picklist(["debug", "info", "log", "warn", "error"])),
-  limit: pipe(number(), integer(), minValue(1), maxValue(maxQueryLimit)),
-  minutes: pipe(number(), integer(), minValue(1), maxValue(minutesPerDay)),
-  requestId: optional(string()),
-  traceId: optional(traceIdSchema),
+const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/u));
+const QueryLimit = Schema.Int.check(Schema.isBetween({ maximum: maxQueryLimit, minimum: 1 }));
+const QueryMinutes = Schema.Int.check(Schema.isBetween({ maximum: minutesPerDay, minimum: 1 }));
+const Level = Schema.Literals(["debug", "info", "log", "warn", "error"]);
+const QueryInput = Schema.Struct({
+  command: Schema.Literals(commands),
+  level: Schema.optional(Level),
+  limit: QueryLimit,
+  minutes: QueryMinutes,
+  requestId: Schema.optional(Schema.String),
+  traceId: Schema.optional(TraceId),
 });
 
-type QueryInput = InferOutput<typeof inputSchema>;
+type Query = typeof QueryInput.Type;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -47,28 +42,42 @@ const { values, positionals } = parseArgs({
   },
 });
 
-async function queryLogs(app: string, input: QueryInput, since: number): Promise<unknown> {
+function argumentsInvalid(): QueryFailure {
+  return new QueryFailure({ reason: "arguments_invalid" });
+}
+
+function required(value: string | undefined): Effect.Effect<string, QueryFailure> {
+  return value === undefined ? Effect.fail(argumentsInvalid()) : Effect.succeed(value);
+}
+
+function queryLogs(app: string, input: Query, since: number): Effect.Effect<unknown, unknown> {
   const levelFilter = input.level === undefined ? "" : " AND level = ?";
   const params =
     input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
-  const rows = await queryExplorer(
+  return queryExplorer(
     app,
     `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${levelFilter} ORDER BY ts_ms DESC LIMIT ?`,
     params,
-  );
-  return rows.map((row: Readonly<Record<string, unknown>>) => withEvent(row));
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
 }
 
-async function runQuery(app: string, input: QueryInput): Promise<unknown> {
+function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
   const since = Date.now() - input.minutes * millisecondsPerMinute;
   if (input.command === "request") {
-    return requestTelemetry(app, parse(string(), input.requestId));
+    return required(input.requestId).pipe(
+      Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
+    );
   }
   if (input.command === "trace") {
-    return queryExplorer(
-      app,
-      "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
-      [parse(string(), input.traceId)],
+    return required(input.traceId).pipe(
+      Effect.flatMap((traceId) =>
+        queryExplorer(
+          app,
+          "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+          [traceId],
+        ),
+      ),
     );
   }
   if (input.command === "traces") {
@@ -81,7 +90,7 @@ async function runQuery(app: string, input: QueryInput): Promise<unknown> {
   return queryLogs(app, input, since);
 }
 
-if (values.help) {
+const help = Effect.sync(() => {
   process.stdout.write(
     `${JSON.stringify({
       commands,
@@ -90,37 +99,42 @@ if (values.help) {
       source: "Cloudflare Local Explorer of the running app",
     })}\n`,
   );
-} else {
-  try {
-    const input = parse(inputSchema, {
-      command: positionals[0],
-      level: values.level,
-      limit: Number(values.limit),
-      minutes: Number(values.minutes),
-      requestId: values["request-id"],
-      traceId: values["trace-id"],
-    });
-    if (positionals.length !== 1) {
-      throw new Error("Specify one query command");
-    }
-    const data = await runQuery(values.app, input);
-    process.stdout.write(
-      `${JSON.stringify({
-        command: input.command,
-        data,
-        observedAt: new Date().toISOString(),
-        ok: true,
-      })}\n`,
-    );
-  } catch {
-    process.stderr.write(
-      `${JSON.stringify({
-        event: "observability.query_failed",
-        ok: false,
-        remediation:
-          "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
-      })}\n`,
-    );
-    process.exitCode = 1;
+});
+
+const query = Effect.fn("query")(function* query() {
+  const input = yield* Schema.decodeUnknownEffect(QueryInput)({
+    command: positionals[0],
+    level: values.level,
+    limit: Number(values.limit),
+    minutes: Number(values.minutes),
+    requestId: values["request-id"],
+    traceId: values["trace-id"],
+  }).pipe(Effect.mapError(argumentsInvalid));
+  if (positionals.length !== 1) {
+    return yield* argumentsInvalid();
   }
-}
+  const data = yield* runQuery(values.app, input);
+  process.stdout.write(
+    `${JSON.stringify({ command: input.command, data, observedAt: new Date().toISOString(), ok: true })}\n`,
+  );
+  return data;
+});
+
+NodeRuntime.runMain(
+  (values.help ? help : query()).pipe(
+    Effect.catchCause(() =>
+      Effect.sync(() => {
+        process.stderr.write(
+          `${JSON.stringify({
+            event: "observability.query_failed",
+            ok: false,
+            remediation:
+              "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
+          })}\n`,
+        );
+        process.exitCode = 1;
+      }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

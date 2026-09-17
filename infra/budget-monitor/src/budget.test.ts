@@ -1,6 +1,8 @@
 import { HttpResponse, http } from "msw";
-import { describe, expect, it } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
+import type { BudgetFailure } from "./config.ts";
+import { Effect } from "effect";
 import type { UsageSnapshot } from "./billing.ts";
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
@@ -19,6 +21,8 @@ const WARNING_LEVEL = 80;
 const EXHAUSTED_LEVEL = 100;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
+const otherAccount = "b".repeat(ACCOUNT_ID_LENGTH);
+const staleNow = new Date("2026-09-20T00:00:00Z");
 const rawConfig = {
   BILLING_READ_TOKEN: "test-read-only-token-not-a-secret",
   BUDGET_JPY: "5000",
@@ -40,138 +44,156 @@ const record = {
 };
 const now = new Date("2026-09-16T00:00:00Z");
 
-async function fetchResponse(
-  input: Readonly<Record<string, unknown>>,
+function usageFrom(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  input: Record<string, unknown>,
   accountId: string,
-  date: Readonly<Date>,
-): Promise<UsageSnapshot> {
-  const server = setupServer(
-    http.get(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, () =>
-      HttpResponse.json(input),
-    ),
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  date: Date,
+): Effect.Effect<UsageSnapshot, BudgetFailure> {
+  return Effect.acquireUseRelease(
+    Effect.sync(() => {
+      const server = setupServer(
+        http.get(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, () =>
+          HttpResponse.json(input),
+        ),
+      );
+      server.listen({ onUnhandledRequest: "error" });
+      return server;
+    }),
+    () => fetchUsage(accountId, "test-token", date),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (server) =>
+      Effect.sync(() => {
+        server.close();
+      }),
   );
-  server.listen({ onUnhandledRequest: "error" });
-  try {
-    return await fetchUsage(accountId, "test-token", date);
-  } finally {
-    server.close();
-  }
 }
 
-async function fetchDailyCosts(): Promise<UsageSnapshot> {
-  return fetchResponse(
-    { result: [record, { ...record, BilledCost: D1_COST_USD, ServiceName: "D1" }], success: true },
-    account,
-    now,
+function code<Value, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, BudgetFailure, Requirements>,
+): Effect.Effect<BudgetFailure["code"], Value, Requirements> {
+  return effect.pipe(
+    Effect.flip,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((failure) => failure.code),
   );
 }
 
-describe("budget evaluation", () => {
-  it("aggregates daily actual costs instead of summing cumulative costs", async () => {
-    expect.hasAssertions();
-    const usage = await fetchDailyCosts();
-    expect(usage.usageUsd).toBe(WORKERS_COST_USD + D1_COST_USD);
-    const decision = evaluateBudget(usage, parseBudgetConfig(rawConfig));
-    expect(decision.allowanceUsd).toBe(ALLOWANCE_USD);
-    expect(decision.level).toBe(WARNING_LEVEL);
-    expect(decision.estimatedTotalJpy).toBe(ESTIMATED_TOTAL_JPY);
-  });
-
-  it("notifies once per threshold within a billing cycle", async () => {
-    expect.hasAssertions();
-    const decision = evaluateBudget(await fetchDailyCosts(), parseBudgetConfig(rawConfig));
-    expect(shouldNotify(decision, [])).toBe(true);
-    expect(shouldNotify(decision, [decision.notificationKey])).toBe(false);
-  });
-});
-
-describe("budget alert levels", () => {
-  it.each([
-    [0, NO_ALERT_LEVEL],
-    [WARNING_USD - CENT, NO_ALERT_LEVEL],
-    [WARNING_USD, WARNING_LEVEL],
-    [ALLOWANCE_USD - CENT, WARNING_LEVEL],
-    [ALLOWANCE_USD, EXHAUSTED_LEVEL],
-    [OVERSPENT_USD, EXHAUSTED_LEVEL],
-  ] as const)("classifies actual USD %s at level %s", async (usageUsd, expected) => {
-    expect.hasAssertions();
-    const usage = await fetchResponse(
-      { result: [{ ...record, BilledCost: usageUsd }], success: true },
+it.effect("aggregates daily actual costs instead of summing cumulative costs", () =>
+  Effect.gen(function* program() {
+    const usage = yield* usageFrom(
+      {
+        result: [record, { ...record, BilledCost: D1_COST_USD, ServiceName: "D1" }],
+        success: true,
+      },
       account,
       now,
     );
-    const decision = evaluateBudget(usage, parseBudgetConfig(rawConfig));
-    expect(decision.level).toBe(expected);
-    expect(shouldNotify(decision, [])).toBe(expected !== NO_ALERT_LEVEL);
-  });
-});
+    assert.strictEqual(usage.usageUsd, WARNING_USD);
+    const decision = yield* evaluateBudget(usage, yield* parseBudgetConfig(rawConfig));
+    assert.strictEqual(decision.allowanceUsd, ALLOWANCE_USD);
+    assert.strictEqual(decision.level, WARNING_LEVEL);
+    assert.strictEqual(decision.estimatedTotalJpy, ESTIMATED_TOTAL_JPY);
+    assert.isTrue(shouldNotify(decision, []));
+    assert.isFalse(shouldNotify(decision, [decision.notificationKey]));
+  }),
+);
 
-describe("billable usage validation", () => {
-  it("missing cost, failed API envelope and empty usage are not treated as zero", async () => {
-    expect.hasAssertions();
-    await expect(fetchResponse({ result: [], success: true }, account, now)).rejects.toThrow(
-      "billing_response_invalid",
-    );
-    await expect(fetchResponse({ result: [record], success: false }, account, now)).rejects.toThrow(
-      "billing_response_invalid",
-    );
-    await expect(
+for (const [usageUsd, expected] of [
+  [NO_ALERT_LEVEL, NO_ALERT_LEVEL],
+  [WARNING_USD - CENT, NO_ALERT_LEVEL],
+  [WARNING_USD, WARNING_LEVEL],
+  [ALLOWANCE_USD - CENT, WARNING_LEVEL],
+  [ALLOWANCE_USD, EXHAUSTED_LEVEL],
+  [OVERSPENT_USD, EXHAUSTED_LEVEL],
+] as const) {
+  it.effect(`classifies actual USD ${usageUsd} at level ${expected}`, () =>
+    Effect.gen(function* program() {
+      const usage = yield* usageFrom(
+        { result: [{ ...record, BilledCost: usageUsd }], success: true },
+        account,
+        now,
+      );
+      const decision = yield* evaluateBudget(usage, yield* parseBudgetConfig(rawConfig));
+      assert.strictEqual(decision.level, expected);
+      assert.strictEqual(shouldNotify(decision, []), expected !== NO_ALERT_LEVEL);
+    }),
+  );
+}
+
+it.effect("missing cost, failed API envelope and empty usage are not treated as zero", () =>
+  Effect.gen(function* program() {
+    for (const input of [
+      { result: [], success: true },
+      { result: [record], success: false },
       // oxlint-disable-next-line unicorn/no-null
-      fetchResponse({ result: [{ ...record, BilledCost: null }], success: true }, account, now),
-    ).rejects.toThrow("billing_response_invalid");
-  });
+      { result: [{ ...record, BilledCost: null }], success: true },
+    ]) {
+      assert.strictEqual(yield* code(usageFrom(input, account, now)), "billing_response_invalid");
+    }
+  }),
+);
 
-  it("rejects wrong account, currency, duplicate rows and ambiguous billing cycles", async () => {
-    expect.hasAssertions();
-    await expect(
-      fetchResponse({ result: [record], success: true }, "b".repeat(ACCOUNT_ID_LENGTH), now),
-    ).rejects.toThrow("billing_account_mismatch");
-    await expect(
-      fetchResponse(
-        { result: [{ ...record, BillingCurrency: "JPY" }], success: true },
-        account,
-        now,
+it.effect("rejects wrong account, currency, duplicate rows and ambiguous billing cycles", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* code(usageFrom({ result: [record], success: true }, otherAccount, now)),
+      "billing_account_mismatch",
+    );
+    assert.strictEqual(
+      yield* code(
+        usageFrom({ result: [{ ...record, BillingCurrency: "JPY" }], success: true }, account, now),
       ),
-    ).rejects.toThrow("billing_response_invalid");
-    await expect(
-      fetchResponse({ result: [record, record], success: true }, account, now),
-    ).rejects.toThrow("billing_duplicate_record");
-    await expect(
-      fetchResponse(
-        {
-          result: [record, { ...record, BillingPeriodStart: "2026-09-02T00:00:00Z" }],
-          success: true,
-        },
-        account,
-        now,
+      "billing_response_invalid",
+    );
+    assert.strictEqual(
+      yield* code(usageFrom({ result: [record, record], success: true }, account, now)),
+      "billing_duplicate_record",
+    );
+    assert.strictEqual(
+      yield* code(
+        usageFrom(
+          {
+            result: [record, { ...record, BillingPeriodStart: "2026-09-02T00:00:00Z" }],
+            success: true,
+          },
+          account,
+          now,
+        ),
       ),
-    ).rejects.toThrow("billing_period_ambiguous");
-  });
-});
+      "billing_period_ambiguous",
+    );
+  }),
+);
 
-describe("fail-closed budget inputs", () => {
-  it("stale data and a budget consumed by fixed fees fail closed", async () => {
-    expect.hasAssertions();
-    await expect(
-      fetchResponse({ result: [record], success: true }, account, new Date("2026-09-20T00:00:00Z")),
-    ).rejects.toThrow("billing_data_stale");
-    expect(() => parseBudgetConfig({ ...rawConfig, FIXED_COST_USD: "50" })).toThrow(
+it.effect("stale data and a budget consumed by fixed fees fail closed", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* code(usageFrom({ result: [record], success: true }, account, staleNow)),
+      "billing_data_stale",
+    );
+    assert.strictEqual(
+      yield* code(parseBudgetConfig({ ...rawConfig, FIXED_COST_USD: "50" })),
       "budget_has_no_usage_allowance",
     );
-    expect(() => parseBudgetConfig({ ...rawConfig, JPY_PER_USD: "0" })).toThrow(
+    assert.strictEqual(
+      yield* code(parseBudgetConfig({ ...rawConfig, JPY_PER_USD: "0" })),
       "budget_config_invalid",
     );
-  });
+  }),
+);
 
-  it("a new billing cycle permits notification again", async () => {
-    expect.hasAssertions();
-    const config = parseBudgetConfig(rawConfig);
-    const usage = await fetchResponse({ result: [record], success: true }, account, now);
-    const current = evaluateBudget({ ...usage, usageUsd: ALLOWANCE_USD }, config);
-    const next = evaluateBudget(
+it.effect("a new billing cycle permits notification again", () =>
+  Effect.gen(function* program() {
+    const config = yield* parseBudgetConfig(rawConfig);
+    const usage = yield* usageFrom({ result: [record], success: true }, account, now);
+    const current = yield* evaluateBudget({ ...usage, usageUsd: ALLOWANCE_USD }, config);
+    const next = yield* evaluateBudget(
       { ...usage, periodStart: "2026-10-01T00:00:00Z", usageUsd: ALLOWANCE_USD },
       config,
     );
-    expect(shouldNotify(next, [current.notificationKey])).toBe(true);
-  });
-});
+    assert.isTrue(shouldNotify(next, [current.notificationKey]));
+  }),
+);

@@ -4,8 +4,8 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   pack: {
     deps: {
-      alwaysBundle: ["valibot", "@template/monitor"],
-      onlyBundle: ["valibot", "@template/monitor"],
+      alwaysBundle: ["effect", "@template/monitor"],
+      onlyBundle: ["effect", "@template/monitor"],
     },
     entry: { index: "src/worker.ts" },
     format: "esm",

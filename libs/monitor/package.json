@@ -7,10 +7,11 @@
   },
   "scripts": {},
   "dependencies": {
-    "valibot": "catalog:"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
     "typescript": "catalog:"
   }
 }

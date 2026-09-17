@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { errorMessage, requirePasskeyUV, requireSuccess, sessionSchema } from "./protocol";
-import { parse } from "valibot";
+import { errorMessage, requirePasskeyUV, requireSuccess } from "./protocol";
+import { SessionView } from "@template/runtime/contracts";
+import { decodeJson } from "@template/runtime/client";
+
+function parseSession(input: unknown): typeof SessionView.Type {
+  return decodeJson(SessionView, input);
+}
 
 describe("パスキー応答の本人確認", () => {
   it("認証要求では既存の challenge を維持して本人確認を必須にする", () => {
@@ -84,11 +89,11 @@ describe("認証結果の検証", () => {
       role: "user",
       twoFactorEnabled: false,
     };
-    expect(parse(sessionSchema, { strong: false, user })).toStrictEqual({ strong: false, user });
-    expect(() => parse(sessionSchema, { user })).toThrow("Invalid key");
-    expect(() => parse(sessionSchema, { strong: "true", user })).toThrow("Invalid type");
-    expect(() => parse(sessionSchema, { strong: true, user: { ...user, role: "root" } })).toThrow(
-      "Invalid type",
+    expect(parseSession({ strong: false, user })).toStrictEqual({ strong: false, user });
+    expect(() => parseSession({ user })).toThrow("サーバーの応答形式が不正です。");
+    expect(() => parseSession({ strong: "true", user })).toThrow("サーバーの応答形式が不正です。");
+    expect(() => parseSession({ strong: true, user: { ...user, role: "root" } })).toThrow(
+      "サーバーの応答形式が不正です。",
     );
   });
 

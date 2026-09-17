@@ -13,9 +13,11 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "@template/auth": "workspace:*",
     "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
+    "effect": "catalog:",
     "fumadocs-core": "16.15.11",
     "fumadocs-mdx": "15.4.1",
     "fumadocs-ui": "16.15.11",
@@ -26,7 +28,6 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "unist-util-visit": "5.1.0",
-    "valibot": "catalog:",
     "zod": "4.6.5"
   },
   "devDependencies": {

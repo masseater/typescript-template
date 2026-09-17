@@ -13,12 +13,13 @@
   "dependencies": {
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "@template/auth": "workspace:*",
     "@template/db": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
+    "effect": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "valibot": "catalog:"
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",

@@ -1,16 +1,15 @@
-import { array, literal, object, parse } from "valibot";
+import { Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath, pathToFileURL } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, writeFile } from "node:fs/promises";
+import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-import { invariant } from "es-toolkit";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { pathToFileURL } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
-import { readEnvironment } from "./environment.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { userInfo } from "node:os";
 
@@ -21,74 +20,125 @@ const COMMAND_TIMEOUT_MS = 60_000;
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
 
-const probeProgram = path.join(import.meta.dirname, "runtime-probe.ts");
-const runtimeEvidenceSchema = object({
-  compilerLoaded: literal(false),
-  engineConnected: literal(true),
-  monitorConnected: literal(true),
-  secretPreserved: literal(true),
-});
-const outputsSchema = object({
-  probeSecret: literal("[secret]"),
-  runtimeEvidence: runtimeEvidenceSchema,
-});
-const stackResourceSchema = object({ type: literal("pulumi:pulumi:Stack") });
-const checkpointSchema = object({
-  deployment: object({ resources: array(stackResourceSchema) }),
-});
+class EngineFailure extends Schema.TaggedError<EngineFailure>()("EngineFailure", {
+  code: Schema.Literals([
+    "engine_verification_failed",
+    "engine_version_failed",
+    "engine_init_failed",
+    "engine_preview_failed",
+    "engine_up_failed",
+    "engine_outputs_failed",
+    "engine_export_failed",
+  ]),
+}) {}
+
+type EngineLabel = "version" | "init" | "preview" | "up" | "outputs" | "export";
 
 interface Sandbox {
   readonly binary: string;
-  readonly environment: Readonly<NodeJS.ProcessEnv>;
+  readonly environment: Readonly<Record<string, string | undefined>>;
   readonly isolated: string;
   readonly project: string;
 }
 
-async function writeCommandLog(sandbox: Sandbox, label: string, content: string): Promise<void> {
-  await writeFile(path.join(sandbox.isolated, `${label}.log`), content, {
-    mode: OWNER_ONLY_FILE_MODE,
-  });
+const probeProgram = fileURLToPath(new URL("runtime-probe.ts", import.meta.url));
+const RuntimeEvidence = Schema.Struct({
+  compilerLoaded: Schema.Literal(false),
+  engineConnected: Schema.Literal(true),
+  monitorConnected: Schema.Literal(true),
+  secretPreserved: Schema.Literal(true),
+});
+const Outputs = Schema.Struct({
+  probeSecret: Schema.Literal("[secret]"),
+  runtimeEvidence: RuntimeEvidence,
+});
+const StackResource = Schema.Struct({ type: Schema.Literal("pulumi:pulumi:Stack") });
+const Deployment = Schema.Struct({ resources: Schema.Array(StackResource) });
+const Checkpoint = Schema.Struct({ deployment: Deployment });
+
+function verificationFailed(): EngineFailure {
+  return new EngineFailure({ code: "engine_verification_failed" });
 }
 
-async function command(sandbox: Sandbox, label: string, args: readonly string[]): Promise<string> {
-  try {
-    // oxlint-disable-next-line typescript/strict-void-return
-    const result = await promisify(execFile)(
-      "/usr/bin/sandbox-exec",
-      [
-        "-p",
-        `(version 1)(allow default)(deny network-outbound)(allow network-outbound (remote ip "localhost:*"))(deny file-write*)(allow file-write* (subpath ${JSON.stringify(sandbox.isolated)}) (literal "/dev/null"))`,
-        sandbox.binary,
-        ...args,
-      ],
-      {
-        cwd: sandbox.project,
-        env: sandbox.environment,
-        maxBuffer: MAX_OUTPUT_BYTES,
-        timeout: COMMAND_TIMEOUT_MS,
-      },
-    );
-    await writeCommandLog(sandbox, label, result.stdout + result.stderr);
-    return result.stdout;
-  } catch (error: unknown) {
-    if (error instanceof Error && "stdout" in error && "stderr" in error) {
-      await writeCommandLog(sandbox, label, `${String(error.stdout)}${String(error.stderr)}`);
-    }
-    throw new Error(`engine_${label}_failed`, { cause: error });
-  }
+function step<Value>(run: () => Promise<Value>): Effect.Effect<Value, EngineFailure> {
+  return Effect.tryPromise({ catch: verificationFailed, try: run });
 }
 
-async function localCliBinary(root: string): Promise<string> {
+function decodeJson<Contract extends Schema.Top & { readonly DecodingServices: never }>(
+  contract: Contract,
+  text: string,
+): Effect.Effect<Contract["Type"], EngineFailure> {
+  return Schema.decodeUnknownEffect(Schema.fromJsonString(contract))(text).pipe(
+    Effect.mapError(verificationFailed),
+  );
+}
+
+function writeCommandLog(
+  sandbox: Sandbox,
+  label: EngineLabel,
+  content: string,
+): Effect.Effect<void, EngineFailure> {
+  return step(async () =>
+    writeFile(path.join(sandbox.isolated, `${label}.log`), content, {
+      mode: OWNER_ONLY_FILE_MODE,
+    }),
+  );
+}
+
+function failedOutput(cause: unknown): string | undefined {
+  return cause instanceof Error && "stdout" in cause && "stderr" in cause
+    ? `${String(cause.stdout)}${String(cause.stderr)}`
+    : undefined;
+}
+
+const command = Effect.fn("command")(function* command(
+  sandbox: Sandbox,
+  label: EngineLabel,
+  args: readonly string[],
+) {
+  const failed = new EngineFailure({ code: `engine_${label}_failed` });
+  const result = yield* Effect.tryPromise({
+    catch: (cause) => ({ cause }),
+    try: async () =>
+      // oxlint-disable-next-line typescript/strict-void-return
+      promisify(execFile)(
+        "/usr/bin/sandbox-exec",
+        [
+          "-p",
+          `(version 1)(allow default)(deny network-outbound)(allow network-outbound (remote ip "localhost:*"))(deny file-write*)(allow file-write* (subpath ${JSON.stringify(sandbox.isolated)}) (literal "/dev/null"))`,
+          sandbox.binary,
+          ...args,
+        ],
+        {
+          cwd: sandbox.project,
+          env: sandbox.environment,
+          maxBuffer: MAX_OUTPUT_BYTES,
+          timeout: COMMAND_TIMEOUT_MS,
+        },
+      ),
+  }).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.catch(({ cause }) => {
+      const output = failedOutput(cause);
+      const logged = output === undefined ? Effect.void : writeCommandLog(sandbox, label, output);
+      return logged.pipe(Effect.andThen(Effect.fail(failed)));
+    }),
+  );
+  yield* writeCommandLog(sandbox, label, result.stdout + result.stderr);
+  return result.stdout;
+});
+
+const localCliBinary = Effect.fn("localCliBinary")(function* localCliBinary(root: string) {
   const [executable] = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
   if (executable === undefined || !path.isAbsolute(executable)) {
-    throw new Error("local_cli_path_required");
+    return yield* verificationFailed();
   }
-  const binary = await realpath(executable);
+  const binary = yield* step(async () => realpath(executable));
   if (!binary.startsWith(path.join(root, ".local", "tools") + path.sep)) {
-    throw new Error("local_cli_path_required");
+    return yield* verificationFailed();
   }
   return binary;
-}
+});
 
 async function writeProbeProject(project: string): Promise<void> {
   await writeFile(
@@ -106,20 +156,17 @@ async function writeProbeProject(project: string): Promise<void> {
   );
   await writeFile(
     path.join(project, "package.json"),
-    JSON.stringify({
-      name: "template-runtime-probe",
-      private: true,
-      type: "module",
-    }),
+    JSON.stringify({ name: "template-runtime-probe", private: true, type: "module" }),
     { mode: OWNER_ONLY_FILE_MODE },
   );
 }
 
-function sandboxEnvironment(isolated: string, state: string): NodeJS.ProcessEnv {
+function sandboxEnvironment(isolated: string, state: string): Sandbox["environment"] {
   const { homedir, username } = userInfo();
   return {
     HOME: homedir,
-    PATH: readEnvironment().PATH,
+    // oxlint-disable-next-line node/no-process-env
+    PATH: process.env["PATH"],
     PULUMI_BACKEND_URL: pathToFileURL(state).href,
     PULUMI_CONFIG_PASSPHRASE: Buffer.from(
       crypto.getRandomValues(new Uint8Array(PASSPHRASE_BYTES)),
@@ -135,29 +182,36 @@ function sandboxEnvironment(isolated: string, state: string): NodeJS.ProcessEnv 
   };
 }
 
-async function createSandbox(root: string): Promise<Sandbox> {
-  const binary = await localCliBinary(root);
+const createSandbox = Effect.fn("createSandbox")(function* createSandbox(root: string) {
+  const binary = yield* localCliBinary(root);
   if (process.platform !== "darwin") {
-    throw new Error("network_sandbox_requires_macos");
+    return yield* verificationFailed();
   }
-  const isolated = await mkdtemp(path.join(root, ".local", "pulumi-engine-"));
+  const isolated = yield* step(async () => mkdtemp(path.join(root, ".local", "pulumi-engine-")));
   const project = path.join(isolated, "project");
   const state = path.join(isolated, "state");
-  await Promise.all(
-    [project, state, path.join(isolated, "tmp")].map(async (directory) => {
-      await mkdir(directory, { mode: OWNER_ONLY_DIRECTORY_MODE });
-    }),
+  yield* step(async () =>
+    Promise.all(
+      [project, state, path.join(isolated, "tmp")].map(async (directory) =>
+        mkdir(directory, { mode: OWNER_ONLY_DIRECTORY_MODE }),
+      ),
+    ),
   );
-  await writeProbeProject(project);
-  return { binary, environment: sandboxEnvironment(isolated, state), isolated, project };
-}
+  yield* step(async () => writeProbeProject(project));
+  const sandbox: Sandbox = {
+    binary,
+    environment: sandboxEnvironment(isolated, state),
+    isolated,
+    project,
+  };
+  return sandbox;
+});
 
-try {
-  const root = path.join(import.meta.dirname, "../../..");
-  const sandbox = await createSandbox(root);
-  const version = await command(sandbox, "version", ["version"]);
-  invariant(version.trim() === "v3.262.0", "engine_cli_version_unexpected");
-  await command(sandbox, "init", [
+const applyProbe = Effect.fn("applyProbe")(function* applyProbe(sandbox: Sandbox) {
+  if ((yield* command(sandbox, "version", ["version"])).trim() !== "v3.262.0") {
+    return yield* verificationFailed();
+  }
+  yield* command(sandbox, "init", [
     "stack",
     "init",
     "isolated",
@@ -165,30 +219,60 @@ try {
     "passphrase",
     "--non-interactive",
   ]);
-  await command(sandbox, "preview", ["preview", "--non-interactive", "--json"]);
-  await command(sandbox, "up", ["up", "--yes", "--skip-preview", "--non-interactive", "--json"]);
-  const output: unknown = JSON.parse(
-    await command(sandbox, "outputs", ["stack", "output", "--json"]),
+  yield* command(sandbox, "preview", ["preview", "--non-interactive", "--json"]);
+  return yield* command(sandbox, "up", [
+    "up",
+    "--yes",
+    "--skip-preview",
+    "--non-interactive",
+    "--json",
+  ]);
+});
+
+const verifyEngine = Effect.fn("verifyEngine")(function* verifyEngine() {
+  const sandbox = yield* createSandbox(fileURLToPath(new URL("../../../", import.meta.url)));
+  yield* applyProbe(sandbox);
+  const evidence = yield* decodeJson(
+    Outputs,
+    yield* command(sandbox, "outputs", ["stack", "output", "--json"]),
   );
-  const evidence = parse(outputsSchema, output);
-  const checkpoint: unknown = JSON.parse(await command(sandbox, "export", ["stack", "export"]));
-  const verifiedState = parse(checkpointSchema, checkpoint);
-  invariant(verifiedState.deployment.resources.length === 1, "engine_state_resources_unexpected");
-  process.stdout.write(
-    `${JSON.stringify({
-      cliVersion: "3.262.0",
-      event: "pulumi.engine_verified",
-      ...evidence.runtimeEvidence,
-      cloudResources: 0,
-      evidenceDirectory: sandbox.isolated,
-      outboundNetwork: "loopback-only",
-    })}\n`,
+  const verifiedState = yield* decodeJson(
+    Checkpoint,
+    yield* command(sandbox, "export", ["stack", "export"]),
   );
-} catch (error: unknown) {
-  const code =
-    error instanceof Error && /^engine_[a-z]+_failed$/u.test(error.message)
-      ? error.message
-      : "engine_verification_failed";
-  process.stderr.write(`${JSON.stringify({ event: code })}\n`);
-  process.exitCode = 1;
+  if (verifiedState.deployment.resources.length !== 1) {
+    return yield* verificationFailed();
+  }
+  return { evidence: evidence.runtimeEvidence, isolated: sandbox.isolated };
+});
+
+function report(code: EngineFailure["code"]): Effect.Effect<void> {
+  return Effect.sync(() => {
+    process.stderr.write(`${JSON.stringify({ event: code })}\n`);
+    process.exitCode = 1;
+  });
 }
+
+NodeRuntime.runMain(
+  verifyEngine().pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap(({ evidence, isolated }) =>
+      Effect.sync(() => {
+        process.stdout.write(
+          `${JSON.stringify({
+            cliVersion: "3.262.0",
+            event: "pulumi.engine_verified",
+            ...evidence,
+            cloudResources: 0,
+            evidenceDirectory: isolated,
+            outboundNetwork: "loopback-only",
+          })}\n`,
+        );
+      }),
+    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.catchTag("EngineFailure", (failure) => report(failure.code)),
+    Effect.catchCause(() => report("engine_verification_failed")),
+  ),
+  { disableErrorReporting: true },
+);

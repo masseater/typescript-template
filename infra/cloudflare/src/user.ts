@@ -1,5 +1,6 @@
+import { Effect } from "effect";
 import { deployApplication } from "./app.ts";
 
-const { origin, workerName } = await deployApplication("user");
+const { origin, workerName } = await Effect.runPromise(deployApplication("user"));
 
 export { origin, workerName };

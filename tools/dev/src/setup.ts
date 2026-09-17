@@ -1,13 +1,13 @@
 import type { App, Credentials } from "./local-environment.ts";
 import {
-  apps,
   credentialsFile,
+  lanOrigin,
   local,
-  origins,
   readCredentials,
   refreshBrowserConfig,
   routes,
 } from "./local-environment.ts";
+import { failure, fileIo } from "./failure.ts";
 import {
   isErrorCode,
   privateDirectoryMode,
@@ -16,6 +16,9 @@ import {
 } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, stat } from "node:fs/promises";
+import { Effect } from "effect";
+import type { LocalCommandFailure } from "./failure.ts";
+import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -31,61 +34,64 @@ interface SetupReport {
 const authSecretBytes = 48;
 const jsonIndentation = 2;
 
-async function credentialsExist(): Promise<boolean> {
-  try {
-    await stat(credentialsFile);
-    return true;
-  } catch (error) {
-    if (isErrorCode(error, "ENOENT")) {
-      return false;
+function credentialsExist(): Effect.Effect<boolean, LocalCommandFailure> {
+  return Effect.tryPromise({
+    catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isErrorCode(cause, "ENOENT") }),
+    try: async () => stat(credentialsFile),
+  }).pipe(
+    Effect.matchEffect({
+      onFailure: ({ missing }) =>
+        missing ? Effect.succeed(false) : Effect.fail(failure("file_io_failed")),
+      onSuccess: () => Effect.succeed(true),
+    }),
+  );
+}
+
+const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
+  function* loadOrCreateCredentials() {
+    if (!(yield* credentialsExist())) {
+      const authSecret = randomBytes(authSecretBytes).toString("base64url");
+      const content = JSON.stringify({ authSecret }, undefined, jsonIndentation);
+      yield* writePrivateFile(credentialsFile, `${content}\n`);
     }
-    throw error;
-  }
-}
+    return yield* readCredentials();
+  },
+);
 
-async function loadOrCreateCredentials(): Promise<Credentials> {
-  if (!(await credentialsExist())) {
-    const credentials = { authSecret: randomBytes(authSecretBytes).toString("base64url") };
-    await writePrivateFile(
-      credentialsFile,
-      `${JSON.stringify(credentials, undefined, jsonIndentation)}\n`,
-    );
-  }
-  return readCredentials();
-}
-
-function appVariables(app: App, credentials: Credentials): Record<string, string> {
+function appVariables(app: App, credentials: Credentials): Readonly<Record<string, string>> {
   return {
-    APP_ORIGIN: origins[app],
+    APP_ORIGIN: lanOrigin(app),
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
     MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
   };
 }
 
-async function writeAppVariables(app: App, credentials: Credentials): Promise<void> {
+function writeAppVariables(
+  app: App,
+  credentials: Credentials,
+): Effect.Effect<void, LocalCommandFailure> {
   const content = `${Object.entries(appVariables(app, credentials))
     .map(([key, value]: readonly [string, string]) => `${key}=${JSON.stringify(value)}`)
     .join("\n")}\n`;
-  await replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
+  return replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
 }
 
-async function setup(): Promise<SetupReport> {
-  await mkdir(local, { mode: privateDirectoryMode, recursive: true });
-  await mkdir(new URL("logs/", local), { mode: privateDirectoryMode, recursive: true });
-  await refreshBrowserConfig();
-  const credentials = await loadOrCreateCredentials();
-  await Promise.all(
-    apps.map(async (app) => {
-      await writeAppVariables(app, credentials);
-    }),
+const setup = Effect.fn("setup")(function* setup() {
+  yield* fileIo(async () => mkdir(local, { mode: privateDirectoryMode, recursive: true }));
+  yield* fileIo(async () =>
+    mkdir(new URL("logs/", local), { mode: privateDirectoryMode, recursive: true }),
   );
-  return {
+  yield* refreshBrowserConfig();
+  const credentials = yield* loadOrCreateCredentials();
+  yield* Effect.forEach(applications, (app) => writeAppVariables(app, credentials));
+  const report: SetupReport = {
     credentialsFile: fileURLToPath(credentialsFile),
     event: "local.app_configuration_ready",
     ok: true,
     secretsPrinted: false,
   };
-}
+  return report;
+});
 
 export { setup };

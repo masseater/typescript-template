@@ -22,7 +22,7 @@ function ProfileEditor({ form }: Readonly<{ form: ProfileForm }>): ReactElement 
           name="profile"
           maxLength={profileMaxLength}
           value={form.profile}
-          onChange={form.handleProfileChange}
+          onValueChange={form.handleProfileChange}
         />
         <Button type="submit" variant="primary" disabled={form.pending}>
           保存

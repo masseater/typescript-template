@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
+import { Effect } from "effect";
 
 const valid = {
   ADMIN_ORIGIN: "https://admin.example.com",
@@ -7,30 +8,45 @@ const valid = {
   WIKI_ORIGIN: "https://wiki.example.com",
 };
 
-describe("health monitor configuration", () => {
-  it("accepts distinct https origins", () => {
-    expect.hasAssertions();
-    expect(healthTargets(parseHealthMonitorConfig(valid))).toStrictEqual([
+function code(
+  input: unknown,
+): Effect.Effect<
+  "health_monitor_config_invalid" | "health_monitor_origins_must_differ",
+  { readonly ADMIN_ORIGIN: string; readonly USER_ORIGIN: string; readonly WIKI_ORIGIN: string }
+> {
+  return parseHealthMonitorConfig(input).pipe(
+    Effect.flip,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((failure) => failure.code),
+  );
+}
+
+it.effect("accepts distinct https origins", () =>
+  Effect.gen(function* program() {
+    assert.deepStrictEqual(healthTargets(yield* parseHealthMonitorConfig(valid)), [
       { origin: "https://app.example.com", service: "user" },
       { origin: "https://admin.example.com", service: "admin" },
       { origin: "https://wiki.example.com", service: "wiki" },
     ]);
-  });
+  }),
+);
 
-  it.each([
-    { USER_ORIGIN: "http://app.example.com" },
-    { WIKI_ORIGIN: "https://app.example.com/docs" },
-  ] as const)("refuses invalid settings without echoing them: %j", (override) => {
-    expect.hasAssertions();
-    expect(() => parseHealthMonitorConfig({ ...valid, ...override })).toThrow(
-      /^health_monitor_config_invalid$/u,
+for (const override of [
+  { USER_ORIGIN: "http://app.example.com" },
+  { WIKI_ORIGIN: "https://app.example.com/docs" },
+]) {
+  it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>
+    Effect.gen(function* program() {
+      assert.strictEqual(yield* code({ ...valid, ...override }), "health_monitor_config_invalid");
+    }),
+  );
+}
+
+it.effect("refuses a configuration that points two applications at the same origin", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* code({ ...valid, WIKI_ORIGIN: "https://app.example.com" }),
+      "health_monitor_origins_must_differ",
     );
-  });
-
-  it("refuses a configuration that points two applications at the same origin", () => {
-    expect.hasAssertions();
-    expect(() =>
-      parseHealthMonitorConfig({ ...valid, WIKI_ORIGIN: "https://app.example.com" }),
-    ).toThrow(/^health_monitor_origins_must_differ$/u);
-  });
-});
+  }),
+);

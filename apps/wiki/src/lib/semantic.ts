@@ -1,4 +1,6 @@
-type Embedder = (texts: readonly string[]) => Promise<readonly (readonly number[])[]>;
+import { Effect } from "effect";
+import { Embedder } from "@template/runtime/wiki";
+import type { EmbeddingFailed } from "@template/runtime/wiki";
 
 interface SemanticDocument {
   readonly id: string;
@@ -22,7 +24,7 @@ interface SemanticIndex {
   readonly vectors: readonly (readonly number[])[];
 }
 
-type SemanticSearch = (embed: Embedder, query: string) => Promise<SemanticMatch[]>;
+type SemanticSearch = (query: string) => Effect.Effect<SemanticMatch[], EmbeddingFailed, Embedder>;
 
 const KEYWORD_RANK_BONUS = 0.3;
 
@@ -35,37 +37,40 @@ function similarity(vector: readonly number[], target: readonly number[]): numbe
   return vector.reduce((total, value, column) => total + value * (target[column] ?? 0), 0);
 }
 
-async function buildIndex(
+const buildIndex = Effect.fn("buildIndex")(function* buildIndex(
   loadDocuments: () => readonly SemanticDocument[],
-  embed: Embedder,
-): Promise<SemanticIndex> {
+) {
+  const { embed } = yield* Embedder;
   const documents = loadDocuments();
-  const vectors = await embed(documents.map((document) => `${document.title}\n${document.text}`));
-  return { documents, vectors: vectors.map((vector) => normalize(vector)) };
-}
+  const vectors = yield* embed(documents.map((document) => `${document.title}\n${document.text}`));
+  const index: SemanticIndex = { documents, vectors: vectors.map((vector) => normalize(vector)) };
+  return index;
+});
 
 function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): SemanticSearch {
-  let ready: Promise<SemanticIndex> | undefined = undefined;
-  async function loadOnce(embed: Embedder): Promise<SemanticIndex> {
-    try {
-      return await buildIndex(loadDocuments, embed);
-    } catch (error) {
-      ready = undefined;
-      throw error;
-    }
-  }
-  return async (embed, query) => {
-    ready ??= loadOnce(embed);
-    const [{ documents, vectors }, [queryVector]] = await Promise.all([ready, embed([query])]);
-    if (!queryVector) {
-      throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
-    }
+  const cache: { index: SemanticIndex | undefined } = { index: undefined };
+  const load = Effect.suspend(() =>
+    cache.index === undefined
+      ? buildIndex(loadDocuments).pipe(
+          Effect.tap((index) =>
+            Effect.sync(() => {
+              cache.index = index;
+            }),
+          ),
+        )
+      : Effect.succeed(cache.index),
+  );
+  return Effect.fn("semanticSearch")(function* semanticSearch(query: string) {
+    const { embed } = yield* Embedder;
+    const [{ documents, vectors }, [queryVector = []]] = yield* Effect.all([load, embed([query])], {
+      concurrency: "unbounded",
+    });
     const target = normalize(queryVector);
     return documents.map((document, index) => ({
       document,
       score: similarity(vectors[index] ?? [], target),
     }));
-  };
+  });
 }
 
 function exactMatchesFirst(
@@ -106,4 +111,4 @@ function rankPages(
 }
 
 export { createSemanticIndex, exactMatchesFirst, rankPages };
-export type { Embedder, SemanticDocument };
+export type { SemanticDocument, SemanticMatch };

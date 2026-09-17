@@ -1,51 +1,82 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile, stat } from "node:fs/promises";
+import { failure, fileIo } from "./failure.ts";
+import { Effect } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { FileHandle } from "node:fs/promises";
+import type { LocalCommandFailure } from "./failure.ts";
+
+type FileLocation = Readonly<URL>;
 
 const privateFileMode = 0o600;
 const privateDirectoryMode = 0o700;
 const groupAndOtherPermissions = 0o077;
 
-type FileLocation = Readonly<Pick<URL, "href">>;
-
 function isErrorCode(error: unknown, code: string): boolean {
-  return error instanceof Error && "code" in error && error.code === code;
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }
 
-async function writeWithFlag(path: FileLocation, content: string, flag: "w" | "wx"): Promise<void> {
-  const file = await open(new URL(path.href), flag, privateFileMode);
-  try {
-    await file.writeFile(content);
-  } finally {
-    await file.close();
-  }
+function closeFile(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  file: FileHandle,
+): Effect.Effect<void, LocalCommandFailure> {
+  return fileIo(async () => file.close());
 }
 
-async function assertOwnerOnly(path: FileLocation): Promise<void> {
-  const { mode } = await stat(new URL(path.href));
+const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  location: FileLocation,
+) {
+  const entry = yield* fileIo(async () => stat(location));
   // oxlint-disable-next-line no-bitwise
-  if ((mode & groupAndOtherPermissions) !== 0) {
-    throw new Error("Local credential file permissions must be 0600");
+  if ((entry.mode & groupAndOtherPermissions) !== 0) {
+    return yield* failure("credentials_permissions_invalid");
   }
-}
+  return entry;
+});
 
-async function replacePrivateFile(path: FileLocation, content: string): Promise<void> {
-  await writeWithFlag(path, content, "w");
-  await chmod(new URL(path.href), privateFileMode);
-}
+const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePrivateFile(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  location: FileLocation,
+  content: string,
+) {
+  yield* Effect.acquireUseRelease(
+    fileIo(async () => open(location, "w", privateFileMode)),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (file) => fileIo(async () => file.writeFile(content)),
+    closeFile,
+  );
+  yield* fileIo(async () => chmod(location, privateFileMode));
+});
 
-async function writePrivateFile(path: FileLocation, content: string): Promise<void> {
-  try {
-    await writeWithFlag(path, content, "wx");
-  } catch (error) {
-    if (!isErrorCode(error, "EEXIST")) {
-      throw error;
-    }
-    if ((await readFile(new URL(path.href), "utf-8")) !== content) {
-      throw new Error("Existing local configuration differs; it was preserved", { cause: error });
-    }
-  }
-  await assertOwnerOnly(path);
-}
+const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFile(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  location: FileLocation,
+  content: string,
+) {
+  yield* Effect.acquireUseRelease(
+    Effect.tryPromise({
+      catch: (error) =>
+        failure(isErrorCode(error, "EEXIST") ? "configuration_exists" : "file_io_failed"),
+      try: async () => open(location, "wx", privateFileMode),
+    }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (file) => fileIo(async () => file.writeFile(content)),
+    closeFile,
+  ).pipe(
+    Effect.catchIf(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (error) => error.reason === "configuration_exists",
+      () =>
+        fileIo(async () => readFile(location, "utf-8")).pipe(
+          Effect.flatMap((existing) =>
+            existing === content ? Effect.void : Effect.fail(failure("configuration_differs")),
+          ),
+        ),
+    ),
+  );
+  yield* assertOwnerOnly(location);
+});
 
 export {
   assertOwnerOnly,

@@ -15,6 +15,7 @@
     "db:bootstrap:remote": "node src/database-command.ts bootstrap"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@pulumi/cloudflare": "catalog:",
     "@pulumi/pulumi": "catalog:",
     "@template/budget-monitor": "workspace:*",
@@ -23,14 +24,14 @@
     "@template/error-monitor": "workspace:*",
     "@template/health-monitor": "workspace:*",
     "@template/infra-bootstrap": "workspace:*",
-    "es-toolkit": "1.52.0",
-    "valibot": "catalog:"
+    "effect": "catalog:",
+    "es-toolkit": "1.52.0"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -18,18 +18,18 @@
     "@base-ui/react": "catalog:",
     "@better-auth/passkey": "catalog:",
     "@tanstack/react-router": "catalog:",
-    "@template/config": "workspace:*",
     "@template/observability": "workspace:*",
+    "@template/runtime": "workspace:*",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
+    "effect": "catalog:",
     "es-toolkit": "1.52.0",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "shadcn": "catalog:",
-    "tailwindcss": "catalog:",
-    "valibot": "catalog:"
+    "tailwindcss": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

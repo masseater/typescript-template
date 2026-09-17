@@ -1,145 +1,141 @@
-import {
-  array,
-  check,
-  email,
-  finite,
-  maxLength,
-  minLength,
-  minValue,
-  number,
-  object,
-  parse,
-  picklist,
-  pipe,
-  readonly,
-  regex,
-  safeParse,
-  strictTuple,
-  string,
-  url,
-} from "valibot";
-import type { InferOutput } from "valibot";
-import { applyPlan } from "./stacks.ts";
+import { Effect, Schema } from "effect";
+import { applyPlan, stackNames } from "./stacks.ts";
+
+class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
+  code: Schema.Literals([
+    "deployment_command_invalid",
+    "cloudflare_settings_invalid",
+    "app_origins_must_differ",
+    "budget_has_no_usage_allowance",
+    "auth_secret_invalid",
+    "account_permission_unavailable",
+    "database_input_invalid",
+    "stack_consumer_mismatch",
+    "stack_output_invalid",
+  ]),
+}) {}
+
+function fail(code: CloudflareFailure["code"]): Effect.Effect<never, CloudflareFailure> {
+  return Effect.fail(new CloudflareFailure({ code }));
+}
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
 
-const id = pipe(string(), regex(/^[a-f0-9]{32}$/u));
-const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
-const nonnegative = pipe(number(), finite(), minValue(0));
-const emailAddress = pipe(string(), email());
-const origin = pipe(
-  string(),
-  url(),
-  check((value) => {
-    const parsed = URL.parse(value);
+const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
+const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
+const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
+const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
+const Origin = Schema.String.check(
+  Schema.makeFilter((value: string) => URL.canParse(value)),
+  Schema.makeFilter((value: string) => {
+    const url = URL.parse(value);
     return (
-      parsed?.protocol === "https:" &&
-      parsed.origin === value &&
-      !parsed.hostname.endsWith(".workers.dev") &&
-      !parsed.username &&
-      !parsed.password
+      url?.protocol === "https:" &&
+      url.origin === value &&
+      !url.hostname.endsWith(".workers.dev") &&
+      !url.username &&
+      !url.password
     );
   }),
 );
-const budgetSchema = object({
-  budgetJpy: positive,
-  fixedCostUsd: nonnegative,
-  jpyPerUsd: positive,
-  recipients: pipe(array(emailAddress), minLength(1), maxLength(MAX_BUDGET_RECIPIENTS), readonly()),
-  reserveUsd: nonnegative,
+
+const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
+
+const SharedSettings = Schema.Struct({
+  accountId: Id,
+  budget: Schema.Struct({
+    budgetJpy: Positive,
+    fixedCostUsd: Nonnegative,
+    jpyPerUsd: Positive,
+    recipients: Recipients,
+    reserveUsd: Nonnegative,
+  }),
+  mailFrom: Email,
+  origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
+  prefix: Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u)),
+  zoneId: Id,
 });
-const sharedSchema = object({
-  accountId: id,
-  budget: budgetSchema,
-  mailFrom: emailAddress,
-  origins: object({ admin: origin, user: origin, wiki: origin }),
-  prefix: pipe(string(), regex(/^[a-z][a-z0-9-]{2,35}$/u)),
-  zoneId: id,
-});
-const deploymentCommandSchema = strictTuple([
-  picklist(["preview", "up"]),
-  picklist(["all", ...applyPlan().map(({ stack }) => stack)]),
+
+type SharedConfig = typeof SharedSettings.Type;
+
+const workerSubdomain = { enabled: false, previewsEnabled: false };
+
+const DeploymentCommand = Schema.Tuple([
+  Schema.Literals(["preview", "up"]),
+  Schema.Literals(["all", ...stackNames]),
 ]);
 
-type SharedConfig = InferOutput<typeof sharedSchema>;
-type DeploymentCommand = Readonly<{
-  operation: InferOutput<typeof deploymentCommandSchema>[0];
-  targets: ReturnType<typeof applyPlan>;
-}>;
-type AccountPermission = "Billing Read" | "Workers Observability Write";
-
-interface PermissionGroup {
-  readonly id: string;
-  readonly name: string;
-  readonly scopes: readonly string[];
-}
-
-const workerSubdomain = { enabled: false, previewsEnabled: false } as const;
-
-function parseDeploymentCommand(args: readonly string[]): DeploymentCommand {
-  const parsed = safeParse(deploymentCommandSchema, args);
-  if (!parsed.success) {
-    throw new Error("deployment_command_invalid");
-  }
-  const [operation, target] = parsed.output;
-  const plan = applyPlan();
+const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* parseDeploymentCommand(
+  args: readonly string[],
+) {
+  const [operation, target] = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
+    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid" })),
+  );
+  const plan = yield* applyPlan();
   return {
     operation,
     targets: target === "all" ? plan : plan.filter(({ stack }) => stack === target),
   };
-}
+});
 
-function assertDistinctOrigins(config: Readonly<Pick<SharedConfig, "origins">>): void {
+const parseSharedConfig = Effect.fn("parseSharedConfig")(function* parseSharedConfig(
+  input: unknown,
+) {
+  const config = yield* Schema.decodeUnknownEffect(SharedSettings)(input).pipe(
+    Effect.mapError(() => new CloudflareFailure({ code: "cloudflare_settings_invalid" })),
+  );
   const origins = Object.values(config.origins);
   if (new Set(origins).size !== origins.length) {
-    throw new Error("app_origins_must_differ");
+    return yield* fail("app_origins_must_differ");
   }
-}
-
-function assertBudgetAllowance(budget: Readonly<Omit<SharedConfig["budget"], "recipients">>): void {
-  if (budget.budgetJpy / budget.jpyPerUsd <= budget.fixedCostUsd + budget.reserveUsd) {
-    throw new Error("budget_has_no_usage_allowance");
+  if (
+    config.budget.budgetJpy / config.budget.jpyPerUsd <=
+    config.budget.fixedCostUsd + config.budget.reserveUsd
+  ) {
+    return yield* fail("budget_has_no_usage_allowance");
   }
-}
-
-function parseSharedConfig(input: unknown): SharedConfig {
-  const parsed = safeParse(sharedSchema, input);
-  if (!parsed.success) {
-    throw new Error("cloudflare_settings_invalid");
-  }
-  const config = parsed.output;
-  assertDistinctOrigins(config);
-  assertBudgetAllowance(config.budget);
   return config;
-}
+});
 
-function validateAuthSecret(secret: string): string {
-  if (secret.length < MIN_AUTH_SECRET_LENGTH || secret.trim() !== secret) {
-    throw new Error("auth_secret_invalid");
+const validateAuthSecret = Effect.fn("validateAuthSecret")(function* validateAuthSecret(
+  secret: unknown,
+) {
+  if (
+    typeof secret !== "string" ||
+    secret.length < MIN_AUTH_SECRET_LENGTH ||
+    secret.trim() !== secret
+  ) {
+    return yield* fail("auth_secret_invalid");
   }
   return secret;
-}
+});
 
-function selectAccountPermission(
-  groups: readonly PermissionGroup[],
-  name: AccountPermission,
-): string {
-  const matches = groups.filter(
-    (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
-  );
-  const [match] = matches;
-  if (matches.length !== 1 || match === undefined) {
-    throw new Error("account_permission_unavailable");
-  }
-  return parse(id, match.id);
-}
+const selectAccountPermission = Effect.fn("selectAccountPermission")(
+  function* selectAccountPermission(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    groups: readonly { id: string; name: string; scopes: string[] }[],
+    name: "Billing Read" | "Workers Observability Write",
+  ) {
+    const matches = groups.filter(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
+    );
+    if (matches.length !== 1) {
+      return yield* fail("account_permission_unavailable");
+    }
+    return yield* Schema.decodeUnknownEffect(Id)(matches[0]?.id).pipe(
+      Effect.mapError(() => new CloudflareFailure({ code: "account_permission_unavailable" })),
+    );
+  },
+);
 
 export {
+  CloudflareFailure,
   parseDeploymentCommand,
   parseSharedConfig,
   selectAccountPermission,
   validateAuthSecret,
   workerSubdomain,
 };
-export type { AccountPermission, SharedConfig };
+export type { SharedConfig };

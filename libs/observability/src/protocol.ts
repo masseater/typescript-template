@@ -1,4 +1,4 @@
-import { is, parse, picklist, pipe, record, regex, string } from "valibot";
+import { Schema } from "effect";
 
 type RouteEntry = readonly [string, string];
 type HttpMethod = (typeof httpMethods)[number];
@@ -17,18 +17,25 @@ const spanIdBytes = 8;
 const hexRadix = 16;
 const hexByteWidth = 2;
 const routeMessage = "Telemetry routes require fixed paths and bounded labels";
+const routePathPattern = /^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u;
 
 const httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "_OTHER"] as const;
-const httpMethodSchema = picklist(httpMethods);
-const traceIdSchema = pipe(string(), regex(/^(?!0+$)[0-9a-f]{32}$/u));
-const spanIdSchema = pipe(string(), regex(/^(?!0+$)[0-9a-f]{16}$/u));
-const requestIdSchema = pipe(
-  string(),
-  regex(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
+const HttpMethodSchema = Schema.Literals(httpMethods);
+const TraceId = Schema.String.check(Schema.isPattern(/^(?!0+$)[0-9a-f]{32}$/u));
+const SpanId = Schema.String.check(Schema.isPattern(/^(?!0+$)[0-9a-f]{16}$/u));
+const RequestId = Schema.String.check(
+  Schema.isPattern(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
 );
-const routePathSchema = pipe(string(), regex(/^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u, routeMessage));
-const routeLabelSchema = pipe(string(), regex(/^[a-z][a-z0-9_.-]{0,63}$/u, routeMessage));
-const routesSchema = record(routePathSchema, routeLabelSchema);
+const RouteLabel = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9_.-]{0,63}$/u));
+const routePathsValid = Schema.makeFilter((routes: Readonly<Record<string, string>>) =>
+  Object.keys(routes).every((path) => routePathPattern.test(path)),
+);
+const Routes = Schema.Record(Schema.String, RouteLabel).check(routePathsValid);
+const isTraceId = Schema.is(TraceId);
+const isSpanId = Schema.is(SpanId);
+const isRequestId = Schema.is(RequestId);
+const isHttpMethod = Schema.is(HttpMethodSchema);
+const isRoutes = Schema.is(Routes);
 
 function randomHex(bytes: number): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
@@ -42,13 +49,11 @@ function parentContext(value: string | null): ParentContext | undefined {
   )?.groups;
   const traceId = groups?.["traceId"];
   const parentSpanId = groups?.["parentSpanId"];
-  return is(traceIdSchema, traceId) && is(spanIdSchema, parentSpanId)
-    ? { parentSpanId, traceId }
-    : undefined;
+  return isTraceId(traceId) && isSpanId(parentSpanId) ? { parentSpanId, traceId } : undefined;
 }
 
 function httpMethod(method: string): HttpMethod {
-  return is(httpMethodSchema, method) ? method : "_OTHER";
+  return isHttpMethod(method) ? method : "_OTHER";
 }
 
 function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
@@ -64,21 +69,19 @@ function routeLabel(pathname: string, routes: Readonly<Record<string, string>>):
   );
 }
 
-function validateRoutes(routes: Readonly<Record<string, string>>): void {
-  parse(routesSchema, routes);
-}
-
 export {
+  RequestId,
+  SpanId,
+  TraceId,
   httpMethod,
   httpMethods,
+  isRequestId,
+  isRoutes,
   parentContext,
   randomHex,
-  requestIdSchema,
   routeLabel,
+  routeMessage,
   spanIdBytes,
-  spanIdSchema,
   traceIdBytes,
-  traceIdSchema,
-  validateRoutes,
 };
 export type { Correlation, HttpMethod };

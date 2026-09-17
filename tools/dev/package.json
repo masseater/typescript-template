@@ -14,11 +14,11 @@
     "browser": "node src/cli.ts browser"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
     "agent-browser": "0.37.1",
-    "portless": "0.15.6",
-    "valibot": "catalog:",
-    "vite-plus": "catalog:"
+    "effect": "catalog:",
+    "portless": "0.15.6"
   },
   "devDependencies": {
     "@types/node": "catalog:",
