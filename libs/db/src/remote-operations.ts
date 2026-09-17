@@ -1,7 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import * as v from "valibot";
-import { compileBootstrapStatement } from "./bootstrap-statement.ts";
+import { SQLiteAsyncDialect } from "drizzle-orm/sqlite-core";
+import { bootstrapStatement } from "./bootstrap-statement.ts";
 
 export interface DatabaseExecutor {
   batch(
@@ -82,7 +83,13 @@ export async function bootstrapDatabase(executor: DatabaseExecutor, email: strin
   const migrations = loadRemoteMigrations();
   if ((await readHistory(executor, migrations)) !== migrations.length)
     throw new Error("REMOTE_MIGRATIONS_REQUIRED");
-  const [rows] = await executor.batch([compileBootstrapStatement(email)]);
+  const query = new SQLiteAsyncDialect().sqlToQuery(bootstrapStatement(email));
+  const [rows] = await executor.batch([
+    {
+      sql: query.sql,
+      params: v.parse(v.array(v.union([v.string(), v.number(), v.null()])), query.params),
+    },
+  ]);
   if (rows?.length !== 1) throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
   const result = v.safeParse(
     v.object({ id: v.string(), email: v.pipe(v.string(), v.email()), role: v.literal("admin") }),

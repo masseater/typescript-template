@@ -5,8 +5,6 @@ import * as v from "valibot";
 import { schema, user } from "./schema.ts";
 
 export { schema } from "./schema.ts";
-export type Audience = "user" | "admin" | "wiki";
-export type Role = "user" | "admin";
 export type DatabaseBinding = D1Database;
 
 export function createDb(binding: DatabaseBinding) {

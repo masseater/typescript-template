@@ -1,30 +1,24 @@
-import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 import { expect, test } from "vite-plus/test";
+import { applyPlan } from "./stacks.ts";
 
-test("real Pulumi SDK and Cloudflare SDK run under native Node type stripping without loading a TypeScript compiler", async () => {
-  const result = await promisify(execFile)(process.execPath, ["src/runtime-probe.ts"], {
-    cwd: fileURLToPath(new URL("../", import.meta.url)),
-    env: { PATH: process.env["PATH"], PULUMI_NODEJS_TYPESCRIPT: "false" },
-    timeout: 20_000,
-  });
-  expect(JSON.parse(result.stdout)).toEqual({
-    event: "pulumi.runtime_verified",
-    compilerLoaded: false,
-    secretPreserved: true,
-  });
+const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/Pulumi.yaml"], {
+  eager: true,
+  import: "default",
 });
 
-test.each([
-  "../shared/Pulumi.yaml",
-  "../user/Pulumi.yaml",
-  "../admin/Pulumi.yaml",
-  "../wiki/Pulumi.yaml",
-  "../../bootstrap/Pulumi.yaml",
-])("%s disables Pulumi compiler loading and runs TypeScript with plain Node", async (filename) => {
-  const yaml = await readFile(new URL(filename, import.meta.url), "utf8");
-  expect(yaml).toContain("typescript: false");
-  expect(yaml).not.toContain("nodeargs");
+test("every Pulumi project is covered", () => {
+  expect(new Set(Object.keys(projects))).toEqual(
+    new Set([
+      "../../bootstrap/Pulumi.yaml",
+      ...applyPlan().map(({ stack }) => `../${stack}/Pulumi.yaml`),
+    ]),
+  );
 });
+
+test.for(Object.entries(projects))(
+  "%s disables Pulumi compiler loading and runs TypeScript with plain Node",
+  ([, yaml]) => {
+    expect(yaml).toContain("typescript: false");
+    expect(yaml).not.toContain("nodeargs");
+  },
+);

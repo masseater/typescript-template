@@ -1,4 +1,8 @@
+import { clientErrorSchema } from "@template/observability";
+import type { RequestContext, createInstrumentation } from "@template/observability";
 import * as v from "valibot";
+
+export { readJson } from "@template/observability";
 
 export function jsonResponse(value: unknown, status = 200): Response {
   return Response.json(value, {
@@ -15,13 +19,7 @@ export async function apiResponse(
     return jsonResponse(await action());
   } catch (error) {
     if (v.isValiError(error)) return jsonResponse({ error: "入力内容を確認してください。" }, 400);
-    if (
-      error instanceof Error &&
-      "statusCode" in error &&
-      typeof error.statusCode === "number" &&
-      error.statusCode >= 400 &&
-      error.statusCode < 500
-    )
+    if (v.is(clientErrorSchema, error))
       return jsonResponse(
         {
           error:
@@ -42,41 +40,6 @@ export async function apiResponse(
   }
 }
 
-export async function readJson(request: Request, expectedOrigin: string): Promise<unknown> {
-  if (
-    request.headers.get("origin") !== expectedOrigin ||
-    request.headers.get("sec-fetch-site") === "cross-site"
-  )
-    throw Object.assign(new Error("ORIGIN_DENIED"), { statusCode: 403 });
-  if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-    throw Object.assign(new Error("JSON_REQUIRED"), { statusCode: 415 });
-  const reader = request.body?.getReader();
-  if (!reader) throw Object.assign(new Error("BODY_REQUIRED"), { statusCode: 400 });
-  const chunks: Uint8Array[] = [];
-  let length = 0;
-  while (true) {
-    const chunk = await reader.read();
-    if (chunk.done) break;
-    length += chunk.value.byteLength;
-    if (length > 16384) {
-      await reader.cancel();
-      throw Object.assign(new Error("BODY_TOO_LARGE"), { statusCode: 413 });
-    }
-    chunks.push(chunk.value);
-  }
-  const bytes = new Uint8Array(length);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.length;
-  }
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
-  } catch {
-    throw Object.assign(new Error("INVALID_JSON"), { statusCode: 400 });
-  }
-}
-
 export function secureResponse(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");
@@ -89,4 +52,35 @@ export function secureResponse(response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+type WorkerRuntime = {
+  config: { ASSETS: { fetch(request: Request): Promise<Response> } };
+  telemetry: ReturnType<typeof createInstrumentation>;
+};
+
+export function createWorker<Runtime extends WorkerRuntime>(options: {
+  runtime: (bindings: unknown) => Runtime;
+  handle: (
+    request: Request,
+    context: { path: string; runtime: Runtime; correlation: RequestContext },
+  ) => Promise<Response> | Response;
+}) {
+  return {
+    async fetch(request: Request, bindings: unknown) {
+      const runtime = options.runtime(bindings);
+      return runtime.telemetry.wrapRequest(request, async (incoming, correlation) => {
+        let path: string;
+        try {
+          path = decodeURIComponent(new URL(incoming.url).pathname);
+        } catch {
+          return new Response(null, { status: 400 });
+        }
+        if (path.endsWith(".map")) return new Response(null, { status: 404 });
+        if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
+        if (path === "/api/telemetry") return runtime.telemetry.ingestBrowser(incoming);
+        return secureResponse(await options.handle(incoming, { path, runtime, correlation }));
+      });
+    },
+  };
 }

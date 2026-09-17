@@ -1,6 +1,7 @@
-import { readFile, readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { Miniflare } from "miniflare";
 import { getTableColumns } from "drizzle-orm";
+import { readMigrationFiles } from "drizzle-orm/migrator";
 import { createDb } from "./index.ts";
 import { schema } from "./schema.ts";
 
@@ -19,14 +20,11 @@ export async function createTestDatabase() {
   });
   try {
     const binding = await runtime.getD1Database("DB");
-    const migrations = new URL("../migrations/", import.meta.url);
-    const files = (await readdir(migrations)).filter((name) => name.endsWith(".sql")).sort();
-    for (const file of files) {
-      const content = await readFile(new URL(file, migrations), "utf8");
-      const statements = content
-        .split("--> statement-breakpoint")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const migrations = readMigrationFiles({
+      migrationsFolder: fileURLToPath(new URL("../migrations/", import.meta.url)),
+    });
+    for (const migration of migrations) {
+      const statements = migration.sql.map((statement) => statement.trim()).filter(Boolean);
       await binding.batch(statements.map((statement) => binding.prepare(statement)));
     }
     return { database: createDb(binding), binding, dispose: () => runtime.dispose() };

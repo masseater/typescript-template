@@ -1,81 +1,74 @@
-import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { expect, test as baseTest } from "vite-plus/test";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
+import { expect, test } from "vite-plus/test";
+import manifest from "../../package.json" with { type: "json" };
+import config from "../../vite.config.ts";
+import plugin from "./rules.ts";
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
-const execution = {
-  encoding: "utf8",
-  env: {
-    ...process.env,
-    PATH: `${path.join(root, "node_modules/.bin")}${path.delimiter}${process.env["PATH"] ?? ""}`,
-  },
-  timeout: 20_000,
-} as const;
+RuleTester.describe = (_text, run) => run();
+RuleTester.it = (_text, run) => run();
+const tester = new RuleTester({ cwd: "/project" });
+type RuleName =
+  | "boundaries"
+  | "no-internal-mocks"
+  | "environment-boundary"
+  | "worker-fetch"
+  | "test-import-graph";
+const ruleNames: RuleName[] = [
+  "boundaries",
+  "no-internal-mocks",
+  "environment-boundary",
+  "worker-fetch",
+  "test-import-graph",
+];
+const reported = (name: RuleName, filename: string, code: string) => {
+  const rule = plugin.rules[name];
+  if (!rule) throw new Error(`Unknown rule ${name}`);
+  try {
+    tester.run(name, rule, { valid: [{ filename, code }], invalid: [] });
+    return false;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Should have no errors but had"))
+      return true;
+    throw error;
+  }
+};
+const reportedRules = (filename: string, code: string) =>
+  ruleNames.filter((rule) => reported(rule, filename, code));
 
-const test = baseTest.extend<{ directory: string }>({
-  directory: async ({}, provide) => {
-    const directory = await mkdtemp(path.join(tmpdir(), "typescript-template-quality-"));
-    await writeFile(
-      path.join(directory, "package.json"),
-      JSON.stringify({
-        type: "module",
-        scripts: { precommit: "vp check", prepush: "vp test run" },
-      }),
-    );
-    await writeFile(
-      path.join(directory, "vite.config.ts"),
-      `export default {
-      lint: {
-        jsPlugins: [${JSON.stringify(path.join(root, "tools/quality/rules.ts"))}],
-        categories: { correctness: "error" },
-        rules: { "project/boundaries": "error", "project/no-internal-mocks": "error", "project/environment-boundary": "error", "project/worker-fetch": "error" }
-      },
-      test: { include: ["*.test.ts"] }
-    };`,
-    );
-    try {
-      await provide(directory);
-    } finally {
-      await rm(directory, { recursive: true, force: true });
-    }
-  },
+test("every project rule is tested and enabled", () => {
+  expect(Object.keys(plugin.rules).sort()).toEqual([...ruleNames].sort());
+  expect(config.lint?.rules).toMatchObject(
+    Object.fromEntries(ruleNames.map((rule) => [`project/${rule}`, "error"])),
+  );
 });
 
 test.for([
-  ["apps/user/probe.ts", 'import "../admin/private.ts";', "project(boundaries)"],
-  ["libs/shared/probe.ts", 'import "../../apps/admin/private.ts";', "project(boundaries)"],
-  ["infra/cloudflare/probe.ts", 'import "../../tools/dev/src/cli.ts";', "project(boundaries)"],
+  ["apps/user/probe.ts", 'import "../admin/private.ts";', "boundaries"],
+  ["libs/shared/probe.ts", 'import "../../apps/admin/private.ts";', "boundaries"],
+  ["infra/cloudflare/probe.ts", 'import "../../tools/dev/src/cli.ts";', "boundaries"],
   [
     "apps/user/probe.ts",
     'import { vi } from "vitest"; vi.mock("owned-module");',
-    "project(no-internal-mocks)",
+    "no-internal-mocks",
   ],
-  ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "project(environment-boundary)"],
+  ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
   [
     "libs/observability/src/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
-    "project(worker-fetch)",
+    "worker-fetch",
   ],
   [
     "infra/budget-monitor/src/billing.ts",
     'const mode = "error"; export const send = () => fetch("https://api", { redirect: mode });',
-    "project(worker-fetch)",
+    "worker-fetch",
   ],
   [
     "infra/error-monitor/src/telemetry.ts",
     'export const send = () => fetch("https://api", { redirect: "error" });',
-    "project(worker-fetch)",
+    "worker-fetch",
   ],
-] as const)("rejects forbidden code in %s", async ([name, code, diagnostic], { directory }) => {
-  const target = path.join(directory, name);
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.status).toBe(1);
-  expect(result.stdout + result.stderr).toContain(diagnostic);
+] as const)("rejects forbidden code in %s", ([name, code, rule]) => {
+  expect(reported(rule, name, code)).toBe(true);
 });
 
 test.for([
@@ -191,14 +184,8 @@ test.for([
     'export const load = () => import("@template/ui/signup");',
   ],
   ["wiki-app", "apps/user/src/probe.ts", 'import "@template/wiki";'],
-] as const)("rejects dependency bypass: %s", async ([_label, name, code], { directory }) => {
-  const target = path.join(directory, name);
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(1);
-  expect(result.stdout + result.stderr).toContain("project(boundaries)");
+] as const)("rejects dependency bypass: %s", ([_label, name, code]) => {
+  expect(reported("boundaries", name, code)).toBe(true);
 });
 
 test.for([
@@ -246,12 +233,8 @@ test.for([
     'import { fn as replace } from "vite-plus/test/plugins/spy"; replace();',
   ],
   ["node-test-mock", 'import { mock as tools } from "node:test"; tools.fn();'],
-] as const)("rejects mock bypass: %s", async ([_label, code], { directory }) => {
-  await writeFile(path.join(directory, "probe.ts"), code);
-  const result = spawnSync("vp", ["lint", "probe.ts"], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(1);
-  expect(result.stdout + result.stderr).toContain("project(no-internal-mocks)");
+] as const)("rejects mock bypass: %s", ([_label, code]) => {
+  expect(reported("no-internal-mocks", "probe.ts", code)).toBe(true);
 });
 
 test.for([
@@ -276,14 +259,8 @@ test.for([
   ["meta-alias", "const meta = import.meta; export const value = meta.env;"],
   ["meta-destructure", "export const { env: values } = import.meta;"],
   ["meta-nested", "export const { env: { SECRET: value } } = import.meta;"],
-] as const)("rejects environment bypass: %s", async ([_label, code], { directory }) => {
-  const name = "libs/shared/src/probe.ts";
-  await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
-  await writeFile(path.join(directory, name), code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(1);
-  expect(result.stdout + result.stderr).toContain("project(environment-boundary)");
+] as const)("rejects environment bypass: %s", ([_label, code]) => {
+  expect(reported("environment-boundary", "libs/shared/src/probe.ts", code)).toBe(true);
 });
 
 test.for([
@@ -307,22 +284,14 @@ test.for([
   ["tools/observe/src/probe.ts", "export const value = process.env;"],
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
-] as const)("allows valid boundary in %s", async ([name, code], { directory }) => {
-  const target = path.join(directory, name);
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(0);
+] as const)("allows valid boundary in %s", ([name, code]) => {
+  expect(reportedRules(name, code)).toEqual([]);
 });
 
-test("allows shared pure code", async ({ directory }) => {
-  await writeFile(
-    path.join(directory, "valid.ts"),
-    "export const add = (a: number, b: number) => a + b;\n",
-  );
-  const result = spawnSync("vp", ["lint", "valid.ts"], { ...execution, cwd: directory });
-  expect({ status: result.status, error: result.error }).toEqual({ status: 0, error: undefined });
+test("allows shared pure code", () => {
+  expect(
+    reportedRules("valid.ts", "export const add = (a: number, b: number) => a + b;\n"),
+  ).toEqual([]);
 });
 
 test.for([
@@ -459,27 +428,16 @@ test.for([
     "object-wrapper",
     'export function load(db: D1Database) { const holder = { storage: db }; return holder.storage.exec("SELECT 1"); }',
   ],
-] as const)("rejects raw D1 operation: %s", async ([_label, code], { directory }) => {
-  const name = "apps/user/src/probe.ts";
-  await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
-  await writeFile(path.join(directory, name), code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(1);
-  expect(result.stdout + result.stderr).toContain("project(boundaries)");
+] as const)("rejects raw D1 operation: %s", ([_label, code]) => {
+  expect(reported("boundaries", "apps/user/src/probe.ts", code)).toBe(true);
 });
 
 test.for([
   ["libs/db/src/security.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
   ["tools/dev/src/probe.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
   ["apps/user/src/probe.test.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
-] as const)("rejects raw D1 outside the adapter in %s", async ([name, code], { directory }) => {
-  await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
-  await writeFile(path.join(directory, name), code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(1);
-  expect(result.stdout + result.stderr).toContain("project(boundaries)");
+] as const)("rejects raw D1 outside the adapter in %s", ([name, code]) => {
+  expect(reported("boundaries", name, code)).toBe(true);
 });
 
 test.for([
@@ -518,50 +476,81 @@ test.for([
     "binding-injection",
     'import { createDb } from "@template/db"; export const load = (binding: D1Database) => createDb(binding);',
   ],
-] as const)("allows non-D1 operation: %s", async ([_label, code], { directory }) => {
-  const name = "libs/shared/src/probe.ts";
-  await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
-  await writeFile(path.join(directory, name), code);
-  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-  expect(result.error).toBeUndefined();
-  expect(result.status, result.stdout + result.stderr).toBe(0);
+] as const)("allows non-D1 operation: %s", ([_label, code]) => {
+  expect(reportedRules("libs/shared/src/probe.ts", code)).toEqual([]);
 });
 
-test.for(["instrumentation", "testing"])(
-  "allows raw D1 in the %s adapter",
-  async (adapter, { directory }) => {
-    const name = `libs/db/src/${adapter}.ts`;
-    await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
-    await writeFile(
-      path.join(directory, name),
+test("allows raw D1 in the testing adapter", () => {
+  expect(
+    reportedRules(
+      "libs/db/src/testing.ts",
       'export const load = (db: D1Database) => db.exec("SELECT 1");',
-    );
-    const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.stdout + result.stderr).toBe(0);
-  },
-);
-
-test("pre-commit hook rejects an actual lint violation", async ({ directory }) => {
-  await writeFile(path.join(directory, "invalid.ts"), "debugger;\n");
-  const result = spawnSync(path.join(root, ".vite-hooks/_/pre-commit"), [], {
-    ...execution,
-    cwd: directory,
-  });
-  expect(result.status).toBe(1);
-  expect(result.stdout + result.stderr).toContain("error");
+    ),
+  ).toEqual([]);
 });
 
-test("pre-push hook rejects an actual failing test", async ({ directory }) => {
-  const vitestEntry = import.meta.resolve("vite-plus/test");
-  await writeFile(
-    path.join(directory, "failure.test.ts"),
-    `import { test, expect } from ${JSON.stringify(vitestEntry)}; test("intentional failure", () => expect(1).toBe(2));`,
-  );
-  const result = spawnSync(path.join(root, ".vite-hooks/_/pre-push"), [], {
-    ...execution,
-    cwd: directory,
+test.for([
+  ["child-process", 'import { spawn } from "node:child_process"; spawn("node");'],
+  ["child-process-bare", 'import * as child from "child_process"; child.execFileSync("node");'],
+  ["child-process-dynamic", 'const { spawn } = await import("node:child_process");'],
+  ["child-process-require", 'const child = require("node:child_process");'],
+  ["child-process-builtin", 'const child = process.getBuiltinModule("node:child_process");'],
+  ["child-process-reexport", 'export { spawn } from "node:child_process";'],
+  ["worker-thread", 'import { Worker } from "node:worker_threads"; new Worker("./probe.ts");'],
+  ["meta-url", 'const file = new URL("../fixture.json", import.meta.url);'],
+  ["meta-dirname", "const directory = import.meta.dirname;"],
+  ["meta-filename", "const file = import.meta.filename;"],
+  ["meta-resolve", 'const entry = import.meta.resolve("./probe.ts");'],
+  ["meta-computed", 'const file = import.meta["url"];'],
+  ["meta-alias", "const meta = import.meta; const file = meta.url;"],
+  ["meta-destructure", "const { url } = import.meta;"],
+  ["meta-assignment", "let file; ({ url: file } = import.meta);"],
+  ["raw-import", 'import text from "./fixture.yaml?raw";'],
+  ["raw-dynamic", 'const text = await import("./fixture.yaml?raw");'],
+  ["glob-query", 'import.meta.glob("./*.yaml", { eager: true, query: "?raw" });'],
+  ["glob-computed-query", 'import.meta.glob("./*.yaml", { ["query"]: "?raw" });'],
+  [
+    "glob-spread-options",
+    'const options = { query: "?raw" }; import.meta.glob("./*.yaml", { ...options });',
+  ],
+  [
+    "glob-dynamic-options",
+    'const options = { query: "?raw" }; import.meta.glob("./*.yaml", options);',
+  ],
+  ["glob-pattern-query", 'import.meta.glob(["./*.yaml?raw"]);'],
+  ["process-cwd", "const root = process.cwd();"],
+  ["process-import-cwd", 'import { cwd } from "node:process"; const root = cwd();'],
+  ["process-alias-cwd", "const runtime = process; const root = runtime.cwd();"],
+] as const)("rejects out-of-graph test dependency: %s", ([_label, code]) => {
+  expect(reported("test-import-graph", "libs/shared/src/probe.test.ts", code)).toBe(true);
+});
+
+test.for([
+  ["glob", 'const files = import.meta.glob("./fixtures/*.json", { eager: true });'],
+  ["json-import", 'import manifest from "../package.json" with { type: "json" };'],
+  [
+    "temporary-files",
+    'import { mkdtemp } from "node:fs/promises"; import { tmpdir } from "node:os"; await mkdtemp(tmpdir());',
+  ],
+] as const)("allows import-graph test dependency: %s", ([_label, code]) => {
+  expect(reportedRules("libs/shared/src/probe.test.ts", code)).toEqual([]);
+});
+
+test("allows out-of-graph dependencies outside tests", () => {
+  expect(
+    reportedRules(
+      "tools/dev/src/cli.ts",
+      'import { spawn } from "node:child_process"; spawn(new URL(".", import.meta.url));',
+    ),
+  ).toEqual([]);
+});
+
+test("git hooks run the verified package scripts", () => {
+  expect(import.meta.glob("../../.vite-hooks/pre-*", { eager: true, import: "default" })).toEqual({
+    "../../.vite-hooks/pre-commit": "vp run precommit\n",
+    "../../.vite-hooks/pre-push": "vp run prepush\n",
   });
-  expect(result.status).toBe(1);
-  expect(result.stdout + result.stderr).toContain("intentional failure");
+  expect(manifest.scripts.precommit).toBe("vp run check");
+  expect(manifest.scripts.check).toContain("vp check");
+  expect(manifest.scripts.prepush).toContain("vp test run --changed origin/main");
 });

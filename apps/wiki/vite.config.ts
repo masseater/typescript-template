@@ -4,11 +4,19 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
+import { applicationPorts } from "@template/config";
 import { previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { devBoundary } from "@template/dev-boundary";
 import { defineConfig } from "vite-plus";
+
+const server = {
+  host: "127.0.0.1",
+  port: applicationPorts.wiki,
+  strictPort: true,
+  allowedHosts: [".local"],
+};
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
@@ -32,7 +40,7 @@ export default defineConfig(({ command, isPreview }) => ({
     tanstackStart(),
     react(),
   ],
-  server: { host: "127.0.0.1", port: 3003, strictPort: true, allowedHosts: [".local"] },
-  preview: { host: "127.0.0.1", port: 3003, strictPort: true, allowedHosts: [".local"] },
+  server,
+  preview: server,
   build: { sourcemap: "hidden" },
 }));

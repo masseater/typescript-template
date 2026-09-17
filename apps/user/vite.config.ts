@@ -3,11 +3,19 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
+import { applicationPorts } from "@template/config";
 import { previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { defineConfig } from "vite-plus";
 import { devBoundary } from "@template/dev-boundary";
+
+const server = {
+  host: "127.0.0.1",
+  port: applicationPorts.user,
+  strictPort: true,
+  allowedHosts: [".local"],
+};
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
@@ -30,7 +38,7 @@ export default defineConfig(({ command, isPreview }) => ({
     tanstackStart(),
     react(),
   ],
-  server: { host: "127.0.0.1", port: 3001, strictPort: true, allowedHosts: [".local"] },
-  preview: { host: "127.0.0.1", port: 3001, strictPort: true, allowedHosts: [".local"] },
+  server,
+  preview: server,
   build: { sourcemap: "hidden" },
 }));

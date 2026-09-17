@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 import { setTimeout } from "node:timers/promises";
+import { applications } from "@template/config";
 import * as v from "valibot";
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 
@@ -12,7 +13,7 @@ const { values } = parseArgs({
 
 try {
   const service = v.parse(
-    v.picklist(["user-server", "admin-server", "wiki-server"]),
+    v.picklist(applications.map((application) => `${application}-server` as const)),
     values.service,
   );
   const app = explorerOrigin(v.parse(v.string(), values.app));

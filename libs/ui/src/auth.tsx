@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { authClient } from "./client";
 import { MFASettings } from "./mfa";
-import { Button, Field, Page, Stack, Status } from "./shared/ui";
-import { requireSuccess } from "./protocol";
+import { Button, Field, Page, Stack, Status, TotpField } from "./shared/ui";
+import { requireSecureContext, requireSuccess } from "./protocol";
 import { useSession } from "./session";
 import { useAction } from "./action";
 
@@ -101,18 +101,7 @@ function LoginForm({
               onChange={(event) => setCode(event.target.value)}
             />
           ) : challenge ? (
-            <Field
-              label="認証アプリの確認コード"
-              name="totp"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]{6}"
-              minLength={6}
-              maxLength={6}
-              required
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-            />
+            <TotpField value={code} onChange={setCode} />
           ) : (
             <>
               <Field
@@ -150,8 +139,7 @@ function LoginForm({
           disabled={action.blocked}
           onClick={() =>
             action.run(async () => {
-              if (!window.isSecureContext)
-                throw new Error("パスキーには HTTPS または localhost が必要です。");
+              requireSecureContext();
               requireSuccess(await authClient.signIn.passkey());
               await onAuthenticated();
             })

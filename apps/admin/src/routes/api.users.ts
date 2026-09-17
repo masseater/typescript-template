@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { roles } from "@template/config";
 import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
 import { apiResponse, readJson } from "@template/runtime/http";
 import * as v from "valibot";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/api/users")({
           const input = v.parse(
             v.strictObject({
               id: v.pipe(v.string(), v.minLength(1)),
-              role: v.picklist(["user", "admin"]),
+              role: v.picklist(roles),
             }),
             await readJson(request, context.runtime.config.APP_ORIGIN),
           );

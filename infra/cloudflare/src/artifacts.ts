@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, lstat, mkdir, readdir, readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
-import type { AppTarget } from "./config.ts";
+import type { Application } from "@template/config";
 
 function privateArtifact(relative: string): boolean {
   return relative
@@ -13,6 +13,19 @@ function privateArtifact(relative: string): boolean {
           name,
         ) || /\.(?:pem|key)$/.test(name),
     );
+}
+
+const moduleTypes: Readonly<Record<string, string>> = {
+  ".js": "application/javascript+module",
+  ".mjs": "application/javascript+module",
+  ".wasm": "application/wasm",
+  ".txt": "text/plain",
+};
+
+async function sha256(file: string): Promise<string> {
+  return createHash("sha256")
+    .update(await readFile(file))
+    .digest("hex");
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -29,7 +42,7 @@ async function files(directory: string): Promise<string[]> {
   return nested.flat().sort();
 }
 
-export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
+export async function loadArtifacts(repositoryRoot: string, target: Application) {
   const root = path.join(repositoryRoot, "apps", target, "dist");
   const server = path.join(root, "server");
   const client = path.join(root, "client");
@@ -61,21 +74,12 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
           throw new Error("server_css_without_public_asset");
         return undefined;
       }
-      const contentType =
-        extension === ".js" || extension === ".mjs"
-          ? "application/javascript+module"
-          : extension === ".wasm"
-            ? "application/wasm"
-            : extension === ".txt"
-              ? "text/plain"
-              : undefined;
+      const contentType = moduleTypes[extension];
       if (!contentType) throw new Error("worker_module_type_unsupported");
       return {
         name: path.relative(server, file).replaceAll(path.sep, "/"),
         contentFile: file,
-        contentSha256: createHash("sha256")
-          .update(await readFile(file))
-          .digest("hex"),
+        contentSha256: await sha256(file),
         contentType,
       };
     }),
@@ -91,20 +95,13 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
       .map(async (file) => ({
         name: path.relative(server, file).replaceAll(path.sep, "/"),
         contentFile: file,
-        contentSha256: createHash("sha256")
-          .update(await readFile(file))
-          .digest("hex"),
+        contentSha256: await sha256(file),
         contentType: "application/source-map",
       })),
   );
   if ((await stat(path.join(server, mainModule))).size === 0) throw new Error("worker_entry_empty");
   const manifest = await Promise.all(
-    clientFiles.map(async (file) => [
-      path.relative(client, file),
-      createHash("sha256")
-        .update(await readFile(file))
-        .digest("hex"),
-    ]),
+    clientFiles.map(async (file) => [path.relative(client, file), await sha256(file)]),
   );
   const digest = createHash("sha256").update(JSON.stringify(manifest)).digest("hex");
   const release = createHash("sha256")

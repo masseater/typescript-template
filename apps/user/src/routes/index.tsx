@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requestJson } from "@template/runtime/client";
-import { useSession } from "@template/ui";
+import { errorMessage, useSession } from "@template/ui";
 import { SignOutButton } from "@template/ui/auth";
 import { Button, Field, Label, Page, Stack, Status, Textarea } from "@template/ui/ui";
 import { useEffect, useId, useState } from "react";
@@ -37,8 +37,7 @@ function Profile() {
           setReady(true);
         }
       } catch (cause) {
-        if (controller.active)
-          setError(cause instanceof Error ? cause.message : "取得に失敗しました。");
+        if (controller.active) setError(errorMessage(cause));
       }
     }
     void load();
@@ -61,7 +60,7 @@ function Profile() {
         setProfile(data.profile);
         setMessage("プロフィールを保存しました。");
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "保存に失敗しました。");
+        setError(errorMessage(cause));
       } finally {
         setPending(false);
       }

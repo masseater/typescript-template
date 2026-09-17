@@ -18,4 +18,21 @@ function Field({
   );
 }
 
-export { Field };
+function TotpField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <Field
+      label="認証アプリの確認コード"
+      name="totp"
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      pattern="[0-9]{6}"
+      minLength={6}
+      maxLength={6}
+      required
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
+export { Field, TotpField };

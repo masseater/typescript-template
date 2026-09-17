@@ -1,6 +1,6 @@
 export { Button } from "./button";
 export { Checkbox } from "./checkbox";
-export { Field } from "./field";
+export { Field, TotpField } from "./field";
 export { Heading } from "./heading";
 export { Label } from "./label";
 export { Page } from "./page";

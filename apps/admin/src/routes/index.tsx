@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { roles } from "@template/config";
 import { requestJson } from "@template/runtime/client";
-import { useSession } from "@template/ui";
+import { errorMessage, useSession } from "@template/ui";
 import { SignOutButton } from "@template/ui/auth";
 import {
   Button,
@@ -14,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@template/ui/ui";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import * as v from "valibot";
 
 const usersSchema = v.object({
@@ -23,13 +24,15 @@ const usersSchema = v.object({
       id: v.string(),
       name: v.string(),
       email: v.string(),
-      role: v.picklist(["user", "admin"]),
+      role: v.picklist(roles),
       emailVerified: v.boolean(),
     }),
   ),
   total: v.number(),
 });
 type UserList = v.InferOutput<typeof usersSchema>;
+const fetchUsers = async (offset: number) =>
+  v.parse(usersSchema, await requestJson(`/api/users?limit=50&offset=${offset}`));
 export const Route = createFileRoute("/")({ component: Users });
 
 function Users() {
@@ -39,27 +42,19 @@ function Users() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const load = useCallback(async () => {
-    try {
-      setData(v.parse(usersSchema, await requestJson(`/api/users?limit=50&offset=${offset}`)));
-    } catch (cause) {
-      setData(null);
-      setError(cause instanceof Error ? cause.message : "一覧の取得に失敗しました。");
-    }
-  }, [offset]);
   const authorized = session?.strong === true && session.user.role === "admin";
   useEffect(() => {
     if (!authorized) return undefined;
     let active = true;
-    void requestJson(`/api/users?limit=50&offset=${offset}`)
-      .then((body) => {
-        if (active) setData(v.parse(usersSchema, body));
+    void fetchUsers(offset)
+      .then((users) => {
+        if (active) setData(users);
         return undefined;
       })
       .catch((cause: unknown) => {
         if (active) {
           setData(null);
-          setError(cause instanceof Error ? cause.message : "一覧の取得に失敗しました。");
+          setError(errorMessage(cause));
         }
       });
     return () => {
@@ -92,9 +87,9 @@ function Users() {
             ? "ユーザーを削除しました。"
             : "権限を変更しました。既存セッションは失効しました。",
         );
-        await load();
+        setData(await fetchUsers(offset));
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "変更に失敗しました。");
+        setError(errorMessage(cause));
       } finally {
         setPending(false);
       }

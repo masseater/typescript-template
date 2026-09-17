@@ -1,3 +1,4 @@
+import { roles } from "@template/config";
 import * as v from "valibot";
 
 export const sessionSchema = v.object({
@@ -5,7 +6,7 @@ export const sessionSchema = v.object({
     id: v.string(),
     name: v.string(),
     email: v.pipe(v.string(), v.email()),
-    role: v.picklist(["user", "admin"]),
+    role: v.picklist(roles),
     twoFactorEnabled: v.boolean(),
   }),
   strong: v.boolean(),
@@ -14,6 +15,10 @@ export type SessionView = v.InferOutput<typeof sessionSchema>;
 
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
+}
+
+export function requireSecureContext(): void {
+  if (!window.isSecureContext) throw new Error("パスキーには HTTPS または localhost が必要です。");
 }
 
 export function requireSuccess<T>(result: {

@@ -1,21 +1,18 @@
 import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as v from "valibot";
+import { applications } from "@template/config";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const audience = v.parse(v.picklist(["user", "admin", "wiki"]), process.argv[2]);
-const source = path.join(root, "apps", audience, "dist/client");
-const destination = path.join(root, ".local", "source-maps", audience, "client");
-let moved = 0;
 
-async function moveMaps(directory: string) {
+async function moveMaps(source: string, destination: string, directory = source): Promise<number> {
   if ((await realpath(directory)) !== directory)
     throw new Error("Source map directory alias is forbidden");
+  let moved = 0;
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.isSymbolicLink()) throw new Error("Source map symlink is forbidden");
     const file = path.join(directory, entry.name);
-    if (entry.isDirectory()) await moveMaps(file);
+    if (entry.isDirectory()) moved += await moveMaps(source, destination, file);
     else if (entry.isFile() && entry.name.endsWith(".map")) {
       const target = path.join(destination, path.relative(source, file));
       await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
@@ -26,7 +23,13 @@ async function moveMaps(directory: string) {
       moved += 1;
     }
   }
+  return moved;
 }
 
-await moveMaps(source);
-console.log(JSON.stringify({ event: "build.source_maps_private", audience, moved }));
+for (const application of applications) {
+  const moved = await moveMaps(
+    path.join(root, "apps", application, "dist/client"),
+    path.join(root, ".local", "source-maps", application, "client"),
+  );
+  console.log(JSON.stringify({ event: "build.source_maps_private", audience: application, moved }));
+}

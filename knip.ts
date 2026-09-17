@@ -13,12 +13,17 @@ const config: KnipConfig = {
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
     "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/remote-cli.ts!"],
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
       entry: [
-        "src/shared.ts!",
+        "src/settings.ts!",
+        "src/database.ts!",
+        "src/tokens.ts!",
+        "src/budget-monitor.ts!",
+        "src/error-monitor.ts!",
+        "src/health-monitor.ts!",
         "src/user.ts!",
         "src/admin.ts!",
         "src/wiki.ts!",
@@ -26,7 +31,7 @@ const config: KnipConfig = {
         "src/cli.ts!",
         "src/check-artifacts.ts!",
         "src/engine-check.ts!",
-        "src/database.ts!",
+        "src/database-command.ts!",
       ],
       project: ["src/**/*.ts!"],
     },
@@ -46,17 +51,14 @@ const config: KnipConfig = {
     "infra/budget-monitor": {
       entry: ["src/worker.ts!", "src/inspect.ts!"],
       project: ["src/**/*.ts!"],
-      ignoreDependencies: ["cloudflare"],
     },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],
       project: ["src/**/*.ts!"],
-      ignoreDependencies: ["cloudflare"],
     },
     "infra/health-monitor": {
       entry: ["src/worker.ts!"],
       project: ["src/**/*.ts!"],
-      ignoreDependencies: ["cloudflare"],
     },
   },
 };

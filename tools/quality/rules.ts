@@ -5,6 +5,7 @@ import {
   destructuredOrigins,
   origins,
   staticText,
+  keyName,
   isD1Operation,
   destructuresD1Operation,
 } from "./references.ts";
@@ -53,16 +54,33 @@ const isEnvironment = (origin: Origin) => {
   );
 };
 
+const outOfGraphModules = new Set([
+  "node:child_process",
+  "child_process",
+  "node:worker_threads",
+  "worker_threads",
+]);
+const isOutOfGraph = (origin: Origin) => {
+  const [source, ...members] = origin;
+  return (
+    outOfGraphModules.has(source ?? "") ||
+    (source === "import.meta" &&
+      ["url", "dirname", "filename", "resolve"].includes(members[0] ?? "")) ||
+    ((source === "node:process" || source === "process") && members[0] === "cwd") ||
+    (source === "global" && members[0] === "process" && members[1] === "cwd")
+  );
+};
+
 export default definePlugin({
   meta: { name: "project" },
   rules: {
     boundaries: {
       meta: metadata(
-        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/instrumentation.ts と testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。",
+        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。",
       ),
       create(context) {
         const current = filename(context);
-        const rawD1Allowed = /\/libs\/db\/src\/(?:instrumentation|testing)\.ts$/.test(current);
+        const rawD1Allowed = current.endsWith("/libs/db/src/testing.ts");
         const checkD1 = (node: ESTree.Node) => {
           if (!rawD1Allowed && isD1Operation(context, node))
             context.report({ node, messageId: "violation" });
@@ -199,6 +217,82 @@ export default definePlugin({
         };
       },
     },
+    "test-import-graph": {
+      meta: metadata(
+        "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
+      ),
+      create(context) {
+        if (!/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(filename(context))) return {};
+        const check = (node: ESTree.Node) => {
+          if (origins(context, node).some(isOutOfGraph))
+            context.report({ node, messageId: "violation" });
+        };
+        const checkSource = (node: ESTree.Node) => {
+          const source = staticText(context, node) ?? "";
+          if (outOfGraphModules.has(source) || source.includes("?"))
+            context.report({ node, messageId: "violation" });
+        };
+        return {
+          MemberExpression: check,
+          ImportExpression: (node) => checkSource(node.source),
+          ImportDeclaration(node) {
+            checkSource(node.source);
+            for (const specifier of node.specifiers) check(specifier.local);
+          },
+          ExportNamedDeclaration(node) {
+            if (node.source) checkSource(node.source);
+          },
+          ExportAllDeclaration: (node) => checkSource(node.source),
+          VariableDeclarator(node) {
+            if (node.id.type !== "ObjectPattern") return;
+            for (const variable of context.sourceCode.getDeclaredVariables(node)) {
+              for (const identifier of variable.identifiers) check(identifier);
+            }
+          },
+          AssignmentExpression(node) {
+            if (
+              node.left.type === "ObjectPattern" &&
+              destructuredOrigins(context, node.left, origins(context, node.right)).some(
+                isOutOfGraph,
+              )
+            )
+              context.report({ node, messageId: "violation" });
+          },
+          CallExpression(node) {
+            const callee = origins(context, node.callee);
+            if (callee.some((origin) => origin.join(".") === "import.meta.glob")) {
+              const [patterns, options] = node.arguments;
+              for (const pattern of patterns?.type === "ArrayExpression"
+                ? patterns.elements
+                : [patterns]) {
+                if (pattern && pattern.type !== "SpreadElement") checkSource(pattern);
+              }
+              const query =
+                options?.type === "ObjectExpression"
+                  ? options.properties.some(
+                      (property) =>
+                        property.type !== "Property" ||
+                        (!property.computed && property.key.type === "Identifier"
+                          ? property.key.name
+                          : staticText(context, property.key)) === "query",
+                    )
+                  : options !== undefined;
+              if (options && query) context.report({ node: options, messageId: "violation" });
+            }
+            const argument = node.arguments[0];
+            if (
+              argument &&
+              callee.some(
+                (origin) =>
+                  (origin[0] === "require" && origin.length === 1) ||
+                  /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/.test(origin.join(".")),
+              )
+            )
+              checkSource(argument);
+          },
+        };
+      },
+    },
     "worker-fetch": {
       meta: metadata(
         'Cloudflare Workers の fetch は redirect: "error" を実行時に拒否します。Worker で動くコードでは redirect: "manual" を指定し、3xx を失敗として扱ってください。ブラウザ・Node 専用のファイルだけで "error" を使えます。',
@@ -214,10 +308,7 @@ export default definePlugin({
           return {};
         return {
           Property(node) {
-            const key =
-              !node.computed && node.key.type === "Identifier"
-                ? node.key.name
-                : staticText(context, node.key);
+            const key = keyName(context, node);
             if (key === "redirect" && staticText(context, node.value) === "error")
               context.report({ node, messageId: "violation" });
           },

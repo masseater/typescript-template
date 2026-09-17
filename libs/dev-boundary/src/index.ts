@@ -1,10 +1,9 @@
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { applications as apps } from "@template/config";
+import type { Application as App } from "@template/config";
 import type { Plugin } from "vite-plus";
-
-type App = "user" | "admin" | "wiki";
-const apps: readonly App[] = ["user", "admin", "wiki"];
 
 function privatePath(value: string, repository: string, app: App): boolean {
   const normalized = value.replaceAll("\\", "/");

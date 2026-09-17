@@ -1,7 +1,9 @@
 import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import * as v from "valibot";
-import type { Database, Role } from "./index.ts";
+import { roles, strongAuthenticationMethods } from "@template/config";
+import type { Role } from "@template/config";
+import type { Database } from "./index.ts";
 import { auditEvent, session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 import { bootstrapStatement } from "./bootstrap-statement.ts";
@@ -19,7 +21,7 @@ async function requireAdmin(database: Database, sessionId: string) {
     !actor ||
     actor.user.role !== "admin" ||
     !actor.user.emailVerified ||
-    !["password_totp", "passkey_uv"].includes(actor.session.authenticationMethod)
+    !v.is(v.picklist(strongAuthenticationMethods), actor.session.authenticationMethod)
   ) {
     throw new Error("ADMIN_STRONG_SESSION_REQUIRED");
   }
@@ -41,7 +43,7 @@ function liveAdmin(database: Database, sessionId: string) {
           eq(actor.emailVerified, true),
           eq(session.securityVersion, actor.securityVersion),
           gt(session.expiresAt, new Date()),
-          inArray(session.authenticationMethod, ["password_totp", "passkey_uv"]),
+          inArray(session.authenticationMethod, strongAuthenticationMethods),
         ),
       ),
   );
@@ -83,7 +85,7 @@ export async function setUserRole(
   targetId: string,
   role: Role,
 ) {
-  v.parse(v.picklist(["user", "admin"]), role);
+  v.parse(v.picklist(roles), role);
   const actor = await requireAdmin(database, sessionId);
   const [updated] = await database
     .update(user)

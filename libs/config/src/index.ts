@@ -1,10 +1,27 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import * as v from "valibot";
 
-const absoluteUrl = v.pipe(v.string(), v.url());
+export const applications = ["user", "admin", "wiki"] as const;
+export type Application = (typeof applications)[number];
+export const applicationPorts = { user: 3001, admin: 3002, wiki: 3003 } satisfies Record<
+  Application,
+  number
+>;
+export const roles = ["user", "admin"] as const;
+export type Role = (typeof roles)[number];
+export const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
+export type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
+export const authenticationMethods = [
+  "password",
+  ...strongAuthenticationMethods,
+  "recovery",
+] as const;
+export const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
+
 const release = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,64}$/));
 const origin = v.pipe(
-  absoluteUrl,
+  v.string(),
+  v.url(),
   v.check((value) => URL.parse(value)?.origin === value, "An origin without a path is required"),
 );
 const scalarSchema = v.object({
@@ -14,8 +31,6 @@ const scalarSchema = v.object({
   EMAIL_FROM: v.pipe(v.string(), v.email()),
   MAILPIT_URL: v.optional(origin),
 });
-
-const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
 
 export function isLocalDevelopmentOrigin(value: string): boolean {
   const url = new URL(value);

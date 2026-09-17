@@ -1,2 +1,2 @@
-export { useSession, SessionStatus } from "./session";
-export type { SessionView } from "./protocol";
+export { useSession } from "./session";
+export { errorMessage } from "./protocol";

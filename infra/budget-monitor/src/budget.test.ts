@@ -13,8 +13,6 @@ const rawConfig = {
   JPY_PER_USD: "100",
   FIXED_COST_USD: "5",
   RESERVE_USD: "5",
-  ALERT_FROM: "mail@example.com",
-  ALERT_TO: "owner@example.com",
 };
 const record = {
   BillingAccountId: account,

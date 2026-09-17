@@ -1,21 +1,23 @@
 import { expect, test } from "vite-plus/test";
 import { readWikiConfig } from "@template/config";
 import {
-  appPolicy,
   parseSharedConfig,
   parseDeploymentCommand,
-  selectObservabilityQueryPermission,
-  selectReadPermission,
+  selectAccountPermission,
   validateAuthSecret,
+  workerSubdomain,
 } from "./config.ts";
+import { applyPlan } from "./stacks.ts";
 
 const settings = {
   accountId: "a".repeat(32),
   zoneId: "b".repeat(32),
   prefix: "template-test",
-  userOrigin: "https://user.example.com",
-  adminOrigin: "https://admin.example.com",
-  wikiOrigin: "https://wiki.example.com",
+  origins: {
+    user: "https://user.example.com",
+    admin: "https://admin.example.com",
+    wiki: "https://wiki.example.com",
+  },
   mailFrom: "mail@example.com",
   budget: {
     budgetJpy: 5000,
@@ -29,38 +31,27 @@ const settings = {
 test("deployment commands reject ignored arguments instead of selecting an unintended stack", () => {
   expect(parseDeploymentCommand(["preview", "admin"])).toEqual({
     operation: "preview",
-    target: "admin",
+    targets: [{ stack: "admin", dependencies: ["settings", "database"] }],
   });
   expect(() => parseDeploymentCommand(["up", "user", "--stack", "other"])).toThrow(
     "deployment_command_invalid",
   );
-  expect(parseDeploymentCommand(["up", "wiki"])).toEqual({ operation: "up", target: "wiki" });
+  expect(parseDeploymentCommand(["up", "wiki"]).targets.map(({ stack }) => stack)).toEqual([
+    "wiki",
+  ]);
+  expect(parseDeploymentCommand(["up", "all"]).targets).toEqual(applyPlan());
   expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
+  expect(() => parseDeploymentCommand(["up", "shared"])).toThrow("deployment_command_invalid");
 });
 
-test("user and admin are distinct deployments with all alternative public URLs disabled", () => {
-  const config = parseSharedConfig(settings);
-  expect(appPolicy(config, "user")).toEqual({
-    name: "template-test-user",
-    origin: settings.userOrigin,
-    subdomain: { enabled: false, previewsEnabled: false },
-    assets: { runWorkerFirst: true },
-  });
-  expect(appPolicy(config, "admin").name).toBe("template-test-admin");
-  expect(appPolicy(config, "admin").subdomain).toEqual({ enabled: false, previewsEnabled: false });
-  expect(appPolicy(config, "admin").assets.runWorkerFirst).toBe(true);
-  expect(appPolicy(config, "wiki")).toEqual({
-    name: "template-test-wiki",
-    origin: settings.wikiOrigin,
-    subdomain: { enabled: false, previewsEnabled: false },
-    assets: { runWorkerFirst: true },
-  });
+test("Workers disable every alternative public URL", () => {
+  expect(workerSubdomain).toEqual({ enabled: false, previewsEnabled: false });
 });
 
 test("the wiki reads authentication, database and optional AI bindings", () => {
   const config = parseSharedConfig(settings);
   const bindings = {
-    APP_ORIGIN: appPolicy(config, "wiki").origin,
+    APP_ORIGIN: config.origins.wiki,
     AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
     APP_RELEASE: "0123456789abcdef",
     EMAIL_FROM: config.mailFrom,
@@ -69,7 +60,7 @@ test("the wiki reads authentication, database and optional AI bindings", () => {
     EMAIL: { send: () => Promise.resolve() },
   };
   const runtime = readWikiConfig(bindings);
-  expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
+  expect(runtime.APP_ORIGIN).toBe(settings.origins.wiki);
   expect(runtime.APP_RELEASE).toBe("0123456789abcdef");
   expect(runtime.AI).toBeNull();
   const ai = { run: () => Promise.resolve({ data: [] }) };
@@ -84,16 +75,19 @@ test.each([
   "https://admin.example.com?x=1",
   "https://app.team.workers.dev",
   "not-a-url",
-])("rejects unsafe admin origin %s", (adminOrigin) => {
-  expect(() => parseSharedConfig({ ...settings, adminOrigin })).toThrow(
+])("rejects unsafe admin origin %s", (admin) => {
+  expect(() => parseSharedConfig({ ...settings, origins: { ...settings.origins, admin } })).toThrow(
     "cloudflare_settings_invalid",
   );
 });
 
 test("rejects same origins", () => {
-  expect(() => parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })).toThrow(
-    "app_origins_must_differ",
-  );
+  expect(() =>
+    parseSharedConfig({
+      ...settings,
+      origins: { ...settings.origins, admin: settings.origins.user },
+    }),
+  ).toThrow("app_origins_must_differ");
 });
 
 test("refuses a budget exhausted by fixed fees", () => {
@@ -104,11 +98,15 @@ test("refuses a budget exhausted by fixed fees", () => {
 
 test("selects Billing Read only and refuses substituted write scopes", () => {
   const read = { id: "c".repeat(32), name: "Billing Read", scopes: ["com.cloudflare.api.account"] };
-  expect(selectReadPermission([read, { ...read, name: "Billing Edit" }])).toBe(read.id);
-  expect(() => selectReadPermission([{ ...read, name: "Billing Edit" }])).toThrow(
-    "billing_read_permission_unavailable",
+  expect(selectAccountPermission([read, { ...read, name: "Billing Edit" }], "Billing Read")).toBe(
+    read.id,
   );
-  expect(() => selectReadPermission([read, read])).toThrow("billing_read_permission_unavailable");
+  expect(() =>
+    selectAccountPermission([{ ...read, name: "Billing Edit" }], "Billing Read"),
+  ).toThrow("account_permission_unavailable");
+  expect(() => selectAccountPermission([read, read], "Billing Read")).toThrow(
+    "account_permission_unavailable",
+  );
 });
 
 test("secret validation errors do not include their inputs", () => {
@@ -123,9 +121,15 @@ test("the error monitor token may only run Workers Observability queries", () =>
     scopes: ["com.cloudflare.api.account"],
   };
   expect(
-    selectObservabilityQueryPermission([write, { ...write, name: "Workers Scripts Write" }]),
+    selectAccountPermission(
+      [write, { ...write, name: "Workers Scripts Write" }],
+      "Workers Observability Write",
+    ),
   ).toBe(write.id);
   expect(() =>
-    selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
-  ).toThrow("observability_query_permission_unavailable");
+    selectAccountPermission(
+      [{ ...write, name: "Workers Scripts Write" }],
+      "Workers Observability Write",
+    ),
+  ).toThrow("account_permission_unavailable");
 });

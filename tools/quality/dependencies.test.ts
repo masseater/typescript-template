@@ -1,10 +1,9 @@
-import { fileURLToPath } from "node:url";
 import { expect, test } from "vite-plus/test";
 import {
   applicationDependencyViolations,
-  readWorkspaceManifests,
   retiredDependencyViolations,
   retiredUiPackages,
+  workspaceManifests,
 } from "./dependencies.ts";
 
 test.for(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])(
@@ -30,14 +29,11 @@ test.for(["dependencies", "devDependencies", "peerDependencies", "optionalDepend
   },
 );
 
-test("repository workspaces share code through libs instead of application packages", async () => {
-  const workspaces = await readWorkspaceManifests(
-    fileURLToPath(new URL("../../", import.meta.url)),
-  );
-  expect(workspaces.filter(({ area }) => area === "apps").map(({ file }) => file)).toEqual(
+test("repository workspaces share code through libs instead of application packages", () => {
+  expect(workspaceManifests.filter(({ area }) => area === "apps").map(({ file }) => file)).toEqual(
     expect.arrayContaining(["apps/user/package.json", "apps/admin/package.json"]),
   );
-  expect(applicationDependencyViolations(workspaces)).toEqual([]);
+  expect(applicationDependencyViolations(workspaceManifests)).toEqual([]);
 });
 
 test.for(Object.keys(retiredUiPackages))("rejects a workspace that declares %s", (dependency) => {
@@ -52,9 +48,6 @@ test.for(Object.keys(retiredUiPackages))("rejects a workspace that declares %s",
   expect(violations[0]).toContain(dependency);
 });
 
-test("repository workspaces no longer declare the replaced UI packages", async () => {
-  const workspaces = await readWorkspaceManifests(
-    fileURLToPath(new URL("../../", import.meta.url)),
-  );
-  expect(retiredDependencyViolations(workspaces)).toEqual([]);
+test("repository workspaces no longer declare the replaced UI packages", () => {
+  expect(retiredDependencyViolations(workspaceManifests)).toEqual([]);
 });

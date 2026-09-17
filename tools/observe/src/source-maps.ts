@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { SourceMap } from "node:module";
 import path from "node:path";
+import type { Application } from "@template/config";
 import * as v from "valibot";
 
 const payload = v.looseObject({
@@ -28,7 +29,7 @@ async function findMap(directory: string, filename: string): Promise<string | un
 
 export async function symbolicate(
   repositoryRoot: string,
-  app: "user" | "admin" | "wiki",
+  app: Application,
   release: string,
   locations: readonly string[],
 ) {

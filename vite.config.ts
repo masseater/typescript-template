@@ -1,6 +1,16 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+  plugins: [
+    {
+      name: "text-modules",
+      enforce: "pre",
+      transform: (code, id) =>
+        /\.ya?ml$|\/\.vite-hooks\/[^/]+$/.test(id)
+          ? `export default ${JSON.stringify(code)};`
+          : undefined,
+    },
+  ],
   lint: {
     options: { typeAware: true, typeCheck: true },
     plugins: ["typescript", "react", "react-perf", "jsx-a11y", "import", "promise", "vitest"],
@@ -47,6 +57,7 @@ export default defineConfig({
       "project/no-internal-mocks": "error",
       "project/environment-boundary": "error",
       "project/worker-fetch": "error",
+      "project/test-import-graph": "error",
       "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
       "shadcn/no-raw-colors": "error",
       "shadcn/no-arbitrary-values": "error",
