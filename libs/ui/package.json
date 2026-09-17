@@ -14,13 +14,14 @@
   "scripts": {},
   "dependencies": {
     "@better-auth/passkey": "1.7.5",
+    "@template/runtime": "workspace:*",
     "better-auth": "1.7.5",
+    "effect": "4.0.0-rc.112",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-intl": "10.2.2",
     "smarthr-ui": "99.6.1",
-    "styled-components": "5.3.11",
-    "valibot": "1.5.0"
+    "styled-components": "5.3.11"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

@@ -1,4 +1,6 @@
-export type Embedder = (texts: readonly string[]) => Promise<number[][]>;
+import { Embedder } from "@template/runtime/wiki";
+import { Effect } from "effect";
+
 export type SemanticDocument = { id: string; url: string; title: string; text: string };
 
 function normalize(vector: readonly number[]) {
@@ -6,29 +8,34 @@ function normalize(vector: readonly number[]) {
   return length > 0 ? vector.map((value) => value / length) : [...vector];
 }
 
-export function createSemanticIndex(loadDocuments: () => Promise<SemanticDocument[]>) {
-  let ready: Promise<{ documents: SemanticDocument[]; vectors: number[][] }> | undefined;
-  const load = async (embed: Embedder) => {
-    const documents = await loadDocuments();
-    const vectors = await embed(documents.map((document) => `${document.title}\n${document.text}`));
-    return { documents, vectors: vectors.map(normalize) };
-  };
-  return async (embed: Embedder, query: string) => {
-    ready ??= load(embed).catch((error: unknown) => {
-      ready = undefined;
-      throw error;
+export function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]) {
+  let index:
+    | { readonly documents: readonly SemanticDocument[]; readonly vectors: number[][] }
+    | undefined;
+  const load = Effect.gen(function* () {
+    if (index !== undefined) return index;
+    const { embed } = yield* Embedder;
+    const documents = loadDocuments();
+    const vectors = yield* embed(
+      documents.map((document) => `${document.title}\n${document.text}`),
+    );
+    index = { documents, vectors: vectors.map(normalize) };
+    return index;
+  });
+  return Effect.fn("semanticSearch")(function* (query: string) {
+    const { embed } = yield* Embedder;
+    const [{ documents, vectors }, [queryVector]] = yield* Effect.all([load, embed([query])], {
+      concurrency: "unbounded",
     });
-    const [{ documents, vectors }, [queryVector]] = await Promise.all([ready, embed([query])]);
-    if (!queryVector) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
-    const target = normalize(queryVector);
-    return documents.map((document, index) => ({
+    const target = normalize(queryVector ?? []);
+    return documents.map((document, position) => ({
       document,
-      score: (vectors[index] ?? []).reduce(
+      score: (vectors[position] ?? []).reduce(
         (total, value, column) => total + value * (target[column] ?? 0),
         0,
       ),
     }));
-  };
+  });
 }
 
 export function rankPages(

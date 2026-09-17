@@ -5,18 +5,25 @@
   "exports": {
     ".": "./src/index.ts",
     "./http": "./src/http.ts",
+    "./account": "./src/account.ts",
     "./client": "./src/client.ts",
-    "./wiki": "./src/wiki.ts"
+    "./contracts": "./src/contracts.ts",
+    "./wiki": "./src/wiki.ts",
+    "./worker": "./src/worker.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@cloudflare/workers-types": "5.20260916.1",
     "@template/auth": "workspace:*",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
     "@template/observability": "workspace:*",
-    "valibot": "1.5.0"
+    "effect": "4.0.0-rc.112",
+    "elysia": "1.4.30"
   },
   "devDependencies": {
-    "typescript": "7.0.2"
+    "@effect/vitest": "4.0.0-rc.112",
+    "typescript": "7.0.2",
+    "vite-plus": "catalog:"
   }
 }

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
+import { Effect } from "effect";
 import {
   backendUrl,
   bucketPolicyResources,
@@ -8,7 +9,9 @@ import {
   selectObjectWritePermission,
 } from "./config.ts";
 
-const config = parseBootstrapConfig(new pulumi.Config().requireObject<unknown>("settings"));
+const config = Effect.runSync(
+  parseBootstrapConfig(new pulumi.Config().requireObject<unknown>("settings")),
+);
 const bucket = new cloudflare.R2Bucket(
   "pulumi-state",
   {
@@ -33,15 +36,21 @@ const token = new cloudflare.AccountToken(
     policies: [
       {
         effect: "allow",
-        permissionGroups: [{ id: groups.results.apply(selectObjectWritePermission) }],
-        resources: bucketPolicyResources(config),
+        permissionGroups: [
+          {
+            id: groups.results.apply((results) =>
+              Effect.runSync(selectObjectWritePermission(results)),
+            ),
+          },
+        ],
+        resources: Effect.runSync(bucketPolicyResources(config)),
       },
     ],
   },
   { protect: true, dependsOn: [bucket, privateDomain], additionalSecretOutputs: ["value"] },
 );
 
-export const stateBackend = backendUrl(config);
+export const stateBackend = Effect.runSync(backendUrl(config));
 export const stateCredentials = pulumi.secret(
   pulumi.all([token.id, token.value]).apply(([accessKeyId, value]) => ({
     accountId: config.accountId,

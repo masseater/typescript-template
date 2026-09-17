@@ -19,8 +19,10 @@ export function parentContext(value: string | null) {
   return { traceId: match[1], parentSpanId: match[2] };
 }
 
-export const httpMethod = (method: string): string =>
-  ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"].includes(method) ? method : "_OTHER";
+const httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] as const;
+
+export const httpMethod = (method: string): (typeof httpMethods)[number] | "_OTHER" =>
+  httpMethods.find((candidate) => candidate === method) ?? "_OTHER";
 
 export function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
   if (Object.hasOwn(routes, pathname)) return routes[pathname] ?? "unmatched";

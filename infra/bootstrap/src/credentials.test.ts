@@ -1,7 +1,8 @@
 import { chmod, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { expect, test } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
 import { prepareStateDirectory, readCredentials, writeCredentials } from "./credentials.ts";
 
 const credentials = {
@@ -11,38 +12,43 @@ const credentials = {
   secretAccessKey: "c".repeat(64),
 };
 
-test("stores credentials atomically with owner-only permissions", async () => {
-  const root = await realpath(await mkdtemp(path.join(tmpdir(), "state-credentials-")));
-  try {
-    const filename = path.join(root, "state", "r2.json");
-    expect(await readCredentials(filename)).toBeUndefined();
-    await writeCredentials(filename, credentials);
-    expect(await readCredentials(filename)).toEqual(credentials);
-    expect((await stat(filename)).mode & 0o777).toBe(0o600);
-    expect((await stat(path.dirname(filename))).mode & 0o777).toBe(0o700);
-    await chmod(filename, 0o644);
-    await expect(readCredentials(filename)).rejects.toThrow("state_credentials_unreadable");
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+const temporaryRoot = Effect.acquireRelease(
+  Effect.promise(async () => realpath(await mkdtemp(path.join(tmpdir(), "state-credentials-")))),
+  (root) => Effect.promise(() => rm(root, { recursive: true, force: true })),
+);
 
-test("refuses credential symlink reads and never overwrites their target", async () => {
-  const root = await realpath(await mkdtemp(path.join(tmpdir(), "state-credentials-")));
-  try {
+it.effect("stores credentials atomically with owner-only permissions", () =>
+  Effect.gen(function* () {
+    const root = yield* temporaryRoot;
+    const filename = path.join(root, "state", "r2.json");
+    assert.isUndefined(yield* readCredentials(filename));
+    yield* writeCredentials(filename, credentials);
+    assert.deepStrictEqual(yield* readCredentials(filename), credentials);
+    assert.strictEqual((yield* Effect.promise(() => stat(filename))).mode & 0o777, 0o600);
+    assert.strictEqual(
+      (yield* Effect.promise(() => stat(path.dirname(filename)))).mode & 0o777,
+      0o700,
+    );
+    yield* Effect.promise(() => chmod(filename, 0o644));
+    const failure = yield* readCredentials(filename).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "state_credentials_unreadable");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses credential symlink reads and never overwrites their target", () =>
+  Effect.gen(function* () {
+    const root = yield* temporaryRoot;
     const outside = path.join(root, "protected");
     const filename = path.join(root, "r2.json");
-    await writeFile(outside, "protected content", { mode: 0o600 });
-    await symlink(outside, filename);
-    await expect(readCredentials(filename)).rejects.toThrow("state_credentials_unreadable");
-    await writeCredentials(filename, credentials);
-    expect(await readFile(outside, "utf8")).toBe("protected content");
-    expect(await readCredentials(filename)).toEqual(credentials);
-    await symlink(root, path.join(root, "alias"));
-    await expect(prepareStateDirectory(path.join(root, "alias"))).rejects.toThrow(
-      "state_directory_symlink_forbidden",
-    );
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+    yield* Effect.promise(() => writeFile(outside, "protected content", { mode: 0o600 }));
+    yield* Effect.promise(() => symlink(outside, filename));
+    const unreadable = yield* readCredentials(filename).pipe(Effect.flip);
+    assert.strictEqual(unreadable.code, "state_credentials_unreadable");
+    yield* writeCredentials(filename, credentials);
+    assert.strictEqual(yield* Effect.promise(() => readFile(outside, "utf8")), "protected content");
+    assert.deepStrictEqual(yield* readCredentials(filename), credentials);
+    yield* Effect.promise(() => symlink(root, path.join(root, "alias")));
+    const forbidden = yield* prepareStateDirectory(path.join(root, "alias")).pipe(Effect.flip);
+    assert.strictEqual(forbidden.code, "state_directory_symlink_forbidden");
+  }).pipe(Effect.scoped),
+);

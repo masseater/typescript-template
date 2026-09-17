@@ -13,6 +13,7 @@
     "@tanstack/react-start": "1.168.54",
     "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
+    "effect": "4.0.0-rc.112",
     "fumadocs-core": "16.15.11",
     "fumadocs-mdx": "15.4.1",
     "fumadocs-ui": "16.15.11",

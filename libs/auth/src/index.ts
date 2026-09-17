@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { passkey } from "@better-auth/passkey";
-import { schema } from "@template/db";
-import type { Audience, Database } from "@template/db";
+import { Database, schema } from "@template/db";
+import type { Audience, DrizzleDatabase } from "@template/db";
 import {
   findPasskeyUser,
   findUser,
@@ -14,14 +14,16 @@ import {
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { twoFactor } from "better-auth/plugins";
+import { Context, Effect, Layer, Schema } from "effect";
 
 export interface AuthOptions {
-  database: Database;
-  baseURL: string;
-  secret: string;
-  audience: Audience;
-  sendVerificationEmail: (message: { email: string; url: string }) => Promise<void>;
-  onError?: (error: unknown) => void;
+  readonly baseURL: string;
+  readonly secret: string;
+  readonly audience: Audience;
+  readonly sendVerificationEmail: (message: {
+    readonly email: string;
+    readonly url: string;
+  }) => Effect.Effect<void, unknown>;
 }
 
 const strongMethods = new Set(["password_totp", "passkey_uv"]);
@@ -41,10 +43,13 @@ function deny(message: string): never {
   throw new APIError("FORBIDDEN", { message });
 }
 
-export function createAuth(options: AuthOptions) {
-  const { database, audience } = options;
+function createAuth(
+  options: AuthOptions,
+  database: DrizzleDatabase,
+  run: <A, E>(effect: Effect.Effect<A, E, Database>) => Promise<A>,
+) {
+  const { audience } = options;
   const origin = new URL(options.baseURL).origin;
-  if (options.secret.length < 32) throw new Error("AUTH_SECRET_TOO_SHORT");
   return betterAuth({
     appName: "TypeScript Template",
     baseURL: options.baseURL,
@@ -52,12 +57,13 @@ export function createAuth(options: AuthOptions) {
     logger: {
       level: "warn",
       log: (level, _message, ...details: unknown[]) => {
-        if (level === "error" && options.onError)
-          options.onError(
-            details.find((detail) => detail instanceof Error) ??
-              new Error("Authentication operation failed"),
-          );
-        else console.warn(JSON.stringify({ event: "authentication.diagnostic", level }));
+        void run(
+          level === "error"
+            ? Effect.logError("authentication.failed", {
+                cause: details.find((detail) => detail instanceof Error) ?? null,
+              })
+            : Effect.logWarning("authentication.diagnostic", { level }),
+        );
       },
     },
     trustedOrigins: [origin],
@@ -75,7 +81,7 @@ export function createAuth(options: AuthOptions) {
       sendVerificationEmail: async ({ user, token }) => {
         const link = new URL("/verify-email", origin);
         link.hash = new URLSearchParams({ token }).toString();
-        await options.sendVerificationEmail({ email: user.email, url: link.href });
+        await run(options.sendVerificationEmail({ email: user.email, url: link.href }));
       },
     },
     user: {
@@ -131,7 +137,7 @@ export function createAuth(options: AuthOptions) {
         authentication: {
           afterVerification: async ({ verification, clientData }) => {
             if (!verification.authenticationInfo.userVerified) deny("PASSKEY_UV_REQUIRED");
-            const user = await findPasskeyUser(database, clientData.id, audience);
+            const user = await run(findPasskeyUser(clientData.id, audience));
             if (!user?.emailVerified) deny("VERIFIED_EMAIL_REQUIRED");
             if (audience === "admin" && user.role !== "admin") deny("ADMIN_REQUIRED");
           },
@@ -148,7 +154,7 @@ export function createAuth(options: AuthOptions) {
       session: {
         create: {
           before: async (candidate, ctx) => {
-            const user = await findUser(database, candidate.userId);
+            const user = await run(findUser(candidate.userId));
             if (!user?.emailVerified) deny("VERIFIED_EMAIL_REQUIRED");
             if (audience === "admin" && user.role !== "admin") deny("ADMIN_REQUIRED");
             const authenticationMethod =
@@ -193,12 +199,12 @@ export function createAuth(options: AuthOptions) {
         if (challengeCookie) {
           const cookie = ctx.context.createAuthCookie(challengeCookie);
           const identifier = await ctx.getSignedCookie(cookie.name, ctx.context.secret);
-          if (!identifier || !(await hasVerificationAudience(database, identifier, audience))) {
+          if (!identifier || !(await run(hasVerificationAudience(identifier, audience)))) {
             deny("CHALLENGE_AUDIENCE_INVALID");
           }
         }
         if (!session) return;
-        const current = await getSessionSecurity(database, session.session.id, audience);
+        const current = await run(getSessionSecurity(session.session.id, audience));
         if (!current || !current.user.emailVerified) deny("SESSION_INVALID");
         if (
           current.user.role === "admin" &&
@@ -223,7 +229,7 @@ export function createAuth(options: AuthOptions) {
             "/passkey/generate-register-options",
             "/passkey/verify-registration",
           ].includes(ctx.path) &&
-          (await hasEnrolledFactor(database, current.user.id, audience))
+          (await run(hasEnrolledFactor(current.user.id, audience)))
         ) {
           deny("EXISTING_FACTOR_REQUIRED");
         }
@@ -240,12 +246,12 @@ export function createAuth(options: AuthOptions) {
           const session =
             ctx.context.newSession ?? (await getSessionFromCtx(ctx, { disableCookieCache: true }));
           if (session) {
-            const current = await getSessionSecurity(database, session.session.id, audience);
+            const current = await run(getSessionSecurity(session.session.id, audience));
             if (
               current &&
               ["password", "password_totp"].includes(current.session.authenticationMethod)
             ) {
-              await markSessionStrong(database, current.session.id, audience, "password_totp");
+              await run(markSessionStrong(current.session.id, audience, "password_totp"));
             }
           }
         }
@@ -254,33 +260,106 @@ export function createAuth(options: AuthOptions) {
         ) {
           const session =
             ctx.context.newSession ?? (await getSessionFromCtx(ctx, { disableCookieCache: true }));
-          if (session) await revokeUserSessions(database, session.user.id);
+          if (session) await run(revokeUserSessions(session.user.id));
         }
       }),
     },
   });
 }
 
-export type Auth = ReturnType<typeof createAuth>;
+export type BetterAuthInstance = ReturnType<typeof createAuth>;
 
-export async function verifySession(options: {
-  auth: Auth;
-  database: Database;
-  headers: Headers;
-  audience: Audience;
-  allowEnrollment?: boolean;
-}) {
-  const session = await options.auth.api.getSession({
-    headers: options.headers,
-    query: { disableCookieCache: true },
-  });
-  if (!session) throw new APIError("UNAUTHORIZED", { message: "SESSION_REQUIRED" });
-  const current = await getSessionSecurity(options.database, session.session.id, options.audience);
-  if (!current || !current.user.emailVerified) deny("SESSION_INVALID");
+export class AuthFailure extends Schema.TaggedError<AuthFailure>()("AuthFailure", {
+  cause: Schema.Defect(),
+}) {}
+
+export class SessionRequired extends Schema.TaggedError<SessionRequired>()("SessionRequired", {}) {}
+
+export class SessionInvalid extends Schema.TaggedError<SessionInvalid>()("SessionInvalid", {}) {}
+
+export class AdminRequired extends Schema.TaggedError<AdminRequired>()("AdminRequired", {}) {}
+
+export class AdminMfaRequired extends Schema.TaggedError<AdminMfaRequired>()(
+  "AdminMfaRequired",
+  {},
+) {}
+
+export class Auth extends Context.Service<
+  Auth,
+  { readonly audience: Audience; readonly instance: BetterAuthInstance }
+>()("@template/auth/Auth") {
+  static layer(options: AuthOptions) {
+    return Layer.effect(
+      Auth,
+      Effect.gen(function* () {
+        const database = yield* Database;
+        const context = yield* Effect.context<Database>();
+        const run = <A, E>(effect: Effect.Effect<A, E, Database>) =>
+          Effect.runPromiseWith(context)(effect);
+        return Auth.of({
+          audience: options.audience,
+          instance: createAuth(options, database, run),
+        });
+      }),
+    );
+  }
+}
+
+const authPromise = <A>(run: (instance: BetterAuthInstance) => Promise<A>) =>
+  Auth.use((auth) =>
+    Effect.tryPromise({
+      try: () => run(auth.instance),
+      catch: (cause) => new AuthFailure({ cause }),
+    }),
+  );
+
+const classifyDenial = (
+  failure: AuthFailure,
+): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired => {
+  const denial = failure.cause instanceof APIError ? failure.cause.body?.message : undefined;
+  if (denial === "SESSION_INVALID") return new SessionInvalid();
+  if (denial === "ADMIN_REQUIRED") return new AdminRequired();
+  if (denial === "ADMIN_MFA_REQUIRED") return new AdminMfaRequired();
+  return failure;
+};
+
+export const handleAuthRequest = (request: Request) =>
+  authPromise((instance) => instance.handler(request));
+
+export class EmailVerificationFailed extends Schema.TaggedError<EmailVerificationFailed>()(
+  "EmailVerificationFailed",
+  { rateLimited: Schema.Boolean },
+) {}
+
+export const verifyEmailToken = Effect.fn("verifyEmailToken")(function* (
+  token: string,
+  headers: Headers,
+) {
+  const { instance } = yield* Auth;
+  const verification = new URL("/api/auth/verify-email", instance.options.baseURL);
+  verification.searchParams.set("token", token);
+  const response = yield* handleAuthRequest(new Request(verification, { method: "GET", headers }));
+  yield* Effect.promise(async () => response.body?.cancel());
+  if (!response.ok)
+    return yield* new EmailVerificationFailed({ rateLimited: response.status === 429 });
+  return { verified: true } as const;
+});
+
+export const verifySession = Effect.fn("verifySession")(function* (
+  headers: Headers,
+  allowEnrollment = false,
+) {
+  const { audience } = yield* Auth;
+  const session = yield* authPromise((instance) =>
+    instance.api.getSession({ headers, query: { disableCookieCache: true } }),
+  ).pipe(Effect.mapError(classifyDenial));
+  if (!session) return yield* new SessionRequired();
+  const current = yield* getSessionSecurity(session.session.id, audience);
+  if (!current || !current.user.emailVerified) return yield* new SessionInvalid();
   const strong = strongMethods.has(current.session.authenticationMethod);
-  if (options.audience === "admin") {
-    if (current.user.role !== "admin") deny("ADMIN_REQUIRED");
-    if (!options.allowEnrollment && !strong) deny("ADMIN_MFA_REQUIRED");
+  if (audience === "admin") {
+    if (current.user.role !== "admin") return yield* new AdminRequired();
+    if (!allowEnrollment && !strong) return yield* new AdminMfaRequired();
   }
   return { user: current.user, session: current.session, strong };
-}
+});

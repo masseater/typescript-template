@@ -4,7 +4,9 @@ import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
 import { errorWorkerArtifact } from "@template/error-monitor/artifact";
+import { Effect } from "effect";
 import { workerObservability } from "./observability.ts";
+import { fail, io } from "./artifacts.ts";
 import {
   parseSharedConfig,
   selectObservabilityQueryPermission,
@@ -12,11 +14,25 @@ import {
   validateAuthSecret,
 } from "./config.ts";
 
+const readWorkerArtifact = (
+  filename: string,
+  empty: "budget_worker_artifact_empty" | "error_worker_artifact_empty",
+) =>
+  Effect.runPromise(
+    io(() => readFile(filename)).pipe(
+      Effect.flatMap((content) => (content.length === 0 ? fail(empty) : Effect.succeed(content))),
+    ),
+  );
+
 const config = new pulumi.Config();
-const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
-export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-const budgetContent = await readFile(budgetWorkerArtifact);
-if (budgetContent.length === 0) throw new Error("budget_worker_artifact_empty");
+const settings = Effect.runSync(parseSharedConfig(config.requireObject<unknown>("settings")));
+export const authSecret = config
+  .requireSecret("authSecret")
+  .apply((value) => Effect.runSync(validateAuthSecret(value)));
+const budgetContent = await readWorkerArtifact(
+  budgetWorkerArtifact,
+  "budget_worker_artifact_empty",
+);
 const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");
 const database = new cloudflare.D1Database(
   "shared-db",
@@ -37,7 +53,11 @@ const billingToken = new cloudflare.AccountToken(
     policies: [
       {
         effect: "allow",
-        permissionGroups: [{ id: permissions.results.apply(selectReadPermission) }],
+        permissionGroups: [
+          {
+            id: permissions.results.apply((groups) => Effect.runSync(selectReadPermission(groups))),
+          },
+        ],
         resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
       },
     ],
@@ -71,7 +91,7 @@ const budgetVersion = new cloudflare.WorkerVersion("budget-version", {
       type: "send_email",
       name: "EMAIL",
       allowedSenderAddresses: [settings.mailFrom],
-      allowedDestinationAddresses: settings.budget.recipients,
+      allowedDestinationAddresses: [...settings.budget.recipients],
     },
     { type: "secret_text", name: "BILLING_READ_TOKEN", text: pulumi.secret(billingToken.value) },
     ...Object.entries({
@@ -101,8 +121,7 @@ const schedule = new cloudflare.WorkersCronTrigger(
   { dependsOn: [budgetDeployment] },
 );
 
-const errorContent = await readFile(errorWorkerArtifact);
-if (errorContent.length === 0) throw new Error("error_worker_artifact_empty");
+const errorContent = await readWorkerArtifact(errorWorkerArtifact, "error_worker_artifact_empty");
 const observabilityToken = new cloudflare.AccountToken(
   "error-query-token",
   {
@@ -111,7 +130,13 @@ const observabilityToken = new cloudflare.AccountToken(
     policies: [
       {
         effect: "allow",
-        permissionGroups: [{ id: permissions.results.apply(selectObservabilityQueryPermission) }],
+        permissionGroups: [
+          {
+            id: permissions.results.apply((groups) =>
+              Effect.runSync(selectObservabilityQueryPermission(groups)),
+            ),
+          },
+        ],
         resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
       },
     ],
@@ -145,7 +170,7 @@ const errorVersion = new cloudflare.WorkerVersion("error-version", {
       type: "send_email",
       name: "EMAIL",
       allowedSenderAddresses: [settings.mailFrom],
-      allowedDestinationAddresses: settings.budget.recipients,
+      allowedDestinationAddresses: [...settings.budget.recipients],
     },
     {
       type: "secret_text",

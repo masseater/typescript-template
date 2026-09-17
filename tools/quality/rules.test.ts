@@ -31,7 +31,7 @@ const test = baseTest.extend<{ directory: string }>({
       lint: {
         jsPlugins: [${JSON.stringify(path.join(root, "tools/quality/rules.ts"))}],
         categories: { correctness: "error" },
-        rules: { "project/boundaries": "error", "project/no-internal-mocks": "error", "project/environment-boundary": "error", "project/worker-fetch": "error" }
+        rules: { "project/boundaries": "error", "project/no-internal-mocks": "error", "project/environment-boundary": "error", "project/worker-fetch": "error", "project/effect-stack": "error", "project/effect-failures": "error" }
       },
       test: { include: ["*.test.ts"] }
     };`,
@@ -68,6 +68,31 @@ test.for([
     "infra/error-monitor/src/telemetry.ts",
     'export const send = () => fetch("https://api", { redirect: "error" });',
     "project(worker-fetch)",
+  ],
+  [
+    "libs/shared/src/probe.ts",
+    'import * as v from "valibot"; export const schema = v.string();',
+    "project(effect-stack)",
+  ],
+  [
+    "apps/user/src/api.ts",
+    'import { Elysia } from "elysia"; export const api = new Elysia();',
+    "project(effect-stack)",
+  ],
+  [
+    "apps/user/src/routes/api.probe.ts",
+    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    "project(effect-stack)",
+  ],
+  [
+    "libs/shared/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => { if (Effect) throw new Error("x"); };',
+    "project(effect-failures)",
+  ],
+  [
+    "infra/budget-monitor/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => { try { return Effect; } catch { return undefined; } };',
+    "project(effect-failures)",
   ],
 ] as const)("rejects forbidden code in %s", async ([name, code, diagnostic], { directory }) => {
   const target = path.join(directory, name);
@@ -535,6 +560,28 @@ test.for(["instrumentation", "testing"])(
     expect(result.status, result.stdout + result.stderr).toBe(0);
   },
 );
+
+test.for([
+  [
+    "libs/runtime/src/http.ts",
+    'import { Elysia } from "elysia"; export const createApi = () => new Elysia();',
+  ],
+  [
+    "libs/auth/src/index.ts",
+    'import { Effect } from "effect"; import { APIError } from "better-auth/api"; export const deny = () => { if (Effect) throw new APIError("FORBIDDEN"); };',
+  ],
+  [
+    "libs/runtime/src/client.ts",
+    'import { Schema } from "effect"; export const read = () => { if (Schema) throw new Error("browser boundary"); };',
+  ],
+  ["tools/dev/src/probe.ts", 'export const run = () => { throw new Error("no effect here"); };'],
+] as const)("allows the Effect stack boundary in %s", async ([name, code], { directory }) => {
+  await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
+  await writeFile(path.join(directory, name), code);
+  const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
+  expect(result.error).toBeUndefined();
+  expect(result.status, result.stdout + result.stderr).toBe(0);
+});
 
 test("pre-commit hook rejects an actual lint violation", async ({ directory }) => {
   await writeFile(path.join(directory, "invalid.ts"), "debugger;\n");

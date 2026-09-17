@@ -1,29 +1,51 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
 import { isLocalDevelopmentOrigin } from "@template/config";
-import * as v from "valibot";
+import { Effect, Option, Result, Schema } from "effect";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
-const localSchema = v.object({
-  APP_ORIGIN: v.pipe(v.string(), v.url()),
-  LOCAL_ADMIN_USER: v.pipe(v.string(), v.minLength(1)),
-  LOCAL_ADMIN_PASSWORD: v.pipe(v.string(), v.minLength(24)),
+class AccessConfigurationInvalid extends Schema.TaggedError<AccessConfigurationInvalid>()(
+  "AccessConfigurationInvalid",
+  { field: Schema.String },
+) {}
+
+const AbsoluteUrl = Schema.String.check(Schema.makeFilter((value: string) => URL.canParse(value)));
+
+const Origin = Schema.Struct({ APP_ORIGIN: AbsoluteUrl });
+
+const LocalAccess = Schema.Struct({
+  APP_ORIGIN: AbsoluteUrl,
+  LOCAL_ADMIN_USER: Schema.String.check(Schema.isMinLength(1)),
+  LOCAL_ADMIN_PASSWORD: Schema.String.check(Schema.isMinLength(24)),
 });
-const accessSchema = v.object({
-  APP_ORIGIN: v.pipe(v.string(), v.url()),
-  ACCESS_ISSUER: v.pipe(
-    v.string(),
-    v.url(),
-    v.check((value) => /^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(value)),
+
+const CloudflareAccess = Schema.Struct({
+  APP_ORIGIN: AbsoluteUrl,
+  ACCESS_ISSUER: AbsoluteUrl.check(
+    Schema.isPattern(/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/),
   ),
-  ACCESS_AUD: v.pipe(v.string(), v.minLength(1)),
+  ACCESS_AUD: Schema.String.check(Schema.isMinLength(1)),
 });
-const keys = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
-async function equalCredentials(left: string, right: string): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const [a, b] = await Promise.all(
-    [left, right].map((value) => crypto.subtle.digest("SHA-256", encoder.encode(value))),
+const decode = <S extends Schema.Top & { readonly DecodingServices: never }>(
+  schema: S,
+  input: unknown,
+) =>
+  Schema.decodeUnknownEffect(schema)(input).pipe(
+    Effect.mapError(
+      (error) =>
+        new AccessConfigurationInvalid({
+          field: /\["([A-Z_]+)"\]/.exec(error.message)?.[1] ?? "unknown",
+        }),
+    ),
   );
-  if (!a || !b) return false;
+
+const keys = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+const localGateCookie = "local-admin-gate";
+
+const digest = (value: string) =>
+  Effect.promise(() => crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+
+const equalCredentials = Effect.fn(function* (left: string, right: string) {
+  const [a, b] = yield* Effect.all([digest(left), digest(right)]);
   const expected = new Uint8Array(b);
   return (
     new Uint8Array(a).reduce(
@@ -31,105 +53,93 @@ async function equalCredentials(left: string, right: string): Promise<boolean> {
       0,
     ) === 0
   );
-}
+});
 
-const localGateCookie = "local-admin-gate";
+const localGateToken = (user: string, password: string) =>
+  Effect.promise(async () => {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(password),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const signature = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(`${localGateCookie}:${user}`),
+    );
+    return btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replaceAll("+", "-")
+      .replaceAll("/", "_")
+      .replace(/=+$/, "");
+  });
 
-async function localGateToken(user: string, password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(`${localGateCookie}:${user}`),
-  );
-  return btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replace(/=+$/, "");
-}
-
-export async function localAccessCookie(bindings: unknown): Promise<string | null> {
-  const { APP_ORIGIN } = v.parse(v.object({ APP_ORIGIN: v.pipe(v.string(), v.url()) }), bindings);
+export const localAccessCookie = Effect.fn("localAccessCookie")(function* (env: unknown) {
+  const { APP_ORIGIN } = yield* decode(Origin, env);
   if (!isLocalDevelopmentOrigin(APP_ORIGIN)) return null;
-  const config = v.parse(localSchema, bindings);
-  const token = await localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD);
+  const config = yield* decode(LocalAccess, env);
+  const token = yield* localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD);
   return `${localGateCookie}=${token}; Path=/; HttpOnly; SameSite=Strict`;
-}
+});
 
-export async function enforceAdminAccess(
-  request: Request,
-  bindings: unknown,
-): Promise<Response | null> {
-  const { APP_ORIGIN } = v.parse(v.object({ APP_ORIGIN: v.pipe(v.string(), v.url()) }), bindings);
-  const local = isLocalDevelopmentOrigin(APP_ORIGIN);
-  const unauthorized = () =>
-    new Response("Authentication required", {
-      status: 401,
-      headers: {
-        "cache-control": "no-store",
-        ...(local
-          ? { "www-authenticate": 'Basic realm="Local administrator access", charset="UTF-8"' }
-          : {}),
-      },
-    });
-  if (new URL(request.url).origin !== APP_ORIGIN) return unauthorized();
-  if (local) {
-    const config = v.parse(localSchema, bindings);
-    const gate = request.headers
-      .get("cookie")
-      ?.split(";")
-      .map((entry) => entry.trim())
-      .find((entry) => entry.startsWith(`${localGateCookie}=`))
-      ?.slice(localGateCookie.length + 1);
-    if (
-      gate &&
-      (await equalCredentials(
-        gate,
-        await localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD),
-      ))
-    )
-      return null;
-    const authorization = request.headers.get("authorization");
-    if (!authorization?.startsWith("Basic ")) return unauthorized();
-    let credentials: string;
-    try {
-      credentials = atob(authorization.slice(6));
-    } catch {
-      return unauthorized();
-    }
-    return (await equalCredentials(
-      credentials,
-      `${config.LOCAL_ADMIN_USER}:${config.LOCAL_ADMIN_PASSWORD}`,
-    ))
-      ? null
-      : unauthorized();
-  }
-  const config = v.parse(accessSchema, bindings);
-  const token = request.headers.get("cf-access-jwt-assertion");
-  if (!token) return unauthorized();
+const verifyAccessAssertion = (token: string, config: typeof CloudflareAccess.Type) => {
   const keySet =
     keys.get(config.ACCESS_ISSUER) ??
     createRemoteJWKSet(new URL(`${config.ACCESS_ISSUER}/cdn-cgi/access/certs`), {
       timeoutDuration: 5000,
     });
   keys.set(config.ACCESS_ISSUER, keySet);
-  try {
-    const { payload } = await jwtVerify(token, keySet, {
+  return Effect.tryPromise(() =>
+    jwtVerify(token, keySet, {
       issuer: config.ACCESS_ISSUER,
       audience: config.ACCESS_AUD,
       algorithms: ["RS256"],
       requiredClaims: ["exp", "iat", "sub", "aud", "iss"],
-    });
-    if (!payload.sub) return unauthorized();
-    return null;
-  } catch {
-    return unauthorized();
+    }),
+  ).pipe(Effect.option, Effect.map(Option.exists(({ payload }) => Boolean(payload.sub))));
+};
+
+export const enforceAdminAccess = Effect.fn("enforceAdminAccess")(function* (
+  request: Request,
+  env: unknown,
+) {
+  const { APP_ORIGIN } = yield* decode(Origin, env);
+  const local = isLocalDevelopmentOrigin(APP_ORIGIN);
+  const unauthorized = new Response("Authentication required", {
+    status: 401,
+    headers: {
+      "cache-control": "no-store",
+      ...(local
+        ? { "www-authenticate": 'Basic realm="Local administrator access", charset="UTF-8"' }
+        : {}),
+    },
+  });
+  if (new URL(request.url).origin !== APP_ORIGIN) return unauthorized;
+  if (local) {
+    const config = yield* decode(LocalAccess, env);
+    const expected = yield* localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD);
+    const gate = request.headers
+      .get("cookie")
+      ?.split(";")
+      .map((entry) => entry.trim())
+      .find((entry) => entry.startsWith(`${localGateCookie}=`))
+      ?.slice(localGateCookie.length + 1);
+    if (gate !== undefined && (yield* equalCredentials(gate, expected))) return null;
+    const authorization = request.headers.get("authorization");
+    if (!authorization?.startsWith("Basic ")) return unauthorized;
+    const credentials = Result.try(() => atob(authorization.slice(6)));
+    if (Result.isFailure(credentials)) return unauthorized;
+    return (yield* equalCredentials(
+      credentials.success,
+      `${config.LOCAL_ADMIN_USER}:${config.LOCAL_ADMIN_PASSWORD}`,
+    ))
+      ? null
+      : unauthorized;
   }
-}
+  const config = yield* decode(CloudflareAccess, env);
+  const token = request.headers.get("cf-access-jwt-assertion");
+  if (!token) return unauthorized;
+  return (yield* verifyAccessAssertion(token, config)) ? null : unauthorized;
+});

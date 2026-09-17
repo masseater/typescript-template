@@ -1,14 +1,14 @@
+import { assert, it } from "@effect/vitest";
 import { sendVerificationEmail } from "@template/config";
-import { createDb } from "@template/db";
+import type { Audience, Database } from "@template/db";
 import { bootstrapAdmin, setUserRole } from "@template/db/admin";
-import { createTestDatabase, getSchemaShape } from "@template/db/testing";
+import { TestDatabase, getSchemaShape } from "@template/db/testing";
 import { getSchema } from "better-auth/db";
+import { Context, Effect, Layer, Schema } from "effect";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { URI } from "otpauth";
-import { expect, expectTypeOf, test as baseTest } from "vite-plus/test";
-import { createAuth, verifySession } from "./index.ts";
-import type { Auth } from "./index.ts";
+import { Auth, verifySession } from "./index.ts";
 
 const password = "test-password-safe-123";
 const secret = "integration-test-secret-at-least-32-characters-long";
@@ -16,22 +16,32 @@ const mailConfig = {
   EMAIL_FROM: "no-reply@example.test",
   MAILPIT_URL: "http://127.0.0.1:8025",
 };
+const origins = { user: "http://localhost:4101", admin: "http://localhost:4102" } as const;
 
-type MailpitMessage = {
-  From: { Email: string };
-  To: { Email: string }[];
-  Subject: string;
-  Text: string;
-};
+const MailpitMessage = Schema.Struct({
+  From: Schema.Struct({ Email: Schema.String }),
+  To: Schema.Array(Schema.Struct({ Email: Schema.String })),
+  Subject: Schema.String,
+  Text: Schema.String,
+});
+
+const TotpEnrollment = Schema.Struct({
+  totpURI: Schema.String,
+  backupCodes: Schema.Array(Schema.String),
+});
+
+type AuthService = Auth["Service"];
 
 class BrowserClient {
   readonly cookies = new Map<string, string>();
-  readonly auth: Auth;
-  readonly origin: string;
+  readonly auth: AuthService;
 
-  constructor(auth: Auth, origin: string) {
+  constructor(auth: AuthService) {
     this.auth = auth;
-    this.origin = origin;
+  }
+
+  get origin() {
+    return origins[this.auth.audience];
   }
 
   headers() {
@@ -41,448 +51,374 @@ class BrowserClient {
     });
   }
 
-  async request(endpoint: string, body?: Record<string, unknown>) {
-    const headers = this.headers();
-    headers.set("content-type", "application/json");
-    const response = await this.auth.handler(
-      new Request(`${this.origin}/api/auth${endpoint}`, {
-        method: body ? "POST" : "GET",
-        headers,
-        ...(body ? { body: JSON.stringify(body) } : {}),
-      }),
-    );
-    for (const cookie of response.headers.getSetCookie()) {
-      const pair = cookie.split(";")[0];
-      if (!pair) continue;
-      const separator = pair.indexOf("=");
-      const key = pair.slice(0, separator);
-      const value = pair.slice(separator + 1);
-      if (value) this.cookies.set(key, value);
-      else this.cookies.delete(key);
-    }
-    return response;
-  }
-}
-
-async function createFixture() {
-  const db = await createTestDatabase();
-  const database = createDb(db.binding);
-  const mailbox = new Map<string, string>();
-  const mailServer = setupServer(
-    http.post<never, MailpitMessage>(
-      `${mailConfig.MAILPIT_URL}/api/v1/send`,
-      async ({ request }) => {
-        const message = await request.json();
-        if (
-          message.From.Email !== mailConfig.EMAIL_FROM ||
-          message.Subject !== "メールアドレスの確認"
-        )
-          return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
-        const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
-        if (!url) return HttpResponse.json({ error: "VERIFICATION_URL_REQUIRED" }, { status: 400 });
-        for (const recipient of message.To) mailbox.set(recipient.Email, url);
-        return HttpResponse.json({ ID: crypto.randomUUID() });
-      },
-    ),
-  );
-  mailServer.listen({ onUnhandledRequest: "error" });
-  const userAuth = createAuth({
-    database,
-    secret,
-    baseURL: "http://localhost:4101",
-    audience: "user",
-    sendVerificationEmail: (message) =>
-      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: "http://localhost:4101" }, message),
-  });
-  const adminAuth = createAuth({
-    database,
-    secret,
-    baseURL: "http://localhost:4102",
-    audience: "admin",
-    sendVerificationEmail: (message) =>
-      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: "http://localhost:4102" }, message),
-  });
-  const register = async (email: string) => {
-    const client = new BrowserClient(userAuth, "http://localhost:4101");
-    const response = await client.request("/sign-up/email", { name: email, email, password });
-    if (!response.ok) throw new Error(`Registration failed: ${response.status}`);
-    return client;
-  };
-  const verifyEmail = async (email: string) => {
-    const url = mailbox.get(email);
-    if (!url) throw new Error("MAIL_DELIVERY_INVALID");
-    const link = new URL(url);
-    expect(link.pathname).toBe("/verify-email");
-    expect(link.search).toBe("");
-    const token = new URLSearchParams(link.hash.slice(1)).get("token");
-    if (!token) throw new Error("VERIFICATION_TOKEN_MISSING");
-    await userAuth.api.verifyEmail({ query: { token } });
-  };
-  return {
-    database,
-    userAuth,
-    adminAuth,
-    register,
-    verifyEmail,
-    dispose: async () => {
-      mailServer.close();
-      await db.dispose();
-    },
-  };
-}
-
-type Fixture = Awaited<ReturnType<typeof createFixture>>;
-const test = baseTest.extend<{ fixture: Fixture }>({
-  fixture: async ({}, provide) => {
-    const fixture = await createFixture();
-    try {
-      await provide(fixture);
-    } finally {
-      await fixture.dispose();
-    }
-  },
-});
-
-async function enableTotp(client: BrowserClient) {
-  const response = await client.request("/two-factor/enable", { password });
-  expect(response.status).toBe(200);
-  const data: unknown = await response.json();
-  if (
-    typeof data !== "object" ||
-    data === null ||
-    !("totpURI" in data) ||
-    typeof data.totpURI !== "string" ||
-    !("backupCodes" in data) ||
-    !Array.isArray(data.backupCodes) ||
-    !data.backupCodes.every((code: unknown): code is string => typeof code === "string")
-  ) {
-    throw new Error("TOTP_ENROLLMENT_FAILED");
-  }
-  const authenticator = URI.parse(data.totpURI);
-  const verified = await client.request("/two-factor/verify-totp", {
-    code: authenticator.generate(),
-  });
-  expect(verified.status).toBe(200);
-  return { authenticator, backupCodes: data.backupCodes };
-}
-
-test("requires an actual email verification before password login", async ({ fixture }) => {
-  const client = await fixture.register("alice@example.com");
-  expect(
-    (await client.request("/sign-in/email", { email: "alice@example.com", password })).status,
-  ).toBe(403);
-  await fixture.verifyEmail("alice@example.com");
-  expect(
-    (await client.request("/sign-in/email", { email: "alice@example.com", password })).status,
-  ).toBe(200);
-  const current = await verifySession({
-    auth: fixture.userAuth,
-    database: fixture.database,
-    headers: client.headers(),
-    audience: "user",
-  });
-  expect(current.user.emailVerified).toBe(true);
-  expectTypeOf(current.user.twoFactorEnabled).toEqualTypeOf<boolean>();
-  expect(current.user.twoFactorEnabled).toBe(false);
-  expect(current.strong).toBe(false);
-});
-
-test("admin enrollment session cannot access CRM until real TOTP verification", async ({
-  fixture,
-}) => {
-  await fixture.register("admin@example.com");
-  await fixture.verifyEmail("admin@example.com");
-  await bootstrapAdmin(fixture.database, "admin@example.com");
-  const client = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-  expect(
-    (await client.request("/sign-in/email", { email: "admin@example.com", password })).status,
-  ).toBe(200);
-  const verify = {
-    auth: fixture.adminAuth,
-    database: fixture.database,
-    headers: client.headers(),
-    audience: "admin" as const,
-  };
-  await expect(verifySession(verify)).rejects.toThrow("ADMIN_MFA_REQUIRED");
-  expect((await verifySession({ ...verify, allowEnrollment: true })).strong).toBe(false);
-  await enableTotp(client);
-  expect((await verifySession({ ...verify, headers: client.headers() })).strong).toBe(true);
-});
-
-test("TOTP sign-in has no usable session until valid second factor", async ({ fixture }) => {
-  const client = await fixture.register("totp@example.com");
-  await fixture.verifyEmail("totp@example.com");
-  await client.request("/sign-in/email", { email: "totp@example.com", password });
-  const { authenticator } = await enableTotp(client);
-  await client.request("/sign-out", {});
-  const signIn = await client.request("/sign-in/email", { email: "totp@example.com", password });
-  expect(await signIn.json()).toMatchObject({ twoFactorRedirect: true });
-  await expect(
-    verifySession({
-      auth: fixture.userAuth,
-      database: fixture.database,
-      headers: client.headers(),
-      audience: "user",
-    }),
-  ).rejects.toThrow("SESSION_REQUIRED");
-  expect((await client.request("/two-factor/verify-totp", { code: "invalid-code" })).ok).toBe(
-    false,
-  );
-  expect(
-    (await client.request("/two-factor/verify-totp", { code: authenticator.generate() })).status,
-  ).toBe(200);
-  expect(
-    (
-      await verifySession({
-        auth: fixture.userAuth,
-        database: fixture.database,
-        headers: client.headers(),
-        audience: "user",
-      })
-    ).strong,
-  ).toBe(true);
-});
-
-test("shared signing secret cannot turn a user session into admin session", async ({ fixture }) => {
-  const client = await fixture.register("admin@example.com");
-  await fixture.verifyEmail("admin@example.com");
-  await bootstrapAdmin(fixture.database, "admin@example.com");
-  await client.request("/sign-in/email", { email: "admin@example.com", password });
-  const forged = new Headers({
-    cookie: client.headers().get("cookie")?.replaceAll("template-user", "template-admin") ?? "",
-  });
-  await expect(
-    verifySession({
-      auth: fixture.adminAuth,
-      database: fixture.database,
-      headers: forged,
-      audience: "admin",
-      allowEnrollment: true,
-    }),
-  ).rejects.toThrow("SESSION_INVALID");
-});
-
-test("shared signing secret cannot transfer a pending TOTP challenge across apps", async ({
-  fixture,
-}) => {
-  const client = await fixture.register("admin@example.com");
-  await fixture.verifyEmail("admin@example.com");
-  await bootstrapAdmin(fixture.database, "admin@example.com");
-  await client.request("/sign-in/email", { email: "admin@example.com", password });
-  const { authenticator } = await enableTotp(client);
-  await client.request("/sign-out", {});
-  await client.request("/sign-in/email", { email: "admin@example.com", password });
-  const admin = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-  for (const [key, value] of client.cookies)
-    admin.cookies.set(key.replace("template-user", "template-admin"), value);
-  const response = await admin.request("/two-factor/verify-totp", {
-    code: authenticator.generate(),
-  });
-  expect(response.status).toBe(403);
-  expect(await response.json()).toMatchObject({ message: "CHALLENGE_AUDIENCE_INVALID" });
-});
-
-test("HTTP inputs cannot self-assign role, audience or authentication strength", async ({
-  fixture,
-}) => {
-  const client = await fixture.register("reader@example.com");
-  await fixture.verifyEmail("reader@example.com");
-  await client.request("/sign-in/email", { email: "reader@example.com", password });
-  await client.request("/update-user", { role: "admin", securityVersion: 99 });
-  await client.request("/update-session", {
-    audience: "admin",
-    authenticationMethod: "passkey_uv",
-  });
-  const current = await verifySession({
-    auth: fixture.userAuth,
-    database: fixture.database,
-    headers: client.headers(),
-    audience: "user",
-  });
-  expect(current.user.role).toBe("user");
-  expect(current.session.audience).toBe("user");
-  expect(current.strong).toBe(false);
-});
-
-test("admin cannot publicly register and user auth has no admin endpoints", async ({ fixture }) => {
-  const admin = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-  expect(
-    (await admin.request("/sign-up/email", { name: "admin", email: "admin@example.com", password }))
-      .ok,
-  ).toBe(false);
-  const user = new BrowserClient(fixture.userAuth, "http://localhost:4101");
-  expect((await user.request("/admin/list-users")).status).toBe(404);
-  expect((await user.request("/admin/set-role", { userId: "x", role: "admin" })).status).toBe(404);
-});
-
-test("revocation invalidates an actual HTTP session", async ({ fixture }) => {
-  await fixture.register("owner@example.com");
-  await fixture.verifyEmail("owner@example.com");
-  await bootstrapAdmin(fixture.database, "owner@example.com");
-  const admin = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-  await admin.request("/sign-in/email", { email: "owner@example.com", password });
-  await enableTotp(admin);
-  const authority = await verifySession({
-    auth: fixture.adminAuth,
-    database: fixture.database,
-    headers: admin.headers(),
-    audience: "admin",
-  });
-  const user = await fixture.register("target@example.com");
-  await fixture.verifyEmail("target@example.com");
-  await user.request("/sign-in/email", { email: "target@example.com", password });
-  const current = await verifySession({
-    auth: fixture.userAuth,
-    database: fixture.database,
-    headers: user.headers(),
-    audience: "user",
-  });
-  await setUserRole(fixture.database, authority.session.id, current.user.id, "admin");
-  await expect(
-    verifySession({
-      auth: fixture.userAuth,
-      database: fixture.database,
-      headers: user.headers(),
-      audience: "user",
-    }),
-  ).rejects.toThrow("SESSION_REQUIRED");
-});
-
-test("old weak admin session cannot enroll another factor after MFA enrollment", async ({
-  fixture,
-}) => {
-  await fixture.register("admin@example.com");
-  await fixture.verifyEmail("admin@example.com");
-  await bootstrapAdmin(fixture.database, "admin@example.com");
-  const first = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-  const old = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-  await first.request("/sign-in/email", { email: "admin@example.com", password });
-  await old.request("/sign-in/email", { email: "admin@example.com", password });
-  await enableTotp(first);
-  const attempt = await old.request("/passkey/generate-register-options");
-  expect(attempt.status).toBe(403);
-  expect(await attempt.json()).toMatchObject({ message: "EXISTING_FACTOR_REQUIRED" });
-  const failedCode = await old.request("/two-factor/verify-totp", { code: "invalid-code" });
-  expect(failedCode.ok).toBe(false);
-  const verify = {
-    auth: fixture.adminAuth,
-    database: fixture.database,
-    headers: old.headers(),
-    audience: "admin" as const,
-  };
-  expect((await verifySession({ ...verify, allowEnrollment: true })).strong).toBe(false);
-  await expect(verifySession(verify)).rejects.toThrow("ADMIN_MFA_REQUIRED");
-});
-
-test.for(["user", "admin"] as const)(
-  "weak admin session cannot retrieve TOTP secret through %s app",
-  async (audience, { fixture }) => {
-    const email = "admin@example.com";
-    await fixture.register(email);
-    await fixture.verifyEmail(email);
-    await bootstrapAdmin(fixture.database, email);
-    const auth = audience === "admin" ? fixture.adminAuth : fixture.userAuth;
-    const origin = audience === "admin" ? "http://localhost:4102" : "http://localhost:4101";
-    const old = new BrowserClient(auth, origin);
-    expect((await old.request("/sign-in/email", { email, password })).status).toBe(200);
-    const enrollment = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-    expect((await enrollment.request("/sign-in/email", { email, password })).status).toBe(200);
-    const { authenticator } = await enableTotp(enrollment);
-
-    const denied = await old.request("/two-factor/get-totp-uri", { password });
-    expect(denied.status).toBe(403);
-    const body: unknown = await denied.json();
-    expect(body).toMatchObject({ message: "ADMIN_MFA_REQUIRED" });
-    expect(body).not.toHaveProperty("totpURI");
-    const verification = {
-      auth,
-      database: fixture.database,
-      headers: old.headers(),
-      audience,
-      allowEnrollment: true,
-    };
-    expect((await verifySession(verification)).strong).toBe(false);
-
-    expect(
-      (await old.request("/two-factor/verify-totp", { code: authenticator.generate() })).status,
-    ).toBe(200);
-    expect((await verifySession({ ...verification, headers: old.headers() })).strong).toBe(true);
-    const allowed = await old.request("/two-factor/get-totp-uri", { password });
-    expect(allowed.status).toBe(200);
-    expect(await allowed.json()).toHaveProperty(
-      "totpURI",
-      expect.stringMatching(/^otpauth:\/\/totp\//),
-    );
-  },
-);
-
-test.for(["user", "admin"] as const)(
-  "admin recovery session cannot retrieve TOTP secret through %s app",
-  async (audience, { fixture }) => {
-    const email = "admin@example.com";
-    await fixture.register(email);
-    await fixture.verifyEmail(email);
-    await bootstrapAdmin(fixture.database, email);
-    const enrollment = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
-    expect((await enrollment.request("/sign-in/email", { email, password })).status).toBe(200);
-    const { backupCodes } = await enableTotp(enrollment);
-    const auth = audience === "admin" ? fixture.adminAuth : fixture.userAuth;
-    const origin = audience === "admin" ? "http://localhost:4102" : "http://localhost:4101";
-    const recovery = new BrowserClient(auth, origin);
-    const login = await recovery.request("/sign-in/email", { email, password });
-    expect(await login.json()).toMatchObject({ twoFactorRedirect: true });
-    expect(
-      (await recovery.request("/two-factor/verify-backup-code", { code: backupCodes[0] })).status,
-    ).toBe(200);
-    const current = await verifySession({
-      auth,
-      database: fixture.database,
-      headers: recovery.headers(),
-      audience,
-      allowEnrollment: true,
+  request(endpoint: string, body?: Record<string, unknown>) {
+    return Effect.promise(async () => {
+      const headers = this.headers();
+      headers.set("content-type", "application/json");
+      const response = await this.auth.instance.handler(
+        new Request(`${this.origin}/api/auth${endpoint}`, {
+          method: body ? "POST" : "GET",
+          headers,
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        }),
+      );
+      for (const cookie of response.headers.getSetCookie()) {
+        const pair = cookie.split(";")[0];
+        if (!pair) continue;
+        const separator = pair.indexOf("=");
+        const key = pair.slice(0, separator);
+        const value = pair.slice(separator + 1);
+        if (value) this.cookies.set(key, value);
+        else this.cookies.delete(key);
+      }
+      return response;
     });
-    expect(current.session.authenticationMethod).toBe("recovery");
-    expect(current.strong).toBe(false);
-    const denied = await recovery.request("/two-factor/get-totp-uri", { password });
-    expect(denied.status).toBe(403);
-    const body: unknown = await denied.json();
-    expect(body).toMatchObject({ message: "ADMIN_MFA_REQUIRED" });
-    expect(body).not.toHaveProperty("totpURI");
-  },
+  }
+
+  json(endpoint: string, body?: Record<string, unknown>) {
+    return this.request(endpoint, body).pipe(
+      Effect.flatMap((response) =>
+        Effect.promise(async () => ({ status: response.status, body: await response.json() })),
+      ),
+    );
+  }
+
+  verify(allowEnrollment = false) {
+    return verifySession(this.headers(), allowEnrollment).pipe(
+      Effect.provideService(Auth, this.auth),
+    );
+  }
+}
+
+const mailbox = new Map<string, string>();
+
+const mailServer = Layer.effectDiscard(
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      mailbox.clear();
+      const server = setupServer(
+        http.post(`${mailConfig.MAILPIT_URL}/api/v1/send`, async ({ request }) => {
+          const message = Schema.decodeUnknownSync(MailpitMessage)(await request.json());
+          if (
+            message.From.Email !== mailConfig.EMAIL_FROM ||
+            message.Subject !== "メールアドレスの確認"
+          )
+            return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
+          const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
+          if (!url)
+            return HttpResponse.json({ error: "VERIFICATION_URL_REQUIRED" }, { status: 400 });
+          for (const recipient of message.To) mailbox.set(recipient.Email, url);
+          return HttpResponse.json({ ID: crypto.randomUUID() });
+        }),
+      );
+      server.listen({ onUnhandledRequest: "error" });
+      return server;
+    }),
+    (server) => Effect.sync(() => server.close()),
+  ),
 );
 
-test("regular user can still retrieve TOTP URI with their password", async ({ fixture }) => {
-  const email = "reader@example.com";
-  const enrollment = await fixture.register(email);
-  await fixture.verifyEmail(email);
-  expect((await enrollment.request("/sign-in/email", { email, password })).status).toBe(200);
-  const old = new BrowserClient(fixture.userAuth, "http://localhost:4101");
-  expect((await old.request("/sign-in/email", { email, password })).status).toBe(200);
-  await enableTotp(enrollment);
-  const current = await verifySession({
-    auth: fixture.userAuth,
-    database: fixture.database,
-    headers: old.headers(),
-    audience: "user",
-  });
-  expect(current.user.role).toBe("user");
-  expect(current.strong).toBe(false);
-  const response = await old.request("/two-factor/get-totp-uri", { password });
-  expect(response.status).toBe(200);
-  expect(await response.json()).toHaveProperty(
-    "totpURI",
-    expect.stringMatching(/^otpauth:\/\/totp\//),
-  );
+const authFor = (audience: Audience) =>
+  Layer.build(
+    Auth.layer({
+      secret,
+      baseURL: origins[audience],
+      audience,
+      sendVerificationEmail: (message) =>
+        sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, message),
+    }),
+  ).pipe(Effect.map((context) => Context.get(context, Auth)));
+
+class Fixture extends Context.Service<
+  Fixture,
+  { readonly user: AuthService; readonly admin: AuthService }
+>()("Fixture") {}
+
+const fixture = Layer.effect(
+  Fixture,
+  Effect.gen(function* () {
+    return Fixture.of({ user: yield* authFor("user"), admin: yield* authFor("admin") });
+  }),
+).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
+
+const register = Effect.fn(function* (email: string) {
+  const { user } = yield* Fixture;
+  const client = new BrowserClient(user);
+  const response = yield* client.request("/sign-up/email", { name: email, email, password });
+  assert.isTrue(response.ok);
+  return client;
 });
 
-test("database exposes every field required by the configured Better Auth plugins", ({
-  fixture,
-}) => {
-  const expected = getSchema(fixture.userAuth.options);
-  const actual = getSchemaShape();
-  for (const [model, description] of Object.entries(expected)) {
-    expect(actual[model]).toEqual(expect.arrayContaining(Object.keys(description.fields)));
-  }
-  expect(expected["passkey"]?.fields["audience"]?.input).toBe(false);
-  expect(expected["verification"]?.fields["audience"]?.input).toBe(false);
+const verifyEmail = Effect.fn(function* (email: string) {
+  const { user } = yield* Fixture;
+  const url = mailbox.get(email);
+  assert.isDefined(url);
+  const link = new URL(url ?? "");
+  assert.strictEqual(link.pathname, "/verify-email");
+  assert.strictEqual(link.search, "");
+  const token = new URLSearchParams(link.hash.slice(1)).get("token");
+  assert.isString(token);
+  yield* Effect.promise(() => user.instance.api.verifyEmail({ query: { token: token ?? "" } }));
 });
+
+const registerVerified = Effect.fn(function* (email: string) {
+  const client = yield* register(email);
+  yield* verifyEmail(email);
+  return client;
+});
+
+const bootstrapVerifiedAdmin = Effect.fn(function* (email: string) {
+  yield* registerVerified(email);
+  yield* bootstrapAdmin(email);
+});
+
+const signIn = (client: BrowserClient, email: string) =>
+  client.request("/sign-in/email", { email, password });
+
+const enableTotp = Effect.fn(function* (client: BrowserClient) {
+  const response = yield* client.json("/two-factor/enable", { password });
+  assert.strictEqual(response.status, 200);
+  const enrollment = Schema.decodeUnknownSync(TotpEnrollment)(response.body);
+  const authenticator = URI.parse(enrollment.totpURI);
+  const verified = yield* client.request("/two-factor/verify-totp", {
+    code: authenticator.generate(),
+  });
+  assert.strictEqual(verified.status, 200);
+  return { authenticator, backupCodes: enrollment.backupCodes };
+});
+
+const failureTag = <A, E extends { readonly _tag: string }, R>(effect: Effect.Effect<A, E, R>) =>
+  effect.pipe(
+    Effect.flip,
+    Effect.map((error) => error._tag),
+  );
+
+const authTest = (name: string, body: () => Effect.Effect<void, unknown, Fixture | Database>) =>
+  it.effect(name, () => body().pipe(Effect.provide(fixture)), { timeout: 60_000 });
+
+authTest("requires an actual email verification before password login", () =>
+  Effect.gen(function* () {
+    const client = yield* register("alice@example.com");
+    assert.strictEqual((yield* signIn(client, "alice@example.com")).status, 403);
+    yield* verifyEmail("alice@example.com");
+    assert.strictEqual((yield* signIn(client, "alice@example.com")).status, 200);
+    const current = yield* client.verify();
+    assert.strictEqual(current.user.emailVerified, true);
+    assert.strictEqual(current.user.twoFactorEnabled, false);
+    assert.strictEqual(current.strong, false);
+  }),
+);
+
+authTest("admin enrollment session cannot access CRM until real TOTP verification", () =>
+  Effect.gen(function* () {
+    yield* bootstrapVerifiedAdmin("admin@example.com");
+    const client = new BrowserClient((yield* Fixture).admin);
+    assert.strictEqual((yield* signIn(client, "admin@example.com")).status, 200);
+    assert.strictEqual(yield* failureTag(client.verify()), "AdminMfaRequired");
+    assert.strictEqual((yield* client.verify(true)).strong, false);
+    yield* enableTotp(client);
+    assert.strictEqual((yield* client.verify()).strong, true);
+  }),
+);
+
+authTest("TOTP sign-in has no usable session until valid second factor", () =>
+  Effect.gen(function* () {
+    const client = yield* registerVerified("totp@example.com");
+    yield* signIn(client, "totp@example.com");
+    const { authenticator } = yield* enableTotp(client);
+    yield* client.request("/sign-out", {});
+    const challenge = yield* client.json("/sign-in/email", { email: "totp@example.com", password });
+    assert.deepInclude(challenge.body, { twoFactorRedirect: true });
+    assert.strictEqual(yield* failureTag(client.verify()), "SessionRequired");
+    assert.isFalse((yield* client.request("/two-factor/verify-totp", { code: "invalid-code" })).ok);
+    assert.strictEqual(
+      (yield* client.request("/two-factor/verify-totp", { code: authenticator.generate() })).status,
+      200,
+    );
+    assert.strictEqual((yield* client.verify()).strong, true);
+  }),
+);
+
+authTest("shared signing secret cannot turn a user session into admin session", () =>
+  Effect.gen(function* () {
+    yield* bootstrapVerifiedAdmin("admin@example.com");
+    const { user, admin } = yield* Fixture;
+    const client = new BrowserClient(user);
+    yield* signIn(client, "admin@example.com");
+    const forged = new BrowserClient(admin);
+    for (const [key, value] of client.cookies)
+      forged.cookies.set(key.replaceAll("template-user", "template-admin"), value);
+    assert.strictEqual(yield* failureTag(forged.verify(true)), "SessionInvalid");
+  }),
+);
+
+authTest("shared signing secret cannot transfer a pending TOTP challenge across apps", () =>
+  Effect.gen(function* () {
+    yield* bootstrapVerifiedAdmin("admin@example.com");
+    const { user, admin } = yield* Fixture;
+    const client = new BrowserClient(user);
+    yield* signIn(client, "admin@example.com");
+    const { authenticator } = yield* enableTotp(client);
+    yield* client.request("/sign-out", {});
+    yield* signIn(client, "admin@example.com");
+    const transferred = new BrowserClient(admin);
+    for (const [key, value] of client.cookies)
+      transferred.cookies.set(key.replace("template-user", "template-admin"), value);
+    const response = yield* transferred.json("/two-factor/verify-totp", {
+      code: authenticator.generate(),
+    });
+    assert.strictEqual(response.status, 403);
+    assert.deepInclude(response.body, { message: "CHALLENGE_AUDIENCE_INVALID" });
+  }),
+);
+
+authTest("HTTP inputs cannot self-assign role, audience or authentication strength", () =>
+  Effect.gen(function* () {
+    const client = yield* registerVerified("reader@example.com");
+    yield* signIn(client, "reader@example.com");
+    yield* client.request("/update-user", { role: "admin", securityVersion: 99 });
+    yield* client.request("/update-session", {
+      audience: "admin",
+      authenticationMethod: "passkey_uv",
+    });
+    const current = yield* client.verify();
+    assert.strictEqual(current.user.role, "user");
+    assert.strictEqual(current.session.audience, "user");
+    assert.strictEqual(current.strong, false);
+  }),
+);
+
+authTest("admin cannot publicly register and user auth has no admin endpoints", () =>
+  Effect.gen(function* () {
+    const { user, admin } = yield* Fixture;
+    const adminClient = new BrowserClient(admin);
+    assert.isFalse(
+      (yield* adminClient.request("/sign-up/email", {
+        name: "admin",
+        email: "admin@example.com",
+        password,
+      })).ok,
+    );
+    const userClient = new BrowserClient(user);
+    assert.strictEqual((yield* userClient.request("/admin/list-users")).status, 404);
+    assert.strictEqual(
+      (yield* userClient.request("/admin/set-role", { userId: "x", role: "admin" })).status,
+      404,
+    );
+  }),
+);
+
+authTest("revocation invalidates an actual HTTP session", () =>
+  Effect.gen(function* () {
+    yield* bootstrapVerifiedAdmin("owner@example.com");
+    const adminClient = new BrowserClient((yield* Fixture).admin);
+    yield* signIn(adminClient, "owner@example.com");
+    yield* enableTotp(adminClient);
+    const authority = yield* adminClient.verify();
+    const target = yield* registerVerified("target@example.com");
+    yield* signIn(target, "target@example.com");
+    const current = yield* target.verify();
+    yield* setUserRole(authority.session.id, current.user.id, "admin");
+    assert.strictEqual(yield* failureTag(target.verify()), "SessionRequired");
+  }),
+);
+
+authTest("old weak admin session cannot enroll another factor after MFA enrollment", () =>
+  Effect.gen(function* () {
+    yield* bootstrapVerifiedAdmin("admin@example.com");
+    const { admin } = yield* Fixture;
+    const first = new BrowserClient(admin);
+    const old = new BrowserClient(admin);
+    yield* signIn(first, "admin@example.com");
+    yield* signIn(old, "admin@example.com");
+    yield* enableTotp(first);
+    const attempt = yield* old.json("/passkey/generate-register-options");
+    assert.strictEqual(attempt.status, 403);
+    assert.deepInclude(attempt.body, { message: "EXISTING_FACTOR_REQUIRED" });
+    assert.isFalse((yield* old.request("/two-factor/verify-totp", { code: "invalid-code" })).ok);
+    assert.strictEqual((yield* old.verify(true)).strong, false);
+    assert.strictEqual(yield* failureTag(old.verify()), "AdminMfaRequired");
+  }),
+);
+
+for (const audience of ["user", "admin"] as const) {
+  authTest(`weak admin session cannot retrieve TOTP secret through ${audience} app`, () =>
+    Effect.gen(function* () {
+      const email = "admin@example.com";
+      yield* bootstrapVerifiedAdmin(email);
+      const services = yield* Fixture;
+      const old = new BrowserClient(services[audience]);
+      assert.strictEqual((yield* signIn(old, email)).status, 200);
+      const enrollment = new BrowserClient(services.admin);
+      assert.strictEqual((yield* signIn(enrollment, email)).status, 200);
+      const { authenticator } = yield* enableTotp(enrollment);
+      const denied = yield* old.json("/two-factor/get-totp-uri", { password });
+      assert.strictEqual(denied.status, 403);
+      assert.deepInclude(denied.body, { message: "ADMIN_MFA_REQUIRED" });
+      assert.notProperty(denied.body, "totpURI");
+      assert.strictEqual((yield* old.verify(true)).strong, false);
+      assert.strictEqual(
+        (yield* old.request("/two-factor/verify-totp", { code: authenticator.generate() })).status,
+        200,
+      );
+      assert.strictEqual((yield* old.verify(true)).strong, true);
+      const allowed = yield* old.json("/two-factor/get-totp-uri", { password });
+      assert.strictEqual(allowed.status, 200);
+      assert.match(String(Reflect.get(Object(allowed.body), "totpURI")), /^otpauth:\/\/totp\//);
+    }),
+  );
+
+  authTest(`admin recovery session cannot retrieve TOTP secret through ${audience} app`, () =>
+    Effect.gen(function* () {
+      const email = "admin@example.com";
+      yield* bootstrapVerifiedAdmin(email);
+      const services = yield* Fixture;
+      const enrollment = new BrowserClient(services.admin);
+      assert.strictEqual((yield* signIn(enrollment, email)).status, 200);
+      const { backupCodes } = yield* enableTotp(enrollment);
+      const recovery = new BrowserClient(services[audience]);
+      const login = yield* recovery.json("/sign-in/email", { email, password });
+      assert.deepInclude(login.body, { twoFactorRedirect: true });
+      assert.strictEqual(
+        (yield* recovery.request("/two-factor/verify-backup-code", { code: backupCodes[0] }))
+          .status,
+        200,
+      );
+      const current = yield* recovery.verify(true);
+      assert.strictEqual(current.session.authenticationMethod, "recovery");
+      assert.strictEqual(current.strong, false);
+      const denied = yield* recovery.json("/two-factor/get-totp-uri", { password });
+      assert.strictEqual(denied.status, 403);
+      assert.deepInclude(denied.body, { message: "ADMIN_MFA_REQUIRED" });
+      assert.notProperty(denied.body, "totpURI");
+    }),
+  );
+}
+
+authTest("regular user can still retrieve TOTP URI with their password", () =>
+  Effect.gen(function* () {
+    const email = "reader@example.com";
+    const enrollment = yield* registerVerified(email);
+    assert.strictEqual((yield* signIn(enrollment, email)).status, 200);
+    const old = new BrowserClient((yield* Fixture).user);
+    assert.strictEqual((yield* signIn(old, email)).status, 200);
+    yield* enableTotp(enrollment);
+    const current = yield* old.verify();
+    assert.strictEqual(current.user.role, "user");
+    assert.strictEqual(current.strong, false);
+    const response = yield* old.json("/two-factor/get-totp-uri", { password });
+    assert.strictEqual(response.status, 200);
+    assert.match(String(Reflect.get(Object(response.body), "totpURI")), /^otpauth:\/\/totp\//);
+  }),
+);
+
+authTest("database exposes every field required by the configured Better Auth plugins", () =>
+  Effect.gen(function* () {
+    const expected = getSchema((yield* Fixture).user.instance.options);
+    const actual = getSchemaShape();
+    for (const [model, description] of Object.entries(expected))
+      assert.includeMembers(actual[model] ?? [], Object.keys(description.fields));
+    assert.strictEqual(expected["passkey"]?.fields["audience"]?.input, false);
+    assert.strictEqual(expected["verification"]?.fields["audience"]?.input, false);
+  }),
+);

@@ -49,7 +49,7 @@ test("standalone CLI rejects malformed private input without echoing it", async 
   expect(result.code).toBe(1);
   expect(result.output).toBe("");
   expect(result.error).not.toContain("malformed-secret-private-token");
-  expect(JSON.parse(result.error)).toMatchObject({ ok: false, code: "REMOTE_DATABASE_FAILED" });
+  expect(JSON.parse(result.error)).toMatchObject({ ok: false, code: "REMOTE_INPUT_INVALID" });
 });
 
 test("standalone CLI refuses execution without a matching target confirmation", async () => {

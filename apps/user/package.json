@@ -10,14 +10,15 @@
   "dependencies": {
     "@tanstack/react-router": "1.170.36",
     "@tanstack/react-start": "1.168.54",
+    "@template/auth": "workspace:*",
     "@template/db": "workspace:*",
     "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
+    "effect": "4.0.0-rc.112",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "smarthr-ui": "99.6.1",
-    "valibot": "1.5.0"
+    "smarthr-ui": "99.6.1"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.10",

@@ -1,5 +1,5 @@
-import * as v from "valibot";
-import { expect, test } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
 import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 
 const local = {
@@ -9,45 +9,67 @@ const local = {
   MAILPIT_URL: "http://127.0.0.1:8025",
 };
 
-test("validates local configuration and defaults the release to local", () => {
-  const result = readEnvironment(local);
-  expect(result.local).toBe(true);
-  expect(result.APP_RELEASE).toBe("local");
-  expect(() => readEnvironment({ ...local, APP_RELEASE: "private@example.com" })).toThrow(
-    v.ValiError,
+const reason = (input: unknown) =>
+  readEnvironment(input).pipe(
+    Effect.flip,
+    Effect.map((error) => error.reason),
   );
-});
 
-test("rejects Mailpit for public application origins", () => {
-  expect(() => readEnvironment({ ...local, APP_ORIGIN: "https://app.example.test" })).toThrow(
-    "Mailpit is restricted to local development",
-  );
-});
+it.effect("validates local configuration and defaults the release to local", () =>
+  Effect.gen(function* () {
+    const result = yield* readEnvironment(local);
+    assert.strictEqual(result.local, true);
+    assert.strictEqual(result.APP_RELEASE, "local");
+    assert.include(yield* reason({ ...local, APP_RELEASE: "private@example.com" }), "APP_RELEASE");
+  }),
+);
 
-test("treats only loopback and HTTPS LAN hosts as local development", () => {
-  expect(readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local" }).local).toBe(true);
-  expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://template-user.local" })).toThrow(
-    "HTTPS is required outside localhost",
-  );
-  for (const origin of [
-    "https://local",
-    "https://user.template.local.example.test",
-    "https://mac-mini.tail2ee823.ts.net",
-    "https://app.example.test",
-  ])
-    expect(isLocalDevelopmentOrigin(origin)).toBe(false);
-});
+it.effect("rejects Mailpit for public application origins", () =>
+  Effect.gen(function* () {
+    assert.strictEqual(
+      yield* reason({ ...local, APP_ORIGIN: "https://app.example.test" }),
+      "Mailpit is restricted to local development",
+    );
+  }),
+);
 
-test("requires HTTPS for non-local origins", () => {
-  expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://app.example.test" })).toThrow(
-    "HTTPS is required outside localhost",
-  );
-});
+it.effect("treats only loopback and HTTPS LAN hosts as local development", () =>
+  Effect.gen(function* () {
+    assert.strictEqual(
+      (yield* readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local" })).local,
+      true,
+    );
+    assert.strictEqual(
+      yield* reason({ ...local, APP_ORIGIN: "http://template-user.local" }),
+      "HTTPS is required outside localhost",
+    );
+    for (const origin of [
+      "https://local",
+      "https://user.template.local.example.test",
+      "https://mac-mini.tail2ee823.ts.net",
+      "https://app.example.test",
+    ])
+      assert.strictEqual(isLocalDevelopmentOrigin(origin), false);
+  }),
+);
 
-test("rejects weak session secrets and pathful application origins", () => {
-  expect(() => readEnvironment({ ...local, AUTH_SECRET: "weak" })).toThrow("32");
-  expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://localhost:3001/path" })).toThrow(
-    "An origin without a path is required",
-  );
-  expect(() => readEnvironment({ ...local, APP_ORIGIN: "not-a-url" })).toThrow(v.ValiError);
-});
+it.effect("requires HTTPS for non-local origins", () =>
+  Effect.gen(function* () {
+    const { MAILPIT_URL: _, ...remote } = local;
+    assert.strictEqual(
+      yield* reason({ ...remote, APP_ORIGIN: "http://app.example.test" }),
+      "HTTPS is required outside localhost",
+    );
+  }),
+);
+
+it.effect("rejects weak session secrets and pathful application origins", () =>
+  Effect.gen(function* () {
+    assert.include(yield* reason({ ...local, AUTH_SECRET: "weak" }), "32");
+    assert.include(
+      yield* reason({ ...local, APP_ORIGIN: "http://localhost:3001/path" }),
+      "An origin without a path is required",
+    );
+    assert.include(yield* reason({ ...local, APP_ORIGIN: "not-a-url" }), "absolute URL");
+  }),
+);

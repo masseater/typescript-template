@@ -18,13 +18,15 @@
     "db:bootstrap:remote": "node src/remote-cli.ts bootstrap"
   },
   "dependencies": {
+    "@effect/platform-node": "4.0.0-rc.112",
     "drizzle-orm": "0.45.2",
+    "effect": "4.0.0-rc.112",
     "miniflare": "4.20260730.0",
-    "valibot": "1.5.0",
     "wrangler": "4.132.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260916.1",
+    "@effect/vitest": "4.0.0-rc.112",
     "@types/node": "24.12.0",
     "drizzle-kit": "0.31.10",
     "msw": "^2.11.0",

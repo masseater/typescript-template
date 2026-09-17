@@ -2,14 +2,14 @@ import { open } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import { parseEnv } from "node:util";
-import * as v from "valibot";
+import { Effect, Result, Schema } from "effect";
 import type { Plugin } from "vite-plus";
 import { enforceAdminAccess, localAccessCookie } from "./src/access.ts";
 
-const credentialsSchema = v.object({
-  APP_ORIGIN: v.pipe(v.string(), v.url()),
-  LOCAL_ADMIN_USER: v.pipe(v.string(), v.minLength(1)),
-  LOCAL_ADMIN_PASSWORD: v.pipe(v.string(), v.minLength(24)),
+const Credentials = Schema.Struct({
+  APP_ORIGIN: Schema.String.check(Schema.makeFilter((value: string) => URL.canParse(value))),
+  LOCAL_ADMIN_USER: Schema.String.check(Schema.isMinLength(1)),
+  LOCAL_ADMIN_PASSWORD: Schema.String.check(Schema.isMinLength(24)),
 });
 
 async function readCredentials(file: URL) {
@@ -18,16 +18,16 @@ async function readCredentials(file: URL) {
     const info = await handle.stat();
     if (!info.isFile() || (info.mode & 0o777) !== 0o600)
       throw new Error("ADMIN_DEV_CREDENTIALS_REQUIRE_MODE_0600");
-    const parsed = v.safeParse(credentialsSchema, parseEnv(await handle.readFile("utf8")));
-    if (!parsed.success) throw new Error("ADMIN_DEV_CREDENTIALS_INVALID");
-    const origin = new URL(parsed.output.APP_ORIGIN);
+    const parsed = Schema.decodeUnknownResult(Credentials)(parseEnv(await handle.readFile("utf8")));
+    if (Result.isFailure(parsed)) throw new Error("ADMIN_DEV_CREDENTIALS_INVALID");
+    const origin = new URL(parsed.success.APP_ORIGIN);
     if (
       origin.protocol !== "http:" ||
       !["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname) ||
-      origin.origin !== parsed.output.APP_ORIGIN
+      origin.origin !== parsed.success.APP_ORIGIN
     )
       throw new Error("ADMIN_DEV_ORIGIN_MUST_BE_LOCAL_HTTP");
-    return parsed.output;
+    return parsed.success;
   } finally {
     await handle.close();
   }
@@ -101,9 +101,11 @@ export function adminDevAccess(credentialsFile = new URL(".dev.vars", import.met
         if (request.headers.authorization)
           headers.set("authorization", request.headers.authorization);
         if (request.headers.cookie) headers.set("cookie", request.headers.cookie);
-        return enforceAdminAccess(
-          new Request(new URL(request.url ?? "/", credentials.APP_ORIGIN), { headers }),
-          credentials,
+        return Effect.runPromise(
+          enforceAdminAccess(
+            new Request(new URL(request.url ?? "/", credentials.APP_ORIGIN), { headers }),
+            credentials,
+          ),
         );
       };
       const handleRequest = async (
@@ -116,7 +118,7 @@ export function adminDevAccess(credentialsFile = new URL(".dev.vars", import.met
         try {
           const rejection = await authorize(request);
           if (!rejection) {
-            const cookie = await localAccessCookie(credentials);
+            const cookie = await Effect.runPromise(localAccessCookie(credentials));
             if (cookie) response.appendHeader("set-cookie", cookie);
             next();
             return;

@@ -1,4 +1,5 @@
-import { expect, test } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
 import { parseErrorMonitorConfig } from "./config.ts";
 
 const valid = {
@@ -8,19 +9,24 @@ const valid = {
   ALERT_TO: "operator@example.com,oncall@example.com",
 };
 
-test("accepts a scoped token and verified operator addresses", () => {
-  expect(parseErrorMonitorConfig(valid)).toEqual({
-    ...valid,
-    ALERT_TO: ["operator@example.com", "oncall@example.com"],
-  });
-});
+it.effect("accepts a scoped token and verified operator addresses", () =>
+  Effect.gen(function* () {
+    assert.deepStrictEqual(yield* parseErrorMonitorConfig(valid), {
+      ...valid,
+      ALERT_TO: ["operator@example.com", "oncall@example.com"],
+    });
+  }),
+);
 
-test.each([
+for (const override of [
   { ALERT_TO: "private-not-an-address" },
   { ALERT_FROM: "" },
   { OBSERVABILITY_TOKEN: "short" },
-])("refuses invalid settings without echoing them: %j", (override) => {
-  expect(() => parseErrorMonitorConfig({ ...valid, ...override })).toThrow(
-    /^error_monitor_config_invalid$/,
+])
+  it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>
+    Effect.gen(function* () {
+      const failure = yield* parseErrorMonitorConfig({ ...valid, ...override }).pipe(Effect.flip);
+      assert.strictEqual(failure.code, "error_monitor_config_invalid");
+      assert.notInclude(JSON.stringify(failure), "private-not-an-address");
+    }),
   );
-});

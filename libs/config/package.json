@@ -3,14 +3,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./mode": "./src/mode.ts"
   },
   "scripts": {},
   "dependencies": {
-    "valibot": "1.5.0"
+    "effect": "4.0.0-rc.112"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260916.1",
-    "typescript": "7.0.2"
+    "@effect/vitest": "4.0.0-rc.112",
+    "typescript": "7.0.2",
+    "vite-plus": "catalog:"
   }
 }

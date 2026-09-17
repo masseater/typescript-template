@@ -5,12 +5,15 @@ const config: KnipConfig = {
   workspaces: {
     ".": {
       project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],
+      ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
     },
     "apps/*": {
       project: ["src/**/*.{ts,tsx}!"],
+      ignoreDependencies: ["cloudflare"],
     },
     "apps/wiki": {
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
+      ignoreDependencies: ["cloudflare"],
     },
     "libs/db": {
       entry: ["src/bootstrap-local.ts!", "src/remote-cli.ts!"],

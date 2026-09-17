@@ -5,14 +5,8 @@ import { SignOutButton } from "@template/ui/auth";
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Stack, Textarea } from "smarthr-ui";
-import * as v from "valibot";
+import { ProfileView } from "@template/runtime/contracts";
 
-const profileSchema = v.object({
-  id: v.string(),
-  name: v.string(),
-  email: v.string(),
-  profile: v.string(),
-});
 export const Route = createFileRoute("/")({ component: Profile });
 
 function Profile() {
@@ -30,7 +24,7 @@ function Profile() {
     const controller = { active: true };
     async function load() {
       try {
-        const data = v.parse(profileSchema, await requestJson("/api/profile"));
+        const data = await requestJson("/api/profile", ProfileView);
         if (controller.active) {
           setName(data.name);
           setProfile(data.profile);
@@ -53,10 +47,10 @@ function Profile() {
     setMessage("");
     async function save() {
       try {
-        const data = v.parse(
-          profileSchema,
-          await requestJson("/api/profile", { method: "PATCH", body: { name, profile } }),
-        );
+        const data = await requestJson("/api/profile", ProfileView, {
+          method: "PATCH",
+          body: { name, profile },
+        });
         setName(data.name);
         setProfile(data.profile);
         setMessage("プロフィールを保存しました。");

@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
 import { fileURLToPath } from "node:url";
+import { Effect } from "effect";
 import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
 import type { AppTarget } from "./config.ts";
 import { loadArtifacts } from "./artifacts.ts";
@@ -11,11 +12,14 @@ export async function deployApplication(target: AppTarget) {
   const config = new pulumi.Config();
   const shared = new pulumi.StackReference(config.require("sharedStack"));
   const rawSettings = await shared.getOutputDetails("applicationSettings");
-  const settings = parseSharedConfig(rawSettings.value);
+  const settings = Effect.runSync(parseSharedConfig(rawSettings.value));
   const policy = appPolicy(settings, target);
   const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
-  const artifacts = await loadArtifacts(repositoryRoot, target);
-  await archiveSourceMaps(repositoryRoot, target, artifacts.release);
+  const artifacts = await Effect.runPromise(
+    loadArtifacts(repositoryRoot, target).pipe(
+      Effect.tap((loaded) => archiveSourceMaps(repositoryRoot, target, loaded.release)),
+    ),
+  );
   const worker = new cloudflare.Worker(`${target}-worker`, {
     accountId: settings.accountId,
     name: policy.name,
@@ -54,10 +58,9 @@ export async function deployApplication(target: AppTarget) {
           {
             type: "secret_text",
             name: "AUTH_SECRET",
-            text: shared.requireOutput("authSecret").apply((value: unknown) => {
-              if (typeof value !== "string") throw new Error("auth_secret_invalid");
-              return validateAuthSecret(value);
-            }),
+            text: shared
+              .requireOutput("authSecret")
+              .apply((value: unknown) => Effect.runSync(validateAuthSecret(value))),
           },
           { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
         ]),

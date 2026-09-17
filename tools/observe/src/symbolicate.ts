@@ -1,7 +1,18 @@
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import * as v from "valibot";
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Schema } from "effect";
 import { symbolicate } from "./source-maps.ts";
+
+class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
+  reason: Schema.Literals(["arguments_invalid"]),
+}) {}
+
+const SymbolicateInput = Schema.Struct({
+  app: Schema.Literals(["user", "admin", "wiki"]),
+  release: Schema.String.check(Schema.isPattern(/^[0-9a-f]{16}$/)),
+  locations: Schema.Array(Schema.String).check(Schema.isLengthBetween(1, 20)),
+});
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -12,34 +23,29 @@ const { values, positionals } = parseArgs({
   },
 });
 
-if (values.help) {
+const help = Effect.sync(() =>
   console.info(
     JSON.stringify({
       usage: "observe:symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
       locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
       readOnly: true,
     }),
+  ),
+);
+
+const resolveFrames = Effect.gen(function* () {
+  const input = yield* Schema.decodeUnknownEffect(SymbolicateInput)({
+    app: values.app,
+    release: values.release,
+    locations: positionals.flatMap((value) => value.split("\n")).filter(Boolean),
+  }).pipe(Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })));
+  const frames = yield* symbolicate(
+    fileURLToPath(new URL("../../../", import.meta.url)),
+    input.app,
+    input.release,
+    input.locations,
   );
-} else {
-  try {
-    const input = v.parse(
-      v.object({
-        app: v.picklist(["user", "admin", "wiki"]),
-        release: v.pipe(v.string(), v.regex(/^[0-9a-f]{16}$/)),
-        locations: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(20)),
-      }),
-      {
-        app: values.app,
-        release: values.release,
-        locations: positionals.flatMap((value) => value.split("\n")).filter(Boolean),
-      },
-    );
-    const frames = await symbolicate(
-      fileURLToPath(new URL("../../../", import.meta.url)),
-      input.app,
-      input.release,
-      input.locations,
-    );
+  yield* Effect.sync(() =>
     console.info(
       JSON.stringify({
         event: "observe.symbolicated",
@@ -47,9 +53,18 @@ if (values.help) {
         release: input.release,
         frames,
       }),
-    );
-  } catch {
-    console.error(JSON.stringify({ event: "observe.symbolicate_failed" }));
-    process.exitCode = 1;
-  }
-}
+    ),
+  );
+});
+
+NodeRuntime.runMain(
+  (values.help ? help : resolveFrames).pipe(
+    Effect.catchCause(() =>
+      Effect.sync(() => {
+        console.error(JSON.stringify({ event: "observe.symbolicate_failed" }));
+        process.exitCode = 1;
+      }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

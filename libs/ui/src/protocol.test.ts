@@ -1,6 +1,7 @@
 import { expect, test } from "vite-plus/test";
-import * as v from "valibot";
-import { errorMessage, requireSuccess, requirePasskeyUV, sessionSchema } from "./protocol";
+import { SessionView } from "@template/runtime/contracts";
+import { Schema } from "effect";
+import { errorMessage, requireSuccess, requirePasskeyUV } from "./protocol";
 
 test("認証要求では既存の challenge を維持して本人確認を必須にする", () => {
   const response = { challenge: "challenge", userVerification: "preferred" };
@@ -63,12 +64,11 @@ test("セッションの強度とロールを応答から明示的に検証す�
     role: "user",
     twoFactorEnabled: false,
   };
-  expect(v.parse(sessionSchema, { user, strong: false })).toEqual({ user, strong: false });
-  expect(() => v.parse(sessionSchema, { user })).toThrow("Invalid key");
-  expect(() => v.parse(sessionSchema, { user, strong: "true" })).toThrow("Invalid type");
-  expect(() => v.parse(sessionSchema, { user: { ...user, role: "root" }, strong: true })).toThrow(
-    "Invalid type",
-  );
+  const decode = Schema.decodeUnknownSync(SessionView);
+  expect(decode({ user, strong: false })).toEqual({ user, strong: false });
+  expect(() => decode({ user })).toThrow("strong");
+  expect(() => decode({ user, strong: "true" })).toThrow("boolean");
+  expect(() => decode({ user: { ...user, role: "root" }, strong: true })).toThrow("role");
 });
 
 test("失敗理由は HTML に変換せず文字列として扱う", () => {

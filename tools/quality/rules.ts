@@ -268,5 +268,73 @@ export default definePlugin({
         };
       },
     },
+    "effect-stack": {
+      meta: metadata(
+        "入力検証は valibot ではなく effect の Schema で行ってください。Elysia アプリは libs/runtime/src/http.ts の createApi で作り、TanStack Start の server route に HTTP ハンドラーを定義しないでください。Worker は起動時にしか Elysia の AOT コードを生成できないため、API は Worker エントリから静的に読み込む必要があります。",
+      ),
+      create(context) {
+        const current = filename(context);
+        const elysiaFactory = /\/libs\/runtime\/src\/http\.ts$/.test(current);
+        const startRoute = /\/apps\/[^/]+\/src\/routes\//.test(current);
+        const check = (node: ESTree.Node) => {
+          const source = staticText(context, node);
+          if (source === undefined) return;
+          if (/^valibot(?:\/|$)/.test(source)) context.report({ node, messageId: "violation" });
+          if (/^elysia(?:\/|$)/.test(source) && !elysiaFactory)
+            context.report({ node, messageId: "violation" });
+        };
+        return {
+          ImportDeclaration: (node) => check(node.source),
+          ExportNamedDeclaration: (node) => {
+            if (node.source) check(node.source);
+          },
+          ExportAllDeclaration: (node) => check(node.source),
+          ImportExpression: (node) => check(node.source),
+          Property(node) {
+            if (!startRoute) return;
+            const key =
+              !node.computed && node.key.type === "Identifier"
+                ? node.key.name
+                : staticText(context, node.key);
+            if (key === "handlers") context.report({ node, messageId: "violation" });
+          },
+        };
+      },
+    },
+    "effect-failures": {
+      meta: metadata(
+        "effect を使うファイルでは throw と try/catch を使えません。失敗は Schema.TaggedError で型に載せ、Effect.fail・Effect.try・Effect.tryPromise・Result.try で扱ってください。better-auth のフックが要求する APIError だけは throw できます。",
+      ),
+      create(context) {
+        const current = filename(context);
+        if (
+          !/\/(?:apps\/[^/]+\/src|libs\/[^/]+\/src|infra\/[^/]+\/src|tools\/[^/]+\/src)\//.test(
+            current,
+          ) ||
+          /\/libs\/ui\/|\/libs\/runtime\/src\/client\.ts$|\/libs\/observability\/src\/browser\.ts$|\.tsx$/.test(
+            current,
+          )
+        )
+          return {};
+        const usesEffect = context.sourceCode.ast.body.some(
+          (statement) =>
+            statement.type === "ImportDeclaration" &&
+            /^effect(?:\/|$)/.test(statement.source.value),
+        );
+        if (!usesEffect) return {};
+        return {
+          ThrowStatement(node) {
+            if (
+              node.argument.type === "NewExpression" &&
+              node.argument.callee.type === "Identifier" &&
+              node.argument.callee.name === "APIError"
+            )
+              return;
+            context.report({ node, messageId: "violation" });
+          },
+          TryStatement: (node) => context.report({ node, messageId: "violation" }),
+        };
+      },
+    },
   },
 });

@@ -1,4 +1,5 @@
-import { ensure, object, string } from "./support.ts";
+import { Effect, Option, Schema } from "effect";
+import { ensure, fail, object, fetchResponse, string } from "./support.ts";
 
 export type ObservedRequest = {
   requestId: string;
@@ -29,7 +30,7 @@ export function collectSecrets(value: unknown, secrets: Set<string>): void {
           if (typeof item === "string" && item.length > 0) {
             secrets.add(item);
             if (item.startsWith("otpauth:")) {
-              const secret = new URL(item).searchParams.get("secret");
+              const secret = URL.parse(item)?.searchParams.get("secret");
               if (secret) secrets.add(secret);
             }
           }
@@ -39,55 +40,65 @@ export function collectSecrets(value: unknown, secrets: Set<string>): void {
   }
 }
 
-export function assertPrivate(data: unknown, secrets: readonly string[]): void {
+export const assertPrivate = Effect.fn("assertPrivate")(function* (
+  data: unknown,
+  secrets: readonly string[],
+) {
   const text = JSON.stringify(data);
   for (const secret of secrets) {
     if (!secret) continue;
     const variants = [secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)];
-    ensure(!variants.some((variant) => text.includes(variant)), "E2E_TELEMETRY_PII_LEAK");
+    yield* ensure(!variants.some((variant) => text.includes(variant)), "E2E_TELEMETRY_PII_LEAK");
   }
-}
+});
 
-export async function explorerQuery(
+export const explorerQuery = Effect.fn("explorerQuery")(function* (
   origin: string,
   sql: string,
   params: readonly (string | number)[],
-): Promise<Record<string, unknown>[]> {
-  const response = await fetch(`${origin}/cdn-cgi/local/explorer/api/local/observability/query`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ sql, params }),
-    signal: AbortSignal.timeout(10_000),
-    redirect: "error",
-  });
-  ensure(response.ok, `E2E_LOCAL_EXPLORER_QUERY_FAILED_${response.status}`);
-  const body = object(await response.json());
-  ensure(body["success"] === true, "E2E_LOCAL_EXPLORER_QUERY_FAILED");
-  const result = object(body["result"]);
+) {
+  const response = yield* fetchResponse(
+    `${origin}/cdn-cgi/local/explorer/api/local/observability/query`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sql, params }),
+      timeout: 10_000,
+      redirect: "error",
+    },
+  );
+  yield* ensure(response.ok, `E2E_LOCAL_EXPLORER_QUERY_FAILED_${response.status}`);
+  const body = yield* object(yield* Effect.tryPromise((): Promise<unknown> => response.json()));
+  yield* ensure(body["success"] === true, "E2E_LOCAL_EXPLORER_QUERY_FAILED");
+  const result = yield* object(body["result"]);
   const columns = result["columns"];
   const rows = result["rows"];
-  ensure(Array.isArray(columns) && Array.isArray(rows), "E2E_LOCAL_EXPLORER_RESULT_INVALID");
-  return rows.map((row: unknown) => {
-    ensure(Array.isArray(row), "E2E_LOCAL_EXPLORER_RESULT_INVALID");
-    return Object.fromEntries(
-      columns.map((column: unknown, index) => [string(column), row[index]]),
-    );
-  });
-}
+  if (!Array.isArray(columns) || !Array.isArray(rows))
+    return yield* fail("E2E_LOCAL_EXPLORER_RESULT_INVALID");
+  return yield* Effect.forEach(rows, (row: unknown) =>
+    Effect.gen(function* () {
+      if (!Array.isArray(row)) return yield* fail("E2E_LOCAL_EXPLORER_RESULT_INVALID");
+      return Object.fromEntries(
+        yield* Effect.forEach(columns, (column: unknown, index) =>
+          Effect.map(string(column), (name) => [name, row[index]] as const),
+        ),
+      );
+    }),
+  );
+});
+
+const decodeArguments = Schema.decodeUnknownOption(
+  Schema.fromJsonString(Schema.Array(Schema.Unknown)),
+);
+const decodeEvent = Schema.decodeUnknownOption(
+  Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown)),
+);
 
 export function structuredEvent(message: unknown): Record<string, unknown> | undefined {
-  if (typeof message !== "string") return undefined;
-  try {
-    const args: unknown = JSON.parse(message);
-    const first: unknown = Array.isArray(args) ? args[0] : undefined;
-    if (typeof first !== "string") return undefined;
-    const parsed: unknown = JSON.parse(first);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? object(parsed)
-      : undefined;
-  } catch {
-    return undefined;
-  }
+  return decodeArguments(message).pipe(
+    Option.flatMap(([first]) => (typeof first === "string" ? decodeEvent(first) : Option.none())),
+    Option.getOrUndefined,
+  );
 }
 
 export function relatedSpans(

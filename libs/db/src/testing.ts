@@ -1,7 +1,9 @@
 import { readFile, readdir } from "node:fs/promises";
-import { Miniflare } from "miniflare";
+import type { D1Database } from "@cloudflare/workers-types";
 import { getTableColumns } from "drizzle-orm";
-import { createDb } from "./index.ts";
+import { Context, Effect, Layer } from "effect";
+import { Miniflare } from "miniflare";
+import { Database } from "./index.ts";
 import { schema } from "./schema.ts";
 
 export function getSchemaShape() {
@@ -10,28 +12,48 @@ export function getSchemaShape() {
   );
 }
 
-export async function createTestDatabase() {
-  const runtime = new Miniflare({
-    modules: true,
-    script: "export default { fetch() { return new Response('test-database'); } };",
-    compatibilityDate: "2026-07-30",
-    d1Databases: { DB: "template-test" },
-  });
-  try {
-    const binding = await runtime.getD1Database("DB");
-    const migrations = new URL("../migrations/", import.meta.url);
-    const files = (await readdir(migrations)).filter((name) => name.endsWith(".sql")).sort();
-    for (const file of files) {
-      const content = await readFile(new URL(file, migrations), "utf8");
-      const statements = content
-        .split("--> statement-breakpoint")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      await binding.batch(statements.map((statement) => binding.prepare(statement)));
-    }
-    return { database: createDb(binding), binding, dispose: () => runtime.dispose() };
-  } catch (error) {
-    await runtime.dispose();
-    throw error;
+export class TestBinding extends Context.Service<TestBinding, D1Database>()(
+  "@template/db/TestBinding",
+) {}
+
+const migrate = async (binding: D1Database) => {
+  const migrations = new URL("../migrations/", import.meta.url);
+  const files = (await readdir(migrations)).filter((name) => name.endsWith(".sql")).sort();
+  for (const file of files) {
+    const content = await readFile(new URL(file, migrations), "utf8");
+    const statements = content
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    await binding.batch(statements.map((statement) => binding.prepare(statement)));
   }
-}
+};
+
+const binding = (migrated: boolean) =>
+  Layer.effect(
+    TestBinding,
+    Effect.acquireRelease(
+      Effect.promise(async () => {
+        const runtime = new Miniflare({
+          modules: true,
+          script: "export default { fetch() { return new Response('test-database'); } };",
+          compatibilityDate: "2026-07-30",
+          d1Databases: { DB: "template-test" },
+        });
+        const d1 = await runtime.getD1Database("DB");
+        if (migrated) await migrate(d1);
+        return { runtime, d1 };
+      }),
+      ({ runtime }) => Effect.promise(() => runtime.dispose()),
+    ).pipe(Effect.map(({ d1 }) => d1)),
+  );
+
+const database = Layer.unwrap(
+  Effect.gen(function* () {
+    return Database.layer(yield* TestBinding);
+  }),
+);
+
+export const TestDatabase = database.pipe(Layer.provideMerge(binding(true)));
+
+export const EmptyTestDatabase = database.pipe(Layer.provideMerge(binding(false)));

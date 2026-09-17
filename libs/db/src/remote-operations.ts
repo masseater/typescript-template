@@ -1,92 +1,111 @@
 import { fileURLToPath } from "node:url";
 import { readMigrationFiles } from "drizzle-orm/migrator";
-import * as v from "valibot";
+import { Effect, Schema } from "effect";
 import { compileBootstrapStatement } from "./bootstrap-statement.ts";
+import type { EmailAddress } from "./bootstrap-statement.ts";
+import { RemoteFailure, fail } from "./remote-input.ts";
 
 export interface DatabaseExecutor {
   batch(
-    queries: readonly { sql: string; params: (string | number | null)[] }[],
-  ): Promise<unknown[][]>;
+    queries: readonly { sql: string; params: readonly (string | number | null)[] }[],
+  ): Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
 }
 
-const migrationSchema = v.object({
-  sql: v.pipe(v.array(v.pipe(v.string(), v.trim(), v.minLength(1))), v.minLength(1)),
-  folderMillis: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  hash: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
+const Migration = Schema.Struct({
+  sql: Schema.Array(Schema.Trim.check(Schema.isMinLength(1))).check(Schema.isMinLength(1)),
+  folderMillis: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+  hash: Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/)),
 });
-type Migration = v.InferOutput<typeof migrationSchema>;
+type Migration = typeof Migration.Type;
 
-export function loadRemoteMigrations(): Migration[] {
-  try {
-    const migrations = v.parse(
-      v.pipe(v.array(migrationSchema), v.minLength(1)),
+const History = Schema.Array(Schema.Struct({ hash: Schema.String, created_at: Schema.Finite }));
+
+const BootstrappedAdmin = Schema.Struct({
+  id: Schema.String,
+  email: Schema.String,
+  role: Schema.Literal("admin"),
+});
+
+export const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* () {
+  const migrations = yield* Effect.try({
+    try: () =>
       readMigrationFiles({
         migrationsFolder: fileURLToPath(new URL("../migrations/", import.meta.url)),
       }),
-    );
-    if (
-      migrations.some(
-        (item, index) => index > 0 && item.folderMillis <= migrations[index - 1]!.folderMillis,
-      )
+    catch: () => new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" }),
+  }).pipe(
+    Effect.flatMap(
+      Schema.decodeUnknownEffect(Schema.Array(Migration).check(Schema.isMinLength(1))),
+    ),
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" })),
+  );
+  if (
+    migrations.some(
+      (item, index) => index > 0 && item.folderMillis <= (migrations[index - 1]?.folderMillis ?? 0),
     )
-      throw new Error("invalid");
-    return migrations;
-  } catch {
-    throw new Error("REMOTE_MIGRATIONS_INVALID");
-  }
-}
+  )
+    return yield* fail("REMOTE_MIGRATIONS_INVALID");
+  return migrations;
+});
 
-async function readHistory(executor: DatabaseExecutor, migrations: readonly Migration[]) {
-  const [rows] = await executor.batch([
+const readHistory = Effect.fn("readHistory")(function* (
+  executor: DatabaseExecutor,
+  migrations: readonly Migration[],
+) {
+  const [rows] = yield* executor.batch([
     { sql: "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at", params: [] },
   ]);
-  const parsed = v.safeParse(v.array(v.object({ hash: v.string(), created_at: v.number() })), rows);
+  const history = yield* Schema.decodeUnknownEffect(History)(rows).pipe(
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISMATCH" })),
+  );
   if (
-    !parsed.success ||
-    parsed.output.some(
+    history.some(
       (item, index) =>
         item.hash !== migrations[index]?.hash ||
         item.created_at !== migrations[index]?.folderMillis,
     )
   )
-    throw new Error("REMOTE_MIGRATION_HISTORY_MISMATCH");
-  return parsed.output.length;
-}
+    return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
+  return history.length;
+});
 
-export async function migrateDatabase(
+export const migrateDatabase = Effect.fn("migrateDatabase")(function* (
   executor: DatabaseExecutor,
   migrations: readonly Migration[],
 ) {
-  await executor.batch([
+  yield* executor.batch([
     {
       sql: "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL UNIQUE, created_at NUMERIC NOT NULL UNIQUE)",
       params: [],
     },
   ]);
-  const applied = await readHistory(executor, migrations);
-  for (const migration of migrations.slice(applied)) {
-    await executor.batch([
+  const applied = yield* readHistory(executor, migrations);
+  for (const migration of migrations.slice(applied))
+    yield* executor.batch([
       ...migration.sql.map((sql) => ({ sql, params: [] })),
       {
         sql: "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
         params: [migration.hash, migration.folderMillis],
       },
     ]);
-  }
-  if ((await readHistory(executor, migrations)) !== migrations.length)
-    throw new Error("REMOTE_MIGRATION_HISTORY_MISMATCH");
+  if ((yield* readHistory(executor, migrations)) !== migrations.length)
+    return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
   return migrations.length - applied;
-}
+});
 
-export async function bootstrapDatabase(executor: DatabaseExecutor, email: string) {
-  const migrations = loadRemoteMigrations();
-  if ((await readHistory(executor, migrations)) !== migrations.length)
-    throw new Error("REMOTE_MIGRATIONS_REQUIRED");
-  const [rows] = await executor.batch([compileBootstrapStatement(email)]);
-  if (rows?.length !== 1) throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
-  const result = v.safeParse(
-    v.object({ id: v.string(), email: v.pipe(v.string(), v.email()), role: v.literal("admin") }),
-    rows[0],
+export const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* (
+  executor: DatabaseExecutor,
+  email: typeof EmailAddress.Type,
+) {
+  const migrations = yield* loadRemoteMigrations();
+  if ((yield* readHistory(executor, migrations)) !== migrations.length)
+    return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
+  const statement = yield* compileBootstrapStatement(email).pipe(
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" })),
   );
-  if (!result.success) throw new Error("REMOTE_RESPONSE_INVALID");
-}
+  const [rows] = yield* executor.batch([statement]);
+  if (rows?.length !== 1) return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
+  yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(rows?.[0]).pipe(
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+  );
+});

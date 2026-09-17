@@ -10,6 +10,8 @@ overrides:
   "@vitest/utils": 4.1.11
   vite@*: "catalog:"
   vitest@*: "catalog:"
+  effect@*: 4.0.0-rc.112
+  "@effect/platform-node-shared@*": 4.0.0-rc.112
 allowBuilds:
   esbuild: true
   workerd: true
@@ -19,6 +21,7 @@ allowBuilds:
   msw: false
   protobufjs: true
   agent-browser: false
+  msgpackr-extract: false
 minimumReleaseAgeExclude:
   - "@cloudflare/vite-plugin@1.54.10"
   - "@cloudflare/workers-types@5.20260916.1"

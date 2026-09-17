@@ -1,15 +1,18 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
+import type { WikiServices } from "@template/runtime/wiki";
+import { Effect } from "effect";
 import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
-import type { SearchServer } from "fumadocs-core/search/server";
-import { wikiLlms } from "./search.ts";
+import { searchServer, wikiLlms } from "./search.ts";
 import { source } from "./source.ts";
 
-export function handleMcp(request: Request, search: SearchServer) {
-  const handler = createMcpHandler(() => {
-    const server = new McpServer({ name: "wiki", version: "1.0.0" });
-    registerSearchTool(server, search);
-    registerSourceTools(server, source, wikiLlms);
-    return server;
+export const handleMcp = (request: Request) =>
+  Effect.gen(function* () {
+    const search = searchServer(yield* Effect.context<WikiServices>());
+    const handler = createMcpHandler(() => {
+      const server = new McpServer({ name: "wiki", version: "1.0.0" });
+      registerSearchTool(server, search);
+      registerSourceTools(server, source, wikiLlms);
+      return server;
+    });
+    return yield* Effect.promise(() => handler.fetch(request));
   });
-  return handler.fetch(request);
-}

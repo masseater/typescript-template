@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
-    "check": "vp check && vp run knip && vp run check:staged",
+    "check": "vp check && vp run knip && vp run check:staged && vp run check:effect",
     "check:staged": "node tools/quality/check-staged.ts",
+    "check:effect": "node tools/quality/effect-diagnostics.ts",
     "lint": "vp lint --max-warnings 0",
     "lint:fix": "vp check --fix",
     "format": "vp fmt",
@@ -53,7 +54,10 @@
     "prepush": "vp run check && vp run test && vp run test:e2e:unit && vp run build && vp run test:artifacts && vp run test:e2e"
   },
   "devDependencies": {
+    "@effect/platform-node": "4.0.0-rc.112",
+    "@effect/tsgo": "0.45.0",
     "@types/node": "24.12.0",
+    "effect": "4.0.0-rc.112",
     "knip": "6.35.1",
     "typescript": "7.0.2",
     "vite": "catalog:",

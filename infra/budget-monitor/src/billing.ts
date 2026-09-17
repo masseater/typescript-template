@@ -1,22 +1,29 @@
-import * as v from "valibot";
+import { Effect, Schema } from "effect";
+import { BudgetFailure, fail } from "./config.ts";
 
-const timestamp = v.pipe(v.string(), v.isoTimestamp());
-const cost = v.pipe(v.number(), v.finite(), v.minValue(0));
-const row = v.looseObject({
-  BillingAccountId: v.string(),
-  BillingCurrency: v.literal("USD"),
-  BillingPeriodStart: timestamp,
-  ChargePeriodStart: timestamp,
-  ChargePeriodEnd: timestamp,
-  ChargeCategory: v.literal("Usage"),
-  BilledCost: cost,
-  ServiceName: v.pipe(v.string(), v.minLength(1)),
-  SubscriptionId: v.optional(v.nullable(v.string())),
-  ZoneId: v.optional(v.nullable(v.string())),
+const Timestamp = Schema.String.check(
+  Schema.makeFilter(
+    (value: string) =>
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+      !Number.isNaN(Date.parse(value)),
+  ),
+);
+const Cost = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
+const UsageRow = Schema.Struct({
+  BillingAccountId: Schema.String,
+  BillingCurrency: Schema.Literal("USD"),
+  BillingPeriodStart: Timestamp,
+  ChargePeriodStart: Timestamp,
+  ChargePeriodEnd: Timestamp,
+  ChargeCategory: Schema.Literal("Usage"),
+  BilledCost: Cost,
+  ServiceName: Schema.String.check(Schema.isMinLength(1)),
+  SubscriptionId: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  ZoneId: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
-const envelope = v.object({
-  success: v.literal(true),
-  result: v.pipe(v.array(row), v.minLength(1)),
+const UsageEnvelope = Schema.Struct({
+  success: Schema.Literal(true),
+  result: Schema.Array(UsageRow).check(Schema.isMinLength(1)),
 });
 
 export interface UsageSnapshot {
@@ -26,16 +33,22 @@ export interface UsageSnapshot {
   records: number;
 }
 
-function parseUsageResponse(input: unknown, accountId: string, now: Date): UsageSnapshot {
-  const parsed = v.safeParse(envelope, input);
-  if (!parsed.success) throw new Error("billing_response_invalid");
-  const rows = parsed.output.result;
-  const starts = new Set(rows.map((item) => item.BillingPeriodStart));
-  if (starts.size !== 1) throw new Error("billing_period_ambiguous");
-  const periodStart = rows[0]!.BillingPeriodStart;
+const summarizeUsage = Effect.fn("summarizeUsage")(function* (
+  input: unknown,
+  accountId: string,
+  now: Date,
+) {
+  const { result: rows } = yield* Schema.decodeUnknownEffect(UsageEnvelope)(input).pipe(
+    Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })),
+  );
+  const [first] = rows;
+  if (first === undefined) return yield* fail("billing_response_invalid");
+  if (new Set(rows.map((item) => item.BillingPeriodStart)).size !== 1)
+    return yield* fail("billing_period_ambiguous");
+  const periodStart = first.BillingPeriodStart;
   const keys = new Set<string>();
   for (const item of rows) {
-    if (item.BillingAccountId !== accountId) throw new Error("billing_account_mismatch");
+    if (item.BillingAccountId !== accountId) return yield* fail("billing_account_mismatch");
     const start = Date.parse(item.ChargePeriodStart);
     const end = Date.parse(item.ChargePeriodEnd);
     if (
@@ -43,9 +56,8 @@ function parseUsageResponse(input: unknown, accountId: string, now: Date): Usage
       end <= start ||
       start > now.getTime() ||
       end > now.getTime() + 86_400_000
-    ) {
-      throw new Error("billing_dates_invalid");
-    }
+    )
+      return yield* fail("billing_dates_invalid");
     const key = JSON.stringify([
       item.SubscriptionId,
       item.ZoneId,
@@ -53,36 +65,42 @@ function parseUsageResponse(input: unknown, accountId: string, now: Date): Usage
       item.ChargePeriodStart,
       item.ChargePeriodEnd,
     ]);
-    if (keys.has(key)) throw new Error("billing_duplicate_record");
+    if (keys.has(key)) return yield* fail("billing_duplicate_record");
     keys.add(key);
   }
   const latest = Math.max(...rows.map((item) => Date.parse(item.ChargePeriodEnd)));
-  if (now.getTime() - latest > 48 * 60 * 60 * 1000) throw new Error("billing_data_stale");
+  if (now.getTime() - latest > 48 * 60 * 60 * 1000) return yield* fail("billing_data_stale");
   const total = rows.reduce((sum, item) => sum + item.BilledCost, 0);
-  if (!Number.isFinite(total)) throw new Error("billing_cost_invalid");
-  return {
+  if (!Number.isFinite(total)) return yield* fail("billing_cost_invalid");
+  const snapshot: UsageSnapshot = {
     periodStart,
     measuredThrough: new Date(latest).toISOString(),
     usageUsd: total,
     records: rows.length,
   };
-}
+  return snapshot;
+});
 
-export async function fetchUsage(
+export const fetchUsage = Effect.fn("fetchUsage")(function* (
   accountId: string,
   token: string,
   now: Date,
-): Promise<UsageSnapshot> {
-  if (!/^[a-f0-9]{32}$/.test(accountId)) throw new Error("billing_account_invalid");
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`,
-    {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      signal: AbortSignal.timeout(15_000),
-      redirect: "manual",
-    },
-  );
-  if (!response.ok) throw new Error("billing_http_failed");
-  const body: unknown = await response.json();
-  return parseUsageResponse(body, accountId, now);
-}
+) {
+  if (!/^[a-f0-9]{32}$/.test(accountId)) return yield* fail("billing_account_invalid");
+  const httpFailed = () => new BudgetFailure({ code: "billing_http_failed" });
+  const response = yield* Effect.tryPromise({
+    try: (signal) =>
+      fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]),
+        redirect: "manual",
+      }),
+    catch: httpFailed,
+  });
+  if (!response.ok) return yield* fail("billing_http_failed");
+  const body = yield* Effect.tryPromise({
+    try: (): Promise<unknown> => response.json(),
+    catch: () => new BudgetFailure({ code: "billing_response_invalid" }),
+  });
+  return yield* summarizeUsage(body, accountId, now);
+});

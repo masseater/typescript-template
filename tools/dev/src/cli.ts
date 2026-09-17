@@ -1,13 +1,48 @@
-import { execFile, spawn } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { createHash, createPublicKey, randomBytes } from "node:crypto";
 import { chmod, lstat, mkdir, open, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import * as v from "valibot";
+import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Effect, Schema } from "effect";
 
-const run = promisify(execFile);
+class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("LocalCommandFailure", {
+  reason: Schema.Literals([
+    "command_unsupported",
+    "app_invalid",
+    "file_io_failed",
+    "process_failed",
+    "credentials_permissions_invalid",
+    "credentials_invalid",
+    "configuration_exists",
+    "configuration_differs",
+    "browser_socket_directory_invalid",
+    "browser_start_failed",
+    "browser_authentication_failed",
+    "browser_command_required",
+  ]),
+}) {}
+
+type FailureReason = LocalCommandFailure["reason"];
+
+const failure = (reason: FailureReason) => new LocalCommandFailure({ reason });
+
+const fileIo = <A>(operation: () => Promise<A>) =>
+  Effect.tryPromise({ try: operation, catch: () => failure("file_io_failed") });
+
+const execFileAsync = promisify(execFile);
+
+const run = (file: string, args: readonly string[], options: Parameters<typeof execFileAsync>[2]) =>
+  Effect.tryPromise({
+    try: () => execFileAsync(file, args, options),
+    catch: () => failure("process_failed"),
+  });
+
+const errorCode = (error: unknown) =>
+  error && typeof error === "object" && "code" in error ? error.code : undefined;
+
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
@@ -16,11 +51,11 @@ const rootHash = createHash("sha256").update(root).digest("hex").slice(0, 12);
 const socket = `template-${rootHash}`;
 const apps = ["user", "admin", "wiki"] as const;
 type App = (typeof apps)[number];
-const appSchema = v.picklist(apps);
-const credentialSchema = v.strictObject({
-  authSecret: v.pipe(v.string(), v.minLength(32)),
-  adminUser: v.literal("operator"),
-  adminPassword: v.pipe(v.string(), v.minLength(24)),
+const AppName = Schema.Literals(apps);
+const Credentials = Schema.Struct({
+  authSecret: Schema.String.check(Schema.isMinLength(32)),
+  adminUser: Schema.Literal("operator"),
+  adminPassword: Schema.String.check(Schema.isMinLength(24)),
 });
 const ports = { user: 3001, admin: 3002, wiki: 3003 };
 const servicePorts = { mailpit: 8025 };
@@ -45,8 +80,12 @@ const browserSettings = `${JSON.stringify({
   restoreSave: "never",
 })}\n`;
 
-async function browserLaunchArguments() {
-  const authority = createPublicKey(await readFile(new URL("ca.pem", portlessHome), "utf8"));
+const browserLaunchArguments = Effect.fn("browserLaunchArguments")(function* () {
+  const certificate = yield* fileIo(() => readFile(new URL("ca.pem", portlessHome), "utf8"));
+  const authority = yield* Effect.try({
+    try: () => createPublicKey(certificate),
+    catch: () => failure("file_io_failed"),
+  });
   const pin = createHash("sha256")
     .update(authority.export({ type: "spki", format: "der" }))
     .digest("base64");
@@ -54,97 +93,117 @@ async function browserLaunchArguments() {
     "--args",
     `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local 127.0.0.1`,
   ];
-}
+});
 
-async function ensureGateway() {
-  await mkdir(portlessHome, { recursive: true, mode: 0o700 });
-  await run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
+const running = (session: string) =>
+  run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root }).pipe(
+    Effect.match({ onFailure: () => false, onSuccess: () => true }),
+  );
+
+const ensureGateway = Effect.fn("ensureGateway")(function* () {
+  yield* fileIo(() => mkdir(portlessHome, { recursive: true, mode: 0o700 }));
+  yield* run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
     cwd: root,
     env: portlessEnvironment,
     timeout: 60_000,
   });
   for (const name of routeNames)
-    await run(portless, ["alias", `template-${name}`, String(routes[name]), "--force"], {
+    yield* run(portless, ["alias", `template-${name}`, String(routes[name]), "--force"], {
       cwd: root,
       env: portlessEnvironment,
       timeout: 30_000,
     });
-  if (!(await running("gateway"))) {
+  if (!(yield* running("gateway"))) {
     const log = fileURLToPath(new URL("logs/gateway.log", local));
     const command = `exec node ${JSON.stringify(fileURLToPath(new URL("gateway.ts", import.meta.url)))} ${proxyPort} >> ${JSON.stringify(log)} 2>&1`;
-    await run(
+    yield* run(
       "tmux",
       ["-L", socket, "new-session", "-d", "-s", "gateway", "-c", root, "fish", "-c", command],
       { cwd: root },
     );
   }
-}
+});
 
-async function replacePrivateFile(path: URL, content: string) {
-  const file = await open(path, "w", 0o600);
-  try {
-    await file.writeFile(content);
-  } finally {
-    await file.close();
-  }
-  await chmod(path, 0o600);
-}
+const replacePrivateFile = Effect.fn("replacePrivateFile")(function* (path: URL, content: string) {
+  yield* Effect.acquireUseRelease(
+    fileIo(() => open(path, "w", 0o600)),
+    (file) => fileIo(() => file.writeFile(content)),
+    (file) => fileIo(() => file.close()),
+  );
+  yield* fileIo(() => chmod(path, 0o600));
+});
 
 const readyPaths = { user: "/login", admin: "/login", wiki: "/" };
 
-async function writePrivateFile(path: URL, content: string) {
-  try {
-    const file = await open(path, "wx", 0o600);
-    try {
-      await file.writeFile(content);
-    } finally {
-      await file.close();
-    }
-  } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "EEXIST")) throw error;
-    if ((await readFile(path, "utf8")) !== content)
-      throw new Error("Existing local configuration differs; it was preserved", { cause: error });
-  }
-  if (((await stat(path)).mode & 0o077) !== 0)
-    throw new Error("Local credential file permissions must be 0600");
-}
+const requirePrivatePermissions = Effect.fn("requirePrivatePermissions")(function* (path: URL) {
+  const entry = yield* fileIo(() => stat(path));
+  if ((entry.mode & 0o077) !== 0) return yield* failure("credentials_permissions_invalid");
+});
 
-async function readCredentials() {
-  if (((await stat(credentialsFile)).mode & 0o077) !== 0)
-    throw new Error("Local credential file permissions must be 0600");
-  return v.parse(credentialSchema, JSON.parse(await readFile(credentialsFile, "utf8")) as unknown);
-}
+const writePrivateFile = Effect.fn("writePrivateFile")(function* (path: URL, content: string) {
+  yield* Effect.acquireUseRelease(
+    Effect.tryPromise({
+      try: () => open(path, "wx", 0o600),
+      catch: (error) =>
+        failure(errorCode(error) === "EEXIST" ? "configuration_exists" : "file_io_failed"),
+    }),
+    (file) => fileIo(() => file.writeFile(content)),
+    (file) => fileIo(() => file.close()),
+  ).pipe(
+    Effect.catchIf(
+      (error) => error.reason === "configuration_exists",
+      () =>
+        fileIo(() => readFile(path, "utf8")).pipe(
+          Effect.flatMap((existing) =>
+            existing === content ? Effect.void : Effect.fail(failure("configuration_differs")),
+          ),
+        ),
+    ),
+  );
+  yield* requirePrivatePermissions(path);
+});
 
-async function browserSocketDirectory() {
+const readCredentials = Effect.fn("readCredentials")(function* () {
+  yield* requirePrivatePermissions(credentialsFile);
+  const text = yield* fileIo(() => readFile(credentialsFile, "utf8"));
+  const json = yield* Effect.try({
+    try: (): unknown => JSON.parse(text),
+    catch: () => failure("credentials_invalid"),
+  });
+  return yield* Schema.decodeUnknownEffect(Credentials)(json, { onExcessProperty: "error" }).pipe(
+    Effect.mapError(() => failure("credentials_invalid")),
+  );
+});
+
+const browserSocketDirectory = Effect.fn("browserSocketDirectory")(function* () {
   const directory = join(tmpdir(), `ab-${rootHash}`);
-  await mkdir(directory, { recursive: true, mode: 0o700 });
-  const entry = await lstat(directory);
+  yield* fileIo(() => mkdir(directory, { recursive: true, mode: 0o700 }));
+  const entry = yield* fileIo(() => lstat(directory));
   if (!entry.isDirectory() || entry.uid !== process.getuid?.())
-    throw new Error("Browser socket directory must be a directory owned by the current user");
-  await chmod(directory, 0o700);
+    return yield* failure("browser_socket_directory_invalid");
+  yield* fileIo(() => chmod(directory, 0o700));
   return directory;
-}
+});
 
-async function setup() {
-  await mkdir(local, { recursive: true, mode: 0o700 });
-  await mkdir(new URL("logs/", local), { recursive: true, mode: 0o700 });
-  await browserSocketDirectory();
-  await replacePrivateFile(browserConfig, browserSettings);
-  const exists = await stat(credentialsFile).then(
-    () => true,
-    (error: unknown) => {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT") return false;
-      throw error;
-    },
+const setup = Effect.fn("setup")(function* () {
+  yield* fileIo(() => mkdir(local, { recursive: true, mode: 0o700 }));
+  yield* fileIo(() => mkdir(new URL("logs/", local), { recursive: true, mode: 0o700 }));
+  yield* browserSocketDirectory();
+  yield* replacePrivateFile(browserConfig, browserSettings);
+  const exists = yield* fileIo(() =>
+    stat(credentialsFile).then(
+      () => true,
+      (error: unknown) => (errorCode(error) === "ENOENT" ? false : Promise.reject(error)),
+    ),
   );
   const credentials = exists
-    ? await readCredentials()
+    ? yield* readCredentials()
     : {
         authSecret: randomBytes(48).toString("base64url"),
         adminUser: "operator",
         adminPassword: randomBytes(32).toString("base64url"),
       };
-  await writePrivateFile(credentialsFile, `${JSON.stringify(credentials, null, 2)}\n`);
+  yield* writePrivateFile(credentialsFile, `${JSON.stringify(credentials, null, 2)}\n`);
   for (const app of apps) {
     const values = {
       APP_ORIGIN: origins[app],
@@ -166,7 +225,7 @@ async function setup() {
       Object.entries(values)
         .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
         .join("\n") + "\n";
-    await replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
+    yield* replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
   }
   return {
     ok: true,
@@ -174,45 +233,40 @@ async function setup() {
     credentialsFile: fileURLToPath(credentialsFile),
     secretsPrinted: false,
   };
-}
+});
 
-async function running(app: string) {
-  return run("tmux", ["-L", socket, "has-session", "-t", app], { cwd: root }).then(
-    () => true,
-    () => false,
-  );
-}
-
-async function status() {
-  const results = await Promise.all(
-    apps.map(async (app) => {
-      const live = await running(app);
-      const response = await fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
-        redirect: "manual",
-        signal: AbortSignal.timeout(3000),
-      }).then(
-        (result) => result.status,
-        () => null,
-      );
-      return {
-        app,
-        processRunning: live,
-        httpStatus: response,
-        origin: origins[app],
-        logFile: fileURLToPath(new URL(`logs/${app}.log`, local)),
-      };
-    }),
+const status = Effect.fn("status")(function* () {
+  const results = yield* Effect.forEach(
+    apps,
+    (app) =>
+      Effect.gen(function* () {
+        const live = yield* running(app);
+        const response = yield* Effect.tryPromise((signal) =>
+          fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
+            redirect: "manual",
+            signal: AbortSignal.any([signal, AbortSignal.timeout(3000)]),
+          }),
+        ).pipe(Effect.match({ onFailure: () => null, onSuccess: (result) => result.status }));
+        return {
+          app,
+          processRunning: live,
+          httpStatus: response,
+          origin: origins[app],
+          logFile: fileURLToPath(new URL(`logs/${app}.log`, local)),
+        };
+      }),
+    { concurrency: "unbounded" },
   );
   return {
     event: "local.application_status",
     functionalVerification: "not-proven-by-status",
     apps: results,
   };
-}
+});
 
-async function connection() {
-  await ensureGateway();
-  const certificate = await readFile(new URL("ca.pem", portlessHome));
+const connection = Effect.fn("connection")(function* () {
+  yield* ensureGateway();
+  const certificate = yield* fileIo(() => readFile(new URL("ca.pem", portlessHome)));
   return {
     event: "local.lan_access",
     reachableFrom: "devices on the same LAN that trust the local certificate authority",
@@ -223,66 +277,96 @@ async function connection() {
     adminCredentialsFile: fileURLToPath(credentialsFile),
     windowsTrustCommand: `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate.toString("base64")}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`,
   };
-}
+});
 
-async function start(app: App) {
-  await readCredentials();
-  await ensureGateway();
-  if (!(await running(app))) {
+const start = Effect.fn("start")(function* (app: App) {
+  yield* readCredentials();
+  yield* ensureGateway();
+  if (!(yield* running(app))) {
     const log = fileURLToPath(new URL(`logs/${app}.log`, local));
-    const logFile = await open(log, "a", 0o600);
-    await logFile.close();
-    await chmod(log, 0o600);
+    yield* Effect.acquireUseRelease(
+      fileIo(() => open(log, "a", 0o600)),
+      () => Effect.void,
+      (file) => fileIo(() => file.close()),
+    );
+    yield* fileIo(() => chmod(log, 0o600));
     const vp = JSON.stringify(join(root, "node_modules/.bin/vp"));
     const command = `exec ${vp} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
-    await run(
+    yield* run(
       "tmux",
       ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],
       { cwd: root },
     );
   }
-  return status();
-}
+  return yield* status();
+});
 
-async function stop(app: App) {
-  if (await running(app))
-    await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
-  return status();
-}
+const stop = Effect.fn("stop")(function* (app: App) {
+  if (yield* running(app))
+    yield* run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
+  return yield* status();
+});
 
-async function browser(app: App) {
-  const socketDirectory = await browserSocketDirectory();
-  await replacePrivateFile(browserConfig, browserSettings);
+type ChildExit =
+  | { readonly started: false }
+  | { readonly started: true; readonly code: number | null };
+
+const spawnChild = (launch: () => ChildProcess) =>
+  Effect.acquireRelease(
+    Effect.try({
+      try: () => {
+        const child = launch();
+        const exited = new Promise<ChildExit>((resolve) => {
+          child.once("error", () => resolve({ started: false }));
+          child.once("exit", (code) => resolve({ started: true, code }));
+        });
+        return { child, exited };
+      },
+      catch: () => failure("browser_start_failed"),
+    }),
+    ({ child }) =>
+      Effect.sync(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill();
+      }),
+  );
+
+const browser = Effect.fn("browser")(function* (app: App) {
+  const socketDirectory = yield* browserSocketDirectory();
+  yield* replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
   const args = [
     "--config",
     fileURLToPath(browserConfig),
-    ...(await browserLaunchArguments()),
+    ...(yield* browserLaunchArguments()),
     "--session",
     session,
   ];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   if (app === "admin") {
-    const credentials = await readCredentials();
-    const child = spawn("agent-browser", [...args, "batch", "--bail", "--json"], {
-      cwd: root,
-      env,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    child.stdout.resume();
-    child.stderr.resume();
-    child.stdin.end(
-      JSON.stringify([["set", "credentials", credentials.adminUser, credentials.adminPassword]]),
+    const credentials = yield* readCredentials();
+    yield* Effect.scoped(
+      Effect.gen(function* () {
+        const { child, exited } = yield* spawnChild(() =>
+          spawn("agent-browser", [...args, "batch", "--bail", "--json"], {
+            cwd: root,
+            env,
+            stdio: ["pipe", "pipe", "pipe"],
+          }),
+        );
+        child.stdout?.resume();
+        child.stderr?.resume();
+        child.stdin?.end(
+          JSON.stringify([
+            ["set", "credentials", credentials.adminUser, credentials.adminPassword],
+          ]),
+        );
+        const exit = yield* Effect.promise(() => exited);
+        if (!exit.started) return yield* failure("browser_start_failed");
+        if (exit.code !== 0) return yield* failure("browser_authentication_failed");
+      }),
     );
-    await new Promise<void>((resolve, reject) => {
-      child.once("error", () => reject(new Error("Could not start agent-browser")));
-      child.once("exit", (code) => {
-        if (code === 0) resolve();
-        else reject(new Error("Could not configure local browser authentication"));
-      });
-    });
   }
-  await run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
+  yield* run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
     cwd: root,
     env,
   });
@@ -293,61 +377,77 @@ async function browser(app: App) {
     origin: origins[app],
     secretsPrinted: false,
   };
-}
+});
 
-async function browserCommand(app: App, args: string[]) {
-  if (args.length === 0) throw new Error("A browser command is required");
-  const socketDirectory = await browserSocketDirectory();
-  const child = spawn(
-    "agent-browser",
-    [
-      "--config",
-      fileURLToPath(browserConfig),
-      ...(await browserLaunchArguments()),
-      "--session",
-      `template-local-${app}`,
-      ...args,
-    ],
-    {
-      cwd: root,
-      env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
-      stdio: "inherit",
-    },
-  );
-  await new Promise<void>((resolve, reject) => {
-    child.once("error", () => reject(new Error("Browser command could not start")));
-    child.once("exit", (code) => {
-      if (code !== 0) process.exitCode = code ?? 1;
-      resolve();
-    });
-  });
-}
-
-try {
-  const action = process.argv[2];
-  if (action === "setup") console.log(JSON.stringify(await setup()));
-  else if (action === "status") console.log(JSON.stringify(await status()));
-  else if (action === "connect") console.log(JSON.stringify(await connection()));
-  else {
-    const app = v.parse(appSchema, process.argv[3]);
-    if (action === "start") console.log(JSON.stringify(await start(app)));
-    else if (action === "stop") console.log(JSON.stringify(await stop(app)));
-    else if (action === "browser") console.log(JSON.stringify(await browser(app)));
-    else if (action === "browser-command") await browserCommand(app, process.argv.slice(4));
-    else if (action === "logs")
-      console.log(
-        JSON.stringify({ app, log: await readFile(new URL(`logs/${app}.log`, local), "utf8") }),
+const browserCommand = Effect.fn("browserCommand")(function* (app: App, args: string[]) {
+  if (args.length === 0) return yield* failure("browser_command_required");
+  const socketDirectory = yield* browserSocketDirectory();
+  const launchArguments = yield* browserLaunchArguments();
+  yield* Effect.scoped(
+    Effect.gen(function* () {
+      const { exited } = yield* spawnChild(() =>
+        spawn(
+          "agent-browser",
+          [
+            "--config",
+            fileURLToPath(browserConfig),
+            ...launchArguments,
+            "--session",
+            `template-local-${app}`,
+            ...args,
+          ],
+          {
+            cwd: root,
+            env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
+            stdio: "inherit",
+          },
+        ),
       );
-    else throw new Error("Unsupported local application command");
-  }
-} catch {
-  console.error(
-    JSON.stringify({
-      ok: false,
-      event: "local.application_command_failed",
-      remediation:
-        "Check vp run dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+      const exit = yield* Effect.promise(() => exited);
+      if (!exit.started) return yield* failure("browser_start_failed");
+      if (exit.code !== 0) process.exitCode = exit.code ?? 1;
     }),
   );
-  process.exitCode = 1;
-}
+});
+
+const print = (value: unknown) => Effect.sync(() => console.log(JSON.stringify(value)));
+
+const main = Effect.gen(function* () {
+  const action = process.argv[2];
+  if (action === "setup") return yield* print(yield* setup());
+  if (action === "status") return yield* print(yield* status());
+  if (action === "connect") return yield* print(yield* connection());
+  const app = yield* Schema.decodeUnknownEffect(AppName)(process.argv[3]).pipe(
+    Effect.mapError(() => failure("app_invalid")),
+  );
+  if (action === "start") return yield* print(yield* start(app));
+  if (action === "stop") return yield* print(yield* stop(app));
+  if (action === "browser") return yield* print(yield* browser(app));
+  if (action === "browser-command") return yield* browserCommand(app, process.argv.slice(4));
+  if (action === "logs") {
+    const log = yield* fileIo(() => readFile(new URL(`logs/${app}.log`, local), "utf8"));
+    return yield* print({ app, log });
+  }
+  return yield* failure("command_unsupported");
+});
+
+NodeRuntime.runMain(
+  main.pipe(
+    Effect.catchCause((cause) =>
+      Cause.hasInterruptsOnly(cause)
+        ? Effect.failCause(cause)
+        : Effect.sync(() => {
+            console.error(
+              JSON.stringify({
+                ok: false,
+                event: "local.application_command_failed",
+                remediation:
+                  "Check vp run dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+              }),
+            );
+            process.exitCode = 1;
+          }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

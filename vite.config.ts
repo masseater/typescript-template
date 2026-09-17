@@ -11,6 +11,14 @@ export default defineConfig({
         files: ["**/*.test.ts"],
         rules: { "no-empty-pattern": ["error", { allowObjectPatternsAsParameters: true }] },
       },
+      {
+        files: ["**/*.ts"],
+        rules: { "react/rules-of-hooks": "off" },
+      },
+      {
+        files: ["libs/ui/**"],
+        rules: { "react/rules-of-hooks": "error" },
+      },
     ],
     rules: {
       "react/react-in-jsx-scope": "off",
@@ -27,13 +35,19 @@ export default defineConfig({
       "import/no-cycle": "error",
       "vitest/no-standalone-expect": [
         "error",
-        { additionalTestBlockFunctions: ["test", "test.for"] },
+        {
+          additionalTestBlockFunctions: ["test", "test.for", "it.effect", "it.scoped", "it.live"],
+        },
       ],
+      "eslint/no-underscore-dangle": ["error", { allow: ["_tag"] }],
+      "typescript/consistent-return": "off",
       "vitest/valid-expect": ["error", { maxArgs: 2 }],
       "project/boundaries": "error",
       "project/no-internal-mocks": "error",
       "project/environment-boundary": "error",
       "project/worker-fetch": "error",
+      "project/effect-stack": "error",
+      "project/effect-failures": "error",
     },
     ignorePatterns: [
       "**/routeTree.gen.ts",

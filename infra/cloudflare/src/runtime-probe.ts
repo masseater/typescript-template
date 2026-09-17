@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
+import { Effect } from "effect";
 import { validateAuthSecret } from "./config.ts";
 
 assert.notEqual(process.env["PULUMI_NODEJS_TYPESCRIPT"], "true");
@@ -15,7 +16,9 @@ if (process.env["TEMPLATE_ENGINE_PROBE"] === "true") {
   assert.equal(pulumi.getProject(), "template-runtime-probe");
   await pulumi.runtime.requirePulumiVersion(">=3.262.0");
 }
-const value = pulumi.secret(validateAuthSecret("runtime-probe-not-a-real-secret-0001"));
+const value = pulumi.secret(
+  Effect.runSync(validateAuthSecret("runtime-probe-not-a-real-secret-0001")),
+);
 assert.equal(await pulumi.isSecret(value), true);
 await new Promise<void>((resolve) => {
   value.apply((resolved) => {

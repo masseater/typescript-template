@@ -1,32 +1,62 @@
 import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import * as v from "valibot";
-import type { Database, Role } from "./index.ts";
+import { Effect, Schema } from "effect";
+import { bootstrapStatement } from "./bootstrap-statement.ts";
+import type { EmailAddress } from "./bootstrap-statement.ts";
+import { DatabaseFailure, query } from "./index.ts";
+import type { DrizzleDatabase, Role } from "./index.ts";
 import { auditEvent, session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
-import { bootstrapStatement } from "./bootstrap-statement.ts";
 
-function reportMutationFailure(error: unknown): never {
-  for (let current: unknown = error; current instanceof Error; current = current.cause) {
-    if (current.message.includes("LAST_ADMIN_REQUIRED")) throw new Error("LAST_ADMIN_REQUIRED");
-  }
-  throw error;
-}
+export class AdminStrongSessionRequired extends Schema.TaggedError<AdminStrongSessionRequired>()(
+  "AdminStrongSessionRequired",
+  {},
+) {}
 
-async function requireAdmin(database: Database, sessionId: string) {
-  const actor = await getSessionSecurity(database, sessionId, "admin");
+export class LastAdminRequired extends Schema.TaggedError<LastAdminRequired>()(
+  "LastAdminRequired",
+  {},
+) {}
+
+export class TargetUnavailable extends Schema.TaggedError<TargetUnavailable>()(
+  "TargetUnavailable",
+  {},
+) {}
+
+export class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
+  "BootstrapUnavailable",
+  {},
+) {}
+
+export const UserPage = Schema.Struct({
+  limit: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+  offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+});
+
+const mentionsLastAdmin = (failure: DatabaseFailure) => {
+  for (let current: unknown = failure.cause; current instanceof Error; current = current.cause)
+    if (current.message.includes("LAST_ADMIN_REQUIRED")) return true;
+  return false;
+};
+
+const protectLastAdmin = <A, R>(effect: Effect.Effect<A, DatabaseFailure, R>) =>
+  effect.pipe(
+    Effect.mapError((failure) => (mentionsLastAdmin(failure) ? new LastAdminRequired() : failure)),
+  );
+
+const requireAdmin = Effect.fn("requireAdmin")(function* (sessionId: string) {
+  const actor = yield* getSessionSecurity(sessionId, "admin");
   if (
     !actor ||
     actor.user.role !== "admin" ||
     !actor.user.emailVerified ||
     !["password_totp", "passkey_uv"].includes(actor.session.authenticationMethod)
-  ) {
-    throw new Error("ADMIN_STRONG_SESSION_REQUIRED");
-  }
+  )
+    return yield* new AdminStrongSessionRequired();
   return actor;
-}
+});
 
-function liveAdmin(database: Database, sessionId: string) {
+function liveAdmin(database: DrizzleDatabase, sessionId: string) {
   const actor = alias(user, "actor");
   return exists(
     database
@@ -47,83 +77,82 @@ function liveAdmin(database: Database, sessionId: string) {
   );
 }
 
-const pageInput = v.strictObject({
-  limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 50),
-  offset: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0)), 0),
+export const listUsers = Effect.fn("listUsers")(function* (
+  sessionId: string,
+  page: typeof UserPage.Type,
+) {
+  yield* requireAdmin(sessionId);
+  const users = yield* query((database) =>
+    database
+      .select({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        profile: user.profile,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+      })
+      .from(user)
+      .where(liveAdmin(database, sessionId))
+      .orderBy(desc(user.createdAt), user.id)
+      .limit(page.limit)
+      .offset(page.offset),
+  );
+  const [total] = yield* query((database) =>
+    database.select({ count: count() }).from(user).where(liveAdmin(database, sessionId)),
+  );
+  return { users, total: total?.count ?? 0 };
 });
 
-export async function listUsers(database: Database, sessionId: string, input: unknown = {}) {
-  await requireAdmin(database, sessionId);
-  const page = v.parse(pageInput, input);
-  const users = await database
-    .select({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      profile: user.profile,
-      role: user.role,
-      emailVerified: user.emailVerified,
-      createdAt: user.createdAt,
-    })
-    .from(user)
-    .where(liveAdmin(database, sessionId))
-    .orderBy(desc(user.createdAt), user.id)
-    .limit(page.limit)
-    .offset(page.offset);
-  const [total] = await database
-    .select({ count: count() })
-    .from(user)
-    .where(liveAdmin(database, sessionId));
-  return { users, total: total?.count ?? 0 };
-}
+const recordAudit = (actorId: string, targetId: string, action: "role_changed" | "user_deleted") =>
+  query((database) =>
+    database.insert(auditEvent).values({
+      id: crypto.randomUUID(),
+      actorId,
+      targetId,
+      action,
+      createdAt: new Date(),
+    }),
+  );
 
-export async function setUserRole(
-  database: Database,
+export const setUserRole = Effect.fn("setUserRole")(function* (
   sessionId: string,
   targetId: string,
   role: Role,
 ) {
-  v.parse(v.picklist(["user", "admin"]), role);
-  const actor = await requireAdmin(database, sessionId);
-  const [updated] = await database
-    .update(user)
-    .set({ role, updatedAt: new Date() })
-    .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
-    .returning({ id: user.id, role: user.role })
-    .catch(reportMutationFailure);
-  if (!updated) throw new Error("USER_NOT_FOUND_OR_AUTHORITY_REVOKED");
-  await database.insert(auditEvent).values({
-    id: crypto.randomUUID(),
-    actorId: actor.user.id,
-    targetId,
-    action: "role_changed",
-    createdAt: new Date(),
-  });
+  const actor = yield* requireAdmin(sessionId);
+  const [updated] = yield* query((database) =>
+    database
+      .update(user)
+      .set({ role, updatedAt: new Date() })
+      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
+      .returning({ id: user.id, role: user.role }),
+  ).pipe(protectLastAdmin);
+  if (!updated) return yield* new TargetUnavailable();
+  yield* recordAudit(actor.user.id, targetId, "role_changed");
   return updated;
-}
+});
 
-export async function deleteUser(database: Database, sessionId: string, targetId: string) {
-  const actor = await requireAdmin(database, sessionId);
-  const [removed] = await database
-    .delete(user)
-    .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
-    .returning({ id: user.id })
-    .catch(reportMutationFailure);
-  if (!removed) throw new Error("USER_NOT_FOUND_OR_AUTHORITY_REVOKED");
-  await database.insert(auditEvent).values({
-    id: crypto.randomUUID(),
-    actorId: actor.user.id,
-    targetId,
-    action: "user_deleted",
-    createdAt: new Date(),
-  });
+export const deleteUser = Effect.fn("deleteUser")(function* (sessionId: string, targetId: string) {
+  const actor = yield* requireAdmin(sessionId);
+  const [removed] = yield* query((database) =>
+    database
+      .delete(user)
+      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
+      .returning({ id: user.id }),
+  ).pipe(protectLastAdmin);
+  if (!removed) return yield* new TargetUnavailable();
+  yield* recordAudit(actor.user.id, targetId, "user_deleted");
   return removed;
-}
+});
 
-export async function bootstrapAdmin(database: Database, email: string) {
-  const [updated] = await database.all<{ id: string; email: string; role: Role }>(
-    bootstrapStatement(email),
+export const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* (
+  email: typeof EmailAddress.Type,
+) {
+  const [updated] = yield* query((database) =>
+    database.all<{ id: string; email: string; role: Role }>(bootstrapStatement(email)),
   );
-  if (!updated) throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
+  if (!updated) return yield* new BootstrapUnavailable();
   return updated;
-}
+});

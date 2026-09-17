@@ -1,5 +1,6 @@
-import { expect, test } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
 import { readWikiConfig } from "@template/config";
+import { Effect } from "effect";
 import {
   appPolicy,
   parseSharedConfig,
@@ -8,6 +9,7 @@ import {
   selectReadPermission,
   validateAuthSecret,
 } from "./config.ts";
+import type { CloudflareFailure } from "./config.ts";
 
 const settings = {
   accountId: "a".repeat(32),
@@ -28,109 +30,174 @@ const settings = {
   },
 };
 
-test("deployment commands reject ignored arguments instead of selecting an unintended stack", () => {
-  expect(parseDeploymentCommand(["preview", "admin"])).toEqual({
-    operation: "preview",
-    target: "admin",
-  });
-  expect(() => parseDeploymentCommand(["up", "user", "--stack", "other"])).toThrow(
-    "deployment_command_invalid",
+const code = <A, R>(effect: Effect.Effect<A, CloudflareFailure, R>) =>
+  effect.pipe(
+    Effect.flip,
+    Effect.map((failure) => failure.code),
   );
-  expect(parseDeploymentCommand(["up", "wiki"])).toEqual({ operation: "up", target: "wiki" });
-  expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
-});
 
-test("user and admin are distinct deployments with all alternative public URLs disabled", () => {
-  const config = parseSharedConfig(settings);
-  expect(appPolicy(config, "user")).toEqual({
-    name: "template-test-user",
-    origin: settings.userOrigin,
-    subdomain: { enabled: false, previewsEnabled: false },
-    assets: { runWorkerFirst: true },
-  });
-  expect(appPolicy(config, "admin").name).toBe("template-test-admin");
-  expect(appPolicy(config, "admin").subdomain).toEqual({ enabled: false, previewsEnabled: false });
-  expect(appPolicy(config, "admin").assets.runWorkerFirst).toBe(true);
-  expect(appPolicy(config, "wiki")).toEqual({
-    name: "template-test-wiki",
-    origin: settings.wikiOrigin,
-    subdomain: { enabled: false, previewsEnabled: false },
-    assets: { runWorkerFirst: true },
-  });
-});
+it.effect(
+  "deployment commands reject ignored arguments instead of selecting an unintended stack",
+  () =>
+    Effect.gen(function* () {
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["preview", "admin"]), {
+        operation: "preview",
+        target: "admin",
+      });
+      assert.strictEqual(
+        yield* code(parseDeploymentCommand(["up", "user", "--stack", "other"])),
+        "deployment_command_invalid",
+      );
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["up", "wiki"]), {
+        operation: "up",
+        target: "wiki",
+      });
+      assert.strictEqual(
+        yield* code(parseDeploymentCommand(["up", "unknown"])),
+        "deployment_command_invalid",
+      );
+    }),
+);
 
-test("the wiki reads its production settings without authentication or database bindings", () => {
-  const config = parseSharedConfig(settings);
-  const runtime = readWikiConfig({
-    APP_ORIGIN: appPolicy(config, "wiki").origin,
-    APP_RELEASE: "0123456789abcdef",
-    ASSETS: { fetch: () => Promise.resolve(new Response()) },
-  });
-  expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
-  expect(runtime.APP_RELEASE).toBe("0123456789abcdef");
-  expect(runtime.AI).toBeNull();
-  const ai = { run: () => Promise.resolve({ data: [] }) };
-  expect(
-    readWikiConfig({
-      APP_ORIGIN: appPolicy(config, "wiki").origin,
-      ASSETS: { fetch: () => Promise.resolve(new Response()) },
-      AI: ai,
-    }).AI,
-  ).toBe(ai);
-});
+it.effect("user and admin are distinct deployments with all alternative public URLs disabled", () =>
+  Effect.gen(function* () {
+    const config = yield* parseSharedConfig(settings);
+    assert.deepStrictEqual(appPolicy(config, "user"), {
+      name: "template-test-user",
+      origin: settings.userOrigin,
+      subdomain: { enabled: false, previewsEnabled: false },
+      assets: { runWorkerFirst: true },
+    });
+    assert.strictEqual(appPolicy(config, "admin").name, "template-test-admin");
+    assert.deepStrictEqual(appPolicy(config, "admin").subdomain, {
+      enabled: false,
+      previewsEnabled: false,
+    });
+    assert.isTrue(appPolicy(config, "admin").assets.runWorkerFirst);
+    assert.deepStrictEqual(appPolicy(config, "wiki"), {
+      name: "template-test-wiki",
+      origin: settings.wikiOrigin,
+      subdomain: { enabled: false, previewsEnabled: false },
+      assets: { runWorkerFirst: true },
+    });
+  }),
+);
 
-test.each([
+it.effect(
+  "the wiki reads its production settings without authentication or database bindings",
+  () =>
+    Effect.gen(function* () {
+      const config = yield* parseSharedConfig(settings);
+      const runtime = yield* readWikiConfig({
+        APP_ORIGIN: appPolicy(config, "wiki").origin,
+        APP_RELEASE: "0123456789abcdef",
+        ASSETS: { fetch: () => Promise.resolve(new Response()) },
+      });
+      assert.strictEqual(runtime.APP_ORIGIN, settings.wikiOrigin);
+      assert.strictEqual(runtime.APP_RELEASE, "0123456789abcdef");
+      assert.isUndefined(runtime.AI);
+      const ai = { run: () => Promise.resolve({ data: [] }) };
+      const withAi = yield* readWikiConfig({
+        APP_ORIGIN: appPolicy(config, "wiki").origin,
+        ASSETS: { fetch: () => Promise.resolve(new Response()) },
+        AI: ai,
+      });
+      assert.strictEqual<unknown>(withAi.AI, ai);
+    }),
+);
+
+for (const adminOrigin of [
   "http://admin.example.com",
   "https://admin.example.com/path",
   "https://admin.example.com/",
   "https://admin.example.com?x=1",
   "https://app.team.workers.dev",
   "not-a-url",
-])("rejects unsafe admin origin %s", (adminOrigin) => {
-  expect(() => parseSharedConfig({ ...settings, adminOrigin })).toThrow(
-    "cloudflare_settings_invalid",
+])
+  it.effect(`rejects unsafe admin origin ${adminOrigin}`, () =>
+    Effect.gen(function* () {
+      assert.strictEqual(
+        yield* code(parseSharedConfig({ ...settings, adminOrigin })),
+        "cloudflare_settings_invalid",
+      );
+    }),
   );
-});
 
-test("rejects same origins and empty management allowlists", () => {
-  expect(() => parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })).toThrow(
-    "app_origins_must_differ",
-  );
-  expect(() => parseSharedConfig({ ...settings, adminEmails: [] })).toThrow(
-    "cloudflare_settings_invalid",
-  );
-});
+it.effect("rejects same origins and empty management allowlists", () =>
+  Effect.gen(function* () {
+    assert.strictEqual(
+      yield* code(parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })),
+      "app_origins_must_differ",
+    );
+    assert.strictEqual(
+      yield* code(parseSharedConfig({ ...settings, adminEmails: [] })),
+      "cloudflare_settings_invalid",
+    );
+  }),
+);
 
-test("refuses a budget exhausted by fixed fees", () => {
-  expect(() =>
-    parseSharedConfig({ ...settings, budget: { ...settings.budget, fixedCostUsd: 50 } }),
-  ).toThrow("budget_has_no_usage_allowance");
-});
+it.effect("refuses a budget exhausted by fixed fees", () =>
+  Effect.gen(function* () {
+    assert.strictEqual(
+      yield* code(
+        parseSharedConfig({ ...settings, budget: { ...settings.budget, fixedCostUsd: 50 } }),
+      ),
+      "budget_has_no_usage_allowance",
+    );
+  }),
+);
 
-test("selects Billing Read only and refuses substituted write scopes", () => {
-  const read = { id: "c".repeat(32), name: "Billing Read", scopes: ["com.cloudflare.api.account"] };
-  expect(selectReadPermission([read, { ...read, name: "Billing Edit" }])).toBe(read.id);
-  expect(() => selectReadPermission([{ ...read, name: "Billing Edit" }])).toThrow(
-    "billing_read_permission_unavailable",
-  );
-  expect(() => selectReadPermission([read, read])).toThrow("billing_read_permission_unavailable");
-});
+it.effect("selects Billing Read only and refuses substituted write scopes", () =>
+  Effect.gen(function* () {
+    const read = {
+      id: "c".repeat(32),
+      name: "Billing Read",
+      scopes: ["com.cloudflare.api.account"],
+    };
+    assert.strictEqual(
+      yield* selectReadPermission([read, { ...read, name: "Billing Edit" }]),
+      read.id,
+    );
+    assert.strictEqual(
+      yield* code(selectReadPermission([{ ...read, name: "Billing Edit" }])),
+      "billing_read_permission_unavailable",
+    );
+    assert.strictEqual(
+      yield* code(selectReadPermission([read, read])),
+      "billing_read_permission_unavailable",
+    );
+  }),
+);
 
-test("secret validation errors do not include their inputs", () => {
-  expect(() => validateAuthSecret("private-value")).toThrow("auth_secret_invalid");
-  expect(validateAuthSecret("x".repeat(32))).toBe("x".repeat(32));
-});
+it.effect("secret validation errors do not include their inputs", () =>
+  Effect.gen(function* () {
+    const failure = yield* validateAuthSecret("private-value").pipe(Effect.flip);
+    assert.strictEqual(failure.code, "auth_secret_invalid");
+    assert.notInclude(JSON.stringify(failure), "private-value");
+    assert.notInclude(String(failure), "private-value");
+    assert.strictEqual(yield* validateAuthSecret("x".repeat(32)), "x".repeat(32));
+  }),
+);
 
-test("the error monitor token may only run Workers Observability queries", () => {
-  const write = {
-    id: "d".repeat(32),
-    name: "Workers Observability Write",
-    scopes: ["com.cloudflare.api.account"],
-  };
-  expect(
-    selectObservabilityQueryPermission([write, { ...write, name: "Workers Scripts Write" }]),
-  ).toBe(write.id);
-  expect(() =>
-    selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
-  ).toThrow("observability_query_permission_unavailable");
-});
+it.effect("the error monitor token may only run Workers Observability queries", () =>
+  Effect.gen(function* () {
+    const write = {
+      id: "d".repeat(32),
+      name: "Workers Observability Write",
+      scopes: ["com.cloudflare.api.account"],
+    };
+    assert.strictEqual(
+      yield* selectObservabilityQueryPermission([
+        write,
+        { ...write, name: "Workers Scripts Write" },
+      ]),
+      write.id,
+    );
+    assert.strictEqual(
+      yield* code(
+        selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
+      ),
+      "observability_query_permission_unavailable",
+    );
+  }),
+);

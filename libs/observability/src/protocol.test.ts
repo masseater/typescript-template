@@ -1,6 +1,7 @@
+import { Result, Schema } from "effect";
 import { expect, test } from "vite-plus/test";
+import { browserEvents } from "./events.ts";
 import { parentContext, routeLabel, validateRoutes } from "./protocol.ts";
-import { parseBrowserEvents } from "./events.ts";
 
 const context = {
   traceId: "a".repeat(32),
@@ -19,6 +20,10 @@ const event = {
   name: "http.client.request",
   value: 0,
 };
+const labels = new Set(["home"]);
+const parse = (input: unknown) =>
+  Schema.decodeUnknownResult(browserEvents(labels, now), { onExcessProperty: "error" })(input);
+const accepted = (input: unknown) => Result.isSuccess(parse(input));
 
 test("traceparent rejects zero IDs, extra fields and token-bearing strings", () => {
   expect(parentContext(`00-${context.traceId}-${context.spanId}-01`)).toEqual({
@@ -39,34 +44,18 @@ test("unknown URL paths cannot become telemetry labels", () => {
 });
 
 test("browser ingress rejects PII, arbitrary fields, forged labels and unbounded batches", () => {
-  const labels = new Set(["home"]);
-  expect(parseBrowserEvents([event], labels, now)).toEqual([event]);
-  expect(() =>
-    parseBrowserEvents([{ ...event, profile: "private biography" }], labels, now),
-  ).toThrow("fields");
-  expect(() =>
-    parseBrowserEvents([{ ...event, route: "private@example.com" }], labels, now),
-  ).toThrow("value");
-  expect(() =>
-    parseBrowserEvents([{ ...event, name: "Bearer private-token" }], labels, now),
-  ).toThrow("event");
-  expect(() => parseBrowserEvents([{ ...event, duration: Infinity }], labels, now)).toThrow(
-    "value",
-  );
-  expect(() => parseBrowserEvents([{ ...event, start: now - 4_000_000 }], labels, now)).toThrow(
-    "value",
-  );
-  expect(() =>
-    parseBrowserEvents(
-      Array.from({ length: 33 }, () => event),
-      labels,
-      now,
-    ),
-  ).toThrow("batch");
+  const result = parse([event]);
+  expect(Result.isSuccess(result) && result.success).toEqual([event]);
+  expect(accepted([{ ...event, profile: "private biography" }])).toBe(false);
+  expect(accepted([{ ...event, route: "private@example.com" }])).toBe(false);
+  expect(accepted([{ ...event, name: "Bearer private-token" }])).toBe(false);
+  expect(accepted([{ ...event, duration: Infinity }])).toBe(false);
+  expect(accepted([{ ...event, start: now - 4_000_000 }])).toBe(false);
+  expect(accepted(Array.from({ length: 33 }, () => event))).toBe(false);
+  expect(accepted([])).toBe(false);
 });
 
 test("browser exceptions carry only a known error type and bounded stack locations", () => {
-  const labels = new Set(["home"]);
   const exception = {
     ...event,
     kind: "exception",
@@ -77,18 +66,13 @@ test("browser exceptions carry only a known error type and bounded stack locatio
     errorType: "TypeError",
     locations: "/assets/index-abc.js:1:234\n/assets/auth-def.js:5:6",
   };
-  expect(parseBrowserEvents([exception], labels, now)).toEqual([exception]);
-  expect(() => parseBrowserEvents([{ ...exception, errorType: "Custom" }], labels, now)).toThrow(
-    "event",
-  );
-  expect(() =>
-    parseBrowserEvents([{ ...exception, locations: "private@example.com" }], labels, now),
-  ).toThrow("event");
+  const result = parse([exception]);
+  expect(Result.isSuccess(result) && result.success).toEqual([exception]);
+  expect(accepted([{ ...exception, errorType: "Custom" }])).toBe(false);
+  expect(accepted([{ ...exception, locations: "private@example.com" }])).toBe(false);
   const { errorType: _type, locations: _locations, ...withoutDetails } = exception;
-  expect(() => parseBrowserEvents([withoutDetails], labels, now)).toThrow("fields");
-  expect(() => parseBrowserEvents([{ ...event, errorType: "TypeError" }], labels, now)).toThrow(
-    "fields",
-  );
+  expect(accepted([withoutDetails])).toBe(false);
+  expect(accepted([{ ...event, errorType: "TypeError" }])).toBe(false);
 });
 
 test("route matching accepts terminal wildcards, prioritizes exact paths and never emits captured paths", () => {

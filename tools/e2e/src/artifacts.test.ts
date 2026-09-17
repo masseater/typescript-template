@@ -1,17 +1,16 @@
-import { expect, test } from "vite-plus/test";
+import { it } from "@effect/vitest";
+import { Effect } from "effect";
 import { loadArtifacts, assertEntries, assertSeparation, assertPublicSafety } from "./artifacts.ts";
 
-test("built Workers have separate executable entries and gated, client-only assets roots", async () => {
-  const pair = await loadArtifacts();
-  expect(() => assertEntries(pair)).not.toThrow();
-});
+it.live("built Workers have separate executable entries and gated, client-only assets roots", () =>
+  Effect.flatMap(loadArtifacts(), assertEntries),
+);
 
-test("actual user bundles contain no dedicated admin UI, route, gate or database module", async () => {
-  const pair = await loadArtifacts();
-  expect(() => assertSeparation(pair)).not.toThrow();
-});
+it.live("actual user bundles contain no dedicated admin UI, route, gate or database module", () =>
+  Effect.flatMap(loadArtifacts(), assertSeparation),
+);
 
-test("actual public assets contain no source maps, private configuration or local secret values", async () => {
-  const pair = await loadArtifacts();
-  expect(() => assertPublicSafety(pair)).not.toThrow();
-});
+it.live(
+  "actual public assets contain no source maps, private configuration or local secret values",
+  () => Effect.flatMap(loadArtifacts(), assertPublicSafety),
+);

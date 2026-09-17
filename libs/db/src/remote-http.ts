@@ -1,45 +1,43 @@
-import * as v from "valibot";
+import { Effect, Schema } from "effect";
+import { RemoteCredentials, RemoteFailure } from "./remote-input.ts";
 import type { DatabaseExecutor } from "./remote-operations.ts";
 
-const configSchema = v.strictObject({
-  accountId: v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/)),
-  databaseId: v.pipe(
-    v.string(),
-    v.uuid(),
-    v.check((value) => !value.startsWith("00000000-")),
+const QueryResponse = Schema.Struct({
+  success: Schema.Literal(true),
+  result: Schema.Array(
+    Schema.Struct({ success: Schema.Literal(true), results: Schema.Array(Schema.Unknown) }),
   ),
-  apiToken: v.pipe(v.string(), v.minLength(20), v.regex(/^[A-Za-z0-9_-]+$/)),
 });
 
-export function remoteExecutor(input: unknown): DatabaseExecutor {
-  const parsed = v.safeParse(configSchema, input);
-  if (!parsed.success) throw new Error("REMOTE_INPUT_INVALID");
-  const { accountId, databaseId, apiToken } = parsed.output;
+const queryFailed = () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
+
+export const remoteExecutor = Effect.fn("remoteExecutor")(function* (input: unknown) {
+  const { accountId, databaseId, apiToken } = yield* Schema.decodeUnknownEffect(RemoteCredentials)(
+    input,
+  ).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
-  return {
-    async batch(queries) {
-      try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
-          body: JSON.stringify({ batch: queries }),
-          signal: AbortSignal.timeout(30_000),
-          redirect: "error",
+  const executor: DatabaseExecutor = {
+    batch: (queries) =>
+      Effect.gen(function* () {
+        const response = yield* Effect.tryPromise({
+          try: (signal) =>
+            fetch(endpoint, {
+              method: "POST",
+              headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
+              body: JSON.stringify({ batch: queries }),
+              signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
+              redirect: "error",
+            }),
+          catch: queryFailed,
         });
-        if (!response.ok) throw new Error("failed");
-        const result = v.safeParse(
-          v.object({
-            success: v.literal(true),
-            result: v.array(v.object({ success: v.literal(true), results: v.array(v.unknown()) })),
-          }),
-          await response.json(),
+        if (!response.ok) return yield* queryFailed();
+        const body = yield* Effect.tryPromise({ try: () => response.json(), catch: queryFailed });
+        const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(body).pipe(
+          Effect.mapError(queryFailed),
         );
-        if (!result.success || result.output.result.length !== queries.length)
-          throw new Error("failed");
-        return result.output.result.map((item) => item.results);
-      } catch {
-        throw new Error("REMOTE_QUERY_FAILED");
-      }
-    },
+        if (decoded.result.length !== queries.length) return yield* queryFailed();
+        return decoded.result.map((item) => item.results);
+      }),
   };
-}
+  return executor;
+});

@@ -1,35 +1,53 @@
-import * as v from "valibot";
+import { Effect, Schema, SchemaGetter, SchemaTransformation } from "effect";
 
-const positive = v.pipe(v.number(), v.finite(), v.minValue(Number.MIN_VALUE));
-const nonnegative = v.pipe(v.number(), v.finite(), v.minValue(0));
-const decimal = v.pipe(v.string(), v.regex(/^\d+(?:\.\d+)?$/), v.transform(Number));
-const schema = v.object({
-  CLOUDFLARE_ACCOUNT_ID: v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/)),
-  BILLING_READ_TOKEN: v.pipe(v.string(), v.minLength(20)),
-  BUDGET_JPY: v.pipe(decimal, positive),
-  JPY_PER_USD: v.pipe(decimal, positive),
-  FIXED_COST_USD: v.pipe(decimal, nonnegative),
-  RESERVE_USD: v.pipe(decimal, nonnegative),
-  ALERT_FROM: v.pipe(v.string(), v.email()),
-  ALERT_TO: v.pipe(
-    v.string(),
-    v.transform((value) => value.split(",")),
-    v.array(v.pipe(v.string(), v.email())),
-    v.minLength(1),
-    v.maxLength(10),
-  ),
+export class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
+  code: Schema.Literals([
+    "budget_config_invalid",
+    "budget_has_no_usage_allowance",
+    "budget_input_invalid",
+    "billing_account_invalid",
+    "billing_http_failed",
+    "billing_response_invalid",
+    "billing_period_ambiguous",
+    "billing_account_mismatch",
+    "billing_dates_invalid",
+    "billing_duplicate_record",
+    "billing_data_stale",
+    "billing_cost_invalid",
+  ]),
+}) {}
+
+export const fail = (code: BudgetFailure["code"]) => Effect.fail(new BudgetFailure({ code }));
+
+const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
+const Decimal = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/)).pipe(
+  Schema.decodeTo(Schema.Number.check(Schema.isFinite()), SchemaTransformation.numberFromString),
+);
+const Recipients = Schema.String.pipe(
+  Schema.decodeTo(Schema.Array(Email).check(Schema.isLengthBetween(1, 10)), {
+    decode: SchemaGetter.transform((value: string) => value.split(",")),
+    encode: SchemaGetter.transform((value: readonly string[]) => value.join(",")),
+  }),
+);
+
+const BudgetEnvironment = Schema.Struct({
+  CLOUDFLARE_ACCOUNT_ID: Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/)),
+  BILLING_READ_TOKEN: Schema.String.check(Schema.isMinLength(20)),
+  BUDGET_JPY: Decimal.check(Schema.isGreaterThan(0)),
+  JPY_PER_USD: Decimal.check(Schema.isGreaterThan(0)),
+  FIXED_COST_USD: Decimal,
+  RESERVE_USD: Decimal,
+  ALERT_FROM: Email,
+  ALERT_TO: Recipients,
 });
 
-export type BudgetConfig = v.InferOutput<typeof schema>;
+export type BudgetConfig = typeof BudgetEnvironment.Type;
 
-export function parseBudgetConfig(input: unknown): BudgetConfig {
-  const result = v.safeParse(schema, input);
-  if (!result.success) throw new Error("budget_config_invalid");
-  if (
-    result.output.BUDGET_JPY / result.output.JPY_PER_USD <=
-    result.output.FIXED_COST_USD + result.output.RESERVE_USD
-  ) {
-    throw new Error("budget_has_no_usage_allowance");
-  }
-  return result.output;
-}
+export const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* (input: unknown) {
+  const config = yield* Schema.decodeUnknownEffect(BudgetEnvironment)(input).pipe(
+    Effect.mapError(() => new BudgetFailure({ code: "budget_config_invalid" })),
+  );
+  if (config.BUDGET_JPY / config.JPY_PER_USD <= config.FIXED_COST_USD + config.RESERVE_USD)
+    return yield* fail("budget_has_no_usage_allowance");
+  return config;
+});

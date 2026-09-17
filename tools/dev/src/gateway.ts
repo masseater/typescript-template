@@ -1,14 +1,48 @@
 import { connect, createServer } from "node:net";
+import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Effect, Schema } from "effect";
 
-const target = Number(process.argv[2]);
-if (!Number.isInteger(target) || target <= 1024)
-  throw new Error("A proxy port above 1024 is required");
+class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
+  reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),
+}) {}
 
-createServer((client) => {
-  const upstream = connect(target, "127.0.0.1");
-  client.pipe(upstream).pipe(client);
-  client.on("error", () => upstream.destroy());
-  upstream.on("error", () => client.destroy());
-}).listen({ port: 443, host: "::" }, () => {
-  console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
-});
+const ProxyPort = Schema.Number.check(Schema.isInt(), Schema.isGreaterThan(1024));
+
+const listen = (target: number) =>
+  Effect.acquireRelease(
+    Effect.callback<ReturnType<typeof createServer>, GatewayFailure>((resume) => {
+      const server = createServer((client) => {
+        const upstream = connect(target, "127.0.0.1");
+        client.pipe(upstream).pipe(client);
+        client.on("error", () => upstream.destroy());
+        upstream.on("error", () => client.destroy());
+      });
+      server.once("error", () =>
+        resume(Effect.fail(new GatewayFailure({ reason: "listen_failed" }))),
+      );
+      server.listen({ port: 443, host: "::" }, () => resume(Effect.succeed(server)));
+    }),
+    (server) => Effect.sync(() => server.close()),
+  );
+
+NodeRuntime.runMain(
+  Effect.gen(function* () {
+    const target = yield* Schema.decodeUnknownEffect(ProxyPort)(Number(process.argv[2])).pipe(
+      Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
+    );
+    yield* listen(target);
+    console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
+    return yield* Effect.never;
+  }).pipe(
+    Effect.scoped,
+    Effect.catchCause((cause) =>
+      Cause.hasInterruptsOnly(cause)
+        ? Effect.failCause(cause)
+        : Effect.sync(() => {
+            console.error(JSON.stringify({ event: "local.gateway_failed" }));
+            process.exitCode = 1;
+          }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

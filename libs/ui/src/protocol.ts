@@ -1,16 +1,9 @@
-import * as v from "valibot";
+import type { SessionView as SessionContract } from "@template/runtime/contracts";
 
-export const sessionSchema = v.object({
-  user: v.object({
-    id: v.string(),
-    name: v.string(),
-    email: v.pipe(v.string(), v.email()),
-    role: v.picklist(["user", "admin"]),
-    twoFactorEnabled: v.boolean(),
-  }),
-  strong: v.boolean(),
-});
-export type SessionView = v.InferOutput<typeof sessionSchema>;
+export type SessionView = typeof SessionContract.Type;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
@@ -32,13 +25,12 @@ export function requirePasskeyUV(data: unknown, pathname: string): void {
     !pathname.endsWith("/passkey/generate-register-options")
   )
     return;
-  if (!v.is(v.record(v.string(), v.unknown()), data))
-    throw new Error("パスキー設定の応答形式が不正です。");
+  if (!isRecord(data)) throw new Error("パスキー設定の応答形式が不正です。");
   if (pathname.endsWith("/passkey/generate-authenticate-options")) {
     data["userVerification"] = "required";
   } else {
     const selection = data["authenticatorSelection"];
-    if (selection !== undefined && !v.is(v.record(v.string(), v.unknown()), selection)) {
+    if (selection !== undefined && !isRecord(selection)) {
       throw new Error("パスキー登録設定の応答形式が不正です。");
     }
     data["authenticatorSelection"] = { ...selection, userVerification: "required" };

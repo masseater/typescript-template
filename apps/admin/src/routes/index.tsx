@@ -4,21 +4,13 @@ import { Page, Status, useSession } from "@template/ui";
 import { SignOutButton } from "@template/ui/auth";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Table, Th, Td } from "smarthr-ui";
-import * as v from "valibot";
+import {
+  RoleChanged,
+  UserDeleted,
+  UserList as UserListContract,
+} from "@template/runtime/contracts";
 
-const usersSchema = v.object({
-  users: v.array(
-    v.object({
-      id: v.string(),
-      name: v.string(),
-      email: v.string(),
-      role: v.picklist(["user", "admin"]),
-      emailVerified: v.boolean(),
-    }),
-  ),
-  total: v.number(),
-});
-type UserList = v.InferOutput<typeof usersSchema>;
+type UserList = typeof UserListContract.Type;
 export const Route = createFileRoute("/")({ component: Users });
 
 function Users() {
@@ -30,7 +22,7 @@ function Users() {
   const [message, setMessage] = useState("");
   const load = useCallback(async () => {
     try {
-      setData(v.parse(usersSchema, await requestJson(`/api/users?limit=50&offset=${offset}`)));
+      setData(await requestJson(`/api/users?limit=50&offset=${offset}`, UserListContract));
     } catch (cause) {
       setData(null);
       setError(cause instanceof Error ? cause.message : "一覧の取得に失敗しました。");
@@ -40,9 +32,9 @@ function Users() {
   useEffect(() => {
     if (!authorized) return undefined;
     let active = true;
-    void requestJson(`/api/users?limit=50&offset=${offset}`)
+    void requestJson(`/api/users?limit=50&offset=${offset}`, UserListContract)
       .then((body) => {
-        if (active) setData(v.parse(usersSchema, body));
+        if (active) setData(body);
         return undefined;
       })
       .catch((cause: unknown) => {
@@ -69,13 +61,13 @@ function Users() {
     setMessage("");
     async function update() {
       try {
-        await requestJson("/api/users", {
-          method,
-          body:
-            method === "DELETE"
-              ? { id: user.id }
-              : { id: user.id, role: user.role === "admin" ? "user" : "admin" },
-        });
+        if (method === "DELETE")
+          await requestJson("/api/users", UserDeleted, { method, body: { id: user.id } });
+        else
+          await requestJson("/api/users", RoleChanged, {
+            method,
+            body: { id: user.id, role: user.role === "admin" ? "user" : "admin" },
+          });
         setMessage(
           method === "DELETE"
             ? "ユーザーを削除しました。"

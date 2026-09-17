@@ -1,20 +1,35 @@
 import { fileURLToPath } from "node:url";
-import * as v from "valibot";
+import { NodeRuntime } from "@effect/platform-node";
+import type { D1Database } from "@cloudflare/workers-types";
+import { Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
 import { bootstrapAdmin } from "./admin.ts";
-import { createDb } from "./index.ts";
-import type { DatabaseBinding } from "./index.ts";
+import { EmailAddress } from "./bootstrap-statement.ts";
+import { Database } from "./index.ts";
 
-async function bootstrapLocal() {
-  const email = v.parse(v.pipe(v.string(), v.email()), process.argv[2]);
-  const platform = await getPlatformProxy<{ DB: DatabaseBinding }>({
-    remoteBindings: false,
-    envFiles: [],
-    configPath: fileURLToPath(new URL("../../../apps/user/wrangler.jsonc", import.meta.url)),
-    persist: { path: fileURLToPath(new URL("../../../.local/d1/v3", import.meta.url)) },
+const platform = Effect.acquireRelease(
+  Effect.promise(() =>
+    getPlatformProxy<{ DB: D1Database }>({
+      remoteBindings: false,
+      envFiles: [],
+      configPath: fileURLToPath(new URL("../../../apps/user/wrangler.jsonc", import.meta.url)),
+      persist: { path: fileURLToPath(new URL("../../../.local/d1/v3", import.meta.url)) },
+    }),
+  ),
+  (proxy) => Effect.promise(() => proxy.dispose()),
+);
+
+const report = (error: string) =>
+  Effect.sync(() => {
+    console.error(JSON.stringify({ action: "admin_bootstrap", success: false, error }));
+    process.exitCode = 1;
   });
-  try {
-    const administrator = await bootstrapAdmin(createDb(platform.env.DB), email);
+
+NodeRuntime.runMain(
+  Effect.gen(function* () {
+    const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
+    const { env } = yield* platform;
+    const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
     console.log(
       JSON.stringify({
         action: "admin_bootstrap",
@@ -22,21 +37,12 @@ async function bootstrapLocal() {
         role: administrator.role,
       }),
     );
-  } finally {
-    await platform.dispose();
-  }
-}
-
-await bootstrapLocal().catch((error: unknown) => {
-  console.error(
-    JSON.stringify({
-      action: "admin_bootstrap",
-      success: false,
-      error:
-        error instanceof Error && error.message === "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"
-          ? error.message
-          : "LOCAL_BOOTSTRAP_FAILED",
-    }),
-  );
-  process.exitCode = 1;
-});
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("BootstrapUnavailable", () =>
+      report("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"),
+    ),
+    Effect.catchCause(() => report("LOCAL_BOOTSTRAP_FAILED")),
+  ),
+  { disableErrorReporting: true },
+);

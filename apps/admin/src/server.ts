@@ -1,42 +1,38 @@
 import handler from "@tanstack/react-start/server-entry";
-import { createRuntime } from "@template/runtime";
-import { secureResponse } from "@template/runtime/http";
+import { appLayer } from "@template/runtime";
+import { Assets, secureResponse } from "@template/runtime/http";
+import { requestPath, serveWorker } from "@template/runtime/worker";
+import { env } from "cloudflare:workers";
+import { Effect, ManagedRuntime } from "effect";
 import { enforceAdminAccess, localAccessCookie } from "./access.ts";
+import { adminApi, dispatchAdminApi } from "./api.ts";
 import { routes } from "./telemetry-routes.ts";
 
-export default {
-  async fetch(request: Request, bindings: unknown) {
-    const runtime = createRuntime(bindings, "admin", routes);
-    return runtime.telemetry.wrapRequest(request, async (incoming, correlation) => {
-      const denied = await enforceAdminAccess(incoming, bindings);
-      if (denied) return denied;
-      const response = await route(incoming, correlation);
-      const cookie = await localAccessCookie(bindings);
-      if (!cookie) return response;
-      const headers = new Headers(response.headers);
-      headers.append("set-cookie", cookie);
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-      });
-    });
+const runtime = ManagedRuntime.make(appLayer(env, "admin", routes));
 
-    async function route(incoming: Request, correlation: Parameters<typeof runtime.forRequest>[0]) {
-      let path: string;
-      try {
-        path = decodeURIComponent(new URL(incoming.url).pathname);
-      } catch {
-        return new Response(null, { status: 400 });
-      }
-      if (path.endsWith(".map")) return new Response(null, { status: 404 });
-      if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
-      if (path === "/api/telemetry") return runtime.telemetry.ingestBrowser(incoming);
-      return secureResponse(
-        await handler.fetch(incoming, {
-          context: { runtime: runtime.forRequest(correlation), correlation },
-        }),
-      );
-    }
-  },
+const route = (request: Request) => {
+  const path = requestPath(request);
+  if (path === undefined) return Effect.succeed(new Response(null, { status: 400 }));
+  if (path.endsWith(".map")) return Effect.succeed(new Response(null, { status: 404 }));
+  if (path.startsWith("/assets/"))
+    return Assets.use((assets) => Effect.promise(() => assets.fetch(request)));
+  if (path.startsWith("/api/")) return dispatchAdminApi(adminApi, request);
+  return Effect.promise(async () => secureResponse(await handler.fetch(request)));
 };
+
+export default serveWorker(runtime, (request) =>
+  Effect.gen(function* () {
+    const denied = yield* enforceAdminAccess(request, env);
+    if (denied) return denied;
+    const response = yield* route(request);
+    const cookie = yield* localAccessCookie(env);
+    if (!cookie) return response;
+    const headers = new Headers(response.headers);
+    headers.append("set-cookie", cookie);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }).pipe(Effect.orDie),
+);

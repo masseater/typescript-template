@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ReactElement } from "react";
-import * as v from "valibot";
-import { sessionSchema, errorMessage } from "./protocol";
+import { SessionView as SessionContract } from "@template/runtime/contracts";
+import { Schema } from "effect";
+import { errorMessage } from "./protocol";
 import type { SessionView } from "./protocol";
 import { Status } from "./primitives";
 
@@ -19,7 +20,7 @@ export function useSession() {
         if (!response.ok)
           throw new Error(`セッションの取得に失敗しました（HTTP ${response.status}）。`);
         const body: unknown = await response.json();
-        return v.parse(sessionSchema, body);
+        return Schema.decodeUnknownSync(SessionContract)(body);
       })
       .then((value) => {
         setSession(value);
