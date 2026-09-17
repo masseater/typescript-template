@@ -1,11 +1,11 @@
-import { absence, readApi, writeApi } from "#shared/api/index.ts";
+import { absence, findApi, writeApi } from "#shared/api/index.ts";
 import { ProfileView } from "@template/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
 
 type Profile = typeof ProfileView.Type;
 
 async function loadProfile(): Promise<Profile> {
-  const profile = await readApi("/api/profile", ProfileView, absence.notFound);
+  const profile = await findApi("/api/profile", ProfileView, absence.notFound);
   if (profile === undefined) {
     throw notFound();
   }

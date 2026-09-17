@@ -66,6 +66,20 @@ function pageNumber(
 const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
 const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
 
+const memberPageSize = 24;
+const maximumMemberPage = 1_000_000;
+
+const MemberListQuery = Schema.Struct({
+  keyword: Schema.optionalKey(UserKeyword),
+  page: pageNumber(1, 1, maximumMemberPage),
+});
+
+const MemberList = Schema.Struct({
+  members: Schema.Array(MemberView),
+  pageSize: Schema.Literal(memberPageSize),
+  total: Schema.Finite,
+});
+
 const UserListQuery = Schema.Struct({
   emailVerified: Schema.optionalKey(BooleanText),
   keyword: Schema.optionalKey(UserKeyword),
@@ -106,6 +120,8 @@ export {
   EmailVerified,
   ErrorBody,
   HealthView,
+  MemberList,
+  MemberListQuery,
   MemberQuery,
   MemberView,
   ProfileUpdate,
@@ -120,6 +136,8 @@ export {
   UserList,
   UserListQuery,
   maximumKeywordLength,
+  maximumMemberPage,
+  memberPageSize,
   maximumNameLength,
   maximumProfileLength,
 };

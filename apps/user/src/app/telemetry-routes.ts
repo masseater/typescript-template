@@ -8,6 +8,7 @@ export const routes = {
   "/api/interview/sheet": "interview-sheet-api",
   "/api/interview/turns": "interview-turns-api",
   "/api/member": "member-api",
+  "/api/members": "members-api",
   "/api/profile": "profile-api",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
@@ -16,6 +17,7 @@ export const routes = {
   "/security": "security",
   "/settings/profile": "profile-edit",
   "/signup": "signup",
+  "/users": "users",
   "/users/*": "profile",
   "/verify-email": "verify-email",
 } as const;
