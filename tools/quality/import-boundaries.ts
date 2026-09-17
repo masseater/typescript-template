@@ -78,7 +78,7 @@ function isDatabaseRuntime(importer: Importer): boolean {
   return (
     isWithinDatabase(importer) &&
     !importer.isTest &&
-    !/\/src\/(?:remote[^/]*|bootstrap[^/]*|migrate[^/]*|testing)\.[cm]?[jt]s$/u.test(
+    !/\/src\/(?:remote[^/]*|bootstrap[^/]*|migrate[^/]*|testing[^/]*)\.[cm]?[jt]s$/u.test(
       importer.current,
     )
   );
@@ -123,11 +123,13 @@ function leaksDatabaseAdmin(importer: Importer, target: ImportTarget): boolean {
 
 function leaksDatabaseOperations(importer: Importer, target: ImportTarget): boolean {
   const importsOperations =
-    /^@template\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|testing)(?:[/.]|$)/u.test(
+    /^@template\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|migrat[^/]*|testing[^/]*)(?:[/.]|$)/u.test(
       target.clean,
     ) ||
-    /\/libs\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|testing)(?:[/.]|$)/u.test(target.resolved);
-  const testSupport = importer.isTest && /\/testing(?:[/.]|$)/u.test(target.resolved);
+    /\/libs\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|migrat[^/]*|testing[^/]*)(?:[/.]|$)/u.test(
+      target.resolved,
+    );
+  const testSupport = importer.isTest && /\/testing[^/]*(?:[/.]|$)/u.test(target.resolved);
   return (
     importsOperations &&
     (importer.location?.area === "apps" ||

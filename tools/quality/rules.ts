@@ -77,7 +77,7 @@ function importSourceChecker(context: LintContext): (node: Node) => void {
   };
 }
 
-const rawD1Adapters = ["migrate-d1", "testing"] as const;
+const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
 const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
 

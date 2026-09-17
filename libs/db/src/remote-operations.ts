@@ -43,7 +43,7 @@ const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRem
     catch: () => new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" }),
     try: () =>
       readMigrationFiles({
-        migrationsFolder: fileURLToPath(new URL("../migrations/", import.meta.url)),
+        migrationsFolder: fileURLToPath(new URL("../migrations/", import.meta.url).href),
       }),
   }).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(MigrationFiles)),
@@ -126,5 +126,5 @@ const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapData
   );
 });
 
-export { bootstrapDatabase, loadRemoteMigrations, migrateDatabase };
+export { MigrationFiles, bootstrapDatabase, loadRemoteMigrations, migrateDatabase };
 export type { DatabaseExecutor, RemoteQuery };

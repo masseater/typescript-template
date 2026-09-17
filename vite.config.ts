@@ -1,6 +1,13 @@
+import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { localDatabase } from "@template/db/local";
+import { readMigrations } from "@template/db/migrations";
+import { workerCompatibility } from "@template/config/worker";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
+const workerTests = "**/*.worker.test.ts";
+const migrations = await readMigrations();
 
 function textModule(code: string, id: string): string | undefined {
   return textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
@@ -252,6 +259,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          exclude: [...defaultExclude, workerTests],
           include: [
             "libs/**/*.test.ts",
             "apps/**/*.test.ts",
@@ -260,6 +268,23 @@ export default defineConfig({
             "infra/**/*.test.ts",
           ],
           name: "node",
+        },
+      },
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            miniflare: {
+              bindings: { TEST_MIGRATIONS: migrations },
+              compatibilityDate: workerCompatibility.date,
+              compatibilityFlags: [...workerCompatibility.flags],
+              d1Databases: { [localDatabase.binding]: localDatabase.database_id },
+            },
+          }),
+        ],
+        test: {
+          include: [`libs/${workerTests}`, `infra/${workerTests}`],
+          name: "workers",
         },
       },
       "./libs/ui/.storybook/vitest.config.ts",

@@ -1,4 +1,4 @@
-import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing.ts";
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
 import { assert, it } from "@effect/vitest";
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
