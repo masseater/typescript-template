@@ -326,18 +326,20 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
     );
     await verifyRecoverySession(recoveringAdmin);
     await recoveringAdmin.waitText("復旧コードでは管理者操作はできません。");
+    const recoveryRead = await recoveringAdmin.api("/api/users");
+    ensure(recoveryRead.status === 403, `E2E_RECOVERY_ADMIN_READ_STATUS_${recoveryRead.status}`);
+    const recoveryPatch = await recoveringAdmin.api("/api/users", "PATCH", {
+      id: bobId,
+      role: "admin",
+    });
     ensure(
-      (await recoveringAdmin.api("/api/users")).status === 403,
-      "E2E_RECOVERY_ADMIN_READ_ALLOWED",
+      recoveryPatch.status === 403,
+      `E2E_RECOVERY_ADMIN_ROLE_CHANGE_STATUS_${recoveryPatch.status}`,
     );
+    const recoveryDelete = await recoveringAdmin.api("/api/users", "DELETE", { id: bobId });
     ensure(
-      (await recoveringAdmin.api("/api/users", "PATCH", { id: bobId, role: "admin" })).status ===
-        403,
-      "E2E_RECOVERY_ADMIN_ROLE_CHANGE_ALLOWED",
-    );
-    ensure(
-      (await recoveringAdmin.api("/api/users", "DELETE", { id: bobId })).status === 403,
-      "E2E_RECOVERY_ADMIN_DELETE_ALLOWED",
+      recoveryDelete.status === 403,
+      `E2E_RECOVERY_ADMIN_DELETE_STATUS_${recoveryDelete.status}`,
     );
     await signOut(recoveringAdmin);
     await recoveringAdmin.login(stack.adminOrigin, alice.email, alice.password);
