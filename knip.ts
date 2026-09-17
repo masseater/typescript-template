@@ -53,9 +53,6 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
       ignoreDependencies: ["cloudflare"],
     },
-    "tools/e2e": {
-      project: ["src/**/*.ts"],
-    },
   },
 };
 
