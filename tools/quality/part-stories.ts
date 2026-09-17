@@ -105,25 +105,16 @@ function a11yRelaxations(): A11yRelaxation[] {
 const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
 const agentConfigFile = ".mcp.json";
 
-function declaredConstant(body: readonly unknown[], name: string): unknown {
-  const declarator = body
-    .flatMap((node: unknown) => nodes(node, "declarations"))
-    .find((declaration: unknown) => field(field(declaration, "id"), "name") === name);
-  return literal(field(declarator, "init"));
-}
-
-function installedVersion(specifier: string): unknown {
-  const manifest = createRequire(import.meta.url).resolve(`${specifier}/package.json`);
-  // oxlint-disable-next-line node/no-sync
-  const parsed: unknown = JSON.parse(readFileSync(manifest, "utf-8"));
-  return field(parsed, "version");
-}
-
 function vendoredWorkerViolations(): string[] {
   // oxlint-disable-next-line node/no-sync
   const { program } = parseSync(workerFile, readFileSync(workerFile, "utf-8"));
-  const vendored = declaredConstant(nodes(program, "body"), "PACKAGE_VERSION");
-  const installed = installedVersion("msw");
+  const declarator = nodes(program, "body")
+    .flatMap((node: unknown) => nodes(node, "declarations"))
+    .find((declaration: unknown) => field(field(declaration, "id"), "name") === "PACKAGE_VERSION");
+  const vendored: unknown = literal(field(declarator, "init"));
+  const manifest = createRequire(import.meta.url).resolve("msw/package.json");
+  // oxlint-disable-next-line node/no-sync
+  const installed: unknown = field(JSON.parse(readFileSync(manifest, "utf-8")), "version");
   return vendored === installed
     ? []
     : [

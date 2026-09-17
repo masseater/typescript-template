@@ -67,19 +67,21 @@ const preparePlaywright = Effect.fn("preparePlaywright")(function* preparePlaywr
     catch: () => new PrepareBrowserFailure({ reason: "playwright_install_failed" }),
     try: async () => execFileAsync(process.execPath, [cli, "install", PLAYWRIGHT_BROWSER]),
   });
-  return Schema.is(Schema.String)(stdout);
+  if (!Schema.is(Schema.String)(stdout)) {
+    return yield* new PrepareBrowserFailure({ reason: "playwright_install_failed" });
+  }
 });
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     yield* prepareAgentBrowser();
-    const playwrightInstalled = yield* preparePlaywright();
+    yield* preparePlaywright();
     // oxlint-disable-next-line no-console
     console.info(
       JSON.stringify({
         event: "local.browser_cli_prepared",
         globalConfigurationChanged: false,
-        playwrightBrowser: playwrightInstalled ? PLAYWRIGHT_BROWSER : "unavailable",
+        playwrightBrowser: PLAYWRIGHT_BROWSER,
       }),
     );
   }).pipe(
