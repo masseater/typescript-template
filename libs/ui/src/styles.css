@@ -1,1 +1,183 @@
-@import "smarthr-ui/smarthr-ui.css";
+@import "tailwindcss";
+@import "shadcn/tailwind.css";
+
+@source ".";
+
+:root {
+  --white: #fff;
+  --white-darken: #f2f2f2;
+  --grey-5: #f8f7f6;
+  --grey-6: #f5f4f3;
+  --grey-7: #f2f1f0;
+  --grey-9: #edebe8;
+  --grey-9-darken: #e2dfda;
+  --grey-20: #d6d3d0;
+  --grey-30: #c1bdb7;
+  --grey-65: #706d65;
+  --grey-100: #23221e;
+  --main: #0077c7;
+  --main-darken: #0068ae;
+  --link: #0071c1;
+  --link-darken: #005ea1;
+  --danger: #e01e5a;
+  --danger-darken: #ca1b51;
+  --warning-yellow: #ffcc17;
+  --warning-yellow-darken: #fcc500;
+  --green: #0f7f85;
+  --transparency-15: rgba(3, 3, 2, 0.15);
+  --transparency-30: rgba(3, 3, 2, 0.3);
+  --transparency-50: rgba(3, 3, 2, 0.5);
+
+  --layer-0: none;
+  --layer-1: 0 1px 2px 0 var(--transparency-30);
+  --layer-2: 0 2px 4px 1px var(--transparency-30);
+  --layer-3: 0 4px 8px 2px var(--transparency-30);
+  --layer-4: 0 8px 16px 4px var(--transparency-30);
+
+  --background: var(--grey-5);
+  --foreground: var(--grey-100);
+  --card: var(--white);
+  --card-foreground: var(--grey-100);
+  --card-hover: var(--white-darken);
+  --popover: var(--white);
+  --popover-foreground: var(--grey-100);
+  --primary: var(--main);
+  --primary-hover: var(--main-darken);
+  --primary-foreground: var(--white);
+  --secondary: var(--grey-9);
+  --secondary-hover: var(--grey-9-darken);
+  --secondary-foreground: var(--grey-100);
+  --muted: var(--grey-7);
+  --muted-foreground: var(--grey-65);
+  --accent: var(--grey-6);
+  --accent-foreground: var(--grey-100);
+  --destructive: var(--danger);
+  --destructive-hover: var(--danger-darken);
+  --destructive-foreground: var(--white);
+  --warning: var(--warning-yellow);
+  --warning-hover: var(--warning-yellow-darken);
+  --warning-foreground: var(--grey-100);
+  --success: var(--green);
+  --disabled-foreground: var(--grey-30);
+  --border: var(--grey-20);
+  --input: var(--grey-20);
+  --head: var(--grey-9);
+  --ring: var(--main);
+  --overlay: var(--transparency-15);
+  --scrim: var(--transparency-50);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-white: var(--white);
+  --color-black: var(--grey-100);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-hover: var(--card-hover);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-hover: var(--warning-hover);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-disabled-foreground: var(--disabled-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-head: var(--head);
+  --color-link: var(--link);
+  --color-link-hover: var(--link-darken);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-scrim: var(--scrim);
+
+  --radius-*: initial;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-*: initial;
+  --shadow-sm: var(--layer-1);
+  --shadow-md: var(--layer-2);
+  --shadow-lg: var(--layer-3);
+  --shadow-xl: var(--layer-4);
+
+  --text-*: initial;
+  --text-2xs: 0.6666666666666666rem;
+  --text-2xs--line-height: 1.5;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.8571428571428571rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.2rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 1.25;
+
+  --leading-*: initial;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  --font-sans: system-ui, sans-serif;
+}
+
+@utility focus-indicator {
+  isolation: isolate;
+  box-shadow: inset 0 0 0 3px var(--white);
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+@utility focus-indicator-outer {
+  isolation: isolate;
+  box-shadow: 0 0 0 2px var(--white);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--border);
+  }
+
+  html {
+    background-color: var(--background);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    overflow-wrap: break-word;
+    text-spacing-trim: space-all;
+  }
+
+  a {
+    color: var(--link);
+    text-decoration: underline;
+  }
+
+  a:hover {
+    color: var(--link-darken);
+  }
+}

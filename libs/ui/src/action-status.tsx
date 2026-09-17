@@ -1,6 +1,6 @@
 import type { ActionState } from "./action";
 import type { ReactElement } from "react";
-import { Status } from "./status";
+import { Status } from "./shared/ui";
 
 interface ActionStatusProps {
   readonly action: ActionState;
@@ -11,9 +11,13 @@ interface ActionStatusProps {
 function ActionStatus({ action, notice, pendingMessage }: ActionStatusProps): ReactElement {
   return (
     <>
-      {action.pending && pendingMessage !== undefined && <Status>{pendingMessage}</Status>}
-      {notice !== undefined && <Status>{notice}</Status>}
-      {action.error !== undefined && action.error !== "" && <Status error>{action.error}</Status>}
+      {action.pending && pendingMessage !== undefined && (
+        <Status variant="pending">{pendingMessage}</Status>
+      )}
+      {notice !== undefined && <Status variant="success">{notice}</Status>}
+      {action.error !== undefined && action.error !== "" && (
+        <Status variant="error">{action.error}</Status>
+      )}
     </>
   );
 }

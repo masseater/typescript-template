@@ -1,0 +1,41 @@
+import type { ComponentProps, ReactElement } from "react";
+import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
+import { Field as FieldPrimitive } from "@base-ui/react/field";
+
+type TextareaFieldProps = Readonly<
+  Pick<ComponentProps<"textarea">, "maxLength" | "name" | "readOnly" | "required" | "value"> & {
+    label: string;
+    onValueChange?: (value: string) => void;
+  }
+>;
+
+const textarea = <textarea />;
+
+function TextareaField({
+  label,
+  maxLength,
+  name,
+  onValueChange,
+  readOnly,
+  required,
+  value,
+}: TextareaFieldProps): ReactElement {
+  return (
+    <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
+      <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
+      <FieldPrimitive.Control
+        render={textarea}
+        name={name}
+        value={value}
+        maxLength={maxLength}
+        readOnly={readOnly}
+        required={required}
+        onValueChange={onValueChange}
+        className={`block field-sizing-content min-h-16 ${controlClassName}`}
+      />
+      <FieldPrimitive.Error className={errorClassName} />
+    </FieldPrimitive.Root>
+  );
+}
+
+export { TextareaField };
