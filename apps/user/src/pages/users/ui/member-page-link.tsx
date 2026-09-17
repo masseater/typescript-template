@@ -1,5 +1,5 @@
-import type { PageTarget } from "@template/ui/ui";
-import { PaginationLink } from "@template/ui/ui";
+import type { PageTarget } from "@template/ui";
+import { PaginationLink } from "@template/ui";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 

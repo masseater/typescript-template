@@ -1,4 +1,4 @@
-import { Button, Field } from "@template/ui/ui";
+import { Button, Field } from "@template/ui";
 import type { ReactElement } from "react";
 import { maximumKeywordLength } from "@template/runtime/contracts";
 import { useNavigate } from "@tanstack/react-router";

@@ -153,7 +153,7 @@ export default defineConfig({
         {
           paths: [
             {
-              message: "@template/ui/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
               name: "smarthr-ui",
             },
             {

@@ -1,4 +1,4 @@
-import { Heading, Icon } from "@template/ui/ui";
+import { Heading, Icon } from "@template/ui";
 import { SearchIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
 import { Feature } from "./feature.tsx";
 import type { ReactElement } from "react";

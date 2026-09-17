@@ -1,4 +1,4 @@
-import { Button, FormColumn } from "./shared/ui";
+import { Button, FormColumn } from "./index";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import { TotpField } from "./totp-field";

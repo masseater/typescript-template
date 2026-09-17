@@ -62,7 +62,7 @@ function reports(rule: RuleName, className: string): boolean {
       invalid: [],
       valid: [
         {
-          code: `import { Button } from "@template/ui/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
+          code: `import { Button } from "@template/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
           filename: designSystemProbe,
           options: [{ allow: ["layout", "spacing"] }],
         },

@@ -1,4 +1,4 @@
-import { Table, TableBody } from "@template/ui/ui";
+import { Table, TableBody } from "@template/ui";
 import type { ListedUser } from "#user-list.ts";
 import { LoadingRow } from "#components/loading-row.tsx";
 import type { ReactElement } from "react";

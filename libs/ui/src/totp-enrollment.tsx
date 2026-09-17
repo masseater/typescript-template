@@ -1,4 +1,4 @@
-import { CheckboxField, Field, FormColumn, Heading } from "./shared/ui";
+import { CheckboxField, Field, FormColumn, Heading } from "./index";
 import type { ActionState } from "./action";
 import { BackupCodeList } from "./backup-code-list";
 import type { Enrollment } from "./mfa-types";

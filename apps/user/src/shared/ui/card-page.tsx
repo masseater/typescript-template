@@ -1,4 +1,4 @@
-import { Card, Heading } from "@template/ui/ui";
+import { Card, Heading } from "@template/ui";
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function CardPage({

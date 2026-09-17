@@ -1,4 +1,4 @@
-import { ButtonLink, NavigationLink } from "@template/ui/ui";
+import { ButtonLink, NavigationLink } from "@template/ui";
 import type { ReactElement } from "react";
 import { serviceName } from "#shared/config/index.ts";
 import { useLocation } from "@tanstack/react-router";

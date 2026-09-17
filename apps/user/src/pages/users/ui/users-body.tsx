@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode, ReactPortal } from "react";
-import { Heading } from "@template/ui/ui";
+import { Heading } from "@template/ui";
 import { SearchForm } from "./search-form.tsx";
 
 function UsersBody({

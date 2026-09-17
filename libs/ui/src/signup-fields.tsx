@@ -1,4 +1,4 @@
-import { Button, Field, FormColumn } from "./shared/ui";
+import { Button, Field, FormColumn } from "./index";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { TextInput } from "./use-text-input";

@@ -1,4 +1,4 @@
-import { Page, Status } from "./shared/ui";
+import { Page, Status } from "./index";
 import { MFASettings } from "./mfa";
 import type { ReactElement } from "react";
 import { SignOutButton } from "./sign-out-button";

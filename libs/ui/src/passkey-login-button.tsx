@@ -1,7 +1,7 @@
 import { requireSecureContext, requireSuccess } from "./protocol";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./shared/ui";
+import { Button } from "./index";
 import type { ReactElement } from "react";
 import { authClient } from "./client";
 

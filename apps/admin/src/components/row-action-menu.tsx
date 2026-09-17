@@ -3,7 +3,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@template/ui/ui";
+} from "@template/ui";
 import { nextRoles, roleLabels } from "#user-labels.ts";
 import { EllipsisIcon } from "lucide-react";
 import type { ListedUser } from "#user-list.ts";

@@ -1,4 +1,4 @@
-import { ButtonLink } from "@template/ui/ui";
+import { ButtonLink } from "@template/ui";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 

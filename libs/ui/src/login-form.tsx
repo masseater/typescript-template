@@ -1,4 +1,4 @@
-import { FormColumn, Separator } from "./shared/ui";
+import { FormColumn, Separator } from "./index";
 import { ActionStatus } from "./action-status";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeLogin } from "./challenge-login";

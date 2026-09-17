@@ -4,12 +4,12 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  useSignOut,
   useToast,
-} from "@template/ui/ui";
+} from "@template/ui";
 import { ChevronDownIcon } from "lucide-react";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
-import { useSignOut } from "@template/ui";
 
 function AccountMenu({ email }: Readonly<{ email: string }>): ReactElement {
   const { action, signOut } = useSignOut();

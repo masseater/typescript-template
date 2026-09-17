@@ -1,4 +1,4 @@
-import { Button, Field, FormColumn } from "./shared/ui";
+import { Button, Field, FormColumn } from "./index";
 import type { Enrollment, SettingsContext } from "./mfa-types";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { SessionView } from "./protocol";

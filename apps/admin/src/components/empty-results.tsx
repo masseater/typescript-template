@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { Status } from "@template/ui/ui";
+import { Status } from "@template/ui";
 import type { UsersSearch } from "#users-search.ts";
 import { omit } from "es-toolkit";
 

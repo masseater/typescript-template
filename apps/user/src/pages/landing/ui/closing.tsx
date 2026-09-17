@@ -1,4 +1,4 @@
-import { ButtonLink, Heading } from "@template/ui/ui";
+import { ButtonLink, Heading } from "@template/ui";
 import type { ReactElement } from "react";
 
 function Closing(): ReactElement {

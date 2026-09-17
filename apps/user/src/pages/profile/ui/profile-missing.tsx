@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Page } from "@template/ui/ui";
+import { Page } from "@template/ui";
 import type { ReactElement } from "react";
 
 function ProfileMissing(): ReactElement {

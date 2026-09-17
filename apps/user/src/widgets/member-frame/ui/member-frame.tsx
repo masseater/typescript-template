@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 import { MemberHeader } from "./member-header.tsx";
 import type { Session } from "#entities/session/index.ts";
-import { ToastProvider } from "@template/ui/ui";
+import { ToastProvider } from "@template/ui";
 
 function MemberFrame({
   children,

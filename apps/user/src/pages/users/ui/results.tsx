@@ -2,8 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { MemberCard } from "./member-card.tsx";
 import { MemberPageLink } from "./member-page-link.tsx";
 import type { Members } from "#pages/users/api/load-members.ts";
-import { PageNavigation } from "@template/ui/ui";
-import type { PageTarget } from "@template/ui/ui";
+import { PageNavigation } from "@template/ui";
+import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 

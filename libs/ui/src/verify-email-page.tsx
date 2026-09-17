@@ -1,5 +1,5 @@
 import { EmailVerification } from "./email-verification";
-import { Page } from "./shared/ui";
+import { Page } from "./index";
 import type { ReactElement } from "react";
 
 function VerifyEmailPage(): ReactElement {
