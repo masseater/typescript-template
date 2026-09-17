@@ -1,8 +1,6 @@
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { expect, test } from "vite-plus/test";
-import { field, readWorkspaceManifests } from "./dependencies.ts";
+import rootManifest from "../../package.json" with { type: "json" };
+import { field, workspaceManifests } from "./dependencies.ts";
 import { scriptViolations } from "./scripts.ts";
 
 test.for([
@@ -55,37 +53,22 @@ test("rejects malformed script definitions", () => {
   );
 });
 
-test("all repository workspace manifests run scripts through Vite+", async () => {
-  const root = fileURLToPath(new URL("../../", import.meta.url));
-  const directories = await Promise.all(
-    ["apps", "libs", "infra", "tools"].map(async (area) => {
-      const entries = await readdir(path.join(root, area), { withFileTypes: true });
-      return entries
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => path.join(area, entry.name));
-    }),
+test("all repository workspace manifests run scripts through Vite+", () => {
+  const violations = [
+    { file: "package.json", manifest: rootManifest },
+    ...workspaceManifests,
+  ].flatMap(({ file, manifest }) =>
+    scriptViolations(manifest).map((violation) => `${file}: ${violation}`),
   );
-  const violations = await Promise.all(
-    [".", ...directories.flat()].map(async (directory) => {
-      const name = path.join(directory, "package.json");
-      const files = await readdir(path.join(root, directory));
-      if (!files.includes("package.json")) return [];
-      const manifest: unknown = JSON.parse(await readFile(path.join(root, name), "utf8"));
-      return scriptViolations(manifest).map((violation) => `${name}: ${violation}`);
-    }),
-  );
-  expect(violations.flat()).toEqual([]);
+  expect(violations).toEqual([]);
 });
 
-test("workspaces outside tools do not depend on tools packages", async () => {
-  const workspaces = await readWorkspaceManifests(
-    fileURLToPath(new URL("../../", import.meta.url)),
-  );
-  const tools = workspaces.flatMap(({ area, manifest }) => {
+test("workspaces outside tools do not depend on tools packages", () => {
+  const tools = workspaceManifests.flatMap(({ area, manifest }) => {
     const name = field(manifest, "name");
     return area === "tools" && typeof name === "string" ? [name] : [];
   });
-  const consumers = workspaces.filter(({ area }) => area !== "tools");
+  const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
   const violations = consumers.flatMap(({ file, manifest }) => {
     const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
       const value = field(manifest, key);
