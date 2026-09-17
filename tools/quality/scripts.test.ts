@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vite-plus/test";
+import { field, readWorkspaceManifests } from "./dependencies.ts";
 import { scriptViolations } from "./scripts.ts";
 
 test.for([
@@ -77,27 +78,15 @@ test("all repository workspace manifests run scripts through Vite+", async () =>
 });
 
 test("workspaces outside tools do not depend on tools packages", async () => {
-  const root = fileURLToPath(new URL("../../", import.meta.url));
-  const manifests = async (area: string) => {
-    const entries = await readdir(path.join(root, area), { withFileTypes: true });
-    const found = await Promise.all(
-      entries
-        .filter((entry) => entry.isDirectory())
-        .map(async (entry) => {
-          const name = path.join(area, entry.name, "package.json");
-          const text = await readFile(path.join(root, name), "utf8").catch(() => undefined);
-          const manifest: unknown = text === undefined ? undefined : JSON.parse(text);
-          return manifest === undefined ? [] : [{ name, manifest }];
-        }),
-    );
-    return found.flat();
-  };
-  const tools = (await manifests("tools")).flatMap(({ manifest }) => {
+  const workspaces = await readWorkspaceManifests(
+    fileURLToPath(new URL("../../", import.meta.url)),
+  );
+  const tools = workspaces.flatMap(({ area, manifest }) => {
     const name = field(manifest, "name");
-    return typeof name === "string" ? [name] : [];
+    return area === "tools" && typeof name === "string" ? [name] : [];
   });
-  const consumers = (await Promise.all(["apps", "libs", "infra"].map(manifests))).flat();
-  const violations = consumers.flatMap(({ name, manifest }) => {
+  const consumers = workspaces.filter(({ area }) => area !== "tools");
+  const violations = consumers.flatMap(({ file, manifest }) => {
     const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
       const value = field(manifest, key);
       return typeof value === "object" && value !== null ? Object.entries(value) : [];
@@ -106,13 +95,7 @@ test("workspaces outside tools do not depend on tools packages", async () => {
       .filter(([key, value]) =>
         tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
       )
-      .map(([key]) => `${name}: ${key}`);
+      .map(([key]) => `${file}: ${key}`);
   });
   expect(violations).toEqual([]);
 });
-
-function field(manifest: unknown, key: string): unknown {
-  return typeof manifest === "object" && manifest !== null
-    ? Object.getOwnPropertyDescriptor(manifest, key)?.value
-    : undefined;
-}

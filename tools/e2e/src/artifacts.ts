@@ -10,12 +10,15 @@ type Build = {
   workerFirst: boolean;
   client: Map<string, Buffer>;
   server: Map<string, Buffer>;
+  sources: { server: readonly string[]; client: readonly string[] };
 };
 export type ArtifactPair = { user: Build; admin: Build; wiki: Build; secrets: readonly string[] };
 const adminMarkers = ["ADMIN_STRONG_SESSION_REQUIRED", "LOCAL_ADMIN_PASSWORD"];
 const adminRoute = /["'`]\/api\/users(?:["'`?])/;
 const wikiMarker = "@cf/baai/bge-m3";
-const privateWikiSource = /(?:^|\/)(?:apps\/(?:user|admin)|libs\/(?:db|auth|ui))\//;
+const adminSource =
+  /^(?:apps\/admin\/|libs\/db\/src\/(?:admin|remote[^/]*|bootstrap[^/]*|testing)\.ts$)/;
+const privateWikiSource = /^(?:apps\/(?:user|admin)|libs\/(?:db|auth|ui))\//;
 
 async function readFiles(directory: string): Promise<Map<string, Buffer>> {
   const entries = new Map<string, Buffer>();
@@ -73,6 +76,31 @@ async function readBuild(audience: "user" | "admin" | "wiki"): Promise<Build> {
     .split(path.sep)
     .join("/");
   ensure(!entry.startsWith("../") && /\.(?:m?js)$/.test(entry), "E2E_ARTIFACT_WORKER_ENTRY_UNSAFE");
+  const serverMaps = new Map([...server].filter(([file]) => file.endsWith(".map")));
+  const privateMapDirectory = path.join(root, ".local", "source-maps", audience, "client");
+  const clientMaps = new Map(
+    (
+      await Promise.all(
+        [...client.keys()]
+          .filter((file) => /\.m?js$/.test(file))
+          .map(async (file): Promise<[string, Buffer][]> => {
+            const bytes = await readFile(path.join(privateMapDirectory, `${file}.map`)).catch(
+              (error: unknown) => {
+                if (
+                  error &&
+                  typeof error === "object" &&
+                  "code" in error &&
+                  error.code === "ENOENT"
+                )
+                  return undefined;
+                throw new Error("E2E_ARTIFACT_CLIENT_MAP_UNREADABLE");
+              },
+            );
+            return bytes ? [[`${file}.map`, bytes]] : [];
+          }),
+      )
+    ).flat(),
+  );
   return {
     name: string(config["name"]),
     directory,
@@ -80,7 +108,30 @@ async function readBuild(audience: "user" | "admin" | "wiki"): Promise<Build> {
     workerFirst: assets["run_worker_first"] === true,
     server,
     client,
+    sources: {
+      server: sourcePaths(serverMaps, `apps/${audience}/dist/server`),
+      client: sourcePaths(clientMaps, `apps/${audience}/dist/client`),
+    },
   };
+}
+
+export function sourcePaths(maps: ReadonlyMap<string, Buffer>, base: string): string[] {
+  const found = new Set<string>();
+  for (const [file, bytes] of maps) {
+    const map = parseJson(bytes);
+    const sources = map["sources"];
+    ensure(Array.isArray(sources), "E2E_ARTIFACT_INVALID_SOURCE_MAP");
+    const sourceRoot = typeof map["sourceRoot"] === "string" ? map["sourceRoot"] : "";
+    for (const source of sources) {
+      ensure(typeof source === "string", "E2E_ARTIFACT_INVALID_SOURCE_MAP");
+      const resolved = path.posix.normalize(
+        path.posix.join(base, path.posix.dirname(file), sourceRoot, source.split("?")[0] ?? source),
+      );
+      if (!resolved.startsWith("../") && !/(?:^|\/)node_modules\//.test(resolved))
+        found.add(resolved);
+    }
+  }
+  return [...found];
 }
 
 export function secretValues(source: string): string[] {
@@ -190,19 +241,26 @@ export function assertSeparation(pair: ArtifactPair): void {
       "E2E_ADMIN_CODE_IN_USER_BUNDLE",
     );
   }
-  for (const [file, bytes] of pair.user.server) {
-    if (!file.endsWith(".map")) continue;
-    const sources = parseJson(bytes)["sources"];
-    ensure(Array.isArray(sources), "E2E_ARTIFACT_INVALID_SERVER_MAP");
-    ensure(
-      !sources.some(
-        (source: unknown) =>
-          typeof source === "string" &&
-          /(?:^|\/)apps\/admin\/|(?:^|\/)libs\/db\/src\/admin\.ts$/.test(source),
-      ),
-      "E2E_ADMIN_SOURCE_IN_USER_SERVER_MAP",
-    );
-  }
+  ensure(
+    pair.admin.sources.server.includes("apps/admin/src/access.ts"),
+    "E2E_ADMIN_SERVER_MAP_CONTROL_MISSING",
+  );
+  ensure(
+    pair.admin.sources.client.includes("apps/admin/src/routes/index.tsx"),
+    "E2E_ADMIN_CLIENT_MAP_CONTROL_MISSING",
+  );
+  ensure(
+    pair.user.sources.client.includes("apps/user/src/routes/index.tsx"),
+    "E2E_USER_CLIENT_MAP_CONTROL_MISSING",
+  );
+  ensure(
+    !pair.user.sources.server.some((source) => adminSource.test(source)),
+    "E2E_ADMIN_SOURCE_IN_USER_SERVER_MAP",
+  );
+  ensure(
+    !pair.user.sources.client.some((source) => adminSource.test(source)),
+    "E2E_ADMIN_SOURCE_IN_USER_CLIENT_MAP",
+  );
   const wikiServer = code(pair.wiki.server);
   const wikiCode = `${wikiServer}\n${code(pair.wiki.client)}`;
   ensure(wikiServer.includes(wikiMarker), "E2E_WIKI_SERVER_MARKER_MISSING");
@@ -217,17 +275,18 @@ export function assertSeparation(pair: ArtifactPair): void {
       !/["'`]\/api\/auth\//.test(wikiCode),
     "E2E_APPLICATION_CODE_IN_WIKI_BUNDLE",
   );
-  for (const [file, bytes] of pair.wiki.server) {
-    if (!file.endsWith(".map")) continue;
-    const sources = parseJson(bytes)["sources"];
-    ensure(Array.isArray(sources), "E2E_ARTIFACT_INVALID_SERVER_MAP");
-    ensure(
-      !sources.some(
-        (source: unknown) => typeof source === "string" && privateWikiSource.test(source),
-      ),
-      "E2E_APPLICATION_SOURCE_IN_WIKI_SERVER_MAP",
-    );
-  }
+  ensure(
+    pair.wiki.sources.server.some((source) => source.startsWith("apps/wiki/")),
+    "E2E_WIKI_SERVER_MAP_CONTROL_MISSING",
+  );
+  ensure(
+    !pair.wiki.sources.server.some((source) => privateWikiSource.test(source)),
+    "E2E_APPLICATION_SOURCE_IN_WIKI_SERVER_MAP",
+  );
+  ensure(
+    !pair.wiki.sources.client.some((source) => privateWikiSource.test(source)),
+    "E2E_APPLICATION_SOURCE_IN_WIKI_CLIENT_MAP",
+  );
 }
 
 export function assertPublicFile(

@@ -1,10 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { authHandler } from "@template/runtime/handlers";
 
 export const Route = createFileRoute("/api/auth/$")({
-  server: {
-    handlers: {
-      GET: ({ request, context }) => context.runtime.auth.handler(request),
-      POST: ({ request, context }) => context.runtime.auth.handler(request),
-    },
-  },
+  server: { handlers: { GET: authHandler, POST: authHandler } },
 });
