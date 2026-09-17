@@ -142,6 +142,7 @@ async function createFixture() {
   return {
     database,
     binding: db.binding,
+    mailbox,
     userAuth,
     adminAuth,
     wikiAuth,
@@ -700,6 +701,20 @@ test("demoted administrator loses MCP access even with an unexpired token", asyn
   const denied = await mcpRequest(fixture, tokens.access_token);
   if (!(denied instanceof Response)) throw new Error("DENIAL_EXPECTED");
   expect(denied.status).toBe(403);
+});
+
+test("wiki sign-in never sends a verification email it has no page for", async ({ fixture }) => {
+  await fixture.register("pending@example.com");
+  fixture.mailbox.delete("pending@example.com");
+  const wiki = new BrowserClient(fixture.wikiAuth, wikiOrigin);
+  const signIn = await wiki.request("/sign-in/email", { email: "pending@example.com", password });
+  expect(signIn.status).toBe(403);
+  expect(fixture.mailbox.has("pending@example.com")).toBe(false);
+  const user = new BrowserClient(fixture.userAuth, "http://localhost:4101");
+  expect(
+    (await user.request("/sign-in/email", { email: "pending@example.com", password })).status,
+  ).toBe(403);
+  expect(fixture.mailbox.has("pending@example.com")).toBe(true);
 });
 
 test("weak or non-administrator wiki sessions cannot grant MCP access", async ({ fixture }) => {

@@ -96,7 +96,7 @@ export function createAuth(options: AuthOptions) {
     },
     emailVerification: {
       sendOnSignUp: true,
-      sendOnSignIn: true,
+      sendOnSignIn: audience !== "wiki",
       autoSignInAfterVerification: false,
       sendVerificationEmail: async ({ user, token }) => {
         const link = new URL("/verify-email", origin);
