@@ -9,10 +9,6 @@ const config: KnipConfig = {
     },
     "apps/*": {
       ignoreDependencies: ["cloudflare"],
-      project: ["src/**/*.{ts,tsx}!"],
-    },
-    "apps/wiki": {
-      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
     "infra/bootstrap": {

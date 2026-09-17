@@ -40,6 +40,7 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | ------------------ | ------------------- | -------------------- |
 | プロフィール       | `/users/{id}`       | ホーム（自分の id）  |
 | ユーザー一覧       | `/users`            | ユーザーを探す       |
+| AI インタビュー    | `/interview`        | AI インタビュー      |
 | プロフィールの編集 | `/settings/profile` | なし                 |
 | 認証設定           | `/security`         | なし                 |
 
@@ -82,4 +83,4 @@ flowchart TD
   home -- ログアウト --> lp
 ```
 
-`redirect` を持ってログインしたときは、自分のホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users) が持つ。
+`redirect` を持ってログインしたときは、自分のホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。

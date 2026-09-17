@@ -1,7 +1,6 @@
-import { Button, Stack } from "smarthr-ui";
+import { Button, Field } from "./shared/ui";
 import type { Enrollment, SettingsContext } from "./mfa-types";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
-import { Field } from "./field";
 import type { SessionView } from "./protocol";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
@@ -70,7 +69,7 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
   const submit = useTotpPasswordSubmit({ context, onEnroll, password });
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <Stack>
+      <div className="flex w-full max-w-md flex-col gap-4">
         <input
           type="email"
           name="username"
@@ -94,7 +93,7 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
         >
           {session.user.twoFactorEnabled ? "認証アプリを解除" : "認証アプリの登録を開始"}
         </Button>
-      </Stack>
+      </div>
     </form>
   );
 }

@@ -1,6 +1,6 @@
-import { Heading, Stack } from "smarthr-ui";
 import { useCallback, useMemo, useState } from "react";
 import { ActionStatus } from "./action-status";
+import { Heading } from "./shared/ui";
 import { PasskeySettings } from "./passkey-settings";
 import type { ReactElement } from "react";
 import { RecoveryNotice } from "./recovery-notice";
@@ -34,14 +34,14 @@ function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElem
     [action, clearNotice, recovery, session],
   );
   return (
-    <Stack>
+    <div className="flex w-full flex-col gap-4">
       <Heading>認証アプリとパスキー</Heading>
       <RecoveryNotice recovery={recovery} role={session.user.role} />
       <TotpSettings context={context} />
       <Heading>パスキー</Heading>
       <PasskeySettings context={context} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
-    </Stack>
+    </div>
   );
 }
 

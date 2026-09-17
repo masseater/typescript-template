@@ -1,6 +1,6 @@
 import { WikiSecurity } from "#/components/wiki-security.tsx";
 import { createFileRoute } from "@tanstack/react-router";
-import uiStyles from "@template/ui/styles.css?url";
+import uiStyles from "#/styles/auth.css?url";
 
 const Route = createFileRoute("/security")({
   component: WikiSecurity,

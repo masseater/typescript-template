@@ -1,5 +1,5 @@
-import { Button, Stack } from "smarthr-ui";
 import { useCallback, useState } from "react";
+import { Button } from "@template/ui/ui";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
 import { decodeJson } from "@template/runtime/client";
@@ -44,15 +44,17 @@ function ConsentActions({
     void decide(false);
   }, [decide]);
   return (
-    <Stack>
+    <div className="flex w-full max-w-md flex-col gap-4">
       <p>{client} に Wiki の閲覧を許可しますか？</p>
-      <Button type="button" variant="primary" disabled={pending} onClick={allow}>
-        許可する
-      </Button>
-      <Button type="button" disabled={pending} onClick={deny}>
-        拒否する
-      </Button>
-    </Stack>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="primary" disabled={pending} onClick={allow}>
+          許可する
+        </Button>
+        <Button type="button" disabled={pending} onClick={deny}>
+          拒否する
+        </Button>
+      </div>
+    </div>
   );
 }
 

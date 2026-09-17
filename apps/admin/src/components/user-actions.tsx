@@ -1,6 +1,6 @@
 import type { ManagedUser, MutationMethod } from "#user-management.ts";
 import type { MouseEventHandler, ReactElement } from "react";
-import { Button } from "smarthr-ui";
+import { Button } from "@template/ui/ui";
 import { useCallback } from "react";
 
 function UserActions({
@@ -20,24 +20,27 @@ function UserActions({
   }, [onMutation, user]);
   const promoted = user.role === "admin";
   return (
-    <>
+    <div className="flex flex-wrap gap-1">
       <Button
         type="button"
+        size="small"
         disabled={pending}
         aria-label={`${user.email} を${promoted ? "一般ユーザー" : "管理者"}に変更`}
         onClick={handleRoleChange}
       >
         {promoted ? "一般ユーザーに変更" : "管理者に変更"}
-      </Button>{" "}
+      </Button>
       <Button
         type="button"
+        variant="danger"
+        size="small"
         disabled={pending}
         aria-label={`${user.email} を削除`}
         onClick={handleDelete}
       >
         削除
       </Button>
-    </>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import type { ManagedUser, MutationMethod } from "#user-management.ts";
+import { Table, TableBody } from "@template/ui/ui";
 import type { ReactElement } from "react";
-import { Table } from "smarthr-ui";
 import { UserRow } from "#components/user-row.tsx";
 import { UsersTableHeader } from "#components/users-table-header.tsx";
 
@@ -16,11 +16,11 @@ function UsersTable({
   return (
     <Table>
       <UsersTableHeader />
-      <tbody>
+      <TableBody>
         {users.map((user) => (
           <UserRow key={user.id} user={user} pending={pending} onMutation={onMutation} />
         ))}
-      </tbody>
+      </TableBody>
     </Table>
   );
 }

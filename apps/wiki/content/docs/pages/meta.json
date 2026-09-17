@@ -9,6 +9,7 @@
     "user-signup",
     "user-login",
     "user-profile",
-    "user-users"
+    "user-users",
+    "user-interview"
   ]
 }
