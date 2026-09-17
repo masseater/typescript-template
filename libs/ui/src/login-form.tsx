@@ -4,6 +4,7 @@ import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeLogin } from "./challenge-login";
 import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
+import { FormColumn } from "./shared/ui";
 import { PasskeyLoginButton } from "./passkey-login-button";
 import type { ReactElement } from "react";
 import { useAction } from "./action";
@@ -24,7 +25,7 @@ function LoginForm({
     setChallenge(undefined);
   }, []);
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
+    <FormColumn>
       {challenge === undefined ? (
         <>
           <CredentialsForm
@@ -46,7 +47,7 @@ function LoginForm({
         />
       )}
       <ActionStatus action={action} pendingMessage="認証を処理しています。" />
-    </div>
+    </FormColumn>
   );
 }
 

@@ -2,42 +2,63 @@ import type { ComponentProps, ReactElement } from "react";
 import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 
-type FieldProps = Readonly<
-  Pick<
-    ComponentProps<"input">,
-    | "autoComplete"
-    | "inputMode"
-    | "maxLength"
-    | "minLength"
-    | "name"
-    | "onChange"
-    | "pattern"
-    | "readOnly"
-    | "required"
-    | "type"
-    | "value"
-  > & { label: string }
->;
+const validationMessages: readonly (readonly [keyof ValidityState, string])[] = [
+  ["valueMissing", "入力してください。"],
+  ["typeMismatch", "正しい形式で入力してください。"],
+  ["patternMismatch", "指定された形式で入力してください。"],
+  ["tooShort", "文字数が足りません。"],
+  ["tooLong", "文字数が多すぎます。"],
+];
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const errors = validationMessages.map(([match, message]) => (
+  <FieldPrimitive.Error key={match} match={match} className={errorClassName}>
+    {message}
+  </FieldPrimitive.Error>
+));
+
+const textarea = <textarea />;
+
+type AutoComplete =
+  | "current-password"
+  | "name"
+  | "new-password"
+  | "off"
+  | "one-time-code"
+  | "username";
+
 function Field({
   autoComplete,
   inputMode,
   label,
   maxLength,
   minLength,
+  multiline,
   name,
-  onChange,
+  onValueChange,
   pattern,
   readOnly,
   required,
   type,
   value,
-}: FieldProps): ReactElement {
+}: Readonly<
+  Pick<
+    ComponentProps<"input">,
+    "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
+  > & {
+    autoComplete?: AutoComplete;
+    label: string;
+    onValueChange?: (value: string) => void;
+  }
+> &
+  Readonly<
+    | { multiline: true; pattern?: never; type?: never }
+    | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
+  >): ReactElement {
   return (
     <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
+        render={multiline === true ? textarea : undefined}
         type={type}
         name={name}
         value={value}
@@ -48,10 +69,10 @@ function Field({
         pattern={pattern}
         readOnly={readOnly}
         required={required}
-        onChange={onChange}
-        className={`inline-block leading-none ${controlClassName}`}
+        onValueChange={onValueChange}
+        className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
       />
-      <FieldPrimitive.Error className={errorClassName} />
+      {errors}
     </FieldPrimitive.Root>
   );
 }

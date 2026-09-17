@@ -1,5 +1,5 @@
+import { Button, FormColumn } from "@template/ui/ui";
 import { useCallback, useState } from "react";
-import { Button } from "@template/ui/ui";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
 import { decodeJson } from "@template/runtime/client";
@@ -44,7 +44,7 @@ function ConsentActions({
     void decide(false);
   }, [decide]);
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
+    <FormColumn>
       <p>{client} に Wiki の閲覧を許可しますか？</p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="primary" disabled={pending} onClick={allow}>
@@ -54,7 +54,7 @@ function ConsentActions({
           拒否する
         </Button>
       </div>
-    </div>
+    </FormColumn>
   );
 }
 
