@@ -5,6 +5,14 @@ import { applications } from "@template/config";
 import { fileURLToPath } from "node:url";
 import { loadArtifacts } from "./artifacts.ts";
 
+function report(reason: string): Effect.Effect<void> {
+  return Effect.sync(() => {
+    // oxlint-disable-next-line no-console
+    console.error(JSON.stringify({ event: "artifacts.invalid", reason }));
+    process.exitCode = 1;
+  });
+}
+
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -22,13 +30,9 @@ NodeRuntime.runMain(
       );
     }
   }).pipe(
-    Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "artifacts.invalid" }));
-        process.exitCode = 1;
-      }),
-    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.catchTag("ArtifactFailure", (failure) => report(failure.code)),
+    Effect.catchCause(() => report("artifact_check_failed")),
   ),
   { disableErrorReporting: true },
 );

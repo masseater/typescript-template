@@ -91,34 +91,40 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
   return { total: total?.count ?? 0, users };
 });
 
-interface AuditedChange {
-  readonly action: "role_changed" | "user_deleted";
-  readonly actorId: string;
-  readonly sessionId: string;
-  readonly targetId: string;
-}
-
-const auditColumns = [
-  auditEvent.action,
-  auditEvent.actorId,
-  auditEvent.createdAt,
-  auditEvent.id,
-  auditEvent.targetId,
-];
-
 function auditWhenTargeted(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: DrizzleDatabase,
-  { action, actorId, sessionId, targetId }: AuditedChange,
+  {
+    action,
+    actorId,
+    sessionId,
+    targetId,
+  }: Readonly<{
+    action: "role_changed" | "user_deleted";
+    actorId: string;
+    sessionId: string;
+    targetId: string;
+  }>,
 ): SQL {
+  const record = [
+    [auditEvent.action, action],
+    [auditEvent.actorId, actorId],
+    [auditEvent.createdAt, Date.now()],
+    [auditEvent.id, crypto.randomUUID()],
+    [auditEvent.targetId, targetId],
+  ] as const;
   const names = sql.join(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    auditColumns.map((column) => sql.identifier(column.name)),
+    record.map(([column]) => sql.identifier(column.name)),
     sql`, `,
   );
-  const values = sql`SELECT ${action}, ${actorId}, ${Date.now()}, ${crypto.randomUUID()}, ${targetId}`;
+  const values = sql.join(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    record.map(([, value]) => sql`${value}`),
+    sql`, `,
+  );
   const targeted = sql`SELECT 1 FROM ${user} WHERE ${user.id} = ${targetId} AND ${liveAdmin(database, sessionId)}`;
-  return sql`INSERT INTO ${auditEvent} (${names}) ${values} WHERE EXISTS (${targeted})`;
+  return sql`INSERT INTO ${auditEvent} (${names}) SELECT ${values} WHERE EXISTS (${targeted})`;
 }
 
 const setUserRole = Effect.fn("setUserRole")(function* setUserRole(
