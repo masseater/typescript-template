@@ -1,8 +1,30 @@
 import { describe, expect, it } from "vite-plus/test";
-import { rankPages } from "./semantic.ts";
+import { exactMatchesFirst, rankPages } from "./semantic.ts";
 
 const PAGE_LIMIT = 5;
 const SHORT_PAGE_LIMIT = 2;
+const pageTexts = new Map([
+  ["/modernization", "部品は `shared/ui` に置きます"],
+  ["/deploy", "`vp run infra:deploy:shared` で共有リソースを作ります"],
+  ["/database", "INFRA:DEPLOY:SHARED"],
+]);
+
+function textOf(url: string): string {
+  return pageTexts.get(url) ?? "";
+}
+
+describe("verbatim query matches", () => {
+  it("pages containing the whole query verbatim outrank pages matching only its words", () => {
+    expect.hasAssertions();
+    expect(
+      exactMatchesFirst("infra:deploy:shared", ["/modernization", "/deploy", "/database"], textOf),
+    ).toStrictEqual(["/deploy", "/database", "/modernization"]);
+    expect(exactMatchesFirst("  ", ["/modernization", "/deploy"], textOf)).toStrictEqual([
+      "/modernization",
+      "/deploy",
+    ]);
+  });
+});
 
 describe("page ranking", () => {
   it("semantic similarity orders pages even when no keyword matches", () => {

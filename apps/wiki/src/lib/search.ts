@@ -1,5 +1,5 @@
 import type { Embedder, SemanticDocument } from "./semantic.ts";
-import { createSemanticIndex, rankPages } from "./semantic.ts";
+import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
 import type { SearchServer } from "fumadocs-core/search/server";
 import type { SortedResult } from "fumadocs-core/search";
 import { createFromSource } from "fumadocs-core/search/server";
@@ -67,6 +67,33 @@ function pageOf(url: string): string {
   return url.split("#")[0] ?? url;
 }
 
+const processedTexts: { pending: Promise<ReadonlyMap<string, string>> | undefined } = {
+  pending: undefined,
+};
+
+async function readProcessedTexts(): Promise<ReadonlyMap<string, string>> {
+  const entries = await Promise.all(
+    source
+      .getPages()
+      .map(
+        async (
+          page: Readonly<{ data: Readonly<Pick<WikiPage["data"], "getText">>; url: string }>,
+        ) => [page.url, await page.data.getText("processed")] as const,
+      ),
+  );
+  return new Map(entries);
+}
+
+async function loadProcessedTexts(): Promise<ReadonlyMap<string, string>> {
+  processedTexts.pending ??= readProcessedTexts();
+  try {
+    return await processedTexts.pending;
+  } catch (error) {
+    processedTexts.pending = undefined;
+    throw error;
+  }
+}
+
 function pageResults(
   url: string,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -128,19 +155,19 @@ function createWikiSearch(
     export: async () => keyword.export(),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     async search(query, options) {
-      const [keywordResults, semanticResults] = await Promise.all([
+      const [keywordResults, texts, semanticResults] = await Promise.all([
         keyword.search(query, options),
+        loadProcessedTexts(),
         semanticSearch(embed, query, reportError),
       ]);
+      const keywordPages = [
+        ...new Set(
+          keywordResults.map((result: Readonly<Pick<KeywordResult, "url">>) => pageOf(result.url)),
+        ),
+      ];
       const pages = rankPages(
         semanticResults.map((match) => ({ score: match.score, url: pageOf(match.document.url) })),
-        [
-          ...new Set(
-            keywordResults.map((result: Readonly<Pick<KeywordResult, "url">>) =>
-              pageOf(result.url),
-            ),
-          ),
-        ],
+        exactMatchesFirst(query, keywordPages, (url) => texts.get(url) ?? ""),
         options?.limit ?? DEFAULT_PAGE_LIMIT,
       );
       return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));

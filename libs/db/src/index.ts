@@ -30,6 +30,10 @@ const profileColumns = {
   profile: user.profile,
 };
 
+async function checkDatabase(database: Readonly<Pick<Database, "select">>): Promise<void> {
+  await database.select({ id: user.id }).from(user).limit(1);
+}
+
 async function getProfile(
   database: Readonly<Pick<Database, "select">>,
   userId: string,
@@ -60,6 +64,6 @@ async function updateProfile(
   return profile;
 }
 
-export { createDb, getProfile, updateProfile };
+export { checkDatabase, createDb, getProfile, updateProfile };
 export { schema } from "./schema.ts";
 export type { Audience, Database, DatabaseBinding, Role };

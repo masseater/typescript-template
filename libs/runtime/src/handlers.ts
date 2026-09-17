@@ -1,6 +1,7 @@
 import { apiResponse, readJson } from "./http.ts";
 import { maxLength, minLength, parse, pipe, strictObject, string } from "valibot";
 import type { AppRequestContext } from "./index.ts";
+import { checkDatabase } from "@template/db";
 
 interface RouteInput {
   readonly request: Request;
@@ -13,6 +14,18 @@ const badRequest = 400;
 const verifyEmailInput = strictObject({
   token: pipe(string(), minLength(1), maxLength(maximumTokenLength)),
 });
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function healthHandler({ context }: RouteInput): Promise<Response> {
+  return apiResponse(async () => {
+    await checkDatabase(context.runtime.database);
+    return {
+      ok: true,
+      release: context.runtime.config.APP_RELEASE,
+      service: context.runtime.audience,
+    };
+  }, context.runtime.reportError);
+}
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function authHandler({ request, context }: RouteInput): Promise<Response> {
@@ -56,4 +69,4 @@ async function verifyEmailHandler({ request, context }: RouteInput): Promise<Res
   }, context.runtime.reportError);
 }
 
-export { authHandler, sessionHandler, verifyEmailHandler };
+export { authHandler, healthHandler, sessionHandler, verifyEmailHandler };

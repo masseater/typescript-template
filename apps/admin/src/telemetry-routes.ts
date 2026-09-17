@@ -1,6 +1,7 @@
 export const routes = {
   "/": "users",
   "/api/auth/*": "auth",
+  "/api/health": "health",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
   "/api/users": "users-api",

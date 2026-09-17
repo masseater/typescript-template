@@ -7,7 +7,7 @@ type Embedder = (texts: readonly string[]) => Promise<number[][]>;
 type AiBinding = NonNullable<ReturnType<typeof readWikiConfig>["AI"]>;
 
 interface WikiRuntime {
-  readonly config: Pick<ReturnType<typeof readWikiConfig>, "APP_ORIGIN" | "ASSETS">;
+  readonly config: Pick<ReturnType<typeof readWikiConfig>, "APP_ORIGIN" | "APP_RELEASE" | "ASSETS">;
   readonly embedder: () => Embedder | undefined;
   readonly reportError: (correlation: RequestContext, error: unknown) => void;
   readonly telemetry: Instrumentation;
@@ -44,7 +44,11 @@ function createWikiRuntime(
   });
   const ai = config.AI;
   return {
-    config: { APP_ORIGIN: config.APP_ORIGIN, ASSETS: config.ASSETS },
+    config: {
+      APP_ORIGIN: config.APP_ORIGIN,
+      APP_RELEASE: config.APP_RELEASE,
+      ASSETS: config.ASSETS,
+    },
     embedder: () => (ai === undefined ? undefined : async (texts) => embedBatches(ai, texts)),
     reportError(correlation, error) {
       telemetry.reportError(correlation, error);

@@ -15,9 +15,11 @@ import {
   validateAuthSecret,
 } from "./config.ts";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
+import { deployHealthMonitor } from "./health-monitor.ts";
 import { errorWorkerArtifact } from "@template/error-monitor/artifact";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
+import { workerCompatibility } from "@template/config/worker";
 import { workerObservability } from "./observability.ts";
 
 const FULL_ROLLOUT_PERCENTAGE = 100;
@@ -94,8 +96,8 @@ const budgetVersion = new WorkerVersion("budget-version", {
       RESERVE_USD: String(settings.budget.reserveUsd),
     }).map(([name, text]: readonly [string, string]) => ({ name, text, type: "plain_text" })),
   ],
-  compatibilityDate: "2026-09-16",
-  compatibilityFlags: ["nodejs_compat"],
+  compatibilityDate: workerCompatibility.date,
+  compatibilityFlags: [...workerCompatibility.flags],
   mainModule: "index.js",
   migrations: { newSqliteClasses: ["BudgetMonitor"], newTag: "v1" },
   modules: [
@@ -166,8 +168,8 @@ const errorVersion = new WorkerVersion("error-version", {
       CLOUDFLARE_ACCOUNT_ID: settings.accountId,
     }).map(([name, text]: readonly [string, string]) => ({ name, text, type: "plain_text" })),
   ],
-  compatibilityDate: "2026-09-16",
-  compatibilityFlags: ["nodejs_compat"],
+  compatibilityDate: workerCompatibility.date,
+  compatibilityFlags: [...workerCompatibility.flags],
   mainModule: "index.js",
   migrations: { newSqliteClasses: ["ErrorMonitor"], newTag: "v1" },
   modules: [
@@ -195,6 +197,7 @@ const errorSchedule = new WorkersCronTrigger(
   },
   { dependsOn: [errorDeployment] },
 );
+const healthMonitor = await deployHealthMonitor(settings);
 
 const databaseId = database.id;
 const applicationSettings = settings;
@@ -202,6 +205,8 @@ const budgetWorkerName = budgetWorker.name;
 const budgetScheduleId = schedule.id;
 const errorWorkerName = errorWorker.name;
 const errorScheduleId = errorSchedule.id;
+const healthWorkerName = healthMonitor.workerName;
+const healthScheduleId = healthMonitor.scheduleId;
 
 export {
   applicationSettings,
@@ -211,4 +216,6 @@ export {
   databaseId,
   errorScheduleId,
   errorWorkerName,
+  healthScheduleId,
+  healthWorkerName,
 };

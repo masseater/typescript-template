@@ -40,12 +40,17 @@ const config: KnipConfig = {
       ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.ts!"],
     },
+    "infra/health-monitor": {
+      entry: ["src/worker.ts!"],
+      ignoreDependencies: ["cloudflare"],
+      project: ["src/**/*.ts!"],
+    },
     "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
     "libs/auth": {
       project: ["src/**/*.ts!", "!src/auth-test-fixture.ts!", "!src/browser-client.ts!"],
     },
     "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/remote-cli.ts!"],
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/remote-cli.ts!"],
       project: ["src/**/*.ts!"],
     },
     "tools/dev": {

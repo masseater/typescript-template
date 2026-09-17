@@ -68,6 +68,19 @@ function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): 
   };
 }
 
+function exactMatchesFirst(
+  query: string,
+  keywordPages: readonly string[],
+  textOf: (url: string) => string,
+): string[] {
+  const needle = query.trim().toLowerCase();
+  if (needle === "") {
+    return [...keywordPages];
+  }
+  const exact = keywordPages.filter((url) => textOf(url).toLowerCase().includes(needle));
+  return [...exact, ...keywordPages.filter((url) => !exact.includes(url))];
+}
+
 function rankPages(
   semantic: readonly PageScore[],
   keywordPages: readonly string[],
@@ -92,5 +105,5 @@ function rankPages(
     .map(([url]: readonly [string, number]) => url);
 }
 
-export { createSemanticIndex, rankPages };
+export { createSemanticIndex, exactMatchesFirst, rankPages };
 export type { Embedder, SemanticDocument };

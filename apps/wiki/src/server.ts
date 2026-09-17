@@ -65,6 +65,9 @@ async function forwardedResponse(scope: RequestScope, path: string): Promise<Res
   if (path === "/api/telemetry") {
     return runtime.telemetry.ingestBrowser(request);
   }
+  if (path === "/api/health") {
+    return jsonResponse({ ok: true, release: runtime.config.APP_RELEASE, service: "wiki" });
+  }
   return undefined;
 }
 

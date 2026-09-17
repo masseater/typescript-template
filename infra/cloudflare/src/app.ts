@@ -12,6 +12,7 @@ import type { WorkerVersionArgs, types } from "@pulumi/cloudflare";
 import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
 import { archiveSourceMaps } from "./source-maps.ts";
 import { loadArtifacts } from "./artifacts.ts";
+import { workerCompatibility } from "@template/config/worker";
 import { workerObservability } from "./observability.ts";
 
 const FULL_ROLLOUT_PERCENTAGE = 100;
@@ -154,8 +155,8 @@ function versionArgs(release: Release): WorkerVersionArgs {
     accountId: release.settings.accountId,
     assets: { config: release.policy.assets, directory: release.artifacts.clientDirectory },
     bindings: [...bindings, { name: "ASSETS", type: "assets" }],
-    compatibilityDate: "2026-09-16",
-    compatibilityFlags: ["nodejs_compat"],
+    compatibilityDate: workerCompatibility.date,
+    compatibilityFlags: [...workerCompatibility.flags],
     mainModule: release.artifacts.mainModule,
     modules: [...release.artifacts.modules],
     workerId: release.workerId,

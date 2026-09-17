@@ -10,8 +10,9 @@ import { createInstrumentation } from "@template/observability";
 type Session = Awaited<ReturnType<typeof verifySession>>;
 
 interface RequestRuntime {
+  readonly audience: Audience;
   readonly auth: Auth;
-  readonly config: { readonly APP_ORIGIN: string };
+  readonly config: { readonly APP_ORIGIN: string; readonly APP_RELEASE: string };
   readonly database: Database;
   readonly reportError: (error: unknown) => void;
   readonly session: (
@@ -35,7 +36,10 @@ interface AppRequestContext {
 interface RequestRuntimeInput {
   readonly audience: Audience;
   readonly config: Readonly<
-    Pick<AppConfig, "APP_ORIGIN" | "AUTH_SECRET" | "EMAIL" | "EMAIL_FROM" | "MAILPIT_URL">
+    Pick<
+      AppConfig,
+      "APP_ORIGIN" | "APP_RELEASE" | "AUTH_SECRET" | "EMAIL" | "EMAIL_FROM" | "MAILPIT_URL"
+    >
   > & { readonly DB: Readonly<AppConfig["DB"]> };
   readonly correlation: RequestContext;
   readonly telemetry: Instrumentation;
@@ -56,8 +60,9 @@ function createRequestRuntime(input: RequestRuntimeInput): RequestRuntime {
     sendVerificationEmail: async (message) => sendVerificationEmail(config, message),
   });
   return {
+    audience,
     auth,
-    config: { APP_ORIGIN: config.APP_ORIGIN },
+    config: { APP_ORIGIN: config.APP_ORIGIN, APP_RELEASE: config.APP_RELEASE },
     database,
     reportError,
     session: async (request, allowEnrollment = false) =>

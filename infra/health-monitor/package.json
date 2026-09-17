@@ -1,20 +1,22 @@
 {
-  "name": "@template/config",
+  "name": "@template/health-monitor",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./worker": "./src/worker.ts",
-    "./vite": "./src/vite.ts"
+    "./artifact": "./src/artifact.ts"
   },
-  "scripts": {},
+  "scripts": {
+    "build": "vp pack"
+  },
   "dependencies": {
-    "valibot": "1.5.0"
+    "valibot": "^1.1.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260916.1",
     "@types/node": "24.12.0",
+    "msw": "^2.11.0",
     "typescript": "7.0.2",
-    "vite-plus": "0.3.2"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }
