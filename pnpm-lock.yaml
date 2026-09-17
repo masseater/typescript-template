@@ -480,24 +480,15 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 1.46.0(react@19.3.0)
-      mdast-util-to-markdown:
-        specifier: 2.1.2
-        version: 2.1.2
       mermaid:
         specifier: 12.0.0
         version: 12.0.0
-      next-themes:
-        specifier: 0.4.6
-        version: 0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react:
         specifier: 'catalog:'
         version: 19.3.0
       react-dom:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
-      unist-util-visit:
-        specifier: 5.1.0
-        version: 5.1.0
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -520,9 +511,6 @@ importers:
       '@template/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
-      '@types/mdast':
-        specifier: 4.0.4
-        version: 4.0.4
       '@types/mdx':
         specifier: 2.0.14
         version: 2.0.14

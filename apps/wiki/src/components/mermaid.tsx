@@ -2,9 +2,7 @@ import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import { useEffect, useId, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { useTheme } from "next-themes";
-
-type Rendering = "failed" | "pending" | "rendered";
+import { useTheme } from "fumadocs-ui/provider/base";
 
 const renderChart = createClientOnlyFn(
   async (id: string, chart: string, dark: boolean): Promise<DocumentFragment> => {
@@ -22,11 +20,13 @@ const renderChart = createClientOnlyFn(
 );
 
 function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
-  const id = `mermaid-${useId().replaceAll(":", "")}`;
+  const id = `mermaid-${useId()}`;
   const { resolvedTheme } = useTheme();
   const container = useRef<HTMLDivElement>(null);
-  const [rendering, setRendering] = useState<Rendering>("pending");
-  const [failure, setFailure] = useState("");
+  const [rendering, setRendering] = useState<
+    | { readonly status: "failed"; readonly message: string }
+    | { readonly status: "pending" | "rendered" }
+  >({ status: "pending" });
   useEffect(() => {
     const controller = { active: true };
     async function render(): Promise<void> {
@@ -34,12 +34,14 @@ function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
         const diagram = await renderChart(id, chart, resolvedTheme === "dark");
         if (controller.active) {
           container.current?.replaceChildren(diagram);
-          setRendering("rendered");
+          setRendering({ status: "rendered" });
         }
       } catch (error) {
         if (controller.active) {
-          setFailure(error instanceof Error ? error.message : String(error));
-          setRendering("failed");
+          setRendering({
+            message: error instanceof Error ? error.message : String(error),
+            status: "failed",
+          });
         }
       }
     }
@@ -49,12 +51,16 @@ function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
     };
   }, [chart, id, resolvedTheme]);
   return (
-    <figure className="my-6" aria-busy={rendering === "pending"}>
-      <div ref={container} className="flex justify-center" hidden={rendering !== "rendered"} />
-      {rendering === "failed" && (
-        <figcaption role="alert">図を描画できませんでした: {failure}</figcaption>
+    <figure className="my-6" aria-busy={rendering.status === "pending"}>
+      <div
+        ref={container}
+        className="flex justify-center"
+        hidden={rendering.status !== "rendered"}
+      />
+      {rendering.status === "failed" && (
+        <figcaption role="alert">図を描画できませんでした: {rendering.message}</figcaption>
       )}
-      {rendering !== "rendered" && (
+      {rendering.status !== "rendered" && (
         <CodeBlock title="mermaid">
           <Pre>{chart}</Pre>
         </CodeBlock>
