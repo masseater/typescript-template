@@ -1,3 +1,11 @@
+pull_request_rules:
+  - name: queue on label
+    conditions:
+      - label = ready-to-merge
+    actions:
+      queue:
+        name: default
+
 queue_rules:
   - name: default
     merge_method: merge
