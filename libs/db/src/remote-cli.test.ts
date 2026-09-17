@@ -1,33 +1,9 @@
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { expect, test } from "vite-plus/test";
+import { runRemoteCli } from "./remote-cli.ts";
 
-function command(args: string[], input: string) {
-  return new Promise<{ code: number | null; output: string; error: string }>((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      [fileURLToPath(new URL("remote-cli.ts", import.meta.url)), ...args],
-      {
-        env: {},
-        stdio: ["pipe", "pipe", "pipe"],
-        timeout: 10000,
-      },
-    );
-    let output = "";
-    let error = "";
-    child.stdout.on("data", (value: Buffer) => {
-      output += value.toString();
-    });
-    child.stderr.on("data", (value: Buffer) => {
-      error += value.toString();
-    });
-    child.on("error", reject);
-    child.on("close", (code) => resolve({ code, output, error }));
-    child.stdin.end(input);
-  });
-}
+const command = (args: string[], input: string) => runRemoteCli(args, [Buffer.from(input)]);
 
-test("standalone CLI emits a structured offline plan with an empty environment", async () => {
+test("CLI emits a structured offline plan", async () => {
   const result = await command(
     ["migrate", "--plan"],
     JSON.stringify({
@@ -44,7 +20,7 @@ test("standalone CLI emits a structured offline plan with an empty environment",
   expect(result.error).toBe("");
 });
 
-test("standalone CLI rejects malformed private input without echoing it", async () => {
+test("CLI rejects malformed private input without echoing it", async () => {
   const result = await command(["bootstrap", "--plan"], "malformed-secret-private-token");
   expect(result.code).toBe(1);
   expect(result.output).toBe("");
@@ -52,7 +28,13 @@ test("standalone CLI rejects malformed private input without echoing it", async 
   expect(JSON.parse(result.error)).toMatchObject({ ok: false, code: "REMOTE_DATABASE_FAILED" });
 });
 
-test("standalone CLI refuses execution without a matching target confirmation", async () => {
+test("CLI rejects non-binary input chunks", async () => {
+  const result = await runRemoteCli(["migrate", "--plan"], ["{}"]);
+  expect(result.code).toBe(1);
+  expect(JSON.parse(result.error)).toMatchObject({ ok: false });
+});
+
+test("CLI refuses execution without a matching target confirmation", async () => {
   const result = await command(
     ["migrate", "--execute"],
     JSON.stringify({

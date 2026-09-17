@@ -9,6 +9,7 @@ export type InstrumentationOptions = {
   serviceName: ServiceName;
   release: string;
   routes: Readonly<Record<string, string>>;
+  log?: { info(line: string): void; error(line: string): void };
 };
 
 const ingressWindows = new Map<ServiceName, { start: number; count: number }>();
@@ -19,9 +20,10 @@ export function createInstrumentation(options: InstrumentationOptions) {
     throw new Error("Invalid telemetry service");
   validateRoutes(options.routes);
   const labels = new Set([...Object.values(options.routes), "unmatched"]);
+  const log = options.log ?? console;
 
   function reportError(context: RequestContext, error: unknown) {
-    console.error(
+    log.error(
       JSON.stringify({
         event: "application.error",
         service: `${options.serviceName}-server`,
@@ -63,7 +65,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
       reportError(context, error);
       throw error;
     } finally {
-      (status >= 500 ? console.error : console.info)(
+      log[status >= 500 ? "error" : "info"](
         JSON.stringify({
           event: "http.server.request",
           service: `${options.serviceName}-server`,
@@ -137,7 +139,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
       const failed =
         event.kind === "exception" ||
         (event.kind === "http" && (event.status === 0 || event.status >= 400));
-      (failed ? console.error : console.info)(
+      log[failed ? "error" : "info"](
         JSON.stringify({
           event: event.name,
           service: `${options.serviceName}-browser`,

@@ -1,27 +1,14 @@
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
+type WorkspaceManifest = { area: string; file: string; manifest: unknown };
 
-export type WorkspaceManifest = { area: string; file: string; manifest: unknown };
-
-export async function readWorkspaceManifests(root: string): Promise<WorkspaceManifest[]> {
-  const found = await Promise.all(
-    ["apps", "libs", "infra", "tools"].map(async (area) => {
-      const entries = await readdir(path.join(root, area), { withFileTypes: true });
-      return Promise.all(
-        entries
-          .filter((entry) => entry.isDirectory())
-          .map(async (entry) => {
-            const file = path.join(area, entry.name, "package.json");
-            const text = await readFile(path.join(root, file), "utf8").catch(() => undefined);
-            return text === undefined
-              ? []
-              : [{ area, file, manifest: JSON.parse(text) as unknown }];
-          }),
-      );
-    }),
-  );
-  return found.flat(2);
-}
+export const workspaceManifests: WorkspaceManifest[] = Object.entries(
+  import.meta.glob<unknown>("../../{apps,libs,infra,tools}/*/package.json", {
+    eager: true,
+    import: "default",
+  }),
+).map(([key, manifest]) => {
+  const file = key.replace(/^(?:\.\.\/)+/, "");
+  return { area: file.split("/")[0] ?? "", file, manifest };
+});
 
 export function field(manifest: unknown, key: string): unknown {
   return typeof manifest === "object" && manifest !== null
