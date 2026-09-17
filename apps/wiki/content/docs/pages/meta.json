@@ -1,4 +1,15 @@
 {
   "title": "ページ構成",
-  "pages": ["admin-layout", "admin-login", "admin-users", "user-interview"]
+  "pages": [
+    "admin-layout",
+    "admin-login",
+    "admin-users",
+    "user-layout",
+    "user-lp",
+    "user-signup",
+    "user-login",
+    "user-profile",
+    "user-users",
+    "user-interview"
+  ]
 }
