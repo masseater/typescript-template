@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 
 test("real Pulumi SDK and Cloudflare SDK run under tsx without loading a TypeScript compiler", async () => {
   const result = await promisify(execFile)(

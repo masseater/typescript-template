@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { externalAttributes } from "./external.ts";
 
 test("non-HTTP external operations never manufacture an HTTP status", () => {

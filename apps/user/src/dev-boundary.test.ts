@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "vite-plus";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { userDevBoundary } from "../dev-boundary.ts";
 
 test("user Vite serves its app but rejects secret files and administrator sources", async () => {

@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { totp } from "./totp.ts";
 import { verificationLink } from "./mail.ts";
 import { decodeBrowserBatch, object, shellQuote, safeFailure } from "./support.ts";

@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { enforceAdminAccess, localAccessCookie } from "./access.ts";
 
 test.for(["/", "/login", "/api/users", "/assets/admin.js", "/assets/admin.js.map"])(

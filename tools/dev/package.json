@@ -11,8 +11,7 @@
     "stop": "node src/cli.ts stop",
     "status": "node src/cli.ts status",
     "logs": "node src/cli.ts logs",
-    "browser": "node src/cli.ts browser",
-    "typecheck": "tsc --noEmit"
+    "browser": "node src/cli.ts browser"
   },
   "dependencies": {
     "agent-browser": "0.37.1",

@@ -8,9 +8,7 @@
     "./client": "./src/client.ts",
     "./wiki": "./src/wiki.ts"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
+  "scripts": {},
   "dependencies": {
     "@template/auth": "workspace:*",
     "@template/config": "workspace:*",
@@ -19,7 +17,6 @@
     "valibot": "1.5.0"
   },
   "devDependencies": {
-    "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "typescript": "7.0.2"
   }
 }

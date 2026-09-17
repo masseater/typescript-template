@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { rankPages } from "./semantic.ts";
 
 test("semantic similarity orders pages even when no keyword matches", () => {
