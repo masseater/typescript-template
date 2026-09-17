@@ -27,5 +27,4 @@ export const Failed = meta.story({
       run: noop,
     },
   },
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
 });

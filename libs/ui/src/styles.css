@@ -51,8 +51,8 @@
   --muted-foreground: var(--grey-65);
   --accent: var(--grey-6);
   --accent-foreground: var(--grey-100);
-  --destructive: var(--danger);
-  --destructive-hover: var(--danger-darken);
+  --destructive: var(--danger-darken);
+  --destructive-hover: var(--danger);
   --destructive-foreground: var(--white);
   --warning: var(--warning-yellow);
   --warning-hover: var(--warning-yellow-darken);

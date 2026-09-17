@@ -35,23 +35,10 @@ function storybookProjects(): unknown[] {
 }
 
 const acceptedA11yViolations = [
-  { file: "libs/ui/src/action-status.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/email-verification.stories.tsx", rule: "color-contrast", story: "Expired" },
-  { file: "libs/ui/src/login-form.stories.tsx", rule: "color-contrast", story: "Rejected" },
-  { file: "libs/ui/src/passkey-list.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/passkey-settings.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "Missing" },
-  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "TooShort" },
-  { file: "libs/ui/src/shared/ui/status.stories.tsx", rule: "color-contrast", story: "Error" },
   {
     file: "libs/ui/src/shared/ui/toast-item.stories.tsx",
     rule: "aria-hidden-focus",
     story: "Failure",
-  },
-  {
-    file: "libs/ui/src/signup-fields.stories.tsx",
-    rule: "color-contrast",
-    story: "RejectsShortPassword",
   },
 ];
 

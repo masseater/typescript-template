@@ -26,5 +26,4 @@ export const Loading = meta.story({ args: { passkeys: undefined } });
 
 export const Failed = meta.story({
   args: { listError: "パスキーの取得に失敗しました。", passkeys: undefined },
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
 });
