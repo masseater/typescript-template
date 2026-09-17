@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { errorMessage } from "./protocol";
 import { noop } from "es-toolkit";
 
@@ -37,7 +37,7 @@ function useAction(): ActionState {
   const [error, setError] = useState<string>();
   const hydrated = useSyncExternalStore(subscribeNothing, clientSnapshot, serverSnapshot);
   const active = useRef(false);
-  const run = useCallback((task: Task) => {
+  function run(task: Task): void {
     if (active.current) {
       return;
     }
@@ -53,7 +53,7 @@ function useAction(): ActionState {
       setPending(false);
     }
     void perform();
-  }, []);
+  }
   return { blocked: pending || !hydrated, error, pending, run };
 }
 

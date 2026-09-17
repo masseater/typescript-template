@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ProfileView } from "@template/runtime/contracts";
 import type { SubmitEventHandler } from "react";
 import { errorMessage } from "@template/ui";
@@ -33,10 +33,10 @@ async function saveProfile(name: string, profile: string): Promise<ProfileData> 
 function useProfileDraft(): ProfileDraft {
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
-  const show = useCallback((data: Readonly<ProfileData>): void => {
+  function show(data: Readonly<ProfileData>): void {
     setName(data.name);
     setProfile(data.profile);
-  }, []);
+  }
   return {
     handleNameChange: setName,
     handleProfileChange: setProfile,
@@ -77,25 +77,22 @@ function useProfileForm(userId: string | undefined): ProfileForm {
       controller.active = false;
     };
   }, [show, userId]);
-  const handleSubmit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: FormSubmission) => {
-      event.preventDefault();
-      setPending(true);
-      setFailure("");
-      setMessage("");
-      async function save(): Promise<void> {
-        try {
-          show(await saveProfile(name, profile));
-          setMessage("プロフィールを保存しました。");
-        } catch (error) {
-          setFailure(errorMessage(error));
-        }
-        setPending(false);
+  function handleSubmit(event: FormSubmission): void {
+    event.preventDefault();
+    setPending(true);
+    setFailure("");
+    setMessage("");
+    async function save(): Promise<void> {
+      try {
+        show(await saveProfile(name, profile));
+        setMessage("プロフィールを保存しました。");
+      } catch (error) {
+        setFailure(errorMessage(error));
       }
-      void save();
-    },
-    [name, profile, show],
-  );
+      setPending(false);
+    }
+    void save();
+  }
   return { ...draft, error: failure, handleSubmit, message, pending, ready };
 }
 

@@ -1,9 +1,8 @@
 import { Button, Field, FormColumn } from "./shared/ui";
-import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
+import type { ReactElement, SyntheticEvent } from "react";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import type { SettingsContext } from "./mfa-types";
 import { authClient } from "./client";
-import { useCallback } from "react";
 import { useTextInput } from "./use-text-input";
 
 interface PasskeyRegisterFormProps {
@@ -16,25 +15,20 @@ const REGISTERED_NOTICE =
 
 function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps): ReactElement {
   const { action, onNotice, onNoticeClear, recovery, session } = context;
-  const { run } = action;
   const name = useTextInput();
-  const { handleChange: setName, value: nameValue } = name;
-  const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
-      event.preventDefault();
-      run(async () => {
-        onNoticeClear();
-        requireSecureContext();
-        requireSuccess(
-          await authClient.passkey.addPasskey({ createSession: false, name: nameValue }),
-        );
-        setName("");
-        onNotice(REGISTERED_NOTICE);
-        await onRegistered();
-      });
-    },
-    [nameValue, onNotice, onNoticeClear, onRegistered, run, setName],
-  );
+  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+    event.preventDefault();
+    action.run(async () => {
+      onNoticeClear();
+      requireSecureContext();
+      requireSuccess(
+        await authClient.passkey.addPasskey({ createSession: false, name: name.value }),
+      );
+      name.handleChange("");
+      onNotice(REGISTERED_NOTICE);
+      await onRegistered();
+    });
+  }
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
@@ -44,7 +38,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
           name="passkey-name"
           maxLength={100}
           required
-          value={nameValue}
+          value={name.value}
           onValueChange={name.handleChange}
         />
         <Button type="submit" disabled={action.blocked || recoveringAdmin}>
