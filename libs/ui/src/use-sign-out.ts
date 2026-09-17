@@ -4,12 +4,9 @@ import { requireSuccess } from "./protocol";
 import { useAction } from "./action";
 import { useCallback } from "react";
 
-interface SignOut {
-  readonly action: ActionState;
-  readonly signOut: () => void;
-}
-
-function useSignOut(destination: string): SignOut {
+function useSignOut(
+  destination = "/login",
+): Readonly<{ action: ActionState; signOut: () => void }> {
   const action = useAction();
   const { run } = action;
   const signOut = useCallback(() => {

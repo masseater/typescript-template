@@ -1,21 +1,27 @@
-import { AppDocument } from "./app-document";
-import { AppNavigation } from "./app-navigation";
-import type { NavigationLink } from "./app-navigation";
-import { Outlet } from "@tanstack/react-router";
+import { AppBody } from "./app-body";
+import type { Children } from "./shared/ui/types";
+import { HeadContent } from "@tanstack/react-router";
 import type { ReactElement } from "react";
+import { initBrowserTelemetry } from "@template/observability/browser";
+import { useEffect } from "react";
 
 function AppShell({
-  navigation,
+  children,
   routes,
-}: Readonly<{
-  navigation: readonly NavigationLink[];
-  routes: Readonly<Record<string, string>>;
-}>): ReactElement {
+}: Children & Readonly<{ routes: Readonly<Record<string, string>> }>): ReactElement {
+  useEffect(() => {
+    const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
+    return (): void => {
+      telemetry.dispose();
+    };
+  }, [routes]);
   return (
-    <AppDocument routes={routes}>
-      <AppNavigation links={navigation} />
-      <Outlet />
-    </AppDocument>
+    <html lang="ja">
+      <head>
+        <HeadContent />
+      </head>
+      <AppBody>{children}</AppBody>
+    </html>
   );
 }
 

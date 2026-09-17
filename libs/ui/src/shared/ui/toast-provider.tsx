@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { ToastViewport } from "./toast-viewport";
 
-function Toaster({ children }: Children): ReactElement {
+function ToastProvider({ children }: Children): ReactElement {
   return (
     <ToastPrimitive.Provider>
       {children}
@@ -12,4 +12,4 @@ function Toaster({ children }: Children): ReactElement {
   );
 }
 
-export { Toaster };
+export { ToastProvider };

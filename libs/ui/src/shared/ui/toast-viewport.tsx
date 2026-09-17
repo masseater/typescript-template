@@ -1,15 +1,16 @@
 import type { ReactElement } from "react";
-import { ToastList } from "./toast-list";
+import { ToastItem } from "./toast-item";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
 function ToastViewport(): ReactElement {
+  const { toasts } = ToastPrimitive.useToastManager();
   return (
     <ToastPrimitive.Portal>
-      <ToastPrimitive.Viewport
-        data-slot="toaster"
-        className="fixed top-4 right-4 left-4 z-50 mx-auto flex w-auto max-w-md flex-col gap-2"
-      >
-        <ToastList />
+      <ToastPrimitive.Viewport className="fixed top-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2">
+        {/* oxlint-disable-next-line typescript/prefer-readonly-parameter-types */}
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} />
+        ))}
       </ToastPrimitive.Viewport>
     </ToastPrimitive.Portal>
   );

@@ -5,6 +5,7 @@ const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
 const maximumProfileLength = 2000;
 const maximumTokenLength = 4096;
+const maximumKeywordLength = 100;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
 
@@ -62,17 +63,25 @@ function pageNumber(
   return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
 }
 
+const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
+const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
+
 const UserListQuery = Schema.Struct({
+  emailVerified: Schema.optionalKey(BooleanText),
+  keyword: Schema.optionalKey(UserKeyword),
   limit: pageNumber(defaultPageSize, 1, maximumPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
+  role: Schema.optionalKey(Role),
 });
 
 const UserSummary = Schema.Struct({
+  createdAt: Schema.DateFromString,
   email: Schema.String,
   emailVerified: Schema.Boolean,
   id: Schema.String,
   name: Schema.String,
   role: Role,
+  twoFactorEnabled: Schema.Boolean,
 });
 
 const UserList = Schema.Struct({ total: Schema.Finite, users: Schema.Array(UserSummary) });
@@ -92,6 +101,7 @@ const HealthView = Schema.Struct({
 });
 
 export {
+  BooleanText,
   EmailVerificationRequest,
   EmailVerified,
   ErrorBody,
@@ -100,11 +110,14 @@ export {
   MemberView,
   ProfileUpdate,
   ProfileView,
+  Role,
   RoleChange,
   RoleChanged,
   SessionView,
   UserDeleted,
   UserDeletion,
+  UserKeyword,
   UserList,
   UserListQuery,
+  maximumKeywordLength,
 };

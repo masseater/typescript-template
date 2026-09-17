@@ -1,4 +1,4 @@
-import { Field, Page, Status, useNotify } from "@template/ui/ui";
+import { Field, Page, Status, useToast } from "@template/ui/ui";
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import { ProfileEditor } from "./profile-editor.tsx";
 import type { ReactElement } from "react";
@@ -8,10 +8,10 @@ import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 
 function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElement {
   const navigate = useNavigate();
-  const notify = useNotify();
+  const notify = useToast();
   const showSaved = useCallback(async (): Promise<void> => {
     await navigate({ params: { id: initial.id }, to: "/users/$id" });
-    notify("プロフィールを保存しました。");
+    notify("success", "プロフィールを保存しました。");
   }, [initial.id, navigate, notify]);
   const form = useProfileForm(initial, showSaved);
   return (

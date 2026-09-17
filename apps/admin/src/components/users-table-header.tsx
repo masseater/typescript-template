@@ -1,15 +1,14 @@
 import { TableHead, TableHeader, TableRow } from "@template/ui/ui";
 import type { ReactElement } from "react";
+import { usersTableColumns } from "#users-table-columns.ts";
 
 function UsersTableHeader(): ReactElement {
   return (
     <TableHeader>
       <TableRow>
-        <TableHead>ユーザー名</TableHead>
-        <TableHead>メールアドレス</TableHead>
-        <TableHead>メール確認</TableHead>
-        <TableHead>権限</TableHead>
-        <TableHead>操作</TableHead>
+        {usersTableColumns.map((column) => (
+          <TableHead key={column}>{column}</TableHead>
+        ))}
       </TableRow>
     </TableHeader>
   );
