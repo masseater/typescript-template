@@ -1,18 +1,16 @@
 import { parseArgs } from "node:util";
 import * as v from "valibot";
-import { queryGrafana, queryPath } from "./query.ts";
+import { queryExplorer, requestTelemetry, structuredMessage } from "./explorer.ts";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    grafana: { type: "string", default: "http://127.0.0.1:3100" },
-    service: { type: "string", default: "user-server" },
+    app: { type: "string", default: "http://127.0.0.1:3001/" },
     minutes: { type: "string", default: "15" },
     limit: { type: "string", default: "100" },
-    severity: { type: "string" },
+    level: { type: "string" },
     "request-id": { type: "string" },
     "trace-id": { type: "string" },
-    expression: { type: "string" },
     help: { type: "boolean", default: false },
   },
 });
@@ -20,59 +18,63 @@ const { values, positionals } = parseArgs({
 if (values.help) {
   console.info(
     JSON.stringify({
-      commands: ["doctor", "logs", "metrics", "exemplars", "traces", "trace"],
-      flags: [
-        "--grafana",
-        "--service",
-        "--minutes",
-        "--limit",
-        "--severity",
-        "--request-id",
-        "--trace-id",
-        "--expression",
-      ],
+      commands: ["logs", "traces", "trace", "request"],
+      flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
+      source: "Cloudflare Local Explorer of the running app",
       readOnly: true,
     }),
   );
 } else {
   try {
-    const schema = v.object({
-      command: v.picklist(["doctor", "logs", "metrics", "exemplars", "traces", "trace"]),
-      service: v.picklist([
-        "user-server",
-        "user-browser",
-        "admin-server",
-        "admin-browser",
-        "wiki-server",
-        "wiki-browser",
-      ]),
-      minutes: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1440)),
-      limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
-    });
-    const parsed = v.parse(schema, {
-      command: positionals[0],
-      service: values.service,
-      minutes: Number(values.minutes),
-      limit: Number(values.limit),
-    });
+    const input = v.parse(
+      v.object({
+        command: v.picklist(["logs", "traces", "trace", "request"]),
+        minutes: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1440)),
+        limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
+        level: v.optional(v.picklist(["debug", "info", "log", "warn", "error"])),
+        requestId: v.optional(v.string()),
+        traceId: v.optional(v.pipe(v.string(), v.regex(/^[0-9a-f]{32}$/))),
+      }),
+      {
+        command: positionals[0],
+        minutes: Number(values.minutes),
+        limit: Number(values.limit),
+        level: values.level,
+        requestId: values["request-id"],
+        traceId: values["trace-id"],
+      },
+    );
     if (positionals.length !== 1) throw new Error("Specify one query command");
-    const severity =
-      values.severity === undefined
-        ? undefined
-        : v.parse(v.picklist(["INFO", "ERROR"]), values.severity);
-    const input = {
-      ...parsed,
-      ...(severity ? { severity } : {}),
-      ...(values["request-id"] ? { requestId: values["request-id"] } : {}),
-      ...(values["trace-id"] ? { traceId: values["trace-id"] } : {}),
-      ...(values.expression ? { expression: values.expression } : {}),
-    };
-    const data = await queryGrafana(values.grafana, queryPath(input, Date.now()));
+    const since = Date.now() - input.minutes * 60_000;
+    const data =
+      input.command === "request"
+        ? await requestTelemetry(values.app, v.parse(v.string(), input.requestId))
+        : input.command === "trace"
+          ? await queryExplorer(
+              values.app,
+              "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+              [v.parse(v.string(), input.traceId)],
+            )
+          : input.command === "traces"
+            ? await queryExplorer(
+                values.app,
+                "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
+                [since, input.limit],
+              )
+            : (
+                await queryExplorer(
+                  values.app,
+                  `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${input.level ? " AND level = ?" : ""} ORDER BY ts_ms DESC LIMIT ?`,
+                  input.level ? [since, input.level, input.limit] : [since, input.limit],
+                )
+              ).map(({ message, ...row }) => ({
+                ...row,
+                event: structuredMessage(message) ?? null,
+              }));
     console.info(
       JSON.stringify({
         ok: true,
-        command: parsed.command,
-        service: parsed.service,
+        command: input.command,
         observedAt: new Date().toISOString(),
         data,
       }),
@@ -83,7 +85,7 @@ if (values.help) {
         ok: false,
         event: "observability.query_failed",
         remediation:
-          "Check arguments, LGTM health and datasource availability. Use --help for read-only query commands.",
+          "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
       }),
     );
     process.exitCode = 1;

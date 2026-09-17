@@ -13,9 +13,7 @@ export function createRuntime(
   const config = readConfig(bindings);
   const telemetry = createInstrumentation({
     serviceName: audience,
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
     release: config.APP_RELEASE,
-    headers: config.otelHeaders,
     routes,
   });
   return {
@@ -25,19 +23,14 @@ export function createRuntime(
       const reportError = (error: unknown) => {
         telemetry.reportError(correlation, error);
       };
-      const database = createDb(config.DB, (operation, execute) =>
-        telemetry.withDbSpan(correlation, operation, execute),
-      );
+      const database = createDb(config.DB);
       const auth = createAuth({
         database,
         baseURL: config.APP_ORIGIN,
         secret: config.AUTH_SECRET,
         audience,
         onError: reportError,
-        sendVerificationEmail: (message) =>
-          telemetry.withExternalSpan(correlation, "email", (child) =>
-            sendVerificationEmail(config, message, child.traceparent),
-          ),
+        sendVerificationEmail: (message) => sendVerificationEmail(config, message),
       });
       return {
         config: { APP_ORIGIN: config.APP_ORIGIN },

@@ -59,7 +59,7 @@ test("user and admin are distinct deployments with all alternative public URLs d
   });
 });
 
-test("the wiki reads its production settings without authentication, database or OTLP bindings", () => {
+test("the wiki reads its production settings without authentication or database bindings", () => {
   const config = parseSharedConfig(settings);
   const runtime = readWikiConfig({
     APP_ORIGIN: appPolicy(config, "wiki").origin,
@@ -68,7 +68,6 @@ test("the wiki reads its production settings without authentication, database or
   });
   expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
   expect(runtime.APP_RELEASE).toBe("0123456789abcdef");
-  expect(runtime.OTEL_EXPORTER_OTLP_ENDPOINT).toBeUndefined();
   expect(runtime.AI).toBeNull();
   const ai = { run: () => Promise.resolve({ data: [] }) };
   expect(

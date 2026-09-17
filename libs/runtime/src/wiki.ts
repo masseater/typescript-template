@@ -11,9 +11,7 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
   const config = readWikiConfig(bindings);
   const telemetry = createInstrumentation({
     serviceName: "wiki",
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
     release: config.APP_RELEASE,
-    headers: config.otelHeaders,
     routes,
   });
   const ai = config.AI;
@@ -23,15 +21,13 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
     reportError(correlation: RequestContext, error: unknown) {
       telemetry.reportError(correlation, error);
     },
-    embedder(correlation: RequestContext) {
+    embedder() {
       if (!ai) return null;
       return async (texts: readonly string[]) => {
         const vectors: number[][] = [];
         for (let start = 0; start < texts.length; start += embeddingBatch) {
           const text = texts.slice(start, start + embeddingBatch);
-          const output = await telemetry.withExternalSpan(correlation, "ai", () =>
-            ai.run(embeddingModel, { text }),
-          );
+          const output = await ai.run(embeddingModel, { text });
           const { data } = v.parse(embeddingOutput, output);
           if (data.length !== text.length) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
           vectors.push(...data);

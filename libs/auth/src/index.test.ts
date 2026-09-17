@@ -1,6 +1,5 @@
 import { sendVerificationEmail } from "@template/config";
 import { createDb } from "@template/db";
-import type { DatabaseOperation, DatabaseTrace } from "@template/db";
 import { bootstrapAdmin, setUserRole } from "@template/db/admin";
 import { createTestDatabase, getSchemaShape } from "@template/db/testing";
 import { getSchema } from "better-auth/db";
@@ -67,14 +66,7 @@ class BrowserClient {
 
 async function createFixture() {
   const db = await createTestDatabase();
-  const queries: { operation: DatabaseOperation; duration: number }[] = [];
-  const trace: DatabaseTrace = async (operation, execute) => {
-    const started = performance.now();
-    const result = await execute();
-    queries.push({ operation, duration: performance.now() - started });
-    return result;
-  };
-  const database = createDb(db.binding, trace);
+  const database = createDb(db.binding);
   const mailbox = new Map<string, string>();
   const mailServer = setupServer(
     http.post<never, MailpitMessage>(
@@ -126,7 +118,6 @@ async function createFixture() {
   };
   return {
     database,
-    queries,
     userAuth,
     adminAuth,
     register,
@@ -192,11 +183,6 @@ test("requires an actual email verification before password login", async ({ fix
   expectTypeOf(current.user.twoFactorEnabled).toEqualTypeOf<boolean>();
   expect(current.user.twoFactorEnabled).toBe(false);
   expect(current.strong).toBe(false);
-  expect(fixture.queries.map((query) => query.operation)).toEqual(
-    expect.arrayContaining(["SELECT", "INSERT", "UPDATE"]),
-  );
-  expect(fixture.queries.every((query) => query.duration >= 0)).toBe(true);
-  expect(JSON.stringify(fixture.queries)).not.toContain("alice@example.com");
 });
 
 test("admin enrollment session cannot access CRM until real TOTP verification", async ({

@@ -10,8 +10,6 @@ const origin = v.pipe(
 const scalarSchema = v.object({
   APP_ORIGIN: origin,
   AUTH_SECRET: v.pipe(v.string(), v.minLength(32)),
-  OTEL_EXPORTER_OTLP_ENDPOINT: v.optional(absoluteUrl),
-  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
   APP_RELEASE: v.optional(release, "local"),
   EMAIL_FROM: v.pipe(v.string(), v.email()),
   MAILPIT_URL: v.optional(origin),
@@ -56,14 +54,7 @@ export function readEnvironment(input: unknown) {
     (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
   )
     throw new Error("Mailpit is restricted to local development");
-  const otelHeaders =
-    scalars.OTEL_EXPORTER_OTLP_HEADERS === undefined
-      ? {}
-      : v.parse(
-          v.record(v.string(), v.string()),
-          JSON.parse(scalars.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
-        );
-  return { ...scalars, otelHeaders, local };
+  return { ...scalars, local };
 }
 
 export function readConfig(input: unknown) {
@@ -88,7 +79,6 @@ export type AppConfig = ReturnType<typeof readConfig>;
 export async function sendVerificationEmail(
   config: Pick<AppConfig, "APP_ORIGIN" | "EMAIL_FROM" | "MAILPIT_URL" | "EMAIL">,
   message: { email: string; url: string },
-  traceparent?: string,
 ): Promise<void> {
   if (new URL(message.url).origin !== config.APP_ORIGIN)
     throw new Error("Email link origin mismatch");
@@ -101,7 +91,7 @@ export async function sendVerificationEmail(
   if (config.MAILPIT_URL) {
     const response = await fetch(`${config.MAILPIT_URL}/api/v1/send`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(traceparent ? { traceparent } : {}) },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         From: { Email: email.from },
         To: [{ Email: email.to }],
@@ -120,8 +110,6 @@ export async function sendVerificationEmail(
 
 const wikiSchema = v.object({
   APP_ORIGIN: origin,
-  OTEL_EXPORTER_OTLP_ENDPOINT: v.optional(absoluteUrl),
-  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
   APP_RELEASE: v.optional(release, "local"),
   ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
   AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
@@ -134,14 +122,6 @@ export function readWikiConfig(input: unknown) {
     APP_ORIGIN: config.APP_ORIGIN,
     ASSETS: config.ASSETS,
     AI: config.AI ?? null,
-    OTEL_EXPORTER_OTLP_ENDPOINT: config.OTEL_EXPORTER_OTLP_ENDPOINT,
     APP_RELEASE: config.APP_RELEASE,
-    otelHeaders:
-      config.OTEL_EXPORTER_OTLP_HEADERS === undefined
-        ? {}
-        : v.parse(
-            v.record(v.string(), v.string()),
-            JSON.parse(config.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
-          ),
   };
 }

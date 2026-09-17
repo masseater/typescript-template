@@ -1,30 +1,21 @@
 import { parseArgs } from "node:util";
 import { setTimeout } from "node:timers/promises";
 import * as v from "valibot";
-import { queryGrafana, queryPath } from "./query.ts";
+import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 
 const { values } = parseArgs({
   options: {
-    grafana: { type: "string", default: "http://127.0.0.1:3100" },
     app: { type: "string" },
     service: { type: "string", default: "user-server" },
   },
 });
 
 try {
-  const service = v.parse(v.picklist(["user-server", "admin-server"]), values.service);
-  const app = new URL(v.parse(v.pipe(v.string(), v.url()), values.app));
-  if (
-    !(
-      (app.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(app.hostname)) ||
-      app.protocol === "https:"
-    ) ||
-    app.username ||
-    app.password ||
-    app.search ||
-    app.hash
-  )
-    throw new Error("App URL requires loopback HTTP or HTTPS and no secrets");
+  const service = v.parse(
+    v.picklist(["user-server", "admin-server", "wiki-server"]),
+    values.service,
+  );
+  const app = explorerOrigin(v.parse(v.string(), values.app));
   const response = await fetch(app, {
     method: "GET",
     redirect: "manual",
@@ -32,59 +23,42 @@ try {
   });
   await response.body?.cancel();
   const requestId = response.headers.get("x-request-id");
-  const traceId = response.headers.get("traceparent")?.split("-")[1];
-  if (!requestId || !traceId || response.status >= 500)
+  if (!requestId || response.status >= 500)
     throw new Error("App must return a non-error response with correlation headers");
-  const input = { service, minutes: 5, limit: 100, requestId, traceId };
   const deadline = Date.now() + 45_000;
-  let found = false;
-  while (Date.now() < deadline) {
-    const logs = await queryGrafana(
-      values.grafana,
-      queryPath({ ...input, command: "logs" }, Date.now()),
+  let verified: { spans: number; logs: number } | undefined;
+  while (Date.now() < deadline && !verified) {
+    const telemetry = await requestTelemetry(app.href, requestId);
+    const logged = telemetry.logs.some(
+      ({ event }) =>
+        event?.["event"] === "http.server.request" &&
+        event["service"] === service &&
+        event["request_id"] === requestId,
     );
-    const traces = await queryGrafana(
-      values.grafana,
-      queryPath({ ...input, command: "traces" }, Date.now()),
+    const traced = telemetry.spans.some(
+      (span) => span["parent_id"] === null && span["duration_ms"] !== null,
     );
-    const exemplars = await queryGrafana(
-      values.grafana,
-      queryPath(
-        {
-          ...input,
-          command: "exemplars",
-        },
-        Date.now(),
-      ),
-    );
-    if (
-      JSON.stringify(logs).includes(requestId) &&
-      JSON.stringify(traces).includes(traceId) &&
-      JSON.stringify(exemplars).includes(traceId)
-    ) {
-      console.info(
-        JSON.stringify({
-          ok: true,
-          requestId,
-          traceId,
-          responseStatus: response.status,
-          service,
-          signals: ["logs", "metrics", "traces"],
-        }),
-      );
-      found = true;
-      break;
-    }
-    await setTimeout(1000);
+    if (logged && traced) verified = { spans: telemetry.spans.length, logs: telemetry.logs.length };
+    else await setTimeout(1000);
   }
-  if (!found) throw new Error("LGTM did not expose correlated data within 45 seconds");
+  if (!verified) throw new Error("Local Explorer did not expose correlated data within 45 seconds");
+  console.info(
+    JSON.stringify({
+      ok: true,
+      requestId,
+      responseStatus: response.status,
+      service,
+      signals: ["logs", "traces"],
+      ...verified,
+    }),
+  );
 } catch {
   console.error(
     JSON.stringify({
       ok: false,
       event: "observability.verification_failed",
       remediation:
-        "Specify --app with a running app URL. Check LGTM, collector exports and Prometheus exemplar storage; all three signals must contain the real request correlation.",
+        "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
     }),
   );
   process.exitCode = 1;

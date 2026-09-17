@@ -1,39 +1,5 @@
 name: typescript-template-local
 services:
-  lgtm:
-    image: grafana/otel-lgtm:0.33.0@sha256:475319e883b66594d1a2f22ef168c2459802bb94548e6f25d9782bd5f5c19a3a
-    ports:
-      - "127.0.0.1:3100:3000"
-      - "127.0.0.1:4318:4318"
-      - "127.0.0.1:4317:4317"
-    environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_AUTH_BASIC_ENABLED: "false"
-      GF_AUTH_DISABLE_LOGIN_FORM: "true"
-      GF_SECURITY_ADMIN_USER: disabled-local-admin
-      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD using the root .local environment file}"
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_ANALYTICS_REPORTING_ENABLED: "false"
-      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
-      ENABLE_LOGS_OTELCOL: "true"
-      PROMETHEUS_EXTRA_ARGS: --enable-feature=otlp-deltatocumulative,exemplar-storage
-    volumes:
-      - lgtm-data:/data
-      - ./otelcol.yaml:/otel-lgtm/otelcol-config.yaml:ro
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:13133/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
-    security_opt:
-      - no-new-privileges:true
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: "3"
   mailpit:
     image: axllent/mailpit:v1.31.1@sha256:98b916bd3c8d61f7633a52d3ea2f58d00620cb01ca57ab59edde68c347a95365
     ports:
@@ -53,37 +19,5 @@ services:
       options:
         max-size: 10m
         max-file: "3"
-  grafana-mcp:
-    image: grafana/mcp-grafana:1.4.2@sha256:f87fa67a561f7b3deb412402887117bd1e9f1f7a8695935d27c498543ab3458b
-    command:
-      [
-        "-t",
-        "streamable-http",
-        "--address",
-        "0.0.0.0:8000",
-        "--allowed-hosts",
-        "localhost:8000,127.0.0.1:8000",
-        "--disable-write",
-        "--enabled-tools",
-        "search,datasource,prometheus,loki",
-      ]
-    environment:
-      GRAFANA_URL: http://lgtm:3000
-      MCP_GRAFANA_SERVER_TOKEN: "${MCP_GRAFANA_SERVER_TOKEN:?Set MCP_GRAFANA_SERVER_TOKEN using the root .local environment file}"
-    ports:
-      - "127.0.0.1:8000:8000"
-    depends_on:
-      lgtm:
-        condition: service_healthy
-    read_only: true
-    cap_drop: [ALL]
-    security_opt:
-      - no-new-privileges:true
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: "3"
 volumes:
-  lgtm-data:
   mailpit-data:
