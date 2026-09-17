@@ -3,16 +3,21 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./mcp": "./src/mcp.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.5",
+    "@better-auth/mcp": "1.7.5",
+    "@better-auth/oauth-provider": "1.7.5",
     "@better-auth/passkey": "1.7.5",
     "@template/db": "workspace:*",
-    "better-auth": "1.7.5"
+    "better-auth": "1.7.5",
+    "better-call": "1.4.0",
+    "valibot": "1.5.0"
   },
   "devDependencies": {
     "@template/config": "workspace:*",

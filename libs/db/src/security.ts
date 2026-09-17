@@ -1,6 +1,14 @@
 import { and, count, eq, gt } from "drizzle-orm";
 import type { Audience, Database } from "./index.ts";
-import { passkey, session, twoFactor, user, verification } from "./schema.ts";
+import {
+  oauthAccessToken,
+  oauthRefreshToken,
+  passkey,
+  session,
+  twoFactor,
+  user,
+  verification,
+} from "./schema.ts";
 
 export async function hasVerificationAudience(
   database: Database,
@@ -92,5 +100,16 @@ export async function markSessionStrong(
 }
 
 export async function revokeUserSessions(database: Database, userId: string) {
+  await database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId));
+  await database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId));
   await database.delete(session).where(eq(session.userId, userId));
+}
+
+export async function findWikiReader(database: Database, userId: string) {
+  const [record] = await database
+    .select({ id: user.id })
+    .from(user)
+    .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
+    .limit(1);
+  return record ?? null;
 }

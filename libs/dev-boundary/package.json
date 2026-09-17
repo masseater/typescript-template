@@ -1,0 +1,17 @@
+{
+  "name": "@template/dev-boundary",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.0",
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11"
+  }
+}

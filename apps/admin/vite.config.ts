@@ -3,7 +3,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
-import { devBoundary } from "@template/dev/vite-boundary";
+import { devBoundary } from "@template/dev-boundary";
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [

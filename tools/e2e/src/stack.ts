@@ -232,17 +232,14 @@ export async function createStack() {
             binding: "ASSETS",
             run_worker_first: true,
           },
-          d1_databases:
-            audience === "wiki"
-              ? []
-              : [
-                  {
-                    binding: "DB",
-                    database_name: `${id}-shared`,
-                    database_id: databaseId,
-                    migrations_dir: path.join(root, "libs/db/migrations"),
-                  },
-                ],
+          d1_databases: [
+            {
+              binding: "DB",
+              database_name: `${id}-shared`,
+              database_id: databaseId,
+              migrations_dir: path.join(root, "libs/db/migrations"),
+            },
+          ],
           vars: {},
           workers_dev: false,
           preview_urls: false,

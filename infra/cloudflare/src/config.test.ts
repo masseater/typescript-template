@@ -175,26 +175,25 @@ test("user and admin are distinct deployments with all alternative public URLs d
   });
 });
 
-test("the wiki reads its runtime settings without authentication or database bindings", () => {
+test("the wiki reads authentication, database and optional AI bindings", () => {
   const config = parseSharedConfig(settings);
-  const runtime = readWikiConfig({
+  const bindings = {
     APP_ORIGIN: appPolicy(config, "wiki").origin,
+    AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
     OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
     OTEL_EXPORTER_OTLP_HEADERS: "{}",
+    EMAIL_FROM: config.mailFrom,
     ASSETS: { fetch: () => Promise.resolve(new Response()) },
-  });
+    DB: { prepare: () => undefined, batch: () => Promise.resolve([]) },
+    EMAIL: { send: () => Promise.resolve() },
+  };
+  const runtime = readWikiConfig(bindings);
   expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
   expect(runtime.sentry).toBeNull();
   expect(runtime.AI).toBeNull();
   const ai = { run: () => Promise.resolve({ data: [] }) };
-  expect(
-    readWikiConfig({
-      APP_ORIGIN: appPolicy(config, "wiki").origin,
-      OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
-      ASSETS: { fetch: () => Promise.resolve(new Response()) },
-      AI: ai,
-    }).AI,
-  ).toBe(ai);
+  expect(readWikiConfig({ ...bindings, AI: ai }).AI).toBe(ai);
+  expect(() => readWikiConfig({ ...bindings, DB: undefined })).toThrow("Invalid type");
 });
 
 test.each([

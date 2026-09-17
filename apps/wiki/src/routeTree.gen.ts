@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as ConsentRouteImport } from './routes/consent'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SecurityRouteImport } from './routes/security'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConsentRoute = ConsentRouteImport.update({
+  id: '/consent',
+  path: '/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
+  '/consent': typeof ConsentRoute
+  '/login': typeof LoginRoute
+  '/security': typeof SecurityRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
+  '/consent': typeof ConsentRoute
+  '/login': typeof LoginRoute
+  '/security': typeof SecurityRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/$': typeof SplatRoute
+  '/consent': typeof ConsentRoute
+  '/login': typeof LoginRoute
+  '/security': typeof SecurityRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/$'
+  fullPaths: '/$' | '/consent' | '/login' | '/security'
   fileRoutesByTo: FileRoutesByTo
-  to: '/$'
-  id: '__root__' | '/$'
+  to: '/$' | '/consent' | '/login' | '/security'
+  id: '__root__' | '/$' | '/consent' | '/login' | '/security'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
+  ConsentRoute: typeof ConsentRoute
+  LoginRoute: typeof LoginRoute
+  SecurityRoute: typeof SecurityRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/consent': {
+      id: '/consent'
+      path: '/consent'
+      fullPath: '/consent'
+      preLoaderRoute: typeof ConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
+  ConsentRoute: ConsentRoute,
+  LoginRoute: LoginRoute,
+  SecurityRoute: SecurityRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

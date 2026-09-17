@@ -124,7 +124,7 @@ test("admin absence checks require a positive admin control and inspect source-m
   );
 });
 
-test("the public wiki bundle is a separate Worker without application routes or sources", () => {
+test("the wiki bundle is a separate Worker with its own login but without application code", () => {
   const pair = data();
   expect(() => assertEntries({ ...pair, wiki: { ...pair.wiki, name: pair.user.name } })).toThrow(
     "E2E_ARTIFACT_WORKERS_NOT_SEPARATE",
@@ -132,19 +132,25 @@ test("the public wiki bundle is a separate Worker without application routes or 
   expect(() =>
     assertSeparation({ ...pair, wiki: { ...pair.wiki, server: pair.user.server } }),
   ).toThrow("E2E_WIKI_SERVER_MARKER_MISSING");
+  const login = new Map(pair.wiki.server);
+  login.set("auth.js", Buffer.from('fetch("/api/auth/get-session")'));
+  login.set(
+    "auth.js.map",
+    Buffer.from(JSON.stringify({ sources: ["../../../../libs/db/src/schema.ts"] })),
+  );
+  expect(() => assertSeparation({ ...pair, wiki: { ...pair.wiki, server: login } })).not.toThrow();
   const leaked = new Map(pair.wiki.server);
-  leaked.set("auth.js", Buffer.from('fetch("/api/auth/get-session")'));
+  leaked.set("admin.js", Buffer.from('fetch("/api/users")'));
   expect(() => assertSeparation({ ...pair, wiki: { ...pair.wiki, server: leaked } })).toThrow(
     "E2E_APPLICATION_CODE_IN_WIKI_BUNDLE",
   );
-  const mapped = new Map(pair.wiki.server);
-  mapped.set(
-    "index.js.map",
-    Buffer.from(JSON.stringify({ sources: ["../../../../libs/db/src/schema.ts"] })),
-  );
-  expect(() => assertSeparation({ ...pair, wiki: { ...pair.wiki, server: mapped } })).toThrow(
-    "E2E_APPLICATION_SOURCE_IN_WIKI_SERVER_MAP",
-  );
+  for (const source of ["../../../../libs/db/src/admin.ts", "../../../../apps/admin/src/x.ts"]) {
+    const mapped = new Map(pair.wiki.server);
+    mapped.set("index.js.map", Buffer.from(JSON.stringify({ sources: [source] })));
+    expect(() => assertSeparation({ ...pair, wiki: { ...pair.wiki, server: mapped } })).toThrow(
+      "E2E_APPLICATION_SOURCE_IN_WIKI_SERVER_MAP",
+    );
+  }
 });
 
 test("a shared OAuth provider URL does not count as an admin application route", () => {

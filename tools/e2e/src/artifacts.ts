@@ -15,7 +15,7 @@ export type ArtifactPair = { user: Build; admin: Build; wiki: Build; secrets: re
 const adminMarkers = ["ADMIN_STRONG_SESSION_REQUIRED"];
 const adminRoute = /["'`]\/api\/users(?:["'`?])/;
 const wikiMarker = "@cf/baai/bge-m3";
-const privateWikiSource = /(?:^|\/)(?:apps\/(?:user|admin)|libs\/(?:db|auth|ui))\//;
+const privateWikiSource = /(?:^|\/)apps\/(?:user|admin)\/|(?:^|\/)libs\/db\/src\/admin\.ts$/;
 
 async function readFiles(directory: string): Promise<Map<string, Buffer>> {
   const entries = new Map<string, Buffer>();
@@ -215,8 +215,7 @@ export function assertSeparation(pair: ArtifactPair): void {
   ensure(
     !adminRoute.test(wikiCode) &&
       !wikiCode.includes("ユーザー管理") &&
-      !adminMarkers.some((marker) => wikiCode.includes(marker)) &&
-      !/["'`]\/api\/auth\//.test(wikiCode),
+      !adminMarkers.some((marker) => wikiCode.includes(marker)),
     "E2E_APPLICATION_CODE_IN_WIKI_BUNDLE",
   );
   for (const [file, bytes] of pair.wiki.server) {

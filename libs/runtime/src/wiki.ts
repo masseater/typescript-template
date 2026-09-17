@@ -1,8 +1,8 @@
+import { authorizeMcpRequest } from "@template/auth/mcp";
 import { readWikiConfig } from "@template/config";
-import { createInstrumentation } from "@template/observability";
 import type { RequestContext } from "@template/observability";
-import { reportSentryError } from "@template/observability/sentry-server";
 import * as v from "valibot";
+import { buildRuntime } from "./index.ts";
 
 const embeddingModel = "@cf/baai/bge-m3";
 const embeddingBatch = 32;
@@ -10,34 +10,37 @@ const embeddingOutput = v.object({ data: v.array(v.array(v.number())) });
 
 export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<string, string>>) {
   const config = readWikiConfig(bindings);
-  const telemetry = createInstrumentation({
-    serviceName: "wiki",
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers: config.otelHeaders,
-    routes,
-  });
+  const runtime = buildRuntime(config, "wiki", routes);
   const ai = config.AI;
   return {
-    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN, sentry: config.sentry },
-    telemetry,
-    reportError(correlation: RequestContext, error: unknown) {
-      telemetry.reportError(correlation, error);
-      if (config.sentry) reportSentryError(error);
-    },
-    embedder(correlation: RequestContext) {
-      if (!ai) return null;
-      return async (texts: readonly string[]) => {
-        const vectors: number[][] = [];
-        for (let start = 0; start < texts.length; start += embeddingBatch) {
-          const text = texts.slice(start, start + embeddingBatch);
-          const output = await telemetry.withExternalSpan(correlation, "ai", () =>
-            ai.run(embeddingModel, { text }),
-          );
-          const { data } = v.parse(embeddingOutput, output);
-          if (data.length !== text.length) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
-          vectors.push(...data);
-        }
-        return vectors;
+    ...runtime,
+    forRequest(correlation: RequestContext) {
+      const request = runtime.forRequest(correlation);
+      return {
+        ...request,
+        authorizeMcp: (incoming: Request) =>
+          authorizeMcpRequest({
+            auth: request.auth,
+            database: request.database,
+            origin: config.APP_ORIGIN,
+            request: incoming,
+          }),
+        embedder() {
+          if (!ai) return null;
+          return async (texts: readonly string[]) => {
+            const vectors: number[][] = [];
+            for (let start = 0; start < texts.length; start += embeddingBatch) {
+              const text = texts.slice(start, start + embeddingBatch);
+              const output = await runtime.telemetry.withExternalSpan(correlation, "ai", () =>
+                ai.run(embeddingModel, { text }),
+              );
+              const { data } = v.parse(embeddingOutput, output);
+              if (data.length !== text.length) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
+              vectors.push(...data);
+            }
+            return vectors;
+          };
+        },
       };
     },
   };

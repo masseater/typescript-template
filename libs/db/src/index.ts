@@ -8,7 +8,7 @@ import { schema, user } from "./schema.ts";
 
 export { schema } from "./schema.ts";
 export type { DatabaseOperation, DatabaseTrace } from "./instrumentation.ts";
-export type Audience = "user" | "admin";
+export type Audience = "user" | "admin" | "wiki";
 export type Role = "user" | "admin";
 export type DatabaseBinding = D1Database;
 

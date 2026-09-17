@@ -24,3 +24,5 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workers-types@5.20260916.1"
   - miniflare@5.20260915.0-alpha
   - wrangler@4.132.0
+patchedDependencies:
+  "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch

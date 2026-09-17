@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "vite-plus";
 import { expect, test } from "vitest";
-import { devBoundary } from "./vite-boundary.ts";
+import { devBoundary } from "./index.ts";
 
 const apps = ["user", "admin", "wiki"] as const;
 

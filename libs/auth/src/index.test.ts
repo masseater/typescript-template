@@ -7,9 +7,11 @@ import { getSchema } from "better-auth/db";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { URI } from "otpauth";
+import * as v from "valibot";
 import { expect, expectTypeOf, test as baseTest } from "vitest";
 import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
+import { authorizeMcpRequest } from "./mcp.ts";
 
 const password = "test-password-safe-123";
 const secret = "integration-test-secret-at-least-32-characters-long";
@@ -45,13 +47,23 @@ class BrowserClient {
   async request(endpoint: string, body?: Record<string, unknown>) {
     const headers = this.headers();
     headers.set("content-type", "application/json");
-    const response = await this.auth.handler(
+    return this.send(
       new Request(`${this.origin}/api/auth${endpoint}`, {
         method: body ? "POST" : "GET",
         headers,
         ...(body ? { body: JSON.stringify(body) } : {}),
       }),
     );
+  }
+
+  async navigate(url: string) {
+    const headers = this.headers();
+    headers.set("accept", "text/html");
+    return this.send(new Request(url, { headers, redirect: "manual" }));
+  }
+
+  async send(request: Request) {
+    const response = await this.auth.handler(request);
     for (const cookie of response.headers.getSetCookie()) {
       const pair = cookie.split(";")[0];
       if (!pair) continue;
@@ -110,6 +122,15 @@ async function createFixture() {
     sendVerificationEmail: (message) =>
       sendVerificationEmail({ ...mailConfig, APP_ORIGIN: "http://localhost:4102" }, message),
   });
+  const wikiAuth = createAuth({
+    database,
+    secret,
+    baseURL: "http://localhost:4103",
+    audience: "wiki",
+    sendVerificationEmail: (message) =>
+      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: "http://localhost:4103" }, message),
+  });
+  await wikiAuth.$context;
   const register = async (email: string) => {
     const client = new BrowserClient(userAuth, "http://localhost:4101");
     const response = await client.request("/sign-up/email", { name: email, email, password });
@@ -126,9 +147,11 @@ async function createFixture() {
   };
   return {
     database,
+    binding: db.binding,
     queries,
     userAuth,
     adminAuth,
+    wikiAuth,
     register,
     verifyEmail,
     dispose: async () => {
@@ -487,14 +510,250 @@ test("regular user can still retrieve TOTP URI with their password", async ({ fi
   );
 });
 
-test("database exposes every field required by the configured Better Auth plugins", ({
+test.for(["userAuth", "wikiAuth"] as const)(
+  "database exposes every field required by the %s plugins",
+  (name, { fixture }) => {
+    const expected = getSchema(fixture[name].options);
+    const actual = getSchemaShape();
+    for (const [model, description] of Object.entries(expected)) {
+      expect(actual[model]).toEqual(expect.arrayContaining(Object.keys(description.fields)));
+    }
+    expect(expected["passkey"]?.fields["audience"]?.input).toBe(false);
+    expect(expected["verification"]?.fields["audience"]?.input).toBe(false);
+  },
+);
+
+const wikiOrigin = "http://localhost:4103";
+const redirectUri = "http://127.0.0.1:43123/callback";
+const redirectSchema = v.object({ url: v.string() });
+
+function base64url(bytes: Uint8Array) {
+  return Buffer.from(bytes).toString("base64url");
+}
+
+async function wikiAdministrator(fixture: Fixture, email = "owner@example.com") {
+  await fixture.register(email);
+  await fixture.verifyEmail(email);
+  await bootstrapAdmin(fixture.database, email);
+  const admin = new BrowserClient(fixture.adminAuth, "http://localhost:4102");
+  await admin.request("/sign-in/email", { email, password });
+  const { authenticator } = await enableTotp(admin);
+  const wiki = new BrowserClient(fixture.wikiAuth, wikiOrigin);
+  const signIn = await wiki.request("/sign-in/email", { email, password });
+  expect(await signIn.json()).toMatchObject({ twoFactorRedirect: true });
+  expect(
+    (await wiki.request("/two-factor/verify-totp", { code: authenticator.generate() })).status,
+  ).toBe(200);
+  return wiki;
+}
+
+async function startAuthorization(fixture: Fixture) {
+  const anonymous = new BrowserClient(fixture.wikiAuth, wikiOrigin);
+  const registration = await anonymous.request("/oauth2/register", {
+    client_name: "Test MCP client",
+    redirect_uris: [redirectUri],
+    token_endpoint_auth_method: "none",
+    grant_types: ["authorization_code", "refresh_token"],
+    response_types: ["code"],
+  });
+  expect(registration.status).toBe(201);
+  const { client_id: clientId } = v.parse(
+    v.object({ client_id: v.string() }),
+    await registration.json(),
+  );
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = base64url(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))),
+  );
+  const authorize = new URL(`${wikiOrigin}/api/auth/oauth2/authorize`);
+  for (const [key, value] of Object.entries({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: "wiki:read offline_access",
+    state: "state-value",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    resource: `${wikiOrigin}/mcp`,
+  }))
+    authorize.searchParams.set(key, value);
+  const redirect = await anonymous.navigate(authorize.href);
+  expect(redirect.status).toBe(302);
+  const login = new URL(redirect.headers.get("location") ?? "", wikiOrigin);
+  expect(login.pathname).toBe("/login");
+  return { clientId, verifier, oauthQuery: login.search.slice(1) };
+}
+
+async function grantAuthorization(wiki: BrowserClient, oauthQuery: string) {
+  const continued = await wiki.request("/oauth2/continue", {
+    postLogin: true,
+    oauth_query: oauthQuery,
+  });
+  expect(continued.status).toBe(200);
+  const next = new URL(v.parse(redirectSchema, await continued.json()).url, wikiOrigin);
+  expect(next.pathname).toBe("/consent");
+  const consented = await wiki.request("/oauth2/consent", {
+    accept: true,
+    oauth_query: next.search.slice(1),
+  });
+  expect(consented.status).toBe(200);
+  const callback = new URL(v.parse(redirectSchema, await consented.json()).url);
+  expect(`${callback.origin}${callback.pathname}`).toBe(redirectUri);
+  expect(callback.searchParams.get("state")).toBe("state-value");
+  const code = callback.searchParams.get("code");
+  if (!code) throw new Error("AUTHORIZATION_CODE_MISSING");
+  return code;
+}
+
+async function exchangeCode(
+  fixture: Fixture,
+  flow: { clientId: string; verifier: string },
+  code: string,
+) {
+  const response = await fixture.wikiAuth.handler(
+    new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        code_verifier: flow.verifier,
+        client_id: flow.clientId,
+        redirect_uri: redirectUri,
+        resource: `${wikiOrigin}/mcp`,
+      }),
+    }),
+  );
+  expect(response.status).toBe(200);
+  return v.parse(v.object({ access_token: v.string() }), await response.json());
+}
+
+function mcpRequest(fixture: Fixture, token?: string) {
+  return authorizeMcpRequest({
+    auth: fixture.wikiAuth,
+    database: fixture.database,
+    origin: wikiOrigin,
+    request: new Request(`${wikiOrigin}/mcp`, {
+      method: "POST",
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    }),
+  });
+}
+
+test("wiki publishes OAuth discovery for its MCP resource", async ({ fixture }) => {
+  const resource = await fixture.wikiAuth.handler(
+    new Request(`${wikiOrigin}/.well-known/oauth-protected-resource/mcp`),
+  );
+  expect(resource.status).toBe(200);
+  expect(await resource.json()).toMatchObject({
+    resource: `${wikiOrigin}/mcp`,
+    authorization_servers: [`${wikiOrigin}/api/auth`],
+  });
+  const server = await fixture.wikiAuth.handler(
+    new Request(`${wikiOrigin}/.well-known/oauth-authorization-server/api/auth`),
+  );
+  expect(server.status).toBe(200);
+  expect(await server.json()).toMatchObject({
+    issuer: `${wikiOrigin}/api/auth`,
+    registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
+    code_challenge_methods_supported: ["S256"],
+  });
+  const challenge = await mcpRequest(fixture);
+  if (!(challenge instanceof Response)) throw new Error("CHALLENGE_EXPECTED");
+  expect(challenge.status).toBe(401);
+  expect(challenge.headers.get("www-authenticate")).toContain(
+    `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`,
+  );
+});
+
+test("strong wiki administrator authorizes an MCP client that can then read the wiki", async ({
   fixture,
 }) => {
-  const expected = getSchema(fixture.userAuth.options);
-  const actual = getSchemaShape();
-  for (const [model, description] of Object.entries(expected)) {
-    expect(actual[model]).toEqual(expect.arrayContaining(Object.keys(description.fields)));
-  }
-  expect(expected["passkey"]?.fields["audience"]?.input).toBe(false);
-  expect(expected["verification"]?.fields["audience"]?.input).toBe(false);
+  const flow = await startAuthorization(fixture);
+  const wiki = await wikiAdministrator(fixture);
+  const code = await grantAuthorization(wiki, flow.oauthQuery);
+  const tokens = await exchangeCode(fixture, flow, code);
+  const granted = await mcpRequest(fixture, tokens.access_token);
+  if (granted instanceof Response) throw new Error(`MCP_ACCESS_DENIED_${granted.status}`);
+  expect(granted.userId).toMatch(/^.+$/);
+  const tampered = await mcpRequest(fixture, `${tokens.access_token.slice(0, -2)}xx`);
+  if (!(tampered instanceof Response)) throw new Error("CHALLENGE_EXPECTED");
+  expect(tampered.status).toBe(401);
+});
+
+test("demoted administrator loses MCP access even with an unexpired token", async ({ fixture }) => {
+  const flow = await startAuthorization(fixture);
+  const wiki = await wikiAdministrator(fixture);
+  const tokens = await exchangeCode(fixture, flow, await grantAuthorization(wiki, flow.oauthQuery));
+  const owner = await verifySession({
+    auth: fixture.wikiAuth,
+    database: fixture.database,
+    headers: wiki.headers(),
+    audience: "wiki",
+  });
+  await fixture.register("second@example.com");
+  await fixture.verifyEmail("second@example.com");
+  await fixture.binding
+    .prepare("UPDATE user SET role = 'admin' WHERE email = ?")
+    .bind("second@example.com")
+    .run();
+  await fixture.binding
+    .prepare("UPDATE user SET role = 'user' WHERE id = ?")
+    .bind(owner.user.id)
+    .run();
+  await expect(
+    verifySession({
+      auth: fixture.wikiAuth,
+      database: fixture.database,
+      headers: wiki.headers(),
+      audience: "wiki",
+    }),
+  ).rejects.toThrow("SESSION_REQUIRED");
+  const denied = await mcpRequest(fixture, tokens.access_token);
+  if (!(denied instanceof Response)) throw new Error("DENIAL_EXPECTED");
+  expect(denied.status).toBe(403);
+});
+
+test("weak or non-administrator wiki sessions cannot grant MCP access", async ({ fixture }) => {
+  const flow = await startAuthorization(fixture);
+  await fixture.register("owner@example.com");
+  await fixture.verifyEmail("owner@example.com");
+  await bootstrapAdmin(fixture.database, "owner@example.com");
+  const weak = new BrowserClient(fixture.wikiAuth, wikiOrigin);
+  expect(
+    (await weak.request("/sign-in/email", { email: "owner@example.com", password })).status,
+  ).toBe(200);
+  const continued = await weak.request("/oauth2/continue", {
+    postLogin: true,
+    oauth_query: flow.oauthQuery,
+  });
+  expect(continued.status).toBe(403);
+  expect(await continued.json()).toMatchObject({ message: "ADMIN_MFA_REQUIRED" });
+
+  const smuggled = new BrowserClient(fixture.wikiAuth, wikiOrigin);
+  const signIn = await smuggled.request("/sign-in/email", {
+    email: "owner@example.com",
+    password,
+    oauth_query: flow.oauthQuery,
+  });
+  expect(signIn.status).toBe(403);
+  expect(await signIn.json()).toMatchObject({ message: "OAUTH_QUERY_NOT_ACCEPTED" });
+
+  await fixture.register("member@example.com");
+  await fixture.verifyEmail("member@example.com");
+  const member = new BrowserClient(fixture.wikiAuth, wikiOrigin);
+  const memberSignIn = await member.request("/sign-in/email", {
+    email: "member@example.com",
+    password,
+  });
+  expect(memberSignIn.ok).toBe(false);
+  expect(
+    (
+      await member.request("/sign-up/email", {
+        name: "new",
+        email: "new@example.com",
+        password,
+      })
+    ).ok,
+  ).toBe(false);
 });

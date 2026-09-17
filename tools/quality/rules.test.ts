@@ -180,7 +180,11 @@ test.for([
   ["production-test-entry", "apps/user/src/probe.ts", 'import "@template/db/testing";'],
   ["admin-signup", "apps/admin/src/probe.ts", 'import "@template/ui/signup";'],
   ["wiki-database", "apps/wiki/src/probe.ts", 'import "@template/db";'],
-  ["wiki-auth", "apps/wiki/src/probe.ts", 'export const load = () => import("@template/auth");'],
+  [
+    "wiki-signup",
+    "apps/wiki/src/probe.ts",
+    'export const load = () => import("@template/ui/signup");',
+  ],
   ["wiki-app", "apps/user/src/probe.ts", 'import "@template/wiki";'],
 ] as const)("rejects dependency bypass: %s", async ([_label, name, code], { directory }) => {
   const target = path.join(directory, name);

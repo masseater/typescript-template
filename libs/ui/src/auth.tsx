@@ -8,7 +8,11 @@ import { useAction } from "./action";
 
 export { MFASettings } from "./mfa";
 
-export function LoginForm(): ReactElement {
+export function LoginForm({
+  onAuthenticated = () => window.location.assign("/"),
+}: {
+  onAuthenticated?: () => Promise<void> | void;
+}): ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -31,7 +35,8 @@ export function LoginForm(): ReactElement {
           requireSuccess(await authClient.twoFactor.verifyTotp({ code, trustDevice: false }));
         }
         setCode("");
-        window.location.assign(backupMode ? "/security?recovery=1" : "/");
+        if (backupMode) window.location.assign("/security?recovery=1");
+        else await onAuthenticated();
         return;
       }
       const data = requireSuccess(await authClient.signIn.email({ email, password }));
@@ -40,11 +45,9 @@ export function LoginForm(): ReactElement {
         setBackupMode(false);
         setChallenge(true);
       } else {
-        window.location.assign(
-          new URLSearchParams(window.location.search).get("recovery") === "setup"
-            ? "/security?recovery=setup"
-            : "/",
-        );
+        if (new URLSearchParams(window.location.search).get("recovery") === "setup")
+          window.location.assign("/security?recovery=setup");
+        else await onAuthenticated();
       }
     });
   }
@@ -115,7 +118,7 @@ export function LoginForm(): ReactElement {
               if (!window.isSecureContext)
                 throw new Error("パスキーには HTTPS または localhost が必要です。");
               requireSuccess(await authClient.signIn.passkey());
-              window.location.assign("/");
+              await onAuthenticated();
             })
           }
         >
