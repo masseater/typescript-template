@@ -57,7 +57,21 @@ export default defineConfig({
       },
       {
         files: ["libs/ui/src/shared/ui/**"],
-        rules: { "shadcn/no-restyle": "off" },
+        rules: {
+          "react/forbid-component-props": ["error", { forbid: ["style"] }],
+          "shadcn/no-restyle": "off",
+        },
+      },
+      {
+        files: [
+          "apps/admin/src/components/account-menu.tsx",
+          "apps/admin/src/components/admin-header.tsx",
+          "apps/admin/src/components/admin-navigation-item.tsx",
+          "apps/admin/src/components/empty-results.tsx",
+          "apps/admin/src/components/page-link.tsx",
+          "apps/admin/src/components/row-action-menu.tsx",
+        ],
+        rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
       },
       {
         files: ["**/*.test.ts", "**/*-fixture.ts"],
@@ -143,7 +157,7 @@ export default defineConfig({
       "project/test-import-graph": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
-      "react/forbid-component-props": ["error", { forbid: ["style"] }],
+      "react/forbid-component-props": "error",
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/jsx-no-literals": "off",
       "react/jsx-props-no-spreading": "error",

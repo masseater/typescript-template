@@ -23,7 +23,7 @@ function ChallengeLogin({
   onRestart,
 }: ChallengeLoginProps): ReactElement {
   const code = useTextInput();
-  const { setValue: setCode } = code;
+  const { handleChange: setCode } = code;
   const toggleMode = useCallback(() => {
     onModeChange(mode === "backup" ? "totp" : "backup");
     setCode("");

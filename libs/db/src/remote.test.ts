@@ -1,4 +1,4 @@
-import { EmptyTestDatabase, d1Executor, runStatement } from "./testing.ts";
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing.ts";
 import { assert, it } from "@effect/vitest";
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
@@ -126,7 +126,7 @@ it.effect(
   "applies real D1 migrations once and rolls back an interrupted migration",
   () =>
     Effect.gen(function* program() {
-      const executor = yield* d1Executor();
+      const executor = d1Executor(yield* TestBinding);
       const migrations = yield* loadRemoteMigrations();
       assert.strictEqual(yield* migrateDatabase(executor, migrations), migrations.length);
       assert.strictEqual(yield* migrateDatabase(executor, migrations), 0);
@@ -134,6 +134,7 @@ it.effect(
       const interruptedMigration = {
         folderMillis,
         hash: "b".repeat(HASH_LENGTH),
+        name: "99999999999999_interrupted",
         sql: [
           "CREATE TABLE interrupted_migration (id TEXT)",
           "INSERT INTO missing_migration_table VALUES (1)",
@@ -156,7 +157,7 @@ it.effect(
   "rejects migrations whose applied history changed",
   () =>
     Effect.gen(function* program() {
-      const executor = yield* d1Executor();
+      const executor = d1Executor(yield* TestBinding);
       const migrations = yield* loadRemoteMigrations();
       yield* migrateDatabase(executor, migrations);
       const [first, ...rest] = migrations;
@@ -174,7 +175,7 @@ it.effect(
   "bootstraps only one verified administrator and revokes their earlier sessions",
   () =>
     Effect.gen(function* program() {
-      const executor = yield* d1Executor();
+      const executor = d1Executor(yield* TestBinding);
       yield* migrateDatabase(executor, yield* loadRemoteMigrations());
       yield* Effect.all([
         insertUser("unverified", false),
@@ -203,7 +204,7 @@ it.effect(
   "the database refuses to delete or demote the last administrator",
   () =>
     Effect.gen(function* program() {
-      const executor = yield* d1Executor();
+      const executor = d1Executor(yield* TestBinding);
       yield* migrateDatabase(executor, yield* loadRemoteMigrations());
       yield* insertUser("first", true);
       yield* bootstrapDatabase(executor, "first@example.test");

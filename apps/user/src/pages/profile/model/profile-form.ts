@@ -1,12 +1,12 @@
-import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { useCallback, useState } from "react";
 import type { ProfileView } from "@template/runtime/contracts";
+import type { SubmitEventHandler } from "react";
 import { errorMessage } from "@template/ui";
 
 type ProfileData = typeof ProfileView.Type;
 
 interface ProfileDraft {
-  readonly handleNameChange: ChangeEventHandler<HTMLInputElement>;
+  readonly handleNameChange: (value: string) => void;
   readonly handleProfileChange: (value: string) => void;
   readonly name: string;
   readonly profile: string;
@@ -21,25 +21,20 @@ interface ProfileForm extends ProfileDraft {
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
 }
 
-type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
-
 function useProfileDraft(loaded: Readonly<ProfileData> | undefined): ProfileDraft {
   const [name, setName] = useState(loaded?.name ?? "");
   const [profile, setProfile] = useState(loaded?.profile ?? "");
-  const handleNameChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
-    (event: FieldEvent) => {
-      setName(event.target.value);
-    },
-    [],
-  );
-  const handleProfileChange = useCallback((next: string): void => {
-    setProfile(next);
-  }, []);
   const show = useCallback((data: Readonly<ProfileData>): void => {
     setName(data.name);
     setProfile(data.profile);
   }, []);
-  return { handleNameChange, handleProfileChange, name, profile, show };
+  return {
+    handleNameChange: setName,
+    handleProfileChange: setProfile,
+    name,
+    profile,
+    show,
+  };
 }
 
 type FormSubmission = Readonly<{ preventDefault: () => void }>;

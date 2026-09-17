@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { session, user } from "./identity-schema.ts";
 
 const jwks = sqliteTable("jwks", {
@@ -21,7 +21,7 @@ const oauthClient = sqliteTable(
     backchannelLogoutUri: text("backchannel_logout_uri"),
     clientCredentialsScopes: text("client_credentials_scopes"),
     clientDiscoveryId: text("client_discovery_id"),
-    clientId: text("client_id").notNull().unique(),
+    clientId: text("client_id").notNull(),
     clientSecret: text("client_secret"),
     contacts: text("contacts"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }),
@@ -54,28 +54,36 @@ const oauthClient = sqliteTable(
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   },
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (table) => [index("oauth_client_user_id_idx").on(table.userId)],
+  (table) => [
+    index("oauth_client_user_id_idx").on(table.userId),
+    uniqueIndex("oauth_client_client_id_unique").on(table.clientId),
+  ],
 );
 
-const oauthResource = sqliteTable("oauth_resource", {
-  accessTokenTtl: integer("access_token_ttl"),
-  allowedScopes: text("allowed_scopes"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }),
-  customClaims: text("custom_claims"),
-  disabled: integer("disabled", { mode: "boolean" }).default(false),
-  dpopBoundAccessTokensRequired: integer("dpop_bound_access_tokens_required", {
-    mode: "boolean",
-  }).default(false),
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull().unique(),
-  metadata: text("metadata"),
-  name: text("name").notNull(),
-  policyVersion: integer("policy_version").default(1),
-  refreshTokenTtl: integer("refresh_token_ttl"),
-  signingAlgorithm: text("signing_algorithm"),
-  signingKeyId: text("signing_key_id"),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
-});
+const oauthResource = sqliteTable(
+  "oauth_resource",
+  {
+    accessTokenTtl: integer("access_token_ttl"),
+    allowedScopes: text("allowed_scopes"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }),
+    customClaims: text("custom_claims"),
+    disabled: integer("disabled", { mode: "boolean" }).default(false),
+    dpopBoundAccessTokensRequired: integer("dpop_bound_access_tokens_required", {
+      mode: "boolean",
+    }).default(false),
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    metadata: text("metadata"),
+    name: text("name").notNull(),
+    policyVersion: integer("policy_version").default(1),
+    refreshTokenTtl: integer("refresh_token_ttl"),
+    signingAlgorithm: text("signing_algorithm"),
+    signingKeyId: text("signing_key_id"),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
+  },
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (table) => [uniqueIndex("oauth_resource_identifier_unique").on(table.identifier)],
+);
 
 const oauthClientResource = sqliteTable(
   "oauth_client_resource",
@@ -118,7 +126,7 @@ const oauthRefreshToken = sqliteTable(
     rotationReplayResponse: text("rotation_replay_response"),
     scopes: text("scopes").notNull(),
     sessionId: text("session_id").references(() => session.id, { onDelete: "set null" }),
-    token: text("token").notNull().unique(),
+    token: text("token").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -129,6 +137,7 @@ const oauthRefreshToken = sqliteTable(
     index("oauth_refresh_token_session_id_idx").on(table.sessionId),
     index("oauth_refresh_token_user_id_idx").on(table.userId),
     index("oauth_refresh_token_authorization_code_id_idx").on(table.authorizationCodeId),
+    uniqueIndex("oauth_refresh_token_token_unique").on(table.token),
   ],
 );
 
@@ -150,7 +159,7 @@ const oauthAccessToken = sqliteTable(
     revoked: integer("revoked", { mode: "timestamp_ms" }),
     scopes: text("scopes").notNull(),
     sessionId: text("session_id").references(() => session.id, { onDelete: "set null" }),
-    token: text("token").unique(),
+    token: text("token"),
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   },
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -160,6 +169,7 @@ const oauthAccessToken = sqliteTable(
     index("oauth_access_token_user_id_idx").on(table.userId),
     index("oauth_access_token_authorization_code_id_idx").on(table.authorizationCodeId),
     index("oauth_access_token_refresh_id_idx").on(table.refreshId),
+    uniqueIndex("oauth_access_token_token_unique").on(table.token),
   ],
 );
 
