@@ -111,10 +111,12 @@ async function createFixture() {
   const verifyEmail = async (email: string) => {
     const url = mailbox.get(email);
     if (!url) throw new Error("MAIL_DELIVERY_INVALID");
-    expect(new URL(url).searchParams.get("callbackURL")).toBe("/login");
-    const response = await userAuth.handler(new Request(url));
-    if (!response.ok && response.status !== 302)
-      throw new Error(`Verification failed: ${response.status}`);
+    const link = new URL(url);
+    expect(link.pathname).toBe("/verify-email");
+    expect(link.search).toBe("");
+    const token = new URLSearchParams(link.hash.slice(1)).get("token");
+    if (!token) throw new Error("VERIFICATION_TOKEN_MISSING");
+    await userAuth.api.verifyEmail({ query: { token } });
   };
   return {
     database,
