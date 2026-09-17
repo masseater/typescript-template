@@ -3,20 +3,18 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
+import { errorWorkerArtifact } from "@template/error-monitor/artifact";
 import { workerObservability } from "./observability.ts";
 import {
   parseSharedConfig,
+  selectObservabilityQueryPermission,
   selectReadPermission,
   validateAuthSecret,
-  validateOtelHeaders,
 } from "./config.ts";
 
 const config = new pulumi.Config();
 const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
 export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-export const otelHeaders = (config.getSecret("otelHeaders") ?? pulumi.secret("{}")).apply(
-  validateOtelHeaders,
-);
 const budgetContent = await readFile(budgetWorkerArtifact);
 if (budgetContent.length === 0) throw new Error("budget_worker_artifact_empty");
 const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");
@@ -103,7 +101,83 @@ const schedule = new cloudflare.WorkersCronTrigger(
   { dependsOn: [budgetDeployment] },
 );
 
+const errorContent = await readFile(errorWorkerArtifact);
+if (errorContent.length === 0) throw new Error("error_worker_artifact_empty");
+const observabilityToken = new cloudflare.AccountToken(
+  "error-query-token",
+  {
+    accountId: settings.accountId,
+    name: `${settings.prefix}-observability-query`,
+    policies: [
+      {
+        effect: "allow",
+        permissionGroups: [{ id: permissions.results.apply(selectObservabilityQueryPermission) }],
+        resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
+      },
+    ],
+  },
+  { additionalSecretOutputs: ["value"] },
+);
+const errorWorker = new cloudflare.Worker("error-worker", {
+  accountId: settings.accountId,
+  name: `${settings.prefix}-errors`,
+  subdomain: { enabled: false, previewsEnabled: false },
+  observability: workerObservability,
+});
+const errorVersion = new cloudflare.WorkerVersion("error-version", {
+  accountId: settings.accountId,
+  workerId: errorWorker.id,
+  compatibilityDate: "2026-09-16",
+  compatibilityFlags: ["nodejs_compat"],
+  mainModule: "index.js",
+  modules: [
+    {
+      name: "index.js",
+      contentType: "application/javascript+module",
+      contentFile: errorWorkerArtifact,
+      contentSha256: createHash("sha256").update(errorContent).digest("hex"),
+    },
+  ],
+  migrations: { newTag: "v1", newSqliteClasses: ["ErrorMonitor"] },
+  bindings: [
+    { type: "durable_object_namespace", name: "MONITOR", className: "ErrorMonitor" },
+    {
+      type: "send_email",
+      name: "EMAIL",
+      allowedSenderAddresses: [settings.mailFrom],
+      allowedDestinationAddresses: settings.budget.recipients,
+    },
+    {
+      type: "secret_text",
+      name: "OBSERVABILITY_TOKEN",
+      text: pulumi.secret(observabilityToken.value),
+    },
+    ...Object.entries({
+      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
+      ALERT_FROM: settings.mailFrom,
+      ALERT_TO: settings.budget.recipients.join(","),
+    }).map(([name, text]) => ({ type: "plain_text", name, text })),
+  ],
+});
+const errorDeployment = new cloudflare.WorkersDeployment("error-deployment", {
+  accountId: settings.accountId,
+  scriptName: errorWorker.name,
+  strategy: "percentage",
+  versions: [{ versionId: errorVersion.id, percentage: 100 }],
+});
+const errorSchedule = new cloudflare.WorkersCronTrigger(
+  "error-schedule",
+  {
+    accountId: settings.accountId,
+    scriptName: errorWorker.name,
+    schedules: [{ cron: "*/5 * * * *" }],
+  },
+  { dependsOn: [errorDeployment] },
+);
+
 export const databaseId = database.id;
 export const applicationSettings = settings;
 export const budgetWorkerName = budgetWorker.name;
 export const budgetScheduleId = schedule.id;
+export const errorWorkerName = errorWorker.name;
+export const errorScheduleId = errorSchedule.id;

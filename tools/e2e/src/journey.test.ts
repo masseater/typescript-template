@@ -78,7 +78,7 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
   let cdp: Cdp | undefined;
   let stage = "distribution";
   try {
-    const started = Math.floor(Date.now() / 1000);
+    const started = Date.now();
     await verifyDistribution(stack.userOrigin, stack.adminOrigin);
     const anonymous = stack.browser("anonymous");
     await anonymous.open(stack.userOrigin, "/login");
@@ -178,14 +178,13 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
       ["fill", 'input[name="password"]', alice.password],
       button("認証アプリを解除"),
       ["wait", "--url", "**/login?recovery=setup"],
-    );
-    await aliceBrowser.open(stack.userOrigin, "/login?recovery=setup");
-    await aliceBrowser.commands(
       ["wait", 'input[name="email"]'],
       enabledButton("ログイン"),
-      ["fill", 'input[name="email"]', alice.email],
-      ["fill", 'input[name="password"]', alice.password],
     );
+    await aliceBrowser.fillStable([
+      ['input[name="email"]', alice.email],
+      ['input[name="password"]', alice.password],
+    ]);
     await aliceBrowser.submitAuthentication("/api/auth/sign-in/email", [button("ログイン")]);
     await aliceBrowser.waitText("新しい認証アプリを登録してください。");
     const restoredEnrollment = await enrollTotp(aliceBrowser, stack.userOrigin, alice.password);
@@ -337,16 +336,21 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
       ...originalEnrollment.backupCodes,
       ...restoredEnrollment.backupCodes,
     ];
-    await verifyCorrelation(await aliceBrowser.api("/api/profile"), "user", forbidden);
-    await verifyCorrelation(await admin.api("/api/users"), "admin", forbidden);
+    await verifyCorrelation(
+      stack.userOrigin,
+      await aliceBrowser.api("/api/profile"),
+      "user",
+      forbidden,
+    );
+    await verifyCorrelation(stack.adminOrigin, await admin.api("/api/users"), "admin", forbidden);
     await verifyJourneyTelemetry(
       [
-        { browser: anonymous, service: "user" },
-        { browser: ownerUser, service: "user" },
-        { browser: aliceBrowser, service: "user" },
-        { browser: bobBrowser, service: "user" },
-        { browser: admin, service: "admin" },
-        { browser: recoveringAdmin, service: "admin" },
+        { browser: anonymous, service: "user", origin: stack.userOrigin },
+        { browser: ownerUser, service: "user", origin: stack.userOrigin },
+        { browser: aliceBrowser, service: "user", origin: stack.userOrigin },
+        { browser: bobBrowser, service: "user", origin: stack.userOrigin },
+        { browser: admin, service: "admin", origin: stack.adminOrigin },
+        { browser: recoveringAdmin, service: "admin", origin: stack.adminOrigin },
       ],
       forbidden,
       started,
@@ -360,7 +364,7 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
       object(tabs.find((entry: unknown) => object(entry)["active"] === true))["tabId"],
     );
     await aliceBrowser.commands(["tab", "new", "about:blank"], ["tab", applicationTab]);
-    await verifyBrowserSignals("user", started);
+    await verifyBrowserSignals(stack.userOrigin, "user", started);
 
     stage = "worker-isolation";
     await stack.stopUser();

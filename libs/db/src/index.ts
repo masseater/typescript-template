@@ -2,18 +2,15 @@ import type { D1Database } from "@cloudflare/workers-types";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as v from "valibot";
-import { instrumentD1 } from "./instrumentation.ts";
-import type { DatabaseTrace } from "./instrumentation.ts";
 import { schema, user } from "./schema.ts";
 
 export { schema } from "./schema.ts";
-export type { DatabaseOperation, DatabaseTrace } from "./instrumentation.ts";
 export type Audience = "user" | "admin" | "wiki";
 export type Role = "user" | "admin";
 export type DatabaseBinding = D1Database;
 
-export function createDb(binding: DatabaseBinding, trace?: DatabaseTrace) {
-  return drizzle(trace ? instrumentD1(binding, trace) : binding, { schema });
+export function createDb(binding: DatabaseBinding) {
+  return drizzle(binding, { schema });
 }
 
 export type Database = ReturnType<typeof createDb>;

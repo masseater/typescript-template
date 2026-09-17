@@ -51,110 +51,83 @@ export function assertPrivate(data: unknown, secrets: readonly string[]): void {
   }
 }
 
-export type ObservedSpan = {
-  traceId: string;
-  spanId: string;
-  parentSpanId?: string;
-  name: string;
-  service: string;
-  requestId?: string;
-};
-
-function id(value: unknown, bytes: number): string {
-  const raw = string(value);
-  if (new RegExp(`^[0-9a-f]{${bytes * 2}}$`).test(raw)) return raw;
-  const decoded = Buffer.from(raw, "base64");
-  ensure(decoded.length === bytes, "E2E_TRACE_ID_ENCODING_INVALID");
-  return decoded.toString("hex");
+export async function explorerQuery(
+  origin: string,
+  sql: string,
+  params: readonly (string | number)[],
+): Promise<Record<string, unknown>[]> {
+  const response = await fetch(`${origin}/cdn-cgi/local/explorer/api/local/observability/query`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sql, params }),
+    signal: AbortSignal.timeout(10_000),
+    redirect: "error",
+  });
+  ensure(response.ok, `E2E_LOCAL_EXPLORER_QUERY_FAILED_${response.status}`);
+  const body = object(await response.json());
+  ensure(body["success"] === true, "E2E_LOCAL_EXPLORER_QUERY_FAILED");
+  const result = object(body["result"]);
+  const columns = result["columns"];
+  const rows = result["rows"];
+  ensure(Array.isArray(columns) && Array.isArray(rows), "E2E_LOCAL_EXPLORER_RESULT_INVALID");
+  return rows.map((row: unknown) => {
+    ensure(Array.isArray(row), "E2E_LOCAL_EXPLORER_RESULT_INVALID");
+    return Object.fromEntries(
+      columns.map((column: unknown, index) => [string(column), row[index]]),
+    );
+  });
 }
 
-function attribute(input: unknown, name: string): string | undefined {
-  if (!Array.isArray(input)) return undefined;
-  const found: unknown = input.find((entry: unknown) => object(entry)["key"] === name);
-  if (!found) return undefined;
-  const value = object(object(found)["value"])["stringValue"];
-  return typeof value === "string" ? value : undefined;
-}
-
-export function traceSpans(input: unknown): ObservedSpan[] {
-  const root = object(input);
-  const resources = root["batches"] ?? root["resourceSpans"];
-  ensure(Array.isArray(resources), "E2E_TRACE_RESOURCES_MISSING");
-  const output: ObservedSpan[] = [];
-  for (const raw of resources) {
-    const resource = object(raw);
-    const service = attribute(object(resource["resource"])["attributes"], "service.name");
-    ensure(service, "E2E_TRACE_SERVICE_MISSING");
-    const scopes = resource["scopeSpans"] ?? resource["instrumentationLibrarySpans"];
-    ensure(Array.isArray(scopes), "E2E_TRACE_SCOPES_MISSING");
-    for (const scope of scopes) {
-      const spans = object(scope)["spans"];
-      ensure(Array.isArray(spans), "E2E_TRACE_SPANS_MISSING");
-      for (const value of spans) {
-        const span = object(value);
-        const parent = span["parentSpanId"];
-        const requestId = attribute(span["attributes"], "request.id");
-        output.push({
-          traceId: id(span["traceId"], 16),
-          spanId: id(span["spanId"], 8),
-          ...(typeof parent === "string" && parent ? { parentSpanId: id(parent, 8) } : {}),
-          name: string(span["name"]),
-          service,
-          ...(requestId ? { requestId } : {}),
-        });
-      }
-    }
+export function structuredEvent(message: unknown): Record<string, unknown> | undefined {
+  if (typeof message !== "string") return undefined;
+  try {
+    const args: unknown = JSON.parse(message);
+    const first: unknown = Array.isArray(args) ? args[0] : undefined;
+    if (typeof first !== "string") return undefined;
+    const parsed: unknown = JSON.parse(first);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? object(parsed)
+      : undefined;
+  } catch {
+    return undefined;
   }
-  return output;
 }
 
 export function relatedSpans(
-  spans: ObservedSpan[],
+  spans: readonly Record<string, unknown>[],
+  events: readonly (Record<string, unknown> | undefined)[],
   request: ObservedRequest,
   service: "user" | "admin" | "wiki",
 ) {
-  const [, traceId, spanId] = request.traceparent.split("-");
-  const server = spans.find(
-    (span) =>
-      span.service === `${service}-server` &&
-      span.traceId === traceId &&
-      span.spanId === spanId &&
-      span.requestId === request.requestId,
-  );
-  if (!server) return false;
   if (request.clientTraceparent) {
     const [, clientTrace, clientSpan] = request.clientTraceparent.split("-");
-    if (server.traceId !== clientTrace || server.parentSpanId !== clientSpan) return false;
+    const [, serverTrace] = request.traceparent.split("-");
+    if (serverTrace !== clientTrace) return false;
     if (
-      !spans.some(
-        (span) =>
-          span.service === `${service}-browser` &&
-          span.name === "http.client.request" &&
-          span.traceId === clientTrace &&
-          span.spanId === clientSpan &&
-          span.requestId === request.requestId,
+      !events.some(
+        (event) =>
+          event?.["event"] === "http.client.request" &&
+          event["service"] === `${service}-browser` &&
+          event["trace_id"] === clientTrace &&
+          event["span_id"] === clientSpan &&
+          event["request_id"] === request.requestId,
       )
     )
       return false;
   } else if (request.method !== "GET" && request.method !== "HEAD") return false;
-  const children = spans.filter(
-    (span) =>
-      span.service === `${service}-server` &&
-      span.traceId === traceId &&
-      span.parentSpanId === server.spanId &&
-      span.requestId === request.requestId,
-  );
   const successful = request.status >= 200 && request.status < 400;
   if (
     successful &&
-    /^\/api\/(?:auth\/|profile$|users$|session$)/.test(request.path) &&
-    !children.some((span) => span.name.startsWith("db."))
+    /^\/api\/(?:auth\/|profile$|users$|session$|verify-email$)/.test(request.path) &&
+    !spans.some((span) => String(span["name"]).startsWith("d1_"))
   )
     return false;
   if (
     successful &&
     request.path === "/api/auth/sign-up/email" &&
-    !children.some((span) => span.name === "external.email")
+    !spans.some(
+      (span) => span["name"] === "fetch" && String(span["attributes"]).includes("/api/v1/send"),
+    )
   )
     return false;
   return true;

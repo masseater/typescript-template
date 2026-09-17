@@ -98,9 +98,9 @@ export function createAuth(options: AuthOptions) {
       sendOnSignUp: true,
       sendOnSignIn: true,
       autoSignInAfterVerification: false,
-      sendVerificationEmail: async ({ user, url }) => {
-        const link = new URL(url);
-        link.searchParams.set("callbackURL", "/login");
+      sendVerificationEmail: async ({ user, token }) => {
+        const link = new URL("/verify-email", origin);
+        link.hash = new URLSearchParams({ token }).toString();
         await options.sendVerificationEmail({ email: user.email, url: link.href });
       },
     },

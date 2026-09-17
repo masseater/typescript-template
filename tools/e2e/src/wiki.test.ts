@@ -5,7 +5,7 @@ import { button, enrollTotp, register } from "./accounts.ts";
 import { enabledButton } from "./browser.ts";
 import { createStack } from "./stack.ts";
 import { ensure, object, poll, string, safeFailure } from "./support.ts";
-import { verifyBrowserSignals, verifyCorrelation } from "./telemetry.ts";
+import { verifyBrowserSignals, verifyCorrelation, verifyExplorerBoundary } from "./telemetry.ts";
 import { totp } from "./totp.ts";
 
 async function mcp(
@@ -73,7 +73,7 @@ test("wiki Worker: administrator login, MCP OAuth authorization, keyword search 
   const callback = await startCallbackServer();
   let stage = "anonymous";
   try {
-    const started = Math.floor(Date.now() / 1000);
+    const started = Date.now();
     const page = await fetch(`${stack.wikiOrigin}/database`, {
       redirect: "manual",
       signal: AbortSignal.timeout(5000),
@@ -144,12 +144,11 @@ test("wiki Worker: administrator login, MCP OAuth authorization, keyword search 
     stage = "login";
     const browser = stack.browser("wiki-reader");
     await browser.commands(["open", authorize.href]);
-    await browser.commands(
-      ["wait", 'input[name="email"]'],
-      enabledButton("ログイン"),
-      ["fill", 'input[name="email"]', reader.email],
-      ["fill", 'input[name="password"]', reader.password],
-    );
+    await browser.commands(["wait", 'input[name="email"]'], enabledButton("ログイン"));
+    await browser.fillStable([
+      ['input[name="email"]', reader.email],
+      ['input[name="password"]', reader.password],
+    ]);
     await browser.submitAuthentication("/api/auth/sign-in/email", [button("ログイン")]);
     await browser.commands(
       ["wait", 'input[name="totp"]'],
@@ -203,7 +202,7 @@ test("wiki Worker: administrator login, MCP OAuth authorization, keyword search 
     );
     ensure(search.status === 200 && Array.isArray(search.data), "E2E_WIKI_SEARCH_FAILED");
     ensure(object(search.data[0])["url"] === "/authentication", "E2E_WIKI_KEYWORD_RANKING_WRONG");
-    await verifyCorrelation(search, "wiki", [reader.password, token]);
+    await verifyCorrelation(stack.wikiOrigin, search, "wiki", [reader.password, token]);
     await browser.commands(
       ["find", "role", "button", "click", "--name", "検索 ⌘ K", "--exact"],
       ["wait", 'input[placeholder="検索"]'],
@@ -229,7 +228,7 @@ test("wiki Worker: administrator login, MCP OAuth authorization, keyword search 
       Array.isArray(results) && object(results[0])["url"] === "/deploy",
       "E2E_WIKI_MCP_KEYWORD_RANKING_WRONG",
     );
-    await verifyCorrelation(found, "wiki", [reader.password, token]);
+    await verifyCorrelation(stack.wikiOrigin, found, "wiki", [reader.password, token]);
     const loaded = await mcp(
       stack.wikiOrigin,
       3,
@@ -244,7 +243,8 @@ test("wiki Worker: administrator login, MCP OAuth authorization, keyword search 
       'setTimeout(() => { throw new Error("E2E wiki browser exception"); }, 0); true',
     );
     await browser.open(stack.wikiOrigin, "/");
-    await verifyBrowserSignals("wiki", started);
+    await verifyBrowserSignals(stack.wikiOrigin, "wiki", started);
+    await verifyExplorerBoundary(stack.wikiOrigin);
   } catch (error) {
     throw safeFailure(error, stage);
   } finally {

@@ -4,10 +4,6 @@ packages:
   - infra/*
   - tools/*
 overrides:
-  "@vitest/runner": 4.1.11
-  "@vitest/expect": 4.1.11
-  "@vitest/spy": 4.1.11
-  "@vitest/utils": 4.1.11
   vite@*: "catalog:"
   vitest@*: "catalog:"
 allowBuilds:

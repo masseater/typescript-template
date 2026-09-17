@@ -18,16 +18,17 @@ test("TOTP rejects unsupported algorithms and non-base32 input", () => {
   );
 });
 
-test("verification links must target this isolated worker and real verification route", () => {
+test("verification links target this isolated worker and keep the token out of the request URL", () => {
   const origin = "http://localhost:12345";
-  const url = `${origin}/api/auth/verify-email?token=public-test-vector`;
+  const url = `${origin}/verify-email#token=public-test-vector`;
   expect(verificationLink(`Verify:\n${url}`, origin)).toBe(url);
-  expect(() =>
-    verificationLink("https://outside.example/api/auth/verify-email?token=x", origin),
-  ).toThrow("E2E_VERIFICATION_LINK_MISSING");
-  expect(() => verificationLink(`${origin}/api/auth/verify-email`, origin)).toThrow(
-    "E2E_VERIFICATION_LINK_MISSING",
-  );
+  for (const link of [
+    "https://outside.example/verify-email#token=x",
+    `${origin}/verify-email`,
+    `${origin}/verify-email?token=x`,
+    `${origin}/api/auth/verify-email?token=x`,
+  ])
+    expect(() => verificationLink(link, origin)).toThrow("E2E_VERIFICATION_LINK_MISSING");
 });
 
 test("browser command failures never propagate echoed inputs or browser error details", () => {

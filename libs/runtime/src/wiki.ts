@@ -31,9 +31,7 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
             const vectors: number[][] = [];
             for (let start = 0; start < texts.length; start += embeddingBatch) {
               const text = texts.slice(start, start + embeddingBatch);
-              const output = await runtime.telemetry.withExternalSpan(correlation, "ai", () =>
-                ai.run(embeddingModel, { text }),
-              );
+              const output = await ai.run(embeddingModel, { text });
               const { data } = v.parse(embeddingOutput, output);
               if (data.length !== text.length) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
               vectors.push(...data);

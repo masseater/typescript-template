@@ -21,9 +21,9 @@ const credentialSchema = v.object({
   authSecret: v.pipe(v.string(), v.minLength(32)),
 });
 const ports = { user: 3001, admin: 3002, wiki: 3003 };
-const servicePorts = { grafana: 3100, mailpit: 8025 };
+const servicePorts = { mailpit: 8025 };
 const routes = { ...ports, ...servicePorts };
-const routeNames = ["user", "admin", "wiki", "grafana", "mailpit"] as const;
+const routeNames = ["user", "admin", "wiki", "mailpit"] as const;
 const hostname = (name: (typeof routeNames)[number]) => `template-${name}.local`;
 const origins = {
   user: `https://${hostname("user")}`,
@@ -145,7 +145,6 @@ async function setup() {
     const values = {
       APP_ORIGIN: origins[app],
       AUTH_SECRET: credentials.authSecret,
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318",
       EMAIL_FROM: "no-reply@example.test",
       MAILPIT_URL: "http://127.0.0.1:8025",
     };
@@ -206,7 +205,6 @@ async function connection() {
     user: origins.user,
     admin: origins.admin,
     wiki: origins.wiki,
-    grafana: `https://${hostname("grafana")}`,
     mailpit: `https://${hostname("mailpit")}`,
     windowsTrustCommand: `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate.toString("base64")}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`,
   };

@@ -1,5 +1,6 @@
 import { ensure } from "./support.ts";
 import { verifyArtifacts } from "./artifacts.ts";
+import { verifyExplorerBoundary } from "./telemetry.ts";
 
 export async function verifyDistribution(userOrigin: string, adminOrigin: string) {
   const { user, admin } = await verifyArtifacts();
@@ -20,14 +21,5 @@ export async function verifyDistribution(userOrigin: string, adminOrigin: string
   }
   const response = await fetch(`${userOrigin}/api/users`, { signal: AbortSignal.timeout(5000) });
   ensure(response.status === 404, "E2E_ADMIN_ROUTE_EXPOSED_BY_USER");
-  for (const origin of [userOrigin, adminOrigin]) {
-    for (const pathname of [
-      "/cdn-cgi/explorer/api/d1/database",
-      "/cdn-cgi/local/explorer/api/d1/database",
-    ]) {
-      const explorer = await fetch(`${origin}${pathname}`, { signal: AbortSignal.timeout(5000) });
-      const body = await explorer.text();
-      ensure(!explorer.ok && !body.includes("uuid"), "E2E_LOCAL_EXPLORER_EXPOSED");
-    }
-  }
+  for (const origin of [userOrigin, adminOrigin]) await verifyExplorerBoundary(origin);
 }

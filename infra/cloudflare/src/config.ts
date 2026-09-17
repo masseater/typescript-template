@@ -1,5 +1,4 @@
 import * as v from "valibot";
-import { sentrySchemas } from "@template/config";
 
 const id = v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/));
 const positive = v.pipe(v.number(), v.finite(), v.minValue(Number.MIN_VALUE));
@@ -8,22 +7,14 @@ const origin = v.pipe(
   v.string(),
   v.url(),
   v.check((value) => {
-    const url = new URL(value);
+    const url = URL.parse(value);
     return (
-      url.protocol === "https:" &&
+      url?.protocol === "https:" &&
       url.origin === value &&
       !url.hostname.endsWith(".workers.dev") &&
       !url.username &&
       !url.password
     );
-  }),
-);
-const httpsUrl = v.pipe(
-  v.string(),
-  v.url(),
-  v.check((value) => {
-    const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash;
   }),
 );
 const sharedSchema = v.object({
@@ -33,15 +24,6 @@ const sharedSchema = v.object({
   userOrigin: origin,
   adminOrigin: origin,
   wikiOrigin: origin,
-  otelEndpoint: httpsUrl,
-  sentryDsn: v.optional(
-    v.pipe(
-      sentrySchemas.dsn,
-      v.check((value) => new URL(value).protocol === "https:"),
-    ),
-  ),
-  sentryEnvironment: v.optional(sentrySchemas.environment),
-  sentryRelease: v.optional(sentrySchemas.release),
   mailFrom: v.pipe(v.string(), v.email()),
   budget: v.object({
     budgetJpy: positive,
@@ -70,8 +52,6 @@ export function parseSharedConfig(input: unknown): SharedConfig {
   const parsed = v.safeParse(sharedSchema, input);
   if (!parsed.success) throw new Error("cloudflare_settings_invalid");
   const config = parsed.output;
-  if (config.sentryDsn && (!config.sentryEnvironment || !config.sentryRelease))
-    throw new Error("sentry_environment_and_release_required");
   if (new Set([config.userOrigin, config.adminOrigin, config.wikiOrigin]).size !== 3)
     throw new Error("app_origins_must_differ");
   if (
@@ -83,40 +63,9 @@ export function parseSharedConfig(input: unknown): SharedConfig {
   return config;
 }
 
-export function sentryRuntimeBindings(config: SharedConfig) {
-  if (!config.sentryDsn) return [];
-  if (!config.sentryEnvironment || !config.sentryRelease)
-    throw new Error("sentry_environment_and_release_required");
-  return [
-    { type: "plain_text", name: "SENTRY_DSN", text: config.sentryDsn },
-    { type: "plain_text", name: "SENTRY_ENVIRONMENT", text: config.sentryEnvironment },
-    { type: "plain_text", name: "SENTRY_RELEASE", text: config.sentryRelease },
-  ];
-}
-
 export function validateAuthSecret(secret: string): string {
   if (secret.length < 32 || secret.trim() !== secret) throw new Error("auth_secret_invalid");
   return secret;
-}
-
-export function validateOtelHeaders(value: string): string {
-  try {
-    const input: unknown = JSON.parse(value);
-    const result = v.safeParse(
-      v.record(
-        v.pipe(v.string(), v.regex(/^[!#$%&'*+.^_`|~0-9a-zA-Z-]+$/)),
-        v.pipe(
-          v.string(),
-          v.check((item) => !/[\r\n]/.test(item)),
-        ),
-      ),
-      input,
-    );
-    if (!result.success) throw new Error("invalid");
-    return JSON.stringify(result.output);
-  } catch {
-    throw new Error("otel_headers_invalid");
-  }
 }
 
 export function appPolicy(config: SharedConfig, target: AppTarget) {
@@ -135,5 +84,17 @@ export function selectReadPermission(
     (group) => group.name === "Billing Read" && group.scopes.includes("com.cloudflare.api.account"),
   );
   if (matches.length !== 1) throw new Error("billing_read_permission_unavailable");
+  return v.parse(id, matches[0]!.id);
+}
+
+export function selectObservabilityQueryPermission(
+  groups: readonly { id: string; name: string; scopes: string[] }[],
+): string {
+  const matches = groups.filter(
+    (group) =>
+      group.name === "Workers Observability Write" &&
+      group.scopes.includes("com.cloudflare.api.account"),
+  );
+  if (matches.length !== 1) throw new Error("observability_query_permission_unavailable");
   return v.parse(id, matches[0]!.id);
 }
