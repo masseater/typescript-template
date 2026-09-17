@@ -10,26 +10,29 @@
     "./auth": "./src/auth.tsx",
     "./shell": "./src/shell.ts",
     "./signup": "./src/signup.tsx",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./ui": "./src/shared/ui/index.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@base-ui/react": "catalog:",
     "@better-auth/passkey": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
     "better-auth": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
     "effect": "catalog:",
     "es-toolkit": "1.52.0",
+    "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-intl": "10.2.2",
-    "smarthr-ui": "catalog:",
-    "styled-components": "5.3.11"
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",
-    "@types/styled-components": "5.1.36",
     "typescript": "catalog:"
   }
 }

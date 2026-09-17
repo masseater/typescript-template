@@ -1,4 +1,4 @@
-import { Page } from "@template/ui";
+import { Page } from "@template/ui/ui";
 import type { ReactElement } from "react";
 import { SignUpForm } from "@template/ui/signup";
 

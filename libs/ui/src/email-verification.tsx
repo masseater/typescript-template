@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
-import { Status } from "./status";
+import { Status } from "./shared/ui";
 
 async function verifyEmailToken(): Promise<boolean> {
   const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
@@ -34,11 +34,11 @@ function EmailVerification(): ReactElement {
     void verify();
   }, []);
   return failed ? (
-    <Status error>
+    <Status variant="error">
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
     </Status>
   ) : (
-    <Status>メールアドレスを確認しています。</Status>
+    <Status variant="pending">メールアドレスを確認しています。</Status>
   );
 }
 

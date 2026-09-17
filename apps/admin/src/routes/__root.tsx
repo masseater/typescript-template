@@ -2,7 +2,7 @@ import { AppShell, appHead } from "@template/ui/shell";
 import type { ReactElement } from "react";
 import { createRootRoute } from "@tanstack/react-router";
 import { routes } from "#telemetry-routes.ts";
-import styles from "@template/ui/styles.css?url";
+import styles from "#styles.css?url";
 
 const navigation = [
   { href: "/", label: "ユーザー管理" },
