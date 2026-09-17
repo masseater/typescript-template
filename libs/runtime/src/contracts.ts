@@ -37,6 +37,15 @@ const ProfileUpdate = Schema.Struct({
   profile: Schema.String.check(Schema.isMaxLength(maximumProfileLength)),
 });
 
+const MemberQuery = Schema.Struct({ id: Identifier });
+
+const MemberView = Schema.Struct({
+  id: Schema.String,
+  joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),
+  name: Schema.String,
+  profile: Schema.String,
+});
+
 const EmailVerificationRequest = Schema.Struct({
   token: Schema.String.check(Schema.isLengthBetween(1, maximumTokenLength)),
 });
@@ -97,6 +106,8 @@ export {
   EmailVerified,
   ErrorBody,
   HealthView,
+  MemberQuery,
+  MemberView,
   ProfileUpdate,
   ProfileView,
   Role,
@@ -109,4 +120,6 @@ export {
   UserList,
   UserListQuery,
   maximumKeywordLength,
+  maximumNameLength,
+  maximumProfileLength,
 };

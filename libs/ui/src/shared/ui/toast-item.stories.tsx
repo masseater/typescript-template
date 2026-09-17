@@ -5,7 +5,6 @@ import { ToastItem } from "./toast-item";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { ToastViewport } from "./toast-viewport";
 import preview from "../../../.storybook/preview";
-import { useCallback } from "react";
 import { useToast } from "./use-toast";
 
 function Raise({
@@ -13,9 +12,9 @@ function Raise({
   variant,
 }: Readonly<{ title: string; variant: "error" | "success" }>): ReactElement {
   const raise = useToast();
-  const show = useCallback(() => {
+  function show(): void {
     raise(variant, title);
-  }, [raise, title, variant]);
+  }
   return (
     <Button type="button" variant="primary" onClick={show}>
       通知を出す

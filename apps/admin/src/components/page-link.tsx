@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#users-search.ts";
 import { normalizeUsersSearch } from "#users-search.ts";
-import { useMemo } from "react";
 
 const baseClassName =
   "inline-flex min-w-8 items-center justify-center rounded-md border px-2 py-1 text-base leading-tight outline-none focus-visible:focus-indicator";
@@ -18,7 +17,7 @@ function PageLink({
   search,
   text,
 }: Readonly<{ label: string; page: number; search: UsersSearch; text: string }>): ReactElement {
-  const target = useMemo(() => normalizeUsersSearch({ ...search, page }), [page, search]);
+  const target = normalizeUsersSearch({ ...search, page });
   return (
     <li>
       <Link

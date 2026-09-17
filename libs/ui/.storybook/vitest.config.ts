@@ -19,6 +19,7 @@ export default defineConfig({
       instances: [{ browser: "chromium" }],
       provider: playwright(),
     },
+    fileParallelism: false,
     name: "storybook",
   },
 });

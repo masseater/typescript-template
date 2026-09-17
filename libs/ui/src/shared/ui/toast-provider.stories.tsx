@@ -3,17 +3,16 @@ import { Button } from "./button";
 import type { ReactElement } from "react";
 import { ToastProvider } from "./toast-provider";
 import preview from "../../../.storybook/preview";
-import { useCallback } from "react";
 import { useToast } from "./use-toast";
 
 function ToastTrigger(): ReactElement {
   const toast = useToast();
-  const success = useCallback(() => {
+  function success(): void {
     toast("success", "利用者の権限を変更しました。");
-  }, [toast]);
-  const failure = useCallback(() => {
+  }
+  function failure(): void {
     toast("error", "利用者の権限を変更できませんでした。");
-  }, [toast]);
+  }
   return (
     <div className="flex gap-2">
       <Button type="button" variant="primary" onClick={success}>

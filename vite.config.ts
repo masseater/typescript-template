@@ -107,7 +107,6 @@ export default defineConfig({
       "unicorn",
       "oxc",
       "react",
-      "react-perf",
       "jsx-a11y",
       "import",
       "promise",
@@ -165,6 +164,7 @@ export default defineConfig({
       "project/environment-boundary": "error",
       "project/layers": "error",
       "project/no-internal-mocks": "error",
+      "project/no-manual-memoization": "error",
       "project/test-import-graph": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
@@ -192,7 +192,12 @@ export default defineConfig({
       "typescript/no-unsafe-return": "error",
       "typescript/only-throw-error": [
         "error",
-        { allow: [{ from: "package", name: "NotFoundError", package: "@tanstack/router-core" }] },
+        {
+          allow: [
+            { from: "package", name: "NotFoundError", package: "@tanstack/router-core" },
+            { from: "package", name: "Redirect", package: "@tanstack/router-core" },
+          ],
+        },
       ],
       "typescript/require-await": "off",
       "unicorn/no-array-method-this-argument": "off",

@@ -4,7 +4,6 @@ import { Button } from "./shared/ui";
 import { ChallengeForm } from "./challenge-form";
 import type { ChallengeMode } from "./challenge-form";
 import type { ReactElement } from "react";
-import { useCallback } from "react";
 import { useTextInput } from "./use-text-input";
 
 interface ChallengeLoginProps {
@@ -23,15 +22,14 @@ function ChallengeLogin({
   onRestart,
 }: ChallengeLoginProps): ReactElement {
   const code = useTextInput();
-  const { handleChange: setCode } = code;
-  const toggleMode = useCallback(() => {
+  function toggleMode(): void {
     onModeChange(mode === "backup" ? "totp" : "backup");
-    setCode("");
-  }, [mode, onModeChange, setCode]);
-  const restart = useCallback(() => {
+    code.handleChange("");
+  }
+  function restart(): void {
     onRestart();
-    setCode("");
-  }, [onRestart, setCode]);
+    code.handleChange("");
+  }
   return (
     <>
       <ChallengeForm action={action} code={code} mode={mode} onAuthenticated={onAuthenticated} />

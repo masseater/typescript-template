@@ -1,4 +1,3 @@
-import { useCallback, useMemo, useState } from "react";
 import { ActionStatus } from "./action-status";
 import { Heading } from "./shared/ui";
 import { PasskeySettings } from "./passkey-settings";
@@ -8,6 +7,7 @@ import type { SessionView } from "./protocol";
 import type { SettingsContext } from "./mfa-types";
 import { TotpSettings } from "./totp-settings";
 import { useAction } from "./action";
+import { useState } from "react";
 
 function readRecovery(): string | undefined {
   if (!("location" in globalThis)) {
@@ -18,21 +18,18 @@ function readRecovery(): string | undefined {
 
 function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElement {
   const [notice, setNotice] = useState<string>();
-  const recovery = useMemo(() => readRecovery(), []);
+  const recovery = readRecovery();
   const action = useAction();
-  const clearNotice = useCallback(() => {
+  function clearNotice(): void {
     setNotice(undefined);
-  }, []);
-  const context = useMemo(
-    (): SettingsContext => ({
-      action,
-      onNotice: setNotice,
-      onNoticeClear: clearNotice,
-      recovery,
-      session,
-    }),
-    [action, clearNotice, recovery, session],
-  );
+  }
+  const context: SettingsContext = {
+    action,
+    onNotice: setNotice,
+    onNoticeClear: clearNotice,
+    recovery,
+    session,
+  };
   return (
     <div className="flex w-full flex-col gap-4">
       <Heading>認証アプリとパスキー</Heading>

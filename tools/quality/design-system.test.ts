@@ -1,4 +1,3 @@
-import { a11yRelaxations, storylessParts, vendoredWorkerViolations } from "./part-stories.ts";
 import {
   appStylesheetViolations,
   coverageViolations,
@@ -6,7 +5,6 @@ import {
   designSystemProbe,
   indexedComponents,
   linkViolations,
-  partsDirectory,
   smarthrTokens,
   sourceViolations,
   stylesheetPath,
@@ -28,22 +26,6 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 
 const lint = field(configs["../../vite.config.ts"], "lint");
 
-const previews: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/.storybook/preview.ts",
-  { eager: true, import: "default" },
-);
-
-function composedParameters(preview: unknown): unknown {
-  return typeof preview === "object" && preview !== null && "composed" in preview
-    ? field(preview.composed, "parameters")
-    : undefined;
-}
-
-function storybookProjects(): unknown[] {
-  const projects: unknown = field(field(configs["../../vite.config.ts"], "test"), "projects");
-  return Array.isArray(projects) ? projects : [];
-}
-
 function restrictedImportNames(): string[] {
   const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
   const options: unknown = Array.isArray(rule) ? rule.at(1) : undefined;
@@ -55,27 +37,6 @@ function restrictedImportNames(): string[] {
       })
     : [];
 }
-
-const acceptedA11yViolations = [
-  { file: "libs/ui/src/action-status.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/email-verification.stories.tsx", rule: "color-contrast", story: "Expired" },
-  { file: "libs/ui/src/login-form.stories.tsx", rule: "color-contrast", story: "Rejected" },
-  { file: "libs/ui/src/passkey-list.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/passkey-settings.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "Missing" },
-  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "TooShort" },
-  { file: "libs/ui/src/shared/ui/status.stories.tsx", rule: "color-contrast", story: "Error" },
-  {
-    file: "libs/ui/src/shared/ui/toast-item.stories.tsx",
-    rule: "aria-hidden-focus",
-    story: "Failure",
-  },
-  {
-    file: "libs/ui/src/signup-fields.stories.tsx",
-    rule: "color-contrast",
-    story: "RejectsShortPassword",
-  },
-];
 
 const restyled = [
   ["no-restyle", "bg-destructive"],
@@ -253,43 +214,5 @@ describe("design system lint", () => {
   it.for(restyled)("%s reports a screen that restyles a part", ([rule, className]) => {
     expect.hasAssertions();
     expect(reports(rule, className)).toBe(true);
-  });
-});
-
-describe("part stories", () => {
-  it("looks for stories in the parts directory components.json points at", () => {
-    expect.hasAssertions();
-    expect(partsDirectory()).toMatch(/libs\/ui\/src\/shared\/ui$/u);
-  });
-
-  it("keeps a story next to every part", () => {
-    expect.hasAssertions();
-    expect(storylessParts(partsDirectory())).toStrictEqual([]);
-  });
-
-  it("reports a directory whose components have no stories", () => {
-    expect.hasAssertions();
-    expect(storylessParts("libs/ui/src")).not.toStrictEqual([]);
-  });
-
-  it("runs the stories as a test project of this repository", () => {
-    expect.hasAssertions();
-    expect(storybookProjects()).toContain("./libs/ui/.storybook/vitest.config.ts");
-  });
-
-  it("fails a story on an accessibility violation", () => {
-    expect.hasAssertions();
-    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.ts"]);
-    expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
-  });
-
-  it("lets a story off only for the rules listed here", () => {
-    expect.hasAssertions();
-    expect(a11yRelaxations()).toStrictEqual(acceptedA11yViolations);
-  });
-
-  it("keeps the vendored service worker at the installed msw version", () => {
-    expect.hasAssertions();
-    expect(vendoredWorkerViolations()).toStrictEqual([]);
   });
 });

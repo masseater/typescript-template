@@ -103,6 +103,7 @@ function a11yRelaxations(): A11yRelaxation[] {
 }
 
 const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
+const agentConfigFile = ".mcp.json";
 
 function declaredConstant(body: readonly unknown[], name: string): unknown {
   const declarator = body
@@ -130,4 +131,16 @@ function vendoredWorkerViolations(): string[] {
       ];
 }
 
-export { a11yRelaxations, storylessParts, vendoredWorkerViolations };
+function storybookEndpointViolations(port: number): string[] {
+  // oxlint-disable-next-line node/no-sync
+  const parsed: unknown = JSON.parse(readFileSync(agentConfigFile, "utf-8"));
+  const url: unknown = field(field(field(parsed, "mcpServers"), "storybook"), "url");
+  const expected = `http://localhost:${String(port)}/mcp`;
+  return url === expected
+    ? []
+    : [
+        `${agentConfigFile}: storybook の url は ${expected} である必要があります（現在: ${String(url)}）。`,
+      ];
+}
+
+export { a11yRelaxations, storybookEndpointViolations, storylessParts, vendoredWorkerViolations };
