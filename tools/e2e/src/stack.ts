@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { localDatabase } from "@template/db/local";
 import { Browser } from "./browser.ts";
 import {
   ensure,
@@ -242,7 +243,7 @@ export async function createStack() {
                     binding: "DB",
                     database_name: `${id}-shared`,
                     database_id: databaseId,
-                    migrations_dir: path.join(root, "libs/db/migrations"),
+                    migrations_dir: localDatabase.migrations_dir,
                   },
                 ],
           vars: {},
