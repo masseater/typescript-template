@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Page, Status, UIProvider } from "@template/ui";
+import { Button, Page, Stack, Status } from "@template/ui/ui";
 import uiStyles from "@template/ui/styles.css?url";
 import { useEffect, useState } from "react";
-import { Button, Stack } from "smarthr-ui";
 import * as v from "valibot";
 
 export const Route = createFileRoute("/consent")({
@@ -66,12 +65,12 @@ function Consent() {
     }
   }
   return (
-    <UIProvider>
-      <Page title="Wiki との連携">
-        {!clientId && <Status error>連携を求めているクライアントが分かりません。</Status>}
-        {client && (
-          <Stack>
-            <p>{client} に Wiki の閲覧を許可しますか？</p>
+    <Page title="Wiki との連携">
+      {!clientId && <Status variant="error">連携を求めているクライアントが分かりません。</Status>}
+      {client && (
+        <Stack className="max-w-md gap-4">
+          <p>{client} に Wiki の閲覧を許可しますか？</p>
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="primary"
@@ -83,11 +82,11 @@ function Consent() {
             <Button type="button" disabled={pending} onClick={() => void decide(false)}>
               拒否する
             </Button>
-          </Stack>
-        )}
-        {clientId && !client && !error && <Status>読み込み中です。</Status>}
-        {error && <Status error>{error}</Status>}
-      </Page>
-    </UIProvider>
+          </div>
+        </Stack>
+      )}
+      {clientId && !client && !error && <Status variant="pending">読み込み中です。</Status>}
+      {error && <Status variant="error">{error}</Status>}
+    </Page>
   );
 }

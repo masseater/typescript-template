@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import * as v from "valibot";
 import { sessionSchema, errorMessage } from "./protocol";
 import type { SessionView } from "./protocol";
-import { Status } from "./primitives";
+import { Status } from "./shared/ui";
 
 export function useSession() {
   const [session, setSession] = useState<SessionView | null>(null);

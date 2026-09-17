@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactElement } from "react";
-import { Button, Stack } from "smarthr-ui";
 import { authClient } from "./client";
 import { MFASettings } from "./mfa";
-import { Field, Page, Status } from "./primitives";
+import { Button, Field, Page, Stack, Status } from "./shared/ui";
 import { requireSuccess } from "./protocol";
 import { useSession } from "./session";
 import { useAction } from "./action";
@@ -30,7 +29,7 @@ export function SecurityPage({ title }: { title: string }): ReactElement {
   return (
     <Page title={title}>
       {loading ? (
-        <Status>読み込み中です。</Status>
+        <Status variant="pending">読み込み中です。</Status>
       ) : session ? (
         <>
           <MFASettings session={session} />
@@ -39,7 +38,7 @@ export function SecurityPage({ title }: { title: string }): ReactElement {
       ) : (
         <a href="/login">ログインしてください。</a>
       )}
-      {error && <Status error>{error}</Status>}
+      {error && <Status variant="error">{error}</Status>}
     </Page>
   );
 }
@@ -88,9 +87,9 @@ function LoginForm({
     });
   }
   return (
-    <Stack>
+    <Stack className="max-w-md gap-4">
       <form onSubmit={submit} aria-busy={action.pending}>
-        <Stack>
+        <Stack className="gap-4">
           {challenge && backupMode ? (
             <Field
               label="バックアップコード"
@@ -186,8 +185,8 @@ function LoginForm({
           ログイン方法を選び直す
         </Button>
       )}
-      {action.pending && <Status>認証を処理しています。</Status>}
-      {action.error && <Status error>{action.error}</Status>}
+      {action.pending && <Status variant="pending">認証を処理しています。</Status>}
+      {action.error && <Status variant="error">{action.error}</Status>}
     </Stack>
   );
 }
@@ -208,7 +207,7 @@ export function SignOutButton() {
       >
         ログアウト
       </Button>
-      {action.error && <Status error>{action.error}</Status>}
+      {action.error && <Status variant="error">{action.error}</Status>}
     </>
   );
 }
@@ -244,10 +243,10 @@ function EmailVerification(): ReactElement {
       .catch(() => setError(true));
   }, []);
   return error ? (
-    <Status error>
+    <Status variant="error">
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
     </Status>
   ) : (
-    <Status>メールアドレスを確認しています。</Status>
+    <Status variant="pending">メールアドレスを確認しています。</Status>
   );
 }

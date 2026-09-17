@@ -1,8 +1,7 @@
 import { useState } from "react";
 import type { FormEvent, ReactElement } from "react";
-import { Button, Stack } from "smarthr-ui";
 import { authClient } from "./client";
-import { Field, Status } from "./primitives";
+import { Button, Field, Stack, Status } from "./shared/ui";
 import { requireSuccess } from "./protocol";
 import { useAction } from "./action";
 
@@ -23,12 +22,14 @@ export function SignUpForm(): ReactElement {
     });
   }
   return (
-    <Stack>
+    <Stack className="max-w-md gap-4">
       {sent ? (
-        <Status>確認メールを送信しました。メールのリンクで確認後、ログインしてください。</Status>
+        <Status variant="success">
+          確認メールを送信しました。メールのリンクで確認後、ログインしてください。
+        </Status>
       ) : (
         <form onSubmit={submit} aria-busy={action.pending}>
-          <Stack>
+          <Stack className="gap-4">
             <Field
               label="ユーザー名"
               name="name"
@@ -64,8 +65,8 @@ export function SignUpForm(): ReactElement {
           </Stack>
         </form>
       )}
-      {action.pending && <Status>登録を処理しています。</Status>}
-      {action.error && <Status error>{action.error}</Status>}
+      {action.pending && <Status variant="pending">登録を処理しています。</Status>}
+      {action.error && <Status variant="error">{action.error}</Status>}
     </Stack>
   );
 }

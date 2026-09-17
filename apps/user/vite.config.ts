@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { previewDevVars } from "@template/config/vite";
@@ -25,6 +26,7 @@ export default defineConfig(({ command, isPreview }) => ({
       persistState: { path: localDatabasePersistence },
       inspectorPort: false,
     }),
+    tailwindcss(),
     tanstackStart(),
     react(),
   ],

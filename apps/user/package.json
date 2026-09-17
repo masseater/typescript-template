@@ -15,12 +15,12 @@
     "@template/ui": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "smarthr-ui": "99.6.1",
     "valibot": "1.5.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.10",
     "@cloudflare/workers-types": "5.20260916.1",
+    "@tailwindcss/vite": "4.3.3",
     "@template/config": "workspace:*",
     "@template/dev-boundary": "workspace:*",
     "@types/node": "24.12.0",

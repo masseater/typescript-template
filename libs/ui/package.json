@@ -10,24 +10,27 @@
     "./auth": "./src/auth.tsx",
     "./shell": "./src/shell.tsx",
     "./signup": "./src/signup.tsx",
+    "./ui": "./src/shared/ui/index.ts",
     "./styles.css": "./src/styles.css"
   },
   "scripts": {},
   "dependencies": {
+    "@base-ui/react": "1.8.0",
     "@better-auth/passkey": "1.7.5",
     "@tanstack/react-router": "1.170.36",
     "@template/observability": "workspace:*",
     "better-auth": "1.7.5",
+    "class-variance-authority": "0.7.1",
+    "cn": "0.3.0",
+    "lucide-react": "1.46.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-intl": "10.2.2",
-    "smarthr-ui": "99.6.1",
-    "styled-components": "5.3.11",
+    "shadcn": "4.21.0",
+    "tailwindcss": "4.3.3",
     "valibot": "1.5.0"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
-    "@types/styled-components": "5.1.36",
     "typescript": "7.0.2"
   }
 }

@@ -1,8 +1,7 @@
 import { HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { initBrowserTelemetry } from "@template/observability/browser";
-import { Fragment, useEffect } from "react";
+import { useEffect } from "react";
 import type { ReactElement } from "react";
-import { UIProvider } from "./primitives";
 
 export function appHead(title: string, stylesheet: string) {
   return {
@@ -34,17 +33,18 @@ export function AppShell({
         <HeadContent />
       </head>
       <body>
-        <UIProvider>
-          <nav aria-label="メイン">
-            {navigation.map((link, index) => (
-              <Fragment key={link.href}>
-                {index > 0 && " "}
-                <a href={link.href}>{link.label}</a>
-              </Fragment>
+        <nav aria-label="メイン" className="border-b border-border bg-card shadow-sm">
+          <ul className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-4 p-4">
+            {navigation.map((link) => (
+              <li key={link.href}>
+                <a href={link.href} className="focus-visible:focus-indicator-outer">
+                  {link.label}
+                </a>
+              </li>
             ))}
-          </nav>
-          <Outlet />
-        </UIProvider>
+          </ul>
+        </nav>
+        <Outlet />
         <Scripts />
       </body>
     </html>
