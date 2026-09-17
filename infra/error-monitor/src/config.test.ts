@@ -4,16 +4,20 @@ import { parseErrorMonitorConfig } from "./config.ts";
 const valid = {
   CLOUDFLARE_ACCOUNT_ID: "a".repeat(32),
   OBSERVABILITY_TOKEN: "t".repeat(40),
-  ALERT_WEBHOOK_URL: "https://hooks.slack.com/services/T/B/secret",
+  ALERT_FROM: "alerts@example.com",
+  ALERT_TO: "operator@example.com,oncall@example.com",
 };
 
-test("accepts an HTTPS webhook and a scoped token", () => {
-  expect(parseErrorMonitorConfig(valid)).toEqual(valid);
+test("accepts a scoped token and verified operator addresses", () => {
+  expect(parseErrorMonitorConfig(valid)).toEqual({
+    ...valid,
+    ALERT_TO: ["operator@example.com", "oncall@example.com"],
+  });
 });
 
 test.each([
-  { ALERT_WEBHOOK_URL: "not-a-url" },
-  { ALERT_WEBHOOK_URL: "http://hooks.slack.com/services/T/B/secret" },
+  { ALERT_TO: "private-not-an-address" },
+  { ALERT_FROM: "" },
   { OBSERVABILITY_TOKEN: "short" },
 ])("refuses invalid settings without echoing them: %j", (override) => {
   expect(() => parseErrorMonitorConfig({ ...valid, ...override })).toThrow(

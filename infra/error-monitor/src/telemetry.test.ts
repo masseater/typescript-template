@@ -2,7 +2,6 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { expect, test } from "vitest";
 import { fetchErrorGroups } from "./telemetry.ts";
-import { postWebhook } from "./webhook.ts";
 
 const account = "a".repeat(32);
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/workers/observability/telemetry/query`;
@@ -84,27 +83,6 @@ test("query failures are errors rather than an empty result", async () => {
   try {
     await expect(fetchErrorGroups(account, "test-token-000000000000", 1, 2)).rejects.toThrow(
       /^telemetry_http_failed$/,
-    );
-  } finally {
-    server.close();
-  }
-});
-
-test("webhooks receive Slack-compatible text and reject unsuccessful deliveries", async () => {
-  let received: unknown;
-  const server = setupServer(
-    http.post("https://hooks.example.test/ok", async ({ request }) => {
-      received = await request.json();
-      return new HttpResponse("ok");
-    }),
-    http.post("https://hooks.example.test/gone", () => new HttpResponse(null, { status: 404 })),
-  );
-  server.listen({ onUnhandledRequest: "error" });
-  try {
-    await postWebhook("https://hooks.example.test/ok", "検出しました");
-    expect(received).toEqual({ text: "検出しました" });
-    await expect(postWebhook("https://hooks.example.test/gone", "x")).rejects.toThrow(
-      "webhook_http_failed",
     );
   } finally {
     server.close();

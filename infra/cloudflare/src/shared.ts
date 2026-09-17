@@ -9,14 +9,12 @@ import {
   parseSharedConfig,
   selectObservabilityQueryPermission,
   selectReadPermission,
-  validateAlertWebhookUrl,
   validateAuthSecret,
 } from "./config.ts";
 
 const config = new pulumi.Config();
 const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
 export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-const alertWebhookUrl = config.requireSecret("alertWebhookUrl").apply(validateAlertWebhookUrl);
 const budgetContent = await readFile(budgetWorkerArtifact);
 if (budgetContent.length === 0) throw new Error("budget_worker_artifact_empty");
 const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");
@@ -144,12 +142,21 @@ const errorVersion = new cloudflare.WorkerVersion("error-version", {
   bindings: [
     { type: "durable_object_namespace", name: "MONITOR", className: "ErrorMonitor" },
     {
+      type: "send_email",
+      name: "EMAIL",
+      allowedSenderAddresses: [settings.mailFrom],
+      allowedDestinationAddresses: settings.budget.recipients,
+    },
+    {
       type: "secret_text",
       name: "OBSERVABILITY_TOKEN",
       text: pulumi.secret(observabilityToken.value),
     },
-    { type: "secret_text", name: "ALERT_WEBHOOK_URL", text: alertWebhookUrl },
-    { type: "plain_text", name: "CLOUDFLARE_ACCOUNT_ID", text: settings.accountId },
+    ...Object.entries({
+      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
+      ALERT_FROM: settings.mailFrom,
+      ALERT_TO: settings.budget.recipients.join(","),
+    }).map(([name, text]) => ({ type: "plain_text", name, text })),
   ],
 });
 const errorDeployment = new cloudflare.WorkersDeployment("error-deployment", {

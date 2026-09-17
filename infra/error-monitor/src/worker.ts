@@ -3,13 +3,14 @@ import { parseErrorMonitorConfig } from "./config.ts";
 import { decideNotifications, formatMessage } from "./decision.ts";
 import type { SeenFingerprints } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
-import { postWebhook } from "./webhook.ts";
 
 interface Bindings {
   MONITOR: DurableObjectNamespace;
+  EMAIL: SendEmail;
   CLOUDFLARE_ACCOUNT_ID: string;
   OBSERVABILITY_TOKEN: string;
-  ALERT_WEBHOOK_URL: string;
+  ALERT_FROM: string;
+  ALERT_TO: string;
 }
 
 const lookback = 15 * 60 * 1000;
@@ -32,7 +33,12 @@ export class ErrorMonitor extends DurableObject<Bindings> {
           now,
         );
         if (decision.notifications.length > 0)
-          await postWebhook(config.ALERT_WEBHOOK_URL, formatMessage(decision.notifications));
+          await this.env.EMAIL.send({
+            from: config.ALERT_FROM,
+            to: config.ALERT_TO,
+            subject: `Cloudflare Workers: ${decision.notifications.length} new or regressed errors`,
+            text: formatMessage(decision.notifications),
+          });
         await this.ctx.storage.put("seen", decision.seen);
         await this.ctx.storage.delete("failureNotifiedDay");
         console.log(
@@ -50,10 +56,12 @@ export class ErrorMonitor extends DurableObject<Bindings> {
         );
         const day = new Date(now).toISOString().slice(0, 10);
         if ((await this.ctx.storage.get<string>("failureNotifiedDay")) !== day) {
-          await postWebhook(
-            config.ALERT_WEBHOOK_URL,
-            "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",
-          );
+          await this.env.EMAIL.send({
+            from: config.ALERT_FROM,
+            to: config.ALERT_TO,
+            subject: "Cloudflare Workers error monitoring failed",
+            text: "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",
+          });
           await this.ctx.storage.put("failureNotifiedDay", day);
         }
         throw new Error("error_monitor_check_failed");

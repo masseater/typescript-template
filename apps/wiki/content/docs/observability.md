@@ -57,7 +57,7 @@ pnpm observe:symbolicate --app user --release <release> "/assets/index-abc.js:1:
 
 ## エラー通知
 
-共有スタックのエラー監視 Worker が 5 分ごとに Workers Logs を照会します。次のエラーを Webhook に通知します。
+共有スタックのエラー監視 Worker が 5 分ごとに Workers Logs を照会します。次のエラーを、Cloudflare の Email 送信で運用者のアドレスに通知します。
 
 - 初めて出た fingerprint のエラー
 - 1 日以上出ていなかったのに再発したエラー
