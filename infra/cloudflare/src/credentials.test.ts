@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { readOwnerOnlySecretsFile, secretsFile } from "./credentials.ts";
 import { Effect } from "effect";
 import type { Scope } from "effect";
@@ -22,7 +22,7 @@ const temporaryPrefix = path.join(tmpdir(), "template-secrets-");
 
 function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.acquireRelease(
-    Effect.promise(async () => realpath(await mkdtemp(temporaryPrefix))),
+    Effect.promise(async () => mkdtemp(temporaryPrefix)),
     (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
   );
 }

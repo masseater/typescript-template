@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { open, realpath } from "node:fs/promises";
+import { lstat, open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { FileHandle } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -87,12 +87,11 @@ const readDeclaredKeys = Effect.fn("readDeclaredKeys")(function* readDeclaredKey
 
 const readOwnerOnlySecretsFile = Effect.fn("readOwnerOnlySecretsFile")(
   function* readOwnerOnlySecretsFile(filename: string) {
-    const directory = path.dirname(filename);
-    const resolved = yield* Effect.tryPromise({
+    const directory = yield* Effect.tryPromise({
       catch: failure("secrets_file_missing"),
-      try: async () => realpath(directory),
+      try: async () => lstat(path.dirname(filename)),
     });
-    if (resolved !== path.resolve(directory)) {
+    if (!directory.isDirectory()) {
       return yield* Effect.fail(
         new SecretsFileFailure({ code: "secrets_file_symlink_forbidden", keys: [] }),
       );
