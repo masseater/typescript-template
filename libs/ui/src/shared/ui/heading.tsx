@@ -2,12 +2,12 @@ import type { ComponentProps } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
-const headingVariants = cva("leading-tight font-bold text-foreground", {
+const headingVariants = cva("font-bold text-foreground", {
   variants: {
     size: {
-      screen: "text-xl",
-      section: "text-lg",
-      block: "text-base",
+      screen: "text-xl leading-tight",
+      section: "text-lg leading-tight",
+      block: "text-base leading-tight",
     },
   },
   defaultVariants: {
