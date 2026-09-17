@@ -1,5 +1,5 @@
-import { applications } from "@template/config";
 import * as v from "valibot";
+import { applyPlan } from "./stacks.ts";
 
 const id = v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/));
 const positive = v.pipe(v.number(), v.finite(), v.minValue(Number.MIN_VALUE));
@@ -39,14 +39,18 @@ export const workerSubdomain = { enabled: false, previewsEnabled: false };
 
 const deploymentCommand = v.strictTuple([
   v.picklist(["preview", "up"]),
-  v.picklist(["shared", ...applications]),
+  v.picklist(["all", ...applyPlan().map(({ stack }) => stack)]),
 ]);
 
 export function parseDeploymentCommand(args: readonly string[]) {
   const parsed = v.safeParse(deploymentCommand, args);
   if (!parsed.success) throw new Error("deployment_command_invalid");
   const [operation, target] = parsed.output;
-  return { operation, target };
+  const plan = applyPlan();
+  return {
+    operation,
+    targets: target === "all" ? plan : plan.filter(({ stack }) => stack === target),
+  };
 }
 
 export function parseSharedConfig(input: unknown): SharedConfig {

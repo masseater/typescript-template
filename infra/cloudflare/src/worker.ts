@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
 import { secret } from "@pulumi/pulumi";
@@ -45,40 +44,16 @@ export async function deployMonitor(
     name: string;
     artifact: string;
     className: string;
-    token?: { name: string; binding: string; permission: Input<string> };
+    token?: { binding: string; text: Input<string> };
     alert: { from: string; to: string[] };
     variables: Record<string, string>;
     cron: string;
   },
 ) {
-  const content = await readFile(options.artifact);
-  if (content.length === 0) throw new Error(`${resource}_worker_artifact_empty`);
+  if ((await readFile(options.artifact)).length === 0)
+    throw new Error(`${resource}_worker_artifact_empty`);
   const tokenBindings = options.token
-    ? [
-        {
-          type: "secret_text",
-          name: options.token.binding,
-          text: secret(
-            new cloudflare.AccountToken(
-              `${resource}-token`,
-              {
-                accountId: options.accountId,
-                name: options.token.name,
-                policies: [
-                  {
-                    effect: "allow",
-                    permissionGroups: [{ id: options.token.permission }],
-                    resources: JSON.stringify({
-                      [`com.cloudflare.api.account.${options.accountId}`]: "*",
-                    }),
-                  },
-                ],
-              },
-              { additionalSecretOutputs: ["value"] },
-            ).value,
-          ),
-        },
-      ]
+    ? [{ type: "secret_text", name: options.token.binding, text: secret(options.token.text) }]
     : [];
   const { worker, deployment } = deployWorker(resource, {
     accountId: options.accountId,
@@ -90,7 +65,6 @@ export async function deployMonitor(
           name: "index.js",
           contentType: "application/javascript+module",
           contentFile: options.artifact,
-          contentSha256: createHash("sha256").update(content).digest("hex"),
         },
       ],
       migrations: { newTag: "v1", newSqliteClasses: [options.className] },
