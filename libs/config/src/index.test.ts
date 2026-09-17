@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { expect, test } from "vitest";
 import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 
@@ -51,6 +52,7 @@ test("rejects weak session secrets and pathful application origins", () => {
   expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://localhost:3001/path" })).toThrow(
     "An origin without a path is required",
   );
+  expect(() => readEnvironment({ ...local, APP_ORIGIN: "not-a-url" })).toThrow(v.ValiError);
 });
 
 test("rejects non-string exporter credential values", () => {

@@ -5,7 +5,7 @@ const absoluteUrl = v.pipe(v.string(), v.url());
 const release = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,64}$/));
 const origin = v.pipe(
   absoluteUrl,
-  v.check((value) => new URL(value).origin === value, "An origin without a path is required"),
+  v.check((value) => URL.parse(value)?.origin === value, "An origin without a path is required"),
 );
 const scalarSchema = v.object({
   APP_ORIGIN: origin,

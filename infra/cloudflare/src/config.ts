@@ -7,9 +7,9 @@ const origin = v.pipe(
   v.string(),
   v.url(),
   v.check((value) => {
-    const url = new URL(value);
+    const url = URL.parse(value);
     return (
-      url.protocol === "https:" &&
+      url?.protocol === "https:" &&
       url.origin === value &&
       !url.hostname.endsWith(".workers.dev") &&
       !url.username &&
@@ -26,7 +26,7 @@ const sharedSchema = v.object({
   wikiOrigin: origin,
   accessIssuer: v.pipe(
     origin,
-    v.check((value) => new URL(value).hostname.endsWith(".cloudflareaccess.com")),
+    v.check((value) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true),
   ),
   adminEmails: v.pipe(v.array(v.pipe(v.string(), v.email())), v.minLength(1), v.maxLength(50)),
   mailFrom: v.pipe(v.string(), v.email()),

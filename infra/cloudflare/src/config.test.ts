@@ -85,6 +85,7 @@ test.each([
   "https://admin.example.com/",
   "https://admin.example.com?x=1",
   "https://app.team.workers.dev",
+  "not-a-url",
 ])("rejects unsafe admin origin %s", (adminOrigin) => {
   expect(() => parseSharedConfig({ ...settings, adminOrigin })).toThrow(
     "cloudflare_settings_invalid",
