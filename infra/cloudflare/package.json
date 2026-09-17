@@ -15,6 +15,7 @@
     "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
+    "@template/monitor": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },

@@ -3,6 +3,7 @@ import { fail, io } from "./artifact-io.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
+import { monitorBinding } from "@template/monitor";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 import { settings } from "./settings.ts";
@@ -44,7 +45,7 @@ const monitorProgram = Effect.fn("monitorProgram")(function* monitorProgram(
       ALERT_FROM: config.mailFrom,
       ALERT_TO: config.budget.recipients.join(","),
       EMAIL: email,
-      MONITOR: DurableObject("MONITOR", { className: options.className }),
+      [monitorBinding]: DurableObject(monitorBinding, { className: options.className }),
       ...variables,
     },
     main: options.artifact,

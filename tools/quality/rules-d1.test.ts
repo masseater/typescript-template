@@ -143,7 +143,11 @@ const rawD1OutsideAdapter = [
   ["apps/user/src/probe.test.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
 ] as const;
 
-const rawD1Adapters = [["libs/db/src/migrate-d1.ts"], ["libs/db/src/testing.ts"]] as const;
+const rawD1Adapters = [
+  ["libs/db/src/migrate-d1.ts"],
+  ["libs/db/src/testing.ts"],
+  ["libs/db/src/testing-node.ts"],
+] as const;
 
 const nonD1Operations = [
   ["regexp", "export const load = (input: string) => /pattern/.exec(input);"],

@@ -6,7 +6,7 @@ import { Effect } from "effect";
 import type { UsageSnapshot } from "./billing.ts";
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
-import { setupServer } from "msw/node";
+import { setupNetwork } from "@msw/cloudflare";
 
 const ACCOUNT_ID_LENGTH = 32;
 const WORKERS_COST_USD = 20;
@@ -53,19 +53,21 @@ function usageFrom(
 ): Effect.Effect<UsageSnapshot, BudgetFailure> {
   return Effect.acquireUseRelease(
     Effect.sync(() => {
-      const server = setupServer(
+      const network = setupNetwork();
+      network.configure({ onUnhandledFrame: "error" });
+      network.use(
         http.get(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, () =>
           HttpResponse.json(input),
         ),
       );
-      server.listen({ onUnhandledRequest: "error" });
-      return server;
+      network.enable();
+      return network;
     }),
     () => fetchUsage(accountId, "test-token", date),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (server) =>
+    (network) =>
       Effect.sync(() => {
-        server.close();
+        network.disable();
       }),
   );
 }

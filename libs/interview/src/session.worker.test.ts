@@ -3,7 +3,6 @@ import { TestDatabase, runStatement } from "@template/db/testing";
 import { assert, it } from "@effect/vitest";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
 import { Interviewer } from "./interviewer.ts";
-import type { TestBinding } from "@template/db/testing";
 import { TestClock } from "effect/testing";
 import { UnderstandingFailed } from "./understanding-failed.ts";
 import { findInterview } from "@template/db/interview";
@@ -14,7 +13,7 @@ const DAILY_TURNS = 60;
 const NICKNAME_LIMIT = 30;
 const greeting = { role: "interviewer", text: "はじめまして。なんて呼べばいいですか？" } as const;
 
-function addMember(id: string): Effect.Effect<unknown, unknown, TestBinding> {
+function addMember(id: string): Effect.Effect<unknown, unknown> {
   return runStatement(
     "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
     id,
