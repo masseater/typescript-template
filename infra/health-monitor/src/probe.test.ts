@@ -8,18 +8,11 @@ import { setupServer } from "msw/node";
 type Resolver = () => Response;
 
 const INTERNAL_SERVER_ERROR = 500;
-const FOUND = 302;
 const release = "0123456789abcdef";
 
 const userTarget: HealthTarget = {
-  guard: undefined,
   origin: "https://app.example.com",
   service: "user",
-};
-const adminTarget: HealthTarget = {
-  guard: "https://team.cloudflareaccess.com",
-  origin: "https://admin.example.com",
-  service: "admin",
 };
 
 async function probe(target: HealthTarget, resolver: Resolver): Promise<ProbeResult> {
@@ -32,11 +25,7 @@ async function probe(target: HealthTarget, resolver: Resolver): Promise<ProbeRes
   }
 }
 
-function redirectTo(location: string): Response {
-  return new HttpResponse(undefined, { headers: { location }, status: FOUND });
-}
-
-describe("unguarded application probes", () => {
+describe("application probes", () => {
   it("an application reporting its own service name and release is healthy", async () => {
     expect.hasAssertions();
     await expect(
@@ -68,37 +57,6 @@ describe("unguarded application probes", () => {
       detail,
       healthy: false,
       service: "user",
-    });
-  });
-});
-
-describe("guarded application probes", () => {
-  it("a guarded application is healthy while Cloudflare Access redirects anonymous probes", async () => {
-    expect.hasAssertions();
-    await expect(
-      probe(adminTarget, () =>
-        redirectTo("https://team.cloudflareaccess.com/cdn-cgi/access/login/admin"),
-      ),
-    ).resolves.toStrictEqual({ detail: "access_guarded", healthy: true, service: "admin" });
-  });
-
-  it.each([
-    {
-      detail: "unguarded_200",
-      name: "answering anonymous requests itself",
-      resolver: (): Response => HttpResponse.json({ ok: true, release, service: "admin" }),
-    },
-    {
-      detail: "unguarded_302",
-      name: "redirecting somewhere other than the Access issuer",
-      resolver: (): Response => redirectTo("https://phish.example/"),
-    },
-  ] as const)("a guarded application $name is unhealthy", async ({ resolver, detail }) => {
-    expect.hasAssertions();
-    await expect(probe(adminTarget, resolver)).resolves.toStrictEqual({
-      detail,
-      healthy: false,
-      service: "admin",
     });
   });
 });

@@ -70,16 +70,19 @@ describe("registration inputs", () => {
 });
 
 describe("database schema", () => {
-  it("exposes every field required by the configured Better Auth plugins", ({
-    fixture,
-  }: Readonly<{ fixture: AuthFixture }>) => {
-    expect.hasAssertions();
-    const expected = getSchema(fixture.userAuthOptions());
-    const actual = getSchemaShape();
-    for (const [model, description] of Object.entries(expected)) {
-      expect(actual[model]).toStrictEqual(expect.arrayContaining(Object.keys(description.fields)));
-    }
-    expect(expected["passkey"]?.fields["audience"]?.input).toBe(false);
-    expect(expected["verification"]?.fields["audience"]?.input).toBe(false);
-  });
+  it.for(["user", "wiki"] as const)(
+    "exposes every field required by the %s Better Auth plugins",
+    (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
+      expect.hasAssertions();
+      const expected = getSchema(fixture.authOptions(audience));
+      const actual = getSchemaShape();
+      for (const [model, description] of Object.entries(expected)) {
+        expect(actual[model]).toStrictEqual(
+          expect.arrayContaining(Object.keys(description.fields)),
+        );
+      }
+      expect(expected["passkey"]?.fields["audience"]?.input).toBe(false);
+      expect(expected["verification"]?.fields["audience"]?.input).toBe(false);
+    },
+  );
 });

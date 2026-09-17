@@ -71,12 +71,12 @@ function createRequestRuntime(input: RequestRuntimeInput): RequestRuntime {
   };
 }
 
-function createRuntime(
-  bindings: unknown,
+function buildRuntime(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  config: AppConfig,
   audience: Audience,
   routes: Readonly<Record<string, string>>,
 ): Runtime {
-  const config = readConfig(bindings);
   const telemetry = createInstrumentation({
     release: config.APP_RELEASE,
     routes,
@@ -89,5 +89,13 @@ function createRuntime(
   };
 }
 
-export { createRuntime };
-export type { AppRequestContext };
+function createRuntime(
+  bindings: unknown,
+  audience: Exclude<Audience, "wiki">,
+  routes: Readonly<Record<string, string>>,
+): Runtime {
+  return buildRuntime(readConfig(bindings), audience, routes);
+}
+
+export { buildRuntime, createRuntime };
+export type { AppRequestContext, RequestRuntime, Runtime };

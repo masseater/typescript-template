@@ -67,19 +67,11 @@ const bindingSchema = object({
 });
 const wikiSchema = object({
   AI: optional(custom<AiBinding>((value) => hasFunction(value, "run"))),
-  APP_ORIGIN: origin,
-  APP_RELEASE: optional(release, "local"),
-  ASSETS: assetBindingSchema,
 });
 
 type Environment = InferOutput<typeof scalarSchema> & { local: boolean };
 type AppConfig = Environment & InferOutput<typeof bindingSchema>;
-interface WikiConfig {
-  AI: AiBinding | undefined;
-  APP_ORIGIN: string;
-  APP_RELEASE: string;
-  ASSETS: AssetBinding;
-}
+type WikiConfig = AppConfig & { AI: AiBinding | undefined };
 
 function isLocalDevelopmentOrigin(value: string): boolean {
   const { hostname, protocol } = new URL(value);
@@ -159,14 +151,8 @@ async function sendVerificationEmail(
 }
 
 function readWikiConfig(input: unknown): WikiConfig {
-  const config = parse(wikiSchema, input);
-  requireSecureOrigin(config.APP_ORIGIN);
-  return {
-    AI: config.AI,
-    APP_ORIGIN: config.APP_ORIGIN,
-    APP_RELEASE: config.APP_RELEASE,
-    ASSETS: config.ASSETS,
-  };
+  const { AI } = parse(wikiSchema, input);
+  return { ...readConfig(input), AI };
 }
 
 export {

@@ -1,15 +1,14 @@
 import type { Audience, Database } from "@template/db";
 import { assertEligibleUser, authenticationMethodFor, deny, isStrongMethod } from "./policy.ts";
-import { findPasskeyUser, findUser, getSessionSecurity } from "@template/db/security";
+import { findUser, getSessionSecurity } from "@template/db/security";
 import { APIError } from "better-auth/api";
 import type { BetterAuthOptions } from "better-auth";
 import type { SessionSecurity } from "@template/db/security";
+import { authPlugins } from "./auth-plugins.ts";
 import { betterAuth } from "better-auth";
 import { createRequestHooks } from "./request-hooks.ts";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { passkey } from "@better-auth/passkey";
 import { schema } from "@template/db";
-import { twoFactor } from "better-auth/plugins";
 
 interface AuthOptions {
   readonly database: Database;
@@ -41,7 +40,7 @@ type EmailAndPasswordOptions = NonNullable<BetterAuthOptions["emailAndPassword"]
 type DatabaseHooks = NonNullable<BetterAuthOptions["databaseHooks"]>;
 type EmailVerificationOptions = NonNullable<BetterAuthOptions["emailVerification"]>;
 type LoggerOptions = NonNullable<BetterAuthOptions["logger"]>;
-type AuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
+type SessionOptions = NonNullable<BetterAuthOptions["session"]>;
 
 const MIN_SECRET_LENGTH = 32;
 const SECONDS_PER_MINUTE = 60;
@@ -90,11 +89,11 @@ function createDatabaseHooks(database: Database, audience: Audience): DatabaseHo
 
 function createEmailVerification(
   sendVerificationEmail: AuthOptions["sendVerificationEmail"],
-  origin: string,
+  { audience, origin }: Readonly<{ audience: Audience; origin: string }>,
 ): EmailVerificationOptions {
   return {
     autoSignInAfterVerification: false,
-    sendOnSignIn: true,
+    sendOnSignIn: audience !== "wiki",
     sendOnSignUp: true,
     sendVerificationEmail: async ({
       user,
@@ -124,49 +123,6 @@ function createLogger(onError: AuthOptions["onError"]): LoggerOptions {
   };
 }
 
-function verificationAudiencePlugin(audience: Audience): AuthPlugin {
-  const audienceField = {
-    defaultValue: audience,
-    input: false,
-    required: true,
-    type: "string",
-  } as const;
-  return {
-    id: "verification-audience",
-    schema: {
-      passkey: { fields: { audience: audienceField } },
-      verification: { fields: { audience: audienceField } },
-    },
-  };
-}
-
-function passkeyPlugin(
-  origin: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  database: Database,
-  audience: Audience,
-): ReturnType<typeof passkey> {
-  return passkey({
-    authentication: {
-      afterVerification: async ({
-        clientData,
-        verification,
-      }: Readonly<{
-        clientData: Readonly<{ id: string }>;
-        verification: Readonly<{ authenticationInfo: Readonly<{ userVerified: boolean }> }>;
-      }>) => {
-        if (!verification.authenticationInfo.userVerified) {
-          deny("PASSKEY_UV_REQUIRED");
-        }
-        assertEligibleUser(await findPasskeyUser(database, clientData.id, audience), audience);
-      },
-    },
-    authenticatorSelection: { userVerification: "required" },
-    origin,
-    rpID: new URL(origin).hostname,
-  });
-}
-
 function createAdvancedOptions(audience: Audience, origin: string): AdvancedOptions {
   return {
     cookiePrefix: `template-${audience}`,
@@ -175,9 +131,33 @@ function createAdvancedOptions(audience: Audience, origin: string): AdvancedOpti
   };
 }
 
+function createSessionOptions(audience: Audience): SessionOptions {
+  return {
+    additionalFields: {
+      audience: {
+        defaultValue: audience,
+        input: false,
+        required: true,
+        type: ["user", "admin", "wiki"],
+      },
+      authenticatedAt: { input: false, required: false, type: "date" },
+      authenticationMethod: {
+        defaultValue: "password",
+        input: false,
+        required: true,
+        type: ["password", "password_totp", "passkey_uv", "recovery"],
+      },
+      securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
+    },
+    cookieCache: { enabled: false },
+    expiresIn: audience === "user" ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
+    freshAge: FRESH_SESSION_SECONDS,
+  };
+}
+
 function createEmailAndPassword(audience: Audience): EmailAndPasswordOptions {
   return {
-    disableSignUp: audience === "admin",
+    disableSignUp: audience !== "user",
     enabled: true,
     minPasswordLength: 12,
     requireEmailVerification: true,
@@ -198,32 +178,16 @@ function createAuth(options: AuthOptions) {
     database: drizzleAdapter(database, { provider: "sqlite", schema, transaction: false }),
     databaseHooks: createDatabaseHooks(database, audience),
     emailAndPassword: createEmailAndPassword(audience),
-    emailVerification: createEmailVerification(options.sendVerificationEmail, origin),
+    emailVerification: createEmailVerification(options.sendVerificationEmail, {
+      audience,
+      origin,
+    }),
     hooks: createRequestHooks(database, audience),
     logger: createLogger(options.onError),
-    plugins: [
-      verificationAudiencePlugin(audience),
-      twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
-      passkeyPlugin(origin, database, audience),
-    ],
+    plugins: authPlugins({ audience, database, origin }),
     rateLimit: { enabled: true, max: 60, storage: "database", window: 60 },
     secret: options.secret,
-    session: {
-      additionalFields: {
-        audience: { defaultValue: audience, input: false, required: true, type: ["user", "admin"] },
-        authenticatedAt: { input: false, required: false, type: "date" },
-        authenticationMethod: {
-          defaultValue: "password",
-          input: false,
-          required: true,
-          type: ["password", "password_totp", "passkey_uv", "recovery"],
-        },
-        securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
-      },
-      cookieCache: { enabled: false },
-      expiresIn: audience === "admin" ? ADMIN_SESSION_SECONDS : USER_SESSION_SECONDS,
-      freshAge: FRESH_SESSION_SECONDS,
-    },
+    session: createSessionOptions(audience),
     trustedOrigins: [origin],
     user: {
       additionalFields: {
@@ -264,7 +228,7 @@ async function verifySession(options: VerifySessionOptions): Promise<VerifiedSes
     deny("SESSION_INVALID");
   }
   const strong = isStrongMethod(current.session.authenticationMethod);
-  if (options.audience === "admin") {
+  if (options.audience !== "user") {
     assertAdminSession(current.user.role, strong, options.allowEnrollment);
   }
   return { session: current.session, strong, user: current.user };

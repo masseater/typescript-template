@@ -2,7 +2,6 @@ import { describe, expect, it } from "vite-plus/test";
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
-  ACCESS_ISSUER: "https://team.cloudflareaccess.com",
   ADMIN_ORIGIN: "https://admin.example.com",
   ALERT_FROM: "alerts@example.com",
   ALERT_TO: "operator@example.com,oncall@example.com",
@@ -16,20 +15,15 @@ describe("health monitor configuration", () => {
     const config = parseHealthMonitorConfig(valid);
     expect(config.ALERT_TO).toStrictEqual(["operator@example.com", "oncall@example.com"]);
     expect(healthTargets(config)).toStrictEqual([
-      { guard: undefined, origin: "https://app.example.com", service: "user" },
-      {
-        guard: "https://team.cloudflareaccess.com",
-        origin: "https://admin.example.com",
-        service: "admin",
-      },
-      { guard: undefined, origin: "https://wiki.example.com", service: "wiki" },
+      { origin: "https://app.example.com", service: "user" },
+      { origin: "https://admin.example.com", service: "admin" },
+      { origin: "https://wiki.example.com", service: "wiki" },
     ]);
   });
 
   it.each([
     { USER_ORIGIN: "http://app.example.com" },
     { WIKI_ORIGIN: "https://app.example.com/docs" },
-    { ACCESS_ISSUER: "https://team.example.com" },
     { ALERT_TO: "private-not-an-address" },
   ] as const)("refuses invalid settings without echoing them: %j", (override) => {
     expect.hasAssertions();

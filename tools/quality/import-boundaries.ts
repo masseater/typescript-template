@@ -146,20 +146,18 @@ function reachesPackageSource(_importer: Importer, target: ImportTarget): boolea
   return /^@template\/[^/]+\/src(?:\/|$)/u.test(target.clean);
 }
 
-function adminImportsSignup({ location }: Importer, target: ImportTarget): boolean {
+function privilegedAppImportsSignup({ location }: Importer, target: ImportTarget): boolean {
   return (
-    location?.area === "apps" &&
-    location.owner === "admin" &&
-    target.clean === "@template/ui/signup"
+    location?.area === "apps" && location.owner !== "user" && target.clean === "@template/ui/signup"
   );
 }
 
-function wikiImportsPrivatePackages({ location }: Importer, target: ImportTarget): boolean {
+function wikiImportsDatabase({ location }: Importer, target: ImportTarget): boolean {
   return (
     location?.area === "apps" &&
     location.owner === "wiki" &&
-    (/^@template\/(?:db|auth|ui)(?:\/|$)/u.test(target.clean) ||
-      /\/libs\/(?:db|auth|ui)(?:\/|$)/u.test(target.resolved))
+    ((/^@template\/db(?:\/|$)/u.test(target.clean) && target.clean !== "@template/db/local") ||
+      /\/libs\/db(?:\/|$)/u.test(target.resolved))
   );
 }
 
@@ -172,8 +170,8 @@ const importRules: readonly ImportRule[] = [
   usesRawDriver,
   importsTestCode,
   reachesPackageSource,
-  adminImportsSignup,
-  wikiImportsPrivatePackages,
+  privilegedAppImportsSignup,
+  wikiImportsDatabase,
 ];
 
 function isForbiddenImport(importer: Importer, source: string): boolean {

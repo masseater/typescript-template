@@ -1,6 +1,5 @@
 import {
   apps,
-  credentialsFile,
   lanOrigin,
   logFileUrl,
   origins,
@@ -36,7 +35,6 @@ interface StatusReport {
 
 interface ConnectionReport {
   readonly admin: string;
-  readonly adminCredentialsFile: string;
   readonly event: "local.lan_access";
   readonly mailpit: string;
   readonly reachableFrom: "devices on the same LAN that trust the local certificate authority";
@@ -91,7 +89,6 @@ async function connection(): Promise<ConnectionReport> {
   await ensureGateway();
   return {
     admin: origins.admin,
-    adminCredentialsFile: fileURLToPath(credentialsFile),
     event: "local.lan_access",
     mailpit: lanOrigin("mailpit"),
     reachableFrom: "devices on the same LAN that trust the local certificate authority",

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { ActionStatus } from "./action-status";
+import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeLogin } from "./challenge-login";
 import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
@@ -9,7 +10,13 @@ import { Stack } from "smarthr-ui";
 import { useAction } from "./action";
 import { useTextInput } from "./use-text-input";
 
-function LoginForm(): ReactElement {
+function goHome(): void {
+  globalThis.location.assign("/");
+}
+
+function LoginForm({
+  onAuthenticated = goHome,
+}: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement {
   const email = useTextInput();
   const password = useTextInput();
   const [challenge, setChallenge] = useState<ChallengeMode>();
@@ -24,15 +31,17 @@ function LoginForm(): ReactElement {
           <CredentialsForm
             action={action}
             email={email}
+            onAuthenticated={onAuthenticated}
             onChallenge={setChallenge}
             password={password}
           />
-          <PasskeyLoginButton action={action} />
+          <PasskeyLoginButton action={action} onAuthenticated={onAuthenticated} />
         </>
       ) : (
         <ChallengeLogin
           action={action}
           mode={challenge}
+          onAuthenticated={onAuthenticated}
           onModeChange={setChallenge}
           onRestart={restart}
         />

@@ -39,6 +39,8 @@ const factorEnrollmentPaths = new Set([
   "/passkey/verify-registration",
 ]);
 const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-passkey"]);
+const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
+const loopbackHosts: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function currentSessionOf(ctx: HookContext): ReturnType<typeof getSessionFromCtx> {
@@ -72,11 +74,33 @@ async function revokeSessionsAfterFactorChange({ ctx, database }: HookScope): Pr
   }
 }
 
+function isLoopbackHttpRedirect(value: unknown): boolean {
+  const url = typeof value === "string" ? URL.parse(value) : undefined;
+  return url?.protocol === "http:" && loopbackHosts.has(url.hostname);
+}
+
+function registersLoopbackClient(path: string, fields: object): boolean {
+  return (
+    path === "/oauth2/register" &&
+    !("application_type" in fields) &&
+    "redirect_uris" in fields &&
+    Array.isArray(fields.redirect_uris) &&
+    fields.redirect_uris.length > 0 &&
+    fields.redirect_uris.every((uri: unknown) => isLoopbackHttpRedirect(uri))
+  );
+}
+
 function rejectUnsafeFields(ctx: Readonly<Pick<HookContext, "body" | "path">>): void {
   const body: unknown = ctx.body;
   const fields = typeof body === "object" && body !== null ? body : {};
   if ("trustDevice" in fields && fields.trustDevice === true) {
     deny("TRUSTED_DEVICE_DISABLED");
+  }
+  if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
+    deny("OAUTH_QUERY_NOT_ACCEPTED");
+  }
+  if (registersLoopbackClient(ctx.path, fields)) {
+    Object.assign(fields, { application_type: "native" });
   }
   if (
     ctx.path === "/passkey/verify-registration" &&
@@ -121,7 +145,7 @@ function enforceAdminAccess({ audience, path, role, strong }: SessionPolicyInput
   if (role === "admin" && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
-  if (audience !== "admin") {
+  if (audience === "user") {
     return;
   }
   if (role !== "admin") {

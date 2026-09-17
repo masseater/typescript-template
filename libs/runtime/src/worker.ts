@@ -13,16 +13,9 @@ interface StartHandler {
 }
 
 interface AppWorkerOptions {
-  readonly audience: Audience;
+  readonly audience: Exclude<Audience, "wiki">;
   readonly routes: Readonly<Record<string, string>>;
   readonly handler: StartHandler;
-  readonly gate?: (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    request: Request,
-    bindings: unknown,
-  ) => Promise<Response | undefined>;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly finalize?: (response: Response, bindings: unknown) => Promise<Response>;
 }
 
 interface AppWorker {
@@ -89,14 +82,9 @@ function createAppWorker(options: AppWorkerOptions): AppWorker {
     fetch: async (request, bindings) => {
       const runtime = createRuntime(bindings, options.audience, options.routes);
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      return runtime.telemetry.wrapRequest(request, async (incoming, correlation) => {
-        const denied = await options.gate?.(incoming, bindings);
-        if (denied !== undefined) {
-          return denied;
-        }
-        const response = await route(options, runtime, { correlation, incoming });
-        return options.finalize ? options.finalize(response, bindings) : response;
-      });
+      return runtime.telemetry.wrapRequest(request, async (incoming, correlation) =>
+        route(options, runtime, { correlation, incoming }),
+      );
     },
   };
 }

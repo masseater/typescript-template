@@ -1,11 +1,19 @@
 import type { Audience, Database, Role } from "./index.ts";
-import { account, session, user } from "./schema.ts";
+import {
+  account,
+  oauthAccessToken,
+  oauthClient,
+  oauthConsent,
+  oauthRefreshToken,
+  session,
+  user,
+} from "./schema.ts";
 import { test as baseTest, expect } from "vite-plus/test";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
+import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
 import { getProfile, updateProfile } from "./index.ts";
 import { createTestDatabase } from "./testing.ts";
 import { eq } from "drizzle-orm";
-import { getSessionSecurity } from "./security.ts";
 
 const SESSION_LIFETIME_MS = 60_000;
 
@@ -90,6 +98,99 @@ test("role change invalidates both audiences immediately", async ({ db }: Contex
   await setUserRole({ database: db, role: "user", sessionId: actor, targetId: "target" });
   await expect(getSessionSecurity(db, targetAdmin, "admin")).resolves.toBeUndefined();
   await expect(getSessionSecurity(db, targetUser, "user")).resolves.toBeUndefined();
+});
+
+async function addOAuthGrant(db: TestDatabase, userId: string): Promise<void> {
+  const clientId = `client-${userId}`;
+  const scopes = '["wiki:read"]';
+  await db.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" });
+  await db.insert(oauthRefreshToken).values({
+    clientId,
+    id: `refresh-${userId}`,
+    scopes,
+    token: `refresh-token-${userId}`,
+    userId,
+  });
+  await db.insert(oauthAccessToken).values({
+    clientId,
+    id: `access-${userId}`,
+    refreshId: `refresh-${userId}`,
+    scopes,
+    token: `access-token-${userId}`,
+    userId,
+  });
+  await db.insert(oauthConsent).values({ clientId, id: `consent-${userId}`, scopes, userId });
+}
+
+async function oauthGrantCounts(
+  db: TestDatabase,
+  userId: string,
+): Promise<Record<"access" | "consent" | "refresh", number>> {
+  const [access, refresh, consent] = await Promise.all([
+    db.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+    db.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+    db.select().from(oauthConsent).where(eq(oauthConsent.userId, userId)),
+  ]);
+  return { access: access.length, consent: consent.length, refresh: refresh.length };
+}
+
+test("role change revokes wiki reading and every OAuth grant of the user", async ({
+  db,
+}: Context) => {
+  await addUser(db, "actor", "admin");
+  await addUser(db, "reader", "admin");
+  const actor = await addSession(db, { audience: "admin", userId: "actor" });
+  await addOAuthGrant(db, "reader");
+  await expect(findWikiReader(db, "reader")).resolves.toStrictEqual({ id: "reader" });
+  await setUserRole({ database: db, role: "user", sessionId: actor, targetId: "reader" });
+  await expect(findWikiReader(db, "reader")).resolves.toBeUndefined();
+  await expect(oauthGrantCounts(db, "reader")).resolves.toStrictEqual({
+    access: 0,
+    consent: 0,
+    refresh: 0,
+  });
+});
+
+test("revoking sessions also revokes OAuth tokens but keeps consent", async ({ db }: Context) => {
+  await addUser(db, "reader", "admin");
+  const wiki = await addSession(db, { audience: "wiki", userId: "reader" });
+  await addOAuthGrant(db, "reader");
+  await revokeUserSessions(db, "reader");
+  await expect(getSessionSecurity(db, wiki, "wiki")).resolves.toBeUndefined();
+  await expect(oauthGrantCounts(db, "reader")).resolves.toStrictEqual({
+    access: 0,
+    consent: 1,
+    refresh: 0,
+  });
+});
+
+test("deleting a user removes OAuth grants", async ({ db }: Context) => {
+  await addUser(db, "actor", "admin");
+  await addUser(db, "reader");
+  const actor = await addSession(db, { audience: "admin", userId: "actor" });
+  await addOAuthGrant(db, "reader");
+  await deleteUser(db, actor, "reader");
+  await expect(oauthGrantCounts(db, "reader")).resolves.toStrictEqual({
+    access: 0,
+    consent: 0,
+    refresh: 0,
+  });
+});
+
+test("wiki reading requires a verified administrator", async ({ db }: Context) => {
+  await addUser(db, "member");
+  await db.insert(user).values({
+    createdAt: new Date(),
+    email: "unverified@example.com",
+    emailVerified: false,
+    id: "unverified",
+    name: "unverified",
+    role: "admin",
+    updatedAt: new Date(),
+  });
+  await expect(findWikiReader(db, "member")).resolves.toBeUndefined();
+  await expect(findWikiReader(db, "unverified")).resolves.toBeUndefined();
+  await expect(findWikiReader(db, "missing")).resolves.toBeUndefined();
 });
 
 test("protects final administrator and credentials during deletion", async ({ db }: Context) => {

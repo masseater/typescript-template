@@ -5,7 +5,7 @@ import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 
-type Audience = "user" | "admin";
+type Audience = "user" | "admin" | "wiki";
 type Role = "user" | "admin";
 type DatabaseBinding = D1Database;
 type Database = DrizzleD1Database<typeof schema> & { $client: DatabaseBinding };

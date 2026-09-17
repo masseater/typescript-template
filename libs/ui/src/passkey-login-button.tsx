@@ -1,11 +1,15 @@
 import type { ActionState } from "./action";
+import type { AuthenticatedHandler } from "./authenticated-handler";
 import { Button } from "smarthr-ui";
 import type { ReactElement } from "react";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { useCallback } from "react";
 
-function PasskeyLoginButton({ action }: Readonly<{ action: ActionState }>): ReactElement {
+function PasskeyLoginButton({
+  action,
+  onAuthenticated,
+}: Readonly<{ action: ActionState; onAuthenticated: AuthenticatedHandler }>): ReactElement {
   const { run } = action;
   const signIn = useCallback(() => {
     run(async () => {
@@ -13,9 +17,9 @@ function PasskeyLoginButton({ action }: Readonly<{ action: ActionState }>): Reac
         throw new Error("パスキーには HTTPS または localhost が必要です。");
       }
       requireSuccess(await authClient.signIn.passkey());
-      globalThis.location.assign("/");
+      await onAuthenticated();
     });
-  }, [run]);
+  }, [onAuthenticated, run]);
   return (
     <Button type="button" disabled={action.blocked} onClick={signIn}>
       パスキーでログイン

@@ -1,7 +1,8 @@
 import { Button, Stack } from "smarthr-ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
-import { Field } from "./field";
+import type { AuthenticatedHandler } from "./authenticated-handler";
+import { ChallengeCodeField } from "./challenge-code-field";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -13,6 +14,7 @@ interface ChallengeFormProps {
   readonly action: ActionState;
   readonly code: TextInput;
   readonly mode: ChallengeMode;
+  readonly onAuthenticated: AuthenticatedHandler;
 }
 
 async function verifyChallenge(mode: ChallengeMode, code: string): Promise<void> {
@@ -29,7 +31,7 @@ async function verifyChallenge(mode: ChallengeMode, code: string): Promise<void>
   requireSuccess(await authClient.twoFactor.verifyTotp({ code, trustDevice: false }));
 }
 
-function ChallengeForm({ action, code, mode }: ChallengeFormProps): ReactElement {
+function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormProps): ReactElement {
   const { run } = action;
   const { setValue: setCode, value: codeValue } = code;
   const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
@@ -38,38 +40,19 @@ function ChallengeForm({ action, code, mode }: ChallengeFormProps): ReactElement
       run(async () => {
         await verifyChallenge(mode, codeValue);
         setCode("");
-        globalThis.location.assign(mode === "backup" ? "/security?recovery=1" : "/");
+        if (mode === "backup") {
+          globalThis.location.assign("/security?recovery=1");
+          return;
+        }
+        await onAuthenticated();
       });
     },
-    [codeValue, mode, run, setCode],
+    [codeValue, mode, onAuthenticated, run, setCode],
   );
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <Stack>
-        {mode === "backup" ? (
-          <Field
-            label="バックアップコード"
-            name="backup-code"
-            type="password"
-            autoComplete="off"
-            required
-            value={codeValue}
-            onChange={code.handleChange}
-          />
-        ) : (
-          <Field
-            label="認証アプリの確認コード"
-            name="totp"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            minLength={6}
-            maxLength={6}
-            required
-            value={codeValue}
-            onChange={code.handleChange}
-          />
-        )}
+        <ChallengeCodeField backup={mode === "backup"} code={code} />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           {mode === "backup" ? "バックアップコードでログイン" : "確認コードでログイン"}
         </Button>

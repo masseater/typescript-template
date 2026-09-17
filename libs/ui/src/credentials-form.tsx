@@ -1,6 +1,7 @@
 import { Button, Stack } from "smarthr-ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
+import type { AuthenticatedHandler } from "./authenticated-handler";
 import type { ChallengeMode } from "./challenge-form";
 import { Field } from "./field";
 import type { TextInput } from "./use-text-input";
@@ -12,18 +13,14 @@ interface CredentialsFormProps {
   readonly action: ActionState;
   readonly email: TextInput;
   readonly password: TextInput;
+  readonly onAuthenticated: AuthenticatedHandler;
   readonly onChallenge: (mode: ChallengeMode) => void;
-}
-
-function destinationAfterLogin(): string {
-  return new URLSearchParams(globalThis.location.search).get("recovery") === "setup"
-    ? "/security?recovery=setup"
-    : "/";
 }
 
 function useCredentialsSubmit({
   action,
   email,
+  onAuthenticated,
   onChallenge,
   password,
 }: CredentialsFormProps): SubmitEventHandler<HTMLFormElement> {
@@ -42,10 +39,14 @@ function useCredentialsSubmit({
           onChallenge("totp");
           return;
         }
-        globalThis.location.assign(destinationAfterLogin());
+        if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
+          globalThis.location.assign("/security?recovery=setup");
+          return;
+        }
+        await onAuthenticated();
       });
     },
-    [emailValue, onChallenge, passwordValue, run, setPassword],
+    [emailValue, onAuthenticated, onChallenge, passwordValue, run, setPassword],
   );
 }
 

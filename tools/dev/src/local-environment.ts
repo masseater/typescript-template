@@ -1,7 +1,7 @@
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-import { literal, minLength, parse, picklist, pipe, record, strictObject, string } from "valibot";
+import { minLength, object, parse, picklist, pipe, record, string } from "valibot";
 import type { InferOutput } from "valibot";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
@@ -32,11 +32,8 @@ const inheritedEnvironment = parse(record(string(), string()), process.env);
 const socket = `template-${rootHash}`;
 const apps = ["user", "admin", "wiki"] as const;
 const appSchema = picklist(apps);
-const adminPasswordMinimumLength = 24;
 const authSecretMinimumLength = 32;
-const credentialSchema = strictObject({
-  adminPassword: pipe(string(), minLength(adminPasswordMinimumLength)),
-  adminUser: literal("operator"),
+const credentialSchema = object({
   authSecret: pipe(string(), minLength(authSecretMinimumLength)),
 });
 const ports = { admin: 3002, user: 3001, wiki: 3003 };

@@ -6,6 +6,7 @@ import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
 import type { StrictRequest } from "msw";
 import type { TestAPI } from "vite-plus/test";
+import { authorizeMcpRequest } from "./mcp.ts";
 import { createDb } from "@template/db";
 import { sendVerificationEmail } from "@template/config";
 import { setupServer } from "msw/node";
@@ -42,8 +43,14 @@ interface AuthFixture {
   readonly setUserRole: (
     input: Readonly<{ role: Role; sessionId: string; targetId: string }>,
   ) => Promise<unknown>;
-  readonly userAuthOptions: () => Auth["options"];
+  readonly auth: (audience: Audience) => Auth;
+  readonly authOptions: (audience: Audience) => Auth["options"];
+  readonly authorizeMcp: (token?: string) => ReturnType<typeof authorizeMcpRequest>;
+  readonly changeRole: (email: string, role: Role) => Promise<void>;
   readonly client: (audience: Audience) => BrowserClient;
+  readonly forgetMail: (email: string) => void;
+  readonly hasMail: (email: string) => boolean;
+  readonly origin: (audience: Audience) => string;
   readonly register: (email: string) => Promise<BrowserClient>;
   readonly registerAdmin: (email: string) => Promise<BrowserClient>;
   readonly registerVerified: (email: string) => Promise<BrowserClient>;
@@ -61,7 +68,7 @@ interface FixtureScope {
   readonly auths: Readonly<Record<Audience, Auth>>;
   readonly database: Database;
   readonly dependencies: AuthTestDependencies;
-  readonly verificationUrl: (email: string) => string | undefined;
+  readonly mailbox: Map<string, string>;
 }
 
 const SECRET = "integration-test-secret-at-least-32-characters-long";
@@ -72,6 +79,7 @@ const MAIL_CONFIG = {
 const ORIGINS = {
   admin: "http://localhost:4102",
   user: "http://localhost:4101",
+  wiki: "http://localhost:4103",
 } as const;
 
 function recordMail(
@@ -157,17 +165,45 @@ async function registerVerifiedUser(scope: MailScope, email: string): Promise<Br
   return client;
 }
 
+async function authorizeMcp(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  { auths, database }: FixtureScope,
+  token: string | undefined,
+): ReturnType<typeof authorizeMcpRequest> {
+  return authorizeMcpRequest({
+    auth: auths.wiki,
+    database,
+    origin: ORIGINS.wiki,
+    request: new Request(`${ORIGINS.wiki}/mcp`, {
+      headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+      method: "POST",
+    }),
+  });
+}
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createFixture(scope: FixtureScope): AuthFixture {
-  const { auths, database, verificationUrl } = scope;
+  const { auths, database, mailbox } = scope;
   const mail = {
     userAuth: auths.user,
-    verificationUrl,
+    verificationUrl: (email: string): string | undefined => mailbox.get(email),
     verifyToken: async (token: string): Promise<unknown> =>
       auths.user.api.verifyEmail({ query: { token } }),
   };
   return {
+    auth: (audience) => auths[audience],
+    authOptions: (audience) => auths[audience].options,
+    authorizeMcp: async (token) => authorizeMcp(scope, token),
+    changeRole: async (email, role) => {
+      const context = await auths.wiki.$context;
+      await context.internalAdapter.updateUserByEmail(email, { role });
+    },
     client: (audience) => new BrowserClient(auths[audience], ORIGINS[audience]),
+    forgetMail: (email) => {
+      mailbox.delete(email);
+    },
+    hasMail: (email) => mailbox.has(email),
+    origin: (audience) => ORIGINS[audience],
     register: async (email) => registerUser(auths.user, email),
     registerAdmin: async (email) => {
       const client = await registerVerifiedUser(mail, email);
@@ -176,7 +212,6 @@ function createFixture(scope: FixtureScope): AuthFixture {
     },
     registerVerified: async (email) => registerVerifiedUser(mail, email),
     setUserRole: async (input) => scope.dependencies.setUserRole({ ...input, database }),
-    userAuthOptions: () => auths.user.options,
     verify: async ({ allowEnrollment, audience, headers }) =>
       verifySession({
         audience,
@@ -201,16 +236,11 @@ function createAuthTest(dependencies: AuthTestDependencies): TestAPI<{ fixture: 
       const auths = {
         admin: createAudienceAuth(database, "admin"),
         user: createAudienceAuth(database, "user"),
+        wiki: createAudienceAuth(database, "wiki"),
       };
+      await auths.wiki.$context;
       try {
-        await provide(
-          createFixture({
-            auths,
-            database,
-            dependencies,
-            verificationUrl: (email) => mailbox.get(email),
-          }),
-        );
+        await provide(createFixture({ auths, database, dependencies, mailbox }));
       } finally {
         mailServer.close();
         await testDatabase.dispose();

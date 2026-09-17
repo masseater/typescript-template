@@ -1,9 +1,9 @@
 import type { ConfigEnv, UserConfig } from "vite-plus";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
-import { localRuntimeToolsOnLoopback, previewDevVars } from "@template/config/vite";
-import { adminDevAccess } from "./dev-access.ts";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
+import { devBoundary } from "@template/dev-boundary";
+import { previewDevVars } from "@template/config/vite";
 import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { workerCompatibility } from "@template/config/worker";
@@ -12,9 +12,8 @@ import { workerCompatibility } from "@template/config/worker";
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
   build: { sourcemap: "hidden" },
   plugins: [
-    localRuntimeToolsOnLoopback(),
     previewDevVars(import.meta.dirname),
-    adminDevAccess(),
+    devBoundary("admin"),
     cloudflare({
       config: {
         assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },

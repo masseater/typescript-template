@@ -49,13 +49,24 @@ class BrowserClient {
   ): Promise<Response> {
     const headers = this.headers();
     headers.set("content-type", "application/json");
-    const response = await this.#auth.handler(
+    return this.send(
       new Request(`${this.#origin}/api/auth${endpoint}`, {
         headers,
         method: body ? "POST" : "GET",
         ...(body ? { body: JSON.stringify(body) } : {}),
       }),
     );
+  }
+
+  public async navigate(url: string): Promise<Response> {
+    const headers = this.headers();
+    headers.set("accept", "text/html");
+    return this.send(new Request(url, { headers, redirect: "manual" }));
+  }
+
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  public async send(request: Request): Promise<Response> {
+    const response = await this.#auth.handler(request);
     for (const cookie of response.headers.getSetCookie()) {
       this.#storeCookie(cookie);
     }

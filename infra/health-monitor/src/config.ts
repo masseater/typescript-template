@@ -18,7 +18,6 @@ type HealthService = "user" | "admin" | "wiki";
 interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
-  readonly guard: string | undefined;
 }
 
 const MAX_ALERT_RECIPIENTS = 10;
@@ -38,10 +37,6 @@ const origin = pipe(
 );
 const emailAddress = pipe(string(), email());
 const schema = object({
-  ACCESS_ISSUER: pipe(
-    origin,
-    check((value) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true),
-  ),
   ADMIN_ORIGIN: origin,
   ALERT_FROM: emailAddress,
   ALERT_TO: pipe(
@@ -57,7 +52,7 @@ const schema = object({
 
 type HealthMonitorConfig = InferOutput<typeof schema>;
 type TargetOrigins = Readonly<
-  Pick<HealthMonitorConfig, "ACCESS_ISSUER" | "ADMIN_ORIGIN" | "USER_ORIGIN" | "WIKI_ORIGIN">
+  Pick<HealthMonitorConfig, "ADMIN_ORIGIN" | "USER_ORIGIN" | "WIKI_ORIGIN">
 >;
 
 function parseHealthMonitorConfig(input: unknown): HealthMonitorConfig {
@@ -75,9 +70,9 @@ function parseHealthMonitorConfig(input: unknown): HealthMonitorConfig {
 
 function healthTargets(config: TargetOrigins): HealthTarget[] {
   return [
-    { guard: undefined, origin: config.USER_ORIGIN, service: "user" },
-    { guard: config.ACCESS_ISSUER, origin: config.ADMIN_ORIGIN, service: "admin" },
-    { guard: undefined, origin: config.WIKI_ORIGIN, service: "wiki" },
+    { origin: config.USER_ORIGIN, service: "user" },
+    { origin: config.ADMIN_ORIGIN, service: "admin" },
+    { origin: config.WIKI_ORIGIN, service: "wiki" },
   ];
 }
 

@@ -1,4 +1,4 @@
-import { Worker, WorkerVersion, ZeroTrustAccessApplication } from "@pulumi/cloudflare";
+import { Worker, WorkerVersion } from "@pulumi/cloudflare";
 import { getProject, isSecret, runtime, secret } from "@pulumi/pulumi";
 import type { Output } from "@pulumi/pulumi";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -25,7 +25,6 @@ function assertProvidersLoadedWithoutCompiler(): void {
   invariant(readEnvironment().PULUMI_NODEJS_TYPESCRIPT !== "true", "pulumi_typescript_enabled");
   invariant(typeof Worker === "function", "worker_provider_missing");
   invariant(typeof WorkerVersion === "function", "worker_version_provider_missing");
-  invariant(typeof ZeroTrustAccessApplication === "function", "access_provider_missing");
 }
 
 async function assertEngineConnected(): Promise<void> {

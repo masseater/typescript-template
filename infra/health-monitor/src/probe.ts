@@ -7,13 +7,9 @@ interface ProbeResult {
   readonly detail: string;
 }
 
-type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">> & {
-  readonly headers: Readonly<Pick<Headers, "get">>;
-};
+type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
 
 const REQUEST_TIMEOUT_MS = 10_000;
-const FIRST_REDIRECT_STATUS = 300;
-const FIRST_CLIENT_ERROR_STATUS = 400;
 
 const payload = object({
   ok: literal(true),
@@ -35,16 +31,6 @@ async function requestHealth(target: HealthTarget): Promise<ProbeResponse | unde
   } catch {
     return undefined;
   }
-}
-
-function guardedResult(target: HealthTarget, guard: string, response: ProbeResponse): ProbeResult {
-  const location = response.headers.get("location");
-  const destination = location === null ? undefined : URL.parse(location, target.origin);
-  const redirected =
-    response.status >= FIRST_REDIRECT_STATUS && response.status < FIRST_CLIENT_ERROR_STATUS;
-  return redirected && destination?.origin === guard
-    ? probeResult(target, true, "access_guarded")
-    : probeResult(target, false, `unguarded_${response.status}`);
 }
 
 async function readBody(response: ProbeResponse): Promise<unknown> {
@@ -72,9 +58,6 @@ async function probeService(target: HealthTarget): Promise<ProbeResult> {
   const response = await requestHealth(target);
   if (response === undefined) {
     return probeResult(target, false, "unreachable");
-  }
-  if (target.guard !== undefined) {
-    return guardedResult(target, target.guard, response);
   }
   if (!response.ok) {
     return probeResult(target, false, `status_${response.status}`);

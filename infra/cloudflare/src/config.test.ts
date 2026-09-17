@@ -16,9 +16,7 @@ const authSecret = "x".repeat(AUTH_SECRET_LENGTH);
 const release = "0123456789abcdef";
 const assetsBinding = { fetch: async (): Promise<Response> => new Response() };
 const settings = {
-  accessIssuer: "https://team.cloudflareaccess.com",
   accountId: "a".repeat(HEX_32_LENGTH),
-  adminEmails: ["admin@example.com"],
   adminOrigin: "https://admin.example.com",
   budget: {
     budgetJpy: 5000,
@@ -77,31 +75,33 @@ describe("application policy", () => {
   });
 });
 
+function wikiBindings(): Record<string, unknown> {
+  const config = parseSharedConfig(settings);
+  return {
+    APP_ORIGIN: appPolicy(config, "wiki").origin,
+    APP_RELEASE: release,
+    ASSETS: assetsBinding,
+    AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
+    DB: { batch: async (): Promise<never[]> => [], prepare: (): undefined => undefined },
+    EMAIL: { send: async (): Promise<undefined> => undefined },
+    EMAIL_FROM: config.mailFrom,
+  };
+}
+
 describe("wiki runtime settings", () => {
-  it("the wiki reads its production settings without authentication or database bindings", () => {
+  it("the wiki reads authentication, database and release settings", () => {
     expect.hasAssertions();
-    const config = parseSharedConfig(settings);
-    const runtime = readWikiConfig({
-      APP_ORIGIN: appPolicy(config, "wiki").origin,
-      APP_RELEASE: release,
-      ASSETS: assetsBinding,
-    });
+    const runtime = readWikiConfig(wikiBindings());
     expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
     expect(runtime.APP_RELEASE).toBe(release);
     expect(runtime.AI).toBeUndefined();
+    expect(() => readWikiConfig({ ...wikiBindings(), DB: undefined })).toThrow("Invalid type");
   });
 
   it("the wiki accepts an optional AI binding", () => {
     expect.hasAssertions();
-    const config = parseSharedConfig(settings);
     const ai = { run: async (): Promise<{ data: never[] }> => ({ data: [] }) };
-    expect(
-      readWikiConfig({
-        AI: ai,
-        APP_ORIGIN: appPolicy(config, "wiki").origin,
-        ASSETS: assetsBinding,
-      }).AI,
-    ).toBe(ai);
+    expect(readWikiConfig({ ...wikiBindings(), AI: ai }).AI).toBe(ai);
   });
 });
 
@@ -120,13 +120,10 @@ describe("shared settings validation", () => {
     );
   });
 
-  it("rejects same origins and empty management allowlists", () => {
+  it("rejects same origins", () => {
     expect.hasAssertions();
     expect(() => parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })).toThrow(
       "app_origins_must_differ",
-    );
-    expect(() => parseSharedConfig({ ...settings, adminEmails: [] })).toThrow(
-      "cloudflare_settings_invalid",
     );
   });
 

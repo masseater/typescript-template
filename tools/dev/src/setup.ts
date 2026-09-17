@@ -27,7 +27,6 @@ interface SetupReport {
   readonly secretsPrinted: false;
 }
 
-const adminPasswordBytes = 32;
 const authSecretBytes = 48;
 const jsonIndentation = 2;
 
@@ -43,39 +42,23 @@ async function credentialsExist(): Promise<boolean> {
   }
 }
 
-async function createCredentials(): Promise<Credentials> {
-  const credentials = {
-    adminPassword: randomBytes(adminPasswordBytes).toString("base64url"),
-    adminUser: "operator" as const,
-    authSecret: randomBytes(authSecretBytes).toString("base64url"),
-  };
-  await writePrivateFile(
-    credentialsFile,
-    `${JSON.stringify(credentials, undefined, jsonIndentation)}\n`,
-  );
-  return credentials;
-}
-
 async function loadOrCreateCredentials(): Promise<Credentials> {
-  return (await credentialsExist()) ? readCredentials() : createCredentials();
+  if (!(await credentialsExist())) {
+    const credentials = { authSecret: randomBytes(authSecretBytes).toString("base64url") };
+    await writePrivateFile(
+      credentialsFile,
+      `${JSON.stringify(credentials, undefined, jsonIndentation)}\n`,
+    );
+  }
+  return readCredentials();
 }
 
 function appVariables(app: App, credentials: Credentials): Record<string, string> {
   return {
     APP_ORIGIN: origins[app],
-    ...(app === "wiki"
-      ? {}
-      : {
-          AUTH_SECRET: credentials.authSecret,
-          EMAIL_FROM: "no-reply@example.test",
-          MAILPIT_URL: "http://127.0.0.1:8025",
-        }),
-    ...(app === "admin"
-      ? {
-          LOCAL_ADMIN_PASSWORD: credentials.adminPassword,
-          LOCAL_ADMIN_USER: credentials.adminUser,
-        }
-      : {}),
+    AUTH_SECRET: credentials.authSecret,
+    EMAIL_FROM: "no-reply@example.test",
+    MAILPIT_URL: "http://127.0.0.1:8025",
   };
 }
 

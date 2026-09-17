@@ -1,4 +1,5 @@
 import type { ActionState } from "./action";
+import type { AuthenticatedHandler } from "./authenticated-handler";
 import { Button } from "smarthr-ui";
 import { ChallengeForm } from "./challenge-form";
 import type { ChallengeMode } from "./challenge-form";
@@ -9,6 +10,7 @@ import { useTextInput } from "./use-text-input";
 interface ChallengeLoginProps {
   readonly action: ActionState;
   readonly mode: ChallengeMode;
+  readonly onAuthenticated: AuthenticatedHandler;
   readonly onModeChange: (mode: ChallengeMode) => void;
   readonly onRestart: () => void;
 }
@@ -16,6 +18,7 @@ interface ChallengeLoginProps {
 function ChallengeLogin({
   action,
   mode,
+  onAuthenticated,
   onModeChange,
   onRestart,
 }: ChallengeLoginProps): ReactElement {
@@ -31,7 +34,7 @@ function ChallengeLogin({
   }, [onRestart, setCode]);
   return (
     <>
-      <ChallengeForm action={action} code={code} mode={mode} />
+      <ChallengeForm action={action} code={code} mode={mode} onAuthenticated={onAuthenticated} />
       <Button type="button" disabled={action.blocked} onClick={toggleMode}>
         {mode === "backup" ? "認証アプリのコードを使う" : "バックアップコードを使う"}
       </Button>

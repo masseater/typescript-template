@@ -1,16 +1,23 @@
-import type { Instrumentation, RequestContext } from "@template/observability";
+import type { RequestRuntime, Runtime } from "./index.ts";
 import { array, number, object, parse } from "valibot";
-import { createInstrumentation } from "@template/observability";
+import type { RequestContext } from "@template/observability";
+import { authorizeMcpRequest } from "@template/auth/mcp";
+import { buildRuntime } from "./index.ts";
 import { readWikiConfig } from "@template/config";
 
 type Embedder = (texts: readonly string[]) => Promise<number[][]>;
 type AiBinding = NonNullable<ReturnType<typeof readWikiConfig>["AI"]>;
 
-interface WikiRuntime {
-  readonly config: Pick<ReturnType<typeof readWikiConfig>, "APP_ORIGIN" | "APP_RELEASE" | "ASSETS">;
+interface WikiRequestRuntime extends RequestRuntime {
+  readonly authorizeMcp: (
+    request: Readonly<{ headers: Readonly<Pick<Headers, "get">> }>,
+  ) => ReturnType<typeof authorizeMcpRequest>;
   readonly embedder: () => Embedder | undefined;
-  readonly reportError: (correlation: RequestContext, error: unknown) => void;
-  readonly telemetry: Instrumentation;
+}
+
+interface WikiRuntime extends Omit<Runtime, "config" | "forRequest"> {
+  readonly config: Runtime["config"] & { readonly APP_RELEASE: string };
+  readonly forRequest: (correlation: RequestContext) => WikiRequestRuntime;
 }
 
 const embeddingModel = "@cf/baai/bge-m3";
@@ -37,23 +44,25 @@ function createWikiRuntime(
   routes: Readonly<Record<string, string>>,
 ): WikiRuntime {
   const config = readWikiConfig(bindings);
-  const telemetry = createInstrumentation({
-    release: config.APP_RELEASE,
-    routes,
-    serviceName: "wiki",
-  });
+  const runtime = buildRuntime(config, "wiki", routes);
   const ai = config.AI;
   return {
-    config: {
-      APP_ORIGIN: config.APP_ORIGIN,
-      APP_RELEASE: config.APP_RELEASE,
-      ASSETS: config.ASSETS,
+    config: { ...runtime.config, APP_RELEASE: config.APP_RELEASE },
+    forRequest: (correlation) => {
+      const request = runtime.forRequest(correlation);
+      return {
+        ...request,
+        authorizeMcp: async (incoming) =>
+          authorizeMcpRequest({
+            auth: request.auth,
+            database: request.database,
+            origin: config.APP_ORIGIN,
+            request: incoming,
+          }),
+        embedder: () => (ai === undefined ? undefined : async (texts) => embedBatches(ai, texts)),
+      };
     },
-    embedder: () => (ai === undefined ? undefined : async (texts) => embedBatches(ai, texts)),
-    reportError(correlation, error) {
-      telemetry.reportError(correlation, error);
-    },
-    telemetry,
+    telemetry: runtime.telemetry,
   };
 }
 

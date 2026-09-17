@@ -47,7 +47,12 @@ const config: KnipConfig = {
     },
     "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
     "libs/auth": {
-      project: ["src/**/*.ts!", "!src/auth-test-fixture.ts!", "!src/browser-client.ts!"],
+      project: [
+        "src/**/*.ts!",
+        "!src/auth-test-fixture.ts!",
+        "!src/browser-client.ts!",
+        "!src/wiki-oauth-fixture.ts!",
+      ],
     },
     "libs/db": {
       entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/remote-cli.ts!"],

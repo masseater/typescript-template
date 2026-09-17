@@ -18,7 +18,6 @@ import {
 } from "valibot";
 import type { InferOutput } from "valibot";
 
-const MAX_ADMIN_EMAILS = 50;
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
 const DEPLOYMENT_COMMAND_LENGTH = 2;
@@ -41,10 +40,6 @@ const origin = pipe(
     );
   }),
 );
-const accessIssuer = pipe(
-  origin,
-  check((value) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true),
-);
 const budgetSchema = object({
   budgetJpy: positive,
   fixedCostUsd: nonnegative,
@@ -53,9 +48,7 @@ const budgetSchema = object({
   reserveUsd: nonnegative,
 });
 const sharedSchema = object({
-  accessIssuer,
   accountId: id,
-  adminEmails: pipe(array(emailAddress), minLength(1), maxLength(MAX_ADMIN_EMAILS), readonly()),
   adminOrigin: origin,
   budget: budgetSchema,
   mailFrom: emailAddress,

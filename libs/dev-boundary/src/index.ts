@@ -6,27 +6,53 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { realpath } from "node:fs/promises";
 
-const maxDecodeDepth = 3;
+type App = "user" | "admin" | "wiki";
 
 interface BoundaryRoots {
+  readonly app: App;
   readonly appRoot: string;
   readonly canonicalRepository: string;
   readonly repository: string;
 }
 
-function privatePath(value: string, repository: string): boolean {
-  const normalized = value.replaceAll("\\", "/");
-  const relative = path.relative(repository, normalized).replaceAll("\\", "/");
+const apps: readonly App[] = ["user", "admin", "wiki"];
+const maxDecodeDepth = 3;
+const forbiddenStatus = 403;
+const badRequestStatus = 400;
+
+function otherApps(app: App): App[] {
+  return apps.filter((name) => name !== app);
+}
+
+function privateAdminPath(normalized: string, app: App): boolean {
   return (
-    /^(?:infra|tools)(?:\/|$)/u.test(relative) ||
-    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)apps\/admin(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:admin|remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$|(?:^|\/)(?:\.env(?:\.[^/]*)?|\.dev\.vars(?:\.[^/]*)?|[^/]*\.(?:pem|key))$/u.test(
-      normalized,
-    ) ||
-    /@template\/(?:admin(?:\/|$)|db\/(?:admin|remote|testing)(?:\/|$))/u.test(normalized)
+    app !== "admin" &&
+    (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(normalized) ||
+      /@template\/db\/admin(?:\/|$)/u.test(normalized))
   );
 }
 
-function serverOptions(appRoot: string, repository: string): UserConfig {
+function privatePath(
+  value: string,
+  roots: Readonly<Pick<BoundaryRoots, "app">>,
+  repository: string,
+): boolean {
+  const normalized = value.replaceAll("\\", "/");
+  const relative = path.relative(repository, normalized).replaceAll("\\", "/");
+  const others = otherApps(roots.app).join("|");
+  return (
+    /^(?:infra|tools)(?:\/|$)/u.test(relative) ||
+    new RegExp(`(?:^|/)apps/(?:${others})(?:/|$)`, "u").test(normalized) ||
+    new RegExp(`@template/(?:${others})(?:/|$)`, "u").test(normalized) ||
+    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$|(?:^|\/)(?:\.env(?:\.[^/]*)?|\.dev\.vars(?:\.[^/]*)?|[^/]*\.(?:pem|key))$/u.test(
+      normalized,
+    ) ||
+    /@template\/db\/(?:remote|testing)(?:\/|$)/u.test(normalized) ||
+    privateAdminPath(normalized, roots.app)
+  );
+}
+
+function serverOptions(app: App, appRoot: string, repository: string): UserConfig {
   return {
     server: {
       cors: false,
@@ -40,8 +66,8 @@ function serverOptions(appRoot: string, repository: string): UserConfig {
           "**/.dev.vars*",
           "**/.local/**",
           "**/.local-agents/**",
-          "**/apps/admin/**",
-          "**/libs/db/src/admin.*",
+          ...otherApps(app).map((name) => `**/apps/${name}/**`),
+          ...(app === "admin" ? [] : ["**/libs/db/src/admin.*"]),
           "**/libs/db/src/remote*",
           "**/libs/db/src/bootstrap*",
           "**/libs/db/src/testing.*",
@@ -73,17 +99,14 @@ async function deniesRequest(url: string | undefined, roots: BoundaryRoots): Pro
     : path.resolve(roots.appRoot, `.${pathname}`);
   const resolved = await realpath(file).catch(() => file);
   return (
-    privatePath(pathname, roots.repository) ||
-    privatePath(file, roots.repository) ||
-    privatePath(resolved, roots.canonicalRepository)
+    privatePath(pathname, roots, roots.repository) ||
+    privatePath(file, roots, roots.repository) ||
+    privatePath(resolved, roots, roots.canonicalRepository)
   );
 }
 
 type DevRequest = Parameters<Connect.NextHandleFunction>[0];
 type DevResponse = Parameters<Connect.NextHandleFunction>[1];
-
-const forbiddenStatus = 403;
-const badRequestStatus = 400;
 
 function createRequestGuard(
   roots: () => BoundaryRoots,
@@ -110,27 +133,28 @@ function createRequestGuard(
   };
 }
 
-export function userDevBoundary(
-  repository = fileURLToPath(new URL("../../", import.meta.url)),
+function devBoundary(
+  app: App,
+  repository = fileURLToPath(new URL("../../../", import.meta.url)),
 ): Plugin {
-  let appRoot = path.join(repository, "apps/user");
+  let appRoot = path.join(repository, "apps", app);
   let canonicalRepository = repository;
   return {
     apply: (_config: unknown, environment: Readonly<ConfigEnv>) =>
       environment.command === "serve" && environment.isPreview !== true,
-    config: () => serverOptions(appRoot, repository),
+    config: () => serverOptions(app, appRoot, repository),
     async configResolved(
       config: Readonly<{ root: string; server: Readonly<Pick<ResolvedConfig["server"], "host">> }>,
     ) {
       appRoot = config.root;
       canonicalRepository = await realpath(repository);
       if (!["127.0.0.1", "localhost", "::1"].includes(String(config.server.host))) {
-        throw new Error("USER_DEV_REQUIRES_LOCAL_SERVER");
+        throw new Error("DEV_SERVER_MUST_LISTEN_ON_LOOPBACK");
       }
     },
     configureServer(server: Readonly<{ middlewares: Readonly<Pick<Connect.Server, "use">> }>) {
       server.middlewares.use(
-        createRequestGuard(() => ({ appRoot, canonicalRepository, repository })),
+        createRequestGuard(() => ({ app, appRoot, canonicalRepository, repository })),
       );
     },
     enforce: "pre",
@@ -140,10 +164,15 @@ export function userDevBoundary(
         return;
       }
       const resolved = await realpath(file).catch(() => file);
-      if (privatePath(file, repository) || privatePath(resolved, canonicalRepository)) {
+      if (
+        privatePath(file, { app }, repository) ||
+        privatePath(resolved, { app }, canonicalRepository)
+      ) {
         throw new Error("Private development module denied");
       }
     },
-    name: "template-user-dev-boundary",
+    name: `template-${app}-dev-boundary`,
   };
 }
+
+export { devBoundary };

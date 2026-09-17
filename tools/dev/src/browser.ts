@@ -3,7 +3,6 @@ import {
   browserSocketDirectory,
   inheritedEnvironment,
   origins,
-  readCredentials,
   readyPaths,
   refreshBrowserConfig,
   root,
@@ -36,36 +35,9 @@ async function sessionArguments(app: App): Promise<string[]> {
   ];
 }
 
-async function configureAdminCredentials(
-  environment: Readonly<Record<string, string>>,
-): Promise<void> {
-  const credentials = await readCredentials();
-  const child = spawn(
-    "agent-browser",
-    [...(await sessionArguments("admin")), "batch", "--bail", "--json"],
-    {
-      cwd: root,
-      env: environment,
-      stdio: ["pipe", "pipe", "pipe"],
-    },
-  );
-  child.stdout.resume();
-  child.stderr.resume();
-  child.stdin.end(
-    JSON.stringify([["set", "credentials", credentials.adminUser, credentials.adminPassword]]),
-  );
-  await once(child, "exit");
-  if (child.exitCode !== 0) {
-    throw new Error("Could not configure local browser authentication");
-  }
-}
-
 async function browser(app: App): Promise<BrowserReport> {
   const socketDirectory = await refreshBrowserConfig();
   const environment = { ...inheritedEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  if (app === "admin") {
-    await configureAdminCredentials(environment);
-  }
   await run(
     "agent-browser",
     [...(await sessionArguments(app)), "open", `${origins[app]}${readyPaths[app]}`],

@@ -16,13 +16,7 @@ interface HealthMonitorDeployment {
 type HealthSettings = Readonly<
   Pick<
     SharedConfig,
-    | "accessIssuer"
-    | "accountId"
-    | "adminOrigin"
-    | "mailFrom"
-    | "prefix"
-    | "userOrigin"
-    | "wikiOrigin"
+    "accountId" | "adminOrigin" | "mailFrom" | "prefix" | "userOrigin" | "wikiOrigin"
   >
 > & { readonly budget: Readonly<{ recipients: readonly string[] }> };
 
@@ -46,7 +40,6 @@ function healthBindings(settings: HealthSettings): types.input.WorkerVersionBind
       type: "send_email",
     },
     ...Object.entries({
-      ACCESS_ISSUER: settings.accessIssuer,
       ADMIN_ORIGIN: settings.adminOrigin,
       ALERT_FROM: settings.mailFrom,
       ALERT_TO: settings.budget.recipients.join(","),
