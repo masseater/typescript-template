@@ -113,9 +113,9 @@ interface DeploymentCommand {
 }
 
 interface PlainTextBinding {
-  name: string;
-  text: string;
-  type: "plain_text";
+  readonly name: string;
+  readonly text: string;
+  readonly type: "plain_text";
 }
 
 interface AppPolicy {

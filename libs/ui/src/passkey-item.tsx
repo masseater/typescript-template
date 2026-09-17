@@ -20,6 +20,7 @@ function PasskeyItem({ action, passkey }: PasskeyItemProps): ReactElement {
   const { id } = passkey;
   const remove = useCallback(() => {
     run(async () => {
+      // oxlint-disable-next-line no-alert
       if (!globalThis.confirm("このパスキーを削除しますか？ 削除後は再ログインが必要です。")) {
         return;
       }

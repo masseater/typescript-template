@@ -1,5 +1,6 @@
 import type { AppTarget, SharedConfig } from "./config.ts";
 import { Config, StackReference, interpolate } from "@pulumi/pulumi";
+import type { Output, OutputInstance } from "@pulumi/pulumi";
 import {
   Worker,
   WorkerVersion,
@@ -14,14 +15,13 @@ import {
   sentryRuntimeBindings,
   validateAuthSecret,
 } from "./config.ts";
-import type { Output } from "@pulumi/pulumi";
-import { fileURLToPath } from "node:url";
 import { loadArtifacts } from "./artifacts.ts";
 import { workerObservability } from "./observability.ts";
 
 const FULL_ROLLOUT_PERCENTAGE = 100;
 
 type WorkerVersionBinding = types.input.WorkerVersionBinding;
+type StringOutput = Readonly<OutputInstance<string>>;
 
 interface Deployment {
   accessAudience: Output<string> | undefined;
@@ -30,9 +30,9 @@ interface Deployment {
 }
 
 interface SharedOutputs {
-  readonly authSecret: Output<string>;
-  readonly databaseId: Output<string>;
-  readonly otelHeaders: Output<string>;
+  readonly authSecret: StringOutput;
+  readonly databaseId: StringOutput;
+  readonly otelHeaders: StringOutput;
 }
 
 interface SharedStack {
@@ -41,27 +41,27 @@ interface SharedStack {
 }
 
 interface Release {
-  readonly accessAudience: Output<string> | undefined;
+  readonly accessAudience: StringOutput | undefined;
   readonly artifacts: Awaited<ReturnType<typeof loadArtifacts>>;
   readonly policy: ReturnType<typeof appPolicy>;
   readonly outputs: SharedOutputs;
   readonly settings: SharedConfig;
   readonly target: AppTarget;
-  readonly workerId: Output<string>;
+  readonly workerId: StringOutput;
 }
 
 interface BindingSources {
-  readonly accessAudience: Output<string> | undefined;
+  readonly accessAudience: StringOutput | undefined;
   readonly origin: string;
   readonly settings: SharedConfig;
   readonly shared: SharedOutputs;
   readonly target: AppTarget;
 }
 
-function adminAccess(settings: SharedConfig, worker: Worker): ZeroTrustAccessApplication {
+function adminAccess(settings: SharedConfig, workerId: StringOutput): ZeroTrustAccessApplication {
   return new ZeroTrustAccessApplication("admin-access", {
     accountId: settings.accountId,
-    destinations: [{ type: "worker", workerId: worker.id }],
+    destinations: [{ type: "worker", workerId }],
     httpOnlyCookieAttribute: true,
     name: `${settings.prefix}-admin-access`,
     policies: [
@@ -129,7 +129,11 @@ function runtimeBindings(sources: BindingSources): WorkerVersionBinding[] {
       text: sources.shared.otelHeaders,
       type: "secret_text",
     },
-    ...Object.entries(plaintext).map(([name, text]) => ({ name, text, type: "plain_text" })),
+    ...Object.entries(plaintext).map(([name, text]: readonly [string, string]) => ({
+      name,
+      text,
+      type: "plain_text",
+    })),
     ...sentryRuntimeBindings(sources.settings),
     ...accessBindings(sources),
   ];
@@ -171,17 +175,14 @@ function versionArgs(release: Release): WorkerVersionArgs {
 async function deployApplication(target: AppTarget): Promise<Deployment> {
   const { outputs, settings } = await readSharedStack();
   const policy = appPolicy(settings, target);
-  const artifacts = await loadArtifacts(
-    fileURLToPath(new URL("../../../", import.meta.url)),
-    target,
-  );
+  const artifacts = await loadArtifacts(`${import.meta.dirname}/../../..`, target);
   const worker = new Worker(`${target}-worker`, {
     accountId: settings.accountId,
     name: policy.name,
     observability: workerObservability,
     subdomain: policy.subdomain,
   });
-  const access = target === "admin" ? adminAccess(settings, worker) : undefined;
+  const access = target === "admin" ? adminAccess(settings, worker.id) : undefined;
   const version = new WorkerVersion(
     `${target}-version`,
     versionArgs({

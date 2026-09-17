@@ -1,4 +1,4 @@
-type Embedder = (texts: readonly string[]) => Promise<number[][]>;
+type Embedder = (texts: readonly string[]) => Promise<readonly (readonly number[])[]>;
 
 interface SemanticDocument {
   readonly id: string;
@@ -85,9 +85,11 @@ function rankPages(
     scores.set(url, (scores.get(url) ?? 0) + KEYWORD_RANK_BONUS / (1 + rank));
   }
   return [...scores]
-    .toSorted((left, right) => right[1] - left[1])
+    .toSorted(
+      (left: readonly [string, number], right: readonly [string, number]) => right[1] - left[1],
+    )
     .slice(0, limit)
-    .map(([url]) => url);
+    .map(([url]: readonly [string, number]) => url);
 }
 
 export { createSemanticIndex, rankPages };

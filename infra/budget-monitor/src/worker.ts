@@ -47,11 +47,13 @@ class BudgetMonitor extends DurableObject<Bindings> {
     try {
       const decision = await evaluateCurrentUsage(config);
       await this.recordDecision(config, decision);
+      // oxlint-disable-next-line no-console
       console.log(
         JSON.stringify({ event: "budget.checked", ...decision, durationMs: Date.now() - started }),
       );
       return Response.json({ decision, ok: true });
     } catch {
+      // oxlint-disable-next-line no-console
       console.error(
         JSON.stringify({ durationMs: Date.now() - started, event: "budget.check_failed" }),
       );
@@ -115,11 +117,15 @@ class BudgetMonitor extends DurableObject<Bindings> {
 
 export { BudgetMonitor };
 
+// oxlint-disable-next-line import/no-default-export
 export default {
   fetch(): Response {
     return new Response("Not found", { status: NOT_FOUND_STATUS });
   },
-  async scheduled(_event, env): Promise<void> {
+  async scheduled(
+    _event: unknown,
+    env: { readonly MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">> },
+  ): Promise<void> {
     const stub = env.MONITOR.get(env.MONITOR.idFromName("account-budget"));
     const result = await stub.fetch("https://budget.internal/check", { method: "POST" });
     if (!result.ok) {

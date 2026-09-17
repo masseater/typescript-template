@@ -22,15 +22,16 @@ const target = {
 
 type RemoteMigration = ReturnType<typeof loadRemoteMigrations>[number];
 
-interface RemoteFixture {
-  binding: D1Database;
-  database: Database;
+type RemoteFixture = Readonly<{
+  binding: Readonly<D1Database>;
+  database: Readonly<Pick<Database, "all" | "insert" | "select">>;
   executor: DatabaseExecutor;
-  migrations: RemoteMigration[];
-}
+  migrations: readonly RemoteMigration[];
+}>;
+type Context = Readonly<{ remote: RemoteFixture }>;
 
-const test = it.extend<{ remote: RemoteFixture }>({
-  remote: async ({}, provide) => {
+const test = it.extend<Context>({
+  remote: async ({}: Readonly<object>, provide) => {
     const { binding, dispose } = await createEmptyTestDatabase("remote-lifecycle-test");
     try {
       await provide({
@@ -58,7 +59,7 @@ function bootstrapCandidate(id: string, emailVerified: boolean): typeof user.$in
 
 async function prepareBootstrapCandidates(
   executor: DatabaseExecutor,
-  database: Database,
+  database: Readonly<Pick<Database, "insert">>,
 ): Promise<void> {
   await migrateDatabase(executor, loadRemoteMigrations());
   await database
@@ -119,7 +120,7 @@ describe("remote input", () => {
   it.for([
     { args: ["bootstrap", "--plan"], code: "REMOTE_INPUT_INVALID" },
     { args: ["migrate", "--plan", "extra"], code: "REMOTE_COMMAND_INVALID" },
-  ])("rejects $args without printing inputs", ({ args, code }) => {
+  ] as const)("rejects $args without printing inputs", ({ args, code }) => {
     expect.hasAssertions();
     expect(() => parseRemoteInput(args, target)).toThrow(code);
   });
@@ -133,7 +134,7 @@ describe("remote input", () => {
 });
 
 describe("remote migrations on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => {
-  test("applies real D1 migrations once", async ({ remote }) => {
+  test("applies real D1 migrations once", async ({ remote }: Context) => {
     expect.hasAssertions();
     await expect(migrateDatabase(remote.executor, remote.migrations)).resolves.toBe(
       remote.migrations.length,
@@ -141,7 +142,7 @@ describe("remote migrations on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => 
     await expect(migrateDatabase(remote.executor, remote.migrations)).resolves.toBe(0);
   });
 
-  test("rolls back an interrupted migration", async ({ remote }) => {
+  test("rolls back an interrupted migration", async ({ remote }: Context) => {
     expect.hasAssertions();
     await migrateDatabase(remote.executor, remote.migrations);
     await expect(
@@ -156,7 +157,7 @@ describe("remote migrations on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => 
     await expect(migrateDatabase(remote.executor, remote.migrations)).resolves.toBe(0);
   });
 
-  test("rejects changed migration history", async ({ remote }) => {
+  test("rejects changed migration history", async ({ remote }: Context) => {
     expect.hasAssertions();
     await migrateDatabase(remote.executor, remote.migrations);
     await expect(
@@ -166,7 +167,7 @@ describe("remote migrations on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => 
 });
 
 describe("remote administrator bootstrap on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => {
-  test("requires a verified existing user", async ({ remote }) => {
+  test("requires a verified existing user", async ({ remote }: Context) => {
     expect.hasAssertions();
     await prepareBootstrapCandidates(remote.executor, remote.database);
     await expect(bootstrapDatabase(remote.executor, "unverified@example.test")).rejects.toThrow(
@@ -177,7 +178,7 @@ describe("remote administrator bootstrap on real D1", { timeout: REAL_D1_TIMEOUT
     );
   });
 
-  test("promotes one administrator and revokes existing sessions", async ({ remote }) => {
+  test("promotes one administrator and revokes existing sessions", async ({ remote }: Context) => {
     expect.hasAssertions();
     await prepareBootstrapCandidates(remote.executor, remote.database);
     await remote.database.insert(session).values({
@@ -203,7 +204,7 @@ describe("remote administrator bootstrap on real D1", { timeout: REAL_D1_TIMEOUT
     );
   });
 
-  test("protects the bootstrapped last administrator", async ({ remote }) => {
+  test("protects the bootstrapped last administrator", async ({ remote }: Context) => {
     expect.hasAssertions();
     await prepareBootstrapCandidates(remote.executor, remote.database);
     await bootstrapDatabase(remote.executor, "first@example.test");

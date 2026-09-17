@@ -1,8 +1,9 @@
 import { millisecondsPerSecond, queryGrafana, queryPath } from "./query.ts";
 import { parse, picklist, pipe, string, url } from "valibot";
 import type { QueryInput } from "./query.ts";
+import { delay } from "es-toolkit";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
-import { setTimeout } from "node:timers/promises";
 
 interface CorrelationInput extends Omit<QueryInput, "command"> {
   readonly requestId: string;
@@ -63,7 +64,7 @@ async function waitForCorrelation(input: CorrelationInput, deadline: number): Pr
   if (await correlated(input)) {
     return true;
   }
-  await setTimeout(millisecondsPerSecond);
+  await delay(millisecondsPerSecond);
   return waitForCorrelation(input, deadline);
 }
 

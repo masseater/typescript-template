@@ -1,9 +1,10 @@
-import type { Audience, Database, DatabaseOperation } from "@template/db";
+import type { Audience, Database, DatabaseOperation, Role } from "@template/db";
 import { BrowserClient, HTTP_FOUND, PASSWORD } from "./browser-client.ts";
 import { HttpResponse, http } from "msw";
 import { test as baseTest, expect } from "vite-plus/test";
 import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
+import type { StrictRequest } from "msw";
 import type { TestAPI } from "vite-plus/test";
 import { createDb } from "@template/db";
 import { sendVerificationEmail } from "@template/config";
@@ -15,8 +16,13 @@ interface TestDatabase {
 }
 
 interface AuthTestDependencies {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly bootstrapAdmin: (database: Database, address: string) => Promise<unknown>;
   readonly createTestDatabase: () => Promise<TestDatabase>;
+  readonly setUserRole: (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    input: Readonly<{ database: Database; role: Role; sessionId: string; targetId: string }>,
+  ) => Promise<unknown>;
 }
 
 interface RecordedQuery {
@@ -25,23 +31,24 @@ interface RecordedQuery {
 }
 
 interface MailpitMessage {
-  From: { Email: string };
-  To: { Email: string }[];
-  Subject: string;
-  Text: string;
+  readonly From: Readonly<{ Email: string }>;
+  readonly To: readonly Readonly<{ Email: string }>[];
+  readonly Subject: string;
+  readonly Text: string;
 }
 
 interface VerifyRequest {
   readonly allowEnrollment?: boolean;
   readonly audience: Audience;
-  readonly headers: Headers;
+  readonly headers: Readonly<Headers>;
 }
 
 interface AuthFixture {
-  readonly adminAuth: Auth;
-  readonly database: Database;
   readonly queries: readonly RecordedQuery[];
-  readonly userAuth: Auth;
+  readonly setUserRole: (
+    input: Readonly<{ role: Role; sessionId: string; targetId: string }>,
+  ) => Promise<unknown>;
+  readonly userAuthOptions: () => Auth["options"];
   readonly client: (audience: Audience) => BrowserClient;
   readonly register: (email: string) => Promise<BrowserClient>;
   readonly registerAdmin: (email: string) => Promise<BrowserClient>;
@@ -50,11 +57,16 @@ interface AuthFixture {
   readonly verifyEmail: (email: string) => Promise<void>;
 }
 
+interface MailScope {
+  readonly userAuth: Readonly<Pick<Auth, "handler">>;
+  readonly verificationUrl: (email: string) => string | undefined;
+}
+
 interface FixtureScope {
   readonly auths: Readonly<Record<Audience, Auth>>;
   readonly database: Database;
   readonly dependencies: AuthTestDependencies;
-  readonly mailbox: ReadonlyMap<string, string>;
+  readonly verificationUrl: (email: string) => string | undefined;
 }
 
 const SECRET = "integration-test-secret-at-least-32-characters-long";
@@ -67,7 +79,10 @@ const ORIGINS = {
   user: "http://localhost:4101",
 } as const;
 
-function recordMail(mailbox: Map<string, string>, message: MailpitMessage): Response {
+function recordMail(
+  deliver: (email: string, url: string) => void,
+  message: MailpitMessage,
+): Response {
   if (message.From.Email !== MAIL_CONFIG.EMAIL_FROM || message.Subject !== "メールアドレスの確認") {
     return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
   }
@@ -76,16 +91,21 @@ function recordMail(mailbox: Map<string, string>, message: MailpitMessage): Resp
     return HttpResponse.json({ error: "VERIFICATION_URL_REQUIRED" }, { status: 400 });
   }
   for (const recipient of message.To) {
-    mailbox.set(recipient.Email, url);
+    deliver(recipient.Email, url);
   }
   return HttpResponse.json({ ID: crypto.randomUUID() });
 }
 
-function startMailServer(mailbox: Map<string, string>): ReturnType<typeof setupServer> {
+function startMailServer(
+  deliver: (email: string, url: string) => void,
+): ReturnType<typeof setupServer> {
   const server = setupServer(
     http.post<never, MailpitMessage>(
       `${MAIL_CONFIG.MAILPIT_URL}/api/v1/send`,
-      async ({ request }) => recordMail(mailbox, await request.json()),
+      async ({
+        request,
+      }: Readonly<{ request: Readonly<Pick<StrictRequest<MailpitMessage>, "json">> }>) =>
+        recordMail(deliver, await request.json()),
     ),
   );
   server.listen({ onUnhandledRequest: "error" });
@@ -109,6 +129,7 @@ function createTracedDatabase(binding: TestDatabase["binding"]): {
   return { database: createDb(binding, trace), queries };
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createAudienceAuth(database: Database, audience: Audience): Auth {
   return createAuth({
     audience,
@@ -121,20 +142,23 @@ function createAudienceAuth(database: Database, audience: Audience): Auth {
   });
 }
 
-async function verifyEmailOf(scope: FixtureScope, email: string): Promise<void> {
-  const url = scope.mailbox.get(email);
+async function verifyEmailOf(scope: MailScope, email: string): Promise<void> {
+  const url = scope.verificationUrl(email);
   if (url === undefined) {
     throw new Error("MAIL_DELIVERY_INVALID");
   }
   expect(new URL(url).searchParams.get("callbackURL")).toBe("/login");
-  const response = await scope.auths.user.handler(new Request(url));
+  const response = await scope.userAuth.handler(new Request(url));
   if (!response.ok && response.status !== HTTP_FOUND) {
     throw new Error(`Verification failed: ${response.status}`);
   }
 }
 
-async function registerUser(scope: FixtureScope, email: string): Promise<BrowserClient> {
-  const client = new BrowserClient(scope.auths.user, ORIGINS.user);
+async function registerUser(
+  userAuth: Readonly<Pick<Auth, "handler">>,
+  email: string,
+): Promise<BrowserClient> {
+  const client = new BrowserClient(userAuth, ORIGINS.user);
   const response = await client.request("/sign-up/email", {
     email,
     name: email,
@@ -146,27 +170,28 @@ async function registerUser(scope: FixtureScope, email: string): Promise<Browser
   return client;
 }
 
-async function registerVerifiedUser(scope: FixtureScope, email: string): Promise<BrowserClient> {
-  const client = await registerUser(scope, email);
+async function registerVerifiedUser(scope: MailScope, email: string): Promise<BrowserClient> {
+  const client = await registerUser(scope.userAuth, email);
   await verifyEmailOf(scope, email);
   return client;
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createFixture(scope: FixtureScope, queries: readonly RecordedQuery[]): AuthFixture {
-  const { auths, database } = scope;
+  const { auths, database, verificationUrl } = scope;
+  const mail = { userAuth: auths.user, verificationUrl };
   return {
-    adminAuth: auths.admin,
     client: (audience) => new BrowserClient(auths[audience], ORIGINS[audience]),
-    database,
     queries,
-    register: async (email) => registerUser(scope, email),
+    register: async (email) => registerUser(auths.user, email),
     registerAdmin: async (email) => {
-      const client = await registerVerifiedUser(scope, email);
+      const client = await registerVerifiedUser(mail, email);
       await scope.dependencies.bootstrapAdmin(database, email);
       return client;
     },
-    registerVerified: async (email) => registerVerifiedUser(scope, email),
-    userAuth: auths.user,
+    registerVerified: async (email) => registerVerifiedUser(mail, email),
+    setUserRole: async (input) => scope.dependencies.setUserRole({ ...input, database }),
+    userAuthOptions: () => auths.user.options,
     verify: async ({ allowEnrollment, audience, headers }) =>
       verifySession({
         audience,
@@ -175,23 +200,30 @@ function createFixture(scope: FixtureScope, queries: readonly RecordedQuery[]): 
         headers,
         ...(allowEnrollment === undefined ? {} : { allowEnrollment }),
       }),
-    verifyEmail: async (email) => verifyEmailOf(scope, email),
+    verifyEmail: async (email) => verifyEmailOf(mail, email),
   };
 }
 
 function createAuthTest(dependencies: AuthTestDependencies): TestAPI<{ fixture: AuthFixture }> {
   return baseTest.extend<{ fixture: AuthFixture }>({
-    fixture: async ({}, provide) => {
+    fixture: async ({}: object, provide) => {
       const testDatabase = await dependencies.createTestDatabase();
       const { database, queries } = createTracedDatabase(testDatabase.binding);
       const mailbox = new Map<string, string>();
-      const mailServer = startMailServer(mailbox);
+      const mailServer = startMailServer((email, url) => {
+        mailbox.set(email, url);
+      });
       const auths = {
         admin: createAudienceAuth(database, "admin"),
         user: createAudienceAuth(database, "user"),
       };
       try {
-        await provide(createFixture({ auths, database, dependencies, mailbox }, queries));
+        await provide(
+          createFixture(
+            { auths, database, dependencies, verificationUrl: (email) => mailbox.get(email) },
+            queries,
+          ),
+        );
       } finally {
         mailServer.close();
         await testDatabase.dispose();

@@ -16,7 +16,7 @@ function reportFailure(): void {
   logError({ event: "browser.telemetry_export_failed" });
 }
 
-async function settle(delivery: Promise<void>): Promise<void> {
+async function settle(delivery: Readonly<Promise<void>>): Promise<void> {
   try {
     await delivery;
   } catch {

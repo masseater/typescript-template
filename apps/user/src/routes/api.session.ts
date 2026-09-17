@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/session")({
   server: {
     handlers: {
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       GET: async ({ request, context }) =>
         apiResponse(async () => {
           const { user, strong } = await context.runtime.session(request, true);

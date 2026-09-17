@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
-import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
-import { text } from "node:stream/consumers";
 
 const ACCOUNT_ID_LENGTH = 32;
 const COMMAND_TIMEOUT_MS = 10_000;
@@ -14,15 +14,15 @@ interface CommandResult {
 }
 
 async function command(args: readonly string[], input: string): Promise<CommandResult> {
-  const child = spawn(
-    process.execPath,
-    [fileURLToPath(new URL("remote-cli.ts", import.meta.url)), ...args],
-    { env: {}, stdio: ["pipe", "pipe", "pipe"], timeout: COMMAND_TIMEOUT_MS },
-  );
+  const child = spawn(process.execPath, [`${import.meta.dirname}/remote-cli.ts`, ...args], {
+    env: {},
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: COMMAND_TIMEOUT_MS,
+  });
   child.stdin.end(input);
   const [output, error] = await Promise.all([
-    text(child.stdout),
-    text(child.stderr),
+    new Response(ReadableStream.from(child.stdout)).text(),
+    new Response(ReadableStream.from(child.stderr)).text(),
     once(child, "close"),
   ]);
   return { code: child.exitCode, error, output };

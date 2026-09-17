@@ -1,10 +1,12 @@
-import type { Connect, HttpServer, Plugin, UserConfig } from "vite-plus";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type { ConfigEnv, Connect, HttpServer, Plugin, UserConfig } from "vite-plus";
 import { enforceAdminAccess, localAccessCookie } from "./src/access.ts";
 import { minLength, object, pipe, safeParse, string, url } from "valibot";
-import type { Duplex } from "node:stream";
 import type { InferOutput } from "valibot";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { open } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { parseEnv } from "node:util";
 
 const permissionBits = 0o777;
@@ -20,7 +22,26 @@ const credentialsSchema = object({
 });
 
 type LocalCredentials = Readonly<InferOutput<typeof credentialsSchema>>;
-type Authorize = (request: IncomingMessage, websocket: boolean) => Promise<Response | undefined>;
+type NodeRequest = Parameters<Connect.NextHandleFunction>[0];
+type NodeResponse = Parameters<Connect.NextHandleFunction>[1];
+type NodeSocket = Readonly<Pick<NodeRequest["socket"], "destroy" | "end" | "on">>;
+type GuardedServer = Readonly<
+  Pick<HttpServer, "on" | "prependOnceListener" | "rawListeners" | "removeAllListeners">
+>;
+type AuthorizationRequest = Readonly<{
+  headers: Readonly<Pick<NodeRequest["headers"], "authorization" | "cookie" | "host" | "origin">>;
+  socket: Readonly<Pick<NodeRequest["socket"], "remoteAddress">>;
+  url?: NodeRequest["url"];
+}>;
+type Rejection = Readonly<{
+  headers: Readonly<Iterable<readonly [string, string]>>;
+  status: number;
+  text: () => Promise<string>;
+}>;
+type Authorize = (
+  request: AuthorizationRequest,
+  websocket: boolean,
+) => Promise<Rejection | undefined>;
 
 interface RequestSource {
   readonly host: string | undefined;
@@ -45,10 +66,11 @@ function parseCredentials(text: string): LocalCredentials {
   return parsed.output;
 }
 
-async function readCredentials(file: Readonly<URL>): Promise<LocalCredentials> {
+async function readCredentials(file: string): Promise<LocalCredentials> {
   const handle = await open(file, "r");
   try {
     const info = await handle.stat();
+    // oxlint-disable-next-line no-bitwise
     if (!info.isFile() || (info.mode & permissionBits) !== privateFileMode) {
       throw new Error("ADMIN_DEV_CREDENTIALS_REQUIRE_MODE_0600");
     }
@@ -87,7 +109,7 @@ function denied(): Response {
   });
 }
 
-function rejectUpgrade(socket: Duplex): void {
+function rejectUpgrade(socket: NodeSocket): void {
   socket.end(
     'HTTP/1.1 401 Unauthorized\r\nConnection: close\r\nCache-Control: no-store\r\nWWW-Authenticate: Basic realm="Local administrator access"\r\nContent-Length: 0\r\n\r\n',
   );
@@ -128,16 +150,19 @@ function createAuthorizer(credentials: LocalCredentials): Authorize {
   };
 }
 
-async function sendRejection(response: ServerResponse, rejection: Response): Promise<void> {
-  response.statusCode = rejection.status;
+async function sendRejection(
+  response: Readonly<Pick<NodeResponse, "end" | "setHeader" | "writeHead">>,
+  rejection: Rejection,
+): Promise<void> {
   for (const [name, value] of rejection.headers) {
     response.setHeader(name, value);
   }
+  response.writeHead(rejection.status);
   response.end(await rejection.text());
 }
 
 async function appendLocalAccessCookie(
-  response: ServerResponse,
+  response: Readonly<Pick<NodeResponse, "appendHeader">>,
   credentials: LocalCredentials,
 ): Promise<void> {
   const cookie = await localAccessCookie(credentials);
@@ -146,15 +171,21 @@ async function appendLocalAccessCookie(
   }
 }
 
-function failClosed(response: ServerResponse): void {
-  response.statusCode = 401;
+const unauthorizedStatus = 401;
+
+function failClosed(response: Readonly<Pick<NodeResponse, "end" | "writeHead">>): void {
+  response.writeHead(unauthorizedStatus);
   response.end("Authentication required");
 }
 
 function createRequestGuard(
   credentials: LocalCredentials,
   authorize: Authorize,
-): Connect.NextHandleFunction {
+): (
+  request: AuthorizationRequest,
+  response: Readonly<Pick<NodeResponse, "appendHeader" | "end" | "setHeader" | "writeHead">>,
+  next: () => void,
+) => void {
   return (request, response, next) => {
     async function guard(): Promise<void> {
       response.setHeader("cache-control", "no-store");
@@ -175,13 +206,13 @@ function createRequestGuard(
   };
 }
 
-function guardUpgrades(httpServer: HttpServer, authorize: Authorize): void {
+function guardUpgrades(httpServer: GuardedServer, authorize: Authorize): void {
   const handlers = httpServer.rawListeners("upgrade");
   httpServer.removeAllListeners("upgrade");
   async function handleUpgrade(
-    request: IncomingMessage,
-    socket: Duplex,
-    head: Buffer,
+    request: AuthorizationRequest,
+    socket: NodeSocket,
+    head: unknown,
   ): Promise<void> {
     try {
       const rejection = await authorize(request, true);
@@ -194,6 +225,7 @@ function guardUpgrades(httpServer: HttpServer, authorize: Authorize): void {
         return;
       }
       await Promise.all(
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         handlers.map(async (handler) => {
           await handler.call(httpServer, request, socket, head);
         }),
@@ -202,7 +234,7 @@ function guardUpgrades(httpServer: HttpServer, authorize: Authorize): void {
       socket.destroy();
     }
   }
-  httpServer.on("upgrade", (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+  httpServer.on("upgrade", (request: AuthorizationRequest, socket: NodeSocket, head: unknown) => {
     socket.on("error", () => {
       socket.destroy();
     });
@@ -215,12 +247,24 @@ function guardUpgrades(httpServer: HttpServer, authorize: Authorize): void {
   });
 }
 
-export function adminDevAccess(credentialsFile = new URL(".dev.vars", import.meta.url)): Plugin {
+export function adminDevAccess(
+  credentialsFile = fileURLToPath(new URL(".dev.vars", import.meta.url)),
+): Plugin {
   return {
-    apply: (_config, environment) =>
+    apply: (_config: unknown, environment: Readonly<ConfigEnv>) =>
       environment.command === "serve" && environment.isPreview !== true,
     config: serverOptions,
-    configResolved(config) {
+    configResolved(
+      config: Readonly<{
+        server: Readonly<{
+          host?: string | boolean;
+          https?: object;
+          middlewareMode: boolean | object;
+          proxy?: object;
+          ws?: false | Readonly<{ port?: number; server?: object }>;
+        }>;
+      }>,
+    ) {
       const { server } = config;
       if (
         !["localhost", "127.0.0.1", "::1"].includes(String(server.host)) ||
@@ -232,7 +276,12 @@ export function adminDevAccess(credentialsFile = new URL(".dev.vars", import.met
         throw new Error("ADMIN_DEV_REQUIRES_LOCAL_SINGLE_HTTP_SERVER");
       }
     },
-    async configureServer(server) {
+    async configureServer(
+      server: Readonly<{
+        httpServer: GuardedServer | null;
+        middlewares: Readonly<Pick<Connect.Server, "use">>;
+      }>,
+    ) {
       const credentials = await readCredentials(credentialsFile);
       const { httpServer } = server;
       if (!httpServer) {

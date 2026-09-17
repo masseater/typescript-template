@@ -5,8 +5,9 @@ import type { DevServer } from "#dev-access-fixture";
 import type { UpgradeCall } from "#dev-access-client";
 import { adminDevAccess } from "#dev-access";
 import { createServer } from "vite-plus";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { writeFile } from "node:fs/promises";
 
 const switchingProtocolsStatus = 101;
@@ -14,9 +15,11 @@ const unauthorizedStatus = 401;
 const privateFileMode = 0o600;
 const sharedFileMode = 0o644;
 
+type DevContext = Readonly<{ dev: DevServer }>;
+
 const test = baseTest.extend<{ dev: DevServer }>({
   dev: [
-    async ({}, provide): Promise<void> => {
+    async ({}: object, provide): Promise<void> => {
       await withDevServer(provide);
     },
     { scope: "file" },
@@ -46,20 +49,23 @@ describe("admin development HMR access", () => {
       protocol: "vite-hmr",
       status: switchingProtocolsStatus,
     },
-  ])("answers $protocol upgrade from $origin with a valid Vite token", async (call, { dev }) => {
-    expect.hasAssertions();
-    const pathname = await websocketPath(dev);
-    await expect(upgrade(dev, pathname, call)).resolves.toBe(call.status);
-  });
+  ])(
+    "answers $protocol upgrade from $origin with a valid Vite token",
+    async (call, { dev }: DevContext) => {
+      expect.hasAssertions();
+      const pathname = await websocketPath(dev);
+      await expect(upgrade(dev, pathname, call)).resolves.toBe(call.status);
+    },
+  );
 
-  test("late upgrade handlers cannot bypass the authentication gate", ({ dev }) => {
+  test("late upgrade handlers cannot bypass the authentication gate", ({ dev }: DevContext) => {
     expect.hasAssertions();
     expect(dev.addUpgradeListener).toThrow("ADMIN_DEV_UNGUARDED_UPGRADE_LISTENER_DENIED");
   });
 });
 
 describe("admin development server startup", () => {
-  test.for([
+  test.for<Readonly<{ file: string; host: string; message: string; mode: number }>>([
     {
       file: "shared.dev.vars",
       host: "127.0.0.1",
@@ -72,11 +78,11 @@ describe("admin development server startup", () => {
       message: "ADMIN_DEV_REQUIRES_LOCAL_SINGLE_HTTP_SERVER",
       mode: privateFileMode,
     },
-  ])("refuses $file on $host", async ({ file, host, message, mode }, { dev }) => {
+  ])("refuses $file on $host", async ({ file, host, message, mode }, { dev }: DevContext) => {
     expect.hasAssertions();
     const credentialsFile = path.join(dev.root, file);
     await writeFile(credentialsFile, credentialsText(crypto.randomUUID()), { mode });
-    const plugin = adminDevAccess(pathToFileURL(credentialsFile));
+    const plugin = adminDevAccess(credentialsFile);
     const startup = createServer({
       configFile: false,
       logLevel: "silent",

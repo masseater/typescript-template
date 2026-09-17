@@ -1,6 +1,5 @@
 import type { Attributes, Correlation, KeyValue } from "./protocol.ts";
 import { attributes, nanoTime, nanosecondsPerMillisecond } from "./protocol.ts";
-import histogramBounds from "./histogram-bounds.json" with { type: "json" };
 
 interface Exemplar {
   readonly asDouble: number;
@@ -45,10 +44,14 @@ type MetricAccumulator = (
 
 const aggregationTemporality = { cumulative: 2, delta: 1 } as const;
 const maximumSeries = 4096;
+// oxlint-disable-next-line no-magic-numbers
+const secondBounds = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
+// oxlint-disable-next-line no-magic-numbers
+const millisecondBounds = [0.1, 1, 10, 100, 500, 1000, 2500, 5000, 10_000];
 
 function histogram(input: HistogramInput): HistogramMetric {
   const { context, end, start, unit, value } = input;
-  const bounds = unit === "s" ? histogramBounds.seconds : histogramBounds.milliseconds;
+  const bounds = unit === "s" ? secondBounds : millisecondBounds;
   const index = bounds.findIndex((bound) => value <= bound);
   const bucket = index === -1 ? bounds.length : index;
   const point: HistogramPoint = {
@@ -117,23 +120,19 @@ function snapshotPoint(
   };
 }
 
-function rememberSeries(
-  series: Map<string, HistogramPoint>,
-  batch: ReadonlyMap<string, HistogramMetric>,
-): void {
-  for (const [key, record] of batch) {
-    const [point] = record.histogram.dataPoints;
-    if (point) {
-      if (!series.has(key) && series.size >= maximumSeries) {
-        series.delete(series.keys().next().value ?? "");
-      }
-      series.set(key, { ...point, exemplars: [] });
-    }
-  }
-}
-
 function createMetricAccumulator(): MetricAccumulator {
   const series = new Map<string, HistogramPoint>();
+  function rememberSeries(batch: Readonly<ReadonlyMap<string, HistogramMetric>>): void {
+    for (const [key, record] of batch) {
+      const [point] = record.histogram.dataPoints;
+      if (point) {
+        if (!series.has(key) && series.size >= maximumSeries) {
+          series.delete(series.keys().next().value ?? "");
+        }
+        series.set(key, { ...point, exemplars: [] });
+      }
+    }
+  }
   return (records, namespace, now) => {
     const batch = new Map<string, HistogramMetric>();
     for (const record of records) {
@@ -152,7 +151,7 @@ function createMetricAccumulator(): MetricAccumulator {
         });
       }
     }
-    rememberSeries(series, batch);
+    rememberSeries(batch);
     return [...batch.values()];
   };
 }

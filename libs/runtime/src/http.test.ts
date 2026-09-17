@@ -28,7 +28,7 @@ describe("json mutation requests", () => {
       statusCode: 413,
       type: "application/json",
     },
-  ])("rejects mutation with status $statusCode", async (mutation) => {
+  ] as const)("rejects mutation with status $statusCode", async (mutation) => {
     expect.hasAssertions();
     const request = new Request(`${origin}/api/profile`, {
       body: mutation.body,

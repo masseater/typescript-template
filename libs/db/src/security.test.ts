@@ -10,9 +10,11 @@ import { getSessionSecurity } from "./security.ts";
 const SESSION_LIFETIME_MS = 60_000;
 
 type SessionRequest = Readonly<{ audience: Audience; strong?: boolean; userId: string }>;
+type TestDatabase = Readonly<Pick<Database, "all" | "delete" | "insert" | "select" | "update">>;
+type Context = Readonly<{ db: TestDatabase }>;
 
-const test = baseTest.extend<{ db: Database }>({
-  db: async ({}, provide) => {
+const test = baseTest.extend<Context>({
+  db: async ({}: Readonly<object>, provide) => {
     const resource = await createTestDatabase();
     try {
       await provide(resource.database);
@@ -22,7 +24,7 @@ const test = baseTest.extend<{ db: Database }>({
   },
 });
 
-async function addUser(db: Database, id: string, role: Role = "user"): Promise<void> {
+async function addUser(db: TestDatabase, id: string, role: Role = "user"): Promise<void> {
   await db.insert(user).values({
     createdAt: new Date(),
     email: `${id}@example.com`,
@@ -35,7 +37,7 @@ async function addUser(db: Database, id: string, role: Role = "user"): Promise<v
 }
 
 async function addSession(
-  db: Database,
+  db: TestDatabase,
   { audience, strong = true, userId }: SessionRequest,
 ): Promise<string> {
   const id = crypto.randomUUID();
@@ -57,7 +59,7 @@ async function addSession(
   return id;
 }
 
-test("persists Unicode profile and rejects attempts to update role", async ({ db }) => {
+test("persists Unicode profile and rejects attempts to update role", async ({ db }: Context) => {
   await addUser(db, "reader");
   await updateProfile(db, "reader", { name: "日本語 العربية 🐈", profile: "私は開発者です。" });
   await expect(getProfile(db, "reader")).resolves.toMatchObject({
@@ -69,7 +71,7 @@ test("persists Unicode profile and rejects attempts to update role", async ({ db
   ).rejects.toThrow("Invalid key");
 });
 
-test("rejects weak admin and cross-audience sessions", async ({ db }) => {
+test("rejects weak admin and cross-audience sessions", async ({ db }: Context) => {
   await addUser(db, "administrator", "admin");
   const weak = await addSession(db, { audience: "admin", strong: false, userId: "administrator" });
   const wrongAudience = await addSession(db, { audience: "user", userId: "administrator" });
@@ -79,7 +81,7 @@ test("rejects weak admin and cross-audience sessions", async ({ db }) => {
   await expect(listUsers(db, strong)).resolves.toMatchObject({ users: [{ id: "administrator" }] });
 });
 
-test("role change invalidates both audiences immediately", async ({ db }) => {
+test("role change invalidates both audiences immediately", async ({ db }: Context) => {
   await addUser(db, "actor", "admin");
   await addUser(db, "target", "admin");
   const actor = await addSession(db, { audience: "admin", userId: "actor" });
@@ -90,7 +92,7 @@ test("role change invalidates both audiences immediately", async ({ db }) => {
   await expect(getSessionSecurity(db, targetUser, "user")).resolves.toBeUndefined();
 });
 
-test("protects final administrator and credentials during deletion", async ({ db }) => {
+test("protects final administrator and credentials during deletion", async ({ db }: Context) => {
   await addUser(db, "last", "admin");
   await db.insert(account).values({
     accountId: "last",
@@ -112,7 +114,7 @@ test("protects final administrator and credentials during deletion", async ({ db
   });
 });
 
-test("simultaneous self-demotions cannot remove all administrators", async ({ db }) => {
+test("simultaneous self-demotions cannot remove all administrators", async ({ db }: Context) => {
   await addUser(db, "alpha", "admin");
   await addUser(db, "beta", "admin");
   const alpha = await addSession(db, { audience: "admin", userId: "alpha" });
@@ -121,11 +123,13 @@ test("simultaneous self-demotions cannot remove all administrators", async ({ db
     setUserRole({ database: db, role: "user", sessionId: alpha, targetId: "alpha" }),
     setUserRole({ database: db, role: "user", sessionId: beta, targetId: "beta" }),
   ]);
-  expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+  expect(
+    outcomes.filter((result: Readonly<{ status: string }>) => result.status === "fulfilled"),
+  ).toHaveLength(1);
   await expect(db.select().from(user).where(eq(user.role, "admin"))).resolves.toHaveLength(1);
 });
 
-test("deletion removes credentials and all sessions", async ({ db }) => {
+test("deletion removes credentials and all sessions", async ({ db }: Context) => {
   await addUser(db, "actor", "admin");
   await addUser(db, "target");
   const actor = await addSession(db, { audience: "admin", userId: "actor" });
@@ -135,12 +139,14 @@ test("deletion removes credentials and all sessions", async ({ db }) => {
   await expect(getSessionSecurity(db, target, "user")).resolves.toBeUndefined();
 });
 
-test("first administrator bootstrap is atomic and one-time", async ({ db }) => {
+test("first administrator bootstrap is atomic and one-time", async ({ db }: Context) => {
   await addUser(db, "alpha");
   await addUser(db, "beta");
   const outcomes = await Promise.allSettled([
     bootstrapAdmin(db, "alpha@example.com"),
     bootstrapAdmin(db, "beta@example.com"),
   ]);
-  expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+  expect(
+    outcomes.filter((result: Readonly<{ status: string }>) => result.status === "fulfilled"),
+  ).toHaveLength(1);
 });

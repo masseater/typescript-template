@@ -13,10 +13,11 @@ import {
   socket,
 } from "./local-environment.ts";
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile } from "node:fs/promises";
 import type { App } from "./local-environment.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { privateFileMode } from "./private-files.ts";
 
 interface ApplicationStatus {
@@ -60,6 +61,7 @@ async function httpStatus(app: App): Promise<number | null> {
     });
     return response.status;
   } catch {
+    // oxlint-disable-next-line unicorn/no-null
     return null;
   }
 }
@@ -106,8 +108,8 @@ async function launch(app: App): Promise<void> {
   const logFile = await open(log, "a", privateFileMode);
   await logFile.close();
   await chmod(log, privateFileMode);
-  const vitePlus = JSON.stringify(path.join(root, "node_modules/.bin/vp"));
-  const command = `exec ${vitePlus} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
+  const vitePlus = JSON.stringify(fileURLToPath(import.meta.resolve("vite-plus/bin")));
+  const command = `exec ${JSON.stringify(process.execPath)} ${vitePlus} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
   await run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],

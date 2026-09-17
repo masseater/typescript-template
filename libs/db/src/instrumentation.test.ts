@@ -14,11 +14,16 @@ interface TraceEvent {
   operation: DatabaseOperation;
 }
 
-type Fixture = Awaited<ReturnType<typeof createTestDatabase>> & {
-  errors: unknown[];
-  events: TraceEvent[];
-  observed: D1Database;
-};
+type LifecycleDatabase = Readonly<Pick<Database, "delete" | "insert" | "select" | "update">>;
+type Fixture = Readonly<{
+  binding: Readonly<D1Database>;
+  database: LifecycleDatabase;
+  dispose: () => Promise<void>;
+  errors: readonly unknown[];
+  events: readonly Readonly<TraceEvent>[];
+  observed: Readonly<D1Database>;
+}>;
+type Context = Readonly<{ db: Fixture }>;
 
 async function createFixture(): Promise<Fixture> {
   const resource = await createTestDatabase();
@@ -60,7 +65,7 @@ function outcomes(
   return events.map((event) => ({ failed: event.failed, operation: event.operation }));
 }
 
-async function runProfileLifecycle(database: Database): Promise<void> {
+async function runProfileLifecycle(database: LifecycleDatabase): Promise<void> {
   await database.insert(user).values({
     createdAt: new Date(),
     email: "private-email@example.com",
@@ -74,8 +79,8 @@ async function runProfileLifecycle(database: Database): Promise<void> {
   await getProfile(database, "observed");
 }
 
-const test = baseTest.extend<{ db: Fixture }>({
-  db: async ({}, provide) => {
+const test = baseTest.extend<Context>({
+  db: async ({}: Readonly<object>, provide) => {
     const db = await createFixture();
     try {
       await provide(db);
@@ -85,7 +90,9 @@ const test = baseTest.extend<{ db: Fixture }>({
   },
 });
 
-test("measures actual Drizzle queries with their operation and outcome", async ({ db }) => {
+test("measures actual Drizzle queries with their operation and outcome", async ({
+  db,
+}: Context) => {
   await db.database.insert(user).values({
     createdAt: new Date(),
     email: "measured@example.com",
@@ -109,7 +116,7 @@ test("measures actual Drizzle queries with their operation and outcome", async (
 
 test("records only operation, outcome and duration without SQL or bound personal data", async ({
   db,
-}) => {
+}: Context) => {
   await runProfileLifecycle(db.database);
   expect(operations(db.events)).toStrictEqual(["INSERT", "SELECT", "UPDATE", "DELETE", "SELECT"]);
   expect(db.events.map((event) => Object.keys(event).toSorted())).toStrictEqual(
@@ -118,7 +125,9 @@ test("records only operation, outcome and duration without SQL or bound personal
   expect(JSON.stringify(db.events)).not.toContain("private");
 });
 
-test("delegates bound first and all overloads to real prepared statements", async ({ db }) => {
+test("delegates bound first and all overloads to real prepared statements", async ({
+  db,
+}: Context) => {
   const statement = db.observed.prepare("SELECT ? AS value").bind("private-value");
   expect(db.events).toHaveLength(0);
   await expect(statement.first()).resolves.toStrictEqual({ value: "private-value" });
@@ -127,7 +136,9 @@ test("delegates bound first and all overloads to real prepared statements", asyn
   expect(operations(db.events)).toStrictEqual(["SELECT", "SELECT", "SELECT"]);
 });
 
-test("delegates bound run and raw overloads to real prepared statements", async ({ db }) => {
+test("delegates bound run and raw overloads to real prepared statements", async ({
+  db,
+}: Context) => {
   const statement = db.observed.prepare("SELECT ? AS value").bind("private-value");
   await expect(statement.run()).resolves.toMatchObject({ success: true });
   await expect(
@@ -145,7 +156,7 @@ test("delegates bound run and raw overloads to real prepared statements", async 
   expect(operations(db.events)).toStrictEqual(["SELECT", "SELECT", "SELECT", "SELECT", "SELECT"]);
 });
 
-test("keeps native batch results without duplicating query spans", async ({ db }) => {
+test("keeps native batch results without duplicating query spans", async ({ db }: Context) => {
   await db.observed.prepare("CREATE TABLE measurement (id TEXT PRIMARY KEY)").run();
   const batch = await db.observed.batch([
     db.observed.prepare("INSERT INTO measurement VALUES (?)").bind("existing"),
@@ -155,7 +166,7 @@ test("keeps native batch results without duplicating query spans", async ({ db }
   expect(operations(db.events)).toStrictEqual(["MIGRATE", "TRANSACTION"]);
 });
 
-test("keeps native batch atomicity and original errors", async ({ db }) => {
+test("keeps native batch atomicity and original errors", async ({ db }: Context) => {
   await db.binding.prepare("CREATE TABLE measurement (id TEXT PRIMARY KEY)").run();
   await db.binding.prepare("INSERT INTO measurement VALUES (?)").bind("existing").run();
   const failing = db.observed.batch([
@@ -170,14 +181,14 @@ test("keeps native batch atomicity and original errors", async ({ db }) => {
   ).resolves.toStrictEqual([["existing"]]);
 });
 
-test("records native statement failures", async ({ db }) => {
+test("records native statement failures", async ({ db }: Context) => {
   await expect(db.observed.prepare("SELECT * FROM missing_table").all()).rejects.toThrow(
     "no such table",
   );
   expect(outcomes(db.events)).toStrictEqual([{ failed: true, operation: "SELECT" }]);
 });
 
-test("conservatively classifies nontrivial SQL without exposing it", async ({ db }) => {
+test("conservatively classifies nontrivial SQL without exposing it", async ({ db }: Context) => {
   await expect(
     db.observed.prepare("/* private-comment */ SELECT ? AS value").bind("private").first(),
   ).resolves.toStrictEqual({ value: "private" });
@@ -189,7 +200,7 @@ test("conservatively classifies nontrivial SQL without exposing it", async ({ db
   expect(JSON.stringify(db.events)).not.toContain("private");
 });
 
-test("preserves real D1 session prepare, batch and bookmark behavior", async ({ db }) => {
+test("preserves real D1 session prepare, batch and bookmark behavior", async ({ db }: Context) => {
   const session = db.observed.withSession("first-primary");
   await expect(
     session.prepare("SELECT ? AS value").bind("session").first<string>("value"),

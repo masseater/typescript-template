@@ -8,9 +8,13 @@ import { parseBrowserEvents } from "./events.ts";
 
 interface Ingress {
   readonly exporter: Exporter;
-  readonly labels: ReadonlySet<string>;
+  readonly labels: Readonly<ReadonlySet<string>>;
   readonly serviceName: ServiceName;
 }
+type IngressRequest = Readonly<Pick<Request, "method" | "url">> & {
+  readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
+  readonly headers: Readonly<Pick<Headers, "get">>;
+};
 interface IngressWindow {
   start: number;
   count: number;
@@ -35,7 +39,7 @@ function emptyResponse(
   return new Response(undefined, { headers, status });
 }
 
-function rejectRequest(request: Request): Response | undefined {
+function rejectRequest(request: IngressRequest): Response | undefined {
   if (request.method !== "POST") {
     return emptyResponse(httpStatus.methodNotAllowed, { ...noStore, allow: "POST" });
   }
@@ -54,7 +58,9 @@ function rejectRequest(request: Request): Response | undefined {
   return undefined;
 }
 
-async function readBoundedText(body: ReadableStream<Uint8Array>): Promise<string | undefined> {
+async function readBoundedText(
+  body: Readonly<AsyncIterable<Uint8Array>>,
+): Promise<string | undefined> {
   const decoder = new TextDecoder();
   let size = 0;
   let text = "";
@@ -68,7 +74,10 @@ async function readBoundedText(body: ReadableStream<Uint8Array>): Promise<string
   return text + decoder.decode();
 }
 
-function parseEvents(text: string, labels: ReadonlySet<string>): BrowserEvent[] | undefined {
+function parseEvents(
+  text: string,
+  labels: Readonly<ReadonlySet<string>>,
+): BrowserEvent[] | undefined {
   try {
     return parseBrowserEvents(JSON.parse(text) as unknown, labels, Date.now());
   } catch {
@@ -147,7 +156,10 @@ function recordBrowserEvent(exporter: Exporter, event: BrowserEvent): void {
   });
 }
 
-async function readEvents(ingress: Ingress, request: Request): Promise<BrowserEvent[] | Response> {
+async function readEvents(
+  ingress: Ingress,
+  request: IngressRequest,
+): Promise<BrowserEvent[] | Response> {
   const rejected = rejectRequest(request);
   if (rejected) {
     return rejected;
@@ -164,7 +176,7 @@ async function readEvents(ingress: Ingress, request: Request): Promise<BrowserEv
 
 async function acceptEvents(
   ingress: Ingress,
-  request: Request,
+  request: IngressRequest,
 ): Promise<BrowserEvent[] | Response> {
   const events = await readEvents(ingress, request);
   if (events instanceof Response || admit(ingress.serviceName, events.length)) {
@@ -178,7 +190,7 @@ async function acceptEvents(
 
 async function ingestBrowser(
   ingress: Ingress,
-  request: Request,
+  request: IngressRequest,
   executionContext?: ExecutionContext,
 ): Promise<Response> {
   const events = await acceptEvents(ingress, request);
@@ -193,3 +205,4 @@ async function ingestBrowser(
 }
 
 export { ingestBrowser };
+export type { IngressRequest };

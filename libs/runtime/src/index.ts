@@ -15,7 +15,10 @@ interface RequestRuntime {
   readonly config: { readonly APP_ORIGIN: string };
   readonly database: Database;
   readonly reportError: (error: unknown) => void;
-  readonly session: (request: Request, allowEnrollment?: boolean) => Promise<Session>;
+  readonly session: (
+    request: Readonly<{ headers: Readonly<Headers> }>,
+    allowEnrollment?: boolean,
+  ) => Promise<Session>;
   readonly telemetry: Instrumentation;
 }
 
@@ -32,7 +35,12 @@ interface AppRequestContext {
 
 interface RequestRuntimeInput {
   readonly audience: Audience;
-  readonly config: AppConfig;
+  readonly config: Readonly<
+    Pick<
+      AppConfig,
+      "APP_ORIGIN" | "AUTH_SECRET" | "EMAIL" | "EMAIL_FROM" | "MAILPIT_URL" | "sentry"
+    >
+  > & { readonly DB: Readonly<AppConfig["DB"]> };
   readonly correlation: RequestContext;
   readonly telemetry: Instrumentation;
 }

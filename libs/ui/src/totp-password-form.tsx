@@ -1,6 +1,6 @@
 import { Button, Stack } from "smarthr-ui";
 import type { Enrollment, SettingsContext } from "./mfa-types";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import { Field } from "./field";
 import type { SessionView } from "./protocol";
 import type { TextInput } from "./use-text-input";
@@ -46,7 +46,7 @@ function useTotpPasswordSubmit({
   const { setValue: setPassword, value: passwordValue } = password;
   const { twoFactorEnabled } = session.user;
   return useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event) => {
+    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
       run(async () => {
         onNoticeClear();

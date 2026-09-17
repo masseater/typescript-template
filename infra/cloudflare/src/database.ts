@@ -1,5 +1,5 @@
 import { object, parse, string } from "valibot";
-import { fileURLToPath } from "node:url";
+import { readEnvironment } from "./environment.ts";
 import { readStackOutput } from "@template/infra-bootstrap/state";
 import { runRemoteDatabaseCommand } from "@template/db/remote";
 
@@ -21,11 +21,11 @@ async function readStandardInput(): Promise<string> {
 try {
   const args = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
   const [operation, mode] = args;
-  const shared = fileURLToPath(new URL("../shared", import.meta.url));
+  const shared = `${import.meta.dirname}/../shared`;
   const settings = parse(settingsSchema, await readStackOutput(shared, "applicationSettings"));
   const databaseId = await readStackOutput(shared, "databaseId");
   const email = operation === "bootstrap" ? await readStandardInput() : "";
-  const apiToken = process.env["CLOUDFLARE_API_TOKEN"];
+  const apiToken = readEnvironment().CLOUDFLARE_API_TOKEN;
   const result = await runRemoteDatabaseCommand(args, {
     accountId: settings.accountId,
     databaseId,

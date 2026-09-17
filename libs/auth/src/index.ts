@@ -55,11 +55,15 @@ const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
 const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
 const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createDatabaseHooks(database: Database, audience: Audience): DatabaseHooks {
   return {
     session: {
       create: {
-        before: async (candidate, ctx) => {
+        before: async (
+          candidate: Readonly<Record<string, unknown> & { userId: string }>,
+          ctx: Readonly<{ path: string }> | null,
+        ) => {
           const user = await findUser(database, candidate.userId);
           assertEligibleUser(user, audience);
           return {
@@ -76,21 +80,28 @@ function createDatabaseHooks(database: Database, audience: Audience): DatabaseHo
     },
     user: {
       create: {
-        before: async (user) => ({ data: { ...user, role: "user", securityVersion: 0 } }),
+        before: async (user: Readonly<Record<string, unknown>>) => ({
+          data: { ...user, role: "user", securityVersion: 0 },
+        }),
       },
     },
   };
 }
 
-function createEmailVerification(options: AuthOptions): EmailVerificationOptions {
+function createEmailVerification(
+  sendVerificationEmail: AuthOptions["sendVerificationEmail"],
+): EmailVerificationOptions {
   return {
     autoSignInAfterVerification: false,
     sendOnSignIn: true,
     sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url }) => {
+    sendVerificationEmail: async ({
+      user,
+      url,
+    }: Readonly<{ user: Readonly<{ email: string }>; url: string }>) => {
       const link = new URL(url);
       link.searchParams.set("callbackURL", "/login");
-      await options.sendVerificationEmail({ email: user.email, url: link.href });
+      await sendVerificationEmail({ email: user.email, url: link.href });
     },
   };
 }
@@ -98,7 +109,7 @@ function createEmailVerification(options: AuthOptions): EmailVerificationOptions
 function createLogger(onError: AuthOptions["onError"]): LoggerOptions {
   return {
     level: "warn",
-    log: (level, _message, ...details: unknown[]) => {
+    log: (level, _message, ...details: readonly unknown[]) => {
       if (level === "error" && onError) {
         onError(
           details.find((detail) => detail instanceof Error) ??
@@ -106,6 +117,7 @@ function createLogger(onError: AuthOptions["onError"]): LoggerOptions {
         );
         return;
       }
+      // oxlint-disable-next-line no-console
       console.warn(JSON.stringify({ event: "authentication.diagnostic", level }));
     },
   };
@@ -129,12 +141,19 @@ function verificationAudiencePlugin(audience: Audience): AuthPlugin {
 
 function passkeyPlugin(
   origin: string,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: Database,
   audience: Audience,
 ): ReturnType<typeof passkey> {
   return passkey({
     authentication: {
-      afterVerification: async ({ verification, clientData }) => {
+      afterVerification: async ({
+        clientData,
+        verification,
+      }: Readonly<{
+        clientData: Readonly<{ id: string }>;
+        verification: Readonly<{ authenticationInfo: Readonly<{ userVerified: boolean }> }>;
+      }>) => {
         if (!verification.authenticationInfo.userVerified) {
           deny("PASSKEY_UV_REQUIRED");
         }
@@ -164,6 +183,7 @@ function createEmailAndPassword(audience: Audience): EmailAndPasswordOptions {
   };
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createAuth(options: AuthOptions) {
   const { database, audience } = options;
   const { origin } = new URL(options.baseURL);
@@ -177,7 +197,7 @@ function createAuth(options: AuthOptions) {
     database: drizzleAdapter(database, { provider: "sqlite", schema, transaction: false }),
     databaseHooks: createDatabaseHooks(database, audience),
     emailAndPassword: createEmailAndPassword(audience),
-    emailVerification: createEmailVerification(options),
+    emailVerification: createEmailVerification(options.sendVerificationEmail),
     hooks: createRequestHooks(database, audience),
     logger: createLogger(options.onError),
     plugins: [
@@ -229,6 +249,7 @@ function assertAdminSession(
   }
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function verifySession(options: VerifySessionOptions): Promise<VerifiedSession> {
   const session = await options.auth.api.getSession({
     headers: options.headers,

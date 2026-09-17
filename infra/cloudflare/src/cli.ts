@@ -1,4 +1,3 @@
-import { fileURLToPath } from "node:url";
 import { parseDeploymentCommand } from "./config.ts";
 import { runWithState } from "@template/infra-bootstrap/state";
 
@@ -11,7 +10,7 @@ try {
   process.exitCode = await runWithState([
     operation,
     "--cwd",
-    fileURLToPath(new URL(`../${target}`, import.meta.url)),
+    `${import.meta.dirname}/../${target}`,
   ]);
 } catch {
   process.stderr.write(`${JSON.stringify({ event: "cloudflare.command_failed" })}\n`);

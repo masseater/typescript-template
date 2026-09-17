@@ -1,21 +1,34 @@
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-import { literal, minLength, parse, picklist, pipe, strictObject, string } from "valibot";
+import { literal, minLength, parse, picklist, pipe, record, strictObject, string } from "valibot";
 import type { InferOutput } from "valibot";
-import { createHash } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
+// oxlint-disable-next-line typescript/strict-void-return
 const run = promisify(execFile);
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const rootHashLength = 12;
-const rootHash = createHash("sha256").update(root).digest("hex").slice(0, rootHashLength);
+const hexadecimalRadix = 16;
+const hexadecimalByteLength = 2;
+const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(root));
+const rootHash = Array.from(new Uint8Array(rootDigest), (byte) =>
+  byte.toString(hexadecimalRadix).padStart(hexadecimalByteLength, "0"),
+)
+  .join("")
+  .slice(0, rootHashLength);
+// oxlint-disable-next-line node/no-process-env
+const inheritedEnvironment = parse(record(string(), string()), process.env);
 const socket = `template-${rootHash}`;
 const apps = ["user", "admin", "wiki"] as const;
 const appSchema = picklist(apps);
@@ -72,7 +85,7 @@ async function readCredentials(): Promise<Credentials> {
 }
 
 async function browserSocketDirectory(): Promise<string> {
-  const directory = path.join(tmpdir(), `ab-${rootHash}`);
+  const directory = `${tmpdir()}/ab-${rootHash}`;
   await mkdir(directory, { mode: privateDirectoryMode, recursive: true });
   const entry = await lstat(directory);
   if (!entry.isDirectory() || entry.uid !== process.getuid?.()) {
@@ -94,6 +107,7 @@ export {
   browserConfig,
   browserSocketDirectory,
   credentialsFile,
+  inheritedEnvironment,
   lanOrigin,
   local,
   logFileUrl,

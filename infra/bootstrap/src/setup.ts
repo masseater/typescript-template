@@ -1,15 +1,16 @@
 import { backendUrl, parseBootstrapConfig, parseCredentials } from "./config.ts";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import { minLength, object, pipe, safeParse, string } from "valibot";
 import { prepareStateDirectory, readCredentials, writeCredentials } from "./credentials.ts";
 import { LocalWorkspace } from "@pulumi/pulumi/automation";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir } from "node:fs/promises";
+import { readEnvironment } from "./environment.ts";
 
 const MIN_API_TOKEN_LENGTH = 20;
 const MIN_PASSPHRASE_LENGTH = 32;
 
-const workDir = fileURLToPath(new URL("../", import.meta.url));
-const stateDirectory = fileURLToPath(new URL("../.state/", import.meta.url));
+const workDir = `${import.meta.dirname}/../`;
+const stateDirectory = `${import.meta.dirname}/../.state/`;
 const credentialsFile = `${stateDirectory}/r2.json`;
 const environmentSchema = object({
   BOOTSTRAP_ACCOUNT_ID: string(),
@@ -19,7 +20,7 @@ const environmentSchema = object({
 });
 
 try {
-  const env = safeParse(environmentSchema, process.env);
+  const env = safeParse(environmentSchema, readEnvironment());
   if (!env.success) {
     throw new Error("bootstrap_environment_invalid");
   }
@@ -45,7 +46,7 @@ try {
         ...commonEnvironment,
         PULUMI_BACKEND_URL: saved
           ? backendUrl(saved)
-          : pathToFileURL(`${stateDirectory}/local`).href,
+          : new URL("../.state/local", import.meta.url).href,
         ...(saved
           ? {
               AWS_ACCESS_KEY_ID: saved.accessKeyId,

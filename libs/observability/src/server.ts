@@ -3,6 +3,7 @@ import type { Diagnostics, ExecutionContext } from "./exporter.ts";
 import type { RequestContext, Telemetry } from "./telemetry.ts";
 import { reportError, wrapRequest } from "./request-span.ts";
 import { withDbSpan, withExternalSpan } from "./child-span.ts";
+import type { IngressRequest } from "./ingress.ts";
 import type { RequestHandler } from "./request-span.ts";
 import type { ServiceName } from "./protocol.ts";
 import { createExporter } from "./exporter.ts";
@@ -19,7 +20,7 @@ interface Instrumentation {
   readonly diagnostics: () => Diagnostics;
   readonly flush: () => Promise<void>;
   readonly ingestBrowser: (
-    request: Request,
+    request: IngressRequest,
     executionContext?: ExecutionContext,
   ) => Promise<Response>;
   readonly reportError: (context: RequestContext, error: unknown) => void;
@@ -34,6 +35,7 @@ interface Instrumentation {
     action: (context: RequestContext) => Promise<Result>,
   ) => Promise<Result>;
   readonly wrapRequest: (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     request: Request,
     handler: RequestHandler,
     executionContext?: ExecutionContext,
@@ -84,6 +86,7 @@ function createInstrumentation(options: InstrumentationOptions): Instrumentation
       withDbSpan(telemetry, operation, { action, context }),
     withExternalSpan: async (context, operation, action) =>
       withExternalSpan(telemetry, operation, { action, context }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     wrapRequest: async (request, handler, executionContext) =>
       wrapRequest(telemetry, request, { executionContext, handler }),
   };

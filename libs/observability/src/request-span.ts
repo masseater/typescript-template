@@ -16,7 +16,11 @@ import type { ExecutionContext } from "./exporter.ts";
 import { errorAttributes } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 
-type RequestHandler = (request: Request, context: RequestContext) => Response | Promise<Response>;
+type RequestHandler = (
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  request: Request,
+  context: RequestContext,
+) => Response | Promise<Response>;
 interface HttpObservation extends Timing {
   readonly context: RequestContext;
   readonly method: string;
@@ -97,7 +101,9 @@ function reportError(telemetry: Telemetry, context: RequestContext, error: unkno
   });
 }
 
-function incomingContext(request: Request): IncomingContext {
+function incomingContext(request: {
+  readonly headers: Readonly<Pick<Headers, "get">>;
+}): IncomingContext {
   const parent = parentContext(request.headers.get("traceparent"));
   const traceId = parent?.traceId ?? randomHex(traceIdBytes);
   const spanId = randomHex(spanIdBytes);
@@ -112,6 +118,7 @@ function incomingContext(request: Request): IncomingContext {
   };
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function correlatedResponse(response: Response, context: RequestContext): Response {
   const headers = new Headers(response.headers);
   headers.set("x-request-id", context.requestId);
@@ -125,7 +132,7 @@ function correlatedResponse(response: Response, context: RequestContext): Respon
 
 function finishRequest(
   telemetry: Telemetry,
-  request: Request,
+  request: Readonly<Pick<Request, "method" | "url">>,
   outcome: IncomingContext &
     Handling & { readonly start: number; readonly status: number; readonly timer: number },
 ): void {
@@ -143,6 +150,7 @@ function finishRequest(
 
 async function wrapRequest(
   telemetry: Telemetry,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
   handling: Handling,
 ): Promise<Response> {

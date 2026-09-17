@@ -117,6 +117,7 @@ function useUserMutation(
   const [message, setMessage] = useState("");
   const handleMutation = useCallback(
     (user: ManagedUser, method: MutationMethod): void => {
+      // oxlint-disable-next-line no-alert
       if (!globalThis.confirm(confirmationText(user, method))) {
         return;
       }

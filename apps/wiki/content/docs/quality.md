@@ -11,7 +11,7 @@ lint のエラーは `vp run lint:fix` で自動修正できるものから直�
 
 ## プッシュ前の検査
 
-pre-push フックは単体テスト、ビルド、成果物の検査、実ブラウザでの E2E テストまで実行します。E2E テストは本物の Worker、D1、Mailpit、Grafana LGTM を使うので、先に `vp run services:up` でローカルサービスを起動しておきます。
+pre-push フックは単体テスト、ビルド、成果物の検査まで実行します。
 
 ## フックを飛ばさない
 

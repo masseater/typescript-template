@@ -8,6 +8,7 @@
     "test": "vp test run"
   },
   "dependencies": {
+    "es-toolkit": "1.52.0",
     "valibot": "1.5.0"
   }
 }

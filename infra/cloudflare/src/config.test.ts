@@ -81,7 +81,7 @@ describe("sentry runtime bindings", () => {
     ).toStrictEqual([]);
   });
 
-  it.each([{}, { sentryEnvironment: "production" }, { sentryRelease: "rev-1" }])(
+  it.each([{}, { sentryEnvironment: "production" }, { sentryRelease: "rev-1" }] as const)(
     "a Sentry DSN requires environment and release: %j",
     (additional) => {
       expect.hasAssertions();
@@ -119,7 +119,7 @@ describe("sentry settings rejected by the runtime", () => {
     { sentryRelease: "release/1" },
     { sentryRelease: "release 1" },
     { sentryRelease: "a".repeat(MAX_SENTRY_RELEASE_LENGTH + 1) },
-  ])("rejects settings the runtime cannot consume: %j", (overrides) => {
+  ] as const)("rejects settings the runtime cannot consume: %j", (overrides) => {
     expect.hasAssertions();
     const config = { ...settings, ...completeSentry, ...overrides };
     expect(() => parseSharedConfig(config)).toThrow("cloudflare_settings_invalid");

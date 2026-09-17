@@ -6,10 +6,10 @@ import type { AuthFixture } from "./auth-test-fixture.ts";
 import { createAuthTest } from "./auth-test-fixture.ts";
 import { createTestDatabase } from "@template/db/testing";
 
-const it = createAuthTest({ bootstrapAdmin, createTestDatabase });
+const it = createAuthTest({ bootstrapAdmin, createTestDatabase, setUserRole });
 
 async function pendingTotpChallenge(
-  client: BrowserClient,
+  client: Readonly<BrowserClient>,
   email: string,
 ): Promise<TotpEnrollment["authenticator"]> {
   await signIn(client, email);
@@ -31,19 +31,21 @@ async function strongAdminSession(
   return fixture.verify({ audience: "admin", headers: admin.headers() });
 }
 
-function adminCookieHeaders(client: BrowserClient): Headers {
+function adminCookieHeaders(client: Readonly<BrowserClient>): Headers {
   const cookie = client.headers().get("cookie") ?? "";
   return new Headers({ cookie: cookie.replaceAll("template-user", "template-admin") });
 }
 
-function copyCookiesToAdmin(from: BrowserClient, to: BrowserClient): void {
-  for (const [key, value] of from.cookies) {
-    to.cookies.set(key.replace("template-user", "template-admin"), value);
+function copyCookiesToAdmin(from: Readonly<BrowserClient>, to: Readonly<BrowserClient>): void {
+  for (const [key, value] of from.cookieEntries()) {
+    to.setCookie(key.replace("template-user", "template-admin"), value);
   }
 }
 
 describe("second factor session", () => {
-  it("TOTP sign-in has no usable session until valid second factor", async ({ fixture }) => {
+  it("TOTP sign-in has no usable session until valid second factor", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const client = await fixture.registerVerified("totp@example.com");
     const authenticator = await pendingTotpChallenge(client, "totp@example.com");
@@ -62,7 +64,9 @@ describe("second factor session", () => {
 });
 
 describe("cross-app isolation", () => {
-  it("shared signing secret cannot turn a user session into admin session", async ({ fixture }) => {
+  it("shared signing secret cannot turn a user session into admin session", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const client = await fixture.registerAdmin("admin@example.com");
     await signIn(client, "admin@example.com");
@@ -77,7 +81,7 @@ describe("cross-app isolation", () => {
 
   it("shared signing secret cannot transfer a pending TOTP challenge across apps", async ({
     fixture,
-  }) => {
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const client = await fixture.registerAdmin("admin@example.com");
     const authenticator = await pendingTotpChallenge(client, "admin@example.com");
@@ -92,14 +96,15 @@ describe("cross-app isolation", () => {
 });
 
 describe("session revocation", () => {
-  it("revocation invalidates an actual HTTP session", async ({ fixture }) => {
+  it("revocation invalidates an actual HTTP session", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const authority = await strongAdminSession(fixture, "owner@example.com");
     const user = await fixture.registerVerified("target@example.com");
     await signIn(user, "target@example.com");
     const current = await fixture.verify({ audience: "user", headers: user.headers() });
-    await setUserRole({
-      database: fixture.database,
+    await fixture.setUserRole({
       role: "admin",
       sessionId: authority.session.id,
       targetId: current.user.id,

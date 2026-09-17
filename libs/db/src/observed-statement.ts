@@ -17,12 +17,12 @@ function statementOperation(query: string): DatabaseOperation {
 }
 
 class ObservedStatement implements D1PreparedStatement {
-  public readonly original: D1PreparedStatement;
+  public readonly original: Readonly<D1PreparedStatement>;
   private readonly operation: DatabaseOperation;
   private readonly trace: DatabaseTrace;
 
   public constructor(
-    original: D1PreparedStatement,
+    original: Readonly<D1PreparedStatement>,
     operation: DatabaseOperation,
     trace: DatabaseTrace,
   ) {
@@ -62,19 +62,21 @@ class ObservedStatement implements D1PreparedStatement {
   }
 }
 
-function unwrapStatement(statement: D1PreparedStatement): D1PreparedStatement {
+function unwrapStatement(statement: Readonly<D1PreparedStatement>): D1PreparedStatement {
   return statement instanceof ObservedStatement ? unwrapStatement(statement.original) : statement;
 }
 
 function observeStatement(
-  statement: D1PreparedStatement,
+  statement: Readonly<D1PreparedStatement>,
   query: string,
   trace: DatabaseTrace,
 ): D1PreparedStatement {
   return new ObservedStatement(statement, statementOperation(query), trace);
 }
 
-function unwrapStatements(statements: readonly D1PreparedStatement[]): D1PreparedStatement[] {
+function unwrapStatements(
+  statements: readonly Readonly<D1PreparedStatement>[],
+): D1PreparedStatement[] {
   return statements.map((statement) => unwrapStatement(statement));
 }
 

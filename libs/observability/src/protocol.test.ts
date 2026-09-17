@@ -92,6 +92,7 @@ describe("traceparent", () => {
       parentContext(`00-${"0".repeat(context.traceId.length)}-${context.spanId}-01`),
     ).toBeUndefined();
     expect(parentContext(`00-${context.traceId}-${context.spanId}-01-token`)).toBeUndefined();
+    // oxlint-disable-next-line unicorn/no-null
     expect(parentContext(null)).toBeUndefined();
   });
 });

@@ -2,7 +2,6 @@ import { email, parse, pipe, string } from "valibot";
 import type { DatabaseBinding } from "./index.ts";
 import { bootstrapAdmin } from "./admin.ts";
 import { createDb } from "./index.ts";
-import { fileURLToPath } from "node:url";
 import { getPlatformProxy } from "wrangler";
 
 const EMAIL_ARGUMENT_INDEX = 2;
@@ -10,9 +9,9 @@ const EMAIL_ARGUMENT_INDEX = 2;
 async function bootstrapLocal(): Promise<void> {
   const address = parse(pipe(string(), email()), process.argv[EMAIL_ARGUMENT_INDEX]);
   const platform = await getPlatformProxy<{ DB: DatabaseBinding }>({
-    configPath: fileURLToPath(new URL("../../../apps/user/wrangler.jsonc", import.meta.url)),
+    configPath: `${import.meta.dirname}/../../../apps/user/wrangler.jsonc`,
     envFiles: [],
-    persist: { path: fileURLToPath(new URL("../../../.local/d1/v3", import.meta.url)) },
+    persist: { path: `${import.meta.dirname}/../../../.local/d1/v3` },
     remoteBindings: false,
   });
   try {

@@ -17,13 +17,12 @@ import {
 } from "valibot";
 import type { InferOutput } from "valibot";
 import { compileBootstrapStatement } from "./bootstrap-statement.ts";
-import { fileURLToPath } from "node:url";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 
 type RemoteQuery = Readonly<{ params: readonly (string | number | null)[]; sql: string }>;
 
 type DatabaseExecutor = Readonly<{
-  batch: (queries: readonly RemoteQuery[]) => Promise<unknown[][]>;
+  batch: (queries: readonly RemoteQuery[]) => Promise<readonly (readonly unknown[])[]>;
 }>;
 
 const statementSchema = pipe(string(), trim(), minLength(1));
@@ -51,7 +50,7 @@ function isChronological(migrations: readonly Migration[]): boolean {
 
 function loadRemoteMigrations(): Migration[] {
   try {
-    const migrationsFolder = fileURLToPath(new URL("../migrations/", import.meta.url));
+    const migrationsFolder = `${import.meta.dirname}/../migrations`;
     const migrations = parse(migrationsSchema, readMigrationFiles({ migrationsFolder }));
     if (!isChronological(migrations)) {
       throw new Error("invalid");
@@ -108,6 +107,7 @@ async function migrateDatabase(
   ]);
   const applied = await readHistory(executor, migrations);
   for (const migration of migrations.slice(applied)) {
+    // oxlint-disable-next-line no-await-in-loop
     await executor.batch(migrationQueries(migration));
   }
   const recorded = await readHistory(executor, migrations);

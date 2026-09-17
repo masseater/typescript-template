@@ -9,6 +9,18 @@ import { source } from "./source.ts";
 type WikiPage = ReturnType<typeof source.getPages>[number];
 type SemanticResult = Awaited<ReturnType<ReturnType<typeof createSemanticIndex>>>[number];
 type KeywordResult = Awaited<ReturnType<SearchServer["search"]>>[number];
+type StructuredData = WikiPage["data"]["structuredData"];
+type WikiPageView = Readonly<{
+  url: string;
+  data: Readonly<
+    Pick<WikiPage["data"], "description" | "title"> & {
+      structuredData: Readonly<{
+        contents: readonly Readonly<StructuredData["contents"][number]>[];
+        headings: readonly Readonly<StructuredData["headings"][number]>[];
+      }>;
+    }
+  >;
+}>;
 
 const DEFAULT_PAGE_LIMIT = 5;
 const LEXICAL_HEADING_LIMIT = 2;
@@ -16,14 +28,14 @@ const HEADING_RESULT_LIMIT = 3;
 
 const keyword = createFromSource(source);
 
-function sectionText(page: WikiPage, heading?: string): string {
+function sectionText(page: WikiPageView, heading?: string): string {
   return page.data.structuredData.contents
     .filter((content) => content.heading === heading)
     .map((content) => content.content)
     .join(" ");
 }
 
-function pageDocuments(page: WikiPage): SemanticDocument[] {
+function pageDocuments(page: WikiPageView): SemanticDocument[] {
   const headings = page.data.structuredData.headings.map((heading) => ({
     id: `${page.url}#${heading.id}`,
     text: sectionText(page, heading.id),
@@ -42,12 +54,13 @@ function pageDocuments(page: WikiPage): SemanticDocument[] {
 }
 
 const semantic = createSemanticIndex(() =>
-  source.getPages().flatMap((page) => pageDocuments(page)),
+  source.getPages().flatMap((page: WikiPageView) => pageDocuments(page)),
 );
 
 const wikiLlms = llms(source, {
-  renderPage: async (page) =>
-    `# ${page.data.title} (${page.url})\n\n${await page.data.getText("processed")}`,
+  renderPage: async (
+    page: Readonly<{ data: Readonly<Pick<WikiPage["data"], "getText" | "title">>; url: string }>,
+  ) => `# ${page.data.title} (${page.url})\n\n${await page.data.getText("processed")}`,
 });
 
 function pageOf(url: string): string {
@@ -56,20 +69,26 @@ function pageOf(url: string): string {
 
 function pageResults(
   url: string,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   keywordResults: readonly KeywordResult[],
   semanticResults: readonly SemanticResult[],
 ): SortedResult[] {
-  const page = source.getPages().find((candidate) => candidate.url === url);
+  const page = source
+    .getPages()
+    .find((candidate: Readonly<Pick<WikiPage, "url">>) => candidate.url === url);
   const title = page?.data.title ?? url;
   const lexical = keywordResults.filter(
-    (result) => pageOf(result.url) === url && result.type !== "page",
+    (result: Readonly<Pick<KeywordResult, "type" | "url">>) =>
+      pageOf(result.url) === url && result.type !== "page",
   );
   const related = semanticResults
     .filter(
       (match) =>
         pageOf(match.document.url) === url &&
         match.document.url !== url &&
-        !lexical.some((result) => result.url === match.document.url),
+        !lexical.some(
+          (result: Readonly<Pick<KeywordResult, "url">>) => result.url === match.document.url,
+        ),
     )
     .toSorted((left, right) => right.score - left.score)
     .map((match): SortedResult => ({
@@ -107,6 +126,7 @@ function createWikiSearch(
 ): SearchServer {
   return {
     export: async () => keyword.export(),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     async search(query, options) {
       const [keywordResults, semanticResults] = await Promise.all([
         keyword.search(query, options),
@@ -114,7 +134,13 @@ function createWikiSearch(
       ]);
       const pages = rankPages(
         semanticResults.map((match) => ({ score: match.score, url: pageOf(match.document.url) })),
-        [...new Set(keywordResults.map((result) => pageOf(result.url)))],
+        [
+          ...new Set(
+            keywordResults.map((result: Readonly<Pick<KeywordResult, "url">>) =>
+              pageOf(result.url),
+            ),
+          ),
+        ],
         options?.limit ?? DEFAULT_PAGE_LIMIT,
       );
       return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));

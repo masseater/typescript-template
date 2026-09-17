@@ -7,10 +7,18 @@ interface SentryConfiguration {
   readonly release: string;
 }
 
+type FrameInput = Readonly<Pick<StackFrame, "colno" | "filename" | "in_app" | "lineno">>;
+type ExceptionInput = Readonly<Pick<Exception, "type">> & {
+  readonly stacktrace?: { readonly frames?: readonly FrameInput[] };
+};
+type EventInput = Readonly<Pick<ErrorEvent, "event_id" | "timestamp" | "type">> & {
+  readonly exception?: { readonly values?: readonly ExceptionInput[] };
+  readonly tags?: Readonly<NonNullable<ErrorEvent["tags"]>>;
+};
 interface SentryOptions {
   readonly autoSessionTracking: false;
   readonly beforeBreadcrumb: () => null;
-  readonly beforeSend: (event: ErrorEvent) => ErrorEvent | null;
+  readonly beforeSend: (event: EventInput) => ErrorEvent | null;
   readonly beforeSendTransaction: () => null;
   readonly dsn?: string;
   readonly enableLogs: false;
@@ -26,7 +34,7 @@ function present(value: string | undefined): value is string {
   return value !== undefined && value !== "";
 }
 
-function safeFrame(frame: StackFrame): StackFrame {
+function safeFrame(frame: FrameInput): StackFrame {
   const [filename] = frame.filename?.split(/[?#]/u, 1) ?? [];
   const publicAsset =
     present(filename) &&
@@ -39,7 +47,7 @@ function safeFrame(frame: StackFrame): StackFrame {
   };
 }
 
-function safeException(exception: Exception): Exception {
+function safeException(exception: ExceptionInput): Exception {
   const type = /^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(exception.type ?? "")
     ? (exception.type ?? "Error")
     : "Error";
@@ -54,7 +62,7 @@ function safeException(exception: Exception): Exception {
   };
 }
 
-function safeTags(event: ErrorEvent): Record<string, string> {
+function safeTags(event: EventInput): Record<string, string> {
   const requestId = event.tags?.["request_id"];
   const traceId = event.tags?.["otel_trace_id"];
   return {
@@ -63,7 +71,7 @@ function safeTags(event: ErrorEvent): Record<string, string> {
   };
 }
 
-function sanitizeEvent(configuration: SentryConfiguration, event: ErrorEvent): ErrorEvent {
+function sanitizeEvent(configuration: SentryConfiguration, event: EventInput): ErrorEvent {
   return {
     type: undefined,
     ...(present(event.event_id) ? { event_id: event.event_id } : {}),
@@ -105,8 +113,11 @@ function sentryBoundary(input: SentryConfiguration): SentryOptions {
   const enabled = present(input.dsn);
   return {
     autoSessionTracking: false,
+    // oxlint-disable-next-line unicorn/no-null
     beforeBreadcrumb: (): null => null,
+    // oxlint-disable-next-line unicorn/no-null
     beforeSend: (event) => (enabled ? sanitizeEvent(input, event) : null),
+    // oxlint-disable-next-line unicorn/no-null
     beforeSendTransaction: (): null => null,
     ...(present(input.dsn) ? { dsn: input.dsn } : {}),
     enableLogs: false,

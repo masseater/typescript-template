@@ -32,9 +32,19 @@ describe("パスキー応答の本人確認", () => {
     });
   });
 
+  it("パスキー以外の応答は変更しない", () => {
+    expect.hasAssertions();
+    const response = { userVerification: "unchanged" };
+    requirePasskeyUV(response, "/api/auth/get-session");
+    expect(response).toStrictEqual({ userVerification: "unchanged" });
+  });
+});
+
+describe("パスキー応答の形式検証", () => {
   it("パスキー設定の不正な応答を拒否する", () => {
     expect.hasAssertions();
     expect(() => {
+      // oxlint-disable-next-line unicorn/no-null
       requirePasskeyUV(null, "/api/auth/passkey/generate-register-options");
     }).toThrow("パスキー設定の応答形式が不正です。");
     expect(() => {
@@ -44,25 +54,22 @@ describe("パスキー応答の本人確認", () => {
       );
     }).toThrow("パスキー登録設定の応答形式が不正です。");
   });
-
-  it("パスキー以外の応答は変更しない", () => {
-    expect.hasAssertions();
-    const response = { userVerification: "unchanged" };
-    requirePasskeyUV(response, "/api/auth/get-session");
-    expect(response).toStrictEqual({ userVerification: "unchanged" });
-  });
 });
 
 describe("認証結果の検証", () => {
   it("認証失敗と結果の欠落を成功扱いにしない", () => {
     expect.hasAssertions();
+    // oxlint-disable-next-line unicorn/no-null
     expect(() => requireSuccess({ data: null, error: { message: "SESSION_INVALID" } })).toThrow(
       "SESSION_INVALID",
     );
+    // oxlint-disable-next-line unicorn/no-null
     expect(() => requireSuccess({ data: null, error: null })).toThrow("結果が返りませんでした");
+    // oxlint-disable-next-line unicorn/no-null
     expect(() => requireSuccess({ data: undefined, error: null })).toThrow(
       "結果が返りませんでした",
     );
+    // oxlint-disable-next-line unicorn/no-null
     expect(requireSuccess({ data: { status: true }, error: null })).toStrictEqual({
       status: true,
     });

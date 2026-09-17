@@ -118,6 +118,7 @@ describe("billable usage validation", () => {
       "billing_response_invalid",
     );
     await expect(
+      // oxlint-disable-next-line unicorn/no-null
       fetchResponse({ result: [{ ...record, BilledCost: null }], success: true }, account, now),
     ).rejects.toThrow("billing_response_invalid");
   });

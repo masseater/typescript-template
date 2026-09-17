@@ -102,6 +102,7 @@ function canRetry(delivery: Delivery, attempt: number, delay: number): boolean {
 }
 
 async function wait(milliseconds: number): Promise<void> {
+  // oxlint-disable-next-line promise/avoid-new
   await new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });

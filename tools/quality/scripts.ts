@@ -90,7 +90,7 @@ export function scriptViolations(manifest: unknown): string[] {
   if (typeof scripts !== "object" || scripts === null || Array.isArray(scripts)) {
     throw new Error("package.json scripts must be an object");
   }
-  return Object.entries(scripts).flatMap(([name, command]) => {
+  return Object.entries(scripts).flatMap(([name, command]: readonly [string, unknown]) => {
     if (typeof command !== "string") {
       throw new TypeError(`Script ${name} must be a string`);
     }

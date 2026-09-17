@@ -10,7 +10,7 @@ interface SessionSecurity {
 type StrongAuthenticationMethod = "password_totp" | "passkey_uv";
 
 async function hasVerificationAudience(
-  database: Database,
+  database: Readonly<Pick<Database, "select">>,
   identifier: string,
   audience: Audience,
 ): Promise<boolean> {
@@ -25,13 +25,16 @@ async function hasVerificationAudience(
   return record !== undefined;
 }
 
-async function findUser(database: Database, userId: string): Promise<User | undefined> {
+async function findUser(
+  database: Readonly<Pick<Database, "select">>,
+  userId: string,
+): Promise<User | undefined> {
   const [record] = await database.select().from(user).where(eq(user.id, userId)).limit(1);
   return record;
 }
 
 async function findPasskeyUser(
-  database: Database,
+  database: Readonly<Pick<Database, "select">>,
   credentialId: string,
   audience: Audience,
 ): Promise<User | undefined> {
@@ -45,7 +48,7 @@ async function findPasskeyUser(
 }
 
 async function hasEnrolledFactor(
-  database: Database,
+  database: Readonly<Pick<Database, "select">>,
   userId: string,
   audience: Audience,
 ): Promise<boolean> {
@@ -62,7 +65,7 @@ async function hasEnrolledFactor(
 }
 
 async function getSessionSecurity(
-  database: Database,
+  database: Readonly<Pick<Database, "select">>,
   sessionId: string,
   audience: Audience,
 ): Promise<SessionSecurity | undefined> {
@@ -90,7 +93,7 @@ async function markSessionStrong({
   sessionId,
 }: Readonly<{
   audience: Audience;
-  database: Database;
+  database: Readonly<Pick<Database, "update">>;
   method: StrongAuthenticationMethod;
   sessionId: string;
 }>): Promise<void> {
@@ -107,7 +110,10 @@ async function markSessionStrong({
   }
 }
 
-async function revokeUserSessions(database: Database, userId: string): Promise<void> {
+async function revokeUserSessions(
+  database: Readonly<Pick<Database, "delete">>,
+  userId: string,
+): Promise<void> {
   await database.delete(session).where(eq(session.userId, userId));
 }
 

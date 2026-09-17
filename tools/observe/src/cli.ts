@@ -8,6 +8,7 @@ import {
   severities,
 } from "./query.ts";
 import { integer, maxValue, minValue, number, object, parse, picklist, pipe } from "valibot";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
 const { values, positionals } = parseArgs({

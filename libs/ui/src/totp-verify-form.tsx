@@ -1,5 +1,5 @@
 import { Button, Stack } from "smarthr-ui";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import { Field } from "./field";
 import { authClient } from "./client";
@@ -18,7 +18,7 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
   const code = useTextInput();
   const { setValue: setCode, value: codeValue } = code;
   const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event) => {
+    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
       run(async () => {
         if (!saved) {

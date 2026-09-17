@@ -25,10 +25,17 @@ describe("billable usage client", () => {
     expect.hasAssertions();
     const authorizations: unknown[] = [];
     const server = setupServer(
-      http.get(endpoint, ({ request }) => {
-        authorizations.push(request.headers.get("authorization"));
-        return HttpResponse.json({ result: [usageRow], success: true });
-      }),
+      http.get(
+        endpoint,
+        ({
+          request,
+        }: {
+          readonly request: { readonly headers: Readonly<Pick<Headers, "get">> };
+        }) => {
+          authorizations.push(request.headers.get("authorization"));
+          return HttpResponse.json({ result: [usageRow], success: true });
+        },
+      ),
     );
     server.listen({ onUnhandledRequest: "error" });
     try {

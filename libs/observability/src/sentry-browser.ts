@@ -16,7 +16,10 @@ function startBrowserSentry(configuration: SentryConfiguration): SentryClient {
   return options.enabled ? init({ ...options, tracePropagationTargets: [] }) : undefined;
 }
 
-async function readClientConfig(signal: AbortSignal): Promise<InferOutput<typeof clientConfig>> {
+type ClientConfig = InferOutput<typeof clientConfig>;
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function readClientConfig(signal: AbortSignal): Promise<ClientConfig> {
   const response = await fetch("/api/client-config", {
     cache: "no-store",
     credentials: "same-origin",
@@ -29,9 +32,12 @@ async function readClientConfig(signal: AbortSignal): Promise<InferOutput<typeof
   return parse(clientConfig, await response.json());
 }
 
-async function connect(signal: AbortSignal): Promise<SentryClient> {
+async function connect(
+  pendingConfiguration: Readonly<Promise<ClientConfig>>,
+  signal: Readonly<Pick<AbortSignal, "aborted">>,
+): Promise<SentryClient> {
   try {
-    const configuration = await readClientConfig(signal);
+    const configuration = await pendingConfiguration;
     if (signal.aborted || configuration.sentry === undefined) {
       return undefined;
     }
@@ -49,14 +55,14 @@ async function connect(signal: AbortSignal): Promise<SentryClient> {
   }
 }
 
-async function disconnect(pending: Promise<SentryClient>): Promise<void> {
+async function disconnect(pending: Readonly<Promise<SentryClient>>): Promise<void> {
   const client = await pending;
   await client?.close(closeTimeoutMilliseconds);
 }
 
 function connectBrowserSentry(): () => void {
   const controller = new AbortController();
-  const pending = connect(controller.signal);
+  const pending = connect(readClientConfig(controller.signal), controller.signal);
   return () => {
     controller.abort();
     void disconnect(pending);

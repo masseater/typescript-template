@@ -7,7 +7,7 @@ import { routes } from "./telemetry-routes.ts";
 import { withSentryRequest } from "@template/observability/sentry-server";
 
 type WorkerExecutionContext = Readonly<{
-  waitUntil: (promise: Promise<unknown>) => void;
+  waitUntil: (promise: Readonly<Promise<unknown>>) => void;
   passThroughOnException: () => void;
 }>;
 type WikiRuntime = ReturnType<typeof createWikiRuntime>;
@@ -22,7 +22,7 @@ interface RequestScope {
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const MAX_QUERY_LENGTH = 200;
 
-function requestPath(request: Request): string | undefined {
+function requestPath(request: Readonly<Pick<Request, "url">>): string | undefined {
   try {
     return decodeURIComponent(new URL(request.url).pathname);
   } catch {
@@ -30,6 +30,7 @@ function requestPath(request: Request): string | undefined {
   }
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function handleApplication(scope: RequestScope, path: string): Promise<Response> {
   const { correlation, request, runtime } = scope;
   const search = createWikiSearch(runtime.embedder(correlation), (failure) => {
@@ -45,6 +46,7 @@ async function handleApplication(scope: RequestScope, path: string): Promise<Res
   return secureResponse(await handler.fetch(request));
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function handleWithReporting(scope: RequestScope, path: string): Promise<Response> {
   const { correlation, executionContext, request, runtime } = scope;
   async function action(): Promise<Response> {
@@ -76,6 +78,7 @@ function localResponse(runtime: WikiRuntime, path: string): Response | undefined
   return undefined;
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function forwardedResponse(scope: RequestScope, path: string): Promise<Response | undefined> {
   const { executionContext, request, runtime } = scope;
   if (path.startsWith("/assets/")) {
@@ -87,6 +90,7 @@ async function forwardedResponse(scope: RequestScope, path: string): Promise<Res
   return undefined;
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function handleRequest(scope: RequestScope): Promise<Response> {
   const path = requestPath(scope.request);
   if (path === undefined) {
@@ -101,6 +105,7 @@ async function handleRequest(scope: RequestScope): Promise<Response> {
 
 const worker = {
   async fetch(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     request: Request,
     bindings: unknown,
     executionContext: WorkerExecutionContext,
@@ -108,6 +113,7 @@ const worker = {
     const runtime = createWikiRuntime(bindings, routes);
     return runtime.telemetry.wrapRequest(
       request,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       async (incoming, correlation) =>
         handleRequest({ correlation, executionContext, request: incoming, runtime }),
       executionContext,
@@ -115,4 +121,5 @@ const worker = {
   },
 };
 
+// oxlint-disable-next-line import/no-default-export
 export default worker;

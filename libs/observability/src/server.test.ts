@@ -52,7 +52,9 @@ function browserEvent(): Record<string, unknown> {
 
 interface TrackedRun {
   readonly background: Promise<unknown>[];
-  readonly executionContext: { readonly waitUntil: (promise: Promise<unknown>) => void };
+  readonly executionContext: {
+    readonly waitUntil: (promise: Readonly<Promise<unknown>>) => void;
+  };
   readonly instrumentation: Instrumentation;
 }
 
@@ -69,7 +71,14 @@ function trackedRun(instrumentation: Instrumentation = setup()): TrackedRun {
   };
 }
 
-async function ingestStatus(instrumentation: Instrumentation, init?: RequestInit): Promise<number> {
+async function ingestStatus(
+  instrumentation: Instrumentation,
+  init?: Readonly<{
+    body?: string;
+    headers?: Readonly<Record<string, string>>;
+    method?: string;
+  }>,
+): Promise<number> {
   const response = await instrumentation.ingestBrowser(new Request(telemetryUrl, init));
   return response.status;
 }
@@ -163,6 +172,7 @@ describe("trace propagation", () => {
     const observed: { traceId?: string; requestId?: string } = {};
     const response = await instrumentation.wrapRequest(
       incoming,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (_request, context) => {
         Object.assign(observed, { requestId: context.requestId, traceId: context.traceId });
         return new Response(undefined, { status: noContent });

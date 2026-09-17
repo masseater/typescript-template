@@ -8,8 +8,12 @@ const authClient = createAuthClient({
   fetchOptions: {
     baseURL: "/api/auth",
     credentials: "same-origin",
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     customFetchImpl: async (input, init) => globalThis.fetch(input, init),
-    onSuccess: ({ data, response }) => {
+    onSuccess: ({
+      data,
+      response,
+    }: Readonly<{ data: unknown; response: Readonly<Pick<Response, "url">> }>) => {
       requirePasskeyUV(data, new URL(response.url).pathname);
     },
     redirect: "error",

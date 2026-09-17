@@ -13,7 +13,7 @@ type DatabaseBinding = D1Database;
 type Database = DrizzleD1Database<typeof schema> & { $client: DatabaseBinding };
 type Profile = Pick<typeof user.$inferSelect, "email" | "id" | "name" | "profile">;
 
-function createDb(binding: DatabaseBinding, trace?: DatabaseTrace): Database {
+function createDb(binding: Readonly<DatabaseBinding>, trace?: DatabaseTrace): Database {
   return drizzle(trace ? instrumentD1(binding, trace) : binding, { schema });
 }
 
@@ -32,16 +32,24 @@ const profileColumns = {
   profile: user.profile,
 };
 
-async function getProfile(database: Database, userId: string): Promise<Profile | null> {
+async function getProfile(
+  database: Readonly<Pick<Database, "select">>,
+  userId: string,
+): Promise<Profile | null> {
   const [profile] = await database
     .select(profileColumns)
     .from(user)
     .where(eq(user.id, userId))
     .limit(1);
+  // oxlint-disable-next-line unicorn/no-null
   return profile ?? null;
 }
 
-async function updateProfile(database: Database, userId: string, input: unknown): Promise<Profile> {
+async function updateProfile(
+  database: Readonly<Pick<Database, "update">>,
+  userId: string,
+  input: unknown,
+): Promise<Profile> {
   const values = parse(profileInput, input);
   const [profile] = await database
     .update(user)

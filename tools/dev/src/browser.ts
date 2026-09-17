@@ -1,6 +1,7 @@
 import {
   browserConfig,
   browserSocketDirectory,
+  inheritedEnvironment,
   origins,
   readCredentials,
   readyPaths,
@@ -10,8 +11,11 @@ import {
 } from "./local-environment.ts";
 import type { App } from "./local-environment.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
 interface BrowserReport {
@@ -32,7 +36,9 @@ async function sessionArguments(app: App): Promise<string[]> {
   ];
 }
 
-async function configureAdminCredentials(environment: Readonly<NodeJS.ProcessEnv>): Promise<void> {
+async function configureAdminCredentials(
+  environment: Readonly<Record<string, string>>,
+): Promise<void> {
   const credentials = await readCredentials();
   const child = spawn(
     "agent-browser",
@@ -56,7 +62,7 @@ async function configureAdminCredentials(environment: Readonly<NodeJS.ProcessEnv
 
 async function browser(app: App): Promise<BrowserReport> {
   const socketDirectory = await refreshBrowserConfig();
-  const environment = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  const environment = { ...inheritedEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   if (app === "admin") {
     await configureAdminCredentials(environment);
   }
@@ -84,7 +90,7 @@ async function browserCommand(app: App, args: readonly string[]): Promise<void> 
   const socketDirectory = await browserSocketDirectory();
   const child = spawn("agent-browser", [...(await sessionArguments(app)), ...args], {
     cwd: root,
-    env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
+    env: { ...inheritedEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
     stdio: "inherit",
   });
   await once(child, "exit");

@@ -23,8 +23,11 @@ const target = {
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database/${target.databaseId}/query`;
 const executeArguments = ["--execute", "--confirm-database", target.databaseId];
 
-function d1Resolver(binding: D1Database): HttpResponseResolver {
-  return async ({ request }) => {
+type Context = Readonly<{ binding: Readonly<D1Database> }>;
+type ResolverRequest = Readonly<{ headers: Readonly<Headers>; json: () => Promise<unknown> }>;
+
+function d1Resolver(binding: Readonly<D1Database>): HttpResponseResolver {
+  return async ({ request }: Readonly<{ request: ResolverRequest }>) => {
     if (request.headers.get("authorization") !== `Bearer ${target.apiToken}`) {
       return new HttpResponse(undefined, { status: UNAUTHORIZED_STATUS });
     }
@@ -46,9 +49,9 @@ async function withCloudflareApi(
   }
 }
 
-const test = it.extend<{ binding: D1Database }>({
+const test = it.extend<Context>({
   binding: [
-    async ({}, provide): Promise<void> => {
+    async ({}: Readonly<object>, provide): Promise<void> => {
       const { binding, dispose } = await createEmptyTestDatabase("remote-http-test");
       try {
         await withCloudflareApi(d1Resolver(binding), async () => {
@@ -122,7 +125,7 @@ describe("remote database execution over the Cloudflare HTTP API", () => {
     ).resolves.toMatchObject({ applied: 0 });
   });
 
-  test("bootstraps through the official HTTP batch contract", async ({ binding }) => {
+  test("bootstraps through the official HTTP batch contract", async ({ binding }: Context) => {
     expect.hasAssertions();
     await runRemoteDatabaseCommand(["migrate", ...executeArguments], target);
     const database = createDb(binding);

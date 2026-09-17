@@ -1,7 +1,16 @@
-import { copyFile, lstat, mkdir, readFile, readdir, realpath, stat } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import {
+  constants,
+  copyFile,
+  lstat,
+  mkdir,
+  readFile,
+  readdir,
+  realpath,
+  stat,
+} from "node:fs/promises";
 import type { AppTarget } from "./config.ts";
-import { constants } from "node:fs";
-import { createHash } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 const MAIN_MODULE = "index.js";
@@ -44,26 +53,31 @@ function privateArtifact(relative: string): boolean {
 async function files(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const nested = await Promise.all(
-    entries.map(async (entry) => {
-      if (entry.isSymbolicLink()) {
-        throw new Error("artifact_symlink_forbidden");
-      }
-      const filename = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        return files(filename);
-      }
-      if (!entry.isFile()) {
-        throw new Error("artifact_file_type_invalid");
-      }
-      return [filename];
-    }),
+    entries.map(
+      async (
+        entry: Readonly<
+          Pick<(typeof entries)[number], "isDirectory" | "isFile" | "isSymbolicLink" | "name">
+        >,
+      ) => {
+        if (entry.isSymbolicLink()) {
+          throw new Error("artifact_symlink_forbidden");
+        }
+        const filename = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+          return files(filename);
+        }
+        if (!entry.isFile()) {
+          throw new Error("artifact_file_type_invalid");
+        }
+        return [filename];
+      },
+    ),
   );
   return nested.flat().toSorted();
 }
 
 async function fileSha256(file: string): Promise<string> {
-  const content = await readFile(file);
-  return createHash("sha256").update(content).digest("hex");
+  return Buffer.from(await crypto.subtle.digest("SHA-256", await readFile(file))).toString("hex");
 }
 
 async function sameContent(left: string, right: string): Promise<boolean> {
@@ -158,7 +172,8 @@ async function clientDigest(client: string, clientFiles: readonly string[]): Pro
   const manifest = await Promise.all(
     clientFiles.map(async (file) => [path.relative(client, file), await fileSha256(file)]),
   );
-  return createHash("sha256").update(JSON.stringify(manifest)).digest("hex");
+  const encodedManifest = new TextEncoder().encode(JSON.stringify(manifest));
+  return Buffer.from(await crypto.subtle.digest("SHA-256", encodedManifest)).toString("hex");
 }
 
 async function assertExistingStagedCopy(

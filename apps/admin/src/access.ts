@@ -33,6 +33,7 @@ async function equalCredentials(left: string, right: string): Promise<boolean> {
   const expected = new Uint8Array(rightDigest);
   return (
     new Uint8Array(leftDigest).reduce(
+      // oxlint-disable-next-line no-bitwise
       (result, value, index) => result | (value ^ (expected[index] ?? 0)),
       0,
     ) === 0
@@ -81,7 +82,9 @@ function unauthorized(local: boolean): Response {
   });
 }
 
-function localGate(headers: Headers): string | undefined {
+type RequestHeaders = Readonly<Pick<Headers, "get">>;
+
+function localGate(headers: RequestHeaders): string | undefined {
   return headers
     .get("cookie")
     ?.split(";")
@@ -90,7 +93,7 @@ function localGate(headers: Headers): string | undefined {
     ?.slice(localGateCookie.length + 1);
 }
 
-function basicCredentials(headers: Headers): string | undefined {
+function basicCredentials(headers: RequestHeaders): string | undefined {
   const authorization = headers.get("authorization");
   if (authorization?.startsWith(basicScheme) !== true) {
     return undefined;
@@ -103,7 +106,7 @@ function basicCredentials(headers: Headers): string | undefined {
 }
 
 async function enforceLocalAccess(
-  headers: Headers,
+  headers: RequestHeaders,
   bindings: unknown,
 ): Promise<Response | undefined> {
   const config = parse(localAccessSchema, bindings);
@@ -130,7 +133,7 @@ async function enforceLocalAccess(
 }
 
 async function enforceCloudflareAccess(
-  headers: Headers,
+  headers: RequestHeaders,
   bindings: unknown,
 ): Promise<Response | undefined> {
   const config = parse(accessSchema, bindings);
@@ -158,7 +161,7 @@ async function enforceCloudflareAccess(
 }
 
 async function enforceAdminAccess(
-  request: Pick<Request, "headers" | "url">,
+  request: Readonly<{ headers: RequestHeaders; url: string }>,
   bindings: unknown,
 ): Promise<Response | undefined> {
   const { APP_ORIGIN } = parse(originSchema, bindings);

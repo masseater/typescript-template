@@ -70,7 +70,7 @@ function hasExactKeys(item: UntrustedFields): boolean {
 
 function validMeasurements(
   item: UntrustedFields,
-  labels: ReadonlySet<string>,
+  labels: Readonly<ReadonlySet<string>>,
   now: number,
 ): boolean {
   const { duration, route, start, status, value } = item;
@@ -110,7 +110,7 @@ function validKind(item: UntrustedFields): boolean {
 
 function isBrowserEvent(
   item: UntrustedFields,
-  labels: ReadonlySet<string>,
+  labels: Readonly<ReadonlySet<string>>,
   now: number,
 ): item is UntrustedFields & BrowserEvent {
   return (
@@ -122,7 +122,11 @@ function isBrowserEvent(
   );
 }
 
-function parseBrowserEvent(item: unknown, labels: ReadonlySet<string>, now: number): BrowserEvent {
+function parseBrowserEvent(
+  item: unknown,
+  labels: Readonly<ReadonlySet<string>>,
+  now: number,
+): BrowserEvent {
   if (!isRecord(item) || !hasExactKeys(item)) {
     throw new Error("Invalid telemetry fields");
   }
@@ -140,7 +144,7 @@ function parseBrowserEvent(item: unknown, labels: ReadonlySet<string>, now: numb
 
 function parseBrowserEvents(
   input: unknown,
-  labels: ReadonlySet<string>,
+  labels: Readonly<ReadonlySet<string>>,
   now: number,
 ): BrowserEvent[] {
   if (!Array.isArray(input) || input.length === 0 || input.length > maximumBatchSize) {

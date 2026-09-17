@@ -1,6 +1,6 @@
-import type { Node, NodeOf, Resolve } from "./references.ts";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { origins, propertyName, staticText, variableOf } from "./references.ts";
-import type { Context } from "vite-plus/lint/plugins";
+import type { Resolve } from "./references.ts";
 
 type D1Kind = "database" | "session" | "statement" | "orm";
 
@@ -110,7 +110,7 @@ function localType(node: Node, name: string): Node | undefined {
 }
 
 function memberD1Types(
-  context: Context,
+  context: LintContext,
   members: NodeOf<"TSTypeLiteral">["members"],
   resolve: Resolve<D1Reference[]>,
 ): D1Reference[] {
@@ -126,7 +126,7 @@ function memberD1Types(
 }
 
 function declaredD1Type(
-  context: Context,
+  context: LintContext,
   node: Node,
   resolve: Resolve<D1Reference[]>,
 ): D1Reference[] {
@@ -144,7 +144,7 @@ function declaredD1Type(
 }
 
 function identifierD1Type(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"Identifier">,
   resolve: Resolve<D1Reference[]>,
 ): D1Reference[] {
@@ -159,7 +159,11 @@ function identifierD1Type(
   return variableOf(context, node) === undefined ? d1NamedType("global", node.name) : [];
 }
 
-function namedD1Type(context: Context, node: Node, resolve: Resolve<D1Reference[]>): D1Reference[] {
+function namedD1Type(
+  context: LintContext,
+  node: Node,
+  resolve: Resolve<D1Reference[]>,
+): D1Reference[] {
   if (node.type === "TSQualifiedName") {
     return origins(context, node.left).flatMap((origin) =>
       d1NamedType(origin[0] ?? "", node.right.name),
@@ -173,7 +177,11 @@ function namedD1Type(context: Context, node: Node, resolve: Resolve<D1Reference[
     : declaredD1Type(context, node, resolve);
 }
 
-function d1Type(context: Context, node: Node, seen: ReadonlySet<Node>): D1Reference[] {
+function d1Type(
+  context: LintContext,
+  node: Node,
+  seen: Readonly<ReadonlySet<Node>>,
+): D1Reference[] {
   if (seen.has(node)) {
     return [];
   }

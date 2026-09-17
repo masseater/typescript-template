@@ -76,6 +76,7 @@ async function apiResponse(
     if (reportError) {
       reportError(error);
     } else {
+      // oxlint-disable-next-line no-console
       console.error(JSON.stringify({ event: "application.request_failed" }));
     }
     return jsonResponse(
@@ -85,7 +86,15 @@ async function apiResponse(
   }
 }
 
-function assertJsonMutation(request: Request, expectedOrigin: string): void {
+interface JsonMutationRequest {
+  readonly body: Readonly<ReadableStream<Uint8Array>> | null;
+  readonly headers: Readonly<Headers>;
+}
+
+function assertJsonMutation(
+  request: Readonly<Pick<JsonMutationRequest, "headers">>,
+  expectedOrigin: string,
+): void {
   if (
     request.headers.get("origin") !== expectedOrigin ||
     request.headers.get("sec-fetch-site") === "cross-site"
@@ -97,7 +106,7 @@ function assertJsonMutation(request: Request, expectedOrigin: string): void {
   }
 }
 
-async function readBoundedText(body: ReadableStream<Uint8Array>): Promise<string> {
+async function readBoundedText(body: Readonly<ReadableStream<Uint8Array>>): Promise<string> {
   const decoder = new TextDecoder();
   let length = 0;
   let text = "";
@@ -111,7 +120,7 @@ async function readBoundedText(body: ReadableStream<Uint8Array>): Promise<string
   return text + decoder.decode();
 }
 
-async function readJson(request: Request, expectedOrigin: string): Promise<unknown> {
+async function readJson(request: JsonMutationRequest, expectedOrigin: string): Promise<unknown> {
   assertJsonMutation(request, expectedOrigin);
   if (!request.body) {
     throw statusError("BODY_REQUIRED", badRequest);
@@ -124,7 +133,14 @@ async function readJson(request: Request, expectedOrigin: string): Promise<unkno
   }
 }
 
-function secureResponse(response: Response): Response {
+function secureResponse(
+  response: Readonly<{
+    body: Readonly<ReadableStream<Uint8Array>> | null;
+    headers: Readonly<Headers>;
+    status: number;
+    statusText: string;
+  }>,
+): Response {
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");
   headers.set("x-content-type-options", "nosniff");

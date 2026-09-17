@@ -8,7 +8,7 @@ type Runtime = ReturnType<typeof createRuntime>;
 type Correlation = Readonly<Parameters<Runtime["forRequest"]>[0]>;
 type WorkerContext = Readonly<{
   passThroughOnException: () => void;
-  waitUntil: (promise: Promise<unknown>) => void;
+  waitUntil: (promise: Readonly<PromiseLike<unknown>>) => void;
 }>;
 
 function requestPath(url: string): string | undefined {
@@ -19,6 +19,7 @@ function requestPath(url: string): string | undefined {
   }
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function infrastructureResponse({
   executionContext,
   incoming,
@@ -46,12 +47,14 @@ function infrastructureResponse({
 }
 
 async function serve(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
   bindings: unknown,
   executionContext: WorkerContext,
 ): Promise<Response> {
   const runtime = createRuntime(bindings, "user", routes);
 
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   async function route(incoming: Request, correlation: Correlation): Promise<Response> {
     const path = requestPath(incoming.url);
     if (path === undefined) {
@@ -84,4 +87,5 @@ async function serve(
 
 const worker = { fetch: serve };
 
+// oxlint-disable-next-line import/no-default-export
 export default worker;

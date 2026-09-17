@@ -1,6 +1,9 @@
-import type { Plugin, UserConfig } from "vite-plus";
+import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { realpath } from "node:fs/promises";
 
 const maxDecodeDepth = 3;
@@ -76,40 +79,59 @@ async function deniesRequest(url: string | undefined, roots: BoundaryRoots): Pro
   );
 }
 
+type DevRequest = Parameters<Connect.NextHandleFunction>[0];
+type DevResponse = Parameters<Connect.NextHandleFunction>[1];
+
+const forbiddenStatus = 403;
+const badRequestStatus = 400;
+
+function createRequestGuard(
+  roots: () => BoundaryRoots,
+): (
+  request: Readonly<Pick<DevRequest, "url">>,
+  response: Readonly<Pick<DevResponse, "end" | "writeHead">>,
+  next: () => void,
+) => void {
+  return (request, response, next) => {
+    async function guard(): Promise<void> {
+      try {
+        if (!(await deniesRequest(request.url, roots()))) {
+          next();
+          return;
+        }
+        response.writeHead(forbiddenStatus, { "cache-control": "no-store" });
+        response.end("Private development resource denied");
+      } catch {
+        response.writeHead(badRequestStatus);
+        response.end("Invalid request");
+      }
+    }
+    void guard();
+  };
+}
+
 export function userDevBoundary(
   repository = fileURLToPath(new URL("../../", import.meta.url)),
 ): Plugin {
   let appRoot = path.join(repository, "apps/user");
   let canonicalRepository = repository;
   return {
-    apply: (_config, environment) =>
+    apply: (_config: unknown, environment: Readonly<ConfigEnv>) =>
       environment.command === "serve" && environment.isPreview !== true,
     config: () => serverOptions(appRoot, repository),
-    async configResolved(config) {
+    async configResolved(
+      config: Readonly<{ root: string; server: Readonly<Pick<ResolvedConfig["server"], "host">> }>,
+    ) {
       appRoot = config.root;
       canonicalRepository = await realpath(repository);
       if (!["127.0.0.1", "localhost", "::1"].includes(String(config.server.host))) {
         throw new Error("USER_DEV_REQUIRES_LOCAL_SERVER");
       }
     },
-    configureServer(server) {
-      server.middlewares.use((request, response, next) => {
-        async function guard(): Promise<void> {
-          try {
-            if (!(await deniesRequest(request.url, { appRoot, canonicalRepository, repository }))) {
-              next();
-              return;
-            }
-            response.statusCode = 403;
-            response.setHeader("cache-control", "no-store");
-            response.end("Private development resource denied");
-          } catch {
-            response.statusCode = 400;
-            response.end("Invalid request");
-          }
-        }
-        void guard();
-      });
+    configureServer(server: Readonly<{ middlewares: Readonly<Pick<Connect.Server, "use">> }>) {
+      server.middlewares.use(
+        createRequestGuard(() => ({ appRoot, canonicalRepository, repository })),
+      );
     },
     enforce: "pre",
     async load(id) {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { root, runCommand, withProbeDirectory } from "./lint-harness.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { writeFile } from "node:fs/promises";
 
 describe("git hooks", () => {

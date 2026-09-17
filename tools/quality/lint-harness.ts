@@ -1,9 +1,16 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { text } from "node:stream/consumers";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
 interface CommandResult {
@@ -14,9 +21,11 @@ interface CommandResult {
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const commandTimeoutMilliseconds = 20_000;
+// oxlint-disable-next-line node/no-process-env
+const inherited = process.env;
 const environment = {
-  ...process.env,
-  PATH: `${path.join(root, "node_modules/.bin")}${path.delimiter}${process.env["PATH"] ?? ""}`,
+  ...inherited,
+  PATH: `${path.join(root, "node_modules/.bin")}${path.delimiter}${inherited["PATH"] ?? ""}`,
 };
 const probeConfiguration = `export default {
       lint: {

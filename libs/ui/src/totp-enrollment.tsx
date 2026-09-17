@@ -14,9 +14,12 @@ interface TotpEnrollmentProps {
 
 function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement {
   const [saved, setSaved] = useState(false);
-  const toggleSaved = useCallback<ChangeEventHandler<HTMLInputElement>>((event) => {
-    setSaved(event.target.checked);
-  }, []);
+  const toggleSaved = useCallback<ChangeEventHandler<HTMLInputElement>>(
+    (event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "checked">> }>) => {
+      setSaved(event.target.checked);
+    },
+    [],
+  );
   return (
     <Stack>
       <label htmlFor="totp-uri">認証アプリ登録用 URI</label>

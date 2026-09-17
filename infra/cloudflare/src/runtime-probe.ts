@@ -1,8 +1,10 @@
 import { Worker, WorkerVersion, ZeroTrustAccessApplication } from "@pulumi/cloudflare";
 import { getProject, isSecret, runtime, secret } from "@pulumi/pulumi";
 import type { Output } from "@pulumi/pulumi";
-import assert from "node:assert/strict";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { createRequire } from "node:module";
+import { invariant } from "es-toolkit";
+import { readEnvironment } from "./environment.ts";
 import { validateAuthSecret } from "./config.ts";
 
 const PROBE_SECRET = "runtime-probe-not-a-real-secret-0001";
@@ -20,24 +22,25 @@ interface ProbeResult {
 }
 
 function assertProvidersLoadedWithoutCompiler(): void {
-  assert.notEqual(process.env["PULUMI_NODEJS_TYPESCRIPT"], "true");
-  assert.equal(process.execArgv.includes("tsx"), true);
-  assert.equal(typeof Worker, "function");
-  assert.equal(typeof WorkerVersion, "function");
-  assert.equal(typeof ZeroTrustAccessApplication, "function");
+  invariant(readEnvironment().PULUMI_NODEJS_TYPESCRIPT !== "true", "pulumi_typescript_enabled");
+  invariant(process.execArgv.includes("tsx"), "tsx_not_loaded");
+  invariant(typeof Worker === "function", "worker_provider_missing");
+  invariant(typeof WorkerVersion === "function", "worker_version_provider_missing");
+  invariant(typeof ZeroTrustAccessApplication === "function", "access_provider_missing");
 }
 
 async function assertEngineConnected(): Promise<void> {
-  if (process.env["TEMPLATE_ENGINE_PROBE"] !== "true") {
+  if (readEnvironment().TEMPLATE_ENGINE_PROBE !== "true") {
     return;
   }
-  assert.equal(runtime.hasEngine(), true);
-  assert.equal(runtime.hasMonitor(), true);
-  assert.equal(getProject(), "template-runtime-probe");
+  invariant(runtime.hasEngine(), "engine_not_connected");
+  invariant(runtime.hasMonitor(), "monitor_not_connected");
+  invariant(getProject() === "template-runtime-probe", "probe_project_mismatch");
   await runtime.requirePulumiVersion(">=3.262.0");
 }
 
-async function resolvedValue(value: Output<string>): Promise<string> {
+async function resolvedValue(value: Readonly<Pick<Output<string>, "apply">>): Promise<string> {
+  // oxlint-disable-next-line promise/avoid-new
   return new Promise((resolve) => {
     value.apply((resolved) => {
       resolve(resolved);
@@ -53,15 +56,15 @@ function assertNoCompilerModules(): void {
       !module.endsWith("/typescript/lib/version.cjs") &&
       !module.endsWith("/typescript/package.json"),
   );
-  assert.equal(compilerModules.length, 0);
+  invariant(compilerModules.length === 0, "compiler_modules_loaded");
 }
 
 async function probeRuntime(): Promise<ProbeResult> {
   assertProvidersLoadedWithoutCompiler();
   await assertEngineConnected();
   const value = secret(validateAuthSecret(PROBE_SECRET));
-  assert.equal(await isSecret(value), true);
-  assert.equal(await resolvedValue(value), PROBE_SECRET);
+  invariant(await isSecret(value), "probe_secret_not_secret");
+  invariant((await resolvedValue(value)) === PROBE_SECRET, "probe_secret_changed");
   assertNoCompilerModules();
   const runtimeEvidence = {
     compilerLoaded: false,

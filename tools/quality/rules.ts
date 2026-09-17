@@ -1,13 +1,15 @@
-import type { Context, ESTree, RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import type { ESTree, RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
 import { destructuredOrigins, origins, propertyName, staticText } from "./references.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import type { Origin } from "./references.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
+import { reportViolation } from "./lint-context.ts";
 
 interface RawD1Checks {
-  readonly destructuring: (reported: ESTree.Node, pattern: ESTree.Node, input: ESTree.Node) => void;
-  readonly operation: (node: ESTree.Node) => void;
+  readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;
+  readonly operation: (node: Node) => void;
 }
 
 const mockSources = new Set([
@@ -40,12 +42,8 @@ function metadata(message: string): RuleMeta {
   };
 }
 
-function filename(context: Context): string {
+function filename(context: LintContext): string {
   return context.filename.replaceAll("\\", "/");
-}
-
-function reportViolation(context: Context, node: ESTree.Node): void {
-  context.report({ messageId: "violation", node });
 }
 
 function isMock(origin: Origin): boolean {
@@ -62,7 +60,7 @@ function isEnvironment(origin: Origin): boolean {
   );
 }
 
-function importSourceChecker(context: Context): (node: ESTree.Node) => void {
+function importSourceChecker(context: LintContext): (node: Node) => void {
   const importer = importerOf(filename(context));
   return (node) => {
     const source = staticText(context, node);
@@ -74,7 +72,7 @@ function importSourceChecker(context: Context): (node: ESTree.Node) => void {
   };
 }
 
-function rawD1Checks(context: Context): RawD1Checks {
+function rawD1Checks(context: LintContext): RawD1Checks {
   const allowed = /\/libs\/db\/src\/(?:instrumentation|testing)\.ts$/u.test(filename(context));
   return {
     destructuring: (reported, pattern, input) => {
@@ -90,40 +88,55 @@ function rawD1Checks(context: Context): RawD1Checks {
   };
 }
 
-function importVisitor(checkSource: (node: ESTree.Node) => void): Visitor {
+function importVisitor(checkSource: (node: Node) => void): Visitor {
   return {
-    ExportAllDeclaration(node): void {
-      checkSource(node.source);
-    },
-    ExportNamedDeclaration(node): void {
-      if (node.source) {
+    ExportAllDeclaration(node: Node): void {
+      if (node.type === "ExportAllDeclaration") {
         checkSource(node.source);
       }
     },
-    ImportDeclaration(node): void {
-      checkSource(node.source);
+    ExportNamedDeclaration(node: Node): void {
+      if (node.type === "ExportNamedDeclaration" && node.source) {
+        checkSource(node.source);
+      }
     },
-    ImportExpression(node): void {
-      checkSource(node.source);
+    ImportDeclaration(node: Node): void {
+      if (node.type === "ImportDeclaration") {
+        checkSource(node.source);
+      }
     },
-    TSExternalModuleReference(node): void {
-      checkSource(node.expression);
+    ImportExpression(node: Node): void {
+      if (node.type === "ImportExpression") {
+        checkSource(node.source);
+      }
     },
-    TSImportType(node): void {
-      checkSource(node.source);
+    TSExternalModuleReference(node: Node): void {
+      if (node.type === "TSExternalModuleReference") {
+        checkSource(node.expression);
+      }
+    },
+    TSImportType(node: Node): void {
+      if (node.type === "TSImportType") {
+        checkSource(node.source);
+      }
     },
   };
 }
 
-function boundariesVisitor(context: Context): Visitor {
+function boundariesVisitor(context: LintContext): Visitor {
   const checkSource = importSourceChecker(context);
   const checks = rawD1Checks(context);
   return {
     ...importVisitor(checkSource),
-    AssignmentExpression(node): void {
-      checks.destructuring(node, node.left, node.right);
+    AssignmentExpression(node: Node): void {
+      if (node.type === "AssignmentExpression") {
+        checks.destructuring(node, node.left, node.right);
+      }
     },
-    CallExpression(node): void {
+    CallExpression(node: Node): void {
+      if (node.type !== "CallExpression") {
+        return;
+      }
       checks.operation(node.callee);
       const [argument] = node.arguments;
       if (
@@ -135,31 +148,32 @@ function boundariesVisitor(context: Context): Visitor {
         checkSource(argument);
       }
     },
-    MemberExpression(node): void {
+    MemberExpression(node: Node): void {
       checks.operation(node);
     },
-    ObjectPattern(node): void {
-      if (node.typeAnnotation) {
+    ObjectPattern(node: Node): void {
+      if (node.type === "ObjectPattern" && node.typeAnnotation) {
         checks.destructuring(node, node, node.typeAnnotation);
       }
     },
-    VariableDeclarator(node): void {
-      if (node.init) {
+    VariableDeclarator(node: Node): void {
+      if (node.type === "VariableDeclarator" && node.init) {
         checks.destructuring(node, node.id, node.init);
       }
     },
   };
 }
 
-function aliasVisitor(context: Context, matches: (origin: Origin) => boolean): Visitor {
-  function check(node: ESTree.Node): void {
+function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean): Visitor {
+  function check(node: Node): void {
     if (origins(context, node).some((origin) => matches(origin))) {
       reportViolation(context, node);
     }
   }
   return {
-    AssignmentExpression(node): void {
+    AssignmentExpression(node: Node): void {
       if (
+        node.type === "AssignmentExpression" &&
         node.left.type === "ObjectPattern" &&
         destructuredOrigins(context, node.left, origins(context, node.right)).some((origin) =>
           matches(origin),
@@ -168,14 +182,18 @@ function aliasVisitor(context: Context, matches: (origin: Origin) => boolean): V
         reportViolation(context, node);
       }
     },
-    ImportDeclaration(node): void {
+    ImportDeclaration(node: Node): void {
+      if (node.type !== "ImportDeclaration") {
+        return;
+      }
       for (const specifier of node.specifiers) {
         check(specifier.local);
       }
     },
     MemberExpression: check,
-    VariableDeclarator(node): void {
-      if (node.id.type !== "ObjectPattern") {
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    VariableDeclarator(node: ESTree.Node): void {
+      if (node.type !== "VariableDeclarator" || node.id.type !== "ObjectPattern") {
         return;
       }
       for (const variable of context.sourceCode.getDeclaredVariables(node)) {
@@ -187,14 +205,18 @@ function aliasVisitor(context: Context, matches: (origin: Origin) => boolean): V
   };
 }
 
-function environmentVisitor(context: Context): Visitor {
+function environmentVisitor(context: LintContext): Visitor {
   if (/\/(?:libs\/config|infra|tools)\//u.test(filename(context))) {
     return {};
   }
   return {
     ...aliasVisitor(context, isEnvironment),
-    ExportNamedDeclaration(node): void {
-      if (!node.source || !["node:process", "process"].includes(node.source.value)) {
+    ExportNamedDeclaration(node: Node): void {
+      if (
+        node.type !== "ExportNamedDeclaration" ||
+        !node.source ||
+        !["node:process", "process"].includes(node.source.value)
+      ) {
         return;
       }
       for (const specifier of node.specifiers) {
@@ -208,18 +230,21 @@ function environmentVisitor(context: Context): Visitor {
   };
 }
 
-function mockVisitor(context: Context): Visitor {
+function mockVisitor(context: LintContext): Visitor {
   return {
     ...aliasVisitor(context, isMock),
-    CallExpression(node): void {
-      if (origins(context, node.callee).some((origin) => isMock(origin))) {
+    CallExpression(node: Node): void {
+      if (
+        node.type === "CallExpression" &&
+        origins(context, node.callee).some((origin) => isMock(origin))
+      ) {
         reportViolation(context, node.callee);
       }
     },
   };
 }
 
-function workerFetchVisitor(context: Context): Visitor {
+function workerFetchVisitor(context: LintContext): Visitor {
   const current = filename(context);
   if (
     !/\/(?:apps|libs|infra\/budget-monitor)\//u.test(current) ||
@@ -230,8 +255,9 @@ function workerFetchVisitor(context: Context): Visitor {
     return {};
   }
   return {
-    Property(node): void {
+    Property(node: Node): void {
       if (
+        node.type === "Property" &&
         propertyName(context, node) === "redirect" &&
         staticText(context, node.value) === "error"
       ) {
@@ -241,6 +267,7 @@ function workerFetchVisitor(context: Context): Visitor {
   };
 }
 
+// oxlint-disable-next-line import/no-default-export
 export default definePlugin({
   meta: { name: "project" },
   rules: {

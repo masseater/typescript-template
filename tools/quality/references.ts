@@ -1,7 +1,7 @@
-import type { Context, ESTree, Variable } from "vite-plus/lint/plugins";
+import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
+import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
+import { scopeOf } from "./lint-context.ts";
 
-type Node = ESTree.Node;
-type NodeOf<Type extends Node["type"]> = Extract<Node, { type: Type }>;
 type Origin = readonly string[];
 type Resolve<Result> = (node: Node) => Result;
 
@@ -16,9 +16,8 @@ const knownGlobals: ReadonlyMap<string, Origin> = new Map([
   ["require", ["require"]],
 ]);
 
-function variableOf(context: Context, node: NodeOf<"Identifier">): Variable | undefined {
-  let scope: ReturnType<Context["sourceCode"]["getScope"]> | null =
-    context.sourceCode.getScope(node);
+function variableOf(context: LintContext, node: NodeOf<"Identifier">): Variable | undefined {
+  let scope: Scope | null = scopeOf(context, node);
   while (scope !== null) {
     const variable = scope.set.get(node.name);
     if (variable !== undefined) {
@@ -33,9 +32,13 @@ function extendOrigin(origin: Origin, suffix: readonly string[]): Origin {
   return [...origin, ...suffix];
 }
 
-function constantInitializer(context: Context, node: NodeOf<"Identifier">): Node | undefined {
+function constantInitializer(context: LintContext, node: NodeOf<"Identifier">): Node | undefined {
   const variable = variableOf(context, node);
-  if (variable?.references.some((reference) => reference.isWrite() && !reference.init) === true) {
+  if (
+    variable?.references.some(
+      (reference: DeepReadonly<Reference>) => reference.isWrite() && !reference.init,
+    ) === true
+  ) {
     return undefined;
   }
   const definition = variable?.defs[0]?.node;
@@ -43,7 +46,7 @@ function constantInitializer(context: Context, node: NodeOf<"Identifier">): Node
 }
 
 function derivedText(
-  context: Context,
+  context: LintContext,
   node: Node,
   resolve: Resolve<string | undefined>,
 ): string | undefined {
@@ -64,9 +67,9 @@ function derivedText(
 }
 
 function staticText(
-  context: Context,
+  context: LintContext,
   node: Node,
-  seen: ReadonlySet<Node> = new Set(),
+  seen: Readonly<ReadonlySet<Node>> = new Set(),
 ): string | undefined {
   if (seen.has(node)) {
     return undefined;
@@ -82,7 +85,7 @@ function staticText(
 }
 
 function propertyName(
-  context: Context,
+  context: LintContext,
   property: NodeOf<"Property" | "TSPropertySignature">,
 ): string | undefined {
   return !property.computed && property.key.type === "Identifier"
@@ -90,7 +93,7 @@ function propertyName(
     : staticText(context, property.key);
 }
 
-function propertyKey(context: Context, node: NodeOf<"MemberExpression">): string | undefined {
+function propertyKey(context: LintContext, node: NodeOf<"MemberExpression">): string | undefined {
   if (!node.computed && node.property.type === "Identifier") {
     return node.property.name;
   }
@@ -98,7 +101,7 @@ function propertyKey(context: Context, node: NodeOf<"MemberExpression">): string
 }
 
 function propertyBindingPath(
-  context: Context,
+  context: LintContext,
   property: NodeOf<"ObjectPattern">["properties"][number],
   resolve: Resolve<string[] | undefined>,
 ): string[] | undefined {
@@ -110,7 +113,7 @@ function propertyBindingPath(
   return key === undefined || suffix === undefined ? undefined : [key, ...suffix];
 }
 
-function bindingPath(context: Context, pattern: Node, name: string): string[] | undefined {
+function bindingPath(context: LintContext, pattern: Node, name: string): string[] | undefined {
   if (pattern.type === "Identifier") {
     return pattern.name === name ? [] : undefined;
   }
@@ -131,7 +134,7 @@ function bindingPath(context: Context, pattern: Node, name: string): string[] | 
 }
 
 function destructuredOrigins(
-  context: Context,
+  context: LintContext,
   pattern: Node,
   inputs: readonly Origin[],
 ): readonly Origin[] {
@@ -175,7 +178,7 @@ function importedOrigin(declaration: Node): Origin | undefined {
 }
 
 function identifierOrigins(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"Identifier">,
   resolve: Resolve<Origin[]>,
 ): Origin[] {
@@ -184,7 +187,7 @@ function identifierOrigins(
     const known = knownGlobals.get(node.name);
     return known === undefined ? [] : [known];
   }
-  const definitions = variable.defs.flatMap((definition): Origin[] => {
+  const definitions = variable.defs.flatMap((definition: DeepReadonly<Definition>): Origin[] => {
     const declaration = definition.node;
     const imported = importedOrigin(declaration);
     if (imported !== undefined) {
@@ -198,7 +201,7 @@ function identifierOrigins(
       ? []
       : resolve(declaration.init).map((origin) => extendOrigin(origin, suffix));
   });
-  const assignments = variable.references.flatMap((reference) =>
+  const assignments = variable.references.flatMap((reference: DeepReadonly<Reference>) =>
     !reference.isWrite() || reference.init || !reference.writeExpr
       ? []
       : resolve(reference.writeExpr),
@@ -207,7 +210,7 @@ function identifierOrigins(
 }
 
 function callOrigins(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"CallExpression">,
   resolve: Resolve<Origin[]>,
 ): Origin[] {
@@ -228,7 +231,7 @@ function callOrigins(
 }
 
 function memberOrigins(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"MemberExpression">,
   resolve: Resolve<Origin[]>,
 ): Origin[] {
@@ -236,7 +239,7 @@ function memberOrigins(
   return key === undefined ? [] : resolve(node.object).map((origin) => extendOrigin(origin, [key]));
 }
 
-function expressionOrigins(context: Context, node: Node, resolve: Resolve<Origin[]>): Origin[] {
+function expressionOrigins(context: LintContext, node: Node, resolve: Resolve<Origin[]>): Origin[] {
   if (node.type === "MetaProperty") {
     return node.meta.name === "import" && node.property.name === "meta" ? [["import.meta"]] : [];
   }
@@ -253,7 +256,11 @@ function expressionOrigins(context: Context, node: Node, resolve: Resolve<Origin
   return node.type === "Identifier" ? identifierOrigins(context, node, resolve) : [];
 }
 
-function origins(context: Context, node: Node, seen: ReadonlySet<Node> = new Set()): Origin[] {
+function origins(
+  context: LintContext,
+  node: Node,
+  seen: Readonly<ReadonlySet<Node>> = new Set(),
+): Origin[] {
   if (seen.has(node)) {
     return [];
   }
@@ -281,4 +288,4 @@ export {
   staticText,
   variableOf,
 };
-export type { Node, NodeOf, Origin, Resolve };
+export type { Origin, Resolve };

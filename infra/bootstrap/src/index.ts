@@ -11,7 +11,6 @@ import {
   parseBootstrapConfig,
   selectObjectWritePermission,
 } from "./config.ts";
-import { createHash } from "node:crypto";
 
 const config = parseBootstrapConfig(new Config().requireObject<unknown>("settings"));
 const bucket = new R2Bucket(
@@ -48,11 +47,13 @@ const token = new AccountToken(
 
 const stateBackend = backendUrl(config);
 const stateCredentials = secret(
-  all([token.id, token.value]).apply(([accessKeyId, value]) => ({
+  all([token.id, token.value]).apply(async ([accessKeyId, value]: readonly [string, string]) => ({
     accessKeyId,
     accountId: config.accountId,
     bucket: config.bucket,
-    secretAccessKey: createHash("sha256").update(value).digest("hex"),
+    secretAccessKey: Buffer.from(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)),
+    ).toString("hex"),
   })),
 );
 

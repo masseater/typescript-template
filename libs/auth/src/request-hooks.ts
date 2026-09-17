@@ -40,12 +40,14 @@ const factorEnrollmentPaths = new Set([
 ]);
 const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-passkey"]);
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function currentSessionOf(ctx: HookContext): ReturnType<typeof getSessionFromCtx> {
   const session =
     ctx.context.newSession ?? (await getSessionFromCtx(ctx, { disableCookieCache: true }));
   return session;
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function markTotpSessionStrong({ audience, ctx, database }: HookScope): Promise<void> {
   const session = await currentSessionOf(ctx);
   if (!session) {
@@ -62,6 +64,7 @@ async function markTotpSessionStrong({ audience, ctx, database }: HookScope): Pr
   }
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function revokeSessionsAfterFactorChange({ ctx, database }: HookScope): Promise<void> {
   const session = await currentSessionOf(ctx);
   if (session) {
@@ -69,7 +72,7 @@ async function revokeSessionsAfterFactorChange({ ctx, database }: HookScope): Pr
   }
 }
 
-function rejectUnsafeFields(ctx: HookContext): void {
+function rejectUnsafeFields(ctx: Readonly<Pick<HookContext, "body" | "path">>): void {
   const body: unknown = ctx.body;
   const fields = typeof body === "object" && body !== null ? body : {};
   if ("trustDevice" in fields && fields.trustDevice === true) {
@@ -95,6 +98,7 @@ function challengeCookieFor(path: string, signedIn: boolean): string | undefined
 }
 
 async function verifyChallengeAudience(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   { audience, ctx, database }: HookScope,
   signedIn: boolean,
 ): Promise<void> {
@@ -130,6 +134,7 @@ function enforceAdminAccess({ audience, path, role, strong }: SessionPolicyInput
 
 async function enforceFactorChanges(
   { audience, path, role, strong, userId }: SessionPolicyInput,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: Database,
 ): Promise<void> {
   if (role !== "admin") {
@@ -148,6 +153,7 @@ async function enforceFactorChanges(
 }
 
 async function enforceSessionPolicy(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   { audience, ctx, database }: HookScope,
   sessionId: string,
 ): Promise<void> {
@@ -166,8 +172,10 @@ async function enforceSessionPolicy(
   await enforceFactorChanges(input, database);
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createRequestHooks(database: Database, audience: Audience): RequestHooks {
   return {
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.context.returned instanceof APIError) {
         return;
@@ -180,6 +188,7 @@ function createRequestHooks(database: Database, audience: Audience): RequestHook
         await revokeSessionsAfterFactorChange(scope);
       }
     }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
       const scope = { audience, ctx, database };

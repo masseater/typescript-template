@@ -1,9 +1,9 @@
-import { chmod, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { chmod, constants, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import type { StateCredentials } from "./config.ts";
-import { constants } from "node:fs";
 import { parseCredentials } from "./config.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { randomUUID } from "node:crypto";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
@@ -22,12 +22,14 @@ async function prepareStateDirectory(directory: string): Promise<void> {
 }
 
 async function readOwnerOnlyFile(filename: string): Promise<string> {
+  // oxlint-disable-next-line no-bitwise
   const handle = await open(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const metadata = await handle.stat();
     if (
       !metadata.isFile() ||
       metadata.nlink !== 1 ||
+      // oxlint-disable-next-line no-bitwise
       (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0
     ) {
       throw new Error("state_credentials_permissions_invalid");
@@ -54,6 +56,7 @@ async function readCredentials(filename: string): Promise<StateCredentials | und
 async function writeExclusiveFile(filename: string, content: string): Promise<void> {
   const handle = await open(
     filename,
+    // oxlint-disable-next-line no-bitwise
     constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
     OWNER_ONLY_FILE_MODE,
   );
@@ -68,7 +71,7 @@ async function writeExclusiveFile(filename: string, content: string): Promise<vo
 async function writeCredentials(filename: string, input: unknown): Promise<void> {
   const credentials = parseCredentials(input);
   await prepareStateDirectory(path.dirname(filename));
-  const temporary = `${filename}.${randomUUID()}.tmp`;
+  const temporary = `${filename}.${crypto.randomUUID()}.tmp`;
   await writeExclusiveFile(temporary, JSON.stringify(credentials));
   try {
     await rename(temporary, filename);

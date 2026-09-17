@@ -4,6 +4,7 @@ import type { SearchServer } from "fumadocs-core/search/server";
 import { source } from "./source.ts";
 import { wikiLlms } from "./search.ts";
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function handleMcp(request: Request, search: SearchServer): Promise<Response> {
   const handler = createMcpHandler(() => {
     const server = new McpServer({ name: "wiki", version: "1.0.0" });

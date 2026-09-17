@@ -1,11 +1,13 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import type { AddressInfo } from "node:net";
 import type { DevEndpoint } from "./dev-access-client.ts";
+import type { HttpServer } from "vite-plus";
 import { adminDevAccess } from "./dev-access.ts";
 import { createServer } from "vite-plus";
 import { localOrigin } from "./dev-access-client.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
 const privateFileMode = 0o600;
@@ -19,7 +21,7 @@ function credentialsText(password: string): string {
   return `APP_ORIGIN=${JSON.stringify(localOrigin)}\nLOCAL_ADMIN_USER="operator"\nLOCAL_ADMIN_PASSWORD=${JSON.stringify(password)}\n`;
 }
 
-async function createWorkspace(root: string, password: string): Promise<URL> {
+async function createWorkspace(root: string, password: string): Promise<string> {
   const credentialsFile = path.join(root, ".dev.vars");
   await Promise.all([mkdir(path.join(root, "src")), mkdir(path.join(root, ".local"))]);
   await Promise.all([
@@ -31,10 +33,10 @@ async function createWorkspace(root: string, password: string): Promise<URL> {
     writeFile(path.join(root, "src/admin.js"), 'export const label = "administrator-module";'),
     writeFile(path.join(root, ".local/runtime.json"), JSON.stringify({ password })),
   ]);
-  return pathToFileURL(credentialsFile);
+  return credentialsFile;
 }
 
-function listeningPort(address: Readonly<AddressInfo> | string | null | undefined): number {
+function listeningPort(address: Readonly<ReturnType<HttpServer["address"]>> | undefined): number {
   if (address === undefined || address === null || typeof address === "string") {
     throw new Error("TEST_SERVER_ADDRESS_REQUIRED");
   }

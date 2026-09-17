@@ -19,9 +19,8 @@ function errorAttributes(error: unknown): ErrorAttributes {
     : "Error";
   const locations =
     error instanceof Error
-      ? [...(error.stack?.matchAll(/(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+/gu) ?? [])]
+      ? (error.stack?.match(/(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+/gu) ?? [])
           .slice(0, maximumLocations)
-          .map((match) => match[0])
           .join("\n")
       : "";
   return { "error.locations": locations, "error.type": type };

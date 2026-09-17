@@ -1,8 +1,11 @@
 import { test as baseTest, describe, expect } from "vite-plus/test";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
-import type { AddressInfo } from "node:net";
+import type { HttpServer } from "vite-plus";
 import { createServer } from "vite-plus";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 import { userDevBoundary } from "#dev-boundary";
 
@@ -47,7 +50,7 @@ async function createRepository(root: string): Promise<string> {
   return app;
 }
 
-function listeningPort(address: Readonly<AddressInfo> | string | null | undefined): number {
+function listeningPort(address: Readonly<ReturnType<HttpServer["address"]>> | undefined): number {
   if (address === undefined || address === null || typeof address === "string") {
     throw new Error("TEST_SERVER_ADDRESS_REQUIRED");
   }
@@ -56,7 +59,7 @@ function listeningPort(address: Readonly<AddressInfo> | string | null | undefine
 
 const test = baseTest.extend<{ server: DevServer }>({
   server: [
-    async ({}, provide): Promise<void> => {
+    async ({}: object, provide): Promise<void> => {
       const directory = await mkdtemp(path.join(tmpdir(), "user-dev-boundary-"));
       const root = await realpath(directory);
       const server = await createServer({
@@ -79,13 +82,15 @@ const test = baseTest.extend<{ server: DevServer }>({
   ],
 });
 
+type ServerContext = Readonly<{ server: DevServer }>;
+
 async function statusOf(url: string): Promise<number> {
   const response = await fetch(url);
   return response.status;
 }
 
 describe("user development boundary", () => {
-  test("serves the user application", async ({ server }) => {
+  test("serves the user application", async ({ server }: ServerContext) => {
     expect.hasAssertions();
     await expect(statusOf(`${server.origin}/`)).resolves.toBe(okStatus);
     const entry = await fetch(`${server.origin}/src/entry.js`);
@@ -100,7 +105,7 @@ describe("user development boundary", () => {
       "libs/db/src/admin.ts",
       "tools/private.js",
     ].flatMap((file) => ["", "?raw", "?import"].map((suffix) => `${file}${suffix}`)),
-  )("rejects private file %s", async (file, { server }) => {
+  )("rejects private file %s", async (file, { server }: ServerContext) => {
     expect.hasAssertions();
     const response = await fetch(`${server.origin}/@fs/${server.root}/${file}`);
     expect(response.status).toBe(forbiddenStatus);
@@ -112,7 +117,7 @@ describe("user development boundary", () => {
     "/@id/@template/admin",
     "/@id/@template/db/admin",
     "/@fs/{root}/apps/%61dmin/src/private.js?raw",
-  ])("rejects private module %s", async (file, { server }) => {
+  ])("rejects private module %s", async (file, { server }: ServerContext) => {
     expect.hasAssertions();
     const url = `${server.origin}${file.replace("{root}", server.root)}`;
     await expect(statusOf(url)).resolves.toBe(forbiddenStatus);

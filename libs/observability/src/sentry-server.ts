@@ -12,6 +12,7 @@ interface SentryRequest {
   readonly action: () => Promise<Response>;
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function withSentryRequest(input: SentryRequest): Promise<Response> {
   const { action, context, correlation, request } = input;
   const options = sentryBoundary(input.configuration);

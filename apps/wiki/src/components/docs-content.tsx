@@ -5,6 +5,7 @@ import type { docs } from "#/lib/source.ts";
 
 type DocsEntry = NonNullable<ReturnType<typeof docs.getPage>>;
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function DocsContent({ page }: Readonly<{ page: DocsEntry }>): ReactElement {
   const Body = page.body;
   return (

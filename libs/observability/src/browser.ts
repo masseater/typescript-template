@@ -77,7 +77,9 @@ function elapsed(timer: number): number {
 }
 
 function responseOutcome(
-  response: Response,
+  response: Readonly<Pick<Response, "status">> & {
+    readonly headers: Readonly<Pick<Headers, "get">>;
+  },
   fallbackRequestId: string,
 ): Pick<BrowserEvent, "requestId" | "status"> {
   const serverRequestId = response.headers.get("x-request-id");
@@ -87,6 +89,7 @@ function responseOutcome(
   };
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function tracedFetch(setup: FetchInstrumentation, request: Request): Promise<Response> {
   const timer = performance.now();
   const span = {
@@ -117,7 +120,9 @@ async function tracedFetch(setup: FetchInstrumentation, request: Request): Promi
 function patchFetch(setup: FetchInstrumentation): () => void {
   const originalFetch = globalThis.fetch;
   async function instrumentedFetch(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     input: RequestInfo | URL,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     init?: RequestInit,
   ): Promise<Response> {
     const url = new URL(
@@ -190,7 +195,7 @@ function listen(recorder: Recorder): () => void {
 }
 
 function observeVitals(recorder: Recorder): void {
-  function recordVital(metric: Metric): void {
+  function recordVital(metric: Readonly<Pick<Metric, "name" | "value">>): void {
     const value = Math.min(Math.max(metric.value, 0), maximumMeasurement);
     recorder.queue.enqueue(documentEvent(recorder, { kind: "vital", name: metric.name, value }));
     if (!recorder.queue.disposed) {

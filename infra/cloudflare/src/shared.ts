@@ -15,7 +15,7 @@ import {
   validateOtelHeaders,
 } from "./config.ts";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
-import { createHash } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 import { workerObservability } from "./observability.ts";
 
@@ -27,7 +27,9 @@ const budgetContent = await readFile(budgetWorkerArtifact);
 if (budgetContent.length === 0) {
   throw new Error("budget_worker_artifact_empty");
 }
-const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");
+const budgetContentSha256 = Buffer.from(
+  await crypto.subtle.digest("SHA-256", budgetContent),
+).toString("hex");
 const database = new D1Database(
   "shared-db",
   {
@@ -79,7 +81,7 @@ const budgetVersion = new WorkerVersion("budget-version", {
       FIXED_COST_USD: String(settings.budget.fixedCostUsd),
       JPY_PER_USD: String(settings.budget.jpyPerUsd),
       RESERVE_USD: String(settings.budget.reserveUsd),
-    }).map(([name, text]) => ({ name, text, type: "plain_text" })),
+    }).map(([name, text]: readonly [string, string]) => ({ name, text, type: "plain_text" })),
   ],
   compatibilityDate: "2026-09-16",
   compatibilityFlags: ["nodejs_compat"],

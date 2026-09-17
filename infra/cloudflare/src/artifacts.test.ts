@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+// oxlint-disable-next-line import/no-nodejs-modules
 import {
   mkdir,
   mkdtemp,
@@ -11,7 +12,9 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { loadArtifacts } from "./artifacts.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
 interface UserBuild {
@@ -35,7 +38,7 @@ async function writeFiles(
   contents: Readonly<Record<string, string>>,
 ): Promise<void> {
   await Promise.all(
-    Object.entries(contents).map(async ([name, content]) => {
+    Object.entries(contents).map(async ([name, content]: readonly [string, string]) => {
       const filename = path.join(directory, name);
       await mkdir(path.dirname(filename), { recursive: true });
       await writeFile(filename, content);

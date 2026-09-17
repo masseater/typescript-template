@@ -1,5 +1,6 @@
 import { defineConfig } from "vite-plus";
 
+// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   fmt: {
     ignorePatterns: [
@@ -69,10 +70,6 @@ export default defineConfig({
     ],
     rules: {
       "eslint/func-style": ["error", "declaration"],
-      "eslint/no-alert": "off",
-      "eslint/no-await-in-loop": "off",
-      "eslint/no-bitwise": "off",
-      "eslint/no-console": "off",
       "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
       "eslint/no-magic-numbers": [
         "error",
@@ -92,11 +89,8 @@ export default defineConfig({
       "eslint/one-var": ["error", "never"],
       "eslint/require-await": "off",
       "import/no-cycle": "error",
-      "import/no-default-export": "off",
       "import/no-named-export": "off",
-      "import/no-nodejs-modules": "off",
       "import/prefer-default-export": "off",
-      "node/no-process-env": "off",
       "node/no-top-level-await": "off",
       "oxc/no-async-await": "off",
       "oxc/no-optional-chaining": "off",
@@ -105,7 +99,6 @@ export default defineConfig({
       "project/environment-boundary": "error",
       "project/no-internal-mocks": "error",
       "project/worker-fetch": "error",
-      "promise/avoid-new": "off",
       "react/exhaustive-deps": "error",
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/jsx-no-literals": "off",
@@ -127,10 +120,7 @@ export default defineConfig({
         "error",
         { allow: [{ from: "package", name: "NotFoundError", package: "@tanstack/router-core" }] },
       ],
-      "typescript/prefer-readonly-parameter-types": "off",
       "typescript/require-await": "off",
-      "typescript/strict-void-return": "off",
-      "unicorn/no-null": "off",
       "unicorn/text-encoding-identifier-case": ["error", { withDash: true }],
     },
   },

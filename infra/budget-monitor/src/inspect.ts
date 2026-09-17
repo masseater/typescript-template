@@ -3,6 +3,7 @@ import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
 
 try {
+  // oxlint-disable-next-line node/no-process-env
   const config = parseBudgetConfig(process.env);
   const usage = await fetchUsage(
     config.CLOUDFLARE_ACCOUNT_ID,

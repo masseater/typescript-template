@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { scriptViolations } from "./scripts.ts";
 
 interface WorkspaceManifest {
@@ -9,7 +8,7 @@ interface WorkspaceManifest {
   readonly name: string;
 }
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
+const root = new URL("../../", import.meta.url);
 
 function field(manifest: unknown, key: string): unknown {
   return typeof manifest === "object" && manifest !== null
@@ -20,10 +19,10 @@ function field(manifest: unknown, key: string): unknown {
 async function workspaceDirectories(areas: readonly string[]): Promise<string[]> {
   const directories = await Promise.all(
     areas.map(async (area) => {
-      const entries = await readdir(path.join(root, area), { withFileTypes: true });
+      const entries = await readdir(new URL(`${area}/`, root), { withFileTypes: true });
       return entries
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => path.join(area, entry.name));
+        .filter((entry: Readonly<{ isDirectory: () => boolean }>) => entry.isDirectory())
+        .map((entry: Readonly<{ name: string }>) => `${area}/${entry.name}`);
     }),
   );
   return directories.flat();
@@ -32,12 +31,13 @@ async function workspaceDirectories(areas: readonly string[]): Promise<string[]>
 async function manifestsIn(directories: readonly string[]): Promise<WorkspaceManifest[]> {
   const found = await Promise.all(
     directories.map(async (directory): Promise<WorkspaceManifest[]> => {
-      const files = await readdir(path.join(root, directory));
+      const files = await readdir(new URL(`${directory}/`, root));
       if (!files.includes("package.json")) {
         return [];
       }
-      const name = path.join(directory, "package.json");
-      const manifest: unknown = JSON.parse(await readFile(path.join(root, name), "utf-8"));
+      const location = new URL(`${directory}/package.json`, root);
+      const name = location.href.slice(root.href.length);
+      const manifest: unknown = JSON.parse(await readFile(location, "utf-8"));
       return [{ manifest, name }];
     }),
   );
@@ -57,10 +57,10 @@ function toolReferences({ manifest, name }: WorkspaceManifest, tools: readonly s
     return typeof value === "object" && value !== null ? Object.entries(value) : [];
   });
   return declared
-    .filter(([key, value]) =>
+    .filter(([key, value]: readonly [string, unknown]) =>
       tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
     )
-    .map(([key]) => `${name}: ${key}`);
+    .map(([key]: readonly [string, unknown]) => `${name}: ${key}`);
 }
 
 const packageManagerCommands = [

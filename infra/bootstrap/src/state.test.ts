@@ -38,7 +38,7 @@ describe("pulumi state command guard", () => {
     { args: ["up", "-v=9"], error: "plaintext_secret_output_forbidden" },
     { args: ["up", "--logtostderr"], error: "plaintext_secret_output_forbidden" },
     { args: ["up", "--tracing", "file:trace"], error: "plaintext_secret_output_forbidden" },
-  ])("refuses secret output or backend switching: $args", ({ args, error }) => {
+  ] as const)("refuses secret output or backend switching: $args", ({ args, error }) => {
     expect.hasAssertions();
     expect(() => {
       validateStateCommand(args);

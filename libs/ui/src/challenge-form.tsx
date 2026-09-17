@@ -1,5 +1,5 @@
 import { Button, Stack } from "smarthr-ui";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import { Field } from "./field";
 import type { TextInput } from "./use-text-input";
@@ -33,7 +33,7 @@ function ChallengeForm({ action, code, mode }: ChallengeFormProps): ReactElement
   const { run } = action;
   const { setValue: setCode, value: codeValue } = code;
   const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event) => {
+    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
       run(async () => {
         await verifyChallenge(mode, codeValue);

@@ -42,21 +42,31 @@ async function saveProfile(name: string, profile: string): Promise<ProfileData> 
   return parse(profileSchema, body);
 }
 
+type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
+
 function useProfileDraft(): ProfileDraft {
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
-  const handleNameChange = useCallback<ChangeEventHandler<HTMLInputElement>>((event) => {
-    setName(event.target.value);
-  }, []);
-  const handleProfileChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>((event) => {
-    setProfile(event.target.value);
-  }, []);
+  const handleNameChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
+    (event: FieldEvent) => {
+      setName(event.target.value);
+    },
+    [],
+  );
+  const handleProfileChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>(
+    (event: FieldEvent) => {
+      setProfile(event.target.value);
+    },
+    [],
+  );
   const show = useCallback((data: Readonly<ProfileData>): void => {
     setName(data.name);
     setProfile(data.profile);
   }, []);
   return { handleNameChange, handleProfileChange, name, profile, show };
 }
+
+type FormSubmission = Readonly<{ preventDefault: () => void }>;
 
 function useProfileForm(userId: string | undefined): ProfileForm {
   const draft = useProfileDraft();
@@ -88,7 +98,7 @@ function useProfileForm(userId: string | undefined): ProfileForm {
     };
   }, [show, userId]);
   const handleSubmit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event) => {
+    (event: FormSubmission) => {
       event.preventDefault();
       setPending(true);
       setFailure("");

@@ -1,11 +1,14 @@
+import type { ConfigEnv, UserConfig } from "vite-plus";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { userDevBoundary } from "./dev-boundary.ts";
 
-export default defineConfig(({ command, isPreview }) => ({
+// oxlint-disable-next-line import/no-default-export
+export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
   build: { sourcemap: "hidden" },
   plugins: [
     userDevBoundary(),

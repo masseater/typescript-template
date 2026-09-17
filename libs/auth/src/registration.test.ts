@@ -1,14 +1,17 @@
 import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_OK, PASSWORD, signIn } from "./browser-client.ts";
+import { bootstrapAdmin, setUserRole } from "@template/db/admin";
 import { createTestDatabase, getSchemaShape } from "@template/db/testing";
 import { describe, expect, expectTypeOf } from "vite-plus/test";
-import { bootstrapAdmin } from "@template/db/admin";
+import type { AuthFixture } from "./auth-test-fixture.ts";
 import { createAuthTest } from "./auth-test-fixture.ts";
 import { getSchema } from "better-auth/db";
 
-const it = createAuthTest({ bootstrapAdmin, createTestDatabase });
+const it = createAuthTest({ bootstrapAdmin, createTestDatabase, setUserRole });
 
 describe("email verification", () => {
-  it("requires an actual email verification before password login", async ({ fixture }) => {
+  it("requires an actual email verification before password login", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const client = await fixture.register("alice@example.com");
     const unverified = await signIn(client, "alice@example.com");
@@ -18,7 +21,9 @@ describe("email verification", () => {
     expect(verified.status).toBe(HTTP_OK);
   });
 
-  it("records a weak verified session without logging personal data", async ({ fixture }) => {
+  it("records a weak verified session without logging personal data", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const client = await fixture.registerVerified("alice@example.com");
     await signIn(client, "alice@example.com");
@@ -40,7 +45,7 @@ describe("email verification", () => {
 describe("registration inputs", () => {
   it("HTTP inputs cannot self-assign role, audience or authentication strength", async ({
     fixture,
-  }) => {
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const client = await fixture.registerVerified("reader@example.com");
     await signIn(client, "reader@example.com");
@@ -55,7 +60,9 @@ describe("registration inputs", () => {
     expect(current.strong).toBe(false);
   });
 
-  it("admin cannot publicly register and user auth has no admin endpoints", async ({ fixture }) => {
+  it("admin cannot publicly register and user auth has no admin endpoints", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const signUp = await fixture
       .client("admin")
@@ -70,9 +77,11 @@ describe("registration inputs", () => {
 });
 
 describe("database schema", () => {
-  it("exposes every field required by the configured Better Auth plugins", ({ fixture }) => {
+  it("exposes every field required by the configured Better Auth plugins", ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
-    const expected = getSchema(fixture.userAuth.options);
+    const expected = getSchema(fixture.userAuthOptions());
     const actual = getSchemaShape();
     for (const [model, description] of Object.entries(expected)) {
       expect(actual[model]).toStrictEqual(expect.arrayContaining(Object.keys(description.fields)));

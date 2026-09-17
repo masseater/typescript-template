@@ -1,7 +1,10 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
 import { parse, picklist } from "valibot";
 import { privateDirectoryMode, privateFileMode } from "./private-files.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -14,17 +17,18 @@ async function sourceMaps(directory: string): Promise<string[]> {
     throw new Error("Source map directory alias is forbidden");
   }
   const entries = await readdir(directory, { withFileTypes: true });
-  if (entries.some((entry) => entry.isSymbolicLink())) {
+  type Entry = Readonly<(typeof entries)[number]>;
+  if (entries.some((entry: Entry) => entry.isSymbolicLink())) {
     throw new Error("Source map symlink is forbidden");
   }
   const nested = await Promise.all(
     entries
-      .filter((entry) => entry.isDirectory())
-      .map(async (entry) => sourceMaps(path.join(directory, entry.name))),
+      .filter((entry: Entry) => entry.isDirectory())
+      .map(async (entry: Entry) => sourceMaps(path.join(directory, entry.name))),
   );
   const files = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".map"))
-    .map((entry) => path.join(directory, entry.name));
+    .filter((entry: Entry) => entry.isFile() && entry.name.endsWith(".map"))
+    .map((entry: Entry) => path.join(directory, entry.name));
   return [...files, ...nested.flat()];
 }
 

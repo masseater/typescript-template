@@ -7,14 +7,14 @@ import {
   expectSignedIn,
   signIn,
 } from "./browser-client.ts";
+import { bootstrapAdmin, setUserRole } from "@template/db/admin";
 import { describe, expect } from "vite-plus/test";
 import type { Audience } from "@template/db";
 import type { AuthFixture } from "./auth-test-fixture.ts";
-import { bootstrapAdmin } from "@template/db/admin";
 import { createAuthTest } from "./auth-test-fixture.ts";
 import { createTestDatabase } from "@template/db/testing";
 
-const it = createAuthTest({ bootstrapAdmin, createTestDatabase });
+const it = createAuthTest({ bootstrapAdmin, createTestDatabase, setUserRole });
 const ADMIN_EMAIL = "admin@example.com";
 const AUDIENCES = ["user", "admin"] as const;
 const TOTP_URI_PATTERN = /^otpauth:\/\/totp\//u;
@@ -84,7 +84,7 @@ async function adminRecoverySession(
 describe("admin enrollment", () => {
   it("admin enrollment session cannot access CRM until real TOTP verification", async ({
     fixture,
-  }) => {
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const admin = await signedInAdmin(fixture);
     const verify = { audience: "admin" as const, headers: admin.headers() };
@@ -98,7 +98,7 @@ describe("admin enrollment", () => {
 
   it("old weak admin session cannot enroll another factor after MFA enrollment", async ({
     fixture,
-  }) => {
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const old = await adminWithStaleSession(fixture);
     const attempt = await old.request("/passkey/generate-register-options");
@@ -121,7 +121,7 @@ describe("admin enrollment", () => {
 describe("totp secret for weak admin sessions", () => {
   it.for(AUDIENCES)(
     "weak admin session cannot retrieve TOTP secret through %s app",
-    async (audience, { fixture }) => {
+    async (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
       expect.hasAssertions();
       const { old } = await adminWithWeakSession(fixture, audience);
       const denied = await old.request("/two-factor/get-totp-uri", { password: PASSWORD });
@@ -142,7 +142,7 @@ describe("totp secret for weak admin sessions", () => {
 describe("totp secret after second factor", () => {
   it.for(AUDIENCES)(
     "weak admin session retrieves TOTP secret after a valid second factor through %s app",
-    async (audience, { fixture }) => {
+    async (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
       expect.hasAssertions();
       const { authenticator, old } = await adminWithWeakSession(fixture, audience);
       const verified = await old.request("/two-factor/verify-totp", {
@@ -168,7 +168,7 @@ describe("totp secret after second factor", () => {
 describe("totp secret for recovery sessions", () => {
   it.for(AUDIENCES)(
     "admin recovery session cannot retrieve TOTP secret through %s app",
-    async (audience, { fixture }) => {
+    async (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
       expect.hasAssertions();
       const recovery = await adminRecoverySession(fixture, audience);
       const current = await fixture.verify({
@@ -188,7 +188,9 @@ describe("totp secret for recovery sessions", () => {
 });
 
 describe("totp secret for regular users", () => {
-  it("regular user can still retrieve TOTP URI with their password", async ({ fixture }) => {
+  it("regular user can still retrieve TOTP URI with their password", async ({
+    fixture,
+  }: Readonly<{ fixture: AuthFixture }>) => {
     expect.hasAssertions();
     const old = await userWithStaleSession(fixture, "reader@example.com");
     const current = await fixture.verify({ audience: "user", headers: old.headers() });

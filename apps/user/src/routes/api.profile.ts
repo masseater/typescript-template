@@ -5,11 +5,13 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/profile")({
   server: {
     handlers: {
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       GET: async ({ request, context }) =>
         apiResponse(async () => {
           const { user } = await context.runtime.session(request);
           return getProfile(context.runtime.database, user.id);
         }, context.runtime.reportError),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       PATCH: async ({ request, context }) =>
         apiResponse(async () => {
           const { user } = await context.runtime.session(request);

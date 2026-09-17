@@ -5,8 +5,8 @@ import { source } from "#/lib/source.ts";
 
 const loadPage = createServerFn({ method: "GET" })
   .validator((slugs: readonly string[]) => [...slugs])
-  .handler(async ({ data: slugs }) => {
-    const page = source.getPage(slugs);
+  .handler(async ({ data: slugs }: Readonly<{ data: readonly string[] }>) => {
+    const page = source.getPage([...slugs]);
     if (!page) {
       throw notFound();
     }
@@ -15,7 +15,7 @@ const loadPage = createServerFn({ method: "GET" })
 
 const Route = createFileRoute("/$")({
   component: DocsRoutePage,
-  loader: async ({ location }) =>
+  loader: async ({ location }: Readonly<{ location: Readonly<{ pathname: string }> }>) =>
     loadPage({
       data: location.pathname
         .split("/")

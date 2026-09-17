@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
+import { readEnvironment } from "./environment.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 
 const PROBE_TIMEOUT_MS = 20_000;
@@ -9,12 +12,13 @@ const PROBE_TIMEOUT_MS = 20_000;
 describe("pulumi runtime", () => {
   it("real Pulumi SDK and Cloudflare SDK run under tsx without loading a TypeScript compiler", async () => {
     expect.hasAssertions();
+    // oxlint-disable-next-line typescript/strict-void-return
     const result = await promisify(execFile)(
       process.execPath,
       ["--import", "tsx", "src/runtime-probe.ts"],
       {
-        cwd: fileURLToPath(new URL("../", import.meta.url)),
-        env: { PATH: process.env["PATH"], PULUMI_NODEJS_TYPESCRIPT: "false" },
+        cwd: `${import.meta.dirname}/..`,
+        env: { PATH: readEnvironment().PATH, PULUMI_NODEJS_TYPESCRIPT: "false" },
         timeout: PROBE_TIMEOUT_MS,
       },
     );

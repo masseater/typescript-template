@@ -10,10 +10,10 @@ import type { DatabaseTrace } from "./database-trace.ts";
 import { ObservedSession } from "./observed-session.ts";
 
 class ObservedDatabase implements D1Database {
-  private readonly original: D1Database;
+  private readonly original: Readonly<D1Database>;
   private readonly trace: DatabaseTrace;
 
-  public constructor(original: D1Database, trace: DatabaseTrace) {
+  public constructor(original: Readonly<D1Database>, trace: DatabaseTrace) {
     this.original = original;
     this.trace = trace;
   }
@@ -23,7 +23,7 @@ class ObservedDatabase implements D1Database {
   }
 
   public async batch<Row = unknown>(
-    statements: readonly D1PreparedStatement[],
+    statements: readonly Readonly<D1PreparedStatement>[],
   ): Promise<D1Result<Row>[]> {
     return this.trace("TRANSACTION", async () =>
       this.original.batch<Row>(unwrapStatements(statements)),
@@ -41,13 +41,12 @@ class ObservedDatabase implements D1Database {
   }
 
   public async dump(): Promise<ArrayBuffer> {
-    return this.trace("OTHER", async () => {
-      throw new Error("d1_dump_unsupported");
-    });
+    // oxlint-disable-next-line typescript/no-deprecated
+    return this.trace("OTHER", async () => this.original.dump());
   }
 }
 
-function instrumentD1(binding: D1Database, trace: DatabaseTrace): D1Database {
+function instrumentD1(binding: Readonly<D1Database>, trace: DatabaseTrace): D1Database {
   return new ObservedDatabase(binding, trace);
 }
 

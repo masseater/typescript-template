@@ -13,8 +13,11 @@ import {
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, stat } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { randomBytes } from "node:crypto";
 
 interface SetupReport {
@@ -80,7 +83,7 @@ function appVariables(app: App, credentials: Credentials): Record<string, string
 
 async function writeAppVariables(app: App, credentials: Credentials): Promise<void> {
   const content = `${Object.entries(appVariables(app, credentials))
-    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+    .map(([key, value]: readonly [string, string]) => `${key}=${JSON.stringify(value)}`)
     .join("\n")}\n`;
   await replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
 }

@@ -1,8 +1,11 @@
 import { backendUrl } from "./config.ts";
-import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
 import { readCredentials } from "./credentials.ts";
+import { readEnvironment } from "./environment.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { text } from "node:stream/consumers";
 
 const FORBIDDEN_ARGUMENT_PREFIXES = [
@@ -40,14 +43,13 @@ function validateOutputRead(name: string): void {
 }
 
 async function stateEnvironment(): Promise<NodeJS.ProcessEnv> {
-  const passphrase = process.env["PULUMI_CONFIG_PASSPHRASE"];
-  const apiToken = process.env["CLOUDFLARE_API_TOKEN"];
+  const environment = readEnvironment();
+  const passphrase = environment.PULUMI_CONFIG_PASSPHRASE;
+  const apiToken = environment.CLOUDFLARE_API_TOKEN;
   if (passphrase === undefined || passphrase === "" || apiToken === undefined || apiToken === "") {
     throw new Error("state_environment_missing");
   }
-  const credentials = await readCredentials(
-    fileURLToPath(new URL("../.state/r2.json", import.meta.url)),
-  );
+  const credentials = await readCredentials(`${import.meta.dirname}/../.state/r2.json`);
   if (!credentials) {
     throw new Error("state_credentials_missing");
   }
@@ -56,12 +58,12 @@ async function stateEnvironment(): Promise<NodeJS.ProcessEnv> {
     AWS_REGION: "auto",
     AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey,
     CLOUDFLARE_API_TOKEN: apiToken,
-    HOME: process.env["HOME"],
-    PATH: process.env["PATH"],
+    HOME: environment.HOME,
+    PATH: environment.PATH,
     PULUMI_BACKEND_URL: backendUrl(credentials),
     PULUMI_CONFIG_PASSPHRASE: passphrase,
-    PULUMI_HOME: fileURLToPath(new URL("../.state/pulumi-home", import.meta.url)),
-    USER: process.env["USER"],
+    PULUMI_HOME: `${import.meta.dirname}/../.state/pulumi-home`,
+    USER: environment.USER,
   };
 }
 

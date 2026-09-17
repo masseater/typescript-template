@@ -1,6 +1,7 @@
 import { array, object, parse, record, string, unknown } from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { generateSQLiteDrizzleJson } from "drizzle-kit/api";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 import { schema } from "./schema.ts";
 

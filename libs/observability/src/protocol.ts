@@ -2,6 +2,7 @@ type ServiceName = "user" | "admin" | "wiki";
 type Signal = "logs" | "metrics" | "traces";
 type TelemetryRuntime = "browser" | "server";
 type Attributes = Readonly<Record<string, string | number | boolean>>;
+type RouteEntry = readonly [string, string];
 interface Correlation {
   readonly traceId: string;
   readonly spanId: string;
@@ -163,7 +164,12 @@ function anyValue(value: string | number | boolean): AnyValue {
 }
 
 function attributes(values: Attributes): KeyValue[] {
-  return Object.entries(values).map(([key, value]) => ({ key, value: anyValue(value) }));
+  return Object.entries(values).map(
+    ([key, value]: readonly [string, string | number | boolean]) => ({
+      key,
+      value: anyValue(value),
+    }),
+  );
 }
 
 function resource(service: ServiceName, runtime: TelemetryRuntime): Resource {
@@ -231,9 +237,12 @@ function routeLabel(pathname: string, routes: Readonly<Record<string, string>>):
     return routes[pathname] ?? "unmatched";
   }
   const prefixes = Object.entries(routes)
-    .filter(([path]) => path.endsWith("/*"))
-    .toSorted(([left], [right]) => right.length - left.length);
-  return prefixes.find(([path]) => pathname.startsWith(path.slice(0, -1)))?.[1] ?? "unmatched";
+    .filter(([path]: RouteEntry) => path.endsWith("/*"))
+    .toSorted(([left]: RouteEntry, [right]: RouteEntry) => right.length - left.length);
+  return (
+    prefixes.find(([path]: RouteEntry) => pathname.startsWith(path.slice(0, -1)))?.[1] ??
+    "unmatched"
+  );
 }
 
 function validRoute(path: string, label: string): boolean {
@@ -248,7 +257,7 @@ function validRoute(path: string, label: string): boolean {
 }
 
 function validateRoutes(routes: Readonly<Record<string, string>>): void {
-  if (Object.entries(routes).some(([path, label]) => !validRoute(path, label))) {
+  if (Object.entries(routes).some(([path, label]: RouteEntry) => !validRoute(path, label))) {
     throw new Error("Telemetry routes require fixed paths and bounded labels");
   }
 }

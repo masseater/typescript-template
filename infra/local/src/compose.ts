@@ -1,8 +1,8 @@
-import { access, lstat, mkdir, open } from "node:fs/promises";
-import { constants } from "node:fs";
-import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { access, constants, lstat, mkdir, open } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
-import { randomBytes } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
@@ -11,10 +11,10 @@ const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 const GENERATED_SECRET_BYTES = 32;
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
-const root = fileURLToPath(new URL("../../../", import.meta.url));
-const local = new URL("../../../.local/", import.meta.url);
-const envFile = new URL("observability.env", local);
-const composeFile = fileURLToPath(new URL("../compose.yaml", import.meta.url));
+const root = `${import.meta.dirname}/../../..`;
+const local = `${root}/.local`;
+const envFile = `${local}/observability.env`;
+const composeFile = `${import.meta.dirname}/../compose.yaml`;
 const bundledCompose = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose";
 const [action] = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
 const actions: Readonly<Record<string, readonly string[]>> = {
@@ -37,13 +37,16 @@ const actions: Readonly<Record<string, readonly string[]>> = {
 
 async function assertOwnerOnlyCredentials(): Promise<void> {
   const metadata = await lstat(envFile);
+  // oxlint-disable-next-line no-bitwise
   if (!metadata.isFile() || (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0) {
     throw new Error("Local credentials must be a regular file with mode 0600");
   }
 }
 
 function generatedSecret(): string {
-  return randomBytes(GENERATED_SECRET_BYTES).toString("base64url");
+  return Buffer.from(crypto.getRandomValues(new Uint8Array(GENERATED_SECRET_BYTES))).toString(
+    "base64url",
+  );
 }
 
 async function writeCredentialsIfMissing(): Promise<void> {
@@ -89,14 +92,7 @@ async function runCompose(args: readonly string[]): Promise<void> {
   );
   const child = spawn(
     bundled ? bundledCompose : "docker",
-    [
-      ...(bundled ? [] : ["compose"]),
-      "--env-file",
-      fileURLToPath(envFile),
-      "-f",
-      composeFile,
-      ...args,
-    ],
+    [...(bundled ? [] : ["compose"]), "--env-file", envFile, "-f", composeFile, ...args],
     { cwd: root, stdio: "inherit" },
   );
   const exitArguments: unknown[] = await once(child, "exit");

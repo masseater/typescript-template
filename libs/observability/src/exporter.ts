@@ -13,7 +13,7 @@ interface Batch {
   readonly runtime: TelemetryRuntime;
 }
 interface ExecutionContext {
-  readonly waitUntil: (promise: Promise<unknown>) => void;
+  readonly waitUntil: (promise: Readonly<Promise<unknown>>) => void;
 }
 interface Diagnostics {
   readonly droppedRecords: number;

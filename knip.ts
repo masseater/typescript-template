@@ -47,9 +47,6 @@ const config: KnipConfig = {
       entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
       project: ["src/**/*.ts!"],
     },
-    "tools/e2e": {
-      project: ["src/**/*.ts"],
-    },
     "tools/observe": {
       entry: ["src/cli.ts!", "src/verify.ts!"],
       project: ["src/**/*.ts!"],
@@ -57,4 +54,5 @@ const config: KnipConfig = {
   },
 };
 
+// oxlint-disable-next-line import/no-default-export
 export default config;

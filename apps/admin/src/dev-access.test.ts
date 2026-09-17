@@ -8,9 +8,11 @@ const okStatus = 200;
 const unauthorizedStatus = 401;
 const forbiddenStatus = 403;
 
+type DevContext = Readonly<{ dev: DevServer }>;
+
 const test = baseTest.extend<{ dev: DevServer }>({
   dev: [
-    async ({}, provide): Promise<void> => {
+    async ({}: object, provide): Promise<void> => {
       await withDevServer(provide);
     },
     { scope: "file" },
@@ -31,7 +33,7 @@ describe("admin development entry authentication", () => {
     "/.dev.vars",
     "/.local/runtime.json",
     "/api/users",
-  ])("is required before delivering %s", async (pathname, { dev }) => {
+  ])("is required before delivering %s", async (pathname, { dev }: DevContext) => {
     expect.hasAssertions();
     const response = await fetchPath(dev, {
       authorized: false,
@@ -42,7 +44,7 @@ describe("admin development entry authentication", () => {
     expect(response.headers["cache-control"]).toBe("no-store");
   });
 
-  test("admits Vite resources", async ({ dev }) => {
+  test("admits Vite resources", async ({ dev }: DevContext) => {
     expect.hasAssertions();
     const page = await fetchPath(dev, { authorized: true, pathname: "/" });
     expect(page.status).toBe(okStatus);
@@ -52,7 +54,7 @@ describe("admin development entry authentication", () => {
     expect(client.status).toBe(okStatus);
   });
 
-  test("is required to revalidate cached modules", async ({ dev }) => {
+  test("is required to revalidate cached modules", async ({ dev }: DevContext) => {
     expect.hasAssertions();
     const cached = await fetchPath(dev, { authorized: true, pathname: "/src/admin.js" });
     const revalidated = await fetchPath(dev, {
@@ -91,7 +93,7 @@ describe("admin development untrusted requests", () => {
       pathname: "/src/admin.js",
       status: forbiddenStatus,
     },
-  ])("rejects $pathname with $headers", async (call, { dev }) => {
+  ])("rejects $pathname with $headers", async (call, { dev }: DevContext) => {
     expect.hasAssertions();
     const response = await fetchPath(dev, call);
     expect(response.status).toBe(call.status);
@@ -106,7 +108,7 @@ describe("admin development credential files", () => {
     "/.local/runtime.json",
     "/@fs/{root}/.dev.vars",
     "/@fs/{root}/.local/runtime.json",
-  ])("does not serve %s after entry authentication", async (pathname, { dev }) => {
+  ])("does not serve %s after entry authentication", async (pathname, { dev }: DevContext) => {
     expect.hasAssertions();
     const response = await fetchPath(dev, {
       authorized: true,

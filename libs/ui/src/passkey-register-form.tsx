@@ -1,5 +1,5 @@
 import { Button, Stack } from "smarthr-ui";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import { Field } from "./field";
 import type { SettingsContext } from "./mfa-types";
 import { authClient } from "./client";
@@ -21,7 +21,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
   const name = useTextInput();
   const { setValue: setName, value: nameValue } = name;
   const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event) => {
+    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
       run(async () => {
         onNoticeClear();

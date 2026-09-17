@@ -1,5 +1,5 @@
 import { Button, Stack } from "smarthr-ui";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { ChallengeMode } from "./challenge-form";
 import { Field } from "./field";
@@ -31,7 +31,7 @@ function useCredentialsSubmit({
   const { value: emailValue } = email;
   const { setValue: setPassword, value: passwordValue } = password;
   return useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event) => {
+    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
       run(async () => {
         const data = requireSuccess(

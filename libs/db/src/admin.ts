@@ -49,7 +49,10 @@ function reportMutationFailure(error: unknown): never {
   throw error;
 }
 
-async function requireAdmin(database: Database, sessionId: string): Promise<SessionSecurity> {
+async function requireAdmin(
+  database: Readonly<Pick<Database, "select">>,
+  sessionId: string,
+): Promise<SessionSecurity> {
   const actor = await getSessionSecurity(database, sessionId, "admin");
   if (
     actor?.user.role !== "admin" ||
@@ -61,7 +64,7 @@ async function requireAdmin(database: Database, sessionId: string): Promise<Sess
   return actor;
 }
 
-function liveAdmin(database: Database, sessionId: string): SQL {
+function liveAdmin(database: Readonly<Pick<Database, "select">>, sessionId: string): SQL {
   const actor = alias(user, "actor");
   const unexpired = gt(session.expiresAt, new Date());
   const strongSession = inArray(session.authenticationMethod, [...strongMethods]);
@@ -85,7 +88,7 @@ function liveAdmin(database: Database, sessionId: string): SQL {
 }
 
 async function recordAudit(
-  database: Database,
+  database: Readonly<Pick<Database, "insert">>,
   event: Readonly<{ action: AuditAction; actorId: string; targetId: string }>,
 ): Promise<void> {
   await database.insert(auditEvent).values({
@@ -96,7 +99,7 @@ async function recordAudit(
 }
 
 async function listUsers(
-  database: Database,
+  database: Readonly<Pick<Database, "select">>,
   sessionId: string,
   input: unknown = {},
 ): Promise<UserPage> {
@@ -130,7 +133,7 @@ async function setUserRole({
   sessionId,
   targetId,
 }: Readonly<{
-  database: Database;
+  database: Readonly<Pick<Database, "insert" | "select" | "update">>;
   role: Role;
   sessionId: string;
   targetId: string;
@@ -151,7 +154,7 @@ async function setUserRole({
 }
 
 async function deleteUser(
-  database: Database,
+  database: Readonly<Pick<Database, "delete" | "insert" | "select">>,
   sessionId: string,
   targetId: string,
 ): Promise<{ id: string }> {
@@ -169,7 +172,7 @@ async function deleteUser(
 }
 
 async function bootstrapAdmin(
-  database: Database,
+  database: Readonly<Pick<Database, "all">>,
   address: string,
 ): Promise<{ email: string; id: string; role: Role }> {
   const [updated] = await database.all<{ email: string; id: string; role: Role }>(

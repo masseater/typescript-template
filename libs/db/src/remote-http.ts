@@ -39,7 +39,9 @@ function remoteExecutor(input: unknown): DatabaseExecutor {
         if (!result.success || result.output.result.length !== queries.length) {
           throw new Error("failed");
         }
-        return result.output.result.map((item) => item.results);
+        return result.output.result.map(
+          (item: Readonly<{ results: readonly unknown[] }>) => item.results,
+        );
       } catch {
         throw new Error("REMOTE_QUERY_FAILED");
       }

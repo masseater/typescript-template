@@ -1,11 +1,17 @@
 import { array, literal, object, parse } from "valibot";
-import { fileURLToPath, pathToFileURL } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, writeFile } from "node:fs/promises";
-import assert from "node:assert/strict";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
+import { invariant } from "es-toolkit";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { pathToFileURL } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
-import { randomBytes } from "node:crypto";
+import { readEnvironment } from "./environment.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { userInfo } from "node:os";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
@@ -15,7 +21,7 @@ const COMMAND_TIMEOUT_MS = 60_000;
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
 
-const probeProgram = fileURLToPath(new URL("runtime-probe.ts", import.meta.url));
+const probeProgram = path.join(import.meta.dirname, "runtime-probe.ts");
 const runtimeEvidenceSchema = object({
   compilerLoaded: literal(false),
   engineConnected: literal(true),
@@ -46,6 +52,7 @@ async function writeCommandLog(sandbox: Sandbox, label: string, content: string)
 
 async function command(sandbox: Sandbox, label: string, args: readonly string[]): Promise<string> {
   try {
+    // oxlint-disable-next-line typescript/strict-void-return
     const result = await promisify(execFile)(
       "/usr/bin/sandbox-exec",
       [
@@ -113,9 +120,11 @@ function sandboxEnvironment(isolated: string, state: string): NodeJS.ProcessEnv 
   const { homedir, username } = userInfo();
   return {
     HOME: homedir,
-    PATH: process.env["PATH"],
+    PATH: readEnvironment().PATH,
     PULUMI_BACKEND_URL: pathToFileURL(state).href,
-    PULUMI_CONFIG_PASSPHRASE: randomBytes(PASSPHRASE_BYTES).toString("hex"),
+    PULUMI_CONFIG_PASSPHRASE: Buffer.from(
+      crypto.getRandomValues(new Uint8Array(PASSPHRASE_BYTES)),
+    ).toString("hex"),
     PULUMI_DISABLE_AUTOMATIC_PLUGIN_ACQUISITION: "true",
     PULUMI_DISABLE_CHECKPOINT_BACKUPS: "true",
     PULUMI_HOME: path.join(isolated, "pulumi-home"),
@@ -146,10 +155,10 @@ async function createSandbox(root: string): Promise<Sandbox> {
 }
 
 try {
-  const root = fileURLToPath(new URL("../../../", import.meta.url));
+  const root = path.join(import.meta.dirname, "../../..");
   const sandbox = await createSandbox(root);
   const version = await command(sandbox, "version", ["version"]);
-  assert.equal(version.trim(), "v3.262.0");
+  invariant(version.trim() === "v3.262.0", "engine_cli_version_unexpected");
   await command(sandbox, "init", [
     "stack",
     "init",
@@ -166,7 +175,7 @@ try {
   const evidence = parse(outputsSchema, output);
   const checkpoint: unknown = JSON.parse(await command(sandbox, "export", ["stack", "export"]));
   const verifiedState = parse(checkpointSchema, checkpoint);
-  assert.equal(verifiedState.deployment.resources.length, 1);
+  invariant(verifiedState.deployment.resources.length === 1, "engine_state_resources_unexpected");
   process.stdout.write(
     `${JSON.stringify({
       cliVersion: "3.262.0",

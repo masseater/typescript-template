@@ -8,10 +8,10 @@ import { observeStatement, unwrapStatements } from "./observed-statement.ts";
 import type { DatabaseTrace } from "./database-trace.ts";
 
 class ObservedSession implements D1DatabaseSession {
-  private readonly original: D1DatabaseSession;
+  private readonly original: Readonly<D1DatabaseSession>;
   private readonly trace: DatabaseTrace;
 
-  public constructor(original: D1DatabaseSession, trace: DatabaseTrace) {
+  public constructor(original: Readonly<D1DatabaseSession>, trace: DatabaseTrace) {
     this.original = original;
     this.trace = trace;
   }
@@ -21,7 +21,7 @@ class ObservedSession implements D1DatabaseSession {
   }
 
   public async batch<Row = unknown>(
-    statements: readonly D1PreparedStatement[],
+    statements: readonly Readonly<D1PreparedStatement>[],
   ): Promise<D1Result<Row>[]> {
     return this.trace("TRANSACTION", async () =>
       this.original.batch<Row>(unwrapStatements(statements)),

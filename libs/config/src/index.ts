@@ -25,6 +25,7 @@ interface EmailBinding {
   readonly send: (message: EmailMessage) => Promise<unknown>;
 }
 interface AssetBinding {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
 }
 interface AiBinding {

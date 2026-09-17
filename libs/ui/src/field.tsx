@@ -2,9 +2,22 @@ import type { ComponentProps, ReactElement } from "react";
 import { Input, Stack } from "smarthr-ui";
 import { useId } from "react";
 
-type FieldProps = Omit<ComponentProps<typeof Input>, "id"> & { readonly label: string };
+type FieldProps = Readonly<
+  Pick<
+    ComponentProps<typeof Input>,
+    | "inputMode"
+    | "maxLength"
+    | "minLength"
+    | "name"
+    | "onChange"
+    | "pattern"
+    | "required"
+    | "type"
+    | "value"
+  > & { autoComplete?: string; label: string }
+>;
 
-function Field({ label, ...props }: Readonly<FieldProps>): ReactElement {
+function Field({ label, ...props }: FieldProps): ReactElement {
   const id = useId();
   return (
     <Stack>

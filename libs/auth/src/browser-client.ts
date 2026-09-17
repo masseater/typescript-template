@@ -13,35 +13,34 @@ const HTTP_FOUND = 302;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 
-function storeCookie(cookies: Map<string, string>, header: string): void {
-  const [pair] = header.split(";");
-  if (pair === undefined || pair === "") {
-    return;
-  }
-  const separator = pair.indexOf("=");
-  const key = pair.slice(0, separator);
-  const value = pair.slice(separator + 1);
-  if (value === "") {
-    cookies.delete(key);
-    return;
-  }
-  cookies.set(key, value);
-}
-
 class BrowserClient {
-  public readonly cookies = new Map<string, string>();
-  public readonly auth: Auth;
-  public readonly origin: string;
+  readonly #auth: Readonly<Pick<Auth, "handler">>;
+  readonly #cookies = new Map<string, string>();
+  readonly #origin: string;
 
-  public constructor(auth: Auth, origin: string) {
-    this.auth = auth;
-    this.origin = origin;
+  public constructor(auth: Readonly<Pick<Auth, "handler">>, origin: string) {
+    this.#auth = auth;
+    this.#origin = origin;
+  }
+
+  public cookieEntries(): (readonly [string, string])[] {
+    return [...this.#cookies];
+  }
+
+  public setCookie(key: string, value: string): void {
+    if (value === "") {
+      this.#cookies.delete(key);
+      return;
+    }
+    this.#cookies.set(key, value);
   }
 
   public headers(): Headers {
     return new Headers({
-      cookie: [...this.cookies].map(([key, value]) => `${key}=${value}`).join("; "),
-      origin: this.origin,
+      cookie: this.cookieEntries()
+        .map(([key, value]) => `${key}=${value}`)
+        .join("; "),
+      origin: this.#origin,
     });
   }
 
@@ -51,25 +50,34 @@ class BrowserClient {
   ): Promise<Response> {
     const headers = this.headers();
     headers.set("content-type", "application/json");
-    const response = await this.auth.handler(
-      new Request(`${this.origin}/api/auth${endpoint}`, {
+    const response = await this.#auth.handler(
+      new Request(`${this.#origin}/api/auth${endpoint}`, {
         headers,
         method: body ? "POST" : "GET",
         ...(body ? { body: JSON.stringify(body) } : {}),
       }),
     );
     for (const cookie of response.headers.getSetCookie()) {
-      storeCookie(this.cookies, cookie);
+      this.#storeCookie(cookie);
     }
     return response;
   }
+
+  #storeCookie(header: string): void {
+    const [pair] = header.split(";");
+    if (pair === undefined || pair === "") {
+      return;
+    }
+    const separator = pair.indexOf("=");
+    this.setCookie(pair.slice(0, separator), pair.slice(separator + 1));
+  }
 }
 
-async function signIn(client: BrowserClient, email: string): Promise<Response> {
+async function signIn(client: Readonly<BrowserClient>, email: string): Promise<Response> {
   return client.request("/sign-in/email", { email, password: PASSWORD });
 }
 
-async function expectSignedIn(client: BrowserClient, email: string): Promise<void> {
+async function expectSignedIn(client: Readonly<BrowserClient>, email: string): Promise<void> {
   const response = await signIn(client, email);
   expect(response.status).toBe(HTTP_OK);
 }
@@ -86,7 +94,7 @@ function isEnrollment(data: unknown): data is { backupCodes: string[]; totpURI: 
   );
 }
 
-async function enableTotp(client: BrowserClient): Promise<TotpEnrollment> {
+async function enableTotp(client: Readonly<BrowserClient>): Promise<TotpEnrollment> {
   const response = await client.request("/two-factor/enable", { password: PASSWORD });
   expect(response.status).toBe(HTTP_OK);
   const data: unknown = await response.json();

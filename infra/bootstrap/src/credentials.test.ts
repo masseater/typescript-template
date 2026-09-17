@@ -1,7 +1,10 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { describe, expect, it } from "vite-plus/test";
 import { prepareStateDirectory, readCredentials, writeCredentials } from "./credentials.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
 const HEX_32_LENGTH = 32;
@@ -30,6 +33,7 @@ async function withTemporaryRoot(run: (root: string) => Promise<void>): Promise<
 
 async function permissions(filename: string): Promise<number> {
   const metadata = await stat(filename);
+  // oxlint-disable-next-line no-bitwise
   return metadata.mode & PERMISSION_BITS;
 }
 

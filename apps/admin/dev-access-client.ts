@@ -1,6 +1,8 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { IncomingMessage, request } from "node:http";
-import type { IncomingHttpHeaders } from "node:http";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { text } from "node:stream/consumers";
 
 const localOrigin = "http://localhost:3002";
@@ -20,7 +22,7 @@ interface HttpCall {
 
 interface HttpResult {
   readonly body: string;
-  readonly headers: Readonly<IncomingHttpHeaders>;
+  readonly headers: Readonly<IncomingMessage["headers"]>;
   readonly status: number;
 }
 

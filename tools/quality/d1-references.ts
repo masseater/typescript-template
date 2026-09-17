@@ -1,17 +1,18 @@
-import type { Context, Definition, Reference } from "vite-plus/lint/plugins";
-import type { Node, NodeOf, Resolve } from "./references.ts";
+import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
+import type { Definition, Reference } from "vite-plus/lint/plugins";
 import { bindingPath, origins, propertyKey, propertyName, variableOf } from "./references.ts";
 import { d1Property, d1Type, followPath, prefixPath } from "./d1-types.ts";
 import type { D1Reference } from "./d1-types.ts";
+import type { Resolve } from "./references.ts";
 
 interface Resolution {
   readonly references: Resolve<D1Reference[]>;
-  readonly seen: ReadonlySet<Node>;
+  readonly seen: Readonly<ReadonlySet<Node>>;
 }
 
 interface BindingLookup {
   readonly name: string;
-  readonly seen: ReadonlySet<Node>;
+  readonly seen: Readonly<ReadonlySet<Node>>;
 }
 
 const templateFactories = new Map<string, ReadonlyMap<string, D1Reference>>([
@@ -22,7 +23,11 @@ const templateFactories = new Map<string, ReadonlyMap<string, D1Reference>>([
   ["@template/db", new Map<string, D1Reference>([["createDb", { kind: "orm", path: [] }]])],
 ]);
 
-function annotatedBinding(context: Context, pattern: Node, lookup: BindingLookup): D1Reference[] {
+function annotatedBinding(
+  context: LintContext,
+  pattern: Node,
+  lookup: BindingLookup,
+): D1Reference[] {
   if (pattern.type === "AssignmentPattern") {
     return annotatedBinding(context, pattern.left, lookup);
   }
@@ -37,7 +42,7 @@ function annotatedBinding(context: Context, pattern: Node, lookup: BindingLookup
 }
 
 function objectD1References(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"ObjectExpression">,
   resolve: Resolve<D1Reference[]>,
 ): D1Reference[] {
@@ -63,7 +68,7 @@ function callResult(reference: D1Reference, bound: boolean): D1Reference[] {
 }
 
 function callD1References(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"CallExpression">,
   resolution: Resolution,
 ): D1Reference[] {
@@ -86,7 +91,7 @@ function markDynamic(reference: D1Reference): D1Reference {
 }
 
 function memberD1References(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"MemberExpression">,
   resolve: Resolve<D1Reference[]>,
 ): D1Reference[] {
@@ -114,8 +119,8 @@ function workerBindingReferences(
 }
 
 function definitionD1References(
-  context: Context,
-  definition: Definition,
+  context: LintContext,
+  definition: DeepReadonly<Definition>,
   resolution: Resolution & BindingLookup,
 ): D1Reference[] {
   const declaration = definition.node;
@@ -142,8 +147,8 @@ function assignmentPattern(node: Node): Node {
 }
 
 function assignmentD1References(
-  context: Context,
-  reference: Reference,
+  context: LintContext,
+  reference: DeepReadonly<Reference>,
   resolution: Resolution & BindingLookup,
 ): D1Reference[] {
   if (!reference.isWrite() || reference.init || !reference.writeExpr) {
@@ -154,7 +159,7 @@ function assignmentD1References(
 }
 
 function identifierD1References(
-  context: Context,
+  context: LintContext,
   node: NodeOf<"Identifier">,
   resolution: Resolution,
 ): D1Reference[] {
@@ -167,15 +172,17 @@ function identifierD1References(
     ...origins(context, node).flatMap(([source, member]) =>
       workerBindingReferences(source, member),
     ),
-    ...variable.defs.flatMap((definition) => definitionD1References(context, definition, lookup)),
-    ...variable.references.flatMap((reference) =>
+    ...variable.defs.flatMap((definition: DeepReadonly<Definition>) =>
+      definitionD1References(context, definition, lookup),
+    ),
+    ...variable.references.flatMap((reference: DeepReadonly<Reference>) =>
       assignmentD1References(context, reference, lookup),
     ),
   ];
 }
 
 function compositeD1References(
-  context: Context,
+  context: LintContext,
   node: Node,
   resolution: Resolution,
 ): D1Reference[] {
@@ -192,7 +199,7 @@ function compositeD1References(
 }
 
 function expressionD1References(
-  context: Context,
+  context: LintContext,
   node: Node,
   resolution: Resolution,
 ): D1Reference[] {
@@ -222,9 +229,9 @@ function expressionD1References(
 }
 
 function d1References(
-  context: Context,
+  context: LintContext,
   node: Node,
-  seen: ReadonlySet<Node> = new Set(),
+  seen: Readonly<ReadonlySet<Node>> = new Set(),
 ): D1Reference[] {
   if (seen.has(node)) {
     return [];
@@ -239,14 +246,14 @@ function d1References(
   });
 }
 
-function isD1Operation(context: Context, node: Node): boolean {
+function isD1Operation(context: LintContext, node: Node): boolean {
   return d1References(context, node).some(
     (reference) => reference.path.length === 0 && reference.method !== undefined,
   );
 }
 
 function destructuredOperation(
-  context: Context,
+  context: LintContext,
   node: Node,
   references: readonly D1Reference[],
 ): boolean {
@@ -270,7 +277,7 @@ function destructuredOperation(
   });
 }
 
-function destructuresD1Operation(context: Context, pattern: Node, input: Node): boolean {
+function destructuresD1Operation(context: LintContext, pattern: Node, input: Node): boolean {
   return destructuredOperation(context, pattern, d1References(context, input));
 }
 

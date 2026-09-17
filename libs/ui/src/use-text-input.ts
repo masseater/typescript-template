@@ -9,9 +9,12 @@ interface TextInput {
 
 function useTextInput(): TextInput {
   const [value, setValue] = useState("");
-  const handleChange = useCallback<ChangeEventHandler<HTMLInputElement>>((event) => {
-    setValue(event.target.value);
-  }, []);
+  const handleChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
+    (event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "value">> }>) => {
+      setValue(event.target.value);
+    },
+    [],
+  );
   return useMemo(() => ({ handleChange, setValue, value }), [handleChange, value]);
 }
 

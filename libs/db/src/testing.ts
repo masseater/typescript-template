@@ -1,11 +1,11 @@
 import type { D1Database, D1PreparedStatement, D1Result } from "@cloudflare/workers-types";
 import type { DatabaseExecutor, RemoteQuery } from "./remote-operations.ts";
 import { array, null_, number, object, parse, string, union } from "valibot";
-import { readFile, readdir } from "node:fs/promises";
 import type { Database } from "./index.ts";
 import { Miniflare } from "miniflare";
 import { createDb } from "./index.ts";
 import { getTableColumns } from "drizzle-orm";
+import { loadRemoteMigrations } from "./remote-operations.ts";
 import { schema } from "./schema.ts";
 
 interface D1HttpBatchResponse {
@@ -22,26 +22,28 @@ interface TestDatabase extends EmptyTestDatabase {
   database: Database;
 }
 
-const migrationsDirectory = new URL("../migrations/", import.meta.url);
 const httpParamSchema = union([string(), number(), null_()]);
 const httpQuerySchema = object({ params: array(httpParamSchema), sql: string() });
 const httpBatchSchema = object({ batch: array(httpQuerySchema) });
 
-function prepareBatch(binding: D1Database, queries: readonly RemoteQuery[]): D1PreparedStatement[] {
+function prepareBatch(
+  binding: Readonly<D1Database>,
+  queries: readonly RemoteQuery[],
+): D1PreparedStatement[] {
   return queries.map((query) => binding.prepare(query.sql).bind(...query.params));
 }
 
-function createD1Executor(binding: D1Database): DatabaseExecutor {
+function createD1Executor(binding: Readonly<D1Database>): DatabaseExecutor {
   return {
     batch: async (queries) => {
       const results = await binding.batch(prepareBatch(binding, queries));
-      return results.map((item) => item.results);
+      return results.map((item: Readonly<{ results: readonly unknown[] }>) => item.results);
     },
   };
 }
 
 async function executeD1HttpBatch(
-  binding: D1Database,
+  binding: Readonly<D1Database>,
   body: unknown,
 ): Promise<D1HttpBatchResponse> {
   const { batch } = parse(httpBatchSchema, body);
@@ -51,27 +53,15 @@ async function executeD1HttpBatch(
 
 function getSchemaShape(): Record<string, string[]> {
   return Object.fromEntries(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Object.entries(schema).map(([name, table]) => [name, Object.keys(getTableColumns(table))]),
   );
 }
 
-async function readMigrationStatements(): Promise<string[][]> {
-  const entries = await readdir(migrationsDirectory);
-  const files = entries.filter((name) => name.endsWith(".sql")).toSorted();
-  const contents = await Promise.all(
-    files.map(async (file) => readFile(new URL(file, migrationsDirectory), "utf-8")),
-  );
-  return contents.map((content) =>
-    content
-      .split("--> statement-breakpoint")
-      .map((statement) => statement.trim())
-      .filter(Boolean),
-  );
-}
-
-async function applyMigrations(binding: D1Database): Promise<void> {
-  for (const statements of await readMigrationStatements()) {
-    await binding.batch(statements.map((statement) => binding.prepare(statement)));
+async function applyMigrations(binding: Readonly<D1Database>): Promise<void> {
+  for (const migration of loadRemoteMigrations()) {
+    // oxlint-disable-next-line no-await-in-loop
+    await binding.batch(migration.sql.map((statement) => binding.prepare(statement)));
   }
 }
 

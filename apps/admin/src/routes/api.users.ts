@@ -11,6 +11,7 @@ const setUserRoleSchema = strictObject({ id: userIdSchema, role: picklist(["user
 export const Route = createFileRoute("/api/users")({
   server: {
     handlers: {
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       DELETE: async ({ request, context }) =>
         apiResponse(async () => {
           const { session } = await context.runtime.session(request);
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/api/users")({
           const input = parse(deleteUserSchema, body);
           return deleteUser(context.runtime.database, session.id, input.id);
         }, context.runtime.reportError),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       GET: async ({ request, context }) =>
         apiResponse(async () => {
           const { session } = await context.runtime.session(request);
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/api/users")({
           };
           return listUsers(context.runtime.database, session.id, input);
         }, context.runtime.reportError),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       PATCH: async ({ request, context }) =>
         apiResponse(async () => {
           const { session } = await context.runtime.session(request);
