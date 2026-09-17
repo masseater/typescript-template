@@ -3,12 +3,13 @@ import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
-import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
-import { origins, propertyName, staticText } from "./references.ts";
+import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
+import type { SpecifierChecks } from "./module-specifiers.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
 import { reportViolation } from "./lint-context.ts";
+import { specifierChecks } from "./module-specifiers.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
 
 interface RawD1Checks {
@@ -65,18 +66,6 @@ function isEnvironment(origin: Origin): boolean {
   );
 }
 
-function importSourceChecker(context: LintContext): (node: Node) => void {
-  const importer = importerOf(filename(context));
-  return (node) => {
-    const source = staticText(context, node);
-    if (
-      source === undefined ? isApplicationOrLibrary(importer) : isForbiddenImport(importer, source)
-    ) {
-      reportViolation(context, node);
-    }
-  };
-}
-
 const rawD1Adapters = ["migrate-d1", "testing"] as const;
 const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
@@ -97,46 +86,46 @@ function rawD1Checks(context: LintContext): RawD1Checks {
   };
 }
 
-function importVisitor(checkSource: (node: Node) => void): Visitor {
+function importVisitor(specifiers: SpecifierChecks): Visitor {
   return {
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
-        checkSource(node.source);
+        specifiers.source(node.source);
       }
     },
     ExportNamedDeclaration(node: Node): void {
       if (node.type === "ExportNamedDeclaration" && node.source) {
-        checkSource(node.source);
+        specifiers.source(node.source);
       }
     },
     ImportDeclaration(node: Node): void {
       if (node.type === "ImportDeclaration") {
-        checkSource(node.source);
+        specifiers.source(node.source);
       }
     },
     ImportExpression(node: Node): void {
       if (node.type === "ImportExpression") {
-        checkSource(node.source);
+        specifiers.source(node.source);
       }
     },
     TSExternalModuleReference(node: Node): void {
       if (node.type === "TSExternalModuleReference") {
-        checkSource(node.expression);
+        specifiers.commonJs(node);
       }
     },
     TSImportType(node: Node): void {
       if (node.type === "TSImportType") {
-        checkSource(node.source);
+        specifiers.source(node.source);
       }
     },
   };
 }
 
 function boundariesVisitor(context: LintContext): Visitor {
-  const checkSource = importSourceChecker(context);
+  const specifiers = specifierChecks(context);
   const checks = rawD1Checks(context);
   return {
-    ...importVisitor(checkSource),
+    ...importVisitor(specifiers),
     AssignmentExpression(node: Node): void {
       if (node.type === "AssignmentExpression") {
         checks.destructuring(node, node.left, node.right);
@@ -147,14 +136,8 @@ function boundariesVisitor(context: LintContext): Visitor {
         return;
       }
       checks.operation(node.callee);
-      const [argument] = node.arguments;
-      if (
-        argument !== undefined &&
-        origins(context, node.callee).some(
-          (origin) => origin[0] === "require" && origin.length === 1,
-        )
-      ) {
-        checkSource(argument);
+      if (specifiers.loaderCall(node.callee)) {
+        specifiers.commonJs(node);
       }
     },
     MemberExpression(node: Node): void {
@@ -241,7 +224,7 @@ export default definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。`,
+        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
       ),
     },
     "effect-failures": {
