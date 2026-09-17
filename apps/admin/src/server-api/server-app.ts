@@ -10,6 +10,7 @@ import { accountApi, unavailable } from "@template/runtime/account";
 import {
   apiRoot,
   apiRoutes,
+  compileApi,
   createApi,
   readJsonBody,
   readSearchParams,
@@ -35,7 +36,7 @@ const failures = {
   },
 };
 
-const adminApi = createApi(apiRoot)
+const app = createApi(apiRoot)
   .use(accountApi(api))
   .get(
     "/users",
@@ -79,5 +80,7 @@ const adminApi = createApi(apiRoot)
       failures,
     ),
   );
+
+const adminApi = compileApi(app);
 
 export { adminApi };

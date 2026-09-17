@@ -1,6 +1,7 @@
 import {
   AppOrigin,
   apiRoutes,
+  compileApi,
   createApi,
   elysiaServer,
   readJsonBody,
@@ -31,28 +32,20 @@ function mutation(headers: Readonly<Record<string, string>>, body: string): Requ
 function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
   const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
-  return startRoute(
-    {
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      fetch: async (request: Request): Promise<Response> => {
-        const handle = byMethod[request.method];
-        return handle === undefined
-          ? new Response(undefined, { status: httpStatus.methodNotAllowed })
-          : handle({ request });
-      },
+  return startRoute({
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    fetch: async (request: Request): Promise<Response> => {
+      const handle = byMethod[request.method];
+      return handle === undefined
+        ? new Response(undefined, { status: httpStatus.methodNotAllowed })
+        : handle({ request });
     },
-    app,
-  );
+  });
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function patchApi(app: AnyElysia, request: Request): Promise<Response> {
-  return Effect.runPromise(servedThroughStart(app)(request));
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function getApi(app: AnyElysia, request: Request): Promise<Response> {
-  return Effect.runPromise(servedThroughStart(app)(request));
+async function callApi(app: AnyElysia, request: Request): Promise<Response> {
+  return Effect.runPromise(servedThroughStart(compileApi(app))(request));
 }
 
 const rejections = [
@@ -117,9 +110,7 @@ describe("api routes behind a start server route", () => {
       const app = createApi("").patch("/api/profile", echo);
       const name = "private-profile-text".repeat(repeatedPrivateText);
       const body = JSON.stringify({ name, profile: 1 });
-      const response = yield* Effect.promise(async () =>
-        patchApi(app, mutation(jsonHeaders, body)),
-      );
+      const response = yield* Effect.promise(async () => callApi(app, mutation(jsonHeaders, body)));
       assert.strictEqual(response.status, httpStatus.badRequest);
       const text = yield* Effect.promise(async () => response.text());
       assert.deepStrictEqual(JSON.parse(text), { error: "入力内容を確認してください。" });
@@ -131,7 +122,7 @@ describe("api routes behind a start server route", () => {
     it.effect(`keeps the request body readable so ${reason} is still rejected`, () =>
       Effect.gen(function* program() {
         const app = createApi("").patch("/api/profile", echo);
-        const response = yield* Effect.promise(async () => patchApi(app, mutation(headers, body)));
+        const response = yield* Effect.promise(async () => callApi(app, mutation(headers, body)));
         assert.isAtLeast(response.status, httpStatus.badRequest);
         assert.isBelow(response.status, httpStatus.internalServerError);
       }),
@@ -146,7 +137,7 @@ describe("api responses behind a start server route", () => {
       const handler = api.route(View, () => Effect.succeed({ id: "visible", profile: "x" }), {});
       const app = createApi("").get("/api/view", handler);
       const response = yield* Effect.promise(async () =>
-        getApi(app, new Request(`${origin}/api/view`)),
+        callApi(app, new Request(`${origin}/api/view`)),
       );
       assert.strictEqual(response.status, httpStatus.ok);
       assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), { id: "visible" });
@@ -170,9 +161,43 @@ describe("api responses behind a start server route", () => {
       });
       const app = createApi("").get("/api/broken", handler);
       const response = yield* Effect.promise(async () =>
-        getApi(app, new Request(`${origin}/api/broken`)),
+        callApi(app, new Request(`${origin}/api/broken`)),
       );
       assert.strictEqual(response.status, httpStatus.internalServerError);
+    }),
+  );
+});
+
+describe("api methods behind a start server route", () => {
+  it.effect("answer HEAD on every route that answers GET", () =>
+    Effect.gen(function* program() {
+      const handler = api.route(
+        Schema.Struct({ id: Schema.String }),
+        () => Effect.succeed({ id: "visible" }),
+        {},
+      );
+      const app = createApi("").get("/api/view", handler);
+      const response = yield* Effect.promise(async () =>
+        callApi(app, new Request(`${origin}/api/view`, { method: "HEAD" })),
+      );
+      assert.strictEqual(response.status, httpStatus.ok);
+    }),
+  );
+
+  it.effect("answer an unknown path with the same json failure shape", () =>
+    Effect.gen(function* program() {
+      const app = createApi("").get(
+        "/api/view",
+        api.route(Schema.Struct({}), () => Effect.succeed({}), {}),
+      );
+      const response = yield* Effect.promise(async () =>
+        callApi(app, new Request(`${origin}/api/missing`)),
+      );
+      assert.strictEqual(response.status, httpStatus.notFound);
+      assert.include(response.headers.get("content-type") ?? "", "application/json");
+      assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), {
+        error: "見つかりませんでした。",
+      });
     }),
   );
 });

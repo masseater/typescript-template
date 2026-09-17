@@ -101,5 +101,11 @@ function failureResponse(
   );
 }
 
-export { failureResponse, reportedFailure };
+function runtimeUnavailable(): Failure {
+  // oxlint-disable-next-line no-console
+  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
+  return { message: unexpectedMessage, status: httpStatus.serviceUnavailable };
+}
+
+export { failureResponse, reportedFailure, runtimeUnavailable };
 export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };

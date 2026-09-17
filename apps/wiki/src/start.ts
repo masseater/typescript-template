@@ -3,7 +3,7 @@ import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/r
 import { guardAccess } from "#/lib/access.ts";
 import { httpStatus } from "@template/observability";
 import { jsonResponse } from "@template/runtime/http";
-import { runtime } from "#/runtime.ts";
+import { runtime } from "#/server-api/index.ts";
 
 const guard = createMiddleware().server(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

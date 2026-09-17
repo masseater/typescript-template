@@ -12,6 +12,7 @@ import { accountApi, unavailable } from "@template/runtime/account";
 import {
   apiRoot,
   apiRoutes,
+  compileApi,
   createApi,
   readJsonBody,
   readSearchParams,
@@ -28,7 +29,7 @@ const failures = {
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-const userApi = createApi(apiRoot)
+const app = createApi(apiRoot)
   .use(accountApi(api))
   .use(interviewApi(api))
   .get(
@@ -92,5 +93,7 @@ const userApi = createApi(apiRoot)
       failures,
     ),
   );
+
+const userApi = compileApi(app);
 
 export { userApi };

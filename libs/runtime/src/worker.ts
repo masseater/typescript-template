@@ -1,21 +1,14 @@
 import type { CurrentRequest, Telemetry } from "@template/observability";
 import { Effect, Result } from "effect";
 import { httpStatus, observeRequest } from "@template/observability";
-import type { AnyElysia } from "elysia";
+import { jsonResponse, secureResponse } from "./responses.ts";
 import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
-import { secureResponse } from "./responses.ts";
+import { runtimeUnavailable } from "./failures.ts";
 
-interface StartRequestContext {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly fetchApi: (request: Request) => Promise<Response>;
-}
 interface StartHandler {
-  readonly fetch: (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    request: Request,
-    options: { readonly context: StartRequestContext },
-  ) => Promise<Response> | Response;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  readonly fetch: (request: Request) => Promise<Response> | Response;
 }
 interface FetchWorker {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -32,12 +25,8 @@ type AppRoute<Requirements> = (
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
 function unavailableResponse(): Response {
-  // oxlint-disable-next-line no-console
-  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
-  return new Response(undefined, {
-    headers: { "cache-control": "no-store" },
-    status: httpStatus.serviceUnavailable,
-  });
+  const failure = runtimeUnavailable();
+  return jsonResponse({ error: failure.message }, failure.status);
 }
 
 function serveWorker<Requirements>(
@@ -93,15 +82,10 @@ function serveApp<Requirements>(
 function startRoute(
   handler: StartHandler,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  api: AnyElysia,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 ): (request: Request) => Effect.Effect<Response> {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  const context: StartRequestContext = { fetchApi: async (call) => api.fetch(call) };
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  return (request) =>
-    Effect.promise(async () => secureResponse(await handler.fetch(request, { context })));
+  return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
 }
 
 export { serveApp, serveWorker, startRoute };
-export type { AppRoute, FetchWorker, StartRequestContext };
+export type { AppRoute, FetchWorker };

@@ -57,12 +57,25 @@ function apiData<Contract extends Decodable>(
   return decodeJson(contract, reply.data);
 }
 
+const absent = {
+  notFound: httpStatus.notFound,
+  unauthorized: httpStatus.unauthorized,
+} as const;
+
 function apiDataOrNone<Contract extends Decodable>(
   contract: Contract,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   reply: ApiReply,
+  absentStatus: (typeof absent)[keyof typeof absent] = absent.unauthorized,
 ): Contract["Type"] | undefined {
-  return reply.error?.status === httpStatus.unauthorized ? undefined : apiData(contract, reply);
+  return reply.error?.status === absentStatus ? undefined : apiData(contract, reply);
+}
+
+function apiServerClient<App extends AnyElysia>(
+  app: App,
+  headers: Readonly<Record<string, string>>,
+): ReturnType<typeof treaty<App, string>> {
+  return treaty(app, { headers, parseDate: false });
 }
 
 function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
@@ -72,4 +85,4 @@ function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
   });
 }
 
-export { apiClient, apiData, apiDataOrNone, decodeJson, failureMessage };
+export { absent, apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson, failureMessage };

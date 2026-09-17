@@ -1,10 +1,11 @@
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import { Effect, Exit, Schema } from "effect";
 import { Elysia, status } from "elysia";
-import { failureResponse, reportedFailure } from "./failures.ts";
+import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { httpStatus, readJson } from "@template/observability";
 import type { AnyElysia } from "elysia";
 import { AppOrigin } from "./app-origin.ts";
+import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { InputInvalid } from "./input-invalid.ts";
 import type { ManagedRuntime } from "effect";
 import type { RequestRejected } from "@template/observability";
@@ -35,11 +36,7 @@ interface ApiRoutes<Requirements> {
   ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
 }
 
-const failedMessage = "処理に失敗しました。";
-const unavailableFailure: Failure = {
-  message: failedMessage,
-  status: httpStatus.internalServerError,
-};
+const missingMessage = "見つかりませんでした。";
 const unreadBody = { unread: true } as const;
 
 function decodeInput<Contract extends Decodable>(
@@ -73,7 +70,19 @@ function readSearchParams<Contract extends Decodable>(
 const apiRoot = "/api";
 
 function createApi<const Prefix extends string>(prefix: Prefix) {
-  return new Elysia({ aot: false, prefix }).onParse(() => unreadBody);
+  return (
+    new Elysia({ adapter: CloudflareAdapter, prefix })
+      .onParse(() => unreadBody)
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      .onError(({ code }) =>
+        code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+      )
+  );
+}
+
+function compileApi<App extends AnyElysia>(app: App): App {
+  app.compile();
+  return app;
 }
 
 type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
@@ -104,15 +113,12 @@ function failedStatus(failure: Failure): Failed {
 }
 
 function unavailableResponse(): Response {
-  // oxlint-disable-next-line no-console
-  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
-  return jsonResponse({ error: failedMessage }, httpStatus.internalServerError);
+  const failure = runtimeUnavailable();
+  return jsonResponse({ error: failure.message }, failure.status);
 }
 
 function unavailableStatus(): Failed {
-  // oxlint-disable-next-line no-console
-  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
-  return failedStatus(unavailableFailure);
+  return failedStatus(runtimeUnavailable());
 }
 
 function respondRaw<Failures extends Tagged, Requirements>(
@@ -185,6 +191,6 @@ export { AppOrigin } from "./app-origin.ts";
 export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
-export { apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
+export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer, readJsonBody, readSearchParams };
 export type { ApiRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

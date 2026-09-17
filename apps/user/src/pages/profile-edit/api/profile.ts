@@ -1,11 +1,13 @@
-import { absence, findApi, writeApi } from "#shared/api/index.ts";
+import { absent, apiData, apiDataOrNone } from "@template/runtime/client";
 import { ProfileView } from "@template/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
+import { userClient } from "#shared/api/index.ts";
 
 type Profile = typeof ProfileView.Type;
 
 async function loadProfile(): Promise<Profile> {
-  const profile = await findApi("/api/profile", ProfileView, absence.notFound);
+  const { api } = await userClient();
+  const profile = apiDataOrNone(ProfileView, await api.profile.get(), absent.notFound);
   if (profile === undefined) {
     throw notFound();
   }
@@ -13,7 +15,8 @@ async function loadProfile(): Promise<Profile> {
 }
 
 async function saveProfile(name: string, profile: string): Promise<Profile> {
-  return writeApi("/api/profile", ProfileView, { name, profile });
+  const { api } = await userClient();
+  return apiData(ProfileView, await api.profile.patch({ name, profile }));
 }
 
 export { loadProfile, saveProfile };

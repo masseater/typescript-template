@@ -1,11 +1,11 @@
-import { apiRoot, apiRoutes, createApi, jsonResponse } from "@template/runtime/http";
+import { apiRoot, apiRoutes, compileApi, createApi, jsonResponse } from "@template/runtime/http";
 import { sessionApi, unavailable } from "@template/runtime/account";
 import { Effect } from "effect";
 import type { WikiServices } from "@template/runtime/wiki";
 import { handleAuthRequest } from "@template/auth";
 import { runtime } from "./runtime.ts";
-import { searchWiki } from "./lib/search.ts";
-import { serveMcp } from "./lib/mcp.ts";
+import { searchWiki } from "#/lib/search.ts";
+import { serveMcp } from "#/lib/mcp.ts";
 
 const maximumQueryLength = 200;
 const api = apiRoutes(runtime);
@@ -21,10 +21,13 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
     : Effect.succeed(jsonResponse([]));
 }
 
-const wikiApi = createApi(apiRoot).use(sessionApi(api)).get("/search", api.raw(search, {}));
+const app = createApi(apiRoot).use(sessionApi(api)).get("/search", api.raw(search, {}));
 
-const wikiProtocol = createApi("")
+const protocol = createApi("")
   .all("/mcp", api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
+
+const wikiApi = compileApi(app);
+const wikiProtocol = compileApi(protocol);
 
 export { wikiApi, wikiProtocol };
