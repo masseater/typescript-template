@@ -42,4 +42,4 @@ vp run dev:stop user
 
 ## ブラウザで操作する
 
-`vp run dev:browser user` で agent-browser を開きます。admin を開くと、ローカル用の管理者認証情報が自動で設定されます。
+`vp run dev:browser user` で agent-browser を開きます。admin と wiki は、管理者アカウントでログインしてから使います。

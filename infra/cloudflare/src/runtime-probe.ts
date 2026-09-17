@@ -7,7 +7,6 @@ import { validateAuthSecret } from "./config.ts";
 assert.notEqual(process.env["PULUMI_NODEJS_TYPESCRIPT"], "true");
 assert.equal(typeof cloudflare.Worker, "function");
 assert.equal(typeof cloudflare.WorkerVersion, "function");
-assert.equal(typeof cloudflare.ZeroTrustAccessApplication, "function");
 if (process.env["TEMPLATE_ENGINE_PROBE"] === "true") {
   assert.equal(pulumi.runtime.hasEngine(), true);
   assert.equal(pulumi.runtime.hasMonitor(), true);

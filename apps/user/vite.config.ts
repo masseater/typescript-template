@@ -6,12 +6,12 @@ import { previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { defineConfig } from "vite-plus";
-import { userDevBoundary } from "./dev-boundary.ts";
+import { devBoundary } from "@template/dev-boundary";
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
     previewDevVars(fileURLToPath(new URL(".", import.meta.url))),
-    userDevBoundary(),
+    devBoundary("user"),
     cloudflare({
       config: {
         name: "template-user",

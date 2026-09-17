@@ -5,6 +5,8 @@ description: このリポジトリの開発者向け wiki です。
 
 この wiki は `apps/wiki/content/docs` に置いた Markdown から生成します。ページの本文、サイドバー、検索索引、MCP の応答はすべて同じ Markdown から作られます。
 
+閲覧できるのは、多要素認証を済ませた管理者アカウントだけです。
+
 ## ページを追加する
 
 `apps/wiki/content/docs` に `.md` ファイルを追加すると、ファイル名がそのまま URL になります。先頭の frontmatter に `title` と `description` を書きます。
@@ -29,3 +31,5 @@ description: 検索結果に表示する一文
 ```json
 { "mcpServers": { "wiki": { "type": "http", "url": "https://<wiki のドメイン>/mcp" } } }
 ```
+
+MCP クライアントは OAuth で接続します。初回の接続でブラウザが開くので、管理者アカウントでログインして連携を許可します。

@@ -5,7 +5,6 @@ const valid = {
   USER_ORIGIN: "https://app.example.com",
   ADMIN_ORIGIN: "https://admin.example.com",
   WIKI_ORIGIN: "https://wiki.example.com",
-  ACCESS_ISSUER: "https://team.cloudflareaccess.com",
   ALERT_FROM: "alerts@example.com",
   ALERT_TO: "operator@example.com,oncall@example.com",
 };
@@ -14,20 +13,15 @@ test("accepts distinct https origins and verified operator addresses", () => {
   const config = parseHealthMonitorConfig(valid);
   expect(config.ALERT_TO).toEqual(["operator@example.com", "oncall@example.com"]);
   expect(healthTargets(config)).toEqual([
-    { service: "user", origin: "https://app.example.com", guard: null },
-    {
-      service: "admin",
-      origin: "https://admin.example.com",
-      guard: "https://team.cloudflareaccess.com",
-    },
-    { service: "wiki", origin: "https://wiki.example.com", guard: null },
+    { service: "user", origin: "https://app.example.com" },
+    { service: "admin", origin: "https://admin.example.com" },
+    { service: "wiki", origin: "https://wiki.example.com" },
   ]);
 });
 
 test.each([
   { USER_ORIGIN: "http://app.example.com" },
   { WIKI_ORIGIN: "https://app.example.com/docs" },
-  { ACCESS_ISSUER: "https://team.example.com" },
   { ALERT_TO: "private-not-an-address" },
 ])("refuses invalid settings without echoing them: %j", (override) => {
   expect(() => parseHealthMonitorConfig({ ...valid, ...override })).toThrow(
