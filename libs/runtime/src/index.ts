@@ -4,7 +4,6 @@ import { createDb } from "@template/db";
 import type { Audience } from "@template/db";
 import { createInstrumentation } from "@template/observability";
 import type { RequestContext } from "@template/observability";
-import { reportSentryError } from "@template/observability/sentry-server";
 
 export function createRuntime(
   bindings: unknown,
@@ -14,31 +13,24 @@ export function createRuntime(
   const config = readConfig(bindings);
   const telemetry = createInstrumentation({
     serviceName: audience,
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers: config.otelHeaders,
+    release: config.APP_RELEASE,
     routes,
   });
   return {
-    config: { ASSETS: config.ASSETS, sentry: config.sentry },
+    config: { ASSETS: config.ASSETS },
     telemetry,
     forRequest(correlation: RequestContext) {
       const reportError = (error: unknown) => {
         telemetry.reportError(correlation, error);
-        if (config.sentry) reportSentryError(error);
       };
-      const database = createDb(config.DB, (operation, execute) =>
-        telemetry.withDbSpan(correlation, operation, execute),
-      );
+      const database = createDb(config.DB);
       const auth = createAuth({
         database,
         baseURL: config.APP_ORIGIN,
         secret: config.AUTH_SECRET,
         audience,
         onError: reportError,
-        sendVerificationEmail: (message) =>
-          telemetry.withExternalSpan(correlation, "email", (child) =>
-            sendVerificationEmail(config, message, child.traceparent),
-          ),
+        sendVerificationEmail: (message) => sendVerificationEmail(config, message),
       });
       return {
         config: { APP_ORIGIN: config.APP_ORIGIN },

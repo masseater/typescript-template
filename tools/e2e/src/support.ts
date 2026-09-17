@@ -5,7 +5,6 @@ import * as v from "valibot";
 
 export const root = fileURLToPath(new URL("../../../", import.meta.url));
 export const mailpit = "http://127.0.0.1:8025";
-export const grafana = "http://127.0.0.1:3100";
 
 export function ensure(condition: unknown, code: string): asserts condition {
   if (!condition) throw new Error(code);

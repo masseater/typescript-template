@@ -1,7 +1,6 @@
 import { readWikiConfig } from "@template/config";
 import { createInstrumentation } from "@template/observability";
 import type { RequestContext } from "@template/observability";
-import { reportSentryError } from "@template/observability/sentry-server";
 import * as v from "valibot";
 
 const embeddingModel = "@cf/baai/bge-m3";
@@ -12,27 +11,23 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
   const config = readWikiConfig(bindings);
   const telemetry = createInstrumentation({
     serviceName: "wiki",
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers: config.otelHeaders,
+    release: config.APP_RELEASE,
     routes,
   });
   const ai = config.AI;
   return {
-    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN, sentry: config.sentry },
+    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN },
     telemetry,
     reportError(correlation: RequestContext, error: unknown) {
       telemetry.reportError(correlation, error);
-      if (config.sentry) reportSentryError(error);
     },
-    embedder(correlation: RequestContext) {
+    embedder() {
       if (!ai) return null;
       return async (texts: readonly string[]) => {
         const vectors: number[][] = [];
         for (let start = 0; start < texts.length; start += embeddingBatch) {
           const text = texts.slice(start, start + embeddingBatch);
-          const output = await telemetry.withExternalSpan(correlation, "ai", () =>
-            ai.run(embeddingModel, { text }),
-          );
+          const output = await ai.run(embeddingModel, { text });
           const { data } = v.parse(embeddingOutput, output);
           if (data.length !== text.length) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
           vectors.push(...data);

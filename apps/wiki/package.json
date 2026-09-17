@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "X_LOCAL_EXPLORER=false vp dev",
+    "dev": "vp dev",
     "build": "vp build",
-    "preview": "X_LOCAL_EXPLORER=false vp preview"
+    "preview": "vp preview"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",

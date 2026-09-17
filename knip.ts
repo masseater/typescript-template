@@ -40,11 +40,16 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {
-      entry: ["src/cli.ts!", "src/verify.ts!"],
+      entry: ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/budget-monitor": {
       entry: ["src/worker.ts!", "src/inspect.ts!"],
+      project: ["src/**/*.ts!"],
+      ignoreDependencies: ["cloudflare"],
+    },
+    "infra/error-monitor": {
+      entry: ["src/worker.ts!"],
       project: ["src/**/*.ts!"],
       ignoreDependencies: ["cloudflare"],
     },

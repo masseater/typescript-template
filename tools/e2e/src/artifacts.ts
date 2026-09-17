@@ -136,9 +136,7 @@ export function sourcePaths(maps: ReadonlyMap<string, Buffer>, base: string): st
 
 export function secretValues(source: string): string[] {
   return Object.entries(parseEnv(source)).flatMap(([key, value]) =>
-    value && /SECRET|PASSWORD|TOKEN|PRIVATE_KEY|API_KEY|OTEL_EXPORTER_OTLP_HEADERS/i.test(key)
-      ? [value]
-      : [],
+    value && /SECRET|PASSWORD|TOKEN|PRIVATE_KEY|API_KEY/i.test(key) ? [value] : [],
   );
 }
 

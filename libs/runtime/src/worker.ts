@@ -1,13 +1,7 @@
 import type { Audience } from "@template/db";
-import { withSentryRequest } from "@template/observability/sentry-server";
 import { createRuntime } from "./index.ts";
 import type { AppRequestContext } from "./index.ts";
-import { jsonResponse, secureResponse } from "./http.ts";
-
-type ExecutionContext = {
-  waitUntil(promise: Promise<unknown>): void;
-  passThroughOnException(): void;
-};
+import { secureResponse } from "./http.ts";
 
 type StartHandler = {
   fetch(request: Request, options: { context: AppRequestContext }): Promise<Response> | Response;
@@ -21,18 +15,14 @@ export function createAppWorker(options: {
   finalize?: (response: Response, bindings: unknown) => Promise<Response>;
 }) {
   return {
-    async fetch(request: Request, bindings: unknown, executionContext: ExecutionContext) {
+    async fetch(request: Request, bindings: unknown) {
       const runtime = createRuntime(bindings, options.audience, options.routes);
-      return runtime.telemetry.wrapRequest(
-        request,
-        async (incoming, correlation) => {
-          const denied = await options.gate?.(incoming, bindings);
-          if (denied) return denied;
-          const response = await route(incoming, correlation);
-          return options.finalize ? options.finalize(response, bindings) : response;
-        },
-        executionContext,
-      );
+      return runtime.telemetry.wrapRequest(request, async (incoming, correlation) => {
+        const denied = await options.gate?.(incoming, bindings);
+        if (denied) return denied;
+        const response = await route(incoming, correlation);
+        return options.finalize ? options.finalize(response, bindings) : response;
+      });
 
       async function route(
         incoming: Request,
@@ -46,24 +36,12 @@ export function createAppWorker(options: {
         }
         if (path.endsWith(".map")) return new Response(null, { status: 404 });
         if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
-        if (path === "/api/telemetry")
-          return runtime.telemetry.ingestBrowser(incoming, executionContext);
-        if (path === "/api/client-config") return jsonResponse({ sentry: runtime.config.sentry });
-        const action = async () =>
-          secureResponse(
-            await options.handler.fetch(incoming, {
-              context: { runtime: runtime.forRequest(correlation), correlation },
-            }),
-          );
-        return runtime.config.sentry
-          ? withSentryRequest(
-              runtime.config.sentry,
-              incoming,
-              executionContext,
-              correlation,
-              action,
-            )
-          : action();
+        if (path === "/api/telemetry") return runtime.telemetry.ingestBrowser(incoming);
+        return secureResponse(
+          await options.handler.fetch(incoming, {
+            context: { runtime: runtime.forRequest(correlation), correlation },
+          }),
+        );
       }
     },
   };

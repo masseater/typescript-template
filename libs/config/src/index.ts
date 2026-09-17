@@ -2,25 +2,17 @@ import type { D1Database } from "@cloudflare/workers-types";
 import * as v from "valibot";
 
 const absoluteUrl = v.pipe(v.string(), v.url());
-export const sentrySchemas = {
-  dsn: absoluteUrl,
-  environment: v.pipe(v.string(), v.regex(/^[a-z0-9.-]{1,64}$/)),
-  release: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,128}$/)),
-};
+const release = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,64}$/));
 const origin = v.pipe(
   absoluteUrl,
-  v.check((value) => new URL(value).origin === value, "An origin without a path is required"),
+  v.check((value) => URL.parse(value)?.origin === value, "An origin without a path is required"),
 );
 const scalarSchema = v.object({
   APP_ORIGIN: origin,
   AUTH_SECRET: v.pipe(v.string(), v.minLength(32)),
-  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
-  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
+  APP_RELEASE: v.optional(release, "local"),
   EMAIL_FROM: v.pipe(v.string(), v.email()),
   MAILPIT_URL: v.optional(origin),
-  SENTRY_DSN: v.optional(sentrySchemas.dsn),
-  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
-  SENTRY_RELEASE: v.optional(sentrySchemas.release),
 });
 
 const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
@@ -55,14 +47,6 @@ function hasFunction(value: unknown, key: string): boolean {
 
 export function readEnvironment(input: unknown) {
   const scalars = v.parse(scalarSchema, input);
-  const sentry =
-    scalars.SENTRY_DSN === undefined
-      ? null
-      : {
-          dsn: scalars.SENTRY_DSN,
-          environment: v.parse(sentrySchemas.environment, scalars.SENTRY_ENVIRONMENT),
-          release: v.parse(sentrySchemas.release, scalars.SENTRY_RELEASE),
-        };
   requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   if (
@@ -70,14 +54,7 @@ export function readEnvironment(input: unknown) {
     (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
   )
     throw new Error("Mailpit is restricted to local development");
-  const otelHeaders =
-    scalars.OTEL_EXPORTER_OTLP_HEADERS === undefined
-      ? {}
-      : v.parse(
-          v.record(v.string(), v.string()),
-          JSON.parse(scalars.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
-        );
-  return { ...scalars, otelHeaders, local, sentry };
+  return { ...scalars, local };
 }
 
 export function readConfig(input: unknown) {
@@ -102,7 +79,6 @@ export type AppConfig = ReturnType<typeof readConfig>;
 export async function sendVerificationEmail(
   config: Pick<AppConfig, "APP_ORIGIN" | "EMAIL_FROM" | "MAILPIT_URL" | "EMAIL">,
   message: { email: string; url: string },
-  traceparent?: string,
 ): Promise<void> {
   if (new URL(message.url).origin !== config.APP_ORIGIN)
     throw new Error("Email link origin mismatch");
@@ -115,7 +91,7 @@ export async function sendVerificationEmail(
   if (config.MAILPIT_URL) {
     const response = await fetch(`${config.MAILPIT_URL}/api/v1/send`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(traceparent ? { traceparent } : {}) },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         From: { Email: email.from },
         To: [{ Email: email.to }],
@@ -134,11 +110,7 @@ export async function sendVerificationEmail(
 
 const wikiSchema = v.object({
   APP_ORIGIN: origin,
-  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
-  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
-  SENTRY_DSN: v.optional(sentrySchemas.dsn),
-  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
-  SENTRY_RELEASE: v.optional(sentrySchemas.release),
+  APP_RELEASE: v.optional(release, "local"),
   ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
   AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
 });
@@ -150,21 +122,6 @@ export function readWikiConfig(input: unknown) {
     APP_ORIGIN: config.APP_ORIGIN,
     ASSETS: config.ASSETS,
     AI: config.AI ?? null,
-    OTEL_EXPORTER_OTLP_ENDPOINT: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    otelHeaders:
-      config.OTEL_EXPORTER_OTLP_HEADERS === undefined
-        ? {}
-        : v.parse(
-            v.record(v.string(), v.string()),
-            JSON.parse(config.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
-          ),
-    sentry:
-      config.SENTRY_DSN === undefined
-        ? null
-        : {
-            dsn: config.SENTRY_DSN,
-            environment: v.parse(sentrySchemas.environment, config.SENTRY_ENVIRONMENT),
-            release: v.parse(sentrySchemas.release, config.SENTRY_RELEASE),
-          },
+    APP_RELEASE: config.APP_RELEASE,
   };
 }

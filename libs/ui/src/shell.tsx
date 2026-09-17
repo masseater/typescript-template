@@ -1,6 +1,5 @@
 import { HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { initBrowserTelemetry } from "@template/observability/browser";
-import { connectBrowserSentry } from "@template/observability/sentry-browser";
 import { Fragment, useEffect } from "react";
 import type { ReactElement } from "react";
 import { UIProvider } from "./primitives";
@@ -25,9 +24,7 @@ export function AppShell({
 }): ReactElement {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
-    const disconnectSentry = connectBrowserSentry();
     return () => {
-      disconnectSentry();
       telemetry.dispose();
     };
   }, [routes]);

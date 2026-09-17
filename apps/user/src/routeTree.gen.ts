@@ -13,8 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as ApiProfileRouteImport } from './routes/api.profile'
 import { Route as ApiSessionRouteImport } from './routes/api.session'
+import { Route as ApiVerifyEmailRouteImport } from './routes/api.verify-email'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -37,6 +39,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProfileRoute = ApiProfileRouteImport.update({
   id: '/api/profile',
   path: '/api/profile',
@@ -45,6 +52,11 @@ const ApiProfileRoute = ApiProfileRouteImport.update({
 const ApiSessionRoute = ApiSessionRouteImport.update({
   id: '/api/session',
   path: '/api/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVerifyEmailRoute = ApiVerifyEmailRouteImport.update({
+  id: '/api/verify-email',
+  path: '/api/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -58,8 +70,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/session': typeof ApiSessionRoute
+  '/api/verify-email': typeof ApiVerifyEmailRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -67,8 +81,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/session': typeof ApiSessionRoute
+  '/api/verify-email': typeof ApiVerifyEmailRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -77,8 +93,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/session': typeof ApiSessionRoute
+  '/api/verify-email': typeof ApiVerifyEmailRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
@@ -88,8 +106,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/security'
     | '/signup'
+    | '/verify-email'
     | '/api/profile'
     | '/api/session'
+    | '/api/verify-email'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,8 +117,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/security'
     | '/signup'
+    | '/verify-email'
     | '/api/profile'
     | '/api/session'
+    | '/api/verify-email'
     | '/api/auth/$'
   id:
     | '__root__'
@@ -106,8 +128,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/security'
     | '/signup'
+    | '/verify-email'
     | '/api/profile'
     | '/api/session'
+    | '/api/verify-email'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -116,8 +140,10 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SecurityRoute: typeof SecurityRoute
   SignupRoute: typeof SignupRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiProfileRoute: typeof ApiProfileRoute
   ApiSessionRoute: typeof ApiSessionRoute
+  ApiVerifyEmailRoute: typeof ApiVerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -151,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/profile': {
       id: '/api/profile'
       path: '/api/profile'
@@ -163,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/api/session'
       fullPath: '/api/session'
       preLoaderRoute: typeof ApiSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/verify-email': {
+      id: '/api/verify-email'
+      path: '/api/verify-email'
+      fullPath: '/api/verify-email'
+      preLoaderRoute: typeof ApiVerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -180,8 +220,10 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SecurityRoute: SecurityRoute,
   SignupRoute: SignupRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiSessionRoute: ApiSessionRoute,
+  ApiVerifyEmailRoute: ApiVerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

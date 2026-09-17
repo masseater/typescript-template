@@ -1,6 +1,7 @@
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 import type { Metric } from "web-vitals";
 import { httpMethod, randomHex, routeLabel, validRequestId, validateRoutes } from "./protocol.ts";
+import { errorAttributes } from "./errors.ts";
 import type { BrowserEvent } from "./events.ts";
 
 export type BrowserTelemetryOptions = {
@@ -108,7 +109,8 @@ export function initBrowserTelemetry(options: BrowserTelemetryOptions) {
   };
   window.fetch = instrumentedFetch;
 
-  function recordException(name: "browser.error" | "browser.unhandledrejection") {
+  function recordException(name: "browser.error" | "browser.unhandledrejection", error: unknown) {
+    const attributes = errorAttributes(error);
     enqueue({
       ...documentContext,
       spanId: randomHex(8),
@@ -120,14 +122,16 @@ export function initBrowserTelemetry(options: BrowserTelemetryOptions) {
       method: "GET",
       name,
       value: 1,
+      errorType: attributes["error.type"],
+      locations: attributes["error.locations"],
     });
     void flush().catch(reportFailure);
   }
-  const errorListener = () => {
-    recordException("browser.error");
+  const errorListener = (event: ErrorEvent) => {
+    recordException("browser.error", event.error);
   };
-  const rejectionListener = () => {
-    recordException("browser.unhandledrejection");
+  const rejectionListener = (event: PromiseRejectionEvent) => {
+    recordException("browser.unhandledrejection", event.reason);
   };
   const visibilityListener = () => {
     if (document.visibilityState === "hidden") flushBeforeUnload();

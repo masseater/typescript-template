@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { Button, Stack } from "smarthr-ui";
 import { authClient } from "./client";
@@ -199,5 +199,44 @@ export function SignOutButton() {
       </Button>
       {action.error && <Status error>{action.error}</Status>}
     </>
+  );
+}
+
+export function VerifyEmailPage(): ReactElement {
+  return (
+    <Page title="メールアドレスの確認">
+      <EmailVerification />
+    </Page>
+  );
+}
+
+function EmailVerification(): ReactElement {
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.hash.slice(1)).get("token");
+    window.history.replaceState(null, "", window.location.pathname);
+    void (
+      token
+        ? fetch("/api/verify-email", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ token }),
+          })
+        : Promise.reject(new Error("EMAIL_VERIFICATION_TOKEN_MISSING"))
+    )
+      .then((response) => {
+        if (!response.ok) throw new Error("EMAIL_VERIFICATION_FAILED");
+        window.location.replace("/login");
+        return undefined;
+      })
+      .catch(() => setError(true));
+  }, []);
+  return error ? (
+    <Status error>
+      確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
+    </Status>
+  ) : (
+    <Status>メールアドレスを確認しています。</Status>
   );
 }
