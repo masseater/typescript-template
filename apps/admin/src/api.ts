@@ -38,8 +38,17 @@ const api = createApi()
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
-          const page = yield* readSearchParams(UserListQuery, request);
-          return yield* listUsers(session.id, page);
+          const { keyword, limit, offset, role, verified } = yield* readSearchParams(
+            UserListQuery,
+            request,
+          );
+          return yield* listUsers(session.id, {
+            limit,
+            offset,
+            ...(keyword === undefined ? {} : { keyword }),
+            ...(role === undefined ? {} : { role }),
+            ...(verified === undefined ? {} : { emailVerified: verified === "true" }),
+          });
         }),
       failures,
     ),

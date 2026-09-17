@@ -1,27 +1,23 @@
-import { Page, Status } from "@template/ui/ui";
+import { Heading } from "@template/ui/ui";
 import type { ReactElement } from "react";
-import { SignOutButton } from "@template/ui/auth";
-import { UserDirectory } from "#components/user-directory.tsx";
-import { useSession } from "@template/ui";
-import { useUserManagement } from "#user-management.ts";
+import { UserFilters } from "#components/user-filters.tsx";
+import { UserResults } from "#components/user-results.tsx";
+import { getRouteApi } from "@tanstack/react-router";
+import { useUserList } from "#user-list.ts";
+
+const route = getRouteApi("/_admin/");
 
 function UsersPage(): ReactElement {
-  const { session, loading, error: sessionError } = useSession();
-  const authorized = session?.strong === true && session.user.role === "admin";
-  const management = useUserManagement(authorized);
-  const shownError = management.error === "" ? sessionError : management.error;
+  const search = route.useSearch();
+  const { reload, state } = useUserList(search);
   return (
-    <Page title="ユーザー管理">
-      {loading && <Status variant="pending">読み込み中です。</Status>}
-      {!loading && !session && <a href="/login">管理者ログインへ</a>}
-      {session && !authorized && <a href="/security">追加認証を完了してください。</a>}
-      {authorized && management.data && (
-        <UserDirectory list={management.data} management={management} />
-      )}
-      {session && <SignOutButton />}
-      {management.message !== "" && <Status variant="success">{management.message}</Status>}
-      {(shownError ?? "") !== "" && <Status variant="error">{shownError}</Status>}
-    </Page>
+    <main className="flex flex-col gap-4 p-4">
+      <Heading as="h1" size="page">
+        ユーザー一覧
+      </Heading>
+      <UserFilters key={JSON.stringify(search)} search={search} />
+      <UserResults search={search} state={state} onReload={reload} />
+    </main>
   );
 }
 
