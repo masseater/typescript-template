@@ -26,16 +26,15 @@ describe("member view", () => {
     }),
   );
 
-  it.effect("rejects a registration date finer than a month", () =>
-    Effect.gen(function* program() {
-      const failure = yield* encode({
-        id: "reader",
-        joined: "2026-08-31T23:59:59.999Z",
-        name: "reader",
-        profile: "",
-      }).pipe(Effect.flip);
-      assert.strictEqual(failure._tag, "SchemaError");
-    }),
+  it.effect.each(["2026-08-31T23:59:59.999Z", "join 2026-08", "26-08", "2026-8"])(
+    "rejects the registration date %s",
+    (joined) =>
+      Effect.gen(function* program() {
+        const failure = yield* encode({ id: "reader", joined, name: "reader", profile: "" }).pipe(
+          Effect.flip,
+        );
+        assert.strictEqual(failure._tag, "SchemaError");
+      }),
   );
 });
 

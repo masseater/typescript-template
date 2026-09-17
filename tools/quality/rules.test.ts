@@ -63,6 +63,18 @@ const forbiddenCode = [
     'import { Elysia } from "elysia"; export const api = new Elysia();',
     "effect-stack",
   ],
+  ["libs/shared/src/probe.ts", 'export * from "elysia";', "effect-stack"],
+  ["libs/shared/src/probe.ts", 'export { t } from "elysia";', "effect-stack"],
+  [
+    "libs/shared/src/probe.ts",
+    'export const load = () => import("elysia/adapter/cloudflare-worker");',
+    "effect-stack",
+  ],
+  [
+    "libs/shared/src/probe.ts",
+    'import type { Infer } from "valibot"; export type T = Infer;',
+    "effect-stack",
+  ],
   [
     "apps/user/src/routes/api.probe.ts",
     "export const Route = { server: { handlers: { GET: () => new Response() } } };",
@@ -223,6 +235,11 @@ const validBoundaries = [
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
+  ["libs/runtime/src/http.ts", 'import { Elysia } from "elysia"; export const api = new Elysia();'],
+  ["libs/shared/src/probe.ts", 'import type { Elysia } from "elysia"; export type Api = Elysia;'],
+  ["libs/shared/src/probe.ts", 'export { helper } from "pre-elysia";'],
+  ["libs/shared/src/probe.ts", 'export { helper } from "my-valibot";'],
+  ["apps/user/src/app/routes/probe.ts", "export const Route = { server: { middleware: [] } };"],
 ] as const;
 
 const singleReports = [

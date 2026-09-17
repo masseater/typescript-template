@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
+import { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment } from "./index.ts";
 import { Effect } from "effect";
 
 const local = {
@@ -76,5 +76,70 @@ it.effect("rejects weak session secrets and pathful application origins", () =>
       "An origin without a path is required",
     );
     assert.include(yield* reason({ ...local, APP_ORIGIN: "not-a-url" }), "absolute URL");
+  }),
+);
+
+function noop(): undefined {
+  return undefined;
+}
+
+const bindings = {
+  AI: { run: noop },
+  ASSETS: { fetch: noop },
+  DB: { batch: noop, prepare: noop },
+  EMAIL: { send: noop },
+};
+
+function configReason(
+  input: unknown,
+): Effect.Effect<string, Effect.Success<ReturnType<typeof readConfig>>> {
+  return readConfig(input).pipe(
+    Effect.flip,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((error) => error.reason),
+  );
+}
+
+it.effect("accepts the bindings the worker declares", () =>
+  Effect.gen(function* program() {
+    const config = yield* readConfig({ ...local, ...bindings });
+    assert.strictEqual<unknown>(config.DB, bindings.DB);
+    assert.strictEqual<unknown>(yield* readAi({ ...local, ...bindings }), bindings.AI);
+    assert.strictEqual<unknown>(yield* readAi(local), undefined);
+    const withoutRunner = yield* readAi({ ...local, AI: {} }).pipe(Effect.flip);
+    assert.strictEqual(withoutRunner._tag, "ConfigurationInvalid");
+  }),
+);
+
+const brokenBindings = [
+  { ASSETS: {} },
+  { ASSETS: "fetch" },
+  { ASSETS: /x/u.exec("y") },
+  { DB: { prepare: noop } },
+  { DB: { batch: noop } },
+  { DB: { batch: "batch", prepare: noop } },
+  { EMAIL: {} },
+] as const;
+
+for (const broken of brokenBindings) {
+  it.effect(`rejects the binding ${JSON.stringify(broken)}`, () =>
+    Effect.gen(function* program() {
+      assert.isString(yield* configReason({ ...local, ...bindings, ...broken }));
+    }),
+  );
+}
+
+it.effect("requires a way to deliver mail", () =>
+  Effect.gen(function* program() {
+    const { MAILPIT_URL: _mailpit, ...withoutMailpit } = local;
+    const { EMAIL: _email, ...withoutEmail } = bindings;
+    assert.strictEqual(
+      yield* configReason({
+        ...withoutMailpit,
+        ...withoutEmail,
+        APP_ORIGIN: "https://app.example.test",
+      }),
+      "An email delivery binding is required",
+    );
   }),
 );
