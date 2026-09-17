@@ -7,12 +7,21 @@ export default defineConfig({
     jsPlugins: [
       "./tools/quality/rules.ts",
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+      "@shadcn/lint",
     ],
+    settings: { shadcn: { ui: "@template/ui/ui" } },
     categories: { correctness: "error", suspicious: "error" },
     overrides: [
       {
         files: ["**/*.test.ts"],
         rules: { "no-empty-pattern": ["error", { allowObjectPatternsAsParameters: true }] },
+      },
+      {
+        files: ["libs/ui/src/shared/ui/**"],
+        rules: {
+          "shadcn/no-restyle": "off",
+          "jsx-a11y/label-has-associated-control": "off",
+        },
       },
     ],
     rules: {
@@ -38,6 +47,10 @@ export default defineConfig({
       "project/no-internal-mocks": "error",
       "project/environment-boundary": "error",
       "project/worker-fetch": "error",
+      "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
+      "shadcn/no-raw-colors": "error",
+      "shadcn/no-arbitrary-values": "error",
+      "shadcn/no-unknown-classes": "error",
     },
     ignorePatterns: [
       "**/routeTree.gen.ts",
