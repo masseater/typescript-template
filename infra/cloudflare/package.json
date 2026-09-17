@@ -8,6 +8,7 @@
   "scripts": {
     "verify:artifacts": "node src/check-artifacts.ts",
     "verify:engine": "node src/engine-check.ts",
+    "verify:runtime": "node src/runtime-probe.ts",
     "preview:shared": "node src/cli.ts preview shared",
     "preview:user": "node src/cli.ts preview user",
     "preview:admin": "node src/cli.ts preview admin",

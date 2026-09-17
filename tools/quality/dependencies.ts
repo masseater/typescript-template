@@ -1,13 +1,9 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, readdir } from "node:fs/promises";
-
 interface WorkspaceManifest {
   readonly area: string;
   readonly file: string;
   readonly manifest: unknown;
 }
 
-const workspaceAreas = ["apps", "libs", "infra", "tools"] as const;
 const dependencyFields = [
   "dependencies",
   "devDependencies",
@@ -21,39 +17,18 @@ function field(manifest: unknown, key: string): unknown {
     : undefined;
 }
 
-async function readManifest(
-  root: string,
-  area: string,
-  directory: string,
-): Promise<WorkspaceManifest[]> {
-  const file = `${area}/${directory}/package.json`;
-  try {
-    const text = await readFile(new URL(file, root), "utf-8");
-    return [{ area, file, manifest: JSON.parse(text) as unknown }];
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return [];
-    }
-    throw error;
-  }
-}
+const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../{apps,libs,infra,tools}/*/package.json",
+  { eager: true, import: "default" },
+);
 
-async function readAreaManifests(root: string, area: string): Promise<WorkspaceManifest[]> {
-  const entries = await readdir(new URL(`${area}/`, root), { withFileTypes: true });
-  const found = await Promise.all(
-    entries
-      .filter((entry: Readonly<{ isDirectory: () => boolean }>) => entry.isDirectory())
-      .map(async (entry: Readonly<{ name: string }>) => readManifest(root, area, entry.name)),
-  );
-  return found.flat();
-}
-
-async function readWorkspaceManifests(root: string): Promise<WorkspaceManifest[]> {
-  const found = await Promise.all(
-    workspaceAreas.map(async (area) => readAreaManifests(root, area)),
-  );
-  return found.flat();
-}
+const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifestModules).map(
+  ([key, manifest]: readonly [string, unknown]) => {
+    const file = key.replace(/^(?:\.\.\/)+/u, "");
+    const [area = ""] = file.split("/");
+    return { area, file, manifest };
+  },
+);
 
 function applicationNames(workspaces: readonly WorkspaceManifest[]): string[] {
   return workspaces.flatMap(({ area, manifest }) => {
@@ -81,5 +56,5 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
   );
 }
 
-export { applicationDependencyViolations, field, readWorkspaceManifests };
+export { applicationDependencyViolations, field, workspaceManifests };
 export type { WorkspaceManifest };

@@ -1,7 +1,5 @@
-import { applicationDependencyViolations, readWorkspaceManifests } from "./dependencies.ts";
+import { applicationDependencyViolations, workspaceManifests } from "./dependencies.ts";
 import { describe, expect, it } from "vite-plus/test";
-
-const root = new URL("../../", import.meta.url).href;
 
 describe("application package boundaries", () => {
   it.for(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])(
@@ -28,12 +26,11 @@ describe("application package boundaries", () => {
     },
   );
 
-  it("repository workspaces share code through libs instead of application packages", async () => {
+  it("repository workspaces share code through libs instead of application packages", () => {
     expect.hasAssertions();
-    const workspaces = await readWorkspaceManifests(root);
-    expect(workspaces.filter(({ area }) => area === "apps").map(({ file }) => file)).toStrictEqual(
-      expect.arrayContaining(["apps/user/package.json", "apps/admin/package.json"]),
-    );
-    expect(applicationDependencyViolations(workspaces)).toStrictEqual([]);
+    expect(
+      workspaceManifests.filter(({ area }) => area === "apps").map(({ file }) => file),
+    ).toStrictEqual(expect.arrayContaining(["apps/user/package.json", "apps/admin/package.json"]));
+    expect(applicationDependencyViolations(workspaceManifests)).toStrictEqual([]);
   });
 });

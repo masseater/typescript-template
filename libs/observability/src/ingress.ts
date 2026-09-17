@@ -1,11 +1,13 @@
-import { logError, logInfo } from "./log.ts";
 import type { BrowserEvent } from "./events.ts";
+import type { LogSink } from "./log.ts";
 import type { ServiceName } from "./protocol.ts";
 import { errorFingerprint } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { parseBrowserEvents } from "./events.ts";
+import { writeLog } from "./log.ts";
 
 interface Ingress {
+  readonly log: LogSink;
   readonly labels: Readonly<ReadonlySet<string>>;
   readonly release: string;
   readonly serviceName: ServiceName;
@@ -116,8 +118,7 @@ function recordBrowserEvent(ingress: Ingress, event: BrowserEvent): void {
   const failed =
     event.kind === "exception" ||
     (event.kind === "http" && (event.status === 0 || event.status >= httpStatus.badRequest));
-  const log = failed ? logError : logInfo;
-  log({
+  writeLog(ingress.log, failed ? "error" : "info", {
     duration_ms: event.duration,
     event: event.name,
     "http.route": event.route,

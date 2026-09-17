@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { lintProbe } from "./lint-harness.ts";
+import { reported } from "./lint-harness.ts";
 
 const mockBypasses = [
   ["import-alias", 'import { vi as tools } from "vitest"; tools.mock("owned");'],
@@ -73,19 +73,13 @@ const environmentBypasses = [
 ] as const;
 
 describe("project lint rules on mock and environment bypasses", () => {
-  it.for(mockBypasses)("rejects mock bypass: %s", async ([_label, code]) => {
+  it.for(mockBypasses)("rejects mock bypass: %s", ([_label, code]) => {
     expect.hasAssertions();
-    const result = await lintProbe("probe.ts", code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(1);
-    expect(result.output).toContain("project(no-internal-mocks)");
+    expect(reported("no-internal-mocks", "probe.ts", code)).toBe(true);
   });
 
-  it.for(environmentBypasses)("rejects environment bypass: %s", async ([_label, code]) => {
+  it.for(environmentBypasses)("rejects environment bypass: %s", ([_label, code]) => {
     expect.hasAssertions();
-    const result = await lintProbe("libs/shared/src/probe.ts", code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(1);
-    expect(result.output).toContain("project(environment-boundary)");
+    expect(reported("environment-boundary", "libs/shared/src/probe.ts", code)).toBe(true);
   });
 });

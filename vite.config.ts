@@ -1,5 +1,11 @@
 import { defineConfig } from "vite-plus";
 
+const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
+
+function textModule(code: string, id: string): string | undefined {
+  return textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
+}
+
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   fmt: {
@@ -101,6 +107,7 @@ export default defineConfig({
       "project/boundaries": "error",
       "project/environment-boundary": "error",
       "project/no-internal-mocks": "error",
+      "project/test-import-graph": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
@@ -128,6 +135,7 @@ export default defineConfig({
       "vite-plus/prefer-vite-plus-imports": "error",
     },
   },
+  plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   test: {
     clearMocks: false,
     include: [

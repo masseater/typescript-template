@@ -1,11 +1,13 @@
-import type { ESTree, RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import type { LintContext, Node } from "./lint-context.ts";
-import { destructuredOrigins, origins, propertyName, staticText } from "./references.ts";
+import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
+import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
+import { aliasVisitor } from "./alias-visitor.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
+import { testImportGraphVisitor } from "./test-import-graph.ts";
 
 interface RawD1Checks {
   readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;
@@ -164,47 +166,6 @@ function boundariesVisitor(context: LintContext): Visitor {
   };
 }
 
-function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean): Visitor {
-  function check(node: Node): void {
-    if (origins(context, node).some((origin) => matches(origin))) {
-      reportViolation(context, node);
-    }
-  }
-  return {
-    AssignmentExpression(node: Node): void {
-      if (
-        node.type === "AssignmentExpression" &&
-        node.left.type === "ObjectPattern" &&
-        destructuredOrigins(context, node.left, origins(context, node.right)).some((origin) =>
-          matches(origin),
-        )
-      ) {
-        reportViolation(context, node);
-      }
-    },
-    ImportDeclaration(node: Node): void {
-      if (node.type !== "ImportDeclaration") {
-        return;
-      }
-      for (const specifier of node.specifiers) {
-        check(specifier.local);
-      }
-    },
-    MemberExpression: check,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    VariableDeclarator(node: ESTree.Node): void {
-      if (node.type !== "VariableDeclarator" || node.id.type !== "ObjectPattern") {
-        return;
-      }
-      for (const variable of context.sourceCode.getDeclaredVariables(node)) {
-        for (const identifier of variable.identifiers) {
-          check(identifier);
-        }
-      }
-    },
-  };
-}
-
 function environmentVisitor(context: LintContext): Visitor {
   if (/\/(?:libs\/config|infra|tools)\//u.test(filename(context))) {
     return {};
@@ -287,6 +248,12 @@ export default definePlugin({
       create: mockVisitor,
       meta: metadata(
         "内部処理・関数・DB のモックは禁止です。別名や分割代入も使用できません。実 DB と実サービスで検証してください。外部 HTTP の置換だけ MSW を利用できます。",
+      ),
+    },
+    "test-import-graph": {
+      create: testImportGraphVisitor,
+      meta: metadata(
+        "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
       ),
     },
     "worker-fetch": {

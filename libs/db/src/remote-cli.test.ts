@@ -1,35 +1,16 @@
 import { describe, expect, it } from "vite-plus/test";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { once } from "node:events";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
+import { runRemoteCli } from "./remote-cli.ts";
 
 const ACCOUNT_ID_LENGTH = 32;
-const COMMAND_TIMEOUT_MS = 10_000;
 
-interface CommandResult {
-  code: number | null;
-  error: string;
-  output: string;
-}
+type CommandResult = Awaited<ReturnType<typeof runRemoteCli>>;
 
 async function command(args: readonly string[], input: string): Promise<CommandResult> {
-  const child = spawn(process.execPath, [`${import.meta.dirname}/remote-cli.ts`, ...args], {
-    env: {},
-    stdio: ["pipe", "pipe", "pipe"],
-    timeout: COMMAND_TIMEOUT_MS,
-  });
-  child.stdin.end(input);
-  const [output, error] = await Promise.all([
-    new Response(ReadableStream.from(child.stdout)).text(),
-    new Response(ReadableStream.from(child.stderr)).text(),
-    once(child, "close"),
-  ]);
-  return { code: child.exitCode, error, output };
+  return runRemoteCli(args, [Buffer.from(input)]);
 }
 
 describe("remote database CLI", () => {
-  it("emits a structured offline plan with an empty environment", async () => {
+  it("emits a structured offline plan", async () => {
     expect.hasAssertions();
     const result = await command(
       ["migrate", "--plan"],
@@ -54,6 +35,13 @@ describe("remote database CLI", () => {
     expect(result.output).toBe("");
     expect(result.error).not.toContain("malformed-secret-private-token");
     expect(JSON.parse(result.error)).toMatchObject({ code: "REMOTE_DATABASE_FAILED", ok: false });
+  });
+
+  it("rejects non-binary input chunks", async () => {
+    expect.hasAssertions();
+    const result = await runRemoteCli(["migrate", "--plan"], ["{}"]);
+    expect(result.code).toBe(1);
+    expect(JSON.parse(result.error)).toMatchObject({ ok: false });
   });
 
   it("refuses execution without a matching target confirmation", async () => {

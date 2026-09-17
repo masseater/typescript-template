@@ -1,11 +1,14 @@
 import type { RequestContext, RequestHandler, Telemetry } from "./request-span.ts";
 import { reportError, wrapRequest } from "./request-span.ts";
 import type { IngressRequest } from "./ingress.ts";
+import type { LogSink } from "./log.ts";
 import type { ServiceName } from "./protocol.ts";
+import { consoleSink } from "./log.ts";
 import { ingestBrowser } from "./ingress.ts";
 import { validateRoutes } from "./protocol.ts";
 
 interface InstrumentationOptions {
+  readonly log?: LogSink;
   readonly serviceName: ServiceName;
   readonly release: string;
   readonly routes: Readonly<Record<string, string>>;
@@ -30,10 +33,11 @@ function createInstrumentation(options: InstrumentationOptions): Instrumentation
     throw new Error("Invalid telemetry service");
   }
   validateRoutes(options.routes);
-  const { release, routes, serviceName } = options;
-  const telemetry: Telemetry = { release, routes, serviceName };
+  const { log = consoleSink, release, routes, serviceName } = options;
+  const telemetry: Telemetry = { log, release, routes, serviceName };
   const ingress = {
     labels: new Set([...Object.values(routes), "unmatched"]),
+    log,
     release,
     serviceName,
   };

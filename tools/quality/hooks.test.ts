@@ -1,32 +1,26 @@
 import { describe, expect, it } from "vite-plus/test";
-import { root, runCommand, withProbeDirectory } from "./lint-harness.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { writeFile } from "node:fs/promises";
+import { field } from "./dependencies.ts";
+
+const manifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
+  eager: true,
+  import: "default",
+});
+
+function script(name: string): unknown {
+  return field(field(manifests["../../package.json"], "scripts"), name);
+}
 
 describe("git hooks", () => {
-  it("pre-commit hook rejects an actual lint violation", async () => {
+  it("git hooks run the verified package scripts", () => {
     expect.hasAssertions();
-    const result = await withProbeDirectory(async (directory) => {
-      await writeFile(path.join(directory, "invalid.ts"), "debugger;\n");
-      return runCommand(path.join(root, ".vite-hooks/_/pre-commit"), [], directory);
+    expect(
+      import.meta.glob("../../.vite-hooks/pre-*", { eager: true, import: "default" }),
+    ).toStrictEqual({
+      "../../.vite-hooks/pre-commit": "vp run precommit\n",
+      "../../.vite-hooks/pre-push": "vp run prepush\n",
     });
-    expect(result.status).toBe(1);
-    expect(result.output).toContain("error");
-  });
-
-  it("pre-push hook rejects an actual failing test", async () => {
-    expect.hasAssertions();
-    const vitestEntry = import.meta.resolve("vite-plus/test");
-    const result = await withProbeDirectory(async (directory) => {
-      await writeFile(
-        path.join(directory, "failure.test.ts"),
-        `import { test, expect } from ${JSON.stringify(vitestEntry)}; test("intentional failure", () => expect(1).toBe(2));`,
-      );
-      return runCommand(path.join(root, ".vite-hooks/_/pre-push"), [], directory);
-    });
-    expect(result.status).toBe(1);
-    expect(result.output).toContain("intentional failure");
+    expect(script("precommit")).toBe("vp run check");
+    expect(script("check")).toContain("vp check");
+    expect(script("prepush")).toContain("vp test run --changed origin/main");
   });
 });

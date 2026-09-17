@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Instrumentation } from "./server.ts";
 import { createInstrumentation } from "./server.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { execFile } from "node:child_process";
 import { httpStatus } from "./http-status.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
 
 const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const spanId = "bbbbbbbbbbbbbbbb";
@@ -13,7 +9,6 @@ const telemetryUrl = "http://localhost/api/telemetry";
 const created = 201;
 const noContent = 204;
 const oversizedBody = 32_769;
-const probeTimeoutMilliseconds = 20_000;
 const jsonHeaders = { "content-type": "application/json", origin: "http://localhost" };
 
 function setup(): Instrumentation {
@@ -52,54 +47,76 @@ async function ingestStatus(
   return response.status;
 }
 
-function logLines(output: string): unknown[] {
-  return output
-    .split("\n")
-    .filter((line) => line !== "")
-    .map((line): unknown => JSON.parse(line));
+interface RecordedLogs {
+  readonly stderr: unknown[];
+  readonly stdout: unknown[];
 }
 
-const probe = `
-import { createInstrumentation } from "./src/server.ts";
-const instrumentation = createInstrumentation({
-  serviceName: "user",
-  release: "abc123",
-  routes: { "/": "home" },
-});
-const base = {
-  route: "home",
-  start: Date.now(),
-  duration: 25,
-  traceId: "a".repeat(32),
-  spanId: "b".repeat(16),
-  requestId: "11111111-1111-4111-8111-111111111111",
-};
-const response = await instrumentation.ingestBrowser(
-  new Request("http://localhost/api/telemetry", {
-    method: "POST",
-    headers: { origin: "http://localhost", "content-type": "application/json" },
-    body: JSON.stringify([
-      { ...base, kind: "http", status: 201, method: "POST", name: "http.client.request", value: 0 },
-      {
-        ...base,
-        kind: "exception",
-        status: 0,
-        method: "GET",
-        name: "browser.error",
-        value: 1,
-        errorType: "TypeError",
-        locations: "/assets/index-abc.js:1:234",
+function recordedInstrumentation(): Readonly<{
+  instrumentation: Instrumentation;
+  logs: RecordedLogs;
+}> {
+  const logs: RecordedLogs = { stderr: [], stdout: [] };
+  const instrumentation = createInstrumentation({
+    log: {
+      error: (line) => {
+        logs.stderr.push(JSON.parse(line));
       },
-    ]),
-  }),
-);
-await instrumentation
-  .wrapRequest(new Request("http://localhost/"), () => {
-    throw new RangeError("private@example.test");
-  })
-  .catch(() => undefined);
-console.info(JSON.stringify({ event: "probe.done", status: response.status }));
-`;
+      info: (line) => {
+        logs.stdout.push(JSON.parse(line));
+      },
+    },
+    release: "abc123",
+    routes: { "/": "home" },
+    serviceName: "user",
+  });
+  return { instrumentation, logs };
+}
+
+function probeEvents(): string {
+  const base = {
+    duration: 25,
+    requestId: "11111111-1111-4111-8111-111111111111",
+    route: "home",
+    spanId,
+    start: Date.now(),
+    traceId,
+  };
+  return JSON.stringify([
+    {
+      ...base,
+      kind: "http",
+      method: "POST",
+      name: "http.client.request",
+      status: created,
+      value: 0,
+    },
+    {
+      ...base,
+      errorType: "TypeError",
+      kind: "exception",
+      locations: "/assets/index-abc.js:1:234",
+      method: "GET",
+      name: "browser.error",
+      status: 0,
+      value: 1,
+    },
+  ]);
+}
+
+function throwPrivateError(): never {
+  throw new RangeError("private@example.test");
+}
+
+async function runProbe(instrumentation: Instrumentation): Promise<number> {
+  const response = await instrumentation.ingestBrowser(
+    new Request(telemetryUrl, { body: probeEvents(), headers: jsonHeaders, method: "POST" }),
+  );
+  await instrumentation
+    .wrapRequest(new Request("http://localhost/"), throwPrivateError)
+    .catch((error: unknown) => error);
+  return response.status;
+}
 
 describe("request wrapping", () => {
   it("the real HTTP response keeps its body and headers and gains correlation headers", async () => {
@@ -196,13 +213,9 @@ describe("browser ingress", () => {
 describe("structured log lines", () => {
   it("browser events and server errors become structured log lines", async () => {
     expect.hasAssertions();
-    // oxlint-disable-next-line typescript/strict-void-return
-    const result = await promisify(execFile)(
-      process.execPath,
-      ["--input-type=module", "-e", probe],
-      { cwd: `${import.meta.dirname}/..`, timeout: probeTimeoutMilliseconds },
-    );
-    expect(logLines(result.stdout)).toStrictEqual([
+    const { instrumentation, logs } = recordedInstrumentation();
+    await expect(runProbe(instrumentation)).resolves.toBe(httpStatus.accepted);
+    expect(logs.stdout).toStrictEqual([
       expect.objectContaining({
         event: "http.client.request",
         "http.response.status_code": created,
@@ -210,9 +223,8 @@ describe("structured log lines", () => {
         service: "user-browser",
         trace_id: traceId,
       }),
-      { event: "probe.done", status: httpStatus.accepted },
     ]);
-    const stderr = logLines(result.stderr);
+    const { stderr } = logs;
     expect(stderr).toStrictEqual([
       expect.objectContaining({
         "error.locations": "/assets/index-abc.js:1:234",
@@ -236,6 +248,6 @@ describe("structured log lines", () => {
     expect(JSON.stringify(stderr)).toMatch(
       /"error\.fingerprint":"[0-9a-f]{8}".*"error\.fingerprint":"[0-9a-f]{8}"/u,
     );
-    expect(result.stderr).not.toContain("private@example.test");
+    expect(JSON.stringify(stderr)).not.toContain("private@example.test");
   });
 });

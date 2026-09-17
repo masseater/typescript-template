@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { lintProbe } from "./lint-harness.ts";
+import { reported, reportedRules } from "./lint-harness.ts";
 
 const rawD1Operations = [
   ["global-type", 'export const load = (db: D1Database) => db.prepare("SELECT 1");'],
@@ -182,36 +182,28 @@ const nonD1Operations = [
 ] as const;
 
 describe("project lint rules on raw D1 access", () => {
-  it.for(rawD1Operations)("rejects raw D1 operation: %s", async ([_label, code]) => {
+  it.for(rawD1Operations)("rejects raw D1 operation: %s", ([_label, code]) => {
     expect.hasAssertions();
-    const result = await lintProbe("apps/user/src/probe.ts", code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(1);
-    expect(result.output).toContain("project(boundaries)");
+    expect(reported("boundaries", "apps/user/src/probe.ts", code)).toBe(true);
   });
 
-  it.for(rawD1OutsideAdapter)("rejects raw D1 outside the adapter in %s", async ([name, code]) => {
+  it.for(rawD1OutsideAdapter)("rejects raw D1 outside the adapter in %s", ([name, code]) => {
     expect.hasAssertions();
-    const result = await lintProbe(name, code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(1);
-    expect(result.output).toContain("project(boundaries)");
+    expect(reported("boundaries", name, code)).toBe(true);
   });
 
-  it.for(nonD1Operations)("allows non-D1 operation: %s", async ([_label, code]) => {
+  it.for(nonD1Operations)("allows non-D1 operation: %s", ([_label, code]) => {
     expect.hasAssertions();
-    const result = await lintProbe("libs/shared/src/probe.ts", code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(0);
+    expect(reportedRules("libs/shared/src/probe.ts", code)).toStrictEqual([]);
   });
 
-  it.for(["instrumentation", "testing"])("allows raw D1 in the %s adapter", async (adapter) => {
+  it.for(["instrumentation", "testing"])("allows raw D1 in the %s adapter", (adapter) => {
     expect.hasAssertions();
-    const result = await lintProbe(
-      `libs/db/src/${adapter}.ts`,
-      'export const load = (db: D1Database) => db.exec("SELECT 1");',
-    );
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(0);
+    expect(
+      reportedRules(
+        `libs/db/src/${adapter}.ts`,
+        'export const load = (db: D1Database) => db.exec("SELECT 1");',
+      ),
+    ).toStrictEqual([]);
   });
 });

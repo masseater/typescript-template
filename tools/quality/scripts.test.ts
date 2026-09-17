@@ -1,16 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
-import { field, readWorkspaceManifests } from "./dependencies.ts";
+import { field, workspaceManifests } from "./dependencies.ts";
 import type { WorkspaceManifest } from "./dependencies.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile } from "node:fs/promises";
 import { scriptViolations } from "./scripts.ts";
-
-const root = new URL("../../", import.meta.url).href;
-
-async function rootManifest(): Promise<WorkspaceManifest> {
-  const manifest: unknown = JSON.parse(await readFile(new URL("package.json", root), "utf-8"));
-  return { area: ".", file: "package.json", manifest };
-}
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   return manifests.flatMap(({ manifest }) => {
@@ -30,6 +21,11 @@ function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly s
     )
     .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
 }
+
+const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
+  eager: true,
+  import: "default",
+});
 
 const packageManagerCommands = [
   "pnpm --filter @template/dev run setup",
@@ -89,20 +85,22 @@ describe("workspace script conventions", () => {
     );
   });
 
-  it("all repository workspace manifests run scripts through Vite+", async () => {
+  it("all repository workspace manifests run scripts through Vite+", () => {
     expect.assertions(1);
-    const manifests = [await rootManifest(), ...(await readWorkspaceManifests(root))];
+    const manifests = [
+      { area: ".", file: "package.json", manifest: rootManifest["../../package.json"] },
+      ...workspaceManifests,
+    ];
     const violations = manifests.flatMap(({ file, manifest }) =>
       scriptViolations(manifest).map((violation) => `${file}: ${violation}`),
     );
     expect(violations).toStrictEqual([]);
   });
 
-  it("workspaces outside tools do not depend on tools packages", async () => {
+  it("workspaces outside tools do not depend on tools packages", () => {
     expect.assertions(1);
-    const workspaces = await readWorkspaceManifests(root);
-    const tools = packageNames(workspaces.filter(({ area }) => area === "tools"));
-    const consumers = workspaces.filter(({ area }) => area !== "tools");
+    const tools = packageNames(workspaceManifests.filter(({ area }) => area === "tools"));
+    const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
     expect(consumers.flatMap((consumer) => toolReferences(consumer, tools))).toStrictEqual([]);
   });
 });

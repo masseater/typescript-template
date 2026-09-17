@@ -1,30 +1,37 @@
 import { describe, expect, it } from "vite-plus/test";
-import { lintProbe } from "./lint-harness.ts";
+import { reported, reportedRules, ruleNames } from "./lint-harness.ts";
+import { field } from "./dependencies.ts";
+import plugin from "./rules.ts";
+
+const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
+  eager: true,
+  import: "default",
+});
 
 const forbiddenCode = [
-  ["apps/user/probe.ts", 'import "../admin/private.ts";', "project(boundaries)"],
-  ["libs/shared/probe.ts", 'import "../../apps/admin/private.ts";', "project(boundaries)"],
-  ["infra/cloudflare/probe.ts", 'import "../../tools/dev/src/cli.ts";', "project(boundaries)"],
+  ["apps/user/probe.ts", 'import "../admin/private.ts";', "boundaries"],
+  ["libs/shared/probe.ts", 'import "../../apps/admin/private.ts";', "boundaries"],
+  ["infra/cloudflare/probe.ts", 'import "../../tools/dev/src/cli.ts";', "boundaries"],
   [
     "apps/user/probe.ts",
     'import { vi } from "vitest"; vi.mock("owned-module");',
-    "project(no-internal-mocks)",
+    "no-internal-mocks",
   ],
-  ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "project(environment-boundary)"],
+  ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
   [
     "libs/observability/src/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
-    "project(worker-fetch)",
+    "worker-fetch",
   ],
   [
     "infra/budget-monitor/src/billing.ts",
     'const mode = "error"; export const send = () => fetch("https://api", { redirect: mode });',
-    "project(worker-fetch)",
+    "worker-fetch",
   ],
   [
     "infra/error-monitor/src/telemetry.ts",
     'export const send = () => fetch("https://api", { redirect: "error" });',
-    "project(worker-fetch)",
+    "worker-fetch",
   ],
 ] as const;
 
@@ -167,37 +174,33 @@ const validBoundaries = [
 ] as const;
 
 describe("project lint rules on dependency boundaries", () => {
-  it.for(forbiddenCode)("rejects forbidden code in %s", async ([name, code, diagnostic]) => {
+  it("every project rule is tested and enabled", () => {
     expect.hasAssertions();
-    const result = await lintProbe(name, code);
-    expect(result.status).toBe(1);
-    expect(result.output).toContain(diagnostic);
-  });
-
-  it.for(dependencyBypasses)("rejects dependency bypass: %s", async ([_label, name, code]) => {
-    expect.hasAssertions();
-    const result = await lintProbe(name, code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(1);
-    expect(result.output).toContain("project(boundaries)");
-  });
-
-  it.for(validBoundaries)("allows valid boundary in %s", async ([name, code]) => {
-    expect.hasAssertions();
-    const result = await lintProbe(name, code);
-    expect(result.error).toBeUndefined();
-    expect(result.status, result.output).toBe(0);
-  });
-
-  it("allows shared pure code", async () => {
-    expect.assertions(1);
-    const result = await lintProbe(
-      "valid.ts",
-      "export const add = (a: number, b: number) => a + b;\n",
+    expect(Object.keys(plugin.rules).toSorted()).toStrictEqual([...ruleNames].toSorted());
+    expect(field(field(configs["../../vite.config.ts"], "lint"), "rules")).toMatchObject(
+      Object.fromEntries(ruleNames.map((rule) => [`project/${rule}`, "error"])),
     );
-    expect({ error: result.error, status: result.status }).toStrictEqual({
-      error: undefined,
-      status: 0,
-    });
+  });
+
+  it.for(forbiddenCode)("rejects forbidden code in %s", ([name, code, rule]) => {
+    expect.hasAssertions();
+    expect(reported(rule, name, code)).toBe(true);
+  });
+
+  it.for(dependencyBypasses)("rejects dependency bypass: %s", ([_label, name, code]) => {
+    expect.hasAssertions();
+    expect(reported("boundaries", name, code)).toBe(true);
+  });
+
+  it.for(validBoundaries)("allows valid boundary in %s", ([name, code]) => {
+    expect.hasAssertions();
+    expect(reportedRules(name, code)).toStrictEqual([]);
+  });
+
+  it("allows shared pure code", () => {
+    expect.hasAssertions();
+    expect(
+      reportedRules("valid.ts", "export const add = (a: number, b: number) => a + b;\n"),
+    ).toStrictEqual([]);
   });
 });

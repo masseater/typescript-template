@@ -7,14 +7,16 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
-import { logError, logInfo } from "./log.ts";
+import type { LogSink } from "./log.ts";
 import { errorAttributes } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
+import { writeLog } from "./log.ts";
 
 interface RequestContext extends Correlation {
   readonly traceparent: string;
 }
 interface Telemetry {
+  readonly log: LogSink;
   readonly release: string;
   readonly routes: Readonly<Record<string, string>>;
   readonly serviceName: ServiceName;
@@ -41,7 +43,7 @@ function correlationFields(telemetry: Telemetry, context: Correlation): Record<s
 }
 
 function reportError(telemetry: Telemetry, context: RequestContext, error: unknown): void {
-  logError({
+  writeLog(telemetry.log, "error", {
     event: "application.error",
     ...correlationFields(telemetry, context),
     ...errorAttributes(error),
@@ -80,8 +82,8 @@ function recordRequest(
   completion: Completion,
 ): void {
   const { context, status } = completion;
-  const log = status >= httpStatus.internalServerError ? logError : logInfo;
-  log({
+  const level = status >= httpStatus.internalServerError ? "error" : "info";
+  writeLog(telemetry.log, level, {
     event: "http.server.request",
     ...correlationFields(telemetry, context),
     duration_ms: performance.now() - completion.timer,
