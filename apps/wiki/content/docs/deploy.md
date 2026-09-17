@@ -22,6 +22,14 @@ pnpm infra:deploy:wiki
 
 共有スタックの設定には、アプリごとの公開 URL として `userOrigin`、`adminOrigin`、`wikiOrigin` を指定します。3 つは別々のドメインにします。
 
+エラー通知の送信先として、Slack の Incoming Webhook の URL を secret で設定します。Discord の Webhook を使う場合は、URL の末尾に `/slack` を付けます。
+
+```bash
+pnpm infra:state pulumi config set alertWebhookUrl --secret --cwd ../cloudflare/shared
+```
+
+各アプリの反映では、`pnpm build` の成果物からリリースの識別子を計算します。そのリリースの source map を `.local/source-maps/` に保管するため、反映はビルドした端末で実行します。
+
 ## データベースの更新
 
 スキーマを変えたときは、アプリを反映する前に `pnpm db:migrate:remote` でマイグレーションを適用します。
