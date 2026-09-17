@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
-    "preview": "vp preview",
-    "typecheck": "tsc --noEmit"
+    "preview": "vp preview"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
@@ -33,8 +32,9 @@
     "@vitejs/plugin-react": "6.1.1",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "vite-plus": "0.3.2",
-    "vitest": "4.1.11",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "4.132.0"
   }
 }

@@ -7,7 +7,6 @@
     "./browser": "./src/browser.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "test": "vp test run"
   },
   "dependencies": {

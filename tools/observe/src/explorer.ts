@@ -63,15 +63,15 @@ export function structuredMessage(message: unknown): Record<string, unknown> | u
 export async function requestTelemetry(app: string, requestId: string) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requestId))
     throw new Error("Invalid request ID");
-  const pattern = `%request_id\\":\\"${requestId}%`;
+  const pattern = `request_id\\":\\"${requestId}`;
   const logs = await queryExplorer(
     app,
-    "SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE message LIKE ? ORDER BY ts_ms LIMIT 500",
+    "SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE instr(message, ?) > 0 ORDER BY ts_ms LIMIT 500",
     [pattern],
   );
   const spans = await queryExplorer(
     app,
-    "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id IN (SELECT trace_id FROM logs WHERE message LIKE ?) ORDER BY start_ms LIMIT 2000",
+    "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id IN (SELECT trace_id FROM logs WHERE instr(message, ?) > 0) ORDER BY start_ms LIMIT 2000",
     [pattern],
   );
   return {

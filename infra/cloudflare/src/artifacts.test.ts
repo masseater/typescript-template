@@ -11,7 +11,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { loadArtifacts } from "./artifacts.ts";
 
 test("uploads server chunks with their source maps but excludes private client source maps", async () => {

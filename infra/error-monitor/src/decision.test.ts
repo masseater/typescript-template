@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { decideNotifications, formatMessage } from "./decision.ts";
 
 const now = Date.parse("2026-09-17T12:00:00Z");

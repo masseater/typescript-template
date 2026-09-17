@@ -8,7 +8,7 @@ services:
     environment:
       MP_DATABASE: /data/mailpit.db
       MP_MAX_MESSAGES: "200"
-      MP_ALLOWED_HOSTS: localhost,127.0.0.1,mailpit,${MAILPIT_TAILNET_HOST:-localhost}
+      MP_ALLOWED_HOSTS: localhost,127.0.0.1,mailpit,template-mailpit.local
       MP_DISABLE_VERSION_CHECK: "true"
     volumes:
       - mailpit-data:/data

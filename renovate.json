@@ -10,7 +10,7 @@
       "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"]
     },
     {
-      "matchPackageNames": ["vitest", "@vitest/**", "@oxlint/plugins"],
+      "matchPackageNames": ["vitest", "@vitest/**"],
       "enabled": false
     },
     {

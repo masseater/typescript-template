@@ -6,7 +6,6 @@
     "config": "node src/compose.ts config",
     "up": "node src/compose.ts up",
     "status": "node src/compose.ts status",
-    "logs": "node src/compose.ts logs",
-    "typecheck": "tsc --noEmit"
+    "logs": "node src/compose.ts logs"
   }
 }

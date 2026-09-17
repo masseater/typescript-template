@@ -33,78 +33,15 @@ function words(command: string): string[][] {
   return result;
 }
 
-const valueOptions = new Set([
-  "--filter",
-  "--filter-prod",
-  "-F",
-  "--dir",
-  "-C",
-  "--workspace-concurrency",
-  "--reporter",
-  "--resume-from",
-]);
-const booleanOptions = new Set([
-  "-r",
-  "--recursive",
-  "-w",
-  "--workspace-root",
-  "--if-present",
-  "--parallel",
-  "--stream",
-  "--aggregate-output",
-  "--silent",
-  "-s",
-  "--fail-if-no-match",
-  "--no-bail",
-  "--no-sort",
-  "--reverse",
-]);
-const isFilter = (value: string) =>
-  value === "--filter" ||
-  value === "--filter-prod" ||
-  value === "-F" ||
-  value.startsWith("--filter=") ||
-  value.startsWith("--filter-prod=") ||
-  value.startsWith("-F=") ||
-  (value.startsWith("-F") && value.length > 2);
+const packageManagers = new Set(["pnpm", "pnpx", "npm", "npx", "yarn", "yarnpkg", "bun", "bunx"]);
+const launchers = new Set(["exec", "command", "env", "corepack"]);
 
-function violatesRun(tokens: string[]): boolean {
-  const index = tokens.findIndex((word) => /(?:^|\/)pnpm(?:\.cmd)?$/.test(word));
-  if (index === -1) return false;
-  if (
-    tokens
-      .slice(0, index)
-      .some(
-        (word) =>
-          !["exec", "command", "env", "corepack"].includes(word) &&
-          !/^[A-Za-z_][A-Za-z0-9_]*=/.test(word),
-      )
-  )
-    return false;
-  const args = tokens.slice(index + 1);
-  let filtered = false;
-  let command: string | undefined;
-  let uncertainOption = false;
-  for (let position = 0; position < args.length; position++) {
-    const argument = args[position];
-    if (argument === undefined) continue;
-    if (argument === "--") break;
-    if (isFilter(argument)) filtered = true;
-    if (valueOptions.has(argument)) {
-      position++;
-      continue;
-    }
-    if (argument.startsWith("-")) {
-      if (!booleanOptions.has(argument) && !isFilter(argument) && !argument.includes("="))
-        uncertainOption = true;
-      continue;
-    }
-    if (!command) {
-      command = argument;
-      if (command === "run") break;
-    }
-  }
-  return filtered && (command !== "run" || uncertainOption);
+function callsPackageManager(tokens: string[]): boolean {
+  const command = tokens.find(
+    (word) => !launchers.has(word) && !/^[A-Za-z_][A-Za-z0-9_]*=/.test(word),
+  );
+  if (command === undefined) return false;
+  return packageManagers.has(command.replace(/^.*\//, "").replace(/\.cmd$/, ""));
 }
 
 export function scriptViolations(manifest: unknown): string[] {
@@ -114,8 +51,10 @@ export function scriptViolations(manifest: unknown): string[] {
     throw new Error("package.json scripts must be an object");
   return Object.entries(scripts).flatMap(([name, command]) => {
     if (typeof command !== "string") throw new Error(`Script ${name} must be a string`);
-    return words(command).some(violatesRun)
-      ? [`${name}: pnpm --filter に続く workspace script は必ず run を明示してください: ${command}`]
+    return words(command).some(callsPackageManager)
+      ? [
+          `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
+        ]
       : [];
   });
 }

@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { explorerOrigin, requestTelemetry, structuredMessage } from "./explorer.ts";
 
 test("Local Explorer queries only target loopback HTTP app origins", () => {
@@ -22,7 +22,7 @@ test("structured console lines are decoded from the Local Explorer message encod
   expect(structuredMessage(42)).toBeUndefined();
 });
 
-test("request lookups refuse identifiers that could widen the LIKE pattern", async () => {
+test("request lookups refuse identifiers that could widen the message match", async () => {
   await expect(requestTelemetry("http://127.0.0.1:3001/", "%")).rejects.toThrow(
     "Invalid request ID",
   );

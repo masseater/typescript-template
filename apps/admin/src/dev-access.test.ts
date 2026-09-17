@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createServer } from "vite-plus";
-import { expect, test as baseTest } from "vitest";
+import { expect, test as baseTest } from "vite-plus/test";
 import { adminDevAccess } from "../dev-access.ts";
 
 const origin = "http://localhost:3002";

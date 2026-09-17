@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { createStack } from "./stack.ts";
 import { ensure, object, string, safeFailure } from "./support.ts";
 import { verifyBrowserSignals, verifyCorrelation, verifyExplorerBoundary } from "./telemetry.ts";
@@ -89,7 +89,7 @@ test("public wiki Worker: Markdown pages, keyword search without Workers AI, MCP
       name: "get_page",
       arguments: { url: "/deploy" },
     });
-    expect(toolText(page.result)).toContain("pnpm infra:deploy:wiki");
+    expect(toolText(page.result)).toContain("vp run infra:deploy:wiki");
 
     stage = "browser-telemetry";
     await reader.evaluate(

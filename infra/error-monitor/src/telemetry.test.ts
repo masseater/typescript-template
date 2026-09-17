@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { fetchErrorGroups } from "./telemetry.ts";
 
 const account = "a".repeat(32);

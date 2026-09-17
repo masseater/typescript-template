@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 
 const local = {
@@ -24,17 +24,15 @@ test("rejects Mailpit for public application origins", () => {
   );
 });
 
-test("treats only loopback and HTTPS tailnet hosts as local development", () => {
-  expect(
-    readEnvironment({ ...local, APP_ORIGIN: "https://mac-mini.tail2ee823.ts.net:3001" }).local,
-  ).toBe(true);
-  expect(() =>
-    readEnvironment({ ...local, APP_ORIGIN: "http://mac-mini.tail2ee823.ts.net:3001" }),
-  ).toThrow("HTTPS is required outside localhost");
+test("treats only loopback and HTTPS LAN hosts as local development", () => {
+  expect(readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local" }).local).toBe(true);
+  expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://template-user.local" })).toThrow(
+    "HTTPS is required outside localhost",
+  );
   for (const origin of [
-    "https://ts.net",
-    "https://example.ts.net",
-    "https://mac-mini.tail2ee823.ts.net.example.test",
+    "https://local",
+    "https://user.template.local.example.test",
+    "https://mac-mini.tail2ee823.ts.net",
     "https://app.example.test",
   ])
     expect(isLocalDevelopmentOrigin(origin)).toBe(false);

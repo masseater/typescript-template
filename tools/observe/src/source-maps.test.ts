@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { symbolicate } from "./source-maps.ts";
 
 test("stack locations resolve to repository sources through the release's private maps", async () => {
