@@ -1,0 +1,38 @@
+import { TotpSettings } from "./totp-settings";
+import { noop } from "es-toolkit";
+import preview from "../.storybook/preview";
+
+const user = {
+  email: "taro@example.com",
+  id: "user_01",
+  name: "山田 太郎",
+  role: "user",
+  twoFactorEnabled: false,
+} as const;
+
+const meta = preview.meta({
+  args: {
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
+      recovery: undefined,
+      session: { strong: true, user },
+    },
+  },
+  component: TotpSettings,
+});
+
+export const NotEnrolled = meta.story();
+
+export const Enrolled = meta.story({
+  args: {
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
+      recovery: undefined,
+      session: { strong: true, user: { ...user, twoFactorEnabled: true } },
+    },
+  },
+});

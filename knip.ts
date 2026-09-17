@@ -65,8 +65,17 @@ const config: KnipConfig = {
       entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
       project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
     },
+    "libs/ui": {
+      project: [
+        "src/**/*.{ts,tsx}!",
+        ".storybook/*.ts",
+        "!src/story-fixture.ts!",
+        "!src/**/*.stories.tsx!",
+      ],
+    },
     "tools/dev": {
       entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
+      ignoreDependencies: ["playwright"],
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {

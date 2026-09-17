@@ -3,6 +3,10 @@
     "cloudflare-observability": {
       "type": "http",
       "url": "https://observability.mcp.cloudflare.com/mcp"
+    },
+    "storybook": {
+      "type": "http",
+      "url": "http://localhost:3051/mcp"
     }
   }
 }
