@@ -4,6 +4,8 @@
 
 ファイルを編集する時は必ず git worktree を使用すること。main ブランチが開いている場所のブランチを変更してはいけない。
 
+main への merge には Mergify の merge queue が使える。
+
 コードの簡潔さや様式より、機械検査による問題検出、実アプリの直接操作による実測データの直接照会を優先する。
 
 動作を確認するときは、agent-browser で実アプリを操作し、その操作に対応する実ログとトレースを、ローカルでは Cloudflare Local Explorer、本番では Workers Observability から直接取得する。
