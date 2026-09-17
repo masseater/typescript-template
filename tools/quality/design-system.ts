@@ -81,8 +81,21 @@ function stylesheetSource(): string {
   return file === "" ? "" : read(file);
 }
 
-function designSystemComponents(): string[] {
+const storySuffix = ".stories.tsx";
+
+function indexedComponents(): string[] {
   return [...project.componentsFor(designSystemProbe).files.keys()].toSorted();
+}
+
+function designSystemComponents(): string[] {
+  return [...project.componentsFor(designSystemProbe).files.entries()]
+    .filter((entry: readonly [string, string]) => !entry[1].endsWith(storySuffix))
+    .map((entry: readonly [string, string]) => entry[0])
+    .toSorted();
+}
+
+function partsDirectory(): string {
+  return project.componentsFor(designSystemProbe).dir ?? "";
 }
 
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
@@ -210,10 +223,12 @@ function tokenViolations(css: string): string[] {
 
 export {
   appStylesheetViolations,
+  indexedComponents,
   coverageViolations,
   designSystemComponents,
   designSystemProbe,
   linkViolations,
+  partsDirectory,
   smarthrTokens,
   sourceViolations,
   stylesheetPath,

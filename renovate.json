@@ -52,6 +52,14 @@
       ]
     },
     {
+      "groupName": "storybook",
+      "matchPackageNames": ["storybook", "@storybook/**", "msw", "msw-storybook-addon"]
+    },
+    {
+      "groupName": "playwright",
+      "matchPackageNames": ["playwright", "@playwright/**"]
+    },
+    {
       "groupName": "better-auth",
       "matchPackageNames": ["better-auth", "@better-auth/**"]
     },

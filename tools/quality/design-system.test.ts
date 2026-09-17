@@ -3,6 +3,7 @@ import {
   coverageViolations,
   designSystemComponents,
   designSystemProbe,
+  indexedComponents,
   linkViolations,
   smarthrTokens,
   sourceViolations,
@@ -188,6 +189,16 @@ describe("design system lint", () => {
       expect(restrictedImportNames()).toContain(name);
     },
   );
+
+  it("leaves the story exports out of the part names it reports", () => {
+    expect.hasAssertions();
+    expect(designSystemComponents()).not.toContain("Default");
+  });
+
+  it("still sees the story exports in the upstream index", () => {
+    expect.hasAssertions();
+    expect(indexedComponents()).toContain("Default");
+  });
 
   it("enables every design system rule", () => {
     expect.hasAssertions();
