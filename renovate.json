@@ -1,0 +1,77 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", ":pinAllExceptPeerDependencies"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["* 0-8 * * 1"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "groupName": "vite-plus",
+      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"]
+    },
+    {
+      "matchPackageNames": ["vitest", "@vitest/**", "@oxlint/plugins"],
+      "enabled": false
+    },
+    {
+      "groupName": "node",
+      "matchPackageNames": ["node", "@types/node"]
+    },
+    {
+      "groupName": "cloudflare",
+      "matchPackageNames": ["wrangler", "miniflare", "workerd", "@cloudflare/**"]
+    },
+    {
+      "groupName": "tanstack",
+      "matchPackageNames": ["@tanstack/**"]
+    },
+    {
+      "groupName": "react",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom",
+        "@vitejs/plugin-react"
+      ]
+    },
+    {
+      "groupName": "smarthr-ui",
+      "matchPackageNames": [
+        "smarthr-ui",
+        "styled-components",
+        "@types/styled-components",
+        "react-intl"
+      ]
+    },
+    {
+      "matchPackageNames": ["styled-components", "@types/styled-components", "react-intl"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "groupName": "better-auth",
+      "matchPackageNames": ["better-auth", "@better-auth/**"]
+    },
+    {
+      "groupName": "sentry",
+      "matchPackageNames": ["@sentry/**"]
+    },
+    {
+      "groupName": "drizzle",
+      "matchPackageNames": ["drizzle-orm", "drizzle-kit"]
+    },
+    {
+      "groupName": "pulumi",
+      "matchPackageNames": ["@pulumi/**"]
+    },
+    {
+      "groupName": "local observability services",
+      "matchManagers": ["docker-compose"]
+    },
+    {
+      "groupName": "script runners",
+      "matchPackageNames": ["tsx", "esbuild"]
+    }
+  ]
+}
