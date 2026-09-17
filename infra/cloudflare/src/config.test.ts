@@ -9,6 +9,8 @@ import {
   workerSubdomain,
 } from "./config.ts";
 import type { CloudflareFailure } from "./config.ts";
+import { applyPlan } from "./stacks.ts";
+import type { StackFailure } from "./stacks.ts";
 
 const settings = {
   accountId: "a".repeat(32),
@@ -29,7 +31,7 @@ const settings = {
   },
 };
 
-const code = <A, R>(effect: Effect.Effect<A, CloudflareFailure, R>) =>
+const code = <A, R>(effect: Effect.Effect<A, CloudflareFailure | StackFailure, R>) =>
   effect.pipe(
     Effect.flip,
     Effect.map((failure) => failure.code),
@@ -41,18 +43,26 @@ it.effect(
     Effect.gen(function* () {
       assert.deepStrictEqual(yield* parseDeploymentCommand(["preview", "admin"]), {
         operation: "preview",
-        target: "admin",
+        targets: [{ stack: "admin", dependencies: ["settings", "database"] }],
       });
       assert.strictEqual(
         yield* code(parseDeploymentCommand(["up", "user", "--stack", "other"])),
         "deployment_command_invalid",
       );
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["up", "wiki"]), {
-        operation: "up",
-        target: "wiki",
-      });
+      assert.deepStrictEqual(
+        (yield* parseDeploymentCommand(["up", "wiki"])).targets.map(({ stack }) => stack),
+        ["wiki"],
+      );
+      assert.deepStrictEqual(
+        (yield* parseDeploymentCommand(["up", "all"])).targets,
+        yield* applyPlan(),
+      );
       assert.strictEqual(
         yield* code(parseDeploymentCommand(["up", "unknown"])),
+        "deployment_command_invalid",
+      );
+      assert.strictEqual(
+        yield* code(parseDeploymentCommand(["up", "shared"])),
         "deployment_command_invalid",
       );
     }),

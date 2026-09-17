@@ -6,13 +6,20 @@ import { parseDeploymentCommand } from "./config.ts";
 
 NodeRuntime.runMain(
   Effect.gen(function* () {
-    const { operation, target } = yield* parseDeploymentCommand(process.argv.slice(2));
-    const exitCode = yield* runWithState([
-      operation,
-      "--cwd",
-      fileURLToPath(new URL(`../${target}`, import.meta.url)),
-    ]);
-    process.exitCode = exitCode;
+    const { operation, targets } = yield* parseDeploymentCommand(process.argv.slice(2));
+    for (const { stack, dependencies } of targets) {
+      console.info(JSON.stringify({ event: "cloudflare.stack_started", stack, dependencies }));
+      const code = yield* runWithState([
+        operation,
+        "--cwd",
+        fileURLToPath(new URL(`../${stack}`, import.meta.url)),
+      ]);
+      if (code !== 0) {
+        console.error(JSON.stringify({ event: "cloudflare.stack_failed", stack }));
+        process.exitCode = code;
+        return;
+      }
+    }
   }).pipe(
     Effect.catchCause(() =>
       Effect.sync(() => {

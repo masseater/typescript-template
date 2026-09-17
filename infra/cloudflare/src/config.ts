@@ -1,5 +1,5 @@
-import { applications } from "@template/config";
 import { Effect, Schema } from "effect";
+import { applyPlan, stackNames } from "./stacks.ts";
 
 export class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()(
   "CloudflareFailure",
@@ -12,6 +12,8 @@ export class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()(
       "auth_secret_invalid",
       "account_permission_unavailable",
       "database_input_invalid",
+      "stack_consumer_mismatch",
+      "stack_output_invalid",
     ]),
   },
 ) {}
@@ -55,7 +57,7 @@ export const workerSubdomain = { enabled: false, previewsEnabled: false };
 
 const DeploymentCommand = Schema.Tuple([
   Schema.Literals(["preview", "up"]),
-  Schema.Literals(["shared", ...applications]),
+  Schema.Literals(["all", ...stackNames]),
 ]);
 
 export const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* (
@@ -64,7 +66,11 @@ export const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(functi
   const [operation, target] = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
     Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid" })),
   );
-  return { operation, target };
+  const plan = yield* applyPlan();
+  return {
+    operation,
+    targets: target === "all" ? plan : plan.filter(({ stack }) => stack === target),
+  };
 });
 
 export const parseSharedConfig = Effect.fn("parseSharedConfig")(function* (input: unknown) {

@@ -3,23 +3,18 @@ import * as cloudflare from "@pulumi/cloudflare";
 import type { Application } from "@template/config";
 import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
-import { parseSharedConfig, validateAuthSecret } from "./config.ts";
 import { loadArtifacts } from "./artifacts.ts";
 import { archiveSourceMaps } from "./source-maps.ts";
+import { consume, consumeSettings } from "./reference.ts";
 import { deployWorker } from "./worker.ts";
 
-export async function deployApplication(target: Application) {
-  const config = new pulumi.Config();
-  const shared = new pulumi.StackReference(config.require("sharedStack"));
-  const rawSettings = await shared.getOutputDetails("applicationSettings");
-  const settings = Effect.runSync(parseSharedConfig(rawSettings.value));
+export const deployApplication = Effect.fn("deployApplication")(function* (target: Application) {
+  const { settings, authSecret } = yield* consumeSettings(target, "settings");
+  const database = yield* consume(target, "database");
   const origin = settings.origins[target];
   const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
-  const artifacts = await Effect.runPromise(
-    loadArtifacts(repositoryRoot, target).pipe(
-      Effect.tap((loaded) => archiveSourceMaps(repositoryRoot, target, loaded.release)),
-    ),
-  );
+  const artifacts = yield* loadArtifacts(repositoryRoot, target);
+  yield* archiveSourceMaps(repositoryRoot, target, artifacts.release);
   const plaintext = {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
@@ -27,14 +22,8 @@ export async function deployApplication(target: Application) {
   };
   const bindings: cloudflare.types.input.WorkerVersionBinding[] = [
     ...(target === "wiki" ? [{ type: "ai", name: "AI" }] : []),
-    { type: "d1", name: "DB", id: shared.requireOutput("databaseId") },
-    {
-      type: "secret_text",
-      name: "AUTH_SECRET",
-      text: shared
-        .requireOutput("authSecret")
-        .apply((value: unknown) => Effect.runSync(validateAuthSecret(value))),
-    },
+    { type: "d1", name: "DB", id: database.text("databaseId") },
+    { type: "secret_text", name: "AUTH_SECRET", text: authSecret },
     { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
     ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
   ];
@@ -62,4 +51,4 @@ export async function deployApplication(target: Application) {
     workerName: worker.name,
     origin: pulumi.interpolate`https://${domain.hostname}`,
   };
-}
+});

@@ -1,4 +1,5 @@
 import { expect, test } from "vite-plus/test";
+import { stackNames } from "./stacks.ts";
 
 const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/Pulumi.yaml"], {
   eager: true,
@@ -6,13 +7,12 @@ const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/
 });
 
 test("every Pulumi project is covered", () => {
-  expect(Object.keys(projects).sort()).toEqual([
-    "../../bootstrap/Pulumi.yaml",
-    "../admin/Pulumi.yaml",
-    "../shared/Pulumi.yaml",
-    "../user/Pulumi.yaml",
-    "../wiki/Pulumi.yaml",
-  ]);
+  expect(new Set(Object.keys(projects))).toEqual(
+    new Set([
+      "../../bootstrap/Pulumi.yaml",
+      ...stackNames.map((stack) => `../${stack}/Pulumi.yaml`),
+    ]),
+  );
 });
 
 test.for(Object.entries(projects))(

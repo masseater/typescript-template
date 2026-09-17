@@ -11,8 +11,8 @@
     "verify:runtime": "node src/runtime-probe.ts",
     "preview": "node src/cli.ts preview",
     "deploy": "node src/cli.ts up",
-    "db:migrate:remote": "node src/database.ts migrate",
-    "db:bootstrap:remote": "node src/database.ts bootstrap"
+    "db:migrate:remote": "node src/database-command.ts migrate",
+    "db:bootstrap:remote": "node src/database-command.ts bootstrap"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

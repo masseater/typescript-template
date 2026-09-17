@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
 import { secret } from "@pulumi/pulumi";
@@ -40,32 +39,6 @@ export function deployWorker(
   return { worker, deployment };
 }
 
-const accountToken = (
-  resource: string,
-  accountId: string,
-  token: { name: string; binding: string; permission: Input<string> },
-) => ({
-  type: "secret_text",
-  name: token.binding,
-  text: secret(
-    new cloudflare.AccountToken(
-      `${resource}-token`,
-      {
-        accountId,
-        name: token.name,
-        policies: [
-          {
-            effect: "allow",
-            permissionGroups: [{ id: token.permission }],
-            resources: JSON.stringify({ [`com.cloudflare.api.account.${accountId}`]: "*" }),
-          },
-        ],
-      },
-      { additionalSecretOutputs: ["value"] },
-    ).value,
-  ),
-});
-
 export const deployMonitor = Effect.fn("deployMonitor")(function* (
   resource: "budget" | "error" | "health",
   options: {
@@ -73,14 +46,14 @@ export const deployMonitor = Effect.fn("deployMonitor")(function* (
     name: string;
     artifact: string;
     className: string;
-    token?: { name: string; binding: string; permission: Input<string> };
+    token?: { binding: string; text: Input<string> };
     alert: { from: string; to: readonly string[] };
     variables: Record<string, string>;
     cron: string;
   },
 ) {
-  const content = yield* io(() => readFile(options.artifact));
-  if (content.length === 0) return yield* fail(`${resource}_worker_artifact_empty`);
+  if ((yield* io(() => readFile(options.artifact))).length === 0)
+    return yield* fail(`${resource}_worker_artifact_empty`);
   const { worker, deployment } = deployWorker(resource, {
     accountId: options.accountId,
     name: options.name,
@@ -91,7 +64,6 @@ export const deployMonitor = Effect.fn("deployMonitor")(function* (
           name: "index.js",
           contentType: "application/javascript+module",
           contentFile: options.artifact,
-          contentSha256: createHash("sha256").update(content).digest("hex"),
         },
       ],
       migrations: { newTag: "v1", newSqliteClasses: [options.className] },
@@ -103,7 +75,9 @@ export const deployMonitor = Effect.fn("deployMonitor")(function* (
           allowedSenderAddresses: [options.alert.from],
           allowedDestinationAddresses: [...options.alert.to],
         },
-        ...(options.token ? [accountToken(resource, options.accountId, options.token)] : []),
+        ...(options.token
+          ? [{ type: "secret_text", name: options.token.binding, text: secret(options.token.text) }]
+          : []),
         ...Object.entries({
           ...options.variables,
           ALERT_FROM: options.alert.from,
