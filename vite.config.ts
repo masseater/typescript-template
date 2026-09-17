@@ -142,7 +142,10 @@ export default defineConfig({
         "vp run -F '!typescript-template' build",
         "vp run --filter @template/dev private-maps",
       ],
-      check: ["vp check", "vp run knip", "vp run check:staged"],
+      check: {
+        command: ["vp check", "vp run knip", "vp run check:staged"],
+        input: [{ auto: true }, "!node_modules/.modules.yaml"],
+      },
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
