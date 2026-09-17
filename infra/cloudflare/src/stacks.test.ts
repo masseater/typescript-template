@@ -1,35 +1,53 @@
-import { applyPlan, projectName, stackReferenceName } from "./stacks.ts";
+import { applyPlan, stackName, stackNames } from "./stacks.ts";
 import { describe, expect, it } from "vite-plus/test";
 import { Effect } from "effect";
 
-const projects: Readonly<Record<string, string>> = import.meta.glob<string>("../*/Pulumi.yaml", {
-  eager: true,
-  import: "default",
-});
+const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
+  "./admin.ts",
+  "./budget-monitor.ts",
+  "./database.ts",
+  "./error-monitor.ts",
+  "./health-monitor.ts",
+  "./tokens.ts",
+  "./user.ts",
+  "./wiki.ts",
+]);
+function defaultExport(module: unknown): unknown {
+  return typeof module === "object" && module !== null ? Reflect.get(module, "default") : undefined;
+}
+
 const plan = await Effect.runPromise(applyPlan());
 const order = plan.map(({ stack }) => stack);
 
-describe("pulumi stacks", () => {
-  it("every stack is applied once, after the stacks whose outputs it consumes", () => {
+describe("alchemy stacks", () => {
+  it("every apply unit runs once, after the units whose outputs it consumes", () => {
     expect.hasAssertions();
     expect(new Set(order).size).toBe(order.length);
+    expect(order).toStrictEqual(expect.arrayContaining([...stackNames]));
     const violations = plan.flatMap(({ dependencies, stack }) =>
       dependencies.filter((dependency) => order.indexOf(dependency) >= order.indexOf(stack)),
     );
     expect(violations).toStrictEqual([]);
   });
 
-  it.for(plan)("$stack project name and program are derived from the stack name", ({ stack }) => {
+  it("the apply units and the stack programs on disk are the same set", () => {
     expect.hasAssertions();
-    expect(projects[`../${stack}/Pulumi.yaml`]).toBe(
-      `name: ${projectName(stack)}\nruntime:\n  name: nodejs\n  options:\n    typescript: false\nmain: ../src/${stack}.ts\n`,
+    expect(Object.keys(stackModules).toSorted()).toStrictEqual(
+      stackNames.map((stack) => `./${stack}.ts`).toSorted(),
     );
   });
 
-  it("stack references are fully qualified for the DIY backend in the same environment", () => {
+  it.for(plan)("$stack exports the program the CLI runs", async ({ stack }) => {
     expect.hasAssertions();
-    expect(stackReferenceName("database", "production")).toBe(
-      "organization/template-database/production",
+    const module: unknown = await stackModules[`./${stack}.ts`]?.();
+    expect(Effect.isEffect(defaultExport(module))).toBe(true);
+  });
+
+  it("stack names are derived from the apply unit", () => {
+    expect.hasAssertions();
+    expect(stackName("database")).toBe("template-database");
+    expect(stackNames.map((stack) => stackName(stack))).toStrictEqual(
+      stackNames.map((stack) => `template-${stack}`),
     );
   });
 });

@@ -1,45 +1,28 @@
-import { ConfigurationInvalid, readWikiConfig } from "@template/config";
+import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import type { AppBindings, WikiBindings } from "./bindings.ts";
+import { ConfigurationInvalid, readConfig, readWikiConfig } from "@template/config";
 import { assert, it } from "@effect/vitest";
 import {
   parseDeploymentCommand,
   parseSharedConfig,
-  selectAccountPermission,
   validateAuthSecret,
   workerSubdomain,
 } from "./config.ts";
 import { Effect } from "effect";
 import { applyPlan } from "./stacks.ts";
+import { verificationSettings } from "./verification-fixture.ts";
 
-const HEX_32_LENGTH = 32;
 const AUTH_SECRET_LENGTH = 32;
 
 const authSecret = "x".repeat(AUTH_SECRET_LENGTH);
 const release = "0123456789abcdef";
-const assetsBinding = { fetch: async (): Promise<Response> => new Response() };
-const databaseBinding = {
-  batch: async (): Promise<never[]> => [],
-  prepare: (): undefined => undefined,
-};
-const emailBinding = { send: async (): Promise<undefined> => undefined };
-const aiBinding = { run: async (): Promise<{ data: never[] }> => ({ data: [] }) };
-const settings = {
-  accountId: "a".repeat(HEX_32_LENGTH),
-  budget: {
-    budgetJpy: 5000,
-    fixedCostUsd: 5,
-    jpyPerUsd: 150,
-    recipients: ["billing@example.com"],
-    reserveUsd: 2,
-  },
-  mailFrom: "mail@example.com",
-  origins: {
-    admin: "https://admin.example.com",
-    user: "https://user.example.com",
-    wiki: "https://wiki.example.com",
-  },
-  prefix: "template-test",
-  zoneId: "b".repeat(HEX_32_LENGTH),
-};
+const settings = verificationSettings;
+
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+function binding<Binding>(value: object): Binding {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return value as Binding;
+}
 
 function code<Value, Failure extends { readonly code: string }, Requirements>(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -55,28 +38,28 @@ it.effect(
   "deployment commands reject ignored arguments instead of selecting an unintended stack",
   () =>
     Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["preview", "admin"]), {
-        operation: "preview",
-        targets: [{ dependencies: ["settings", "database"], stack: "admin" }],
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "admin"]), {
+        operation: "plan",
+        targets: [{ dependencies: ["database"], stack: "admin" }],
       });
       assert.strictEqual(
-        yield* code(parseDeploymentCommand(["up", "user", "--stack", "other"])),
+        yield* code(parseDeploymentCommand(["deploy", "user", "--stage", "other"])),
         "deployment_command_invalid",
       );
       assert.deepStrictEqual(
-        (yield* parseDeploymentCommand(["up", "wiki"])).targets.map(({ stack }) => stack),
+        (yield* parseDeploymentCommand(["deploy", "wiki"])).targets.map(({ stack }) => stack),
         ["wiki"],
       );
       assert.deepStrictEqual(
-        (yield* parseDeploymentCommand(["up", "all"])).targets,
+        (yield* parseDeploymentCommand(["deploy", "all"])).targets,
         yield* applyPlan(),
       );
       assert.strictEqual(
-        yield* code(parseDeploymentCommand(["up", "unknown"])),
+        yield* code(parseDeploymentCommand(["deploy", "unknown"])),
         "deployment_command_invalid",
       );
       assert.strictEqual(
-        yield* code(parseDeploymentCommand(["up", "shared"])),
+        yield* code(parseDeploymentCommand(["up", "all"])),
         "deployment_command_invalid",
       );
     }),
@@ -88,27 +71,35 @@ it.effect("workers disable every alternative public URL", () =>
   }),
 );
 
-it.effect("the wiki reads authentication, database and optional AI bindings", () =>
+const appBindings: AppBindings = {
+  APP_ORIGIN: settings.origins.user,
+  APP_RELEASE: release,
+  ASSETS: binding<Service>({ fetch: async (): Promise<Response> => new Response() }),
+  AUTH_SECRET: "user-runtime-secret-at-least-32-characters",
+  DB: binding<D1Database>({
+    batch: async (): Promise<never[]> => [],
+    prepare: (): undefined => undefined,
+  }),
+  EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
+  EMAIL_FROM: settings.mailFrom,
+};
+
+const wikiBindings: WikiBindings = {
+  ...appBindings,
+  AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
+  APP_ORIGIN: settings.origins.wiki,
+};
+
+it.effect("every application reads exactly the bindings its Worker declares", () =>
   Effect.gen(function* program() {
-    const config = yield* parseSharedConfig(settings);
-    const bindings = {
-      APP_ORIGIN: config.origins.wiki,
-      APP_RELEASE: release,
-      ASSETS: assetsBinding,
-      AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
-      DB: databaseBinding,
-      EMAIL: emailBinding,
-      EMAIL_FROM: config.mailFrom,
-    };
-    const runtime = yield* readWikiConfig(bindings);
-    assert.strictEqual(runtime.APP_ORIGIN, settings.origins.wiki);
-    assert.strictEqual(runtime.APP_RELEASE, release);
-    assert.isUndefined(runtime.AI);
-    assert.strictEqual<unknown>(
-      (yield* readWikiConfig({ ...bindings, AI: aiBinding })).AI,
-      aiBinding,
-    );
-    const missing = yield* readWikiConfig({ ...bindings, DB: undefined }).pipe(Effect.flip);
+    const app = yield* readConfig(appBindings);
+    assert.strictEqual(app.APP_ORIGIN, settings.origins.user);
+    assert.strictEqual(app.APP_RELEASE, release);
+    const wiki = yield* readWikiConfig(wikiBindings);
+    assert.strictEqual(wiki.APP_ORIGIN, settings.origins.wiki);
+    assert.isDefined(wiki.AI);
+    assert.isUndefined((yield* readWikiConfig(appBindings)).AI);
+    const missing = yield* readWikiConfig({ ...wikiBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
   }),
 );
@@ -156,28 +147,6 @@ it.effect("refuses a budget exhausted by fixed fees", () =>
   }),
 );
 
-it.effect("selects Billing Read only and refuses substituted write scopes", () =>
-  Effect.gen(function* program() {
-    const read = {
-      id: "c".repeat(HEX_32_LENGTH),
-      name: "Billing Read",
-      scopes: ["com.cloudflare.api.account"],
-    };
-    assert.strictEqual(
-      yield* selectAccountPermission([read, { ...read, name: "Billing Edit" }], "Billing Read"),
-      read.id,
-    );
-    assert.strictEqual(
-      yield* code(selectAccountPermission([{ ...read, name: "Billing Edit" }], "Billing Read")),
-      "account_permission_unavailable",
-    );
-    assert.strictEqual(
-      yield* code(selectAccountPermission([read, read], "Billing Read")),
-      "account_permission_unavailable",
-    );
-  }),
-);
-
 it.effect("secret validation errors do not include their inputs", () =>
   Effect.gen(function* program() {
     const failure = yield* validateAuthSecret("private-value").pipe(Effect.flip);
@@ -185,31 +154,5 @@ it.effect("secret validation errors do not include their inputs", () =>
     assert.notInclude(JSON.stringify(failure), "private-value");
     assert.notInclude(String(failure), "private-value");
     assert.strictEqual(yield* validateAuthSecret(authSecret), authSecret);
-  }),
-);
-
-it.effect("the error monitor token may only run Workers Observability queries", () =>
-  Effect.gen(function* program() {
-    const write = {
-      id: "d".repeat(HEX_32_LENGTH),
-      name: "Workers Observability Write",
-      scopes: ["com.cloudflare.api.account"],
-    };
-    assert.strictEqual(
-      yield* selectAccountPermission(
-        [write, { ...write, name: "Workers Scripts Write" }],
-        "Workers Observability Write",
-      ),
-      write.id,
-    );
-    assert.strictEqual(
-      yield* code(
-        selectAccountPermission(
-          [{ ...write, name: "Workers Scripts Write" }],
-          "Workers Observability Write",
-        ),
-      ),
-      "account_permission_unavailable",
-    );
   }),
 );

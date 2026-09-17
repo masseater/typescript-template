@@ -2,34 +2,29 @@
   "name": "@template/infra-cloudflare",
   "private": true,
   "type": "module",
-  "exports": {
-    "./config": "./src/config.ts"
-  },
   "scripts": {
     "verify:artifacts": "node src/check-artifacts.ts",
-    "verify:engine": "node src/engine-check.ts",
-    "verify:runtime": "node src/runtime-probe.ts",
-    "preview": "node src/cli.ts preview",
-    "deploy": "node src/cli.ts up",
+    "verify:stacks": "node src/check-stacks.ts",
+    "preview": "node src/cli.ts plan",
+    "deploy": "node src/cli.ts deploy",
     "db:migrate:remote": "node src/database-command.ts migrate",
     "db:bootstrap:remote": "node src/database-command.ts bootstrap"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@pulumi/cloudflare": "catalog:",
-    "@pulumi/pulumi": "catalog:",
     "@template/budget-monitor": "workspace:*",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
     "@template/error-monitor": "workspace:*",
     "@template/health-monitor": "workspace:*",
-    "@template/infra-bootstrap": "workspace:*",
-    "effect": "catalog:",
-    "es-toolkit": "1.52.0"
+    "alchemy": "catalog:",
+    "effect": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

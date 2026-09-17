@@ -11,17 +11,12 @@ const config: KnipConfig = {
       ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
-    "infra/bootstrap": {
-      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
-      project: ["src/**/*.ts!"],
-    },
     "infra/budget-monitor": {
       entry: ["src/worker.ts!", "src/inspect.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
       entry: [
-        "src/settings.ts!",
         "src/database.ts!",
         "src/tokens.ts!",
         "src/budget-monitor.ts!",
@@ -30,10 +25,9 @@ const config: KnipConfig = {
         "src/user.ts!",
         "src/admin.ts!",
         "src/wiki.ts!",
-        "src/runtime-probe.ts!",
         "src/cli.ts!",
         "src/check-artifacts.ts!",
-        "src/engine-check.ts!",
+        "src/check-stacks.ts!",
         "src/database-command.ts!",
       ],
       project: ["src/**/*.ts!"],

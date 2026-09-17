@@ -1,15 +1,27 @@
-import { D1Database } from "@pulumi/cloudflare";
+import { RemovalPolicy, Stack } from "alchemy";
+import { stackName, stackOptions } from "./stacks.ts";
+import { D1 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
-import { consumeSettings } from "./reference.ts";
+import { settings } from "./settings.ts";
 
-const { settings } = await Effect.runPromise(consumeSettings("database", "settings"));
-const database = new D1Database(
-  "database",
-  {
-    accountId: settings.accountId,
-    name: `${settings.prefix}-db`,
-  },
-  { protect: true },
+const databaseResource = "Database";
+
+const stack = Stack(
+  stackName("database"),
+  stackOptions,
+  Effect.gen(function* database() {
+    const config = yield* settings;
+    const d1 = yield* D1.Database(databaseResource, { name: `${config.prefix}-db` }).pipe(
+      RemovalPolicy.retain(),
+    );
+    return { databaseId: d1.databaseId, databaseName: d1.databaseName };
+  }),
 );
 
-export const databaseId = database.id;
+function databaseRef(): Effect.Effect<D1.Database> {
+  return D1.Database.ref(databaseResource, { stack: stackName("database") });
+}
+
+// oxlint-disable-next-line import/no-default-export
+export default stack;
+export { databaseRef };

@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect";
 import { applyPlan, stackNames } from "./stacks.ts";
+import type { WorkerObservability } from "alchemy/Cloudflare";
+import { workerCompatibility } from "@template/config/worker";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
@@ -8,10 +10,8 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "app_origins_must_differ",
     "budget_has_no_usage_allowance",
     "auth_secret_invalid",
-    "account_permission_unavailable",
     "database_input_invalid",
-    "stack_consumer_mismatch",
-    "stack_output_invalid",
+    "database_output_unavailable",
   ]),
 }) {}
 
@@ -60,9 +60,19 @@ const SharedSettings = Schema.Struct({
 type SharedConfig = typeof SharedSettings.Type;
 
 const workerSubdomain = { enabled: false, previewsEnabled: false };
+const workerCompatibilityOptions = {
+  date: workerCompatibility.date,
+  flags: [...workerCompatibility.flags],
+};
+const workerObservability = {
+  enabled: true,
+  headSamplingRate: 1,
+  logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
+  traces: { enabled: true, headSamplingRate: 1 },
+} satisfies WorkerObservability;
 
 const DeploymentCommand = Schema.Tuple([
-  Schema.Literals(["preview", "up"]),
+  Schema.Literals(["plan", "deploy"]),
   Schema.Literals(["all", ...stackNames]),
 ]);
 
@@ -111,31 +121,13 @@ const validateAuthSecret = Effect.fn("validateAuthSecret")(function* validateAut
   return secret;
 });
 
-const selectAccountPermission = Effect.fn("selectAccountPermission")(
-  function* selectAccountPermission(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    groups: readonly { id: string; name: string; scopes: string[] }[],
-    name: "Billing Read" | "Workers Observability Write",
-  ) {
-    const matches = groups.filter(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
-    );
-    if (matches.length !== 1) {
-      return yield* fail("account_permission_unavailable");
-    }
-    return yield* Schema.decodeUnknownEffect(Id)(matches[0]?.id).pipe(
-      Effect.mapError(() => new CloudflareFailure({ code: "account_permission_unavailable" })),
-    );
-  },
-);
-
 export {
   CloudflareFailure,
   parseDeploymentCommand,
   parseSharedConfig,
-  selectAccountPermission,
   validateAuthSecret,
+  workerCompatibilityOptions,
+  workerObservability,
   workerSubdomain,
 };
 export type { SharedConfig };

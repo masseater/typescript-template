@@ -11,10 +11,14 @@ import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 import { stageClientFiles } from "./staging.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { stat } from "node:fs/promises";
+
+const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const MAIN_MODULE = "index.js";
 const RELEASE_LENGTH = 16;
@@ -30,6 +34,11 @@ interface WorkerModule {
   readonly contentType: string;
   readonly name: string;
 }
+
+const workerModuleGlobs = [
+  ...[...MODULE_CONTENT_TYPES.keys()].map((extension) => `**/*${extension}`),
+  "**/*.map",
+];
 
 interface Artifacts {
   readonly clientDirectory: string;
@@ -166,10 +175,10 @@ function releaseId(
 }
 
 const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
-  repositoryRoot: string,
+  repository: string,
   target: Application,
 ) {
-  const root = path.join(repositoryRoot, "apps", target, "dist");
+  const root = path.join(repository, "apps", target, "dist");
   const output: BuildOutput = {
     client: path.join(root, "client"),
     server: path.join(root, "server"),
@@ -184,23 +193,23 @@ const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
 });
 
 const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
-  repositoryRoot: string,
+  repository: string,
   target: Application,
 ) {
-  const output = yield* buildOutput(repositoryRoot, target);
+  const output = yield* buildOutput(repository, target);
   const clientFiles = yield* clientArtifactFiles(output.client);
   const { code, sourceMaps } = yield* loadWorkerModules(output, clientFiles);
   const digest = yield* clientDigest(output.client, clientFiles);
   const release = yield* releaseId(code, digest);
-  const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
+  const staging = path.join(repository, "infra", "cloudflare", ".artifacts", target, digest);
   yield* stageClientFiles(output.client, staging, clientFiles);
   const artifacts: Artifacts = {
     clientDirectory: staging,
-    mainModule: MAIN_MODULE,
+    mainModule: path.join(output.server, MAIN_MODULE),
     modules: [...code, ...sourceMaps],
     release,
   };
   return artifacts;
 });
 
-export { loadArtifacts };
+export { loadArtifacts, repositoryRoot, workerModuleGlobs };
