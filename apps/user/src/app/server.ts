@@ -1,17 +1,6 @@
-import { dispatchUserApi, userApi } from "./api.ts";
-import { Interviewer } from "@template/interview";
-import { createAppWorker } from "@template/runtime/app";
-import { env } from "cloudflare:workers";
+import { serveApp, startRoute } from "@template/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
-import { routes } from "./telemetry-routes.ts";
+import { runtime } from "#shared/server-api/index.ts";
 
 // oxlint-disable-next-line import/no-default-export
-export default createAppWorker({
-  api: userApi,
-  audience: "user",
-  dispatch: dispatchUserApi,
-  env,
-  handler,
-  routes,
-  services: Interviewer.fromEnvironment(env),
-});
+export default serveApp(runtime, startRoute(handler));

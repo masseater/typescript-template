@@ -15,6 +15,7 @@ import { Route as AdminIndexRouteImport } from './routes/_admin/index'
 import { Route as AdminSecurityRouteImport } from './routes/_admin/security'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
+import { Route as ApiSplatRouteImport } from './routes/api.$'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/_admin',
@@ -44,18 +45,25 @@ const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => PublicRoute,
 } as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AdminIndexRoute
   '/security': typeof AdminSecurityRoute
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
+  '/api/$': typeof ApiSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AdminIndexRoute
   '/security': typeof AdminSecurityRoute
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
+  '/api/$': typeof ApiSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -64,13 +72,14 @@ export interface FileRoutesById {
   '/_admin/security': typeof AdminSecurityRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
+  '/api/$': typeof ApiSplatRoute
   '/_admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/security' | '/login' | '/verify-email'
+  fullPaths: '/' | '/security' | '/login' | '/verify-email' | '/api/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/security' | '/login' | '/verify-email'
+  to: '/' | '/security' | '/login' | '/verify-email' | '/api/$'
   id:
     | '__root__'
     | '/_admin'
@@ -78,12 +87,14 @@ export interface FileRouteTypes {
     | '/_admin/security'
     | '/_public/login'
     | '/_public/verify-email'
+    | '/api/$'
     | '/_admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
+  ApiSplatRoute: typeof ApiSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -130,6 +141,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicVerifyEmailRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -161,6 +179,7 @@ const PublicRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
+  ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

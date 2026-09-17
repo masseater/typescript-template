@@ -32,6 +32,25 @@ function previewDevVars(appRoot: string): Plugin {
   };
 }
 
+const serverOnlyFiles: (string | RegExp)[] = [
+  "**/libs/auth/src/**",
+  "**/libs/db/src/**",
+  "**/libs/runtime/src/**",
+  "**/src/**/server-api/**",
+];
+const clientReachableFiles: (string | RegExp)[] = [
+  "**/node_modules/**",
+  "**/libs/runtime/src/{client,contracts}.ts",
+];
+const importProtection = {
+  client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles },
+};
+const serverOnlyMarkers: readonly string[] = [
+  "ELYSIA_REQUEST_ID",
+  "better-auth/api",
+  "drizzle:entityKind",
+];
+
 const envFileLoader = "tanstack-start-core:load-env";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -80,4 +99,12 @@ const appRun = {
   tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
 
-export { appRun, appServer, previewDevVars, reactCompiler, withoutEnvFileLoader };
+export {
+  appRun,
+  appServer,
+  importProtection,
+  previewDevVars,
+  reactCompiler,
+  serverOnlyMarkers,
+  withoutEnvFileLoader,
+};

@@ -1,48 +1,43 @@
-import type { CommonFailure, FailureTable, Tagged } from "./failures.ts";
-import type { CurrentRequest, RequestRejected } from "@template/observability";
+import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import { Effect, Exit, Schema } from "effect";
+import { Elysia, status } from "elysia";
+import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { httpStatus, readJson } from "@template/observability";
-import { jsonResponse, secureResponse } from "./responses.ts";
 import type { AnyElysia } from "elysia";
 import { AppOrigin } from "./app-origin.ts";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
-import type { Context } from "effect";
-import { Elysia } from "elysia";
 import { InputInvalid } from "./input-invalid.ts";
-import { developmentServer } from "@template/config/mode";
-import { failureResponse } from "./failures.ts";
+import type { ManagedRuntime } from "effect";
+import type { RequestRejected } from "@template/observability";
+import { jsonResponse } from "./responses.ts";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 type Handler<Value, Failures, Requirements> = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
-) => Effect.Effect<Value, Failures, Requirements | CurrentRequest>;
-type ElysiaHandler = (context: Readonly<Record<string, unknown>>) => Promise<Response>;
-interface PendingRequest<Requirements> {
-  readonly context: Context.Context<Requirements | CurrentRequest>;
+) => Effect.Effect<Value, Failures, Requirements>;
+interface ElysiaContext {
   readonly request: Request;
 }
-type PendingRequests<Requirements> = WeakMap<Request, PendingRequest<Requirements>>;
-interface ApiBridge<Requirements> {
-  readonly dispatch: (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    app: AnyElysia,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    request: Request,
-  ) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
+type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
+interface ApiRoutes<Requirements> {
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ) => ElysiaHandler;
-  readonly route: <Value, Failures extends Tagged>(
+  readonly route: <Value, Encoded, Failures extends Tagged>(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    response: Schema.Codec<Value, unknown>,
+    response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  ) => ElysiaHandler;
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
 }
 
-const failedMessage = "処理に失敗しました。";
+const missingMessage = "見つかりませんでした。";
+const unreadBody = { unread: true } as const;
 
 function decodeInput<Contract extends Decodable>(
   schema: Contract,
@@ -72,84 +67,130 @@ function readSearchParams<Contract extends Decodable>(
   return decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));
 }
 
-function createApi(): AnyElysia {
-  return developmentServer
-    ? new Elysia({ aot: false })
-    : new Elysia({ adapter: CloudflareAdapter });
+const apiRoot = "/api";
+
+function createApi<const Prefix extends string>(prefix: Prefix) {
+  return (
+    new Elysia({ adapter: CloudflareAdapter, prefix })
+      .onParse(() => unreadBody)
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      .onError(({ code }) =>
+        code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+      )
+  );
 }
+
+function compileApi<App extends AnyElysia>(app: App): App {
+  app.compile();
+  return app;
+}
+
+type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function compileApi(app: AnyElysia): AnyElysia {
-  return developmentServer ? app : app.compile();
-}
-
-function dispatcher<Requirements>(
+function elysiaServer(app: AnyElysia): {
+  readonly handlers: Readonly<Record<StartMethod, ElysiaHandler>>;
+} {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  pending: PendingRequests<Requirements>,
-): ApiBridge<Requirements>["dispatch"] {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  return (app, request) =>
-    Effect.gen(function* dispatchRequest() {
-      const routed = new Request(request.url, { headers: request.headers, method: request.method });
-      pending.set(routed, {
-        context: yield* Effect.context<Requirements | CurrentRequest>(),
-        request,
-      });
-      const response = yield* Effect.promise(async (): Promise<Response> => app.fetch(routed));
-      return secureResponse(response);
-    });
-}
-
-function rawHandler<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  pending: PendingRequests<Requirements>,
-): ApiBridge<Requirements>["raw"] {
-  return (handler, failures) =>
-    async ({ request }): Promise<Response> => {
-      const entry = request instanceof Request ? pending.get(request) : undefined;
-      if (entry === undefined) {
-        return jsonResponse({ error: failedMessage }, httpStatus.internalServerError);
-      }
-      const program = handler(entry.request).pipe(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        Effect.catchCause((cause) => failureResponse(failures, cause)),
-        Effect.provide(entry.context),
-      );
-      const exit = await Effect.runPromiseExit(program);
-      return Exit.isSuccess(exit)
-        ? exit.value
-        : jsonResponse({ error: failedMessage }, httpStatus.internalServerError);
-    };
-}
-
-function routeHandler<Requirements>(
-  raw: ApiBridge<Requirements>["raw"],
-): ApiBridge<Requirements>["route"] {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  return (response, handler, failures) => {
-    const encode = Schema.encodeEffect(response);
-    return raw(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
-        handler(request).pipe(
-          Effect.flatMap((value) => Effect.orDie(encode(value))),
-          Effect.map((body) => jsonResponse(body)),
-        ),
-      failures,
-    );
+  async function handle(context: ElysiaContext): Promise<Response> {
+    return app.fetch(context.request);
+  }
+  return {
+    handlers: {
+      DELETE: handle,
+      GET: handle,
+      HEAD: handle,
+      OPTIONS: handle,
+      PATCH: handle,
+      POST: handle,
+      PUT: handle,
+    },
   };
 }
 
-function apiBridge<Requirements>(): ApiBridge<Requirements> {
-  const pending: PendingRequests<Requirements> = new WeakMap();
-  const raw = rawHandler(pending);
-  return { dispatch: dispatcher(pending), raw, route: routeHandler(raw) };
+function failedStatus(failure: Failure): Failed {
+  return status(failure.status, { error: failure.message });
+}
+
+function unavailableResponse(): Response {
+  const failure = runtimeUnavailable();
+  return jsonResponse({ error: failure.message }, failure.status);
+}
+
+function unavailableStatus(): Failed {
+  return failedStatus(runtimeUnavailable());
+}
+
+function respondRaw<Failures extends Tagged, Requirements>(
+  handler: Handler<Response, Failures, Requirements>,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+): (request: Request) => Effect.Effect<Response, never, Requirements> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (request) =>
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    handler(request).pipe(Effect.catchCause((cause) => failureResponse(failures, cause)));
+}
+
+function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  response: Schema.Codec<Value, Encoded>,
+  handler: Handler<Value, Failures, Requirements>,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+): (request: Request) => Effect.Effect<Encoded | Failed, never, Requirements> {
+  const encode = Schema.encodeEffect(response);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (request) =>
+    handler(request).pipe(
+      Effect.flatMap((value) => Effect.orDie(encode(value))),
+      Effect.catchCause(
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        (cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus)),
+      ),
+    );
+}
+
+function apiRoutes<Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  runtime: ManagedRuntime.ManagedRuntime<Requirements, unknown>,
+): ApiRoutes<Requirements> {
+  async function settle<Value>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    context: ElysiaContext,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    program: (request: Request) => Effect.Effect<Value, never, Requirements>,
+    unavailable: () => Value,
+  ): Promise<Value> {
+    const exit = await runtime.runPromiseExit(program(context.request));
+    return Exit.isSuccess(exit) ? exit.value : unavailable();
+  }
+  function raw<Failures extends Tagged>(
+    handler: Handler<Response, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ): ElysiaHandler {
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    return async (context): Promise<Response> =>
+      settle(context, respondRaw(handler, failures), unavailableResponse);
+  }
+  function route<Value, Encoded, Failures extends Tagged>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    response: Schema.Codec<Value, Encoded>,
+    handler: Handler<Value, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ): (context: ElysiaContext) => Promise<Encoded | Failed> {
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    return async (context): Promise<Encoded | Failed> =>
+      settle(context, respondValue(response, handler, failures), unavailableStatus);
+  }
+  return { raw, route };
 }
 
 export { AppOrigin } from "./app-origin.ts";
 export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
-export { jsonResponse, privateHeaders, secureResponse } from "./responses.ts";
-export { apiBridge, compileApi, createApi, readJsonBody, readSearchParams };
-export type { ApiBridge };
+export { jsonResponse, secureResponse } from "./responses.ts";
+export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer, readJsonBody, readSearchParams };
+export type { ApiRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

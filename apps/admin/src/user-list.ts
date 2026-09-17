@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { UserList } from "@template/runtime/contracts";
 import type { UsersSearch } from "#users-search.ts";
+import { adminClient } from "#api-client.ts";
+import { apiData } from "@template/runtime/client";
 import { errorMessage } from "@template/ui";
-import { requestJson } from "@template/runtime/client";
-import { userListRequestPath } from "#users-search.ts";
+import { userListQuery } from "#users-search.ts";
 
 const registeredDate = new Intl.DateTimeFormat("ja-JP", {
   day: "numeric",
@@ -38,9 +39,9 @@ interface Outcome {
   readonly state: UserListState;
 }
 
-async function fetchUsers(path: string): Promise<UserListState> {
+async function fetchUsers(query: Readonly<Record<string, string>>): Promise<UserListState> {
   try {
-    const { total, users } = await requestJson(path, UserList);
+    const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
     const listed = users.map(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       ({ createdAt, email, emailVerified, id, name, role, twoFactorEnabled }) => ({
@@ -60,13 +61,14 @@ async function fetchUsers(path: string): Promise<UserListState> {
 }
 
 function useUserList(search: UsersSearch): Readonly<{ reload: () => void; state: UserListState }> {
-  const path = userListRequestPath(search);
+  const query = userListQuery(search);
+  const path = new URLSearchParams(query).toString();
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>();
   useEffect(() => {
     const controller = { active: true };
     async function load(): Promise<void> {
-      const state = await fetchUsers(path);
+      const state = await fetchUsers(query);
       if (controller.active) {
         setOutcome({ attempt, path, state });
       }
@@ -75,7 +77,7 @@ function useUserList(search: UsersSearch): Readonly<{ reload: () => void; state:
     return (): void => {
       controller.active = false;
     };
-  }, [attempt, path]);
+  }, [attempt, path, query]);
   function reload(): void {
     setAttempt((current) => current + 1);
   }
