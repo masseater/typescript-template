@@ -10,9 +10,11 @@ import {
 } from "@template/runtime/http";
 import type { AppServices } from "@template/runtime";
 import { Effect } from "effect";
+import type { Interviewer } from "@template/interview";
+import { interviewApi } from "./interview-api.ts";
 import { verifySession } from "@template/auth";
 
-const bridge = apiBridge<AppServices>();
+const bridge = apiBridge<AppServices | Interviewer>();
 const failures = {
   ...unavailable,
   UserNotFound: { message: "対象が見つかりません。", status: 404 },
@@ -20,6 +22,7 @@ const failures = {
 
 const api = createApi()
   .use(accountApi(bridge))
+  .use(interviewApi(bridge))
   .get(
     "/api/profile",
     bridge.route(

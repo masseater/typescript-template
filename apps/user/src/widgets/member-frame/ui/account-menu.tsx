@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
+  Icon,
 } from "@template/ui/ui";
 import { ChevronDownIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -19,7 +20,7 @@ function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
     <DropdownMenu>
       <DropdownMenuTrigger aria-label={`${name} のアカウントメニュー`}>
         <span className="max-w-48 truncate">{name}</span>
-        <ChevronDownIcon aria-hidden="true" className="size-4" />
+        <Icon icon={ChevronDownIcon} size="small" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLinkItem render={profileEditLink}>プロフィールの編集</DropdownMenuLinkItem>

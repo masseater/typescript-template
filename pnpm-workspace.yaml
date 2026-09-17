@@ -7,6 +7,8 @@ overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
   effect@*: "catalog:"
+  drizzle-orm@*: "catalog:"
+  drizzle-kit@*: "catalog:"
   "@effect/platform-node-shared@*": 4.0.0-rc.112
 allowBuilds:
   esbuild: true
@@ -18,6 +20,8 @@ allowBuilds:
   protobufjs: true
   agent-browser: false
   msgpackr-extract: false
+  "@google/genai": false
+  "@openrouter/sdk": false
 minimumReleaseAgeExclude:
   - "@cloudflare/vite-plugin@1.54.10"
   - "@cloudflare/workers-types@5.20260916.1"
@@ -43,6 +47,8 @@ catalog:
   better-auth: 1.7.5
   class-variance-authority: 0.7.1
   cn: 0.3.0
+  drizzle-kit: 1.0.0-rc.4
+  drizzle-orm: 1.0.0-rc.4
   effect: 4.0.0-rc.112
   lucide-react: 1.46.0
   msw: 2.15.0

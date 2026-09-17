@@ -4,6 +4,7 @@ import { loadProfile } from "#pages/profile-edit/index.ts";
 
 const Route = createFileRoute("/_member/settings/profile")({
   component: ProfileEditRoute,
+  gcTime: 0,
   loader: loadProfile,
 });
 

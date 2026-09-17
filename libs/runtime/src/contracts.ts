@@ -120,4 +120,6 @@ export {
   UserList,
   UserListQuery,
   maximumKeywordLength,
+  maximumNameLength,
+  maximumProfileLength,
 };

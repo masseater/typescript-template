@@ -11,10 +11,10 @@ const localDatabase = {
   binding: "DB",
   database_id: "00000000-0000-0000-0000-000000000001",
   database_name: "template-shared",
-  migrations_dir: path.join(import.meta.dirname, "../migrations"),
 };
 
 const localDatabasePersistence = path.join(import.meta.dirname, "../../../.local/d1");
+const localDatabaseStore = path.join(localDatabasePersistence, "v3");
 
 async function writeLocalDatabaseConfig(): Promise<string> {
   await mkdir(localDatabasePersistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
@@ -29,4 +29,4 @@ async function writeLocalDatabaseConfig(): Promise<string> {
   return file;
 }
 
-export { localDatabase, localDatabasePersistence, writeLocalDatabaseConfig };
+export { localDatabase, localDatabasePersistence, localDatabaseStore, writeLocalDatabaseConfig };

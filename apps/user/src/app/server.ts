@@ -1,4 +1,5 @@
 import { dispatchUserApi, userApi } from "./api.ts";
+import { Interviewer } from "@template/interview";
 import { createAppWorker } from "@template/runtime/app";
 import { env } from "cloudflare:workers";
 import handler from "@tanstack/react-start/server-entry";
@@ -12,4 +13,5 @@ export default createAppWorker({
   env,
   handler,
   routes,
+  services: Interviewer.fromEnvironment(env),
 });

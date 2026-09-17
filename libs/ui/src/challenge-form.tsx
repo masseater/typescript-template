@@ -1,7 +1,7 @@
+import { Button, FormColumn } from "./shared/ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./shared/ui";
 import { ChallengeCodeField } from "./challenge-code-field";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
@@ -33,7 +33,7 @@ async function verifyChallenge(mode: ChallengeMode, code: string): Promise<void>
 
 function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormProps): ReactElement {
   const { run } = action;
-  const { setValue: setCode, value: codeValue } = code;
+  const { handleChange: setCode, value: codeValue } = code;
   const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
     (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
@@ -51,12 +51,12 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
   );
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <ChallengeCodeField backup={mode === "backup"} code={code} />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           {mode === "backup" ? "バックアップコードでログイン" : "確認コードでログイン"}
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

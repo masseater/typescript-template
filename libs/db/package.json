@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
+    "./interview": "./src/interview.ts",
     "./security": "./src/security.ts",
     "./testing": "./src/testing.ts",
     "./remote": "./src/remote-command.ts",
@@ -19,7 +20,7 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
-    "drizzle-orm": "0.45.2",
+    "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "miniflare": "4.20260730.0",
     "wrangler": "catalog:"
@@ -28,7 +29,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
-    "drizzle-kit": "0.31.10",
+    "drizzle-kit": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:"
   }

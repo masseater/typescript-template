@@ -1,24 +1,22 @@
+import { Heading, Icon } from "@template/ui/ui";
 import { SearchIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
 import { Feature } from "./feature.tsx";
-import { Heading } from "@template/ui/ui";
 import type { ReactElement } from "react";
-
-const iconClassName = "size-8 text-primary";
 
 const features = [
   {
     description: "名前と自己紹介を書いて、自分のページを持てます。",
-    icon: <UserRoundIcon aria-hidden="true" className={iconClassName} />,
+    icon: <Icon icon={UserRoundIcon} size="large" tone="primary" />,
     title: "プロフィールを作る",
   },
   {
     description: "名前で検索して、気になる人のプロフィールを開けます。",
-    icon: <SearchIcon aria-hidden="true" className={iconClassName} />,
+    icon: <Icon icon={SearchIcon} size="large" tone="primary" />,
     title: "他の利用者を探す",
   },
   {
     description: "パスキーと 2 段階認証で、ログインを強くできます。",
-    icon: <ShieldCheckIcon aria-hidden="true" className={iconClassName} />,
+    icon: <Icon icon={ShieldCheckIcon} size="large" tone="primary" />,
     title: "アカウントを守る",
   },
 ] as const;

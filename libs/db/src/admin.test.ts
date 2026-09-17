@@ -1,8 +1,9 @@
-import { account, user } from "./schema.ts";
+import { account, auditEvent, user } from "./schema.ts";
 import { addCredential, addSession, addUser, failureTag, successCount } from "./records-fixture.ts";
 import { assert, it } from "@effect/vitest";
 import { deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { getProfile, query, updateProfile } from "./index.ts";
+import type { Database } from "./index.ts";
 import { Effect } from "effect";
 import { TestDatabase } from "./testing.ts";
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
@@ -10,6 +11,11 @@ import { eq } from "drizzle-orm";
 import { getSessionSecurity } from "./security.ts";
 
 const page = { limit: 50, offset: 0 };
+
+function auditRecords(): Effect.Effect<readonly unknown[], unknown, Database> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return query(async (database) => database.select().from(auditEvent));
+}
 
 it.effect("persists Unicode profiles", () =>
   Effect.gen(function* program() {
@@ -113,5 +119,31 @@ it.effect("first administrator bootstrap is atomic and one-time", () =>
       { concurrency: "unbounded" },
     );
     assert.strictEqual(successCount(outcomes), 1);
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("writes an audit record only when the user change lands", () =>
+  Effect.gen(function* program() {
+    yield* addUser("actor", "admin");
+    yield* addUser("target");
+    const actor = yield* addSession("actor", "admin");
+    assert.strictEqual(yield* failureTag(deleteUser(actor, "missing")), "TargetUnavailable");
+    assert.strictEqual(
+      yield* failureTag(setUserRole(actor, "missing", "admin")),
+      "TargetUnavailable",
+    );
+    assert.lengthOf(yield* auditRecords(), 0);
+    yield* setUserRole(actor, "target", "admin");
+    assert.lengthOf(yield* auditRecords(), 1);
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("a rejected user change leaves no audit record behind", () =>
+  Effect.gen(function* program() {
+    yield* addUser("last", "admin");
+    const actor = yield* addSession("last", "admin");
+    assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
+    assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
+    assert.lengthOf(yield* auditRecords(), 0);
   }).pipe(Effect.provide(TestDatabase)),
 );

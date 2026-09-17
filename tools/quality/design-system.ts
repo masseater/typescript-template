@@ -1,6 +1,8 @@
-import { project } from "@shadcn/lint";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+import { project } from "@shadcn/lint";
 
 const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
 
@@ -65,14 +67,18 @@ function declarations(css: string): Map<string, string> {
   return found;
 }
 
+function read(file: string): string {
+  // oxlint-disable-next-line node/no-sync
+  return readFileSync(file, "utf-8");
+}
+
 function stylesheetPath(): string {
   return project.themeFileFor(designSystemProbe) ?? "";
 }
 
 function stylesheetSource(): string {
   const file = stylesheetPath();
-  // oxlint-disable-next-line node/no-sync
-  return file === "" ? "" : readFileSync(file, "utf-8");
+  return file === "" ? "" : read(file);
 }
 
 function designSystemComponents(): string[] {
@@ -83,26 +89,106 @@ const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.css",
 );
 
-function appStylesheetSources(app: string): string[] {
-  return (
-    Object.keys(appStylesheets)
-      .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
-      .filter((file) => file.startsWith(`${app}/`))
-      // oxlint-disable-next-line node/no-sync
-      .map((file) => readFileSync(file, "utf-8"))
+const appModules: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../apps/*/src/**/*.{ts,tsx}",
+);
+
+const partsImport = '@import "@template/ui/styles.css"';
+
+const sourcePattern = /@source\s+"(?<directory>[^"]+)"/gu;
+
+function appFiles(files: Readonly<Record<string, unknown>>, app: string): string[] {
+  return Object.keys(files)
+    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
+    .filter((file) => file.startsWith(`${app}/`));
+}
+
+function isDirectory(target: string): boolean {
+  try {
+    // oxlint-disable-next-line node/no-sync
+    return statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function declaredSources(css: string): string[] {
+  const found: string[] = [];
+  for (const match of css.matchAll(sourcePattern)) {
+    const { directory } = match.groups ?? {};
+    if (directory !== undefined) {
+      found.push(directory);
+    }
+  }
+  return found;
+}
+
+function scannedDirectories(file: string, css: string): string[] {
+  return declaredSources(css).map((directory) =>
+    path.normalize(path.join(path.dirname(file), directory)),
   );
 }
 
-function appStylesheetViolations(apps: readonly string[]): string[] {
-  return apps.flatMap((app) =>
-    appStylesheetSources(app).some(
-      (css) => css.includes('@import "@template/ui/styles.css"') && css.includes("@source"),
-    )
+function sourceViolations(app: string, file: string, css: string): string[] {
+  const declared = declaredSources(css);
+  if (declared.length === 0) {
+    return [`${file}: @source がありません。このアプリのクラスだけ生成されません。`];
+  }
+  return declared.flatMap((directory) => {
+    const scanned = path.normalize(path.join(path.dirname(file), directory));
+    if (scanned !== `${app}/src` && !scanned.startsWith(`${app}/src/`)) {
+      return [
+        `${file}: @source "${directory}" は ${scanned} を走査しており、${app}/src の外です。`,
+      ];
+    }
+    return isDirectory(scanned)
+      ? []
+      : [`${file}: @source "${directory}" のディレクトリがありません。`];
+  });
+}
+
+function styledFiles(app: string): string[] {
+  return appFiles(appModules, app).filter(
+    (file) => file.endsWith(".tsx") && read(file).includes("className"),
+  );
+}
+
+function coverageViolations(app: string, scanned: readonly string[]): string[] {
+  return styledFiles(app).flatMap((file) =>
+    scanned.some((directory) => file === directory || file.startsWith(`${directory}/`))
       ? []
       : [
-          `${app}: 部品を使うアプリは自分の CSS エントリで @import "@template/ui/styles.css" と @source を宣言してください。宣言がないとこのアプリのクラスだけ生成されません。`,
+          `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
         ],
   );
+}
+
+function linkViolations(app: string, file: string): string[] {
+  const link = `${file.slice(`${app}/src/`.length)}?url`;
+  return appFiles(appModules, app).some((module) => read(module).includes(link))
+    ? []
+    : [`${file}: ${app} のソースから ${link} で読み込まれていません。`];
+}
+
+function entryViolations(app: string, entries: readonly string[]): string[] {
+  const violations: string[] = [];
+  const scanned: string[] = [];
+  for (const file of entries) {
+    violations.push(...sourceViolations(app, file, read(file)), ...linkViolations(app, file));
+    scanned.push(...scannedDirectories(file, read(file)));
+  }
+  return [...violations, ...coverageViolations(app, scanned)];
+}
+
+function appStylesheetViolations(apps: readonly string[]): string[] {
+  return apps.flatMap((app) => {
+    const entries = appFiles(appStylesheets, app).filter((file) =>
+      read(file).includes(partsImport),
+    );
+    return entries.length === 0
+      ? [`${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`]
+      : entryViolations(app, entries);
+  });
 }
 
 function tokenViolations(css: string): string[] {
@@ -124,9 +210,12 @@ function tokenViolations(css: string): string[] {
 
 export {
   appStylesheetViolations,
+  coverageViolations,
   designSystemComponents,
   designSystemProbe,
+  linkViolations,
   smarthrTokens,
+  sourceViolations,
   stylesheetPath,
   stylesheetSource,
   tokenViolations,

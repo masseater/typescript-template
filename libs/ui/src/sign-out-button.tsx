@@ -3,7 +3,9 @@ import { Button } from "./shared/ui";
 import type { ReactElement } from "react";
 import { useSignOut } from "./use-sign-out";
 
-function SignOutButton({ destination }: Readonly<{ destination?: string }>): ReactElement {
+function SignOutButton({
+  destination,
+}: Readonly<{ destination?: string | undefined }>): ReactElement {
   const { action, signOut } = useSignOut(destination);
   return (
     <>

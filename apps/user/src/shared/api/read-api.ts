@@ -31,4 +31,6 @@ async function readApi<Shape extends Contract>(
   return decodeJson(contract, body);
 }
 
-export { readApi };
+const absence = { notFound: 404, unauthorized: 401 } as const;
+
+export { absence, readApi };

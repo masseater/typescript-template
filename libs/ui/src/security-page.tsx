@@ -5,7 +5,7 @@ import { SignOutButton } from "./sign-out-button";
 import { useSession } from "./use-session";
 
 function SecurityPage({
-  signedOutPath = "/login",
+  signedOutPath,
   title,
 }: Readonly<{ signedOutPath?: string; title: string }>): ReactElement {
   const { session, loading, error } = useSession();

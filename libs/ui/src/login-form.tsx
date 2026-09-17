@@ -1,3 +1,4 @@
+import { FormColumn, Separator } from "./shared/ui";
 import { useCallback, useState } from "react";
 import { ActionStatus } from "./action-status";
 import type { AuthenticatedHandler } from "./authenticated-handler";
@@ -6,7 +7,6 @@ import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
 import { PasskeyLoginButton } from "./passkey-login-button";
 import type { ReactElement } from "react";
-import { Separator } from "./shared/ui";
 import { useAction } from "./action";
 import { useTextInput } from "./use-text-input";
 
@@ -21,11 +21,15 @@ function LoginForm({
   const password = useTextInput();
   const [challenge, setChallenge] = useState<ChallengeMode>();
   const action = useAction();
+  const { handleChange: setEmail } = email;
+  const { handleChange: setPassword } = password;
   const restart = useCallback(() => {
     setChallenge(undefined);
-  }, []);
+    setEmail("");
+    setPassword("");
+  }, [setEmail, setPassword]);
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
+    <FormColumn>
       {challenge === undefined ? (
         <>
           <CredentialsForm
@@ -48,7 +52,7 @@ function LoginForm({
         />
       )}
       <ActionStatus action={action} pendingMessage="認証を処理しています。" />
-    </div>
+    </FormColumn>
   );
 }
 

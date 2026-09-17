@@ -1,15 +1,14 @@
+import { absence, readApi } from "#shared/api/index.ts";
 import { ProfileView } from "@template/runtime/contracts";
-import { readApi } from "#shared/api/index.ts";
+import { notFound } from "@tanstack/react-router";
 import { requestJson } from "@template/runtime/client";
 
 type Profile = typeof ProfileView.Type;
 
-const notFound = 404;
-
 async function loadProfile(): Promise<Profile> {
-  const profile = await readApi("/api/profile", ProfileView, notFound);
+  const profile = await readApi("/api/profile", ProfileView, absence.notFound);
   if (profile === undefined) {
-    throw new Error("プロフィールが見つかりません。");
+    throw notFound();
   }
   return profile;
 }
