@@ -8,31 +8,39 @@ import {
 } from "@template/runtime/contracts";
 import { accountApi, unavailable } from "@template/runtime/account";
 import {
-  apiBridge,
+  apiRoot,
+  apiRoutes,
   compileApi,
   createApi,
   readJsonBody,
   readSearchParams,
 } from "@template/runtime/http";
 import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
-import type { AppServices } from "@template/runtime";
 import { Effect } from "effect";
+import { httpStatus } from "@template/observability";
+import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
-const bridge = apiBridge<AppServices>();
-const forbidden = { message: "この操作は許可されていません。", status: 403 };
+const api = apiRoutes(runtime);
+const forbidden = { message: "この操作は許可されていません。", status: httpStatus.forbidden };
 const failures = {
   ...unavailable,
   AdminStrongSessionRequired: forbidden,
-  LastAdminRequired: { message: "最後の管理者は削除・降格できません。", status: 409 },
-  TargetUnavailable: { message: "対象が存在しないか、操作権限が失効しています。", status: 409 },
+  LastAdminRequired: {
+    message: "最後の管理者は削除・降格できません。",
+    status: httpStatus.conflict,
+  },
+  TargetUnavailable: {
+    message: "対象が存在しないか、操作権限が失効しています。",
+    status: httpStatus.conflict,
+  },
 };
 
-const api = createApi()
-  .use(accountApi(bridge))
+const app = createApi(apiRoot)
+  .use(accountApi(api))
   .get(
-    "/api/users",
-    bridge.route(
+    "/users",
+    api.route(
       UserList,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -45,8 +53,8 @@ const api = createApi()
     ),
   )
   .patch(
-    "/api/users",
-    bridge.route(
+    "/users",
+    api.route(
       RoleChanged,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -59,8 +67,8 @@ const api = createApi()
     ),
   )
   .delete(
-    "/api/users",
-    bridge.route(
+    "/users",
+    api.route(
       UserDeleted,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -73,7 +81,6 @@ const api = createApi()
     ),
   );
 
-const adminApi = compileApi(api);
-const dispatchAdminApi = bridge.dispatch;
+const adminApi = compileApi(app);
 
-export { adminApi, dispatchAdminApi };
+export { adminApi };

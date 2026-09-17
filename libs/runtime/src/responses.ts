@@ -24,4 +24,4 @@ function secureResponse(response: Response): Response {
   });
 }
 
-export { jsonResponse, privateHeaders, secureResponse };
+export { jsonResponse, secureResponse };

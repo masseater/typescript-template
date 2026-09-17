@@ -253,7 +253,7 @@ export default definePlugin({
     "effect-stack": {
       create: effectStackVisitor,
       meta: metadata(
-        "入力検証は valibot ではなく effect の Schema で行ってください。Elysia アプリは libs/runtime/src/http.ts の createApi で作り、TanStack Start の server route に HTTP ハンドラーを定義しないでください。Worker は起動時にしか Elysia の AOT コードを生成できないため、API は Worker エントリから静的に読み込む必要があります。",
+        "入力検証は valibot ではなく effect の Schema で行ってください。Elysia アプリは libs/runtime/src/http.ts の createApi で作り、createFileRoute の server には elysiaServer(app) だけを渡して Elysia に委譲してください。handlers を直接書いた server route は作れません。",
       ),
     },
     "environment-boundary": {

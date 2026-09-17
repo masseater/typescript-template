@@ -18,13 +18,13 @@ class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestReje
   ]),
 }) {}
 
-const rejectionStatus: Readonly<Record<RequestRejected["reason"], number>> = {
+const rejectionStatus = {
   body_required: httpStatus.badRequest,
   body_too_large: httpStatus.payloadTooLarge,
   invalid_json: httpStatus.badRequest,
   json_required: httpStatus.unsupportedMediaType,
   origin_denied: httpStatus.forbidden,
-};
+} as const satisfies Readonly<Record<RequestRejected["reason"], number>>;
 
 function headerRejection(
   request: JsonRequest,
