@@ -33,23 +33,23 @@ function previewDevVars(appRoot: string): Plugin {
 }
 
 const serverOnlyFiles: (string | RegExp)[] = [
-  "**/src/{api,runtime,server}.ts",
-  "**/src/app/{api,runtime,server}.ts",
-  "**/src/*-api.ts",
-  "**/src/app/*-api.ts",
   "**/libs/auth/src/**",
   "**/libs/db/src/**",
+  "**/libs/runtime/src/**",
+  "**/src/**/server-api/**",
 ];
-const serverOnlySpecifiers: (string | RegExp)[] = [
-  "elysia",
-  /^elysia\//u,
-  "drizzle-orm",
-  /^drizzle-orm\//u,
-  "better-auth",
-  /^better-auth\/(?!react$|client(?:\/|$))/u,
-  /^@better-auth\/(?!passkey\/client$)/u,
+const clientReachableFiles: (string | RegExp)[] = [
+  "**/node_modules/**",
+  "**/libs/runtime/src/{client,contracts}.ts",
 ];
-const importProtection = { client: { files: serverOnlyFiles, specifiers: serverOnlySpecifiers } };
+const importProtection = {
+  client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles },
+};
+const serverOnlyMarkers: readonly string[] = [
+  "ELYSIA_REQUEST_ID",
+  "better-auth/api",
+  "drizzle:entityKind",
+];
 
 const envFileLoader = "tanstack-start-core:load-env";
 
@@ -99,4 +99,12 @@ const appRun = {
   tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
 
-export { appRun, appServer, importProtection, previewDevVars, reactCompiler, withoutEnvFileLoader };
+export {
+  appRun,
+  appServer,
+  importProtection,
+  previewDevVars,
+  reactCompiler,
+  serverOnlyMarkers,
+  withoutEnvFileLoader,
+};
