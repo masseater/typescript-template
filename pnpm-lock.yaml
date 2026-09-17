@@ -304,6 +304,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260916.1
         version: 5.20260916.1
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
@@ -377,6 +380,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/mdx':
         specifier: 2.0.14
         version: 2.0.14
@@ -472,6 +478,9 @@ importers:
       '@template/budget-monitor':
         specifier: workspace:*
         version: link:../budget-monitor
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@template/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -485,9 +494,6 @@ importers:
         specifier: ^1.1.0
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
-      '@template/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
@@ -571,12 +577,21 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260916.1
         version: 5.20260916.1
+      '@types/node':
+        specifier: 24.12.0
+        version: 24.12.0
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite-plus:
+        specifier: 0.3.2
+        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   libs/db:
     dependencies:
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5)
