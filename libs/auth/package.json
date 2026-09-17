@@ -16,9 +16,10 @@
     "@template/db": "workspace:*",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
-    "valibot": "catalog:"
+    "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "otpauth": "9.5.2",

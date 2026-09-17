@@ -1,4 +1,4 @@
-import { integer, maxValue, minValue, number, object, pipe } from "valibot";
+import { Effect, Option, Schema } from "effect";
 import { httpStatus } from "./http-status.ts";
 
 interface JsonRequest {
@@ -7,64 +7,89 @@ interface JsonRequest {
 }
 
 const defaultBodyLimit = 16_384;
-const lastClientError = 499;
 
-const clientErrorSchema = object({
-  statusCode: pipe(number(), integer(), minValue(httpStatus.badRequest), maxValue(lastClientError)),
-});
+class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestRejected", {
+  reason: Schema.Literals([
+    "origin_denied",
+    "json_required",
+    "body_required",
+    "body_too_large",
+    "invalid_json",
+  ]),
+}) {}
 
-function failure(message: string, statusCode: number): Error {
-  return Object.assign(new Error(message), { statusCode });
-}
+const rejectionStatus: Readonly<Record<RequestRejected["reason"], number>> = {
+  body_required: httpStatus.badRequest,
+  body_too_large: httpStatus.payloadTooLarge,
+  invalid_json: httpStatus.badRequest,
+  json_required: httpStatus.unsupportedMediaType,
+  origin_denied: httpStatus.forbidden,
+};
 
-function assertJsonRequest(request: JsonRequest, expectedOrigin: string, limit: number): void {
+function headerRejection(
+  request: JsonRequest,
+  expectedOrigin: string,
+  limit: number,
+): Option.Option<RequestRejected["reason"]> {
   if (
     request.headers.get("origin") !== expectedOrigin ||
     request.headers.get("sec-fetch-site") === "cross-site"
   ) {
-    throw failure("ORIGIN_DENIED", httpStatus.forbidden);
+    return Option.some("origin_denied");
   }
   if (request.headers.get("content-type")?.split(";")[0] !== "application/json") {
-    throw failure("JSON_REQUIRED", httpStatus.unsupportedMediaType);
+    return Option.some("json_required");
   }
-  if (Number(request.headers.get("content-length")) > limit) {
-    throw failure("BODY_TOO_LARGE", httpStatus.payloadTooLarge);
-  }
+  return Number(request.headers.get("content-length")) > limit
+    ? Option.some("body_too_large")
+    : Option.none();
 }
 
 async function readBoundedText(
   body: Readonly<AsyncIterable<Uint8Array>>,
   limit: number,
-): Promise<string> {
+): Promise<string | undefined> {
   const decoder = new TextDecoder();
   let length = 0;
   let text = "";
   for await (const chunk of body) {
     length += chunk.byteLength;
     if (length > limit) {
-      throw failure("BODY_TOO_LARGE", httpStatus.payloadTooLarge);
+      return undefined;
     }
     text += decoder.decode(chunk, { stream: true });
   }
   return text + decoder.decode();
 }
 
-async function readJson(
+const parseJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
+
+const readBody = Effect.fn("readBody")(function* readBody(
+  body: Readonly<AsyncIterable<Uint8Array>>,
+  limit: number,
+) {
+  const text = yield* Effect.promise(async () => readBoundedText(body, limit));
+  if (text === undefined) {
+    return yield* new RequestRejected({ reason: "body_too_large" });
+  }
+  return yield* parseJson(text).pipe(
+    Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
+  );
+});
+
+function readJson(
   request: JsonRequest,
   expectedOrigin: string,
   limit = defaultBodyLimit,
-): Promise<unknown> {
-  assertJsonRequest(request, expectedOrigin, limit);
-  if (!request.body) {
-    throw failure("BODY_REQUIRED", httpStatus.badRequest);
+): Effect.Effect<unknown, RequestRejected> {
+  const rejection = headerRejection(request, expectedOrigin, limit);
+  if (Option.isSome(rejection)) {
+    return Effect.fail(new RequestRejected({ reason: rejection.value }));
   }
-  const text = await readBoundedText(request.body, limit);
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    throw failure("INVALID_JSON", httpStatus.badRequest);
-  }
+  return request.body === null
+    ? Effect.fail(new RequestRejected({ reason: "body_required" }))
+    : readBody(request.body, limit);
 }
 
-export { clientErrorSchema, readJson };
+export { RequestRejected, readJson, rejectionStatus };
 export type { JsonRequest };

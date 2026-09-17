@@ -1,7 +1,8 @@
-import { errorMessage, sessionSchema } from "./protocol";
 import { useCallback, useEffect, useState } from "react";
+import { SessionView as SessionContract } from "@template/runtime/contracts";
 import type { SessionView } from "./protocol";
-import { parse } from "valibot";
+import { decodeJson } from "@template/runtime/client";
+import { errorMessage } from "./protocol";
 
 interface SessionSnapshot {
   readonly error: string | undefined;
@@ -24,7 +25,7 @@ async function fetchSession(): Promise<SessionView | undefined> {
     throw new Error(`セッションの取得に失敗しました（HTTP ${response.status}）。`);
   }
   const body: unknown = await response.json();
-  return parse(sessionSchema, body);
+  return decodeJson(SessionContract, body);
 }
 
 async function loadSession(): Promise<SessionSnapshot> {

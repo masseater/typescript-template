@@ -1,25 +1,8 @@
-import { maxLength, minLength, parse, pipe, strictObject, string, trim } from "valibot";
-import { schema, user } from "./schema.ts";
-import type { D1Database } from "@cloudflare/workers-types";
-import type { DrizzleD1Database } from "drizzle-orm/d1";
-import { drizzle } from "drizzle-orm/d1";
+import { Effect } from "effect";
+import { UserNotFound } from "./user-not-found.ts";
 import { eq } from "drizzle-orm";
-
-type DatabaseBinding = D1Database;
-type Database = DrizzleD1Database<typeof schema> & { $client: DatabaseBinding };
-type Profile = Pick<typeof user.$inferSelect, "email" | "id" | "name" | "profile">;
-
-function createDb(binding: Readonly<DatabaseBinding>): Database {
-  return drizzle(binding, { schema });
-}
-
-const NAME_MAX_LENGTH = 100;
-const PROFILE_MAX_LENGTH = 2000;
-
-const profileInput = strictObject({
-  name: pipe(string(), trim(), minLength(1), maxLength(NAME_MAX_LENGTH)),
-  profile: pipe(string(), maxLength(PROFILE_MAX_LENGTH)),
-});
+import { query } from "./database.ts";
+import { user } from "./schema.ts";
 
 const profileColumns = {
   email: user.email,
@@ -28,40 +11,41 @@ const profileColumns = {
   profile: user.profile,
 };
 
-async function checkDatabase(database: Readonly<Pick<Database, "select">>): Promise<void> {
-  await database.select({ id: user.id }).from(user).limit(1);
-}
+const checkDatabase = Effect.fn("checkDatabase")(function* checkDatabase() {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  yield* query((database) => database.select({ id: user.id }).from(user).limit(1));
+});
 
-async function getProfile(
-  database: Readonly<Pick<Database, "select">>,
-  userId: string,
-): Promise<Profile | null> {
-  const [profile] = await database
-    .select(profileColumns)
-    .from(user)
-    .where(eq(user.id, userId))
-    .limit(1);
+const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [profile] = yield* query((database) =>
+    database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
+  );
   // oxlint-disable-next-line unicorn/no-null
   return profile ?? null;
-}
+});
 
-async function updateProfile(
-  database: Readonly<Pick<Database, "update">>,
+const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
   userId: string,
-  input: unknown,
-): Promise<Profile> {
-  const values = parse(profileInput, input);
-  const [profile] = await database
-    .update(user)
-    .set({ ...values, updatedAt: new Date() })
-    .where(eq(user.id, userId))
-    .returning(profileColumns);
+  values: { readonly name: string; readonly profile: string },
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [profile] = yield* query((database) =>
+    database
+      .update(user)
+      .set({ ...values, updatedAt: new Date() })
+      .where(eq(user.id, userId))
+      .returning(profileColumns),
+  );
   if (!profile) {
-    throw new Error("USER_NOT_FOUND");
+    return yield* new UserNotFound();
   }
   return profile;
-}
+});
 
-export { checkDatabase, createDb, getProfile, updateProfile };
+export { Database, query } from "./database.ts";
+export { DatabaseFailure } from "./database-failure.ts";
+export type { DrizzleDatabase } from "./database.ts";
 export { schema } from "./schema.ts";
-export type { Database, DatabaseBinding };
+export { UserNotFound } from "./user-not-found.ts";
+export { checkDatabase, getProfile, updateProfile };

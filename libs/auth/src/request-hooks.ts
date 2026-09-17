@@ -9,7 +9,7 @@ import {
 } from "@template/db/security";
 import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
-import type { Database } from "@template/db";
+import type { Run } from "./runner.ts";
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
@@ -17,7 +17,7 @@ type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 interface HookScope {
   readonly audience: Application;
   readonly ctx: HookContext;
-  readonly database: Database;
+  readonly run: Run;
 }
 
 interface SessionPolicyInput {
@@ -51,27 +51,22 @@ async function currentSessionOf(ctx: HookContext): ReturnType<typeof getSessionF
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function markTotpSessionStrong({ audience, ctx, database }: HookScope): Promise<void> {
+async function markTotpSessionStrong({ audience, ctx, run }: HookScope): Promise<void> {
   const session = await currentSessionOf(ctx);
   if (!session) {
     return;
   }
-  const current = await getSessionSecurity(database, session.session.id, audience);
+  const current = await run(getSessionSecurity(session.session.id, audience));
   if (current && totpUpgradableMethods.has(current.session.authenticationMethod)) {
-    await markSessionStrong({
-      audience,
-      database,
-      method: "password_totp",
-      sessionId: current.session.id,
-    });
+    await run(markSessionStrong(current.session.id, audience, "password_totp"));
   }
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function revokeSessionsAfterFactorChange({ ctx, database }: HookScope): Promise<void> {
+async function revokeSessionsAfterFactorChange({ ctx, run }: HookScope): Promise<void> {
   const session = await currentSessionOf(ctx);
   if (session) {
-    await revokeUserSessions(database, session.user.id);
+    await run(revokeUserSessions(session.user.id));
   }
 }
 
@@ -124,7 +119,7 @@ function challengeCookieFor(path: string, signedIn: boolean): string | undefined
 
 async function verifyChallengeAudience(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  { audience, ctx, database }: HookScope,
+  { audience, ctx, run }: HookScope,
   signedIn: boolean,
 ): Promise<void> {
   const challengeCookie = challengeCookieFor(ctx.path, signedIn);
@@ -136,7 +131,7 @@ async function verifyChallengeAudience(
   if (
     typeof identifier !== "string" ||
     identifier === "" ||
-    !(await hasVerificationAudience(database, identifier, audience))
+    !(await run(hasVerificationAudience(identifier, audience)))
   ) {
     deny("CHALLENGE_AUDIENCE_INVALID");
   }
@@ -159,8 +154,7 @@ function enforceAdminAccess({ audience, path, role, strong }: SessionPolicyInput
 
 async function enforceFactorChanges(
   { audience, path, role, strong, userId }: SessionPolicyInput,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  database: Database,
+  run: Run,
 ): Promise<void> {
   if (role !== "admin") {
     return;
@@ -168,7 +162,7 @@ async function enforceFactorChanges(
   if (
     !strong &&
     factorEnrollmentPaths.has(path) &&
-    (await hasEnrolledFactor(database, userId, audience))
+    (await run(hasEnrolledFactor(userId, audience)))
   ) {
     deny("EXISTING_FACTOR_REQUIRED");
   }
@@ -179,10 +173,10 @@ async function enforceFactorChanges(
 
 async function enforceSessionPolicy(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  { audience, ctx, database }: HookScope,
+  { audience, ctx, run }: HookScope,
   sessionId: string,
 ): Promise<void> {
-  const current = await getSessionSecurity(database, sessionId, audience);
+  const current = await run(getSessionSecurity(sessionId, audience));
   if (current?.user.emailVerified !== true) {
     deny("SESSION_INVALID");
   }
@@ -194,18 +188,17 @@ async function enforceSessionPolicy(
     userId: current.user.id,
   };
   enforceAdminAccess(input);
-  await enforceFactorChanges(input, database);
+  await enforceFactorChanges(input, run);
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createRequestHooks(database: Database, audience: Application): RequestHooks {
+function createRequestHooks(run: Run, audience: Application): RequestHooks {
   return {
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.context.returned instanceof APIError) {
         return;
       }
-      const scope = { audience, ctx, database };
+      const scope = { audience, ctx, run };
       if (ctx.path === "/two-factor/verify-totp") {
         await markTotpSessionStrong(scope);
       }
@@ -216,7 +209,7 @@ function createRequestHooks(database: Database, audience: Application): RequestH
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
-      const scope = { audience, ctx, database };
+      const scope = { audience, ctx, run };
       const session = await getSessionFromCtx(ctx, { disableCookieCache: true });
       await verifyChallengeAudience(scope, Boolean(session));
       if (session) {

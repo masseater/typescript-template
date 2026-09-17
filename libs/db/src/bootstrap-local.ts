@@ -1,42 +1,51 @@
-import { email, parse, pipe, string } from "valibot";
+import { Effect, Schema } from "effect";
+import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
 import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
-import type { DatabaseBinding } from "./index.ts";
-import { bootstrapAdmin } from "./admin.ts";
-import { createDb } from "./index.ts";
+import type { D1Database } from "@cloudflare/workers-types";
+import { Database } from "./database.ts";
+import { NodeRuntime } from "@effect/platform-node";
 import { getPlatformProxy } from "wrangler";
 
-const EMAIL_ARGUMENT_INDEX = 2;
+const platform = Effect.acquireRelease(
+  Effect.promise(async () =>
+    getPlatformProxy<{ DB: D1Database }>({
+      configPath: await writeLocalDatabaseConfig(),
+      envFiles: [],
+      persist: { path: `${localDatabasePersistence}/v3` },
+      remoteBindings: false,
+    }),
+  ),
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (proxy) => Effect.promise(async () => proxy.dispose()),
+);
 
-async function bootstrapLocal(): Promise<void> {
-  const address = parse(pipe(string(), email()), process.argv[EMAIL_ARGUMENT_INDEX]);
-  const platform = await getPlatformProxy<{ DB: DatabaseBinding }>({
-    configPath: await writeLocalDatabaseConfig(),
-    envFiles: [],
-    persist: { path: `${localDatabasePersistence}/v3` },
-    remoteBindings: false,
+function report(error: string): Effect.Effect<void> {
+  return Effect.sync(() => {
+    // oxlint-disable-next-line no-console
+    console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false }));
+    process.exitCode = 1;
   });
-  try {
-    const administrator = await bootstrapAdmin(createDb(platform.env.DB), address);
-    const report = {
-      action: "admin_bootstrap",
-      role: administrator.role,
-      userId: administrator.id,
-    };
-    process.stdout.write(`${JSON.stringify(report)}\n`);
-  } finally {
-    await platform.dispose();
-  }
 }
 
-await bootstrapLocal().catch((error: unknown) => {
-  const failure = {
-    action: "admin_bootstrap",
-    error:
-      error instanceof Error && error.message === "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"
-        ? error.message
-        : "LOCAL_BOOTSTRAP_FAILED",
-    success: false,
-  };
-  process.stderr.write(`${JSON.stringify(failure)}\n`);
-  process.exitCode = 1;
-});
+NodeRuntime.runMain(
+  Effect.gen(function* program() {
+    const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
+    const { env } = yield* platform;
+    const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
+    // oxlint-disable-next-line no-console
+    console.log(
+      JSON.stringify({
+        action: "admin_bootstrap",
+        role: administrator.role,
+        userId: administrator.id,
+      }),
+    );
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("BootstrapUnavailable", () =>
+      report("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"),
+    ),
+    Effect.catchCause(() => report("LOCAL_BOOTSTRAP_FAILED")),
+  ),
+  { disableErrorReporting: true },
+);

@@ -26,5 +26,5 @@ function logError(fields: LogFields): void {
   writeLog(consoleSink, "error", fields);
 }
 
-export { consoleSink, logError, writeLog };
+export { consoleSink, logError };
 export type { LogSink };

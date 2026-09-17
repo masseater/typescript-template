@@ -1,86 +1,90 @@
+import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
-import { describe, expect, it } from "vite-plus/test";
 import { prepareStateDirectory, readCredentials, writeCredentials } from "./credentials.ts";
+import { Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
-const HEX_32_LENGTH = 32;
-const HEX_64_LENGTH = 64;
+const HEX_ID_LENGTH = 32;
+const SECRET_LENGTH = 64;
 const PERMISSION_BITS = 0o777;
 const OWNER_ONLY_FILE_MODE = 0o600;
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const WORLD_READABLE_FILE_MODE = 0o644;
 
 const credentials = {
-  accessKeyId: "b".repeat(HEX_32_LENGTH),
-  accountId: "a".repeat(HEX_32_LENGTH),
+  accessKeyId: "b".repeat(HEX_ID_LENGTH),
+  accountId: "a".repeat(HEX_ID_LENGTH),
   bucket: "test-state",
-  secretAccessKey: "c".repeat(HEX_64_LENGTH),
+  secretAccessKey: "c".repeat(SECRET_LENGTH),
 };
 
-async function withTemporaryRoot(run: (root: string) => Promise<void>): Promise<void> {
-  const temporary = await mkdtemp(path.join(tmpdir(), "state-credentials-"));
-  const root = await realpath(temporary);
-  try {
-    await run(root);
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
+async function createTemporaryRoot(): Promise<string> {
+  const prefix = path.join(tmpdir(), "state-credentials-");
+  return realpath(await mkdtemp(prefix));
 }
 
-async function permissions(filename: string): Promise<number> {
-  const metadata = await stat(filename);
-  // oxlint-disable-next-line no-bitwise
-  return metadata.mode & PERMISSION_BITS;
+function permissions(target: string): Effect.Effect<number> {
+  return Effect.promise(async () => stat(target)).pipe(
+    // oxlint-disable-next-line no-bitwise, typescript/prefer-readonly-parameter-types
+    Effect.map((info) => info.mode & PERMISSION_BITS),
+  );
 }
 
-describe("state credentials storage", () => {
-  it("stores credentials atomically with owner-only permissions", async () => {
-    expect.hasAssertions();
-    await withTemporaryRoot(async (root) => {
-      const filename = path.join(root, "state", "r2.json");
-      await expect(readCredentials(filename)).resolves.toBeUndefined();
-      await writeCredentials(filename, credentials);
-      await expect(readCredentials(filename)).resolves.toStrictEqual(credentials);
-      await expect(permissions(filename)).resolves.toBe(OWNER_ONLY_FILE_MODE);
-      await expect(permissions(path.dirname(filename))).resolves.toBe(OWNER_ONLY_DIRECTORY_MODE);
-    });
-  });
+const temporaryRoot = Effect.acquireRelease(Effect.promise(createTemporaryRoot), (root) =>
+  Effect.promise(async () => rm(root, { force: true, recursive: true })),
+);
 
-  it("refuses credentials readable by other users", async () => {
-    expect.hasAssertions();
-    await withTemporaryRoot(async (root) => {
-      const filename = path.join(root, "state", "r2.json");
-      await writeCredentials(filename, credentials);
-      await chmod(filename, WORLD_READABLE_FILE_MODE);
-      await expect(readCredentials(filename)).rejects.toThrow("state_credentials_unreadable");
-    });
-  });
+it.effect("stores credentials atomically with owner-only permissions", () =>
+  Effect.gen(function* program() {
+    const root = yield* temporaryRoot;
+    const filename = path.join(root, "state", "r2.json");
+    assert.isUndefined(yield* readCredentials(filename));
+    yield* writeCredentials(filename, credentials);
+    assert.deepStrictEqual(yield* readCredentials(filename), credentials);
+    assert.strictEqual(yield* permissions(filename), OWNER_ONLY_FILE_MODE);
+    assert.strictEqual(yield* permissions(path.dirname(filename)), OWNER_ONLY_DIRECTORY_MODE);
+    yield* Effect.promise(async () => chmod(filename, WORLD_READABLE_FILE_MODE));
+    const failure = yield* readCredentials(filename).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "state_credentials_unreadable");
+  }).pipe(Effect.scoped),
+);
 
-  it("refuses credential symlink reads and never overwrites their target", async () => {
-    expect.hasAssertions();
-    await withTemporaryRoot(async (root) => {
-      const outside = path.join(root, "protected");
-      const filename = path.join(root, "r2.json");
-      await writeFile(outside, "protected content", { mode: OWNER_ONLY_FILE_MODE });
-      await symlink(outside, filename);
-      await expect(readCredentials(filename)).rejects.toThrow("state_credentials_unreadable");
-      await writeCredentials(filename, credentials);
-      await expect(readFile(outside, "utf-8")).resolves.toBe("protected content");
-      await expect(readCredentials(filename)).resolves.toStrictEqual(credentials);
-    });
-  });
-
-  it("refuses a symlinked state directory", async () => {
-    expect.hasAssertions();
-    await withTemporaryRoot(async (root) => {
-      await symlink(root, path.join(root, "alias"));
-      await expect(prepareStateDirectory(path.join(root, "alias"))).rejects.toThrow(
-        "state_directory_symlink_forbidden",
-      );
-    });
-  });
+const symlinkedCredentials = Effect.fn("symlinkedCredentials")(function* symlinkedCredentials(
+  root: string,
+) {
+  const outside = path.join(root, "protected");
+  const filename = path.join(root, "r2.json");
+  yield* Effect.promise(async () =>
+    writeFile(outside, "protected content", { mode: OWNER_ONLY_FILE_MODE }),
+  );
+  yield* Effect.promise(async () => symlink(outside, filename));
+  return { filename, outside };
 });
+
+it.effect("refuses credential symlink reads and never overwrites their target", () =>
+  Effect.gen(function* program() {
+    const root = yield* temporaryRoot;
+    const { filename, outside } = yield* symlinkedCredentials(root);
+    const unreadable = yield* readCredentials(filename).pipe(Effect.flip);
+    assert.strictEqual(unreadable.code, "state_credentials_unreadable");
+    yield* writeCredentials(filename, credentials);
+    assert.strictEqual(
+      yield* Effect.promise(async () => readFile(outside, "utf-8")),
+      "protected content",
+    );
+    assert.deepStrictEqual(yield* readCredentials(filename), credentials);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses a symlinked state directory", () =>
+  Effect.gen(function* program() {
+    const root = yield* temporaryRoot;
+    yield* Effect.promise(async () => symlink(root, path.join(root, "alias")));
+    const forbidden = yield* prepareStateDirectory(path.join(root, "alias")).pipe(Effect.flip);
+    assert.strictEqual(forbidden.code, "state_directory_symlink_forbidden");
+  }).pipe(Effect.scoped),
+);

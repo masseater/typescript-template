@@ -17,14 +17,16 @@
     "db:bootstrap:local": "node src/bootstrap-local.ts"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
     "drizzle-orm": "0.45.2",
+    "effect": "catalog:",
     "miniflare": "4.20260730.0",
-    "valibot": "catalog:",
     "wrangler": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "drizzle-kit": "0.31.10",
     "msw": "catalog:",

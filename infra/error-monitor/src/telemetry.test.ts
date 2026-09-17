@@ -1,25 +1,12 @@
 import { HttpResponse, http } from "msw";
-import { describe, expect, it } from "vite-plus/test";
-import type { StrictRequest } from "msw";
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
 import { fetchErrorGroups } from "./telemetry.ts";
 import { setupServer } from "msw/node";
 
-interface QueryRequestBody {
-  readonly parameters: Readonly<{
-    calculations: readonly Readonly<{ operator: string }>[];
-    filters: readonly unknown[];
-  }>;
-  readonly timeframe: Readonly<{ from: number; to: number }>;
-  readonly view: string;
-}
-
-type QueryRequest = Readonly<Pick<StrictRequest<QueryRequestBody>, "json">> & {
-  readonly headers: Readonly<Pick<Headers, "get">>;
-};
-
 const ACCOUNT_ID_LENGTH = 32;
-const UNAUTHORIZED_STATUS = 401;
-const FORBIDDEN_STATUS = 403;
 const GROUPED_EVENTS = 4;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
@@ -62,70 +49,71 @@ const queryResult = {
   success: true,
 };
 
-function recordQueries(
-  record: (body: QueryRequestBody) => void,
-): (input: Readonly<{ request: QueryRequest }>) => Promise<Response> {
-  return async ({ request }) => {
-    if (request.headers.get("authorization") !== `Bearer ${token}`) {
-      return new HttpResponse(undefined, { status: UNAUTHORIZED_STATUS });
-    }
-    record(await request.json());
-    return HttpResponse.json(queryResult);
-  };
+function withServer(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ...handlers: Parameters<typeof setupServer>
+): Effect.Effect<SetupServer, never, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.sync(() => {
+      const server = setupServer(...handlers);
+      server.listen({ onUnhandledRequest: "error" });
+      return server;
+    }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (server) =>
+      Effect.sync(() => {
+        server.close();
+      }),
+  );
 }
 
-describe("workers observability error query", () => {
-  it("groups fingerprinted error logs through the Workers Observability query API", async () => {
-    expect.hasAssertions();
-    const bodies: QueryRequestBody[] = [];
-    const handler = recordQueries((body) => {
-      bodies.push(body);
-    });
-    const server = setupServer(http.post<never, QueryRequestBody>(endpoint, handler));
-    server.listen({ onUnhandledRequest: "error" });
-    try {
-      await expect(fetchErrorGroups(window)).resolves.toStrictEqual([
-        {
-          count: GROUPED_EVENTS,
-          event: "application.error",
-          fingerprint: "0123abcd",
-          service: "user-server",
-          type: "RangeError",
-        },
-      ]);
-      const sent = bodies.map((body) => ({
-        filters: body.parameters.filters,
-        operators: body.parameters.calculations.map((item) => item.operator),
-        timeframe: body.timeframe,
-        view: body.view,
-      }));
-      expect(sent).toStrictEqual([
-        {
-          filters: [{ key: "error.fingerprint", operation: "exists", type: "string" }],
-          operators: ["count"],
-          timeframe: { from: 1, to: 2 },
-          view: "calculations",
-        },
-      ]);
-    } finally {
-      server.close();
-    }
-  });
-});
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function recordQuery(requests: unknown[]): Effect.Effect<SetupServer, never, Scope.Scope> {
+  return withServer(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    http.post(endpoint, async ({ request }) => {
+      if (request.headers.get("authorization") !== `Bearer ${token}`) {
+        return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
+      }
+      requests.push(await request.json());
+      return HttpResponse.json(queryResult);
+    }),
+  );
+}
 
-describe("workers observability query failures", () => {
-  it("are errors rather than an empty result", async () => {
-    expect.hasAssertions();
-    const server = setupServer(
+it.effect("groups fingerprinted error logs through the Workers Observability query API", () =>
+  Effect.gen(function* program() {
+    const requests: unknown[] = [];
+    yield* recordQuery(requests);
+    assert.deepStrictEqual(yield* fetchErrorGroups(window), [
+      {
+        count: GROUPED_EVENTS,
+        event: "application.error",
+        fingerprint: "0123abcd",
+        service: "user-server",
+        type: "RangeError",
+      },
+    ]);
+    const [body] = requests;
+    assert.deepInclude(body, {
+      timeframe: { from: window.from, to: window.to },
+      view: "calculations",
+    });
+    assert.deepNestedInclude(body, {
+      "parameters.calculations[0].operator": "count",
+      "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
+    });
+  }).pipe(Effect.scoped),
+);
+
+it.effect("query failures are errors rather than an empty result", () =>
+  Effect.gen(function* program() {
+    yield* withServer(
       http.post(endpoint, () =>
-        HttpResponse.json({ secret: "must-not-be-logged" }, { status: FORBIDDEN_STATUS }),
+        HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
       ),
     );
-    server.listen({ onUnhandledRequest: "error" });
-    try {
-      await expect(fetchErrorGroups(window)).rejects.toThrow(/^telemetry_http_failed$/u);
-    } finally {
-      server.close();
-    }
-  });
-});
+    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "telemetry_http_failed");
+  }).pipe(Effect.scoped),
+);

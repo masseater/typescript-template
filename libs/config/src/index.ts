@@ -1,169 +1,123 @@
-import {
-  check,
-  custom,
-  email,
-  minLength,
-  object,
-  optional,
-  parse,
-  pipe,
-  regex,
-  string,
-  url,
-} from "valibot";
-import type { D1Database } from "@cloudflare/workers-types";
-import type { InferOutput } from "valibot";
+import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
+import { Effect, Schema } from "effect";
+import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import { loopbackHosts } from "./applications.ts";
 
-interface EmailMessage {
-  readonly to: string;
-  readonly from: string;
-  readonly subject: string;
-  readonly text: string;
-}
-interface EmailBinding {
-  readonly send: (message: EmailMessage) => Promise<unknown>;
-}
-interface AssetBinding {
+interface AssetFetcher {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
 }
-interface AiBinding {
-  readonly run: (model: string, inputs: { readonly text: readonly string[] }) => Promise<unknown>;
-}
 
 const minimumAuthSecretLength = 32;
-const mailpitTimeoutMilliseconds = 10_000;
 
-const absoluteUrl = pipe(string(), url());
-const release = pipe(string(), regex(/^[a-zA-Z0-9._-]{1,64}$/u));
-const origin = pipe(
-  absoluteUrl,
-  check((value) => URL.parse(value)?.origin === value, "An origin without a path is required"),
+const AbsoluteUrl = Schema.String.check(
+  Schema.makeFilter((value: string) => URL.canParse(value) || "Expected an absolute URL"),
 );
-const scalarSchema = object({
-  APP_ORIGIN: origin,
-  APP_RELEASE: optional(release, "local"),
-  AUTH_SECRET: pipe(string(), minLength(minimumAuthSecretLength)),
-  EMAIL_FROM: pipe(string(), email()),
-  MAILPIT_URL: optional(origin),
-});
+const Origin = AbsoluteUrl.check(
+  Schema.makeFilter(
+    (value: string) => URL.parse(value)?.origin === value || "An origin without a path is required",
+  ),
+);
+const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u));
+const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
+const localRelease = Effect.succeed("local");
+const withRelease = Release.pipe(Schema.withDecodingDefaultKey(localRelease));
+const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 
-const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
-
-function hasFunction(value: unknown, key: string): boolean {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    key in value &&
-    typeof Reflect.get(value, key) === "function"
+function bindingWith<Binding>(
+  name: string,
+  methods: readonly string[],
+): Schema.declare<Binding, Binding> {
+  return Schema.declare(
+    (value: unknown): value is Binding =>
+      typeof value === "object" &&
+      value !== null &&
+      methods.every((method) => typeof Reflect.get(value, method) === "function"),
+    { expected: name },
   );
 }
 
-const assetBindingSchema = custom<AssetBinding>((value) => hasFunction(value, "fetch"));
-const bindingSchema = object({
-  ASSETS: assetBindingSchema,
-  DB: custom<D1Database>((value) => hasFunction(value, "prepare") && hasFunction(value, "batch")),
-  EMAIL: optional(custom<EmailBinding>((value) => hasFunction(value, "send"))),
-});
-const wikiSchema = object({
-  AI: optional(custom<AiBinding>((value) => hasFunction(value, "run"))),
+const Scalars = Schema.Struct({
+  APP_ORIGIN: Origin,
+  APP_RELEASE: withRelease,
+  AUTH_SECRET: AuthSecret,
+  EMAIL_FROM: Email,
+  MAILPIT_URL: Schema.optionalKey(Origin),
 });
 
-type Environment = InferOutput<typeof scalarSchema> & { local: boolean };
-type AppConfig = Environment & InferOutput<typeof bindingSchema>;
-type WikiConfig = AppConfig & { AI: AiBinding | undefined };
+const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);
+const Bindings = Schema.Struct({
+  ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
+  DB: bindingWith<D1Database>("D1Database", ["prepare", "batch"]),
+  EMAIL: Schema.optionalKey(EmailBinding),
+});
+
+const WikiBindings = Schema.Struct({
+  AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
+});
 
 function isLocalDevelopmentOrigin(value: string): boolean {
-  const { hostname, protocol } = new URL(value);
+  const url = URL.parse(value);
   return (
-    loopbackHostSet.has(hostname) ||
-    (protocol === "https:" && /^[a-z0-9-]+\.local$/u.test(hostname))
+    url !== null &&
+    (loopbackHosts.includes(url.hostname) ||
+      (url.protocol === "https:" && /^[a-z0-9-]+\.local$/u.test(url.hostname)))
   );
 }
 
-function requireSecureOrigin(value: string): void {
-  const { hostname, protocol } = new URL(value);
-  if (!loopbackHostSet.has(hostname) && protocol !== "https:") {
-    throw new Error("HTTPS is required outside localhost");
-  }
+function invalid(reason: string): ConfigurationInvalid {
+  return new ConfigurationInvalid({ reason });
 }
 
-function readEnvironment(input: unknown): Environment {
-  const scalars = parse(scalarSchema, input);
-  requireSecureOrigin(scalars.APP_ORIGIN);
+function decode<Decoded extends Schema.Top & { readonly DecodingServices: never }>(
+  schema: Decoded,
+  input: unknown,
+): Effect.Effect<Decoded["Type"], ConfigurationInvalid> {
+  return Schema.decodeUnknownEffect(schema)(input).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.mapError((issue) => invalid(issue.message)),
+  );
+}
+
+function requireSecureOrigin(origin: string): Effect.Effect<void, ConfigurationInvalid> {
+  const url = new URL(origin);
+  return url.protocol === "https:" || loopbackHosts.includes(url.hostname)
+    ? Effect.void
+    : Effect.fail(invalid("HTTPS is required outside localhost"));
+}
+
+const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
+  const scalars = yield* decode(Scalars, input);
+  yield* requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   if (
     scalars.MAILPIT_URL !== undefined &&
-    (!local || !loopbackHostSet.has(new URL(scalars.MAILPIT_URL).hostname))
+    (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
   ) {
-    throw new Error("Mailpit is restricted to local development");
+    return yield* invalid("Mailpit is restricted to local development");
   }
   return { ...scalars, local };
-}
+});
 
-function readConfig(input: unknown): AppConfig {
-  const scalars = readEnvironment(input);
-  const bindings = parse(bindingSchema, input);
-  if (scalars.MAILPIT_URL === undefined && !bindings.EMAIL) {
-    throw new Error("An email delivery binding is required");
+const readConfig = Effect.fn("readConfig")(function* readConfig(input: unknown) {
+  const scalars = yield* readEnvironment(input);
+  const bindings = yield* decode(Bindings, input);
+  if (scalars.MAILPIT_URL === undefined && bindings.EMAIL === undefined) {
+    return yield* invalid("An email delivery binding is required");
   }
   return { ...scalars, ...bindings };
-}
+});
 
-async function sendThroughMailpit(mailpitUrl: string, message: EmailMessage): Promise<void> {
-  const response = await fetch(`${mailpitUrl}/api/v1/send`, {
-    body: JSON.stringify({
-      From: { Email: message.from },
-      Subject: message.subject,
-      Text: message.text,
-      To: [{ Email: message.to }],
-    }),
-    headers: { "content-type": "application/json" },
-    method: "POST",
-    redirect: "manual",
-    signal: AbortSignal.timeout(mailpitTimeoutMilliseconds),
-  });
-  if (!response.ok) {
-    throw new Error(`Email delivery failed (${response.status})`);
-  }
-}
+type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
-async function sendVerificationEmail(
-  config: Readonly<Pick<AppConfig, "APP_ORIGIN" | "EMAIL_FROM" | "MAILPIT_URL" | "EMAIL">>,
-  message: Readonly<{ email: string; url: string }>,
-): Promise<void> {
-  if (new URL(message.url).origin !== config.APP_ORIGIN) {
-    throw new Error("Email link origin mismatch");
-  }
-  const verification: EmailMessage = {
-    from: config.EMAIL_FROM,
-    subject: "メールアドレスの確認",
-    text: `次のリンクでメールアドレスを確認してください。\n${message.url}`,
-    to: message.email,
-  };
-  if (config.MAILPIT_URL !== undefined) {
-    await sendThroughMailpit(config.MAILPIT_URL, verification);
-    return;
-  }
-  if (!config.EMAIL) {
-    throw new Error("Email delivery binding is missing");
-  }
-  await config.EMAIL.send(verification);
-}
+const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(input: unknown) {
+  const config = yield* readConfig(input);
+  const { AI } = yield* decode(WikiBindings, input);
+  return { ...config, AI };
+});
 
-function readWikiConfig(input: unknown): WikiConfig {
-  const { AI } = parse(wikiSchema, input);
-  return { ...readConfig(input), AI };
-}
+type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
-export {
-  isLocalDevelopmentOrigin,
-  readConfig,
-  readEnvironment,
-  readWikiConfig,
-  sendVerificationEmail,
-};
 export {
   applicationPorts,
   applications,
@@ -172,5 +126,9 @@ export {
   roles,
   strongAuthenticationMethods,
 } from "./applications.ts";
-export type { AppConfig, EmailBinding, EmailMessage };
 export type { Application, Role, StrongAuthenticationMethod } from "./applications.ts";
+export { ConfigurationInvalid } from "./configuration-invalid.ts";
+export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
+export { sendVerificationEmail } from "./email.ts";
+export { isLocalDevelopmentOrigin, readConfig, readEnvironment, readWikiConfig };
+export type { AppConfig, AssetFetcher, WikiConfig };

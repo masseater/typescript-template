@@ -11,8 +11,13 @@ import {
   parseBootstrapConfig,
   selectObjectWritePermission,
 } from "./config.ts";
+import { Effect } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { createHash } from "node:crypto";
 
-const config = parseBootstrapConfig(new Config().requireObject<unknown>("settings"));
+const config = await Effect.runPromise(
+  parseBootstrapConfig(new Config().requireObject<unknown>("settings")),
+);
 const bucket = new R2Bucket(
   "pulumi-state",
   {
@@ -37,23 +42,29 @@ const token = new AccountToken(
     policies: [
       {
         effect: "allow",
-        permissionGroups: [{ id: groups.results.apply(selectObjectWritePermission) }],
-        resources: bucketPolicyResources(config),
+        permissionGroups: [
+          {
+            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+            id: groups.results.apply(async (results) =>
+              Effect.runPromise(selectObjectWritePermission(results)),
+            ),
+          },
+        ],
+        resources: await Effect.runPromise(bucketPolicyResources(config)),
       },
     ],
   },
   { additionalSecretOutputs: ["value"], dependsOn: [bucket, privateDomain], protect: true },
 );
 
-const stateBackend = backendUrl(config);
+const stateBackend = await Effect.runPromise(backendUrl(config));
 const stateCredentials = secret(
-  all([token.id, token.value]).apply(async ([accessKeyId, value]: readonly [string, string]) => ({
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  all([token.id, token.value]).apply(([accessKeyId, value]) => ({
     accessKeyId,
     accountId: config.accountId,
     bucket: config.bucket,
-    secretAccessKey: Buffer.from(
-      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)),
-    ).toString("hex"),
+    secretAccessKey: createHash("sha256").update(value).digest("hex"),
   })),
 );
 

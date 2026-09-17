@@ -1,28 +1,41 @@
-import { describe, expect, it } from "vite-plus/test";
-import { is, object, parse } from "valibot";
-import { alertEnvironment } from "./index.ts";
+import { Effect, Exit, Schema } from "effect";
+import { assert, it } from "@effect/vitest";
+import { AlertEnvironment } from "./index.ts";
 
-const alerts = object(alertEnvironment);
+const TOO_MANY_RECIPIENTS = 11;
 
-describe("monitor alert environment", () => {
-  it("splits verified operator addresses", () => {
-    expect.hasAssertions();
-    expect(
-      parse(alerts, {
+const decode = Schema.decodeUnknownEffect(AlertEnvironment);
+
+it.effect("splits verified operator addresses", () =>
+  Effect.gen(function* program() {
+    assert.deepStrictEqual(
+      yield* decode({
         ALERT_FROM: "alerts@example.com",
         ALERT_TO: "operator@example.com,oncall@example.com",
       }),
-    ).toStrictEqual({
-      ALERT_FROM: "alerts@example.com",
-      ALERT_TO: ["operator@example.com", "oncall@example.com"],
-    });
-  });
+      {
+        ALERT_FROM: "alerts@example.com",
+        ALERT_TO: ["operator@example.com", "oncall@example.com"],
+      },
+    );
+  }),
+);
 
-  it.each([
-    { ALERT_FROM: "alerts@example.com", ALERT_TO: "private-not-an-address" },
-    { ALERT_FROM: "", ALERT_TO: "operator@example.com" },
-  ])("refuses invalid alert addresses: %j", (input: Readonly<Record<string, string>>) => {
-    expect.hasAssertions();
-    expect(is(alerts, input)).toBe(false);
-  });
-});
+for (const input of [
+  { ALERT_FROM: "alerts@example.com", ALERT_TO: "private-not-an-address" },
+  { ALERT_FROM: "", ALERT_TO: "operator@example.com" },
+  {
+    ALERT_FROM: "alerts@example.com",
+    ALERT_TO: Array.from(
+      { length: TOO_MANY_RECIPIENTS },
+      (_unused, index) => `operator${index}@example.com`,
+    ).join(","),
+  },
+]) {
+  it.effect(`refuses invalid alert addresses: ${JSON.stringify(input)}`, () =>
+    Effect.gen(function* program() {
+      const outcome = yield* Effect.exit(decode(input));
+      assert.isTrue(Exit.isFailure(outcome));
+    }),
+  );
+}

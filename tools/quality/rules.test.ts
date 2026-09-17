@@ -33,6 +33,32 @@ const forbiddenCode = [
     'export const send = () => fetch("https://api", { redirect: "error" });',
     "worker-fetch",
   ],
+  [
+    "libs/shared/src/probe.ts",
+    'import * as v from "valibot"; export const schema = v.string();',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/api.ts",
+    'import { Elysia } from "elysia"; export const api = new Elysia();',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/routes/api.probe.ts",
+    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    "effect-stack",
+  ],
+  [
+    "libs/shared/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => { if (Effect) throw new Error("x"); };',
+    "effect-failures",
+  ],
+  [
+    "infra/budget-monitor/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => { try { return Effect; } catch { return undefined; } };',
+    "effect-failures",
+  ],
+  ["libs/db/src/admin.ts", 'import "./bootstrap-statement.ts";', "boundaries"],
 ] as const;
 
 const dependencyBypasses = [
@@ -171,6 +197,7 @@ const validBoundaries = [
   ["tools/observe/src/probe.ts", "export const value = process.env;"],
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
+  ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
 ] as const;
 
 describe("project lint rules on dependency boundaries", () => {

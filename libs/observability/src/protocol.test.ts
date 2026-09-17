@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { parentContext, routeLabel, validateRoutes } from "./protocol.ts";
+import { isRoutes, parentContext, routeLabel } from "./protocol.ts";
 
 const context = {
   requestId: "11111111-1111-4111-8111-111111111111",
@@ -27,28 +27,24 @@ describe("route labels", () => {
   it("unknown URL paths cannot become telemetry labels", () => {
     expect.hasAssertions();
     const routes = { "/": "home", "/api/health": "health" };
-    validateRoutes(routes);
+    expect(isRoutes(routes)).toBe(true);
     expect(routeLabel("/token/secret-user@example.com", routes)).toBe("unmatched");
     expect(routeLabel("/", routes)).toBe("home");
-    expect(() => {
-      validateRoutes({ "/": "private@example.com" });
-    }).toThrow("bounded labels");
+    expect(isRoutes({ "/": "private@example.com" })).toBe(false);
   });
 
   it("accepts terminal wildcards, prioritizes exact paths and never emits captured paths", () => {
     expect.hasAssertions();
     const routes = { "/api/*": "api", "/api/auth/*": "auth", "/api/auth/sign-in": "signin" };
-    validateRoutes(routes);
+    expect(isRoutes(routes)).toBe(true);
     expect(
       ["/api/auth/sign-in", "/api/auth/token/private@example.com", "/api/authentic"].map((path) =>
         routeLabel(path, routes),
       ),
     ).toStrictEqual(["signin", "auth", "api"]);
-    expect(() => {
-      validateRoutes({ "/api/*/token": "bad" });
-    }).toThrow("bounded labels");
-    expect(() => {
-      validateRoutes({ "/api/**": "bad" });
-    }).toThrow("bounded labels");
+    expect([isRoutes({ "/api/*/token": "bad" }), isRoutes({ "/api/**": "bad" })]).toStrictEqual([
+      false,
+      false,
+    ]);
   });
 });

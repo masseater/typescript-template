@@ -1,11 +1,13 @@
-import { is, literal, object, string } from "valibot";
 import type { LLMsOptions } from "fumadocs-core/mdx-plugins";
+import { Schema } from "effect";
 
-const chartAttribute = object({
-  name: literal("chart"),
-  type: literal("mdxJsxAttribute"),
-  value: string(),
-});
+const isChartAttribute = Schema.is(
+  Schema.Struct({
+    name: Schema.Literal("chart"),
+    type: Schema.Literal("mdxJsxAttribute"),
+    value: Schema.String,
+  }),
+);
 
 const processedMarkdown: LLMsOptions = {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types, max-params
@@ -13,9 +15,9 @@ const processedMarkdown: LLMsOptions = {
     const chart =
       node.type === "mdxJsxFlowElement" && node.name === "Mermaid"
         ? // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-          node.attributes.find((attribute) => is(chartAttribute, attribute))
+          node.attributes.find((attribute) => isChartAttribute(attribute))
         : undefined;
-    return is(chartAttribute, chart)
+    return isChartAttribute(chart)
       ? state.handle({ lang: "mermaid", type: "code", value: chart.value }, parent, state, info)
       : undefined;
   },

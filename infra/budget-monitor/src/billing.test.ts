@@ -1,66 +1,75 @@
 import { HttpResponse, http } from "msw";
-import { describe, expect, it } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
 import { fetchUsage } from "./billing.ts";
 import { setupServer } from "msw/node";
 
 const ACCOUNT_ID_LENGTH = 32;
 const BILLED_COST_USD = 2;
-const FORBIDDEN_STATUS = 403;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
-const usageRow = {
-  BilledCost: BILLED_COST_USD,
-  BillingAccountId: account,
-  BillingCurrency: "USD",
-  BillingPeriodStart: "2026-09-01T00:00:00Z",
-  ChargeCategory: "Usage",
-  ChargePeriodEnd: "2026-09-15T00:00:00Z",
-  ChargePeriodStart: "2026-09-14T00:00:00Z",
-  ServiceName: "Workers",
-};
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billable-usage`;
 
-describe("billable usage client", () => {
-  it("fetches the official V1 endpoint using bearer authentication", async () => {
-    expect.hasAssertions();
-    const authorizations: unknown[] = [];
-    const server = setupServer(
-      http.get(
-        endpoint,
-        ({
-          request,
-        }: {
-          readonly request: { readonly headers: Readonly<Pick<Headers, "get">> };
-        }) => {
-          authorizations.push(request.headers.get("authorization"));
-          return HttpResponse.json({ result: [usageRow], success: true });
-        },
-      ),
-    );
-    server.listen({ onUnhandledRequest: "error" });
-    try {
-      const usage = await fetchUsage(account, "test-token", new Date("2026-09-16T00:00:00Z"));
-      expect(authorizations).toStrictEqual(["Bearer test-token"]);
-      expect(usage.usageUsd).toBe(BILLED_COST_USD);
-    } finally {
-      server.close();
-    }
-  });
+function withServer(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ...handlers: Parameters<typeof setupServer>
+): Effect.Effect<SetupServer, never, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.sync(() => {
+      const server = setupServer(...handlers);
+      server.listen({ onUnhandledRequest: "error" });
+      return server;
+    }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (server) =>
+      Effect.sync(() => {
+        server.close();
+      }),
+  );
+}
 
-  it("does not return zero usage or expose response bodies on authorization failure", async () => {
-    expect.hasAssertions();
-    const server = setupServer(
+it.effect("fetches the official V1 endpoint using bearer authentication", () =>
+  Effect.gen(function* program() {
+    yield* withServer(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      http.get(endpoint, ({ request }) => {
+        if (request.headers.get("authorization") !== "Bearer test-token") {
+          // oxlint-disable-next-line unicorn/no-null
+          return new HttpResponse(null, { status: 401 });
+        }
+        return HttpResponse.json({
+          result: [
+            {
+              BilledCost: BILLED_COST_USD,
+              BillingAccountId: account,
+              BillingCurrency: "USD",
+              BillingPeriodStart: "2026-09-01T00:00:00Z",
+              ChargeCategory: "Usage",
+              ChargePeriodEnd: "2026-09-15T00:00:00Z",
+              ChargePeriodStart: "2026-09-14T00:00:00Z",
+              ServiceName: "Workers",
+            },
+          ],
+          success: true,
+        });
+      }),
+    );
+    const usage = yield* fetchUsage(account, "test-token", new Date("2026-09-16T00:00:00Z"));
+    assert.strictEqual(usage.usageUsd, BILLED_COST_USD);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("does not return zero usage or expose response bodies on authorization failure", () =>
+  Effect.gen(function* program() {
+    yield* withServer(
       http.get(endpoint, () =>
-        HttpResponse.json({ secret: "must-not-be-logged" }, { status: FORBIDDEN_STATUS }),
+        HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
       ),
     );
-    server.listen({ onUnhandledRequest: "error" });
-    try {
-      await expect(fetchUsage(account, "test-token", new Date())).rejects.toThrow(
-        "billing_http_failed",
-      );
-    } finally {
-      server.close();
-    }
-  });
-});
+    const failure = yield* fetchUsage(account, "test-token", new Date()).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "billing_http_failed");
+    assert.notInclude(JSON.stringify(failure), "must-not-be-logged");
+  }).pipe(Effect.scoped),
+);

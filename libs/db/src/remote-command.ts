@@ -1,60 +1,69 @@
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
-import type { DatabaseExecutor } from "./remote-operations.ts";
-import type { RemoteTarget } from "./remote-input.ts";
-import { parseRemoteInput } from "./remote-input.ts";
+import { fail, parseRemoteInput } from "./remote-input.ts";
+import { Effect } from "effect";
 import { remoteExecutor } from "./remote-http.ts";
 
-type RemoteCommandResult =
-  | {
-      accountId: string;
-      databaseId: string;
-      event: "database.remote_plan";
-      migrations: { createdAt: number; hash: string }[];
-      ok: true;
-      operation: "migrate" | "bootstrap";
-      remoteStateVerified: false;
-    }
-  | { applied: number; databaseId: string; event: "database.remote_migrated"; ok: true }
-  | { databaseId: string; event: "database.remote_admin_bootstrapped"; ok: true };
+type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
+type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
-function targetExecutor(target: Readonly<RemoteTarget>): DatabaseExecutor {
+interface PlanReport {
+  readonly accountId: string;
+  readonly databaseId: string;
+  readonly event: "database.remote_plan";
+  readonly migrations: readonly { readonly createdAt: number; readonly hash: string }[];
+  readonly ok: true;
+  readonly operation: RemoteInput["operation"];
+  readonly remoteStateVerified: false;
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function planReport({ operation, target }: RemoteInput, migrations: Migrations): PlanReport {
+  return {
+    accountId: target.accountId,
+    databaseId: target.databaseId,
+    event: "database.remote_plan",
+    migrations: migrations.map((item) => ({ createdAt: item.folderMillis, hash: item.hash })),
+    ok: true,
+    operation,
+    remoteStateVerified: false,
+  };
+}
+
+const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  { operation, target }: RemoteInput,
+  migrations: Migrations,
+) {
   if (target.apiToken === undefined) {
-    throw new Error("REMOTE_INPUT_INVALID");
+    return yield* fail("REMOTE_INPUT_INVALID");
   }
-  return remoteExecutor({ ...target, apiToken: target.apiToken });
-}
-
-async function executeBootstrap(target: Readonly<RemoteTarget>): Promise<RemoteCommandResult> {
-  const executor = targetExecutor(target);
-  if (target.email === undefined) {
-    throw new Error("REMOTE_INPUT_INVALID");
-  }
-  await bootstrapDatabase(executor, target.email);
-  return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
-}
-
-async function runRemoteDatabaseCommand(
-  args: readonly string[],
-  input: unknown,
-): Promise<RemoteCommandResult> {
-  const { operation, execute, target } = parseRemoteInput(args, input);
-  const migrations = loadRemoteMigrations();
-  if (!execute) {
+  const executor = remoteExecutor({ ...target, apiToken: target.apiToken });
+  if (operation === "migrate") {
+    const applied = yield* migrateDatabase(executor, migrations);
     return {
-      accountId: target.accountId,
+      applied,
       databaseId: target.databaseId,
-      event: "database.remote_plan",
-      migrations: migrations.map((item) => ({ createdAt: item.folderMillis, hash: item.hash })),
+      event: "database.remote_migrated",
       ok: true,
-      operation,
-      remoteStateVerified: false,
-    };
+    } as const;
   }
-  if (operation === "bootstrap") {
-    return executeBootstrap(target);
+  if (target.email === undefined) {
+    return yield* fail("REMOTE_INPUT_INVALID");
   }
-  const applied = await migrateDatabase(targetExecutor(target), migrations);
-  return { applied, databaseId: target.databaseId, event: "database.remote_migrated", ok: true };
-}
+  yield* bootstrapDatabase(executor, target.email);
+  return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
+});
 
+const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
+  function* runRemoteDatabaseCommand(args: readonly string[], input: unknown) {
+    const parsed = yield* parseRemoteInput(args, input);
+    const migrations = yield* loadRemoteMigrations();
+    const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> = parsed.execute
+      ? yield* executeRemote(parsed, migrations)
+      : planReport(parsed, migrations);
+    return report;
+  },
+);
+
+export { RemoteFailure } from "./remote-input.ts";
 export { runRemoteDatabaseCommand };

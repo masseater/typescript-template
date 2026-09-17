@@ -1,0 +1,78 @@
+import { APIError } from "better-auth/api";
+import { AdminMfaRequired } from "./admin-mfa-required.ts";
+import { AdminRequired } from "./admin-required.ts";
+import { Auth } from "./auth.ts";
+import { AuthFailure } from "./auth-failure.ts";
+import type { BetterAuthInstance } from "./create-auth.ts";
+import { Effect } from "effect";
+import { EmailVerificationFailed } from "./email-verification-failed.ts";
+import { SessionInvalid } from "./session-invalid.ts";
+
+const tooManyRequests = 429;
+
+function authPromise<Value>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  run: (instance: BetterAuthInstance) => Promise<Value>,
+): Effect.Effect<Value, AuthFailure, Auth> {
+  return Effect.gen(function* authPromiseProgram() {
+    const { instance } = yield* Auth;
+    return yield* Effect.tryPromise({
+      catch: (cause) => new AuthFailure({ cause }),
+      try: async () => run(instance),
+    });
+  });
+}
+
+function classifyDenial(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  failure: AuthFailure,
+): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired {
+  const denial = failure.cause instanceof APIError ? failure.cause.body?.message : undefined;
+  if (denial === "SESSION_INVALID") {
+    return new SessionInvalid();
+  }
+  if (denial === "ADMIN_REQUIRED") {
+    return new AdminRequired();
+  }
+  return denial === "ADMIN_MFA_REQUIRED" ? new AdminMfaRequired() : failure;
+}
+
+type AuthSession = Awaited<ReturnType<BetterAuthInstance["api"]["getSession"]>>;
+
+function authSession(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  headers: Headers,
+): Effect.Effect<
+  AuthSession,
+  AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired,
+  Auth
+> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return authPromise(async (instance): Promise<AuthSession> =>
+    instance.api.getSession({ headers, query: { disableCookieCache: true } }),
+  ).pipe(Effect.mapError(classifyDenial));
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function handleAuthRequest(request: Request): Effect.Effect<Response, AuthFailure, Auth> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return authPromise(async (instance) => instance.handler(request));
+}
+
+const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToken(
+  token: string,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  headers: Headers,
+) {
+  const { instance } = yield* Auth;
+  const verification = new URL("/api/auth/verify-email", instance.options.baseURL);
+  verification.searchParams.set("token", token);
+  const response = yield* handleAuthRequest(new Request(verification, { headers, method: "GET" }));
+  yield* Effect.promise(async () => response.body?.cancel());
+  if (!response.ok) {
+    return yield* new EmailVerificationFailed({ rateLimited: response.status === tooManyRequests });
+  }
+  return { verified: true } as const;
+});
+
+export { authSession, handleAuthRequest, verifyEmailToken };

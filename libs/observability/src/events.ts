@@ -1,25 +1,6 @@
-import {
-  array,
-  finite,
-  integer,
-  literal,
-  maxLength,
-  maxValue,
-  minLength,
-  minValue,
-  number,
-  object,
-  parse,
-  picklist,
-  pipe,
-  strictObject,
-  string,
-  union,
-  variant,
-} from "valibot";
-import { errorLocationsSchema, errorTypes } from "./errors.ts";
-import { httpMethods, requestIdSchema, spanIdSchema, traceIdSchema } from "./protocol.ts";
-import type { InferOutput } from "valibot";
+import { Effect, Schema } from "effect";
+import { ErrorLocations, errorTypes } from "./errors.ts";
+import { RequestId, SpanId, TraceId, httpMethods } from "./protocol.ts";
 
 const maximumBatchSize = 32;
 const maximumMeasurement = 600_000;
@@ -28,63 +9,82 @@ const maximumEventAge = 3_600_000;
 const maximumStatus = 599;
 const minimumHttpStatus = 100;
 
-const measurement = pipe(number(), finite(), minValue(0), maxValue(maximumMeasurement));
-const fields = {
-  duration: measurement,
-  method: picklist(httpMethods),
-  requestId: requestIdSchema,
-  route: string(),
-  spanId: spanIdSchema,
-  start: pipe(number(), finite(), minValue(0)),
-  traceId: traceIdSchema,
-  value: measurement,
-};
-const httpStatusSchema = pipe(
-  number(),
-  integer(),
-  minValue(minimumHttpStatus),
-  maxValue(maximumStatus),
+const Measurement = Schema.Number.check(
+  Schema.isFinite(),
+  Schema.isBetween({ maximum: maximumMeasurement, minimum: 0 }),
 );
-const unsentStatus = literal(0);
-const requestStatus = union([unsentStatus, httpStatusSchema]);
-const eventSchema = variant("kind", [
-  strictObject({
-    ...fields,
-    kind: literal("http"),
-    name: literal("http.client.request"),
-    status: requestStatus,
-  }),
-  strictObject({
-    ...fields,
-    errorType: picklist(errorTypes),
-    kind: literal("exception"),
-    locations: errorLocationsSchema,
-    name: picklist(["browser.error", "browser.unhandledrejection"]),
-    status: literal(0),
-  }),
-  strictObject({
-    ...fields,
-    kind: literal("vital"),
-    name: picklist(["CLS", "INP", "LCP", "FCP", "TTFB"]),
-    status: literal(0),
-  }),
-]);
-const eventsSchema = pipe(array(eventSchema), minLength(1), maxLength(maximumBatchSize));
+const fields = {
+  duration: Measurement,
+  method: Schema.Literals(httpMethods),
+  requestId: RequestId,
+  route: Schema.String,
+  spanId: SpanId,
+  start: Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0)),
+  traceId: TraceId,
+  value: Measurement,
+};
+const HttpStatus = Schema.Int.check(
+  Schema.isBetween({ maximum: maximumStatus, minimum: minimumHttpStatus }),
+);
+const Unsent = Schema.Literal(0);
+const HttpEvent = Schema.Struct({
+  ...fields,
+  kind: Schema.Literal("http"),
+  name: Schema.Literal("http.client.request"),
+  status: Schema.Union([Unsent, HttpStatus]),
+});
+const ExceptionEvent = Schema.Struct({
+  ...fields,
+  errorType: Schema.Literals(errorTypes),
+  kind: Schema.Literal("exception"),
+  locations: ErrorLocations,
+  name: Schema.Literals(["browser.error", "browser.unhandledrejection"]),
+  status: Unsent,
+});
+const VitalEvent = Schema.Struct({
+  ...fields,
+  kind: Schema.Literal("vital"),
+  name: Schema.Literals(["CLS", "INP", "LCP", "FCP", "TTFB"]),
+  status: Unsent,
+});
+const BrowserEventSchema = Schema.Union([HttpEvent, ExceptionEvent, VitalEvent]);
+const BrowserEvents = Schema.Array(BrowserEventSchema).check(
+  Schema.isLengthBetween(1, maximumBatchSize),
+);
+const decodeEvents = Schema.decodeUnknownEffect(BrowserEvents, { onExcessProperty: "error" });
 
-type BrowserEvent = InferOutput<typeof eventSchema>;
+type BrowserEvent = typeof BrowserEventSchema.Type;
+
+class BrowserEventsInvalid extends Schema.TaggedError<BrowserEventsInvalid>()(
+  "BrowserEventsInvalid",
+  {},
+) {}
+
+function placed(
+  events: readonly BrowserEvent[],
+  labels: Readonly<ReadonlySet<string>>,
+  now: number,
+): boolean {
+  return events.every(
+    (event) =>
+      labels.has(event.route) &&
+      event.start >= now - maximumEventAge &&
+      event.start <= now + maximumClockSkew,
+  );
+}
 
 function parseBrowserEvents(
   input: unknown,
   labels: Readonly<ReadonlySet<string>>,
   now: number,
-): BrowserEvent[] {
-  const events = parse(eventsSchema, input);
-  const placement = object({
-    route: picklist([...labels]),
-    start: pipe(number(), minValue(now - maximumEventAge), maxValue(now + maximumClockSkew)),
-  });
-  parse(array(placement), events);
-  return events;
+): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> {
+  return decodeEvents(input).pipe(
+    Effect.mapError(() => new BrowserEventsInvalid()),
+    Effect.filterOrFail(
+      (events) => placed(events, labels, now),
+      () => new BrowserEventsInvalid(),
+    ),
+  );
 }
 
 export { maximumBatchSize, maximumMeasurement, parseBrowserEvents };

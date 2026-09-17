@@ -1,9 +1,10 @@
 import { Button, Stack } from "smarthr-ui";
-import { object, parse, string } from "valibot";
 import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
+import { Schema } from "effect";
+import { decodeJson } from "@template/runtime/client";
 
-const redirectSchema = object({ url: string() });
+const Redirect = Schema.Struct({ url: Schema.String });
 
 async function submitDecision(accept: boolean): Promise<void> {
   const response = await fetch("/api/auth/oauth2/consent", {
@@ -15,7 +16,7 @@ async function submitDecision(accept: boolean): Promise<void> {
   if (!response.ok) {
     throw new Error("連携の許可を処理できませんでした。");
   }
-  globalThis.location.assign(parse(redirectSchema, await response.json()).url);
+  globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
 }
 
 function ConsentActions({

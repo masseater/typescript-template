@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import {
   mkdir,
@@ -11,6 +11,10 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
+import type { Application } from "@template/config";
+import type { ArtifactFailure } from "./artifact-io.ts";
+import { Effect } from "effect";
+import type { Scope } from "effect";
 import { loadArtifacts } from "./artifacts.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
@@ -23,14 +27,17 @@ interface UserBuild {
   readonly server: string;
 }
 
-async function withTemporaryRoot(run: (root: string) => Promise<void>): Promise<void> {
+async function createTemporaryRoot(): Promise<string> {
   const temporary = await mkdtemp(path.join(tmpdir(), "template-artifacts-"));
-  const root = await realpath(temporary);
-  try {
-    await run(root);
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
+  return realpath(temporary);
+}
+
+const temporaryRoot = Effect.acquireRelease(Effect.promise(createTemporaryRoot), (root) =>
+  Effect.promise(async () => rm(root, { force: true, recursive: true })),
+);
+
+function run<Value>(operation: () => Promise<Value>): Effect.Effect<Value> {
+  return Effect.promise(operation);
 }
 
 async function writeFiles(
@@ -65,139 +72,145 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
   return { client, root, server };
 }
 
-async function withUserBuild(run: (build: UserBuild) => Promise<void>): Promise<void> {
-  await withTemporaryRoot(async (root) => {
-    await run(await writeUserBuild(root));
-  });
+const userBuild: Effect.Effect<UserBuild, never, Scope.Scope> = temporaryRoot.pipe(
+  Effect.flatMap((root) => run(async () => writeUserBuild(root))),
+);
+
+function failureCode(
+  root: string,
+  target: Application,
+): Effect.Effect<ArtifactFailure["code"], Effect.Success<ReturnType<typeof loadArtifacts>>> {
+  return loadArtifacts(root, target).pipe(
+    Effect.flip,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((failure) => failure.code),
+  );
 }
 
-describe("worker artifact staging", () => {
-  it("uploads server chunks with their source maps but excludes private client source maps", async () => {
-    expect.hasAssertions();
-    await withUserBuild(async ({ client, root, server }) => {
-      await writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" });
-      const artifacts = await loadArtifacts(root, "user");
-      expect(artifacts.modules).toStrictEqual([
-        {
-          contentFile: path.join(server, "chunks/handler.js"),
-          contentType: "application/javascript+module",
-          name: "chunks/handler.js",
-        },
-        {
-          contentFile: path.join(server, "index.js"),
-          contentType: "application/javascript+module",
-          name: "index.js",
-        },
-        {
-          contentFile: path.join(server, "index.js.map"),
-          contentType: "application/source-map",
-          name: "index.js.map",
-        },
-      ]);
-      expect(artifacts.release).toMatch(/^[0-9a-f]{16}$/u);
-      await expect(readdir(artifacts.clientDirectory)).resolves.toStrictEqual([
+it.effect(
+  "uploads server chunks with their source maps but excludes private client source maps",
+  () =>
+    Effect.gen(function* program() {
+      const { client, root, server } = yield* userBuild;
+      yield* run(async () => writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" }));
+      const artifacts = yield* loadArtifacts(root, "user");
+      assert.deepStrictEqual(
+        artifacts.modules.map((module) => [module.name, module.contentType]),
+        [
+          ["chunks/handler.js", "application/javascript+module"],
+          ["index.js", "application/javascript+module"],
+          ["index.js.map", "application/source-map"],
+        ],
+      );
+      assert.match(artifacts.release, /^[0-9a-f]{16}$/u);
+      assert.deepStrictEqual(yield* run(async () => readdir(artifacts.clientDirectory)), [
         "app.js",
         "styles.css",
       ]);
-      await expect(readFile(path.join(client, "app.js.map"), "utf-8")).resolves.toBe(
+      assert.strictEqual(
+        yield* run(async () => readFile(path.join(client, "app.js.map"), "utf-8")),
         "private source map",
       );
-    });
-  });
+    }).pipe(Effect.scoped),
+);
 
-  it("reuses the staging directory for unchanged client content", async () => {
-    expect.hasAssertions();
-    await withUserBuild(async ({ root }) => {
-      const first = await loadArtifacts(root, "user");
-      const second = await loadArtifacts(root, "user");
-      expect(second.clientDirectory).toBe(first.clientDirectory);
-    });
-  });
-});
+it.effect("reuses the staging directory for unchanged client content", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    const first = yield* loadArtifacts(root, "user");
+    const second = yield* loadArtifacts(root, "user");
+    assert.strictEqual(second.clientDirectory, first.clientDirectory);
+  }).pipe(Effect.scoped),
+);
 
-describe("worker artifact integrity", () => {
-  it("refuses server CSS that differs from its public asset", async () => {
-    expect.hasAssertions();
-    await withUserBuild(async ({ root, server }) => {
-      await writeFile(path.join(server, "styles.css"), "body{color:blue}");
-      await expect(loadArtifacts(root, "user")).rejects.toThrow("server_css_without_public_asset");
-    });
-  });
+it.effect("refuses server CSS that differs from its public asset", () =>
+  Effect.gen(function* program() {
+    const { root, server } = yield* userBuild;
+    yield* run(async () => writeFile(path.join(server, "styles.css"), "body{color:blue}"));
+    assert.strictEqual(yield* failureCode(root, "user"), "server_css_without_public_asset");
+  }).pipe(Effect.scoped),
+);
 
-  it("never writes through a link placed in the staging directory", async () => {
-    expect.hasAssertions();
-    await withUserBuild(async ({ root }) => {
-      const artifacts = await loadArtifacts(root, "user");
-      const protectedFile = path.join(root, "protected.txt");
+it.effect("never writes through a link placed in the staging directory", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    const artifacts = yield* loadArtifacts(root, "user");
+    const protectedFile = path.join(root, "protected.txt");
+    yield* run(async () => {
       await writeFile(protectedFile, "do not overwrite");
       await unlink(path.join(artifacts.clientDirectory, "app.js"));
       await symlink(protectedFile, path.join(artifacts.clientDirectory, "app.js"));
-      await expect(loadArtifacts(root, "user")).rejects.toThrow("artifact_staging_link_forbidden");
-      await expect(readFile(protectedFile, "utf-8")).resolves.toBe("do not overwrite");
     });
-  });
+    assert.strictEqual(yield* failureCode(root, "user"), "artifact_staging_link_forbidden");
+    assert.strictEqual(
+      yield* run(async () => readFile(protectedFile, "utf-8")),
+      "do not overwrite",
+    );
+  }).pipe(Effect.scoped),
+);
 
-  it("stages changed client content in a new directory", async () => {
-    expect.hasAssertions();
-    await withUserBuild(async ({ client, root }) => {
-      const first = await loadArtifacts(root, "user");
-      await writeFile(path.join(client, "app.js"), "export const publicValue = 2;");
-      const second = await loadArtifacts(root, "user");
-      expect(second.clientDirectory).not.toBe(first.clientDirectory);
-      expect(second.release).not.toBe(first.release);
-    });
-  });
+it.effect("stages changed client content in a new directory", () =>
+  Effect.gen(function* program() {
+    const { client, root } = yield* userBuild;
+    const first = yield* loadArtifacts(root, "user");
+    yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 2;"));
+    const second = yield* loadArtifacts(root, "user");
+    assert.notStrictEqual(second.clientDirectory, first.clientDirectory);
+    assert.notStrictEqual(second.release, first.release);
+  }).pipe(Effect.scoped),
+);
 
-  it("derives the release from code and client content but not from source maps", async () => {
-    expect.hasAssertions();
-    await withUserBuild(async ({ root, server }) => {
-      await writeFiles(server, { "index.js.map": "{}" });
-      const first = await loadArtifacts(root, "user");
-      await writeFile(path.join(server, "index.js.map"), '{"version":3}');
-      const mapChanged = await loadArtifacts(root, "user");
-      await writeFile(path.join(server, "chunks/handler.js"), "export default { changed: true };");
-      const codeChanged = await loadArtifacts(root, "user");
-      expect(mapChanged.release).toBe(first.release);
-      expect(codeChanged.release).not.toBe(first.release);
-    });
-  });
-});
+it.effect("derives the release from code and client content but not from source maps", () =>
+  Effect.gen(function* program() {
+    const { root, server } = yield* userBuild;
+    yield* run(async () => writeFiles(server, { "index.js.map": "{}" }));
+    const first = yield* loadArtifacts(root, "user");
+    yield* run(async () => writeFile(path.join(server, "index.js.map"), '{"version":3}'));
+    const mapChanged = yield* loadArtifacts(root, "user");
+    yield* run(async () =>
+      writeFile(path.join(server, "chunks/handler.js"), "export default { changed: true };"),
+    );
+    const codeChanged = yield* loadArtifacts(root, "user");
+    assert.strictEqual(mapChanged.release, first.release);
+    assert.notStrictEqual(codeChanged.release, first.release);
+  }).pipe(Effect.scoped),
+);
 
-describe("private artifact refusal", () => {
-  it.each([
-    ".dev.vars",
-    ".dev.vars.production",
-    ".env",
-    ".env.production",
-    ".env-backup",
-    "wrangler.json",
-    "private.key",
-    ".git/config",
-    ".vite/manifest.json",
-    "Pulumi.production.yaml",
-  ])("refuses private client artifact %s before copying anything", async (filename) => {
-    expect.hasAssertions();
-    await withTemporaryRoot(async (root) => {
+for (const filename of [
+  ".dev.vars",
+  ".dev.vars.production",
+  ".env",
+  ".env.production",
+  ".env-backup",
+  "wrangler.json",
+  "private.key",
+  ".git/config",
+  ".vite/manifest.json",
+  "Pulumi.production.yaml",
+]) {
+  it.effect(`refuses private client artifact ${filename} before copying anything`, () =>
+    Effect.gen(function* program() {
+      const root = yield* temporaryRoot;
       const client = path.join(root, "apps/user/dist/client");
       const server = path.join(root, "apps/user/dist/server");
-      await mkdir(path.dirname(path.join(client, filename)), { recursive: true });
-      await mkdir(server, { recursive: true });
-      await writeFile(path.join(client, filename), "private");
-      await writeFile(path.join(server, "index.js"), "export default {};");
-      await expect(loadArtifacts(root, "user")).rejects.toThrow("private_client_artifact");
-    });
-  });
+      yield* run(async () => {
+        await writeFiles(client, { [filename]: "private" });
+        await writeFiles(server, { "index.js": "export default {};" });
+      });
+      assert.strictEqual(yield* failureCode(root, "user"), "private_client_artifact");
+    }).pipe(Effect.scoped),
+  );
+}
 
-  it("refuses symlinks in upload roots", async () => {
-    expect.hasAssertions();
-    await withTemporaryRoot(async (root) => {
-      const dist = path.join(root, "apps/admin/dist");
+it.effect("refuses symlinks in upload roots", () =>
+  Effect.gen(function* program() {
+    const root = yield* temporaryRoot;
+    const dist = path.join(root, "apps/admin/dist");
+    yield* run(async () => {
       await mkdir(path.join(dist, "server"), { recursive: true });
       await mkdir(path.join(root, "private"));
       await symlink(path.join(root, "private"), path.join(dist, "client"));
-      await expect(loadArtifacts(root, "admin")).rejects.toThrow(
-        "artifact_directory_symlink_forbidden",
-      );
     });
-  });
-});
+    assert.strictEqual(yield* failureCode(root, "admin"), "artifact_directory_symlink_forbidden");
+  }).pipe(Effect.scoped),
+);

@@ -16,16 +16,16 @@
   "dependencies": {
     "@better-auth/passkey": "catalog:",
     "@tanstack/react-router": "catalog:",
-    "@template/config": "workspace:*",
     "@template/observability": "workspace:*",
+    "@template/runtime": "workspace:*",
     "better-auth": "catalog:",
+    "effect": "catalog:",
     "es-toolkit": "1.52.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-intl": "10.2.2",
     "smarthr-ui": "catalog:",
-    "styled-components": "5.3.11",
-    "valibot": "catalog:"
+    "styled-components": "5.3.11"
   },
   "devDependencies": {
     "@types/react": "catalog:",

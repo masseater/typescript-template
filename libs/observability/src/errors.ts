@@ -1,4 +1,4 @@
-import { check, maxLength, pipe, string } from "valibot";
+import { Schema } from "effect";
 
 const errorTypes = [
   "Error",
@@ -44,16 +44,18 @@ function errorLocations(stack: string | undefined): string {
     .join("\n");
 }
 
-const errorLocationsSchema = pipe(
-  string(),
-  maxLength(maximumLocationsLength),
-  check(
-    (value) =>
-      value === "" ||
-      value
-        .split("\n")
-        .every((line) => line.length <= maximumLocationLength && locationLine.test(line)),
-  ),
+function locationsBounded(value: string): boolean {
+  return (
+    value === "" ||
+    value
+      .split("\n")
+      .every((line) => line.length <= maximumLocationLength && locationLine.test(line))
+  );
+}
+
+const ErrorLocations = Schema.String.check(
+  Schema.isMaxLength(maximumLocationsLength),
+  Schema.makeFilter(locationsBounded),
 );
 
 function errorFingerprint(type: ErrorType, locations: string): string {
@@ -78,4 +80,5 @@ function errorAttributes(error: unknown): ErrorAttributes {
   };
 }
 
-export { errorAttributes, errorFingerprint, errorLocationsSchema, errorTypes };
+export { ErrorLocations, errorAttributes, errorFingerprint, errorTypes };
+export type { ErrorAttributes };

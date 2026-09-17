@@ -1,44 +1,61 @@
-import { array, literal, object, safeParse, unknown } from "valibot";
+import { Effect, Schema } from "effect";
 import type { DatabaseExecutor } from "./remote-operations.ts";
+import { RemoteFailure } from "./remote-input.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
-
-const queryResultSchema = object({ results: array(unknown()), success: literal(true) });
-const batchResponseSchema = object({
-  result: array(queryResultSchema),
-  success: literal(true),
+const StatementResult = Schema.Struct({
+  results: Schema.Array(Schema.Unknown),
+  success: Schema.Literal(true),
 });
+const QueryResponse = Schema.Struct({
+  result: Schema.Array(StatementResult),
+  success: Schema.Literal(true),
+});
+
+function queryFailed(): RemoteFailure {
+  return new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
+}
 
 function remoteExecutor({
   accountId,
-  apiToken,
   databaseId,
-}: Readonly<{ accountId: string; apiToken: string; databaseId: string }>): DatabaseExecutor {
+  apiToken,
+}: {
+  readonly accountId: string;
+  readonly databaseId: string;
+  readonly apiToken: string;
+}): DatabaseExecutor {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
   return {
-    async batch(queries) {
-      try {
-        const response = await fetch(endpoint, {
-          body: JSON.stringify({ batch: queries }),
-          headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
-          method: "POST",
-          redirect: "error",
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    batch: (queries) =>
+      Effect.gen(function* batch() {
+        const response = yield* Effect.tryPromise({
+          catch: queryFailed,
+          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+          try: async (signal) =>
+            fetch(endpoint, {
+              body: JSON.stringify({ batch: queries }),
+              headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
+              method: "POST",
+              redirect: "error",
+              signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+            }),
         });
         if (!response.ok) {
-          throw new Error("failed");
+          return yield* queryFailed();
         }
-        const result = safeParse(batchResponseSchema, await response.json());
-        if (!result.success || result.output.result.length !== queries.length) {
-          throw new Error("failed");
-        }
-        return result.output.result.map(
-          (item: Readonly<{ results: readonly unknown[] }>) => item.results,
+        const body = yield* Effect.tryPromise({
+          catch: queryFailed,
+          try: async (): Promise<unknown> => response.json(),
+        });
+        const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(body).pipe(
+          Effect.mapError(queryFailed),
         );
-      } catch {
-        throw new Error("REMOTE_QUERY_FAILED");
-      }
-    },
+        if (decoded.result.length !== queries.length) {
+          return yield* queryFailed();
+        }
+        return decoded.result.map((item) => item.results);
+      }),
   };
 }
 

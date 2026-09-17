@@ -1,11 +1,12 @@
 import { applyPlan, projectName, stackReferenceName } from "./stacks.ts";
 import { describe, expect, it } from "vite-plus/test";
+import { Effect } from "effect";
 
 const projects: Readonly<Record<string, string>> = import.meta.glob<string>("../*/Pulumi.yaml", {
   eager: true,
   import: "default",
 });
-const plan = applyPlan();
+const plan = await Effect.runPromise(applyPlan());
 const order = plan.map(({ stack }) => stack);
 
 describe("pulumi stacks", () => {

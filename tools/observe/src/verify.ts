@@ -1,7 +1,7 @@
+import { Cause, Effect, Schema } from "effect";
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
-import { parse, picklist, string } from "valibot";
+import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
-import { delay } from "es-toolkit";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
@@ -18,10 +18,24 @@ interface VerificationTarget {
 
 type Fields = Readonly<Record<string, unknown>>;
 
+class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("VerificationFailure", {
+  reason: Schema.Literals([
+    "arguments_invalid",
+    "request_failed",
+    "correlation_headers_missing",
+    "telemetry_not_correlated",
+  ]),
+}) {}
+
 const appTimeoutMilliseconds = 15_000;
 const correlationWindowMilliseconds = 45_000;
 const pollIntervalMilliseconds = 1000;
 const firstServerErrorStatus = 500;
+
+const VerifyInput = Schema.Struct({
+  app: Schema.String,
+  service: Schema.Literals(applications.map((application) => `${application}-server` as const)),
+});
 
 const { values } = parseArgs({
   options: {
@@ -30,8 +44,12 @@ const { values } = parseArgs({
   },
 });
 
-async function correlated(target: VerificationTarget): Promise<Verified | undefined> {
-  const telemetry = await requestTelemetry(target.app, target.requestId);
+function fail(reason: VerificationFailure["reason"]): VerificationFailure {
+  return new VerificationFailure({ reason });
+}
+
+const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {
+  const telemetry = yield* requestTelemetry(target.app, target.requestId);
   const logged = telemetry.logs.some(
     ({ event }: Readonly<{ event: Fields | undefined }>) =>
       event?.["event"] === "http.server.request" &&
@@ -41,67 +59,97 @@ async function correlated(target: VerificationTarget): Promise<Verified | undefi
   const traced = telemetry.spans.some(
     (span: Fields) => span["parent_id"] === null && span["duration_ms"] !== null,
   );
-  return logged && traced
-    ? { logs: telemetry.logs.length, spans: telemetry.spans.length }
-    : undefined;
-}
+  const verified: Verified | undefined =
+    logged && traced ? { logs: telemetry.logs.length, spans: telemetry.spans.length } : undefined;
+  return verified;
+});
 
-async function waitForCorrelation(
+function waitForCorrelation(
   target: VerificationTarget,
   deadline: number,
-): Promise<Verified | undefined> {
+): Effect.Effect<Verified, VerificationFailure | Effect.Error<ReturnType<typeof correlated>>> {
   if (Date.now() >= deadline) {
-    return undefined;
+    return Effect.fail(fail("telemetry_not_correlated"));
   }
-  const verified = await correlated(target);
-  if (verified !== undefined) {
-    return verified;
-  }
-  await delay(pollIntervalMilliseconds);
-  return waitForCorrelation(target, deadline);
+  return correlated(target).pipe(
+    Effect.flatMap((verified) =>
+      verified === undefined
+        ? Effect.sleep(pollIntervalMilliseconds).pipe(
+            Effect.andThen(() => waitForCorrelation(target, deadline)),
+          )
+        : Effect.succeed(verified),
+    ),
+  );
 }
 
-try {
-  const service = parse(
-    picklist(applications.map((application) => `${application}-server` as const)),
-    values.service,
-  );
-  const app = explorerOrigin(parse(string(), values.app));
-  const response = await fetch(app, {
-    method: "GET",
-    redirect: "manual",
-    signal: AbortSignal.timeout(appTimeoutMilliseconds),
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<URL>) {
+  const response = yield* Effect.tryPromise({
+    catch: () => fail("request_failed"),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    try: async (signal) =>
+      fetch(app, {
+        method: "GET",
+        redirect: "manual",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(appTimeoutMilliseconds)]),
+      }),
   });
-  await response.body?.cancel();
+  yield* Effect.tryPromise({
+    catch: () => fail("request_failed"),
+    try: async () => response.body?.cancel(),
+  });
   const requestId = response.headers.get("x-request-id") ?? "";
   if (requestId === "" || response.status >= firstServerErrorStatus) {
-    throw new Error("App must return a non-error response with correlation headers");
+    return yield* fail("correlation_headers_missing");
   }
-  const verified = await waitForCorrelation(
-    { app: app.href, requestId, service },
+  return { requestId, status: response.status };
+});
+
+const verify = Effect.fn("verify")(function* verify() {
+  const input = yield* Schema.decodeUnknownEffect(VerifyInput)({
+    app: values.app,
+    service: values.service,
+  }).pipe(Effect.mapError(() => fail("arguments_invalid")));
+  const app = yield* explorerOrigin(input.app);
+  const { requestId, status } = yield* requestApp(app);
+  const verified = yield* waitForCorrelation(
+    { app: app.href, requestId, service: input.service },
     Date.now() + correlationWindowMilliseconds,
   );
-  if (verified === undefined) {
-    throw new Error("Local Explorer did not expose correlated data within 45 seconds");
-  }
-  process.stdout.write(
-    `${JSON.stringify({
-      ok: true,
-      requestId,
-      responseStatus: response.status,
-      service,
-      signals: ["logs", "traces"],
-      ...verified,
-    })}\n`,
-  );
-} catch {
-  process.stderr.write(
-    `${JSON.stringify({
-      event: "observability.verification_failed",
-      ok: false,
-      remediation:
-        "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
-    })}\n`,
-  );
-  process.exitCode = 1;
-}
+  return {
+    ok: true,
+    requestId,
+    responseStatus: status,
+    service: input.service,
+    signals: ["logs", "traces"],
+    ...verified,
+  };
+});
+
+NodeRuntime.runMain(
+  verify().pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap((report) =>
+      Effect.sync(() => {
+        process.stdout.write(`${JSON.stringify(report)}\n`);
+      }),
+    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.catchCause((cause) =>
+      Cause.hasInterruptsOnly(cause)
+        ? Effect.failCause(cause)
+        : Effect.sync(() => {
+            process.stderr.write(
+              `${JSON.stringify({
+                event: "observability.verification_failed",
+                ok: false,
+                remediation:
+                  "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
+              })}\n`,
+            );
+            process.exitCode = 1;
+          }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

@@ -4,12 +4,15 @@ const config: KnipConfig = {
   ignoreDependencies: ["vite", "vitest"],
   workspaces: {
     ".": {
+      ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
       project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],
     },
     "apps/*": {
+      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.{ts,tsx}!"],
     },
     "apps/wiki": {
+      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
     "infra/bootstrap": {
@@ -53,12 +56,13 @@ const config: KnipConfig = {
         "src/**/*.ts!",
         "!src/auth-test-fixture.ts!",
         "!src/browser-client.ts!",
+        "!src/mail-fixture.ts!",
         "!src/wiki-oauth-fixture.ts!",
       ],
     },
     "libs/db": {
       entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-      project: ["src/**/*.ts!"],
+      project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
     },
     "tools/dev": {
       entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],

@@ -1,18 +1,10 @@
 import type { ChangeEventHandler, SubmitEventHandler } from "react";
-import { object, parse, string } from "valibot";
 import { useCallback, useEffect, useState } from "react";
-import type { InferOutput } from "valibot";
+import { ProfileView } from "@template/runtime/contracts";
 import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
 
-const profileSchema = object({
-  email: string(),
-  id: string(),
-  name: string(),
-  profile: string(),
-});
-
-type ProfileData = InferOutput<typeof profileSchema>;
+type ProfileData = typeof ProfileView.Type;
 
 interface ProfileDraft {
   readonly handleNameChange: ChangeEventHandler<HTMLInputElement>;
@@ -31,12 +23,11 @@ interface ProfileForm extends ProfileDraft {
 }
 
 async function loadProfile(): Promise<ProfileData> {
-  return parse(profileSchema, await requestJson("/api/profile"));
+  return requestJson("/api/profile", ProfileView);
 }
 
 async function saveProfile(name: string, profile: string): Promise<ProfileData> {
-  const body = await requestJson("/api/profile", { body: { name, profile }, method: "PATCH" });
-  return parse(profileSchema, body);
+  return requestJson("/api/profile", ProfileView, { body: { name, profile }, method: "PATCH" });
 }
 
 type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
