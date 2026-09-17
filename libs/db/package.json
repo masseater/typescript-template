@@ -14,22 +14,20 @@
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "db:migrate:local": "node src/migrate-local.ts",
-    "db:bootstrap:local": "node src/bootstrap-local.ts",
-    "db:migrate:remote": "node src/remote-cli.ts migrate",
-    "db:bootstrap:remote": "node src/remote-cli.ts bootstrap"
+    "db:bootstrap:local": "node src/bootstrap-local.ts"
   },
   "dependencies": {
     "@template/config": "workspace:*",
     "drizzle-orm": "0.45.2",
     "miniflare": "4.20260730.0",
-    "valibot": "1.5.0",
-    "wrangler": "4.132.0"
+    "valibot": "catalog:",
+    "wrangler": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260916.1",
-    "@types/node": "24.12.0",
+    "@cloudflare/workers-types": "catalog:",
+    "@types/node": "catalog:",
     "drizzle-kit": "0.31.10",
-    "msw": "^2.11.0",
-    "typescript": "7.0.2"
+    "msw": "catalog:",
+    "typescript": "catalog:"
   }
 }

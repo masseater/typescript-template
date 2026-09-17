@@ -24,4 +24,4 @@ jobs:
           cache: true
       - run: vp run check
       - run: vp test run
-      - run: vp run test:runtime
+      - run: vp run --filter @template/infra-cloudflare verify:runtime

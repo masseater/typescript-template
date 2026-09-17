@@ -8,6 +8,10 @@
   },
   "scripts": {},
   "dependencies": {
+    "valibot": "catalog:",
     "web-vitals": "6.2.2"
+  },
+  "devDependencies": {
+    "@template/config": "workspace:*"
   }
 }

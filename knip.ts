@@ -13,7 +13,7 @@ const config: KnipConfig = {
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
     "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/remote-cli.ts!"],
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
