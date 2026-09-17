@@ -525,6 +525,9 @@ importers:
 
   infra/budget-monitor:
     dependencies:
+      '@template/monitor':
+        specifier: workspace:*
+        version: link:../../libs/monitor
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
@@ -596,6 +599,9 @@ importers:
 
   infra/error-monitor:
     dependencies:
+      '@template/monitor':
+        specifier: workspace:*
+        version: link:../../libs/monitor
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
@@ -621,6 +627,9 @@ importers:
 
   infra/health-monitor:
     dependencies:
+      '@template/monitor':
+        specifier: workspace:*
+        version: link:../../libs/monitor
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
@@ -760,6 +769,19 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
+
+  libs/monitor:
+    dependencies:
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 'catalog:'
+        version: 5.20260916.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
 
   libs/observability:
     dependencies:

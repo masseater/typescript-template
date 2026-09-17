@@ -9,6 +9,7 @@
     "build": "vp pack"
   },
   "dependencies": {
+    "@template/monitor": "workspace:*",
     "valibot": "catalog:"
   },
   "devDependencies": {

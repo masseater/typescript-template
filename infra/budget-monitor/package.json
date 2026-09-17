@@ -10,6 +10,7 @@
     "inspect": "node src/inspect.ts"
   },
   "dependencies": {
+    "@template/monitor": "workspace:*",
     "valibot": "catalog:"
   },
   "devDependencies": {

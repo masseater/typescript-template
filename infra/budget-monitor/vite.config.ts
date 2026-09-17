@@ -7,6 +7,9 @@ export default defineConfig({
     platform: "browser",
     target: "es2023",
     outExtensions: () => ({ js: ".js" }),
-    deps: { alwaysBundle: ["valibot"], onlyBundle: ["valibot"], neverBundle: [/^cloudflare:/] },
+    deps: {
+      alwaysBundle: ["valibot", "@template/monitor"],
+      onlyBundle: ["valibot", "@template/monitor"],
+    },
   },
 });
