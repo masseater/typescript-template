@@ -3,21 +3,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "private-maps": "node src/private-maps.ts",
+    "browser": "node src/cli.ts browser",
     "browser-command": "node src/cli.ts browser-command",
     "connect": "node src/cli.ts connect",
+    "logs": "node src/cli.ts logs",
+    "private-maps": "node src/private-maps.ts",
     "setup": "node src/cli.ts setup",
     "start": "node src/cli.ts start",
-    "stop": "node src/cli.ts stop",
     "status": "node src/cli.ts status",
-    "logs": "node src/cli.ts logs",
-    "browser": "node src/cli.ts browser"
+    "stop": "node src/cli.ts stop",
+    "storybook": "node src/cli.ts storybook"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
     "agent-browser": "0.37.1",
     "effect": "catalog:",
+    "playwright": "catalog:",
     "portless": "0.15.6"
   },
   "devDependencies": {

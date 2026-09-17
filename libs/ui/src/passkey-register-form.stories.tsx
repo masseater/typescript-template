@@ -1,10 +1,26 @@
-import { session, settingsContext } from "./story-fixture";
 import { PasskeyRegisterForm } from "./passkey-register-form";
-import { fn } from "storybook/test";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
+const user = {
+  email: "taro@example.com",
+  id: "user_01",
+  name: "山田 太郎",
+  role: "user",
+  twoFactorEnabled: false,
+} as const;
+
 const meta = preview.meta({
-  args: { context: settingsContext(), onRegistered: fn() },
+  args: {
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
+      recovery: undefined,
+      session: { strong: true, user },
+    },
+    onRegistered: async (): Promise<void> => undefined,
+  },
   component: PasskeyRegisterForm,
 });
 
@@ -12,9 +28,12 @@ export const Default = meta.story();
 
 export const RecoveringAdmin = meta.story({
   args: {
-    context: settingsContext({
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
       recovery: "1",
-      session: session({ role: "admin" }, false),
-    }),
+      session: { strong: false, user: { ...user, role: "admin" } },
+    },
   },
 });

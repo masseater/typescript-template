@@ -56,7 +56,7 @@
     },
     {
       "groupName": "playwright",
-      "matchPackageNames": ["playwright", "@playwright/**", "@vitest/browser-playwright"]
+      "matchPackageNames": ["playwright", "@playwright/**"]
     },
     {
       "groupName": "better-auth",

@@ -1,9 +1,10 @@
 import { HttpResponse, http } from "msw";
-import { expect, fn, userEvent } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import { LoginForm } from "./login-form";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
-const meta = preview.meta({ args: { onAuthenticated: fn() }, component: LoginForm });
+const meta = preview.meta({ args: { onAuthenticated: noop }, component: LoginForm });
 
 export const Default = meta.story();
 
@@ -26,7 +27,7 @@ export const Rejected = meta.story({
       ),
     );
   },
-  parameters: { a11y: { test: "todo" } },
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com");
     await userEvent.type(canvas.getByLabelText("パスワード"), "wrong password");

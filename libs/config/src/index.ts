@@ -128,6 +128,7 @@ export {
   authenticationMethods,
   loopbackHosts,
   roles,
+  storybookPort,
   strongAuthenticationMethods,
 } from "./applications.ts";
 export type { Application, Role, StrongAuthenticationMethod } from "./applications.ts";

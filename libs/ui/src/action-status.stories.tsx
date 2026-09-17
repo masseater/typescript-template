@@ -1,18 +1,31 @@
-import { failedAction, idleAction, pendingAction } from "./story-fixture";
 import { ActionStatus } from "./action-status";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
-const meta = preview.meta({ args: { action: idleAction() }, component: ActionStatus });
+const meta = preview.meta({
+  args: { action: { blocked: false, error: undefined, pending: false, run: noop } },
+  component: ActionStatus,
+});
 
 export const Idle = meta.story();
 
 export const Pending = meta.story({
-  args: { action: pendingAction(), pendingMessage: "認証を処理しています。" },
+  args: {
+    action: { blocked: true, error: undefined, pending: true, run: noop },
+    pendingMessage: "認証を処理しています。",
+  },
 });
 
 export const Notice = meta.story({ args: { notice: "パスキーを登録しました。" } });
 
 export const Failed = meta.story({
-  args: { action: failedAction("認証サーバーが操作を拒否しました。") },
-  parameters: { a11y: { test: "todo" } },
+  args: {
+    action: {
+      blocked: false,
+      error: "認証サーバーが操作を拒否しました。",
+      pending: false,
+      run: noop,
+    },
+  },
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
 });

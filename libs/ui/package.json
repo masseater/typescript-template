@@ -13,10 +13,6 @@
     "./styles.css": "./src/styles.css",
     "./ui": "./src/shared/ui/index.ts"
   },
-  "scripts": {
-    "browsers": "vp exec playwright install chromium",
-    "storybook": "vp exec storybook dev -p 3051 --no-open"
-  },
   "dependencies": {
     "@base-ui/react": "catalog:",
     "@better-auth/passkey": "catalog:",
@@ -40,15 +36,17 @@
     "@storybook/addon-vitest": "10.6.0",
     "@storybook/react-vite": "10.6.0",
     "@tailwindcss/vite": "catalog:",
+    "@template/config": "workspace:*",
     "@types/react": "catalog:",
-    "@vitest/browser-playwright": "4.1.11",
+    "@types/react-dom": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "msw": "catalog:",
     "msw-storybook-addon": "3.0.3",
-    "playwright": "1.63.0",
+    "playwright": "catalog:",
     "storybook": "10.6.0",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "0.3.2",
+    "vite-plus": "catalog:",
     "vitest": "catalog:"
   },
   "msw": {

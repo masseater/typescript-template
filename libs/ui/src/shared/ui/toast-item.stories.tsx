@@ -1,20 +1,21 @@
 import { expect, screen, userEvent, waitFor } from "storybook/test";
 import { Button } from "./button";
 import type { ReactElement } from "react";
+import { ToastItem } from "./toast-item";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { ToastViewport } from "./toast-viewport";
 import preview from "../../../.storybook/preview";
 import { useCallback } from "react";
 import { useToast } from "./use-toast";
 
-function ShowToast({ variant }: Readonly<{ variant: "error" | "success" }>): ReactElement {
-  const toast = useToast();
+function Raise({
+  title,
+  variant,
+}: Readonly<{ title: string; variant: "error" | "success" }>): ReactElement {
+  const raise = useToast();
   const show = useCallback(() => {
-    toast(
-      variant,
-      variant === "error" ? "利用者の権限を変更できませんでした。" : "利用者の権限を変更しました。",
-    );
-  }, [toast, variant]);
+    raise(variant, title);
+  }, [raise, title, variant]);
   return (
     <Button type="button" variant="primary" onClick={show}>
       通知を出す
@@ -23,22 +24,20 @@ function ShowToast({ variant }: Readonly<{ variant: "error" | "success" }>): Rea
 }
 
 const meta = preview.meta({
-  args: { variant: "success" },
-  component: ShowToast,
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
-  },
-  render: ({ variant }): ReactElement => (
+  args: { toast: { id: "toast_01", title: "利用者の権限を変更しました。", type: "success" } },
+  component: ToastItem,
+  render: ({ toast }): ReactElement => (
     <ToastPrimitive.Provider>
-      <ShowToast variant={variant} />
+      <Raise
+        title={typeof toast.title === "string" ? toast.title : ""}
+        variant={toast.type === "error" ? "error" : "success"}
+      />
       <ToastViewport />
     </ToastPrimitive.Provider>
   ),
-  title: "shared/ui/ToastItem",
 });
 
 export const Success = meta.story({
-  args: { variant: "success" },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
     await expect(await screen.findByText("利用者の権限を変更しました。")).toBeInTheDocument();
@@ -46,8 +45,10 @@ export const Success = meta.story({
 });
 
 export const Failure = meta.story({
-  args: { variant: "error" },
-  parameters: { a11y: { test: "todo" } },
+  args: {
+    toast: { id: "toast_02", title: "利用者の権限を変更できませんでした。", type: "error" },
+  },
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
     await expect(
@@ -57,7 +58,6 @@ export const Failure = meta.story({
 });
 
 export const Closes = meta.story({
-  args: { variant: "success" },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
     await userEvent.click(await screen.findByLabelText("通知を閉じる"));

@@ -1,10 +1,10 @@
 import { PasskeyItem } from "./passkey-item";
 import type { ReactElement } from "react";
-import { idleAction } from "./story-fixture";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
 const meta = preview.meta({
-  args: { action: idleAction() },
+  args: { action: { blocked: false, error: undefined, pending: false, run: noop } },
   component: PasskeyItem,
   render: ({ action, passkey }): ReactElement => (
     <ul>

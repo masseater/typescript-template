@@ -1,24 +1,53 @@
-import { session, settingsContext } from "./story-fixture";
 import { TotpPasswordForm } from "./totp-password-form";
-import { fn } from "storybook/test";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
+const user = {
+  email: "taro@example.com",
+  id: "user_01",
+  name: "山田 太郎",
+  role: "user",
+  twoFactorEnabled: false,
+} as const;
+
 const meta = preview.meta({
-  args: { context: settingsContext(), enrolling: false, onEnroll: fn() },
+  args: {
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
+      recovery: undefined,
+      session: { strong: true, user },
+    },
+    enrolling: false,
+    onEnroll: noop,
+  },
   component: TotpPasswordForm,
 });
 
 export const Enroll = meta.story();
 
 export const Disable = meta.story({
-  args: { context: settingsContext({ session: session({ twoFactorEnabled: true }) }) },
+  args: {
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
+      recovery: undefined,
+      session: { strong: true, user: { ...user, twoFactorEnabled: true } },
+    },
+  },
 });
 
 export const AdminLocked = meta.story({
   args: {
-    context: settingsContext({
-      session: session({ role: "admin", twoFactorEnabled: true }),
-    }),
+    context: {
+      action: { blocked: false, error: undefined, pending: false, run: noop },
+      onNotice: noop,
+      onNoticeClear: noop,
+      recovery: undefined,
+      session: { strong: true, user: { ...user, role: "admin", twoFactorEnabled: true } },
+    },
   },
 });
 

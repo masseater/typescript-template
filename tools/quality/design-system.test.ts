@@ -1,10 +1,14 @@
+import { a11yRelaxations, storylessParts, vendoredWorkerViolations } from "./part-stories.ts";
 import {
   appStylesheetViolations,
+  coverageViolations,
   designSystemComponents,
   designSystemProbe,
+  indexedComponents,
+  linkViolations,
   partsDirectory,
   smarthrTokens,
-  storylessParts,
+  sourceViolations,
   stylesheetPath,
   stylesheetSource,
   tokenViolations,
@@ -12,6 +16,8 @@ import {
 } from "./design-system.ts";
 import { describe, expect, it } from "vite-plus/test";
 import { field, workspaceManifests } from "./dependencies.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { AssertionError } from "node:assert";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { plugin } from "@shadcn/lint";
 
@@ -50,6 +56,27 @@ function restrictedImportNames(): string[] {
     : [];
 }
 
+const acceptedA11yViolations = [
+  { file: "libs/ui/src/action-status.stories.tsx", rule: "color-contrast", story: "Failed" },
+  { file: "libs/ui/src/email-verification.stories.tsx", rule: "color-contrast", story: "Expired" },
+  { file: "libs/ui/src/login-form.stories.tsx", rule: "color-contrast", story: "Rejected" },
+  { file: "libs/ui/src/passkey-list.stories.tsx", rule: "color-contrast", story: "Failed" },
+  { file: "libs/ui/src/passkey-settings.stories.tsx", rule: "color-contrast", story: "Failed" },
+  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "Missing" },
+  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "TooShort" },
+  { file: "libs/ui/src/shared/ui/status.stories.tsx", rule: "color-contrast", story: "Error" },
+  {
+    file: "libs/ui/src/shared/ui/toast-item.stories.tsx",
+    rule: "aria-hidden-focus",
+    story: "Failure",
+  },
+  {
+    file: "libs/ui/src/signup-fields.stories.tsx",
+    rule: "color-contrast",
+    story: "RejectsShortPassword",
+  },
+];
+
 const restyled = [
   ["no-restyle", "bg-destructive"],
   ["no-raw-colors", "text-red-500"],
@@ -80,8 +107,11 @@ function reports(rule: RuleName, className: string): boolean {
         },
       ],
     });
-  } catch {
-    return true;
+  } catch (error) {
+    if (error instanceof AssertionError) {
+      return true;
+    }
+    throw error;
   }
   return false;
 }
@@ -141,6 +171,46 @@ describe("app stylesheet ownership", () => {
     expect.hasAssertions();
     expect(appStylesheetViolations(["apps/missing"])).toHaveLength(1);
   });
+
+  it("reports a @source that scans a directory which does not exist", () => {
+    expect.hasAssertions();
+    expect(
+      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@source "./nonexistent";'),
+    ).toHaveLength(1);
+  });
+
+  it("reports a @source that scans outside the app", () => {
+    expect.hasAssertions();
+    expect(
+      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@source "../../../libs/ui";'),
+    ).toHaveLength(1);
+  });
+
+  it("reports a stylesheet with no @source at all", () => {
+    expect.hasAssertions();
+    expect(
+      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@import "tailwindcss";'),
+    ).toHaveLength(1);
+  });
+
+  it("reports a stylesheet the app never links", () => {
+    expect.hasAssertions();
+    expect(linkViolations("apps/wiki", "apps/wiki/src/styles/unlinked.css")).toHaveLength(1);
+  });
+});
+
+describe("app stylesheet coverage", () => {
+  it("reports a @source narrowed past the screens it has to cover", () => {
+    expect.hasAssertions();
+    expect(coverageViolations("apps/wiki", ["apps/wiki/src/styles"])).toContainEqual(
+      expect.stringContaining("apps/wiki/src/components/consent-actions.tsx"),
+    );
+  });
+
+  it("accepts a @source that covers every styled file of the app", () => {
+    expect.hasAssertions();
+    expect(coverageViolations("apps/wiki", ["apps/wiki/src/components"])).toStrictEqual([]);
+  });
 });
 
 describe("design system lint", () => {
@@ -158,6 +228,16 @@ describe("design system lint", () => {
       expect(restrictedImportNames()).toContain(name);
     },
   );
+
+  it("leaves the story exports out of the part names it reports", () => {
+    expect.hasAssertions();
+    expect(designSystemComponents()).not.toContain("Default");
+  });
+
+  it("still sees the story exports in the upstream index", () => {
+    expect.hasAssertions();
+    expect(indexedComponents()).toContain("Default");
+  });
 
   it("enables every design system rule", () => {
     expect.hasAssertions();
@@ -201,5 +281,15 @@ describe("part stories", () => {
     expect.hasAssertions();
     const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.ts"]);
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
+  });
+
+  it("lets a story off only for the rules listed here", () => {
+    expect.hasAssertions();
+    expect(a11yRelaxations()).toStrictEqual(acceptedA11yViolations);
+  });
+
+  it("keeps the vendored service worker at the installed msw version", () => {
+    expect.hasAssertions();
+    expect(vendoredWorkerViolations()).toStrictEqual([]);
   });
 });

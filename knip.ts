@@ -77,6 +77,7 @@ const config: KnipConfig = {
     },
     "tools/dev": {
       entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
+      ignoreDependencies: ["playwright"],
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {

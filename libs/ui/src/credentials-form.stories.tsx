@@ -1,15 +1,14 @@
-import { idleAction, pendingAction, textInput } from "./story-fixture";
 import { CredentialsForm } from "./credentials-form";
-import { fn } from "storybook/test";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
 const meta = preview.meta({
   args: {
-    action: idleAction(),
-    email: textInput(),
-    onAuthenticated: fn(),
-    onChallenge: fn(),
-    password: textInput(),
+    action: { blocked: false, error: undefined, pending: false, run: noop },
+    email: { handleChange: noop, value: "" },
+    onAuthenticated: noop,
+    onChallenge: noop,
+    password: { handleChange: noop, value: "" },
   },
   component: CredentialsForm,
 });
@@ -17,7 +16,12 @@ const meta = preview.meta({
 export const Empty = meta.story();
 
 export const Filled = meta.story({
-  args: { email: textInput("taro@example.com"), password: textInput("correct horse battery") },
+  args: {
+    email: { handleChange: noop, value: "taro@example.com" },
+    password: { handleChange: noop, value: "correct horse battery" },
+  },
 });
 
-export const Pending = meta.story({ args: { action: pendingAction() } });
+export const Pending = meta.story({
+  args: { action: { blocked: true, error: undefined, pending: true, run: noop } },
+});

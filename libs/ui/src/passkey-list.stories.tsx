@@ -1,9 +1,12 @@
 import { PasskeyList } from "./passkey-list";
-import { idleAction } from "./story-fixture";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
 
 const meta = preview.meta({
-  args: { action: idleAction(), listError: undefined },
+  args: {
+    action: { blocked: false, error: undefined, pending: false, run: noop },
+    listError: undefined,
+  },
   component: PasskeyList,
 });
 
@@ -23,5 +26,5 @@ export const Loading = meta.story({ args: { passkeys: undefined } });
 
 export const Failed = meta.story({
   args: { listError: "パスキーの取得に失敗しました。", passkeys: undefined },
-  parameters: { a11y: { test: "todo" } },
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
 });

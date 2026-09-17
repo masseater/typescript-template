@@ -11,7 +11,7 @@ export const Success = meta.story({
 
 export const Error = meta.story({
   args: { children: "認証サーバーが操作を拒否しました。", variant: "error" },
-  parameters: { a11y: { test: "todo" } },
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
 });
 
 export const Pending = meta.story({

@@ -1,9 +1,12 @@
 import { TotpField } from "./totp-field";
+import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
-import { textInput } from "./story-fixture";
 
-const meta = preview.meta({ args: { code: textInput() }, component: TotpField });
+const meta = preview.meta({
+  args: { code: { handleChange: noop, value: "" } },
+  component: TotpField,
+});
 
 export const Empty = meta.story();
 
-export const Filled = meta.story({ args: { code: textInput("123456") } });
+export const Filled = meta.story({ args: { code: { handleChange: noop, value: "123456" } } });

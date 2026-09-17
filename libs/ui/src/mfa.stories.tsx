@@ -1,15 +1,22 @@
 import { HttpResponse, http } from "msw";
-import { passkeyListPath, session } from "./story-fixture";
 import { MFASettings } from "./mfa";
 import { expect } from "storybook/test";
 import preview from "../.storybook/preview";
 
+const listPath = "/api/auth/passkey/list-user-passkeys";
+
+const user = {
+  email: "taro@example.com",
+  id: "user_01",
+  name: "山田 太郎",
+  role: "user",
+  twoFactorEnabled: false,
+} as const;
+
 const meta = preview.meta({
-  args: { session: session() },
+  args: { session: { strong: true, user } },
   beforeEach: ({ msw }) => {
-    msw.use(
-      http.get(passkeyListPath, () => HttpResponse.json([{ id: "passkey_01", name: "iPhone" }])),
-    );
+    msw.use(http.get(listPath, () => HttpResponse.json([{ id: "passkey_01", name: "iPhone" }])));
   },
   component: MFASettings,
 });
@@ -20,8 +27,10 @@ export const NotEnrolled = meta.story({
   },
 });
 
-export const Enrolled = meta.story({ args: { session: session({ twoFactorEnabled: true }) } });
+export const Enrolled = meta.story({
+  args: { session: { strong: true, user: { ...user, twoFactorEnabled: true } } },
+});
 
 export const Admin = meta.story({
-  args: { session: session({ role: "admin", twoFactorEnabled: true }) },
+  args: { session: { strong: true, user: { ...user, role: "admin", twoFactorEnabled: true } } },
 });

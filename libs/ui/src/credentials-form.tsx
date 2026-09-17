@@ -1,4 +1,4 @@
-import { Button, Field } from "./shared/ui";
+import { Button, Field, FormColumn } from "./shared/ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
@@ -25,7 +25,7 @@ function useCredentialsSubmit({
 }: CredentialsFormProps): SubmitEventHandler<HTMLFormElement> {
   const { run } = action;
   const { value: emailValue } = email;
-  const { setValue: setPassword, value: passwordValue } = password;
+  const { handleChange: setPassword, value: passwordValue } = password;
   return useCallback<SubmitEventHandler<HTMLFormElement>>(
     (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
@@ -54,7 +54,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
   const submit = useCredentialsSubmit(props);
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <Field
           label="メールアドレス"
           name="email"
@@ -62,7 +62,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
           autoComplete="username"
           required
           value={email.value}
-          onChange={email.handleChange}
+          onValueChange={email.handleChange}
         />
         <Field
           label="パスワード"
@@ -71,12 +71,12 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
           autoComplete="current-password"
           required
           value={password.value}
-          onChange={password.handleChange}
+          onValueChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           ログイン
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

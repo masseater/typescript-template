@@ -7,6 +7,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import { application } from "./local-environment.ts";
 import { failure } from "./failure.ts";
 import { setup } from "./setup.ts";
+import { storybook } from "./storybook.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure>;
 
@@ -16,6 +17,7 @@ const globalCommands = new Map<string, () => Command>([
   ["connect", connection],
   ["setup", setup],
   ["status", status],
+  ["storybook", storybook],
 ]);
 
 const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
