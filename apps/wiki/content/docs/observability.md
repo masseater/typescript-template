@@ -1,33 +1,34 @@
 ---
 title: 観測
-description: ログ・トレース・メトリクスで実際の動作を確かめる方法です。
+description: ログとトレースで実際の動作を確かめる方法です。
 ---
 
-## 送信されるデータ
+## 記録されるデータ
 
-各 Worker とブラウザは、ログとトレースを記録します。サービス名は `user-server`、`user-browser` のように、アプリ名と実行場所の組み合わせです。
+観測は Cloudflare と Pulumi だけで完結します。外部の観測サービスやコンテナは使いません。
 
-送信先は環境で変わります。
+各 Worker とブラウザは、同じ形の構造化ログを出します。サービス名は `user-server`、`user-browser` のように、アプリ名と実行場所の組み合わせです。サーバー側の span は、Workers ランタイムの自動トレースが D1、fetch、Workers AI、メール送信について記録します。
 
-| 環境     | 送信先                                    | 条件                                           |
-| -------- | ----------------------------------------- | ---------------------------------------------- |
-| ローカル | Grafana LGTM（OpenTelemetry）             | `OTEL_EXPORTER_OTLP_ENDPOINT` が設定されている |
-| 本番     | Cloudflare Workers Logs と Workers Traces | `OTEL_EXPORTER_OTLP_ENDPOINT` がない           |
+| 環境     | 記録先                                                              |
+| -------- | ------------------------------------------------------------------- |
+| ローカル | Cloudflare Local Explorer（`wrangler dev`、`vp dev`、`vp preview`） |
+| 本番     | Cloudflare Workers Logs と Workers Traces                           |
 
-本番では、ブラウザのイベントとアプリのエラーを構造化ログとして Workers Logs に出します。サーバー側の span は Workers の自動トレースが記録します。無料プランの上限は、ログとトレースの span を合わせて 1 日 200,000 イベントです。
+本番の無料プランの上限は、ログとトレースの span を合わせて 1 日 200,000 イベントです。
 
 ## 照会する
 
-レスポンスヘッダーの `x-request-id` と `traceparent` を使い、同じリクエストのログとトレースを突き合わせます。
+レスポンスヘッダーの `x-request-id` を使い、同じリクエストのログとトレースを突き合わせます。
 
-ローカルでは次のコマンドを使います。
+ローカルでは、起動中のアプリの Local Explorer を次のコマンドで照会します。`--app` には `http://127.0.0.1:<ポート>/` を指定します。
 
 ```bash
-pnpm observe
-pnpm observe:verify
+pnpm observe request --app http://127.0.0.1:3001/ --request-id <x-request-id の値>
+pnpm observe logs --app http://127.0.0.1:3001/ --level error
+pnpm observe:verify --app http://127.0.0.1:3001/
 ```
 
-Grafana の MCP には `pnpm observe:mcp` で読み取り専用の権限で接続します。
+ブラウザでは `http://localhost:<ポート>/cdn-cgi/local/explorer` を開くと、同じログとトレースを見られます。
 
 本番では、Cloudflare ダッシュボードの Workers & Pages にある Observability で検索します。AI からは、リポジトリの `.mcp.json` に定義した Cloudflare の Workers Observability MCP で照会します。初回は Cloudflare の OAuth 認可が必要です。
 
