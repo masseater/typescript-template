@@ -6,7 +6,6 @@
     "./artifact": "./src/artifact.ts"
   },
   "scripts": {
-    "build": "vp pack",
     "inspect": "node src/inspect.ts"
   },
   "dependencies": {

@@ -1,4 +1,4 @@
-import type { Plugin, ServerOptions } from "vite-plus";
+import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
 import type { Application } from "./applications.ts";
 import { applicationPorts } from "./applications.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -31,6 +31,37 @@ function previewDevVars(appRoot: string): Plugin {
   };
 }
 
+const envFileLoader = "tanstack-start-core:load-env";
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
+  let removed = 0;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  function strip(options: readonly PluginOption[]): PluginOption[] {
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    return options.flatMap((plugin: PluginOption): PluginOption[] => {
+      if (Array.isArray(plugin)) {
+        return [strip(plugin)];
+      }
+      if (
+        typeof plugin === "object" &&
+        plugin !== null &&
+        "name" in plugin &&
+        plugin.name === envFileLoader
+      ) {
+        removed += 1;
+        return [];
+      }
+      return [plugin];
+    });
+  }
+  const kept = strip(plugins);
+  if (removed === 0) {
+    throw new Error(`${envFileLoader} plugin not found`);
+  }
+  return kept;
+}
+
 function appServer(app: Application): ServerOptions {
   return {
     allowedHosts: [".local"],
@@ -40,4 +71,8 @@ function appServer(app: Application): ServerOptions {
   };
 }
 
-export { appServer, previewDevVars };
+const appRun = {
+  tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
+} satisfies UserConfig["run"];
+
+export { appRun, appServer, previewDevVars, withoutEnvFileLoader };
