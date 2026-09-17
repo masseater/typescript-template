@@ -8,12 +8,12 @@ import { useTextInput } from "./use-text-input";
 
 interface SignUpFieldsProps {
   readonly action: ActionState;
-  readonly onSent: (sent: boolean) => void;
+  readonly onSent: () => void;
 }
 
 async function signUp(
   fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
-  onSent: (sent: boolean) => void,
+  onSent: () => void,
 ): Promise<void> {
   const { email, name, password } = fields;
   requireSuccess(
@@ -25,7 +25,7 @@ async function signUp(
     }),
   );
   password.handleChange("");
-  onSent(true);
+  onSent();
 }
 
 function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
@@ -69,7 +69,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
           onValueChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
-          登録して確認メールを送信
+          登録する
         </Button>
       </FormColumn>
     </form>

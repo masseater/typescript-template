@@ -174,7 +174,12 @@ export default defineConfig({
       "typescript/no-unsafe-return": "error",
       "typescript/only-throw-error": [
         "error",
-        { allow: [{ from: "package", name: "NotFoundError", package: "@tanstack/router-core" }] },
+        {
+          allow: [
+            { from: "package", name: "NotFoundError", package: "@tanstack/router-core" },
+            { from: "package", name: "Redirect", package: "@tanstack/router-core" },
+          ],
+        },
       ],
       "typescript/require-await": "off",
       "unicorn/no-array-method-this-argument": "off",

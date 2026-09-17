@@ -1,6 +1,6 @@
 const HOME = "/";
 const LOGIN = "/login";
-const localOrigin = "https://admin.invalid";
+const localOrigin = "https://app.invalid";
 
 function redirectTarget(value: unknown): string {
   if (typeof value !== "string" || !value.startsWith("/") || /^\/[/\\]/u.test(value)) {

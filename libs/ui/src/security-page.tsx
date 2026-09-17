@@ -4,7 +4,10 @@ import type { ReactElement } from "react";
 import { SignOutButton } from "./sign-out-button";
 import { useSession } from "./use-session";
 
-function SecurityPage({ title }: Readonly<{ title: string }>): ReactElement {
+function SecurityPage({
+  signedOutPath,
+  title,
+}: Readonly<{ signedOutPath?: string; title: string }>): ReactElement {
   const { session, loading, error } = useSession();
   return (
     <Page title={title}>
@@ -12,7 +15,7 @@ function SecurityPage({ title }: Readonly<{ title: string }>): ReactElement {
       {!loading && session && (
         <>
           <MFASettings session={session} />
-          <SignOutButton />
+          <SignOutButton destination={signedOutPath} />
         </>
       )}
       {!loading && !session && <a href="/login">ログインしてください。</a>}

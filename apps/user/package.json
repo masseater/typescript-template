@@ -19,6 +19,7 @@
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
     "effect": "catalog:",
+    "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
