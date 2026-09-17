@@ -1,4 +1,6 @@
-import { chmod, mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, lstat, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { decodeBrowserBatch, ensure, object, poll, run, string, root } from "./support.ts";
@@ -29,8 +31,16 @@ export class Browser {
   }
 
   private async execute(...commands: string[][]) {
-    const socketDirectory = join(root, ".local", "ab");
+    const socketDirectory = join(
+      tmpdir(),
+      `ab-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`,
+    );
     await mkdir(socketDirectory, { recursive: true, mode: 0o700 });
+    const entry = await lstat(socketDirectory);
+    ensure(
+      entry.isDirectory() && entry.uid === process.getuid?.(),
+      "E2E_BROWSER_SOCKET_DIRECTORY_NOT_OWNED",
+    );
     await chmod(socketDirectory, 0o700);
     const output = await run(
       "agent-browser",
