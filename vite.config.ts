@@ -51,6 +51,13 @@ export default defineConfig({
     },
     overrides: [
       {
+        files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts", "libs/runtime/src/account.ts"],
+        rules: {
+          "typescript/explicit-function-return-type": "off",
+          "typescript/explicit-module-boundary-types": "off",
+        },
+      },
+      {
         files: ["libs/ui/src/shared/ui/**"],
         rules: {
           "react/forbid-component-props": ["error", { forbid: ["style"] }],
@@ -193,8 +200,14 @@ export default defineConfig({
       "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
       "shadcn/no-unknown-classes": "error",
       "typescript/consistent-return": "off",
-      "typescript/explicit-function-return-type": ["error", { allowedNames: ["createAuth"] }],
-      "typescript/explicit-module-boundary-types": ["error", { allowedNames: ["createAuth"] }],
+      "typescript/explicit-function-return-type": [
+        "error",
+        { allowedNames: ["createApi", "createAuth"] },
+      ],
+      "typescript/explicit-module-boundary-types": [
+        "error",
+        { allowedNames: ["createApi", "createAuth"] },
+      ],
       "typescript/no-explicit-any": "error",
       "typescript/no-floating-promises": "error",
       "typescript/no-misused-promises": "error",
@@ -230,12 +243,14 @@ export default defineConfig({
         command: [
           "vp check",
           "vp run knip",
+          "vp run check:client",
           "vp run check:layers",
           "vp run check:staged",
           "vp run check:effect",
         ],
         input: [{ auto: true }, "!node_modules/.modules.yaml"],
       },
+      "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
       "check:layers": "steiger apps/user/src --fail-on-warnings",
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
