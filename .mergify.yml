@@ -1,0 +1,8 @@
+queue_rules:
+  - name: default
+    merge_method: merge
+    queue_conditions:
+      - base = main
+      - check-success = check
+    merge_conditions:
+      - check-success = check
