@@ -1,6 +1,6 @@
 import { LoginPage } from "@template/ui/auth";
 import type { ReactElement } from "react";
-import { redirectTarget } from "#login-redirect.ts";
+import { redirectTarget } from "@template/ui";
 import { useCallback } from "react";
 import { useLocation } from "@tanstack/react-router";
 
