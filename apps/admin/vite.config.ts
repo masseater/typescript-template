@@ -1,5 +1,5 @@
 import type { ConfigEnv, UserConfig } from "vite-plus";
-import { appServer, previewDevVars } from "@template/config/vite";
+import { appRun, appServer, previewDevVars, withoutEnvFileLoader } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
@@ -27,9 +27,10 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
       persistState: { path: localDatabasePersistence },
       viteEnvironment: { name: "ssr" },
     }),
-    tanstackStart(),
+    ...withoutEnvFileLoader(tanstackStart()),
     react(),
   ],
   preview: appServer("admin"),
+  run: appRun,
   server: appServer("admin"),
 }));
