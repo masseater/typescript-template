@@ -7,6 +7,7 @@ import {
   validateAuthSecret,
   workerSubdomain,
 } from "./config.ts";
+import { applyPlan } from "./stacks.ts";
 
 const settings = {
   accountId: "a".repeat(32),
@@ -30,13 +31,17 @@ const settings = {
 test("deployment commands reject ignored arguments instead of selecting an unintended stack", () => {
   expect(parseDeploymentCommand(["preview", "admin"])).toEqual({
     operation: "preview",
-    target: "admin",
+    targets: [{ stack: "admin", dependencies: ["settings", "database"] }],
   });
   expect(() => parseDeploymentCommand(["up", "user", "--stack", "other"])).toThrow(
     "deployment_command_invalid",
   );
-  expect(parseDeploymentCommand(["up", "wiki"])).toEqual({ operation: "up", target: "wiki" });
+  expect(parseDeploymentCommand(["up", "wiki"]).targets.map(({ stack }) => stack)).toEqual([
+    "wiki",
+  ]);
+  expect(parseDeploymentCommand(["up", "all"]).targets).toEqual(applyPlan());
   expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
+  expect(() => parseDeploymentCommand(["up", "shared"])).toThrow("deployment_command_invalid");
 });
 
 test("Workers disable every alternative public URL", () => {

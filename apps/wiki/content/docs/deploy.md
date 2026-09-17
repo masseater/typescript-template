@@ -9,18 +9,17 @@ Pulumi の状態は Cloudflare R2 に保存します。最初に一度だけ `vp
 
 ## 反映の順序
 
-共有リソースを先に作り、そのあとで各アプリを反映します。変更内容は `preview` で確認してから `deploy` を実行します。
+stack は `settings`、`database`、`tokens`、`budget-monitor`、`error-monitor`、`health-monitor`、`user`、`admin`、`wiki` に分かれています。`all` を指定すると、依存する stack が先になる順序で 1 つずつ反映し、失敗した stack で止まります。変更内容は `preview` で確認してから `deploy` を実行します。
 
 ```bash
 vp run build
-vp run --filter @template/infra-cloudflare preview shared
-vp run --filter @template/infra-cloudflare deploy shared
-vp run --filter @template/infra-cloudflare deploy user
-vp run --filter @template/infra-cloudflare deploy admin
-vp run --filter @template/infra-cloudflare deploy wiki
+vp run --filter @template/infra-cloudflare preview settings
+vp run --filter @template/infra-cloudflare deploy all
 ```
 
-共有スタックの設定には、アプリごとの公開 URL として `origins` に `user`、`admin`、`wiki` を指定します。3 つは別々のドメインにします。
+stack 名は全 stack で揃えます。各 stack は同じ stack 名の依存先から出力を読みます。
+
+`settings` stack の設定には、アプリごとの公開 URL として `origins` に `user`、`admin`、`wiki` を指定します。3 つは別々のドメインにします。
 
 エラー通知と予算通知は、`budget.recipients` のアドレスに Cloudflare の Email 送信で届きます。宛先は Cloudflare Email Routing で確認済みのアドレスにします。
 

@@ -1,6 +1,6 @@
-name: template-shared
+name: template-database
 runtime:
   name: nodejs
   options:
     typescript: false
-main: ../src/shared.ts
+main: ../src/database.ts
