@@ -6,7 +6,6 @@ import { Effect } from "effect";
 import { validateAuthSecret } from "./config.ts";
 
 assert.notEqual(process.env["PULUMI_NODEJS_TYPESCRIPT"], "true");
-assert.equal(process.execArgv.includes("tsx"), true);
 assert.equal(typeof cloudflare.Worker, "function");
 assert.equal(typeof cloudflare.WorkerVersion, "function");
 assert.equal(typeof cloudflare.ZeroTrustAccessApplication, "function");

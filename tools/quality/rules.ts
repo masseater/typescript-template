@@ -276,15 +276,15 @@ export default definePlugin({
         const current = filename(context);
         const elysiaFactory = /\/libs\/runtime\/src\/http\.ts$/.test(current);
         const startRoute = /\/apps\/[^/]+\/src\/routes\//.test(current);
-        const check = (node: ESTree.Node) => {
+        const check = (node: ESTree.Node, typeOnly = false) => {
           const source = staticText(context, node);
           if (source === undefined) return;
           if (/^valibot(?:\/|$)/.test(source)) context.report({ node, messageId: "violation" });
-          if (/^elysia(?:\/|$)/.test(source) && !elysiaFactory)
+          if (/^elysia(?:\/|$)/.test(source) && !elysiaFactory && !typeOnly)
             context.report({ node, messageId: "violation" });
         };
         return {
-          ImportDeclaration: (node) => check(node.source),
+          ImportDeclaration: (node) => check(node.source, node.importKind === "type"),
           ExportNamedDeclaration: (node) => {
             if (node.source) check(node.source);
           },

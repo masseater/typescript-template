@@ -6,8 +6,7 @@
     "./artifact": "./src/artifact.ts"
   },
   "scripts": {
-    "test": "vp test run --config vitest.config.ts",
-    "build": "esbuild src/worker.ts --bundle --format=esm --platform=browser --target=es2023 --external:cloudflare:* --outfile=dist/index.js"
+    "build": "vp pack"
   },
   "dependencies": {
     "effect": "4.0.0-rc.112"
@@ -16,7 +15,6 @@
     "@cloudflare/workers-types": "5.20260916.1",
     "@effect/vitest": "4.0.0-rc.112",
     "@types/node": "24.12.0",
-    "esbuild": "0.28.2",
     "msw": "^2.11.0",
     "typescript": "7.0.2",
     "vite": "catalog:",

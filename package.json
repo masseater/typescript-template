@@ -7,12 +7,8 @@
     "check": "vp check && vp run knip && vp run check:staged && vp run check:effect",
     "check:staged": "node tools/quality/check-staged.ts",
     "check:effect": "node tools/quality/effect-diagnostics.ts",
-    "lint": "vp lint --max-warnings 0",
-    "lint:fix": "vp check --fix",
-    "format": "vp fmt",
     "knip": "knip && knip --strict",
-    "test": "vp test run",
-    "build": "vp run -r build && vp run --filter @template/dev private-maps user && vp run --filter @template/dev private-maps admin && vp run --filter @template/dev private-maps wiki",
+    "build": "vp run -F '!typescript-template' build && vp run --filter @template/dev private-maps user && vp run --filter @template/dev private-maps admin && vp run --filter @template/dev private-maps wiki",
     "build:user": "vp run --filter @template/user build && vp run --filter @template/dev private-maps user",
     "build:admin": "vp run --filter @template/admin build && vp run --filter @template/dev private-maps admin",
     "build:wiki": "vp run --filter @template/wiki build && vp run --filter @template/dev private-maps wiki",
@@ -47,11 +43,9 @@
     "infra:deploy:user": "vp run --filter @template/infra-cloudflare deploy:user",
     "infra:deploy:admin": "vp run --filter @template/infra-cloudflare deploy:admin",
     "infra:deploy:wiki": "vp run --filter @template/infra-cloudflare deploy:wiki",
-    "test:e2e": "vp run --filter @template/e2e test",
-    "test:e2e:unit": "vp run --filter @template/e2e test:unit",
-    "test:artifacts": "vp run --filter @template/e2e test:artifacts && vp run --filter @template/infra-cloudflare verify:artifacts",
+    "test:artifacts": "vp run --filter @template/infra-cloudflare verify:artifacts",
     "precommit": "vp run check",
-    "prepush": "vp run check && vp run test && vp run test:e2e:unit && vp run build && vp run test:artifacts && vp run test:e2e"
+    "prepush": "vp run check && vp test run && vp run build && vp run test:artifacts"
   },
   "devDependencies": {
     "@effect/platform-node": "4.0.0-rc.112",

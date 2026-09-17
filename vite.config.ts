@@ -4,7 +4,10 @@ export default defineConfig({
   lint: {
     options: { typeAware: true, typeCheck: true },
     plugins: ["typescript", "react", "react-perf", "jsx-a11y", "import", "promise", "vitest"],
-    jsPlugins: ["./tools/quality/rules.ts"],
+    jsPlugins: [
+      "./tools/quality/rules.ts",
+      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+    ],
     categories: { correctness: "error", suspicious: "error" },
     overrides: [
       {
@@ -22,6 +25,7 @@ export default defineConfig({
     ],
     rules: {
       "react/react-in-jsx-scope": "off",
+      "vite-plus/prefer-vite-plus-imports": "error",
       "typescript/no-explicit-any": "error",
       "typescript/no-floating-promises": "error",
       "typescript/no-misused-promises": "error",

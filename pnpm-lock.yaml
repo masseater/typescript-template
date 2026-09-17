@@ -175,10 +175,6 @@ catalogs:
       version: 4.1.11
 
 overrides:
-  '@vitest/runner': 4.1.11
-  '@vitest/expect': 4.1.11
-  '@vitest/spy': 4.1.11
-  '@vitest/utils': 4.1.11
   vite@*: npm:@voidzero-dev/vite-plus-core@0.3.2
   vitest@*: 4.1.11
   effect@*: 4.0.0-rc.112
@@ -230,9 +226,6 @@ importers:
       '@template/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@template/observability':
-        specifier: workspace:*
-        version: link:../../libs/observability
       '@template/runtime':
         specifier: workspace:*
         version: link:../../libs/runtime
@@ -306,9 +299,6 @@ importers:
       '@template/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@template/observability':
-        specifier: workspace:*
-        version: link:../../libs/observability
       '@template/runtime':
         specifier: workspace:*
         version: link:../../libs/runtime
@@ -334,6 +324,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260916.1
         version: 5.20260916.1
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
@@ -410,6 +403,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/mdx':
         specifier: 2.0.14
         version: 2.0.14
@@ -465,18 +461,12 @@ importers:
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      tsx:
-        specifier: ^4.20.0
-        version: 4.23.13
       typescript:
         specifier: 7.0.2
         version: 7.0.2
       vite:
         specifier: 'catalog:'
         version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
-      vite-plus:
-        specifier: 'catalog:'
-        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   infra/budget-monitor:
     dependencies:
@@ -496,15 +486,9 @@ importers:
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      esbuild:
-        specifier: 0.28.2
-        version: 0.28.2
       msw:
         specifier: ^2.11.0
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
-      tsx:
-        specifier: ^4.20.0
-        version: 4.23.13
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -529,6 +513,9 @@ importers:
       '@template/budget-monitor':
         specifier: workspace:*
         version: link:../budget-monitor
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@template/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -545,24 +532,15 @@ importers:
       '@effect/vitest':
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@template/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      tsx:
-        specifier: ^4.20.0
-        version: 4.23.13
       typescript:
         specifier: 7.0.2
         version: 7.0.2
       vite:
         specifier: 'catalog:'
         version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
-      vite-plus:
-        specifier: 'catalog:'
-        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
@@ -582,9 +560,6 @@ importers:
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      esbuild:
-        specifier: 0.28.2
-        version: 0.28.2
       msw:
         specifier: ^2.11.0
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
@@ -656,11 +631,14 @@ importers:
       '@effect/vitest':
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@types/node':
+        specifier: 24.12.0
+        version: 24.12.0
       typescript:
         specifier: 7.0.2
         version: 7.0.2
       vite-plus:
-        specifier: 'catalog:'
+        specifier: 0.3.2
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   libs/db:
@@ -668,6 +646,9 @@ importers:
       '@effect/platform-node':
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5)
@@ -752,6 +733,12 @@ importers:
       '@better-auth/passkey':
         specifier: 1.7.5
         version: 1.7.5(@better-auth/core@1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@5.5.0))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.3)
+      '@tanstack/react-router':
+        specifier: 1.170.36
+        version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@template/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@template/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -808,39 +795,6 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-
-  tools/e2e:
-    devDependencies:
-      '@effect/platform-node':
-        specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@effect/vitest':
-        specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@template/db':
-        specifier: workspace:*
-        version: link:../../libs/db
-      '@types/node':
-        specifier: 24.12.0
-        version: 24.12.0
-      agent-browser:
-        specifier: 0.37.1
-        version: 0.37.1
-      effect:
-        specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112
-      typescript:
-        specifier: 7.0.2
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
-      vite-plus:
-        specifier: 'catalog:'
-        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      wrangler:
-        specifier: 4.132.0
-        version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
 
   tools/observe:
     dependencies:

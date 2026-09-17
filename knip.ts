@@ -16,7 +16,7 @@ const config: KnipConfig = {
       ignoreDependencies: ["cloudflare"],
     },
     "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/remote-cli.ts!"],
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/remote-cli.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
@@ -55,9 +55,6 @@ const config: KnipConfig = {
       entry: ["src/worker.ts!"],
       project: ["src/**/*.ts!"],
       ignoreDependencies: ["cloudflare"],
-    },
-    "tools/e2e": {
-      project: ["src/**/*.ts"],
     },
   },
 };

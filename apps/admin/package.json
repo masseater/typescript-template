@@ -13,7 +13,6 @@
     "@template/auth": "workspace:*",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
-    "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
     "effect": "4.0.0-rc.112",

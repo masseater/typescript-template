@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./http": "./src/http.ts",
     "./account": "./src/account.ts",
+    "./app": "./src/app.ts",
     "./client": "./src/client.ts",
     "./contracts": "./src/contracts.ts",
     "./wiki": "./src/wiki.ts",

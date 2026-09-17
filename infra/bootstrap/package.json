@@ -6,9 +6,8 @@
     "./state": "./src/state.ts"
   },
   "scripts": {
-    "test": "vp test run --config vitest.config.ts",
-    "setup": "tsx src/setup.ts",
-    "with-state": "tsx src/run.ts"
+    "setup": "node src/setup.ts",
+    "with-state": "node src/run.ts"
   },
   "dependencies": {
     "@effect/platform-node": "4.0.0-rc.112",
@@ -19,9 +18,7 @@
   "devDependencies": {
     "@effect/vitest": "4.0.0-rc.112",
     "@types/node": "24.12.0",
-    "tsx": "^4.20.0",
     "typescript": "7.0.2",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite": "catalog:"
   }
 }

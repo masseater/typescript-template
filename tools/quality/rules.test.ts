@@ -575,6 +575,10 @@ test.for([
     'import { Schema } from "effect"; export const read = () => { if (Schema) throw new Error("browser boundary"); };',
   ],
   ["tools/dev/src/probe.ts", 'export const run = () => { throw new Error("no effect here"); };'],
+  [
+    "libs/runtime/src/app.ts",
+    'import type { AnyElysia } from "elysia"; export type App = AnyElysia;',
+  ],
 ] as const)("allows the Effect stack boundary in %s", async ([name, code], { directory }) => {
   await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
   await writeFile(path.join(directory, name), code);

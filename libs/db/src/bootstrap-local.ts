@@ -1,4 +1,3 @@
-import { fileURLToPath } from "node:url";
 import { NodeRuntime } from "@effect/platform-node";
 import type { D1Database } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
@@ -6,14 +5,15 @@ import { getPlatformProxy } from "wrangler";
 import { bootstrapAdmin } from "./admin.ts";
 import { EmailAddress } from "./bootstrap-statement.ts";
 import { Database } from "./index.ts";
+import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
 
 const platform = Effect.acquireRelease(
-  Effect.promise(() =>
+  Effect.promise(async () =>
     getPlatformProxy<{ DB: D1Database }>({
       remoteBindings: false,
       envFiles: [],
-      configPath: fileURLToPath(new URL("../../../apps/user/wrangler.jsonc", import.meta.url)),
-      persist: { path: fileURLToPath(new URL("../../../.local/d1/v3", import.meta.url)) },
+      configPath: await writeLocalDatabaseConfig(),
+      persist: { path: `${localDatabasePersistence}/v3` },
     }),
   ),
   (proxy) => Effect.promise(() => proxy.dispose()),

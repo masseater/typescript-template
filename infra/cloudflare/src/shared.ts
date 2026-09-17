@@ -2,6 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
+import { workerCompatibility } from "@template/config/worker";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
 import { errorWorkerArtifact } from "@template/error-monitor/artifact";
 import { Effect } from "effect";
@@ -73,8 +74,8 @@ const budgetWorker = new cloudflare.Worker("budget-worker", {
 const budgetVersion = new cloudflare.WorkerVersion("budget-version", {
   accountId: settings.accountId,
   workerId: budgetWorker.id,
-  compatibilityDate: "2026-09-16",
-  compatibilityFlags: ["nodejs_compat"],
+  compatibilityDate: workerCompatibility.date,
+  compatibilityFlags: [...workerCompatibility.flags],
   mainModule: "index.js",
   modules: [
     {

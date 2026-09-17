@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["vite-plus/client", "@cloudflare/workers-types"] },
+  "compilerOptions": { "types": ["vite-plus/client", "@cloudflare/workers-types", "node"] },
   "include": ["src/**/*.ts"]
 }

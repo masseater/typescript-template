@@ -1,5 +1,21 @@
 import { expect, test } from "vite-plus/test";
-import { rankPages } from "./semantic.ts";
+import { exactMatchesFirst, rankPages } from "./semantic.ts";
+
+test("pages containing the whole query verbatim outrank pages matching only its words", () => {
+  const texts = new Map([
+    ["/modernization", "部品は `shared/ui` に置きます"],
+    ["/deploy", "`vp run infra:deploy:shared` で共有リソースを作ります"],
+    ["/database", "INFRA:DEPLOY:SHARED"],
+  ]);
+  const textOf = (url: string) => texts.get(url) ?? "";
+  expect(
+    exactMatchesFirst("infra:deploy:shared", ["/modernization", "/deploy", "/database"], textOf),
+  ).toEqual(["/deploy", "/database", "/modernization"]);
+  expect(exactMatchesFirst("  ", ["/modernization", "/deploy"], textOf)).toEqual([
+    "/modernization",
+    "/deploy",
+  ]);
+});
 
 test("semantic similarity orders pages even when no keyword matches", () => {
   const semantic = [

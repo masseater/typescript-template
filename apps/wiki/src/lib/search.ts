@@ -6,7 +6,7 @@ import { llms } from "fumadocs-core/source";
 import { createFromSource } from "fumadocs-core/search/server";
 import type { SortedResult } from "fumadocs-core/search";
 import type { SearchServer } from "fumadocs-core/search/server";
-import { createSemanticIndex, rankPages } from "./semantic.ts";
+import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
 import type { SemanticDocument } from "./semantic.ts";
 import { source } from "./source.ts";
 
@@ -45,6 +45,20 @@ export const wikiLlms = llms(source, {
 
 const pageOf = (url: string) => url.split("#")[0] ?? url;
 
+let processedTexts: ReadonlyMap<string, string> | undefined;
+const loadProcessedTexts = Effect.gen(function* () {
+  if (processedTexts !== undefined) return processedTexts;
+  const entries = yield* Effect.promise(() =>
+    Promise.all(
+      source
+        .getPages()
+        .map(async (page) => [page.url, await page.data.getText("processed")] as const),
+    ),
+  );
+  processedTexts = new Map(entries);
+  return processedTexts;
+});
+
 type SearchOptions = Parameters<SearchServer["search"]>[1];
 
 export const searchWiki = Effect.fn("searchWiki")(function* (
@@ -52,9 +66,10 @@ export const searchWiki = Effect.fn("searchWiki")(function* (
   options?: SearchOptions,
 ) {
   const embedder = yield* Embedder;
-  const [keywordResults, semanticResults] = yield* Effect.all(
+  const [keywordResults, texts, semanticResults] = yield* Effect.all(
     [
       Effect.promise(() => keyword.search(query, options)),
+      loadProcessedTexts,
       embedder.available
         ? semantic(query).pipe(
             Effect.catch((error) => reportFailure(Cause.fail(error)).pipe(Effect.as([]))),
@@ -65,7 +80,11 @@ export const searchWiki = Effect.fn("searchWiki")(function* (
   );
   const pages = rankPages(
     semanticResults.map((match) => ({ url: pageOf(match.document.url), score: match.score })),
-    [...new Set(keywordResults.map((result) => pageOf(result.url)))],
+    exactMatchesFirst(
+      query,
+      [...new Set(keywordResults.map((result) => pageOf(result.url)))],
+      (url) => texts.get(url) ?? "",
+    ),
     options?.limit ?? 5,
   );
   return pages.flatMap((url): SortedResult[] => {
