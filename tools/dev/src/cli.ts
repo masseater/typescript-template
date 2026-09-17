@@ -1,6 +1,8 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { chmod, mkdir, open, readFile, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import * as v from "valibot";
@@ -10,8 +12,9 @@ const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
-const browserSocket = new URL("ab/", local);
-const socket = `template-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`;
+const rootHash = createHash("sha256").update(root).digest("hex").slice(0, 12);
+const browserSocket = join(tmpdir(), `ab-${rootHash}`);
+const socket = `template-${rootHash}`;
 const apps = ["user", "admin", "wiki"] as const;
 type App = (typeof apps)[number];
 const appSchema = v.picklist(apps);
@@ -228,7 +231,7 @@ async function browser(app: App) {
   await replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
   const args = ["--config", fileURLToPath(browserConfig), "--session", session];
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: fileURLToPath(browserSocket) };
+  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: browserSocket };
   if (app === "admin") {
     const credentials = await readCredentials();
     const child = spawn("agent-browser", [...args, "batch", "--bail", "--json"], {
@@ -269,7 +272,7 @@ async function browserCommand(app: App, args: string[]) {
     ["--config", fileURLToPath(browserConfig), "--session", `template-local-${app}`, ...args],
     {
       cwd: root,
-      env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: fileURLToPath(browserSocket) },
+      env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: browserSocket },
       stdio: "inherit",
     },
   );

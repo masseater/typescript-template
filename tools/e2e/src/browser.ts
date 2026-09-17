@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { chmod, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { decodeBrowserBatch, ensure, object, poll, run, string, root } from "./support.ts";
@@ -10,6 +12,11 @@ export const enabledButton = (name: string) => [
   "--fn",
   `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\\s+/g, "") === ${JSON.stringify(name.replace(/\s+/g, ""))})`,
 ];
+
+const socketDirectory = join(
+  tmpdir(),
+  `ab-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`,
+);
 
 const rateLimitWindow = 11_000;
 const rateLimitRetries = 3;
@@ -29,7 +36,6 @@ export class Browser {
   }
 
   private async execute(...commands: string[][]) {
-    const socketDirectory = join(root, ".local", "ab");
     await mkdir(socketDirectory, { recursive: true, mode: 0o700 });
     await chmod(socketDirectory, 0o700);
     const output = await run(
