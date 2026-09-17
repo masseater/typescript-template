@@ -65,13 +65,6 @@ function apiDataOrNone<Contract extends Decodable>(
   return reply.error?.status === httpStatus.unauthorized ? undefined : apiData(contract, reply);
 }
 
-function apiServerClient<App extends AnyElysia>(
-  app: App,
-  headers: Readonly<Record<string, string>>,
-): ReturnType<typeof treaty<App, string>> {
-  return treaty(app, { headers, parseDate: false });
-}
-
 function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
   return treaty<App>(globalThis.location.origin, {
     fetch: { cache: "no-store", credentials: "same-origin", redirect: "error" },
@@ -79,4 +72,4 @@ function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
   });
 }
 
-export { apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson, failureMessage };
+export { apiClient, apiData, apiDataOrNone, decodeJson, failureMessage };
