@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
+import { workerCompatibility } from "@template/config/worker";
 import { fileURLToPath } from "node:url";
 import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
 import type { AppTarget } from "./config.ts";
@@ -44,8 +45,8 @@ export async function deployApplication(target: AppTarget) {
   const version = new cloudflare.WorkerVersion(`${target}-version`, {
     accountId: settings.accountId,
     workerId: worker.id,
-    compatibilityDate: "2026-09-16",
-    compatibilityFlags: ["nodejs_compat"],
+    compatibilityDate: workerCompatibility.date,
+    compatibilityFlags: [...workerCompatibility.flags],
     mainModule: artifacts.mainModule,
     modules: artifacts.modules,
     assets: { directory: artifacts.clientDirectory, config: policy.assets },

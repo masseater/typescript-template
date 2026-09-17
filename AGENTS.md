@@ -8,7 +8,7 @@
 
 観測は Cloudflare と Pulumi だけで完結させ、外部の観測 SaaS やコンテナの観測基盤を追加しない。
 
-ローカルで起動した各アプリには Cloudflare Local Explorer（`/cdn-cgi/local/explorer`）があり、ログとトレースが蓄積されている。
+ローカル開発の際は Cloudflare Local Explorer（`/cdn-cgi/local/explorer`）を用いる。
 
 関連アプリ・共通パッケージ・インフラ・内部運用ツールが必要な場合は、他のリポジトリを使用せずこの単一リポジトリで管理する。
 
