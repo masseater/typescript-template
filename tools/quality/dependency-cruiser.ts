@@ -1,0 +1,134 @@
+import type { IConfiguration } from "dependency-cruiser";
+
+const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
+const specModule = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
+const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
+const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap)[^/]*\.ts$`;
+const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrate|testing)[^/]*\.ts$|.*${testModule})`;
+const databaseTesting = String.raw`^libs/db/src/testing\.ts$`;
+const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
+const serverOnlyPackage = String.raw`^libs/(?:db|auth)/`;
+
+const configuration: IConfiguration = {
+  forbidden: [
+    {
+      comment:
+        "依存先を解決できません。アプリはデプロイ単位で、取り込まれる面を持ちません。相手のパッケージが exports で公開している入口を指定し、その依存を package.json に宣言してください。",
+      from: {},
+      name: "no-unresolvable",
+      severity: "error",
+      to: { couldNotResolve: true, pathNot: "^cloudflare:" },
+    },
+    {
+      comment:
+        "アプリはデプロイ単位です。共有したい処理は libs/ のパッケージへ移し、そちらを参照してください。",
+      from: { path: "^apps/([^/]+)/" },
+      name: "no-app-to-app",
+      severity: "error",
+      to: { path: "^apps/([^/]+)/", pathNot: "^apps/$1/" },
+    },
+    {
+      comment:
+        "共有パッケージがデプロイ単位のアプリに依存しています。必要な処理をアプリから libs/ へ移してください。",
+      from: { path: "^(?:libs|infra|tools)/" },
+      name: "no-shared-to-app",
+      severity: "error",
+      to: { path: "^apps/" },
+    },
+    {
+      comment:
+        "tools/ は開発時の道具です。配布物に入るコードから参照せず、必要な処理を libs/ のパッケージへ移してください。",
+      from: { path: "^(?:apps|libs|infra)/" },
+      name: "no-runtime-to-tools",
+      severity: "error",
+      to: { path: "^tools/" },
+    },
+    {
+      comment:
+        "非公開のファイルへ相対パスで踏み込んでいます。相手のパッケージが exports で公開している入口を使ってください。",
+      from: { path: "^(apps|libs|infra|tools)/([^/]+)/" },
+      name: "no-package-escape",
+      severity: "error",
+      to: { dependencyTypes: ["local"], pathNot: "^$1/$2/" },
+    },
+    {
+      comment:
+        "管理者専用の処理です。apps/admin と libs/db の中だけで使い、利用者向けのコードへ持ち込まないでください。",
+      from: {
+        path: "^(?:apps|libs)/",
+        pathNot: `^apps/admin/|^libs/db/src/(?!index\\.ts$)|${testModule}`,
+      },
+      name: "no-database-admin-outside-admin",
+      severity: "error",
+      to: { path: databaseAdmin },
+    },
+    {
+      comment:
+        "本番 D1 への直接操作とローカル DB の構築です。infra/ と tools/ の運用コマンドからだけ呼んでください。",
+      from: { path: "^(?:apps|libs)/", pathNot: databaseInternal },
+      name: "no-database-operations-outside-tooling",
+      severity: "error",
+      to: { path: databaseOperations },
+    },
+    {
+      comment:
+        "テスト用の DB 構築です。テストとフィクスチャからだけ使い、アプリの実装へ持ち込まないでください。",
+      from: { path: `^apps/|^libs/(?!db/)`, pathNot: `^libs/.*${testModule}` },
+      name: "no-database-testing-outside-tests",
+      severity: "error",
+      to: { path: databaseTesting },
+    },
+    {
+      comment:
+        "生の DB ドライバーは libs/db の中だけで使えます。業務処理は計測付きの @template/db の入口を使ってください。",
+      from: { pathNot: "^libs/db/" },
+      name: "no-raw-database-driver",
+      severity: "error",
+      to: { path: rawDatabaseDriver },
+    },
+    {
+      comment:
+        "テストとフィクスチャは配布物に入りません。実装から参照せず、共有したい処理を通常のモジュールへ出してください。",
+      from: { pathNot: testModule },
+      name: "no-production-to-test",
+      severity: "error",
+      to: { path: specModule },
+    },
+    {
+      comment:
+        "利用者登録の画面は apps/user だけが持てます。管理者と wiki からは参照しないでください。",
+      from: { path: "^apps/", pathNot: "^apps/user/" },
+      name: "no-signup-outside-user",
+      severity: "error",
+      to: { path: String.raw`^libs/ui/src/signup\.tsx$` },
+    },
+    {
+      comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
+      from: { path: "^apps/wiki/" },
+      name: "no-wiki-to-database",
+      severity: "error",
+      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/local\.ts$` },
+    },
+    {
+      comment:
+        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。経路の途中のモジュールも含めて、契約の型だけを参照する形にしてください。",
+      from: { path: "^libs/ui/src/", pathNot: testModule },
+      name: "no-browser-to-server",
+      severity: "error",
+      to: { path: serverOnlyPackage, reachable: true },
+    },
+  ],
+  options: {
+    doNotFollow: { path: ["node_modules"] },
+    enhancedResolveOptions: {
+      conditionNames: ["import", "require", "node", "default", "types"],
+      exportsFields: ["exports"],
+      extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".d.ts"],
+      mainFields: ["module", "main", "types", "typings"],
+    },
+    exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.|dist/)`] },
+  },
+};
+
+// oxlint-disable-next-line import/no-default-export
+export default configuration;
