@@ -9,6 +9,7 @@ import { verifyEmail } from "./mail.ts";
 import { totp } from "./totp.ts";
 import { verifyCorrelation, verifyBrowserSignals, verifyJourneyTelemetry } from "./telemetry.ts";
 import { verifyDistribution } from "./distribution.ts";
+import { verifySharedRoutes } from "./shared-routes.ts";
 
 type Account = ReturnType<Stack["account"]>;
 const button = (name: string) => ["find", "role", "button", "click", "--name", name, "--exact"];
@@ -135,6 +136,11 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
   try {
     const started = Math.floor(Date.now() / 1000);
     await verifyDistribution(stack.userOrigin, stack.adminOrigin);
+
+    stage = "shared-routes";
+    await verifySharedRoutes(stack);
+
+    stage = "anonymous";
     const anonymous = stack.browser("anonymous");
     await anonymous.open(stack.userOrigin, "/login");
     ensure((await anonymous.api("/api/profile")).status === 401, "E2E_ANONYMOUS_PROFILE_ALLOWED");
