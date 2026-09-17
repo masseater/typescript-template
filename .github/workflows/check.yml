@@ -30,9 +30,12 @@ jobs:
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
       - run: vp run check
+      - run: vp test run
+      - run: vp run build
+      - run: vp run --filter @template/infra-cloudflare verify:artifacts
+      - run: vp run --filter @template/infra-cloudflare verify:stacks
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always()
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
-      - run: vp test run
-      - run: vp run --filter @template/infra-cloudflare verify:runtime
