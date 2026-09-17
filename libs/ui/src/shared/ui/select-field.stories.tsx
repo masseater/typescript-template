@@ -16,15 +16,13 @@ const meta = preview.meta({
   component: SelectField,
 });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const Admin = meta.story({ args: { value: "admin" } });
+export const Admin = meta.story({ args: { value: "admin" } });
 
-const Selects = meta.story({
+export const Selects = meta.story({
   play: async ({ args, canvas }) => {
     await userEvent.selectOptions(canvas.getByLabelText("権限"), "admin");
     await expect(args.onValueChange).toHaveBeenCalledWith("admin");
   },
 });
-
-export { Admin, Default, Selects };

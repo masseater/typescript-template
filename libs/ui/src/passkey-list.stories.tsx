@@ -7,7 +7,7 @@ const meta = preview.meta({
   component: PasskeyList,
 });
 
-const Registered = meta.story({
+export const Registered = meta.story({
   args: {
     passkeys: [
       { id: "passkey_01", name: "MacBook Pro" },
@@ -17,13 +17,11 @@ const Registered = meta.story({
   },
 });
 
-const Empty = meta.story({ args: { passkeys: [] } });
+export const Empty = meta.story({ args: { passkeys: [] } });
 
-const Loading = meta.story({ args: { passkeys: undefined } });
+export const Loading = meta.story({ args: { passkeys: undefined } });
 
-const Failed = meta.story({
+export const Failed = meta.story({
   args: { listError: "パスキーの取得に失敗しました。", passkeys: undefined },
   parameters: { a11y: { test: "todo" } },
 });
-
-export { Empty, Failed, Loading, Registered };

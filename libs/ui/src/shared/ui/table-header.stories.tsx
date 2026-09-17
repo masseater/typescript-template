@@ -14,7 +14,7 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story({
+export const Default = meta.story({
   args: {
     children: (
       <TableRow>
@@ -24,5 +24,3 @@ const Default = meta.story({
     ),
   },
 });
-
-export { Default };

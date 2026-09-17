@@ -8,9 +8,9 @@ const meta = preview.meta({
   component: PasskeyRegisterForm,
 });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const RecoveringAdmin = meta.story({
+export const RecoveringAdmin = meta.story({
   args: {
     context: settingsContext({
       recovery: "1",
@@ -18,5 +18,3 @@ const RecoveringAdmin = meta.story({
     }),
   },
 });
-
-export { Default, RecoveringAdmin };

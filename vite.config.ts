@@ -73,6 +73,7 @@ export default defineConfig({
       {
         files: ["**/*.stories.tsx"],
         rules: {
+          "import/group-exports": "off",
           "import/no-relative-parent-imports": "off",
           "react/jsx-max-depth": "off",
           "typescript/prefer-readonly-parameter-types": "off",

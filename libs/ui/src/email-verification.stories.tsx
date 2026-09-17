@@ -4,11 +4,9 @@ import preview from "../.storybook/preview";
 
 const meta = preview.meta({ component: EmailVerification });
 
-const Expired = meta.story({
+export const Expired = meta.story({
   parameters: { a11y: { test: "todo" } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("alert")).toBeInTheDocument();
   },
 });
-
-export { Expired };

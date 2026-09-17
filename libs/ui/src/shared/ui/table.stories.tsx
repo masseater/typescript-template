@@ -8,7 +8,7 @@ import preview from "../../../.storybook/preview";
 
 const meta = preview.meta({ component: Table });
 
-const Default = meta.story({
+export const Default = meta.story({
   args: {
     children: (
       <>
@@ -35,5 +35,3 @@ const Default = meta.story({
     ),
   },
 });
-
-export { Default };

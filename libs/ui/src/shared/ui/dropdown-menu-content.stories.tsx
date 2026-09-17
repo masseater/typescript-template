@@ -29,6 +29,4 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story();
-
-export { Default };
+export const Default = meta.story();

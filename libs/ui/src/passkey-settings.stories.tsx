@@ -8,7 +8,7 @@ const listPath = "/api/auth/passkey/list-user-passkeys";
 
 const meta = preview.meta({ args: { context: settingsContext() }, component: PasskeySettings });
 
-const Registered = meta.story({
+export const Registered = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(
       http.get(listPath, () =>
@@ -24,7 +24,7 @@ const Registered = meta.story({
   },
 });
 
-const Empty = meta.story({
+export const Empty = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(http.get(listPath, () => HttpResponse.json([])));
   },
@@ -33,7 +33,7 @@ const Empty = meta.story({
   },
 });
 
-const Failed = meta.story({
+export const Failed = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(
       http.get(listPath, () =>
@@ -46,5 +46,3 @@ const Failed = meta.story({
     await expect(await canvas.findByRole("alert")).toBeInTheDocument();
   },
 });
-
-export { Empty, Failed, Registered };

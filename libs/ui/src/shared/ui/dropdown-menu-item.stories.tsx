@@ -30,10 +30,8 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const Destructive = meta.story({ args: { children: "削除", variant: "destructive" } });
+export const Destructive = meta.story({ args: { children: "削除", variant: "destructive" } });
 
-const Disabled = meta.story({ args: { disabled: true } });
-
-export { Default, Destructive, Disabled };
+export const Disabled = meta.story({ args: { disabled: true } });

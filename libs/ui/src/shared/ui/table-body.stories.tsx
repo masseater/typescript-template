@@ -14,7 +14,7 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story({
+export const Default = meta.story({
   args: {
     children: (
       <>
@@ -30,5 +30,3 @@ const Default = meta.story({
     ),
   },
 });
-
-export { Default };

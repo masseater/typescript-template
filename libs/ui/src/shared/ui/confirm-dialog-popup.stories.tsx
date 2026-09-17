@@ -39,8 +39,6 @@ const meta = preview.meta({
   ),
 });
 
-const Primary = meta.story();
+export const Primary = meta.story();
 
-const Danger = meta.story({ args: { variant: "danger" } });
-
-export { Danger, Primary };
+export const Danger = meta.story({ args: { variant: "danger" } });

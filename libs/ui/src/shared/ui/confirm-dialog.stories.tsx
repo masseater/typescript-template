@@ -14,16 +14,16 @@ const meta = preview.meta({
   component: ConfirmDialog,
 });
 
-const Closed = meta.story({ args: { open: false } });
+export const Closed = meta.story({ args: { open: false } });
 
-const Danger = meta.story({
+export const Danger = meta.story({
   args: { open: true, variant: "danger" },
   play: async () => {
     await expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
   },
 });
 
-const Primary = meta.story({
+export const Primary = meta.story({
   args: {
     confirmLabel: "送信する",
     description: "確認メールを再送します。",
@@ -31,5 +31,3 @@ const Primary = meta.story({
     title: "確認メールを再送しますか？",
   },
 });
-
-export { Closed, Danger, Primary };

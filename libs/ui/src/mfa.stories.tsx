@@ -14,16 +14,14 @@ const meta = preview.meta({
   component: MFASettings,
 });
 
-const NotEnrolled = meta.story({
+export const NotEnrolled = meta.story({
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("iPhone")).toBeInTheDocument();
   },
 });
 
-const Enrolled = meta.story({ args: { session: session({ twoFactorEnabled: true }) } });
+export const Enrolled = meta.story({ args: { session: session({ twoFactorEnabled: true }) } });
 
-const Admin = meta.story({
+export const Admin = meta.story({
   args: { session: session({ role: "admin", twoFactorEnabled: true }) },
 });
-
-export { Admin, Enrolled, NotEnrolled };

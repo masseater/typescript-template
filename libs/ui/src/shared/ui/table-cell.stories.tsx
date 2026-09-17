@@ -18,6 +18,4 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story({ args: { children: "taro@example.com" } });
-
-export { Default };
+export const Default = meta.story({ args: { children: "taro@example.com" } });

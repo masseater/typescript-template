@@ -15,8 +15,6 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const Disabled = meta.story({ args: { disabled: true } });
-
-export { Default, Disabled };
+export const Disabled = meta.story({ args: { disabled: true } });

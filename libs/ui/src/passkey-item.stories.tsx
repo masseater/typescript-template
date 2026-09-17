@@ -13,8 +13,6 @@ const meta = preview.meta({
   ),
 });
 
-const Named = meta.story({ args: { passkey: { id: "passkey_01", name: "MacBook Pro" } } });
+export const Named = meta.story({ args: { passkey: { id: "passkey_01", name: "MacBook Pro" } } });
 
-const Unnamed = meta.story({ args: { passkey: { id: "passkey_02" } } });
-
-export { Named, Unnamed };
+export const Unnamed = meta.story({ args: { passkey: { id: "passkey_02" } } });

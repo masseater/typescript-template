@@ -30,13 +30,11 @@ const meta = preview.meta({
   ),
 });
 
-const Empty = meta.story();
+export const Empty = meta.story();
 
-const Stacked = meta.story({
+export const Stacked = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を 2 件出す" }));
     await expect(await screen.findByText("確認メールを再送しました。")).toBeInTheDocument();
   },
 });
-
-export { Empty, Stacked };

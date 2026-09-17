@@ -8,13 +8,13 @@ const meta = preview.meta({
   component: TotpPasswordForm,
 });
 
-const Enroll = meta.story();
+export const Enroll = meta.story();
 
-const Disable = meta.story({
+export const Disable = meta.story({
   args: { context: settingsContext({ session: session({ twoFactorEnabled: true }) }) },
 });
 
-const AdminLocked = meta.story({
+export const AdminLocked = meta.story({
   args: {
     context: settingsContext({
       session: session({ role: "admin", twoFactorEnabled: true }),
@@ -22,6 +22,4 @@ const AdminLocked = meta.story({
   },
 });
 
-const Enrolling = meta.story({ args: { enrolling: true } });
-
-export { AdminLocked, Disable, Enroll, Enrolling };
+export const Enrolling = meta.story({ args: { enrolling: true } });

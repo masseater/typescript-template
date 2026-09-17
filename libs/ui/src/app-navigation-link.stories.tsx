@@ -11,6 +11,4 @@ const meta = preview.meta({
   ),
 });
 
-const Default = meta.story({ args: { href: "/security", label: "認証設定" } });
-
-export { Default };
+export const Default = meta.story({ args: { href: "/security", label: "認証設定" } });

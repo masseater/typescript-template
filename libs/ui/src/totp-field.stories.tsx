@@ -4,8 +4,6 @@ import { textInput } from "./story-fixture";
 
 const meta = preview.meta({ args: { code: textInput() }, component: TotpField });
 
-const Empty = meta.story();
+export const Empty = meta.story();
 
-const Filled = meta.story({ args: { code: textInput("123456") } });
-
-export { Empty, Filled };
+export const Filled = meta.story({ args: { code: textInput("123456") } });

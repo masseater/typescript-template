@@ -13,8 +13,6 @@ const meta = preview.meta({
   component: ChallengeLogin,
 });
 
-const Totp = meta.story({ args: { mode: "totp" } });
+export const Totp = meta.story({ args: { mode: "totp" } });
 
-const BackupCode = meta.story({ args: { mode: "backup" } });
-
-export { BackupCode, Totp };
+export const BackupCode = meta.story({ args: { mode: "backup" } });

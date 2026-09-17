@@ -7,16 +7,14 @@ const meta = preview.meta({
   component: CheckboxField,
 });
 
-const Unchecked = meta.story({ args: { checked: false } });
+export const Unchecked = meta.story({ args: { checked: false } });
 
-const Checked = meta.story({ args: { checked: true } });
+export const Checked = meta.story({ args: { checked: true } });
 
-const Toggles = meta.story({
+export const Toggles = meta.story({
   args: { checked: false },
   play: async ({ args, canvas }) => {
     await userEvent.click(canvas.getByRole("checkbox"));
     await expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
   },
 });
-
-export { Checked, Toggles, Unchecked };

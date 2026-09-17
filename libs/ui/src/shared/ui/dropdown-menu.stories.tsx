@@ -25,13 +25,11 @@ const meta = preview.meta({
   component: DropdownMenu,
 });
 
-const Closed = meta.story();
+export const Closed = meta.story();
 
-const Opened = meta.story({
+export const Opened = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "利用者の操作" }));
     await expect(await screen.findByRole("menuitem", { name: "権限を変更" })).toBeInTheDocument();
   },
 });
-
-export { Closed, Opened };

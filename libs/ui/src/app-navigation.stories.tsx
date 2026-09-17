@@ -3,7 +3,7 @@ import preview from "../.storybook/preview";
 
 const meta = preview.meta({ component: AppNavigation, parameters: { layout: "fullscreen" } });
 
-const Default = meta.story({
+export const Default = meta.story({
   args: {
     links: [
       { href: "/", label: "ホーム" },
@@ -12,5 +12,3 @@ const Default = meta.story({
     ],
   },
 });
-
-export { Default };

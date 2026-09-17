@@ -4,17 +4,15 @@ import preview from "../.storybook/preview";
 
 const meta = preview.meta({ args: { action: idleAction() }, component: ActionStatus });
 
-const Idle = meta.story();
+export const Idle = meta.story();
 
-const Pending = meta.story({
+export const Pending = meta.story({
   args: { action: pendingAction(), pendingMessage: "認証を処理しています。" },
 });
 
-const Notice = meta.story({ args: { notice: "パスキーを登録しました。" } });
+export const Notice = meta.story({ args: { notice: "パスキーを登録しました。" } });
 
-const Failed = meta.story({
+export const Failed = meta.story({
   args: { action: failedAction("認証サーバーが操作を拒否しました。") },
   parameters: { a11y: { test: "todo" } },
 });
-
-export { Failed, Idle, Notice, Pending };

@@ -8,8 +8,6 @@ const meta = preview.meta({
   component: PasskeyLoginButton,
 });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const Pending = meta.story({ args: { action: pendingAction() } });
-
-export { Default, Pending };
+export const Pending = meta.story({ args: { action: pendingAction() } });

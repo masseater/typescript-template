@@ -16,8 +16,6 @@ const meta = preview.meta({
   ),
 });
 
-const Unchecked = meta.story({ args: { checked: false } });
+export const Unchecked = meta.story({ args: { checked: false } });
 
-const Checked = meta.story({ args: { checked: true } });
-
-export { Checked, Unchecked };
+export const Checked = meta.story({ args: { checked: true } });

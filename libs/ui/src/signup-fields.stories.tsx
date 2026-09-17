@@ -8,11 +8,11 @@ const meta = preview.meta({
   component: SignUpFields,
 });
 
-const Empty = meta.story();
+export const Empty = meta.story();
 
-const Pending = meta.story({ args: { action: pendingAction() } });
+export const Pending = meta.story({ args: { action: pendingAction() } });
 
-const Filled = meta.story({
+export const Filled = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("ユーザー名"), "山田 太郎");
     await userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com");
@@ -23,5 +23,3 @@ const Filled = meta.story({
     await expect(canvas.getByLabelText("メールアドレス")).toHaveValue("taro@example.com");
   },
 });
-
-export { Empty, Filled, Pending };

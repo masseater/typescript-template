@@ -5,9 +5,9 @@ import preview from "../.storybook/preview";
 
 const meta = preview.meta({ args: { onAuthenticated: fn() }, component: LoginForm });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const TypesCredentials = meta.story({
+export const TypesCredentials = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com");
     await userEvent.type(canvas.getByLabelText("パスワード"), "correct horse battery");
@@ -15,7 +15,7 @@ const TypesCredentials = meta.story({
   },
 });
 
-const Rejected = meta.story({
+export const Rejected = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(
       http.post("/api/auth/sign-in/email", () =>
@@ -36,5 +36,3 @@ const Rejected = meta.story({
     );
   },
 });
-
-export { Default, Rejected, TypesCredentials };

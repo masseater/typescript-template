@@ -37,7 +37,7 @@ const meta = preview.meta({
   title: "shared/ui/ToastItem",
 });
 
-const Success = meta.story({
+export const Success = meta.story({
   args: { variant: "success" },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
@@ -45,7 +45,7 @@ const Success = meta.story({
   },
 });
 
-const Failure = meta.story({
+export const Failure = meta.story({
   args: { variant: "error" },
   parameters: { a11y: { test: "todo" } },
   play: async ({ canvas }) => {
@@ -56,7 +56,7 @@ const Failure = meta.story({
   },
 });
 
-const Closes = meta.story({
+export const Closes = meta.story({
   args: { variant: "success" },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
@@ -66,5 +66,3 @@ const Closes = meta.story({
     });
   },
 });
-
-export { Closes, Failure, Success };

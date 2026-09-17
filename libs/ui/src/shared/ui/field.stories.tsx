@@ -4,9 +4,9 @@ import preview from "../../../.storybook/preview";
 
 const meta = preview.meta({ args: { onChange: fn(), value: "" }, component: Field });
 
-const Text = meta.story({ args: { label: "ユーザー名", name: "name", required: true } });
+export const Text = meta.story({ args: { label: "ユーザー名", name: "name", required: true } });
 
-const Email = meta.story({
+export const Email = meta.story({
   args: {
     autoComplete: "username",
     label: "メールアドレス",
@@ -17,7 +17,7 @@ const Email = meta.story({
   },
 });
 
-const Password = meta.story({
+export const Password = meta.story({
   args: {
     autoComplete: "current-password",
     label: "パスワード",
@@ -27,11 +27,11 @@ const Password = meta.story({
   },
 });
 
-const ReadOnly = meta.story({
+export const ReadOnly = meta.story({
   args: { label: "所属", name: "team", readOnly: true, value: "プラットフォーム" },
 });
 
-const Numeric = meta.story({
+export const Numeric = meta.story({
   args: {
     autoComplete: "one-time-code",
     inputMode: "numeric",
@@ -42,12 +42,10 @@ const Numeric = meta.story({
   },
 });
 
-const Types = meta.story({
+export const Types = meta.story({
   args: { label: "ユーザー名", name: "name" },
   play: async ({ args, canvas }) => {
     await userEvent.type(canvas.getByLabelText("ユーザー名"), "た");
     await expect(args.onChange).toHaveBeenCalled();
   },
 });
-
-export { Email, Numeric, Password, ReadOnly, Text, Types };

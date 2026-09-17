@@ -8,10 +8,8 @@ const meta = preview.meta({
   component: ChallengeForm,
 });
 
-const Totp = meta.story({ args: { mode: "totp" } });
+export const Totp = meta.story({ args: { mode: "totp" } });
 
-const BackupCode = meta.story({ args: { mode: "backup" } });
+export const BackupCode = meta.story({ args: { mode: "backup" } });
 
-const Pending = meta.story({ args: { action: pendingAction(), mode: "totp" } });
-
-export { BackupCode, Pending, Totp };
+export const Pending = meta.story({ args: { action: pendingAction(), mode: "totp" } });

@@ -14,12 +14,10 @@ const meta = preview.meta({
   component: CredentialsForm,
 });
 
-const Empty = meta.story();
+export const Empty = meta.story();
 
-const Filled = meta.story({
+export const Filled = meta.story({
   args: { email: textInput("taro@example.com"), password: textInput("correct horse battery") },
 });
 
-const Pending = meta.story({ args: { action: pendingAction() } });
-
-export { Empty, Filled, Pending };
+export const Pending = meta.story({ args: { action: pendingAction() } });

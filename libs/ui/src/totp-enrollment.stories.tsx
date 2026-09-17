@@ -13,14 +13,12 @@ const meta = preview.meta({
   component: TotpEnrollment,
 });
 
-const Default = meta.story();
+export const Default = meta.story();
 
-const UnlocksVerifyAfterSaving = meta.story({
+export const UnlocksVerifyAfterSaving = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeDisabled();
     await userEvent.click(canvas.getByRole("checkbox"));
     await expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeEnabled();
   },
 });
-
-export { Default, UnlocksVerifyAfterSaving };

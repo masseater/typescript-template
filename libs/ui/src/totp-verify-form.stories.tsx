@@ -8,10 +8,8 @@ const meta = preview.meta({
   component: TotpVerifyForm,
 });
 
-const BackupCodesUnsaved = meta.story({ args: { saved: false } });
+export const BackupCodesUnsaved = meta.story({ args: { saved: false } });
 
-const BackupCodesSaved = meta.story({ args: { saved: true } });
+export const BackupCodesSaved = meta.story({ args: { saved: true } });
 
-const Pending = meta.story({ args: { action: pendingAction(), saved: true } });
-
-export { BackupCodesSaved, BackupCodesUnsaved, Pending };
+export const Pending = meta.story({ args: { action: pendingAction(), saved: true } });
