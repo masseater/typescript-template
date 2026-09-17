@@ -51,3 +51,27 @@ export function applicationDependencyViolations(
     ),
   );
 }
+
+export const retiredUiPackages = {
+  "smarthr-ui": "@template/ui/ui の shadcn/ui (Base UI) 部品",
+  "styled-components": "Tailwind CSS v4 のユーティリティ",
+  "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  "react-intl": "Paraglide JS",
+} as const;
+
+export function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+  return workspaces.flatMap(({ file, manifest }) =>
+    ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"].flatMap(
+      (key) => {
+        const value = field(manifest, key);
+        if (typeof value !== "object" || value === null) return [];
+        return Object.entries(retiredUiPackages)
+          .filter(([dependency]) => Object.hasOwn(value, dependency))
+          .map(
+            ([dependency, replacement]) =>
+              `${file}: ${dependency} は置き換え済みです。${replacement} を使ってください。`,
+          );
+      },
+    ),
+  );
+}

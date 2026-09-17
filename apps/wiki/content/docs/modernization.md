@@ -9,14 +9,12 @@ TanStack Start、Elysia、Effect v4 を土台にし、Cloudflare 上で動かし
 
 ## 現在の構成から置き換えるもの
 
-| 現在                          | 置き換え先                                           | 置き換える理由                                                                                                                              |
-| ----------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| smarthr-ui、styled-components | shadcn/ui（Base UI 版）を SmartHR 風に書き換えたもの | smarthr-ui は Tailwind CSS v3 のままで、styled-components も残っています。Tailwind CSS v4 に揃えるため、見た目だけを SmartHR 風に移植します |
-| Pulumi                        | Alchemy v2                                           | Cloudflare のリソース定義と、そのリソースを使うアプリのコードを 1 つの Effect プログラムに書けます                                          |
-| valibot、zod                  | Effect Schema                                        | 検証とシリアライズのスキーマを Effect の型に揃えます                                                                                        |
-| react-intl                    | Paraglide JS                                         | smarthr-ui と言語設定を共有する必要がなくなります。メッセージを型付きの関数にコンパイルし、使わない翻訳を削れます                           |
-| Sentry                        | Workers の OTLP エクスポートと Effect の OTLP 出力   | SaaS に依存せず、トレースとログを同じ trace ID で外部に送れます                                                                             |
-| Drizzle ORM 0.45              | Drizzle ORM v1                                       | `drizzle-orm/effect-schema` で DB スキーマから Effect Schema を作れます                                                                     |
+| 現在             | 置き換え先                                         | 置き換える理由                                                                                     |
+| ---------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Pulumi           | Alchemy v2                                         | Cloudflare のリソース定義と、そのリソースを使うアプリのコードを 1 つの Effect プログラムに書けます |
+| valibot、zod     | Effect Schema                                      | 検証とシリアライズのスキーマを Effect の型に揃えます                                               |
+| Sentry           | Workers の OTLP エクスポートと Effect の OTLP 出力 | SaaS に依存せず、トレースとログを同じ trace ID で外部に送れます                                    |
+| Drizzle ORM 0.45 | Drizzle ORM v1                                     | `drizzle-orm/effect-schema` で DB スキーマから Effect Schema を作れます                            |
 
 ## 基盤
 
@@ -109,14 +107,14 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 ```json
 {
   "jsPlugins": ["@shadcn/lint"],
-  "settings": { "shadcn": { "ui": "@/shared/ui" } },
+  "settings": { "shadcn": { "ui": "@template/ui/ui" } },
   "rules": {
     "shadcn/no-restyle": ["error", { "allow": ["layout", "spacing"] }],
     "shadcn/no-raw-colors": "error",
     "shadcn/no-arbitrary-values": "error",
     "shadcn/no-unknown-classes": "error"
   },
-  "overrides": [{ "files": ["src/shared/ui/**"], "rules": { "shadcn/no-restyle": "off" } }]
+  "overrides": [{ "files": ["libs/ui/src/shared/ui/**"], "rules": { "shadcn/no-restyle": "off" } }]
 }
 ```
 
