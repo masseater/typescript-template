@@ -19,4 +19,3 @@ function AppNavigation({ links }: Readonly<{ links: readonly NavigationLink[] }>
 }
 
 export { AppNavigation };
-export type { NavigationLink };

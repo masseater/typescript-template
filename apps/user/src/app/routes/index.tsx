@@ -15,7 +15,7 @@ const loadOnServer = createServerFn({ method: "GET" }).handler(
   async (): Promise<Profile | undefined> =>
     apiDataOrNone(
       ProfileView,
-      await treaty(userApi, { headers: getRequest().headers }).api.profile.get(),
+      await treaty(userApi, { headers: getRequest().headers, parseDate: false }).api.profile.get(),
     ),
 );
 
