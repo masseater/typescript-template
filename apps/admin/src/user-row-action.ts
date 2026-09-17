@@ -1,8 +1,9 @@
 import { RoleChanged, UserDeleted } from "@template/runtime/contracts";
 import type { ListedUser } from "#user-list.ts";
+import { adminClient } from "#api-client.ts";
+import { apiData } from "@template/runtime/client";
 import { errorMessage } from "@template/ui";
 import { nextRoles } from "#user-labels.ts";
-import { requestJson } from "@template/runtime/client";
 import { useState } from "react";
 import { useToast } from "@template/ui/ui";
 
@@ -18,12 +19,13 @@ interface UserRowAction {
 }
 
 async function perform(user: ListedUser, operation: RowOperation): Promise<string> {
+  const { users } = adminClient();
   if (operation === "delete") {
-    await requestJson("/api/users", UserDeleted, { body: { id: user.id }, method: "DELETE" });
+    apiData(UserDeleted, await users.delete({ id: user.id }));
     return `${user.email} を削除しました。`;
   }
   const role = nextRoles[user.role];
-  await requestJson("/api/users", RoleChanged, { body: { id: user.id, role }, method: "PATCH" });
+  apiData(RoleChanged, await users.patch({ id: user.id, role }));
   return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
 }
 

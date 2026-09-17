@@ -1,13 +1,15 @@
-import { absence, findApi } from "#shared/api/index.ts";
+import { absent, apiDataOrNone } from "@template/runtime/client";
 import type { Member } from "#pages/profile/model/member.ts";
 import { MemberView } from "@template/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
+import { userClient } from "#shared/api/index.ts";
 
 async function loadMember(id: string): Promise<Member> {
-  const member = await findApi(
-    `/api/member?${new URLSearchParams({ id }).toString()}`,
+  const { api } = await userClient();
+  const member = apiDataOrNone(
     MemberView,
-    absence.notFound,
+    await api.member.get({ query: { id } }),
+    absent.notFound,
   );
   if (member === undefined) {
     throw notFound();

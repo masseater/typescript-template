@@ -16,6 +16,7 @@ import { Effect } from "effect";
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+import { serverOnlyMarkers } from "@template/config/vite";
 import { stageFiles } from "./staging.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -27,7 +28,6 @@ function monitorArtifact(unit: string): string {
 }
 
 const RELEASE_LENGTH = 16;
-const SERVER_ONLY_MARKERS: readonly string[] = ["drizzle:entityKind", "better-auth/api"];
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
 
 interface WorkerModule {
@@ -64,7 +64,7 @@ function privateArtifact(relative: string): boolean {
 
 function carriesServerOnlyCode(file: string): Effect.Effect<boolean, ArtifactFailure> {
   return io(async () => readFile(file, "utf-8")).pipe(
-    Effect.map((source) => SERVER_ONLY_MARKERS.some((marker) => source.includes(marker))),
+    Effect.map((source) => serverOnlyMarkers.some((marker) => source.includes(marker))),
   );
 }
 
