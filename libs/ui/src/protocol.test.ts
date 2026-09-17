@@ -105,3 +105,27 @@ describe("認証結果の検証", () => {
     );
   });
 });
+
+describe("認証の失敗理由", () => {
+  it.for([
+    ["INVALID_EMAIL_OR_PASSWORD", "メールアドレスかパスワードが違います。"],
+    ["EMAIL_NOT_VERIFIED", "メールアドレスが未確認です。確認メールのリンクを開いてください。"],
+    ["INVALID_CODE", "確認コードが違います。"],
+    ["INVALID_BACKUP_CODE", "バックアップコードが違います。"],
+  ] as const)("ログインの失敗 %s を画面に出す理由へ変える", ([code, reason]) => {
+    expect.hasAssertions();
+    expect(() =>
+      requireSuccess({ data: undefined, error: { code, message: "Upstream wording" } }),
+    ).toThrow(reason);
+  });
+
+  it("理由を持たない失敗コードは認証サーバーの文言のまま出す", () => {
+    expect.hasAssertions();
+    expect(() =>
+      requireSuccess({
+        data: undefined,
+        error: { code: "SOMETHING_ELSE", message: "Upstream wording" },
+      }),
+    ).toThrow("Upstream wording");
+  });
+});

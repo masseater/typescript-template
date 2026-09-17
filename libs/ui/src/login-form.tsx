@@ -1,9 +1,9 @@
+import { FormColumn, Separator } from "./shared/ui";
 import { ActionStatus } from "./action-status";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeLogin } from "./challenge-login";
 import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
-import { FormColumn } from "./shared/ui";
 import { PasskeyLoginButton } from "./passkey-login-button";
 import type { ReactElement } from "react";
 import { useAction } from "./action";
@@ -23,6 +23,8 @@ function LoginForm({
   const action = useAction();
   function restart(): void {
     setChallenge(undefined);
+    email.handleChange("");
+    password.handleChange("");
   }
   return (
     <FormColumn>
@@ -35,6 +37,7 @@ function LoginForm({
             onChallenge={setChallenge}
             password={password}
           />
+          <Separator label="または" />
           <PasskeyLoginButton action={action} onAuthenticated={onAuthenticated} />
         </>
       ) : (

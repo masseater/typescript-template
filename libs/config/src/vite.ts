@@ -33,8 +33,10 @@ function previewDevVars(appRoot: string): Plugin {
 }
 
 const serverOnlyFiles: (string | RegExp)[] = [
-  "**/src/**/{api,runtime,server}.ts",
-  "**/src/**/*-api.ts",
+  "**/src/{api,runtime,server}.ts",
+  "**/src/app/{api,runtime,server}.ts",
+  "**/src/*-api.ts",
+  "**/src/app/*-api.ts",
   "**/libs/auth/src/**",
   "**/libs/db/src/**",
 ];

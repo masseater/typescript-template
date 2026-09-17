@@ -2,8 +2,8 @@ import type { ReactElement } from "react";
 import { SecurityPage } from "@template/ui/auth";
 import { createFileRoute } from "@tanstack/react-router";
 
-const Route = createFileRoute("/security")({
-  component: (): ReactElement => <SecurityPage title="認証設定" />,
+const Route = createFileRoute("/_member/security")({
+  component: (): ReactElement => <SecurityPage title="認証設定" signedOutPath="/" />,
 });
 
 export { Route };

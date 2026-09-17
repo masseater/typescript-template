@@ -9,130 +9,190 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as SecurityRouteImport } from './routes/security'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as MemberRouteImport } from './routes/_member'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as MemberSecurityRouteImport } from './routes/_member/security'
+import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as PublicSignupRouteImport } from './routes/_public/signup'
+import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
+import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const MemberRoute = MemberRouteImport.update({
+  id: '/_member',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SecurityRoute = SecurityRouteImport.update({
+const MemberSecurityRoute = MemberSecurityRouteImport.update({
   id: '/security',
   path: '/security',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => MemberRoute,
 } as any)
-const SignupRoute = SignupRouteImport.update({
+const PublicIndexRoute = PublicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLoginRoute = PublicLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicSignupRoute = PublicSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
+const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberSettingsProfileRoute = MemberSettingsProfileRouteImport.update({
+  id: '/settings/profile',
+  path: '/settings/profile',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberUsersIdRoute = MemberUsersIdRouteImport.update({
+  id: '/users/$id',
+  path: '/users/$id',
+  getParentRoute: () => MemberRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/security': typeof SecurityRoute
-  '/signup': typeof SignupRoute
-  '/verify-email': typeof VerifyEmailRoute
+  '/': typeof PublicIndexRoute
+  '/security': typeof MemberSecurityRoute
+  '/login': typeof PublicLoginRoute
+  '/signup': typeof PublicSignupRoute
+  '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/settings/profile': typeof MemberSettingsProfileRoute
+  '/users/$id': typeof MemberUsersIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/security': typeof SecurityRoute
-  '/signup': typeof SignupRoute
-  '/verify-email': typeof VerifyEmailRoute
+  '/': typeof PublicIndexRoute
+  '/security': typeof MemberSecurityRoute
+  '/login': typeof PublicLoginRoute
+  '/signup': typeof PublicSignupRoute
+  '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/settings/profile': typeof MemberSettingsProfileRoute
+  '/users/$id': typeof MemberUsersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/security': typeof SecurityRoute
-  '/signup': typeof SignupRoute
-  '/verify-email': typeof VerifyEmailRoute
+  '/_member': typeof MemberRouteWithChildren
+  '/_public': typeof PublicRouteWithChildren
+  '/_member/security': typeof MemberSecurityRoute
+  '/_public/login': typeof PublicLoginRoute
+  '/_public/signup': typeof PublicSignupRoute
+  '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/_public/': typeof PublicIndexRoute
+  '/_member/settings/profile': typeof MemberSettingsProfileRoute
+  '/_member/users/$id': typeof MemberUsersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/security' | '/signup' | '/verify-email' | '/api/$'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/security' | '/signup' | '/verify-email' | '/api/$'
-  id:
-    | '__root__'
     | '/'
-    | '/login'
     | '/security'
+    | '/login'
     | '/signup'
     | '/verify-email'
     | '/api/$'
+    | '/settings/profile'
+    | '/users/$id'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/security'
+    | '/login'
+    | '/signup'
+    | '/verify-email'
+    | '/api/$'
+    | '/settings/profile'
+    | '/users/$id'
+  id:
+    | '__root__'
+    | '/_member'
+    | '/_public'
+    | '/_member/security'
+    | '/_public/login'
+    | '/_public/signup'
+    | '/_public/verify-email'
+    | '/api/$'
+    | '/_public/'
+    | '/_member/settings/profile'
+    | '/_member/users/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LoginRoute: typeof LoginRoute
-  SecurityRoute: typeof SecurityRoute
-  SignupRoute: typeof SignupRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
+  MemberRoute: typeof MemberRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_member': {
+      id: '/_member'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof MemberRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/security': {
-      id: '/security'
+    '/_member/security': {
+      id: '/_member/security'
       path: '/security'
       fullPath: '/security'
-      preLoaderRoute: typeof SecurityRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof MemberSecurityRouteImport
+      parentRoute: typeof MemberRoute
     }
-    '/signup': {
-      id: '/signup'
+    '/_public/': {
+      id: '/_public/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/login': {
+      id: '/_public/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/signup': {
+      id: '/_public/signup'
       path: '/signup'
       fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicSignupRouteImport
+      parentRoute: typeof PublicRoute
     }
-    '/verify-email': {
-      id: '/verify-email'
+    '/_public/verify-email': {
+      id: '/_public/verify-email'
       path: '/verify-email'
       fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicVerifyEmailRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/api/$': {
       id: '/api/$'
@@ -141,15 +201,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_member/settings/profile': {
+      id: '/_member/settings/profile'
+      path: '/settings/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof MemberSettingsProfileRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/users/$id': {
+      id: '/_member/users/$id'
+      path: '/users/$id'
+      fullPath: '/users/$id'
+      preLoaderRoute: typeof MemberUsersIdRouteImport
+      parentRoute: typeof MemberRoute
+    }
   }
 }
 
+interface MemberRouteChildren {
+  MemberSecurityRoute: typeof MemberSecurityRoute
+  MemberSettingsProfileRoute: typeof MemberSettingsProfileRoute
+  MemberUsersIdRoute: typeof MemberUsersIdRoute
+}
+
+const MemberRouteChildren: MemberRouteChildren = {
+  MemberSecurityRoute: MemberSecurityRoute,
+  MemberSettingsProfileRoute: MemberSettingsProfileRoute,
+  MemberUsersIdRoute: MemberUsersIdRoute,
+}
+
+const MemberRouteWithChildren =
+  MemberRoute._addFileChildren(MemberRouteChildren)
+
+interface PublicRouteChildren {
+  PublicLoginRoute: typeof PublicLoginRoute
+  PublicSignupRoute: typeof PublicSignupRoute
+  PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
+  PublicIndexRoute: typeof PublicIndexRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicLoginRoute: PublicLoginRoute,
+  PublicSignupRoute: PublicSignupRoute,
+  PublicVerifyEmailRoute: PublicVerifyEmailRoute,
+  PublicIndexRoute: PublicIndexRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  SecurityRoute: SecurityRoute,
-  SignupRoute: SignupRoute,
-  VerifyEmailRoute: VerifyEmailRoute,
+  MemberRoute: MemberRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport

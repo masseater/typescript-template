@@ -1,13 +1,21 @@
 import type { CurrentRequest, Telemetry } from "@template/observability";
 import { Effect, Result } from "effect";
 import { httpStatus, observeRequest } from "@template/observability";
+import type { AnyElysia } from "elysia";
 import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
 import { secureResponse } from "./responses.ts";
 
-interface StartHandler {
+interface StartRequestContext {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly fetch: (request: Request) => Promise<Response> | Response;
+  readonly fetchApi: (request: Request) => Promise<Response>;
+}
+interface StartHandler {
+  readonly fetch: (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    request: Request,
+    options: { readonly context: StartRequestContext },
+  ) => Promise<Response> | Response;
 }
 interface FetchWorker {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -85,10 +93,15 @@ function serveApp<Requirements>(
 function startRoute(
   handler: StartHandler,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  api: AnyElysia,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 ): (request: Request) => Effect.Effect<Response> {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
+  const context: StartRequestContext = { fetchApi: async (call) => api.fetch(call) };
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (request) =>
+    Effect.promise(async () => secureResponse(await handler.fetch(request, { context })));
 }
 
 export { serveApp, serveWorker, startRoute };
-export type { AppRoute, FetchWorker };
+export type { AppRoute, FetchWorker, StartRequestContext };

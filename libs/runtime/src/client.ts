@@ -28,13 +28,16 @@ function decodeJson<Contract extends Decodable>(
   return decoded.success;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function failureMessage(reply: ApiReply, failure: ApiFailure): string {
-  const body = Schema.decodeUnknownResult(ErrorBody)(failure.value);
-  const message = Result.isSuccess(body)
-    ? body.success.error
-    : `リクエストに失敗しました（HTTP ${failure.status}）。`;
-  const requestId = reply.response.headers.get("x-request-id") ?? "";
+function failureMessage(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  reply: Readonly<Pick<Response, "headers" | "status">>,
+  body: unknown,
+): string {
+  const failure = Schema.decodeUnknownResult(ErrorBody)(body);
+  const message = Result.isSuccess(failure)
+    ? failure.success.error
+    : `リクエストに失敗しました（HTTP ${reply.status}）。`;
+  const requestId = reply.headers.get("x-request-id") ?? "";
   return requestId === "" ? message : `${message} リクエスト ID: ${requestId}`;
 }
 
@@ -44,7 +47,12 @@ function apiData<Contract extends Decodable>(
   reply: ApiReply,
 ): Contract["Type"] {
   if (reply.error !== null) {
-    throw new Error(failureMessage(reply, reply.error));
+    throw new Error(
+      failureMessage(
+        { headers: reply.response.headers, status: reply.error.status },
+        reply.error.value,
+      ),
+    );
   }
   return decodeJson(contract, reply.data);
 }
@@ -71,4 +79,4 @@ function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
   });
 }
 
-export { apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson };
+export { apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson, failureMessage };

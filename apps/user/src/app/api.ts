@@ -1,7 +1,13 @@
-import { ProfileUpdate, ProfileView } from "@template/runtime/contracts";
-import { UserNotFound, getProfile, updateProfile } from "@template/db";
+import { MemberQuery, MemberView, ProfileUpdate, ProfileView } from "@template/runtime/contracts";
+import { UserNotFound, getMember, getProfile, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
-import { apiRoot, apiRoutes, createApi, readJsonBody } from "@template/runtime/http";
+import {
+  apiRoot,
+  apiRoutes,
+  createApi,
+  readJsonBody,
+  readSearchParams,
+} from "@template/runtime/http";
 import { Effect } from "effect";
 import { httpStatus } from "@template/observability";
 import { interviewApi } from "./interview-api.ts";
@@ -30,6 +36,20 @@ const userApi = createApi(apiRoot)
             return yield* new UserNotFound();
           }
           return profile;
+        }),
+      failures,
+    ),
+  )
+  .get(
+    "/member",
+    api.route(
+      MemberView,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySession(request.headers);
+          const { id } = yield* readSearchParams(MemberQuery, request);
+          return yield* getMember(user.id, id);
         }),
       failures,
     ),
