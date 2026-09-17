@@ -2,9 +2,10 @@ import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 import type { Scope } from "effect";
-import type { SetupServer } from "msw/node";
 import { fetchUsage } from "./billing.ts";
-import { setupServer } from "msw/node";
+import { setupNetwork } from "@msw/cloudflare";
+
+type Network = ReturnType<typeof setupNetwork>;
 
 const ACCOUNT_ID_LENGTH = 32;
 const BILLED_COST_USD = 2;
@@ -14,18 +15,20 @@ const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billa
 
 function withServer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> {
+  ...handlers: Parameters<Network["use"]>
+): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(
     Effect.sync(() => {
-      const server = setupServer(...handlers);
-      server.listen({ onUnhandledRequest: "error" });
-      return server;
+      const network = setupNetwork();
+      network.configure({ onUnhandledFrame: "error" });
+      network.use(...handlers);
+      network.enable();
+      return network;
     }),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (server) =>
+    (network) =>
       Effect.sync(() => {
-        server.close();
+        network.disable();
       }),
   );
 }
