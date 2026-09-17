@@ -32,4 +32,12 @@ describe("login path", () => {
     expect(loginPath("/?keyword=a&page=2")).toBe("/login?redirect=%2F%3Fkeyword%3Da%26page%3D2");
     expect(loginPath("/")).toBe("/login");
   });
+
+  it("does not wrap a login location in another redirect", () => {
+    expect.hasAssertions();
+    expect(loginPath("/login?redirect=%2F%3Fkeyword%3Da")).toBe(
+      "/login?redirect=%2F%3Fkeyword%3Da",
+    );
+    expect(loginPath("/login")).toBe("/login");
+  });
 });

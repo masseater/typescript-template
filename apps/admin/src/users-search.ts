@@ -10,12 +10,13 @@ const PageNumber = Schema.Union([Schema.Number, Schema.NumberFromString]).check(
 );
 
 const isSearchRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
+const isVerificationText = Schema.is(EmailVerificationFilter);
 
 interface UsersSearch {
   readonly keyword?: typeof UserKeyword.Type;
   readonly page?: number;
   readonly role?: typeof Role.Type;
-  readonly verified?: typeof EmailVerificationFilter.Type;
+  readonly verified?: boolean;
 }
 
 function decoded<Type>(
@@ -29,10 +30,18 @@ function decoded<Type>(
 
 function normalizeUsersSearch(raw: unknown): UsersSearch {
   const search = isSearchRecord(raw) ? raw : {};
-  const keyword = decoded(UserKeyword, search["keyword"]);
+  const keywordInput = search["keyword"];
+  const verifiedInput = search["verified"];
+  const keyword = decoded(
+    UserKeyword,
+    typeof keywordInput === "number" ? String(keywordInput) : keywordInput,
+  );
   const page = decoded(PageNumber, search["page"]);
   const role = decoded(Role, search["role"]);
-  const verified = decoded(EmailVerificationFilter, search["verified"]);
+  const verified = decoded(
+    Schema.Boolean,
+    isVerificationText(verifiedInput) ? verifiedInput === "true" : verifiedInput,
+  );
   return {
     ...(keyword && { keyword: keyword.value }),
     ...(page && { page: page.value }),
@@ -49,7 +58,7 @@ function userListRequestPath(search: UsersSearch): string {
   for (const [name, value] of [
     ["keyword", search.keyword],
     ["role", search.role],
-    ["verified", search.verified],
+    ["verified", search.verified === undefined ? undefined : String(search.verified)],
   ] as const) {
     if (value !== undefined) {
       params.set(name, value);

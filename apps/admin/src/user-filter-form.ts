@@ -19,7 +19,9 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
   const navigate = useNavigate({ from: "/" });
   const [keyword, setKeyword] = useState(search.keyword ?? "");
   const [role, setRole] = useState<string>(search.role ?? "");
-  const [verified, setVerified] = useState<string>(search.verified ?? "");
+  const [verified, setVerified] = useState<string>(
+    search.verified === undefined ? "" : String(search.verified),
+  );
   const handleKeywordChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
     (event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "value">> }>) => {
       setKeyword(event.target.value);

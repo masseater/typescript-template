@@ -11,6 +11,9 @@ function redirectTarget(value: unknown): string {
 }
 
 function loginPath(current: string): string {
+  if (new URL(current, localOrigin).pathname === LOGIN) {
+    return current;
+  }
   return current === HOME
     ? LOGIN
     : `${LOGIN}?${new URLSearchParams({ redirect: current }).toString()}`;
