@@ -1,5 +1,6 @@
-import { Effect, Schema } from "effect";
-import { applications, roles } from "@template/config";
+import { Effect, Schema, Struct } from "effect";
+import { UserRow } from "@template/db";
+import { applications } from "@template/config";
 
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
@@ -8,28 +9,19 @@ const maximumTokenLength = 4096;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
 
-const Role = Schema.Literals(roles);
+const Role = UserRow.fields.role;
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const ErrorBody = Schema.Struct({ error: Schema.String });
 
 const SessionView = Schema.Struct({
   strong: Schema.Boolean,
-  user: Schema.Struct({
-    email: Schema.String,
-    id: Schema.String,
-    name: Schema.String,
-    role: Role,
-    twoFactorEnabled: Schema.Boolean,
-  }),
+  user: Schema.Struct(
+    Struct.pick(UserRow.fields, ["email", "id", "name", "role", "twoFactorEnabled"]),
+  ),
 });
 
-const ProfileView = Schema.Struct({
-  email: Schema.String,
-  id: Schema.String,
-  name: Schema.String,
-  profile: Schema.String,
-});
+const ProfileView = Schema.Struct(Struct.pick(UserRow.fields, ["email", "id", "name", "profile"]));
 
 const ProfileUpdate = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
@@ -58,23 +50,19 @@ const UserListQuery = Schema.Struct({
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
 });
 
-const UserSummary = Schema.Struct({
-  email: Schema.String,
-  emailVerified: Schema.Boolean,
-  id: Schema.String,
-  name: Schema.String,
-  role: Role,
-});
+const UserSummary = Schema.Struct(
+  Struct.pick(UserRow.fields, ["email", "emailVerified", "id", "name", "role"]),
+);
 
 const UserList = Schema.Struct({ total: Schema.Finite, users: Schema.Array(UserSummary) });
 
 const RoleChange = Schema.Struct({ id: Identifier, role: Role });
 
-const RoleChanged = Schema.Struct({ id: Schema.String, role: Role });
+const RoleChanged = Schema.Struct(Struct.pick(UserRow.fields, ["id", "role"]));
 
 const UserDeletion = Schema.Struct({ id: Identifier });
 
-const UserDeleted = Schema.Struct({ id: Schema.String });
+const UserDeleted = Schema.Struct(Struct.pick(UserRow.fields, ["id"]));
 
 const HealthView = Schema.Struct({
   ok: Schema.Literal(true),
