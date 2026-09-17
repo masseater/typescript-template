@@ -146,4 +146,4 @@ test("applies real D1 migrations once, rejects changed history and preserves boo
   } finally {
     await runtime.dispose();
   }
-}, 30_000);
+});
