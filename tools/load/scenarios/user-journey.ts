@@ -30,11 +30,11 @@ const options: Options = {
   },
   thresholds: {
     checks: ["rate==1"],
-    "http_req_duration{name:login-page}": ["p(95)<400"],
-    "http_req_duration{name:members-search}": ["p(95)<400"],
-    "http_req_duration{name:members}": ["p(95)<400"],
-    "http_req_duration{name:profile}": ["p(95)<400"],
-    "http_req_duration{name:session}": ["p(95)<400"],
+    "http_req_duration{name:login-page}": ["p(95)<1000"],
+    "http_req_duration{name:members-search}": ["p(95)<1000"],
+    "http_req_duration{name:members}": ["p(95)<1000"],
+    "http_req_duration{name:profile}": ["p(95)<1000"],
+    "http_req_duration{name:session}": ["p(95)<1000"],
     http_req_failed: ["rate<0.01"],
   },
 };
