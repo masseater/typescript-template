@@ -6,7 +6,6 @@
     "./artifact": "./src/artifact.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "test": "vp test run --config vitest.config.ts",
     "build": "esbuild src/worker.ts --bundle --format=esm --platform=browser --target=es2023 --external:cloudflare:* --outfile=dist/index.js",
     "inspect": "tsx src/inspect.ts"
@@ -21,7 +20,7 @@
     "msw": "^2.11.0",
     "tsx": "^4.20.0",
     "typescript": "7.0.2",
-    "vite-plus": "0.3.2",
-    "vitest": "4.1.11"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

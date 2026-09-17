@@ -1,6 +1,6 @@
 import type { Auth } from "./index.ts";
 import { URI } from "otpauth";
-import { expect } from "vitest";
+import { expect } from "vite-plus/test";
 
 interface TotpEnrollment {
   readonly authenticator: ReturnType<typeof URI.parse>;

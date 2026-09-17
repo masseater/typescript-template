@@ -1,10 +1,10 @@
 import type { Audience, Database, DatabaseOperation } from "@template/db";
 import { BrowserClient, HTTP_FOUND, PASSWORD } from "./browser-client.ts";
 import { HttpResponse, http } from "msw";
-import { test as baseTest, expect } from "vitest";
+import { test as baseTest, expect } from "vite-plus/test";
 import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
-import type { TestAPI } from "vitest";
+import type { TestAPI } from "vite-plus/test";
 import { createDb } from "@template/db";
 import { sendVerificationEmail } from "@template/config";
 import { setupServer } from "msw/node";

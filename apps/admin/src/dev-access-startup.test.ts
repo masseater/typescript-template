@@ -1,4 +1,4 @@
-import { test as baseTest, describe, expect } from "vitest";
+import { test as baseTest, describe, expect } from "vite-plus/test";
 import { credentialsText, withDevServer } from "#dev-access-fixture";
 import { localOrigin, upgrade, websocketPath } from "#dev-access-client";
 import type { DevServer } from "#dev-access-fixture";

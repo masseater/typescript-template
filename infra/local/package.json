@@ -8,7 +8,6 @@
     "up": "node src/compose.ts up",
     "status": "node src/compose.ts status",
     "logs": "node src/compose.ts logs",
-    "mcp": "node src/compose.ts mcp",
-    "typecheck": "tsc --noEmit"
+    "mcp": "node src/compose.ts mcp"
   }
 }

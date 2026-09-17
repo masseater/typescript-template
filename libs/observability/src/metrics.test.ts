@@ -1,5 +1,5 @@
 import { createMetricAccumulator, histogram } from "./metrics.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { HistogramMetric } from "./metrics.ts";
 
 type HistogramPoint = HistogramMetric["histogram"]["dataPoints"][number];

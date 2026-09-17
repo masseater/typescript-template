@@ -1,6 +1,6 @@
 import type { Audience, Database, Role } from "./index.ts";
 import { account, session, user } from "./schema.ts";
-import { test as baseTest, expect } from "vitest";
+import { test as baseTest, expect } from "vite-plus/test";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { getProfile, updateProfile } from "./index.ts";
 import { createTestDatabase } from "./testing.ts";

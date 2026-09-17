@@ -1,6 +1,6 @@
 import { HttpResponse, http } from "msw";
 import { createEmptyTestDatabase, executeD1HttpBatch } from "./testing.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { D1Database } from "@cloudflare/workers-types";
 import type { HttpResponseResolver } from "msw";
 import { createDb } from "./index.ts";

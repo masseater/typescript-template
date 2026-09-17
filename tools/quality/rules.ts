@@ -1,9 +1,9 @@
-import type { Context, ESTree, RuleMeta, Visitor } from "@oxlint/plugins";
+import type { Context, ESTree, RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { destructuredOrigins, origins, propertyName, staticText } from "./references.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import type { Origin } from "./references.ts";
-import { definePlugin } from "@oxlint/plugins";
+import { definePlugin } from "vite-plus/lint/plugins";
 
 interface RawD1Checks {
   readonly destructuring: (reported: ESTree.Node, pattern: ESTree.Node, input: ESTree.Node) => void;
@@ -13,6 +13,8 @@ interface RawD1Checks {
 const mockSources = new Set([
   "vitest",
   "@vitest/spy",
+  "vite-plus/test",
+  "vite-plus/test/plugins/spy",
   "@jest/globals",
   "jest-mock",
   "node:test",

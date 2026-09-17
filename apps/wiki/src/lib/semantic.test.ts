@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { rankPages } from "./semantic.ts";
 
 const PAGE_LIMIT = 5;

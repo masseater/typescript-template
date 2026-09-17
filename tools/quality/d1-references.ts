@@ -1,4 +1,4 @@
-import type { Context, Definition, Reference } from "@oxlint/plugins";
+import type { Context, Definition, Reference } from "vite-plus/lint/plugins";
 import type { Node, NodeOf, Resolve } from "./references.ts";
 import { bindingPath, origins, propertyKey, propertyName, variableOf } from "./references.ts";
 import { d1Property, d1Type, followPath, prefixPath } from "./d1-types.ts";

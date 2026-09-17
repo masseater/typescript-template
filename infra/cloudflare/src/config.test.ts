@@ -7,7 +7,7 @@ import {
   validateAuthSecret,
   validateOtelHeaders,
 } from "./config.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { readEnvironment, readWikiConfig } from "@template/config";
 
 const HEX_32_LENGTH = 32;

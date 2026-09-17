@@ -1,22 +1,22 @@
 import {
   apps,
   credentialsFile,
-  host,
+  lanOrigin,
   logFileUrl,
-  originFor,
   origins,
   ports,
-  publish,
   readCredentials,
   readyPaths,
   root,
   run,
-  servicePorts,
+  running,
   socket,
 } from "./local-environment.ts";
+import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import { chmod, open, readFile } from "node:fs/promises";
 import type { App } from "./local-environment.ts";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { privateFileMode } from "./private-files.ts";
 
 interface ApplicationStatus {
@@ -36,12 +36,13 @@ interface StatusReport {
 interface ConnectionReport {
   readonly admin: string;
   readonly adminCredentialsFile: string;
-  readonly event: "local.remote_access";
+  readonly event: "local.lan_access";
   readonly grafana: string;
   readonly mailpit: string;
-  readonly reachableFrom: "devices in the same tailnet";
+  readonly reachableFrom: "devices on the same LAN that trust the local certificate authority";
   readonly user: string;
   readonly wiki: string;
+  readonly windowsTrustCommand: string;
 }
 
 interface LogReport {
@@ -51,18 +52,9 @@ interface LogReport {
 
 const statusTimeoutMilliseconds = 3000;
 
-async function running(app: App): Promise<boolean> {
-  try {
-    await run("tmux", ["-L", socket, "has-session", "-t", app], { cwd: root });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function httpStatus(app: App): Promise<number | null> {
   try {
-    const response = await fetch(`${origins[app]}${readyPaths[app]}`, {
+    const response = await fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
       redirect: "manual",
       signal: AbortSignal.timeout(statusTimeoutMilliseconds),
     });
@@ -90,21 +82,22 @@ async function status(): Promise<StatusReport> {
   };
 }
 
+function windowsTrustCommand(certificate: string): string {
+  return `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`;
+}
+
 async function connection(): Promise<ConnectionReport> {
-  if (host === undefined) {
-    throw new Error("Tailscale is required for access from other computers");
-  }
-  await publish(servicePorts.grafana, true);
-  await publish(servicePorts.mailpit, true);
+  await ensureGateway();
   return {
     admin: origins.admin,
     adminCredentialsFile: fileURLToPath(credentialsFile),
-    event: "local.remote_access",
-    grafana: originFor(servicePorts.grafana),
-    mailpit: originFor(servicePorts.mailpit),
-    reachableFrom: "devices in the same tailnet",
+    event: "local.lan_access",
+    grafana: lanOrigin("grafana"),
+    mailpit: lanOrigin("mailpit"),
+    reachableFrom: "devices on the same LAN that trust the local certificate authority",
     user: origins.user,
     wiki: origins.wiki,
+    windowsTrustCommand: windowsTrustCommand(await certificateAuthorityBase64()),
   };
 }
 
@@ -113,7 +106,8 @@ async function launch(app: App): Promise<void> {
   const logFile = await open(log, "a", privateFileMode);
   await logFile.close();
   await chmod(log, privateFileMode);
-  const command = `exec pnpm --filter @template/${app} run preview >> ${JSON.stringify(log)} 2>&1`;
+  const vitePlus = JSON.stringify(path.join(root, "node_modules/.bin/vp"));
+  const command = `exec ${vitePlus} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
   await run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],
@@ -123,7 +117,7 @@ async function launch(app: App): Promise<void> {
 
 async function start(app: App): Promise<StatusReport> {
   await readCredentials();
-  await publish(ports[app], true);
+  await ensureGateway();
   if (!(await running(app))) {
     await launch(app);
   }
@@ -134,7 +128,6 @@ async function stop(app: App): Promise<StatusReport> {
   if (await running(app)) {
     await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
   }
-  await publish(ports[app], false);
   return status();
 }
 

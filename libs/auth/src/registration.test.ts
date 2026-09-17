@@ -1,6 +1,6 @@
 import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_OK, PASSWORD, signIn } from "./browser-client.ts";
 import { createTestDatabase, getSchemaShape } from "@template/db/testing";
-import { describe, expect, expectTypeOf } from "vitest";
+import { describe, expect, expectTypeOf } from "vite-plus/test";
 import { bootstrapAdmin } from "@template/db/admin";
 import { createAuthTest } from "./auth-test-fixture.ts";
 import { getSchema } from "better-auth/db";

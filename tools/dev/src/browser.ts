@@ -9,6 +9,7 @@ import {
   run,
 } from "./local-environment.ts";
 import type { App } from "./local-environment.ts";
+import { browserLaunchArguments } from "./lan-gateway.ts";
 import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { spawn } from "node:child_process";
@@ -21,15 +22,21 @@ interface BrowserReport {
   readonly session: string;
 }
 
-function sessionArguments(app: App): string[] {
-  return ["--config", fileURLToPath(browserConfig), "--session", `template-local-${app}`];
+async function sessionArguments(app: App): Promise<string[]> {
+  return [
+    "--config",
+    fileURLToPath(browserConfig),
+    ...(await browserLaunchArguments()),
+    "--session",
+    `template-local-${app}`,
+  ];
 }
 
 async function configureAdminCredentials(environment: Readonly<NodeJS.ProcessEnv>): Promise<void> {
   const credentials = await readCredentials();
   const child = spawn(
     "agent-browser",
-    [...sessionArguments("admin"), "batch", "--bail", "--json"],
+    [...(await sessionArguments("admin")), "batch", "--bail", "--json"],
     {
       cwd: root,
       env: environment,
@@ -55,7 +62,7 @@ async function browser(app: App): Promise<BrowserReport> {
   }
   await run(
     "agent-browser",
-    [...sessionArguments(app), "open", `${origins[app]}${readyPaths[app]}`],
+    [...(await sessionArguments(app)), "open", `${origins[app]}${readyPaths[app]}`],
     {
       cwd: root,
       env: environment,
@@ -75,7 +82,7 @@ async function browserCommand(app: App, args: readonly string[]): Promise<void> 
     throw new Error("A browser command is required");
   }
   const socketDirectory = await browserSocketDirectory();
-  const child = spawn("agent-browser", [...sessionArguments(app), ...args], {
+  const child = spawn("agent-browser", [...(await sessionArguments(app)), ...args], {
     cwd: root,
     env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
     stdio: "inherit",

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { lintProbe } from "./lint-harness.ts";
 
 const mockBypasses = [
@@ -35,6 +35,16 @@ const mockBypasses = [
   ["reassignment", 'import { vi } from "vitest"; let tools; tools = vi; tools.fn();'],
   ["jest-alias", 'import { jest as tools } from "@jest/globals"; tools.spyOn({}, "method");'],
   ["direct-spy-import", 'import { fn as replace } from "@vitest/spy"; replace();'],
+  ["vite-plus-import", 'import { vi as tools } from "vite-plus/test"; tools.mock("owned");'],
+  [
+    "vite-plus-namespace",
+    'import * as tools from "vite-plus/test"; const { vi: kit } = tools; kit.fn();',
+  ],
+  ["vite-plus-dynamic", 'const { vi: tools } = await import("vite-plus/test"); tools.fn();'],
+  [
+    "vite-plus-spy-import",
+    'import { fn as replace } from "vite-plus/test/plugins/spy"; replace();',
+  ],
   ["node-test-mock", 'import { mock as tools } from "node:test"; tools.fn();'],
 ] as const;
 

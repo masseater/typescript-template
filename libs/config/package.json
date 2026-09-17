@@ -5,15 +5,12 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
+  "scripts": {},
   "dependencies": {
     "valibot": "1.5.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260916.1",
-    "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "typescript": "7.0.2"
   }
 }

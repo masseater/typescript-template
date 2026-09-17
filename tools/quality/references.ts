@@ -1,4 +1,4 @@
-import type { Context, ESTree, Variable } from "@oxlint/plugins";
+import type { Context, ESTree, Variable } from "vite-plus/lint/plugins";
 
 type Node = ESTree.Node;
 type NodeOf<Type extends Node["type"]> = Extract<Node, { type: Type }>;

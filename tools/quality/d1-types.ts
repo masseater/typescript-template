@@ -1,6 +1,6 @@
 import type { Node, NodeOf, Resolve } from "./references.ts";
 import { origins, propertyName, staticText, variableOf } from "./references.ts";
-import type { Context } from "@oxlint/plugins";
+import type { Context } from "vite-plus/lint/plugins";
 
 type D1Kind = "database" | "session" | "statement" | "orm";
 

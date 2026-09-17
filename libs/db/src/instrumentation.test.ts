@@ -1,5 +1,5 @@
 import type { DatabaseOperation, DatabaseTrace } from "./database-trace.ts";
-import { test as baseTest, expect } from "vitest";
+import { test as baseTest, expect } from "vite-plus/test";
 import { createDb, getProfile, updateProfile } from "./index.ts";
 import { parse, string } from "valibot";
 import type { D1Database } from "@cloudflare/workers-types";

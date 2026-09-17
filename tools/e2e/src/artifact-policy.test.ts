@@ -4,7 +4,7 @@ import {
   assertSeparation,
   secretValues,
 } from "./artifact-policy.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { ArtifactPair } from "./artifact-policy.ts";
 
 function data(): ArtifactPair {

@@ -7,7 +7,7 @@ import {
   expectSignedIn,
   signIn,
 } from "./browser-client.ts";
-import { describe, expect } from "vitest";
+import { describe, expect } from "vite-plus/test";
 import type { Audience } from "@template/db";
 import type { AuthFixture } from "./auth-test-fixture.ts";
 import { bootstrapAdmin } from "@template/db/admin";

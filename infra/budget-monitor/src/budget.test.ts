@@ -1,5 +1,5 @@
 import { HttpResponse, http } from "msw";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
 import type { UsageSnapshot } from "./billing.ts";
 import { fetchUsage } from "./billing.ts";

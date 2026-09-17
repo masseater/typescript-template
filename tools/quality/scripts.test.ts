@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -63,51 +63,49 @@ function toolReferences({ manifest, name }: WorkspaceManifest, tools: readonly s
     .map(([key]) => `${name}: ${key}`);
 }
 
-const ambiguousCommands = [
-  "pnpm --filter @template/dev setup",
-  "pnpm --filter @template/local config",
-  "pnpm --filter @template/user build",
-  "pnpm --filter=@template/dev setup",
-  "pnpm --filter-prod=@template/dev setup",
-  "pnpm -F @template/dev setup",
-  "pnpm -F@template/dev setup",
-  'pnpm --filter "@template/dev" setup',
-  "pnpm --filter '@template/*' setup",
-  "pnpm --filter @template/dev --if-present setup",
-  "pnpm --dir . --filter @template/dev setup",
-  "corepack pnpm --filter @template/dev setup",
-  "env CI=true pnpm --filter @template/dev setup",
-  "pnpm --filter @template/dev run start && pnpm --filter @template/local config",
-  "pnpm --filter @template/dev setup -- run",
-  "pnpm --filter @template/dev setup; pnpm run test",
-  "pnpm --filter @template/dev setup\npnpm run test",
-  "pnpm --filter @template/dev setup || pnpm --filter @template/dev run start",
+const packageManagerCommands = [
+  "pnpm --filter @template/dev run setup",
+  "pnpm -r --if-present build",
+  "pnpm run test",
+  "pnpm check",
+  "pnpm exec knip",
+  "pnpm dlx wrangler deploy",
+  "pnpx wrangler deploy",
+  "npm run build",
+  "npx knip",
+  "yarn build",
+  "bunx vp build",
+  "./node_modules/.bin/pnpm run build",
+  "pnpm.cmd run build",
+  "corepack pnpm --filter @template/dev run setup",
+  "env CI=true pnpm run test",
+  "exec pnpm run preview",
+  "vp run build && pnpm run test",
+  "vp run build; npm test",
+  "vp run build\nyarn test",
+  "vp run build || npx knip",
 ];
 
-const explicitCommands = [
-  "pnpm --filter @template/dev run setup",
-  "pnpm --filter @template/local run config",
-  "pnpm --filter=@template/user run build",
-  "pnpm -F @template/dev run setup",
-  "pnpm --filter @template/dev --resume-from @template/dev run setup",
-  "pnpm --filter '@template/*' --if-present run build",
-  "pnpm --filter @template/dev run setup && pnpm --filter @template/local run config",
-  "pnpm --filter @template/dev run setup -- --filter anything",
-  "pnpm run test",
-  "pnpm -r --if-present build",
+const vitePlusCommands = [
+  "vp run --filter @template/dev setup",
+  "vp run -r build",
+  "vp exec knip",
+  "vp dlx wrangler deploy",
+  "CI=true vp run test",
   "node tools/dev/src/cli.ts",
-  "echo 'pnpm --filter @template/dev setup'",
+  "echo 'pnpm run test'",
+  "vp run build -- --reporter pnpm",
 ];
 
 describe("workspace script conventions", () => {
-  it.for(ambiguousCommands)("rejects pnpm builtin ambiguity: %s", (command) => {
+  it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
     expect.assertions(1);
     expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([
-      `probe: pnpm --filter に続く workspace script は必ず run を明示してください: ${command}`,
+      `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
     ]);
   });
 
-  it.for(explicitCommands)("allows explicit workspace script execution: %s", (command) => {
+  it.for(vitePlusCommands)("allows Vite+ entry points: %s", (command) => {
     expect.assertions(1);
     expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([]);
   });
@@ -118,12 +116,12 @@ describe("workspace script conventions", () => {
       "Script setup must be a string",
     );
     expect(() => scriptViolations({ scripts: [] })).toThrow("scripts must be an object");
-    expect(() => scriptViolations({ scripts: { setup: "pnpm --filter 'broken" } })).toThrow(
+    expect(() => scriptViolations({ scripts: { setup: "vp run 'broken" } })).toThrow(
       "unfinished shell quote",
     );
   });
 
-  it("all repository workspace manifests use explicit run after pnpm filters", async () => {
+  it("all repository workspace manifests run scripts through Vite+", async () => {
     expect.assertions(1);
     const directories = await workspaceDirectories(["apps", "libs", "infra", "tools"]);
     const manifests = await manifestsIn([".", ...directories]);

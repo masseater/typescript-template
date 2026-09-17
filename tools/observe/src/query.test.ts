@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { maxQueryLimit, minutesPerDay, queryPath } from "./query.ts";
 import type { QueryInput } from "./query.ts";
 

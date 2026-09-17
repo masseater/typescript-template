@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
 
 const now = 1_800_000_000_000;

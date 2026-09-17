@@ -1,5 +1,5 @@
 import { apiResponse, readJson, secureResponse } from "./http.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { number, parse } from "valibot";
 
 const origin = "http://localhost:3001";

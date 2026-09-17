@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
-import { text } from "node:stream/consumers";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
@@ -35,42 +34,6 @@ const actions: Readonly<Record<string, readonly string[]>> = {
   status: ["ps", "--format", "json"],
   up: ["up", "-d", "--wait"],
 };
-
-async function tailscaleStatus(): Promise<string> {
-  const child = spawn("tailscale", ["status", "--json"], { stdio: ["ignore", "pipe", "ignore"] });
-  try {
-    const [output] = await Promise.all([text(child.stdout), once(child, "close")]);
-    return output;
-  } catch {
-    return "";
-  }
-}
-
-function dnsName(status: unknown): string {
-  if (typeof status !== "object" || status === null || !("Self" in status)) {
-    return "";
-  }
-  const { Self: self } = status;
-  if (
-    typeof self !== "object" ||
-    self === null ||
-    !("DNSName" in self) ||
-    typeof self.DNSName !== "string"
-  ) {
-    return "";
-  }
-  return self.DNSName.replace(/\.$/u, "");
-}
-
-async function tailnetHost(): Promise<string> {
-  const output = await tailscaleStatus();
-  try {
-    const name = dnsName(JSON.parse(output));
-    return /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/u.test(name) ? name : "localhost";
-  } catch {
-    return "localhost";
-  }
-}
 
 async function assertOwnerOnlyCredentials(): Promise<void> {
   const metadata = await lstat(envFile);
@@ -134,11 +97,7 @@ async function runCompose(args: readonly string[]): Promise<void> {
       composeFile,
       ...args,
     ],
-    {
-      cwd: root,
-      env: { ...process.env, MAILPIT_TAILNET_HOST: await tailnetHost() },
-      stdio: "inherit",
-    },
+    { cwd: root, stdio: "inherit" },
   );
   const exitArguments: unknown[] = await once(child, "exit");
   const [code] = exitArguments;

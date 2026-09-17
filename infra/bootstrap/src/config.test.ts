@@ -5,7 +5,7 @@ import {
   parseCredentials,
   selectObjectWritePermission,
 } from "./config.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const HEX_32_LENGTH = 32;
 const HEX_64_LENGTH = 64;

@@ -1,5 +1,5 @@
 import { chmod, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { prepareStateDirectory, readCredentials, writeCredentials } from "./credentials.ts";
 import path from "node:path";
 import { tmpdir } from "node:os";

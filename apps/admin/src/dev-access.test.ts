@@ -1,4 +1,4 @@
-import { test as baseTest, describe, expect } from "vitest";
+import { test as baseTest, describe, expect } from "vite-plus/test";
 import type { DevServer } from "#dev-access-fixture";
 import type { HttpCall } from "#dev-access-client";
 import { fetchPath } from "#dev-access-client";

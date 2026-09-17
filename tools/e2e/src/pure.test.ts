@@ -1,5 +1,5 @@
 import { decodeBrowserBatch, object, safeFailure, shellQuote } from "./support.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { totp } from "./totp.ts";
 import { verificationLink } from "./mail.ts";
 

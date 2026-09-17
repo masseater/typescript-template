@@ -112,8 +112,7 @@ interface WikiConfig {
 function isLocalDevelopmentOrigin(value: string): boolean {
   const { hostname, protocol } = new URL(value);
   return (
-    loopbackHosts.has(hostname) ||
-    (protocol === "https:" && /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/u.test(hostname))
+    loopbackHosts.has(hostname) || (protocol === "https:" && /^[a-z0-9-]+\.local$/u.test(hostname))
   );
 }
 

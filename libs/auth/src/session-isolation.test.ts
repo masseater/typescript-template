@@ -1,7 +1,7 @@
 import type { BrowserClient, TotpEnrollment } from "./browser-client.ts";
 import { HTTP_FORBIDDEN, HTTP_OK, enableTotp, signIn } from "./browser-client.ts";
 import { bootstrapAdmin, setUserRole } from "@template/db/admin";
-import { describe, expect } from "vitest";
+import { describe, expect } from "vite-plus/test";
 import type { AuthFixture } from "./auth-test-fixture.ts";
 import { createAuthTest } from "./auth-test-fixture.ts";
 import { createTestDatabase } from "@template/db/testing";

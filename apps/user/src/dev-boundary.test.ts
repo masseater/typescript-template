@@ -1,4 +1,4 @@
-import { test as baseTest, describe, expect } from "vitest";
+import { test as baseTest, describe, expect } from "vite-plus/test";
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { createServer } from "vite-plus";

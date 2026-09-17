@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { ensure, inStage, object, string } from "./support.ts";
 import { verifyBrowserSignals, verifyCorrelation, verifyJourneyTelemetry } from "./telemetry.ts";
 import type { AdminJourney } from "./journey-admin.ts";

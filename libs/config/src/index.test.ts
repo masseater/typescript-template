@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 
 const local = {
@@ -10,20 +10,17 @@ const local = {
 };
 
 describe("local development origins", () => {
-  it("treats only loopback and HTTPS tailnet hosts as local development", () => {
+  it("treats only loopback and HTTPS LAN hosts as local development", () => {
     expect.hasAssertions();
-    const tailnet = readEnvironment({
-      ...local,
-      APP_ORIGIN: "https://mac-mini.tail2ee823.ts.net:3001",
-    });
-    expect({ local: tailnet.local }).toStrictEqual({ local: true });
-    expect(() =>
-      readEnvironment({ ...local, APP_ORIGIN: "http://mac-mini.tail2ee823.ts.net:3001" }),
-    ).toThrow("HTTPS is required outside localhost");
+    const lan = readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local" });
+    expect({ local: lan.local }).toStrictEqual({ local: true });
+    expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://template-user.local" })).toThrow(
+      "HTTPS is required outside localhost",
+    );
     const publicOrigins = [
-      "https://ts.net",
-      "https://example.ts.net",
-      "https://mac-mini.tail2ee823.ts.net.example.test",
+      "https://local",
+      "https://user.template.local.example.test",
+      "https://mac-mini.tail2ee823.ts.net",
       "https://app.example.test",
     ];
     expect(publicOrigins.filter((origin) => isLocalDevelopmentOrigin(origin))).toStrictEqual([]);

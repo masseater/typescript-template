@@ -1,16 +1,6 @@
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-import {
-  literal,
-  minLength,
-  object,
-  parse,
-  picklist,
-  pipe,
-  safeParse,
-  strictObject,
-  string,
-} from "valibot";
+import { literal, minLength, parse, picklist, pipe, strictObject, string } from "valibot";
 import type { InferOutput } from "valibot";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -37,70 +27,43 @@ const credentialSchema = strictObject({
   authSecret: pipe(string(), minLength(authSecretMinimumLength)),
 });
 const ports = { admin: 3002, user: 3001, wiki: 3003 };
-const servicePorts = { grafana: 3100, mailpit: 8025 };
+const routes = { ...ports, grafana: 3100, mailpit: 8025 };
+const routeNames = ["user", "admin", "wiki", "grafana", "mailpit"] as const;
 const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
-const tailscaleTimeoutMilliseconds = 20_000;
-const tailnetSchema = object({
-  BackendState: string(),
-  Self: object({ DNSName: string() }),
-});
 
 type App = (typeof apps)[number];
+type RouteName = (typeof routeNames)[number];
 type Credentials = InferOutput<typeof credentialSchema>;
 
-async function tailscaleStatus(): Promise<string> {
-  try {
-    const { stdout } = await run("tailscale", ["status", "--json"], { cwd: root });
-    return stdout;
-  } catch {
-    return "";
-  }
+function lanHostname(name: RouteName): string {
+  return `template-${name}.local`;
 }
 
-async function tailnetHost(): Promise<string | undefined> {
-  const output = await tailscaleStatus();
-  if (output === "") {
-    return undefined;
-  }
-  const parsed = safeParse(tailnetSchema, JSON.parse(output) as unknown);
-  if (!parsed.success || parsed.output.BackendState !== "Running") {
-    return undefined;
-  }
-  const tailnetName = parsed.output.Self.DNSName.replace(/\.$/u, "");
-  return /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/u.test(tailnetName) ? tailnetName : undefined;
-}
-
-const host = await tailnetHost();
-
-function originFor(port: number): string {
-  return host === undefined ? `http://localhost:${port}` : `https://${host}:${port}`;
+function lanOrigin(name: RouteName): string {
+  return `https://${lanHostname(name)}`;
 }
 
 const origins = {
-  admin: originFor(ports.admin),
-  user: originFor(ports.user),
-  wiki: originFor(ports.wiki),
+  admin: lanOrigin("admin"),
+  user: lanOrigin("user"),
+  wiki: lanOrigin("wiki"),
 };
 const browserSettings = `${JSON.stringify({
-  allowedDomains: ["localhost", "127.0.0.1", ...(host === undefined ? [] : [host])],
+  allowedDomains: ["localhost", "127.0.0.1", ...routeNames.map((name) => lanHostname(name))],
   restoreSave: "never",
 })}\n`;
 
-function logFileUrl(app: App): URL {
-  return new URL(`logs/${app}.log`, local);
+function logFileUrl(name: string): URL {
+  return new URL(`logs/${name}.log`, local);
 }
 
-async function publish(port: number, enabled: boolean): Promise<void> {
-  if (host === undefined) {
-    return;
+async function running(session: string): Promise<boolean> {
+  try {
+    await run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root });
+    return true;
+  } catch {
+    return false;
   }
-  await run(
-    "tailscale",
-    enabled
-      ? ["serve", "--bg", `--https=${port}`, `http://127.0.0.1:${port}`]
-      : ["serve", `--https=${port}`, "off"],
-    { cwd: root, timeout: tailscaleTimeoutMilliseconds },
-  );
 }
 
 async function readCredentials(): Promise<Credentials> {
@@ -131,19 +94,19 @@ export {
   browserConfig,
   browserSocketDirectory,
   credentialsFile,
-  host,
+  lanOrigin,
   local,
   logFileUrl,
-  originFor,
   origins,
   ports,
-  publish,
   readCredentials,
   readyPaths,
   refreshBrowserConfig,
   root,
+  routeNames,
+  routes,
   run,
-  servicePorts,
+  running,
   socket,
 };
 export type { App, Credentials };

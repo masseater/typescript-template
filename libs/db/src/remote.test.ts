@@ -1,6 +1,6 @@
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 import { createD1Executor, createEmptyTestDatabase } from "./testing.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { session, user } from "./schema.ts";
 import type { D1Database } from "@cloudflare/workers-types";
 import type { Database } from "./index.ts";
@@ -13,6 +13,7 @@ import { parseRemoteInput } from "./remote-input.ts";
 const ACCOUNT_ID_LENGTH = 32;
 const MIGRATION_HASH_LENGTH = 64;
 const SESSION_LIFETIME_MS = 60_000;
+const REAL_D1_TIMEOUT_MS = 60_000;
 
 const target = {
   accountId: "a".repeat(ACCOUNT_ID_LENGTH),
@@ -131,7 +132,7 @@ describe("remote input", () => {
   });
 });
 
-describe("remote migrations on real D1", () => {
+describe("remote migrations on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => {
   test("applies real D1 migrations once", async ({ remote }) => {
     expect.hasAssertions();
     await expect(migrateDatabase(remote.executor, remote.migrations)).resolves.toBe(
@@ -164,7 +165,7 @@ describe("remote migrations on real D1", () => {
   });
 });
 
-describe("remote administrator bootstrap on real D1", () => {
+describe("remote administrator bootstrap on real D1", { timeout: REAL_D1_TIMEOUT_MS }, () => {
   test("requires a verified existing user", async ({ remote }) => {
     expect.hasAssertions();
     await prepareBootstrapCandidates(remote.executor, remote.database);

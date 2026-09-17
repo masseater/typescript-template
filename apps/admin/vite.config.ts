@@ -20,6 +20,6 @@ export default defineConfig(({ command, isPreview }) => ({
     tanstackStart(),
     react(),
   ],
-  preview: { allowedHosts: [".ts.net"], host: "127.0.0.1", port: 3002, strictPort: true },
-  server: { allowedHosts: [".ts.net"], host: "127.0.0.1", port: 3002, strictPort: true },
+  preview: { allowedHosts: [".local"], host: "127.0.0.1", port: 3002, strictPort: true },
+  server: { allowedHosts: [".local"], host: "127.0.0.1", port: 3002, strictPort: true },
 }));

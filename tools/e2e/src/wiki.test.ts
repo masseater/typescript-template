@@ -1,5 +1,5 @@
 import { currentSecond, verifyBrowserSignals, verifyCorrelation } from "./telemetry.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { ensure, inStage, object, string } from "./support.ts";
 import { httpStatus, requestTimeout } from "./http.ts";
 import type { BrowserSession } from "./browser.ts";
@@ -157,7 +157,7 @@ describe("public wiki Worker", () => {
       await inStage("application-isolation", verifyApplicationIsolation, context);
       await inStage("search", verifySearch, context);
       const deployPage = await inStage("mcp", verifyMcpTools, context);
-      expect(deployPage).toContain("pnpm infra:deploy:wiki");
+      expect(deployPage).toContain("vp run infra:deploy:wiki");
       await inStage("browser-telemetry", verifyWikiBrowserSignals, context);
     } finally {
       await stack.cleanup();

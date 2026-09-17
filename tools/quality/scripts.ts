@@ -6,12 +6,6 @@ interface ShellWords {
   readonly word: string;
 }
 
-interface PnpmArguments {
-  readonly command: string | undefined;
-  readonly filtered: boolean;
-  readonly uncertainOption: boolean;
-}
-
 function closeWord(state: ShellWords): ShellWords {
   return state.word === ""
     ? state
@@ -75,95 +69,17 @@ function words(command: string): readonly (readonly string[])[] {
   return closeSegment(state).segments;
 }
 
-const valueOptions = new Set([
-  "--filter",
-  "--filter-prod",
-  "-F",
-  "--dir",
-  "-C",
-  "--workspace-concurrency",
-  "--reporter",
-  "--resume-from",
-]);
-const booleanOptions = new Set([
-  "-r",
-  "--recursive",
-  "-w",
-  "--workspace-root",
-  "--if-present",
-  "--parallel",
-  "--stream",
-  "--aggregate-output",
-  "--silent",
-  "-s",
-  "--fail-if-no-match",
-  "--no-bail",
-  "--no-sort",
-  "--reverse",
-]);
-const shortFilter = "-F";
+const packageManagers = new Set(["pnpm", "pnpx", "npm", "npx", "yarn", "yarnpkg", "bun", "bunx"]);
+const launchers = new Set(["exec", "command", "env", "corepack"]);
 
-function isFilter(value: string): boolean {
-  return (
-    value === "--filter" ||
-    value === "--filter-prod" ||
-    value === shortFilter ||
-    value.startsWith("--filter=") ||
-    value.startsWith("--filter-prod=") ||
-    value.startsWith("-F=") ||
-    (value.startsWith(shortFilter) && value.length > shortFilter.length)
+function callsPackageManager(tokens: readonly string[]): boolean {
+  const command = tokens.find(
+    (word) => !launchers.has(word) && !/^[A-Za-z_][A-Za-z0-9_]*=/u.test(word),
   );
-}
-
-function withOption(summary: PnpmArguments, option: string): PnpmArguments {
-  if (valueOptions.has(option)) {
-    return summary;
-  }
-  const uncertain = !booleanOptions.has(option) && !isFilter(option) && !option.includes("=");
-  return { ...summary, uncertainOption: summary.uncertainOption || uncertain };
-}
-
-function inspectArguments(args: readonly string[], summary: PnpmArguments): PnpmArguments {
-  const [argument, ...rest] = args;
-  if (argument === undefined || argument === "--") {
-    return summary;
-  }
-  const next = { ...summary, filtered: summary.filtered || isFilter(argument) };
-  if (argument.startsWith("-")) {
-    return inspectArguments(
-      valueOptions.has(argument) ? rest.slice(1) : rest,
-      withOption(next, argument),
-    );
-  }
-  if (next.command !== undefined) {
-    return inspectArguments(rest, next);
-  }
-  const withCommand = { ...next, command: argument };
-  return argument === "run" ? withCommand : inspectArguments(rest, withCommand);
-}
-
-function violatesRun(tokens: readonly string[]): boolean {
-  const index = tokens.findIndex((word) => /(?:^|\/)pnpm(?:\.cmd)?$/u.test(word));
-  if (index === -1) {
+  if (command === undefined) {
     return false;
   }
-  if (
-    tokens
-      .slice(0, index)
-      .some(
-        (word) =>
-          !["exec", "command", "env", "corepack"].includes(word) &&
-          !/^[A-Za-z_][A-Za-z0-9_]*=/u.test(word),
-      )
-  ) {
-    return false;
-  }
-  const { command, filtered, uncertainOption } = inspectArguments(tokens.slice(index + 1), {
-    command: undefined,
-    filtered: false,
-    uncertainOption: false,
-  });
-  return filtered && (command !== "run" || uncertainOption);
+  return packageManagers.has(command.replace(/^.*\//u, "").replace(/\.cmd$/u, ""));
 }
 
 export function scriptViolations(manifest: unknown): string[] {
@@ -178,8 +94,10 @@ export function scriptViolations(manifest: unknown): string[] {
     if (typeof command !== "string") {
       throw new TypeError(`Script ${name} must be a string`);
     }
-    return words(command).some((tokens) => violatesRun(tokens))
-      ? [`${name}: pnpm --filter に続く workspace script は必ず run を明示してください: ${command}`]
+    return words(command).some((tokens) => callsPackageManager(tokens))
+      ? [
+          `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
+        ]
       : [];
   });
 }
