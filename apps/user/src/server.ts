@@ -1,14 +1,15 @@
-import handler from "@tanstack/react-start/server-entry";
+import { dispatchUserApi, userApi } from "./api.ts";
 import { createAppWorker } from "@template/runtime/app";
 import { env } from "cloudflare:workers";
-import { dispatchUserApi, userApi } from "./api.ts";
+import handler from "@tanstack/react-start/server-entry";
 import { routes } from "./telemetry-routes.ts";
 
+// oxlint-disable-next-line import/no-default-export
 export default createAppWorker({
-  env,
-  audience: "user",
-  routes,
-  handler,
   api: userApi,
+  audience: "user",
   dispatch: dispatchUserApi,
+  env,
+  handler,
+  routes,
 });

@@ -1,74 +1,99 @@
-import { applications, roles } from "@template/config";
 import { Effect, Schema } from "effect";
+import { applications, roles } from "@template/config";
+
+const maximumIdentifierLength = 256;
+const maximumNameLength = 100;
+const maximumProfileLength = 2000;
+const maximumTokenLength = 4096;
+const defaultPageSize = 50;
+const maximumPageSize = 100;
 
 const Role = Schema.Literals(roles);
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, 256));
+const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
-export const ErrorBody = Schema.Struct({ error: Schema.String });
+const ErrorBody = Schema.Struct({ error: Schema.String });
 
-export const SessionView = Schema.Struct({
+const SessionView = Schema.Struct({
+  strong: Schema.Boolean,
   user: Schema.Struct({
+    email: Schema.String,
     id: Schema.String,
     name: Schema.String,
-    email: Schema.String,
     role: Role,
     twoFactorEnabled: Schema.Boolean,
   }),
-  strong: Schema.Boolean,
 });
 
-export const ProfileView = Schema.Struct({
+const ProfileView = Schema.Struct({
+  email: Schema.String,
   id: Schema.String,
   name: Schema.String,
-  email: Schema.String,
   profile: Schema.String,
 });
 
-export const ProfileUpdate = Schema.Struct({
-  name: Schema.Trim.check(Schema.isLengthBetween(1, 100)),
-  profile: Schema.String.check(Schema.isMaxLength(2000)),
+const ProfileUpdate = Schema.Struct({
+  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
+  profile: Schema.String.check(Schema.isMaxLength(maximumProfileLength)),
 });
 
-export const EmailVerificationRequest = Schema.Struct({
-  token: Schema.String.check(Schema.isLengthBetween(1, 4096)),
+const EmailVerificationRequest = Schema.Struct({
+  token: Schema.String.check(Schema.isLengthBetween(1, maximumTokenLength)),
 });
 
-export const EmailVerified = Schema.Struct({ verified: Schema.Literal(true) });
+const EmailVerified = Schema.Struct({ verified: Schema.Literal(true) });
 
-const pageNumber = (fallback: number, minimum: number, maximum: number) =>
-  Schema.NumberFromString.pipe(
-    Schema.check(Schema.isInt(), Schema.isBetween({ minimum, maximum })),
-    Schema.withDecodingDefaultKey(Effect.succeed(String(fallback))),
-  );
+function pageNumber(
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): Schema.withDecodingDefaultKey<Schema.NumberFromString> {
+  const range = Schema.isBetween({ maximum, minimum });
+  const bounded = Schema.NumberFromString.check(Schema.isInt(), range);
+  const fallbackText = Effect.succeed(String(fallback));
+  return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
+}
 
-export const UserListQuery = Schema.Struct({
-  limit: pageNumber(50, 1, 100),
+const UserListQuery = Schema.Struct({
+  limit: pageNumber(defaultPageSize, 1, maximumPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
 });
 
-export const UserList = Schema.Struct({
-  users: Schema.Array(
-    Schema.Struct({
-      id: Schema.String,
-      name: Schema.String,
-      email: Schema.String,
-      role: Role,
-      emailVerified: Schema.Boolean,
-    }),
-  ),
-  total: Schema.Finite,
+const UserSummary = Schema.Struct({
+  email: Schema.String,
+  emailVerified: Schema.Boolean,
+  id: Schema.String,
+  name: Schema.String,
+  role: Role,
 });
 
-export const RoleChange = Schema.Struct({ id: Identifier, role: Role });
+const UserList = Schema.Struct({ total: Schema.Finite, users: Schema.Array(UserSummary) });
 
-export const RoleChanged = Schema.Struct({ id: Schema.String, role: Role });
+const RoleChange = Schema.Struct({ id: Identifier, role: Role });
 
-export const UserDeletion = Schema.Struct({ id: Identifier });
+const RoleChanged = Schema.Struct({ id: Schema.String, role: Role });
 
-export const UserDeleted = Schema.Struct({ id: Schema.String });
+const UserDeletion = Schema.Struct({ id: Identifier });
 
-export const HealthView = Schema.Struct({
+const UserDeleted = Schema.Struct({ id: Schema.String });
+
+const HealthView = Schema.Struct({
   ok: Schema.Literal(true),
-  service: Schema.Literals(applications),
   release: Schema.String,
+  service: Schema.Literals(applications),
 });
+
+export {
+  EmailVerificationRequest,
+  EmailVerified,
+  ErrorBody,
+  HealthView,
+  ProfileUpdate,
+  ProfileView,
+  RoleChange,
+  RoleChanged,
+  SessionView,
+  UserDeleted,
+  UserDeletion,
+  UserList,
+  UserListQuery,
+};

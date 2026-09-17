@@ -1,40 +1,43 @@
-import { NodeRuntime } from "@effect/platform-node";
-import type { D1Database } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
-import { getPlatformProxy } from "wrangler";
-import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import { EmailAddress } from "./bootstrap-statement.ts";
-import { Database } from "./index.ts";
+import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
 import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
+import type { D1Database } from "@cloudflare/workers-types";
+import { Database } from "./database.ts";
+import { NodeRuntime } from "@effect/platform-node";
+import { getPlatformProxy } from "wrangler";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>
     getPlatformProxy<{ DB: D1Database }>({
-      remoteBindings: false,
-      envFiles: [],
       configPath: await writeLocalDatabaseConfig(),
+      envFiles: [],
       persist: { path: `${localDatabasePersistence}/v3` },
+      remoteBindings: false,
     }),
   ),
-  (proxy) => Effect.promise(() => proxy.dispose()),
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
-const report = (error: string) =>
-  Effect.sync(() => {
-    console.error(JSON.stringify({ action: "admin_bootstrap", success: false, error }));
+function report(error: string): Effect.Effect<void> {
+  return Effect.sync(() => {
+    // oxlint-disable-next-line no-console
+    console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false }));
     process.exitCode = 1;
   });
+}
 
 NodeRuntime.runMain(
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
     const { env } = yield* platform;
     const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
+    // oxlint-disable-next-line no-console
     console.log(
       JSON.stringify({
         action: "admin_bootstrap",
-        userId: administrator.id,
         role: administrator.role,
+        userId: administrator.id,
       }),
     );
   }).pipe(

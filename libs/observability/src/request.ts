@@ -1,6 +1,14 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
+import { httpStatus } from "./http-status.ts";
 
-export class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestRejected", {
+interface JsonRequest {
+  readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
+  readonly headers: Readonly<Pick<Headers, "get">>;
+}
+
+const defaultBodyLimit = 16_384;
+
+class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestRejected", {
   reason: Schema.Literals([
     "origin_denied",
     "json_required",
@@ -10,51 +18,78 @@ export class RequestRejected extends Schema.TaggedError<RequestRejected>()("Requ
   ]),
 }) {}
 
-export const rejectionStatus: Record<RequestRejected["reason"], number> = {
-  origin_denied: 403,
-  json_required: 415,
-  body_required: 400,
-  body_too_large: 413,
-  invalid_json: 400,
+const rejectionStatus: Readonly<Record<RequestRejected["reason"], number>> = {
+  body_required: httpStatus.badRequest,
+  body_too_large: httpStatus.payloadTooLarge,
+  invalid_json: httpStatus.badRequest,
+  json_required: httpStatus.unsupportedMediaType,
+  origin_denied: httpStatus.forbidden,
 };
 
-const reject = (reason: RequestRejected["reason"]) => new RequestRejected({ reason });
-
-const readText = (body: ReadableStream<Uint8Array>, limit: number) =>
-  Effect.promise(async () => {
-    const reader = body.getReader();
-    const decoder = new TextDecoder();
-    let text = "";
-    let length = 0;
-    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
-      length += chunk.value.byteLength;
-      if (length > limit) {
-        await reader.cancel();
-        return undefined;
-      }
-      text += decoder.decode(chunk.value, { stream: true });
-    }
-    return text + decoder.decode();
-  });
-
-export const readJson = Effect.fn("readJson")(function* (
-  request: Request,
+function headerRejection(
+  request: JsonRequest,
   expectedOrigin: string,
-  limit: number = 16_384,
-) {
+  limit: number,
+): Option.Option<RequestRejected["reason"]> {
   if (
     request.headers.get("origin") !== expectedOrigin ||
     request.headers.get("sec-fetch-site") === "cross-site"
-  )
-    return yield* reject("origin_denied");
-  if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-    return yield* reject("json_required");
-  if (Number(request.headers.get("content-length")) > limit) return yield* reject("body_too_large");
-  if (request.body === null) return yield* reject("body_required");
-  const text = yield* readText(request.body, limit);
-  if (text === undefined) return yield* reject("body_too_large");
-  return yield* Effect.try({
-    try: (): unknown => JSON.parse(text),
-    catch: () => reject("invalid_json"),
-  });
+  ) {
+    return Option.some("origin_denied");
+  }
+  if (request.headers.get("content-type")?.split(";")[0] !== "application/json") {
+    return Option.some("json_required");
+  }
+  return Number(request.headers.get("content-length")) > limit
+    ? Option.some("body_too_large")
+    : Option.none();
+}
+
+async function readBoundedText(
+  body: Readonly<AsyncIterable<Uint8Array>>,
+  limit: number,
+): Promise<string | undefined> {
+  const decoder = new TextDecoder();
+  let length = 0;
+  let text = "";
+  for await (const chunk of body) {
+    length += chunk.byteLength;
+    if (length > limit) {
+      return undefined;
+    }
+    text += decoder.decode(chunk, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
+const parseJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
+
+const readBody = Effect.fn("readBody")(function* readBody(
+  body: Readonly<AsyncIterable<Uint8Array>>,
+  limit: number,
+) {
+  const text = yield* Effect.promise(async () => readBoundedText(body, limit));
+  if (text === undefined) {
+    return yield* new RequestRejected({ reason: "body_too_large" });
+  }
+  return yield* parseJson(text).pipe(
+    Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
+  );
 });
+
+function readJson(
+  request: JsonRequest,
+  expectedOrigin: string,
+  limit = defaultBodyLimit,
+): Effect.Effect<unknown, RequestRejected> {
+  const rejection = headerRejection(request, expectedOrigin, limit);
+  if (Option.isSome(rejection)) {
+    return Effect.fail(new RequestRejected({ reason: rejection.value }));
+  }
+  return request.body === null
+    ? Effect.fail(new RequestRejected({ reason: "body_required" }))
+    : readBody(request.body, limit);
+}
+
+export { RequestRejected, readJson, rejectionStatus };
+export type { JsonRequest };

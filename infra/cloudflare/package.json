@@ -24,7 +24,8 @@
     "@template/error-monitor": "workspace:*",
     "@template/health-monitor": "workspace:*",
     "@template/infra-bootstrap": "workspace:*",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "es-toolkit": "1.52.0"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

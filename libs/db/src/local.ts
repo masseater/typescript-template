@@ -1,30 +1,32 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 import { workerCompatibility } from "@template/config/worker";
 
-export const localDatabase = {
+const OWNER_ONLY_DIRECTORY_MODE = 0o700;
+const OWNER_ONLY_FILE_MODE = 0o600;
+
+const localDatabase = {
   binding: "DB",
-  database_name: "template-shared",
   database_id: "00000000-0000-0000-0000-000000000001",
-  migrations_dir: fileURLToPath(new URL("../migrations", import.meta.url)),
+  database_name: "template-shared",
+  migrations_dir: path.join(import.meta.dirname, "../migrations"),
 };
 
-export const localDatabasePersistence = fileURLToPath(
-  new URL("../../../.local/d1", import.meta.url),
-);
+const localDatabasePersistence = path.join(import.meta.dirname, "../../../.local/d1");
 
-export async function writeLocalDatabaseConfig() {
-  await mkdir(localDatabasePersistence, { recursive: true, mode: 0o700 });
-  const file = `${localDatabasePersistence}/wrangler.generated.json`;
-  await writeFile(
-    file,
-    `${JSON.stringify({
-      name: "template-local-database",
-      compatibility_date: workerCompatibility.date,
-      compatibility_flags: workerCompatibility.flags,
-      d1_databases: [localDatabase],
-    })}\n`,
-    { mode: 0o600 },
-  );
+async function writeLocalDatabaseConfig(): Promise<string> {
+  await mkdir(localDatabasePersistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
+  const file = path.join(localDatabasePersistence, "wrangler.generated.json");
+  const config = {
+    compatibility_date: workerCompatibility.date,
+    compatibility_flags: workerCompatibility.flags,
+    d1_databases: [localDatabase],
+    name: "template-local-database",
+  };
+  await writeFile(file, `${JSON.stringify(config)}\n`, { mode: OWNER_ONLY_FILE_MODE });
   return file;
 }
+
+export { localDatabase, localDatabasePersistence, writeLocalDatabaseConfig };

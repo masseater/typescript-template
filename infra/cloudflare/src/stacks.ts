@@ -1,63 +1,100 @@
-import type { Application } from "@template/config";
 import { Effect, Schema } from "effect";
+import type { Application } from "@template/config";
 
 const application = ["settings", "database"] as const;
 const stackDependencies = {
-  settings: [],
-  database: ["settings"],
-  tokens: ["settings"],
+  admin: application,
   "budget-monitor": ["settings", "tokens"],
+  database: ["settings"],
   "error-monitor": ["settings", "tokens"],
   "health-monitor": ["settings"],
+  settings: [],
+  tokens: ["settings"],
   user: application,
-  admin: application,
   wiki: application,
-} as const satisfies Record<string, readonly string[]> & Record<Application, typeof application>;
+} as const satisfies Readonly<Record<string, readonly string[]>> &
+  Readonly<Record<Application, typeof application>>;
+const stackOrder = [
+  "settings",
+  "database",
+  "tokens",
+  "budget-monitor",
+  "error-monitor",
+  "health-monitor",
+  "user",
+  "admin",
+  "wiki",
+] as const satisfies readonly (keyof typeof stackDependencies)[];
 
-export type StackName = keyof typeof stackDependencies;
-export type DependencyOf<T extends StackName> = (typeof stackDependencies)[T][number];
+type StackName = keyof typeof stackDependencies;
+type DependencyOf<Consumer extends StackName> = (typeof stackDependencies)[Consumer][number];
 
-export interface StackOutputs {
-  settings: "applicationSettings" | "authSecret";
-  database: "databaseId";
-  tokens: "billingReadToken" | "observabilityQueryToken";
+interface StackOutputs {
+  readonly database: "databaseId";
+  readonly settings: "applicationSettings" | "authSecret";
+  readonly tokens: "billingReadToken" | "observabilityQueryToken";
 }
 
-export class StackFailure extends Schema.TaggedError<StackFailure>()("StackFailure", {
+interface PlannedStack {
+  readonly dependencies: readonly StackName[];
+  readonly stack: StackName;
+}
+
+class StackFailure extends Schema.TaggedError<StackFailure>()("StackFailure", {
   code: Schema.Literal("stack_dependency_cycle"),
 }) {}
 
-function isStackName(value: unknown): value is StackName {
-  return typeof value === "string" && Object.hasOwn(stackDependencies, value);
-}
-
-export const stackNames = Object.keys(stackDependencies).filter(isStackName);
-
-export function projectName(stack: StackName): string {
+function projectName(stack: StackName): string {
   return `template-${stack}`;
 }
 
-export function stackReferenceName(source: StackName, environment: string): string {
+function stackReferenceName(source: StackName, environment: string): string {
   return `organization/${projectName(source)}/${environment}`;
 }
 
-export const applyPlan = Effect.fn("applyPlan")(function* () {
+function visitStack(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ordered: StackName[],
+  stack: StackName,
+  visiting: readonly StackName[],
+): Effect.Effect<void, StackFailure> {
+  // oxlint-disable-next-line typescript/no-use-before-define
+  return Effect.suspend(() => visitUnordered(ordered, stack, visiting));
+}
+
+function visitUnordered(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ordered: StackName[],
+  stack: StackName,
+  visiting: readonly StackName[],
+): Effect.Effect<void, StackFailure> {
+  if (ordered.includes(stack)) {
+    return Effect.void;
+  }
+  if (visiting.includes(stack)) {
+    return Effect.fail(new StackFailure({ code: "stack_dependency_cycle" }));
+  }
+  return Effect.all(
+    stackDependencies[stack].map((dependency) =>
+      visitStack(ordered, dependency, [...visiting, stack]),
+    ),
+  ).pipe(
+    Effect.tap(() =>
+      Effect.sync(() => {
+        ordered.push(stack);
+      }),
+    ),
+    Effect.asVoid,
+  );
+}
+
+const applyPlan = Effect.fn("applyPlan")(function* applyPlan() {
   const ordered: StackName[] = [];
-  const visit = (
-    stack: StackName,
-    visiting: readonly StackName[],
-  ): Effect.Effect<void, StackFailure> =>
-    Effect.gen(function* () {
-      if (ordered.includes(stack)) return;
-      if (visiting.includes(stack))
-        return yield* new StackFailure({ code: "stack_dependency_cycle" });
-      for (const dependency of stackDependencies[stack])
-        yield* visit(dependency, [...visiting, stack]);
-      ordered.push(stack);
-    });
-  for (const stack of stackNames) yield* visit(stack, []);
-  return ordered.map((stack) => ({
-    stack,
-    dependencies: stackDependencies[stack] as readonly StackName[],
-  }));
+  yield* Effect.all(stackOrder.map((stack) => visitStack(ordered, stack, [])));
+  return ordered.map((stack): PlannedStack => ({ dependencies: stackDependencies[stack], stack }));
 });
+
+const stackNames = stackOrder;
+
+export { applyPlan, projectName, stackNames, stackReferenceName };
+export type { DependencyOf, StackName, StackOutputs };

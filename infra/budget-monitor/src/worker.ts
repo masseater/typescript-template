@@ -1,9 +1,9 @@
 import { Monitor, monitorHandler } from "@template/monitor";
 import type { MonitorBindings, Notify } from "@template/monitor";
+import { evaluateBudget, shouldNotify } from "./decision.ts";
 import { Effect } from "effect";
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
-import { evaluateBudget, shouldNotify } from "./decision.ts";
 
 interface Bindings extends MonitorBindings {
   CLOUDFLARE_ACCOUNT_ID: string;
@@ -21,9 +21,9 @@ export class BudgetMonitor extends Monitor<Bindings> {
     text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
   };
 
-  protected check(notify: Notify) {
+  protected check(notify: Notify): Effect.Effect<object, unknown> {
     const { env, ctx } = this;
-    return Effect.gen(function* () {
+    return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
       const snapshot = yield* fetchUsage(
         config.CLOUDFLARE_ACCOUNT_ID,
@@ -31,7 +31,7 @@ export class BudgetMonitor extends Monitor<Bindings> {
         new Date(),
       );
       const decision = yield* evaluateBudget(snapshot, config);
-      const previous = yield* Effect.promise(() =>
+      const previous = yield* Effect.promise(async () =>
         ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
       );
       const keys = previous?.period === decision.periodStart ? previous.keys : [];
@@ -40,10 +40,10 @@ export class BudgetMonitor extends Monitor<Bindings> {
           subject: `Cloudflare budget: ${decision.level}% threshold`,
           text: JSON.stringify(decision),
         });
-        yield* Effect.promise(() =>
+        yield* Effect.promise(async () =>
           ctx.storage.put("notifications", {
-            period: decision.periodStart,
             keys: [...keys, decision.notificationKey],
+            period: decision.periodStart,
           }),
         );
       }
@@ -52,4 +52,5 @@ export class BudgetMonitor extends Monitor<Bindings> {
   }
 }
 
+// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("budget");

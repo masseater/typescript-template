@@ -1,7 +1,6 @@
-import { and, count, eq, gt } from "drizzle-orm";
 import type { Application, StrongAuthenticationMethod } from "@template/config";
 import { Effect, Schema } from "effect";
-import { query } from "./index.ts";
+import { and, count, eq, gt } from "drizzle-orm";
 import {
   oauthAccessToken,
   oauthRefreshToken,
@@ -11,40 +10,45 @@ import {
   user,
   verification,
 } from "./schema.ts";
+import { query } from "./database.ts";
 
-export class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
+class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 
-export const hasVerificationAudience = Effect.fn("hasVerificationAudience")(function* (
-  identifier: string,
-  audience: Application,
-) {
-  const [record] = yield* query((database) =>
-    database
-      .select({ id: verification.id })
-      .from(verification)
-      .where(
-        and(
-          eq(verification.identifier, identifier),
-          eq(verification.audience, audience),
-          gt(verification.expiresAt, new Date()),
-        ),
-      )
-      .limit(1),
-  );
-  return record !== undefined;
-});
+const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
+  function* hasVerificationAudience(identifier: string, audience: Application) {
+    const now = new Date();
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    const [record] = yield* query((database) =>
+      database
+        .select({ id: verification.id })
+        .from(verification)
+        .where(
+          and(
+            eq(verification.identifier, identifier),
+            eq(verification.audience, audience),
+            gt(verification.expiresAt, now),
+          ),
+        )
+        .limit(1),
+    );
+    return record !== undefined;
+  },
+);
 
-export const findUser = Effect.fn("findUser")(function* (userId: string) {
+const findUser = Effect.fn("findUser")(function* findUser(userId: string) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database.select().from(user).where(eq(user.id, userId)).limit(1),
   );
+  // oxlint-disable-next-line unicorn/no-null
   return record ?? null;
 });
 
-export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* (
+const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
   credentialId: string,
   audience: Application,
 ) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database
       .select({ user })
@@ -53,19 +57,22 @@ export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* (
       .where(and(eq(passkey.credentialID, credentialId), eq(passkey.audience, audience)))
       .limit(1),
   );
+  // oxlint-disable-next-line unicorn/no-null
   return record?.user ?? null;
 });
 
-export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* (
+const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFactor(
   userId: string,
   audience: Application,
 ) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [keys] = yield* query((database) =>
     database
       .select({ count: count() })
       .from(passkey)
       .where(and(eq(passkey.userId, userId), eq(passkey.audience, audience))),
   );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [totp] = yield* query((database) =>
     database
       .select({ id: twoFactor.id })
@@ -76,10 +83,12 @@ export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* (
   return (keys?.count ?? 0) > 0 || totp !== undefined;
 });
 
-export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* (
+const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionSecurity(
   sessionId: string,
   audience: Application,
 ) {
+  const now = new Date();
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database
       .select({ session, user })
@@ -90,40 +99,50 @@ export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* (
           eq(session.id, sessionId),
           eq(session.audience, audience),
           eq(session.securityVersion, user.securityVersion),
-          gt(session.expiresAt, new Date()),
+          gt(session.expiresAt, now),
         ),
       )
       .limit(1),
   );
+  // oxlint-disable-next-line unicorn/no-null
   return record ?? null;
 });
 
-export const markSessionStrong = Effect.fn("markSessionStrong")(function* (
+const markSessionStrong = Effect.fn("markSessionStrong")(function* markSessionStrong(
   sessionId: string,
   audience: Application,
   method: StrongAuthenticationMethod,
 ) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [updated] = yield* query((database) =>
     database
       .update(session)
-      .set({ authenticationMethod: method, authenticatedAt: new Date() })
+      .set({ authenticatedAt: new Date(), authenticationMethod: method })
       .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
       .returning({ id: session.id }),
   );
-  if (!updated) return yield* new SessionRevoked();
+  if (!updated) {
+    return yield* new SessionRevoked();
+  }
 });
 
-export const revokeUserSessions = Effect.fn("revokeUserSessions")(function* (userId: string) {
+const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserSessions(
+  userId: string,
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query((database) =>
     database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
   );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query((database) =>
     database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
   );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query((database) => database.delete(session).where(eq(session.userId, userId)));
 });
 
-export const findWikiReader = Effect.fn("findWikiReader")(function* (userId: string) {
+const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database
       .select({ id: user.id })
@@ -131,5 +150,18 @@ export const findWikiReader = Effect.fn("findWikiReader")(function* (userId: str
       .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
       .limit(1),
   );
+  // oxlint-disable-next-line unicorn/no-null
   return record ?? null;
 });
+
+export {
+  SessionRevoked,
+  findPasskeyUser,
+  findUser,
+  findWikiReader,
+  getSessionSecurity,
+  hasEnrolledFactor,
+  hasVerificationAudience,
+  markSessionStrong,
+  revokeUserSessions,
+};

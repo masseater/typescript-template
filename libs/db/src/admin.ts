@@ -1,92 +1,57 @@
-import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
-import { strongAuthenticationMethods } from "@template/config";
-import type { Role } from "@template/config";
 import { Effect, Schema } from "effect";
-import { DatabaseFailure, query } from "./index.ts";
-import type { DrizzleDatabase } from "./index.ts";
-import { auditEvent, session, user } from "./schema.ts";
-import { getSessionSecurity } from "./security.ts";
+import { and, count, desc, eq } from "drizzle-orm";
+import { auditEvent, user } from "./schema.ts";
+import { liveAdmin, requireAdmin } from "./admin-session.ts";
+import type { Database } from "./database.ts";
+import type { DatabaseFailure } from "./database-failure.ts";
+import { LastAdminRequired } from "./last-admin-required.ts";
+import type { Role } from "@template/config";
+import { TargetUnavailable } from "./target-unavailable.ts";
+import { query } from "./database.ts";
 
-export class AdminStrongSessionRequired extends Schema.TaggedError<AdminStrongSessionRequired>()(
-  "AdminStrongSessionRequired",
-  {},
-) {}
+const MAX_PAGE_SIZE = 100;
 
-export class LastAdminRequired extends Schema.TaggedError<LastAdminRequired>()(
-  "LastAdminRequired",
-  {},
-) {}
-
-export class TargetUnavailable extends Schema.TaggedError<TargetUnavailable>()(
-  "TargetUnavailable",
-  {},
-) {}
-
-export const UserPage = Schema.Struct({
-  limit: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+const UserPage = Schema.Struct({
+  limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
 });
 
-const mentionsLastAdmin = (failure: DatabaseFailure) => {
-  for (let current: unknown = failure.cause; current instanceof Error; current = current.cause)
-    if (current.message.includes("LAST_ADMIN_REQUIRED")) return true;
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function mentionsLastAdmin(failure: DatabaseFailure): boolean {
+  for (let current: unknown = failure.cause; current instanceof Error; current = current.cause) {
+    if (current.message.includes("LAST_ADMIN_REQUIRED")) {
+      return true;
+    }
+  }
   return false;
-};
+}
 
-const protectLastAdmin = <A, R>(effect: Effect.Effect<A, DatabaseFailure, R>) =>
-  effect.pipe(
+function protectLastAdmin<Value, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
+): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> {
+  return effect.pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((failure) => (mentionsLastAdmin(failure) ? new LastAdminRequired() : failure)),
-  );
-
-const requireAdmin = Effect.fn("requireAdmin")(function* (sessionId: string) {
-  const actor = yield* getSessionSecurity(sessionId, "admin");
-  if (
-    !actor ||
-    actor.user.role !== "admin" ||
-    !actor.user.emailVerified ||
-    !strongAuthenticationMethods.some((method) => method === actor.session.authenticationMethod)
-  )
-    return yield* new AdminStrongSessionRequired();
-  return actor;
-});
-
-function liveAdmin(database: DrizzleDatabase, sessionId: string) {
-  const actor = alias(user, "actor");
-  return exists(
-    database
-      .select({ id: session.id })
-      .from(session)
-      .innerJoin(actor, eq(session.userId, actor.id))
-      .where(
-        and(
-          eq(session.id, sessionId),
-          eq(session.audience, "admin"),
-          eq(actor.role, "admin"),
-          eq(actor.emailVerified, true),
-          eq(session.securityVersion, actor.securityVersion),
-          gt(session.expiresAt, new Date()),
-          inArray(session.authenticationMethod, strongAuthenticationMethods),
-        ),
-      ),
   );
 }
 
-export const listUsers = Effect.fn("listUsers")(function* (
+const listUsers = Effect.fn("listUsers")(function* listUsers(
   sessionId: string,
   page: typeof UserPage.Type,
 ) {
   yield* requireAdmin(sessionId);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const users = yield* query((database) =>
     database
       .select({
-        id: user.id,
+        createdAt: user.createdAt,
         email: user.email,
+        emailVerified: user.emailVerified,
+        id: user.id,
         name: user.name,
         profile: user.profile,
         role: user.role,
-        emailVerified: user.emailVerified,
-        createdAt: user.createdAt,
       })
       .from(user)
       .where(liveAdmin(database, sessionId))
@@ -94,29 +59,32 @@ export const listUsers = Effect.fn("listUsers")(function* (
       .limit(page.limit)
       .offset(page.offset),
   );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [total] = yield* query((database) =>
     database.select({ count: count() }).from(user).where(liveAdmin(database, sessionId)),
   );
-  return { users, total: total?.count ?? 0 };
+  return { total: total?.count ?? 0, users };
 });
 
-const recordAudit = (actorId: string, targetId: string, action: "role_changed" | "user_deleted") =>
-  query((database) =>
-    database.insert(auditEvent).values({
-      id: crypto.randomUUID(),
-      actorId,
-      targetId,
-      action,
-      createdAt: new Date(),
-    }),
-  );
+function recordAudit(
+  actorId: string,
+  targetId: string,
+  action: "role_changed" | "user_deleted",
+): Effect.Effect<void, DatabaseFailure, Database> {
+  const event = { action, actorId, createdAt: new Date(), id: crypto.randomUUID(), targetId };
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return query(async (database): Promise<void> => {
+    await database.insert(auditEvent).values(event);
+  });
+}
 
-export const setUserRole = Effect.fn("setUserRole")(function* (
+const setUserRole = Effect.fn("setUserRole")(function* setUserRole(
   sessionId: string,
   targetId: string,
   role: Role,
 ) {
   const actor = yield* requireAdmin(sessionId);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [updated] = yield* query((database) =>
     database
       .update(user)
@@ -124,20 +92,33 @@ export const setUserRole = Effect.fn("setUserRole")(function* (
       .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
       .returning({ id: user.id, role: user.role }),
   ).pipe(protectLastAdmin);
-  if (!updated) return yield* new TargetUnavailable();
+  if (!updated) {
+    return yield* new TargetUnavailable();
+  }
   yield* recordAudit(actor.user.id, targetId, "role_changed");
   return updated;
 });
 
-export const deleteUser = Effect.fn("deleteUser")(function* (sessionId: string, targetId: string) {
+const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
+  sessionId: string,
+  targetId: string,
+) {
   const actor = yield* requireAdmin(sessionId);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [removed] = yield* query((database) =>
     database
       .delete(user)
       .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
       .returning({ id: user.id }),
   ).pipe(protectLastAdmin);
-  if (!removed) return yield* new TargetUnavailable();
+  if (!removed) {
+    return yield* new TargetUnavailable();
+  }
   yield* recordAudit(actor.user.id, targetId, "user_deleted");
   return removed;
 });
+
+export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+export { LastAdminRequired } from "./last-admin-required.ts";
+export { TargetUnavailable } from "./target-unavailable.ts";
+export { UserPage, deleteUser, listUsers, setUserRole };

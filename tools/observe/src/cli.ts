@@ -1,121 +1,136 @@
-import { parseArgs } from "node:util";
+import { Effect, Schema } from "effect";
+import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { applicationPorts } from "@template/config";
-import { Effect, Schema } from "effect";
-import { queryExplorer, requestTelemetry, structuredMessage } from "./explorer.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
 }) {}
 
 const commands = ["logs", "traces", "trace", "request"] as const;
+const minutesPerDay = 1440;
+const maxQueryLimit = 500;
+const millisecondsPerMinute = 60_000;
 
+const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/u));
+const QueryLimit = Schema.Int.check(Schema.isBetween({ maximum: maxQueryLimit, minimum: 1 }));
+const QueryMinutes = Schema.Int.check(Schema.isBetween({ maximum: minutesPerDay, minimum: 1 }));
+const Level = Schema.Literals(["debug", "info", "log", "warn", "error"]);
 const QueryInput = Schema.Struct({
   command: Schema.Literals(commands),
-  minutes: Schema.Number.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 1440 })),
-  limit: Schema.Number.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 500 })),
-  level: Schema.optional(Schema.Literals(["debug", "info", "log", "warn", "error"])),
+  level: Schema.optional(Level),
+  limit: QueryLimit,
+  minutes: QueryMinutes,
   requestId: Schema.optional(Schema.String),
-  traceId: Schema.optional(Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/))),
+  traceId: Schema.optional(TraceId),
 });
 
-const argumentsInvalid = () => new QueryFailure({ reason: "arguments_invalid" });
+type Query = typeof QueryInput.Type;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    app: { type: "string", default: `http://127.0.0.1:${applicationPorts.user}/` },
-    minutes: { type: "string", default: "15" },
-    limit: { type: "string", default: "100" },
+    app: { default: `http://127.0.0.1:${applicationPorts.user}/`, type: "string" },
+    help: { default: false, type: "boolean" },
     level: { type: "string" },
+    limit: { default: "100", type: "string" },
+    minutes: { default: "15", type: "string" },
     "request-id": { type: "string" },
     "trace-id": { type: "string" },
-    help: { type: "boolean", default: false },
   },
 });
 
-const help = Effect.sync(() =>
-  console.info(
-    JSON.stringify({
+function argumentsInvalid(): QueryFailure {
+  return new QueryFailure({ reason: "arguments_invalid" });
+}
+
+function required(value: string | undefined): Effect.Effect<string, QueryFailure> {
+  return value === undefined ? Effect.fail(argumentsInvalid()) : Effect.succeed(value);
+}
+
+function queryLogs(app: string, input: Query, since: number): Effect.Effect<unknown, unknown> {
+  const levelFilter = input.level === undefined ? "" : " AND level = ?";
+  const params =
+    input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
+  return queryExplorer(
+    app,
+    `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${levelFilter} ORDER BY ts_ms DESC LIMIT ?`,
+    params,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
+}
+
+function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
+  const since = Date.now() - input.minutes * millisecondsPerMinute;
+  if (input.command === "request") {
+    return required(input.requestId).pipe(
+      Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
+    );
+  }
+  if (input.command === "trace") {
+    return required(input.traceId).pipe(
+      Effect.flatMap((traceId) =>
+        queryExplorer(
+          app,
+          "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+          [traceId],
+        ),
+      ),
+    );
+  }
+  if (input.command === "traces") {
+    return queryExplorer(
+      app,
+      "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
+      [since, input.limit],
+    );
+  }
+  return queryLogs(app, input, since);
+}
+
+const help = Effect.sync(() => {
+  process.stdout.write(
+    `${JSON.stringify({
       commands,
       flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
-      source: "Cloudflare Local Explorer of the running app",
       readOnly: true,
-    }),
-  ),
-);
+      source: "Cloudflare Local Explorer of the running app",
+    })}\n`,
+  );
+});
 
-const query = Effect.gen(function* () {
+const query = Effect.fn("query")(function* query() {
   const input = yield* Schema.decodeUnknownEffect(QueryInput)({
     command: positionals[0],
-    minutes: Number(values.minutes),
-    limit: Number(values.limit),
     level: values.level,
+    limit: Number(values.limit),
+    minutes: Number(values.minutes),
     requestId: values["request-id"],
     traceId: values["trace-id"],
   }).pipe(Effect.mapError(argumentsInvalid));
-  if (positionals.length !== 1) return yield* argumentsInvalid();
-  const since = Date.now() - input.minutes * 60_000;
-  const queries = {
-    request: () =>
-      input.requestId === undefined
-        ? Effect.fail(argumentsInvalid())
-        : requestTelemetry(values.app, input.requestId),
-    trace: () =>
-      input.traceId === undefined
-        ? Effect.fail(argumentsInvalid())
-        : queryExplorer(
-            values.app,
-            "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
-            [input.traceId],
-          ),
-    traces: () =>
-      queryExplorer(
-        values.app,
-        "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
-        [since, input.limit],
-      ),
-    logs: () =>
-      queryExplorer(
-        values.app,
-        `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${input.level ? " AND level = ?" : ""} ORDER BY ts_ms DESC LIMIT ?`,
-        input.level ? [since, input.level, input.limit] : [since, input.limit],
-      ).pipe(
-        Effect.map((logs) =>
-          logs.map(({ message, ...row }) => ({
-            ...row,
-            event: structuredMessage(message) ?? null,
-          })),
-        ),
-      ),
-  };
-  return { command: input.command, data: yield* queries[input.command]() };
-}).pipe(
-  Effect.flatMap(({ command, data }) =>
-    Effect.sync(() =>
-      console.info(
-        JSON.stringify({
-          ok: true,
-          command,
-          observedAt: new Date().toISOString(),
-          data,
-        }),
-      ),
-    ),
-  ),
-);
+  if (positionals.length !== 1) {
+    return yield* argumentsInvalid();
+  }
+  const data = yield* runQuery(values.app, input);
+  process.stdout.write(
+    `${JSON.stringify({ command: input.command, data, observedAt: new Date().toISOString(), ok: true })}\n`,
+  );
+  return data;
+});
 
 NodeRuntime.runMain(
-  (values.help ? help : query).pipe(
+  (values.help ? help : query()).pipe(
     Effect.catchCause(() =>
       Effect.sync(() => {
-        console.error(
-          JSON.stringify({
-            ok: false,
+        process.stderr.write(
+          `${JSON.stringify({
             event: "observability.query_failed",
+            ok: false,
             remediation:
               "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
-          }),
+          })}\n`,
         );
         process.exitCode = 1;
       }),

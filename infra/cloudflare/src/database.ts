@@ -1,9 +1,9 @@
-import * as cloudflare from "@pulumi/cloudflare";
+import { D1Database } from "@pulumi/cloudflare";
 import { Effect } from "effect";
 import { consumeSettings } from "./reference.ts";
 
 const { settings } = await Effect.runPromise(consumeSettings("database", "settings"));
-const database = new cloudflare.D1Database(
+const database = new D1Database(
   "database",
   {
     accountId: settings.accountId,

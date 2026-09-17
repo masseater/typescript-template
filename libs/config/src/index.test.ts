@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
 import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
+import { Effect } from "effect";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",
@@ -9,14 +9,18 @@ const local = {
   MAILPIT_URL: "http://127.0.0.1:8025",
 };
 
-const reason = (input: unknown) =>
-  readEnvironment(input).pipe(
+function reason(
+  input: unknown,
+): Effect.Effect<string, Effect.Success<ReturnType<typeof readEnvironment>>> {
+  return readEnvironment(input).pipe(
     Effect.flip,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((error) => error.reason),
   );
+}
 
 it.effect("validates local configuration and defaults the release to local", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     const result = yield* readEnvironment(local);
     assert.strictEqual(result.local, true);
     assert.strictEqual(result.APP_RELEASE, "local");
@@ -25,7 +29,7 @@ it.effect("validates local configuration and defaults the release to local", () 
 );
 
 it.effect("rejects Mailpit for public application origins", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     assert.strictEqual(
       yield* reason({ ...local, APP_ORIGIN: "https://app.example.test" }),
       "Mailpit is restricted to local development",
@@ -34,7 +38,7 @@ it.effect("rejects Mailpit for public application origins", () =>
 );
 
 it.effect("treats only loopback and HTTPS LAN hosts as local development", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     assert.strictEqual(
       (yield* readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local" })).local,
       true,
@@ -48,14 +52,15 @@ it.effect("treats only loopback and HTTPS LAN hosts as local development", () =>
       "https://user.template.local.example.test",
       "https://mac-mini.tail2ee823.ts.net",
       "https://app.example.test",
-    ])
+    ]) {
       assert.strictEqual(isLocalDevelopmentOrigin(origin), false);
+    }
   }),
 );
 
 it.effect("requires HTTPS for non-local origins", () =>
-  Effect.gen(function* () {
-    const { MAILPIT_URL: _, ...remote } = local;
+  Effect.gen(function* program() {
+    const { MAILPIT_URL: _mailpit, ...remote } = local;
     assert.strictEqual(
       yield* reason({ ...remote, APP_ORIGIN: "http://app.example.test" }),
       "HTTPS is required outside localhost",
@@ -64,7 +69,7 @@ it.effect("requires HTTPS for non-local origins", () =>
 );
 
 it.effect("rejects weak session secrets and pathful application origins", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     assert.include(yield* reason({ ...local, AUTH_SECRET: "weak" }), "32");
     assert.include(
       yield* reason({ ...local, APP_ORIGIN: "http://localhost:3001/path" }),

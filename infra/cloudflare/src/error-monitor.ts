@@ -1,24 +1,25 @@
-import { errorWorkerArtifact } from "@template/error-monitor/artifact";
-import { Effect } from "effect";
 import { consume, consumeSettings } from "./reference.ts";
+import { Effect } from "effect";
 import { deployMonitor } from "./worker.ts";
+import { errorWorkerArtifact } from "@template/error-monitor/artifact";
 
 const errors = await Effect.runPromise(
-  Effect.gen(function* () {
+  Effect.gen(function* errors() {
     const { settings } = yield* consumeSettings("error-monitor", "settings");
     const tokens = yield* consume("error-monitor", "tokens");
     return yield* deployMonitor("error", {
       accountId: settings.accountId,
-      name: `${settings.prefix}-errors`,
+      alert: { from: settings.mailFrom, to: settings.budget.recipients },
       artifact: errorWorkerArtifact,
       className: "ErrorMonitor",
-      token: { binding: "OBSERVABILITY_TOKEN", text: tokens.text("observabilityQueryToken") },
-      alert: { from: settings.mailFrom, to: settings.budget.recipients },
-      variables: { CLOUDFLARE_ACCOUNT_ID: settings.accountId },
       cron: "*/5 * * * *",
+      name: `${settings.prefix}-errors`,
+      token: { binding: "OBSERVABILITY_TOKEN", text: tokens.text("observabilityQueryToken") },
+      variables: { CLOUDFLARE_ACCOUNT_ID: settings.accountId },
     });
   }),
 );
 
-export const workerName = errors.workerName;
-export const scheduleId = errors.scheduleId;
+const { scheduleId, workerName } = errors;
+
+export { scheduleId, workerName };

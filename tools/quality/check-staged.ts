@@ -1,32 +1,66 @@
-import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-import { NodeRuntime } from "@effect/platform-node";
 import { Effect } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { promisify } from "node:util";
 import { secretViolations } from "./secrets.ts";
 
+interface StagedFailure {
+  readonly file: string;
+  readonly rules: string[];
+}
+
+const MAX_OUTPUT_BYTES = 33_554_432;
+
+// oxlint-disable-next-line typescript/strict-void-return
 const run = promisify(execFile);
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const options = { cwd: root, maxBuffer: 32 * 1024 * 1024 };
-const git = (args: readonly string[]) => Effect.tryPromise(() => run("git", [...args], options));
+const options = { cwd: root, maxBuffer: MAX_OUTPUT_BYTES };
+
+function git(args: readonly string[]): Effect.Effect<string, unknown> {
+  return Effect.tryPromise(async () => run("git", [...args], options)).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map(({ stdout }) => stdout),
+  );
+}
+
+function stagedFailure(file: string): Effect.Effect<StagedFailure[], unknown> {
+  return git(["show", `:${file}`]).pipe(
+    Effect.map((content) => {
+      const rules = secretViolations(file, content);
+      return rules.length > 0 ? [{ file, rules }] : [];
+    }),
+  );
+}
+
+const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
+  const listed = yield* git(["ls-files", "--cached", "-z"]);
+  const files = listed.split("\0").filter(Boolean);
+  const failures = yield* Effect.all(files.map((file) => stagedFailure(file)));
+  return failures.flat();
+});
 
 NodeRuntime.runMain(
-  Effect.gen(function* () {
-    const { stdout } = yield* git(["ls-files", "--cached", "-z"]);
-    const failures: { file: string; rules: string[] }[] = [];
-    for (const file of stdout.split("\0").filter(Boolean)) {
-      const staged = yield* git(["show", `:${file}`]);
-      const rules = secretViolations(file, staged.stdout);
-      if (rules.length) failures.push({ file, rules });
-    }
-    console.log(
-      JSON.stringify({ event: "quality.staged_secrets", ok: failures.length === 0, failures }),
-    );
-    if (failures.length) process.exitCode = 1;
-  }).pipe(
+  scanStaged().pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap((failures) =>
+      Effect.sync(() => {
+        process.stdout.write(
+          `${JSON.stringify({ event: "quality.staged_secrets", failures, ok: failures.length === 0 })}\n`,
+        );
+        if (failures.length > 0) {
+          process.exitCode = 1;
+        }
+      }),
+    ),
     Effect.catchCause(() =>
       Effect.sync(() => {
-        console.error(JSON.stringify({ event: "quality.staged_secrets_failed", ok: false }));
+        process.stderr.write(
+          `${JSON.stringify({ event: "quality.staged_secrets_failed", ok: false })}\n`,
+        );
         process.exitCode = 1;
       }),
     ),

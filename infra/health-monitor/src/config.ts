@@ -14,28 +14,42 @@ const Origin = Schema.String.check(
   }),
 );
 const HealthMonitorEnvironment = Schema.Struct({
-  USER_ORIGIN: Origin,
   ADMIN_ORIGIN: Origin,
+  USER_ORIGIN: Origin,
   WIKI_ORIGIN: Origin,
 });
 
-export type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;
+type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;
 
-export const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(function* (
-  input: unknown,
-) {
-  const config = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
-    Effect.mapError(() => new HealthMonitorFailure({ code: "health_monitor_config_invalid" })),
-  );
-  if (new Set([config.USER_ORIGIN, config.ADMIN_ORIGIN, config.WIKI_ORIGIN]).size !== 3)
-    return yield* new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" });
-  return config;
-});
+const APPLICATION_COUNT = 3;
 
-export function healthTargets(config: HealthMonitorConfig) {
+const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
+  function* parseHealthMonitorConfig(input: unknown) {
+    const config = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
+      Effect.mapError(() => new HealthMonitorFailure({ code: "health_monitor_config_invalid" })),
+    );
+    if (
+      new Set([config.USER_ORIGIN, config.ADMIN_ORIGIN, config.WIKI_ORIGIN]).size !==
+      APPLICATION_COUNT
+    ) {
+      return yield* new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" });
+    }
+    return config;
+  },
+);
+
+function healthTargets(
+  config: HealthMonitorConfig,
+): readonly [
+  { readonly origin: string; readonly service: "user" },
+  { readonly origin: string; readonly service: "admin" },
+  { readonly origin: string; readonly service: "wiki" },
+] {
   return [
-    { service: "user", origin: config.USER_ORIGIN },
-    { service: "admin", origin: config.ADMIN_ORIGIN },
-    { service: "wiki", origin: config.WIKI_ORIGIN },
+    { origin: config.USER_ORIGIN, service: "user" },
+    { origin: config.ADMIN_ORIGIN, service: "admin" },
+    { origin: config.WIKI_ORIGIN, service: "wiki" },
   ] as const;
 }
+
+export { healthTargets, parseHealthMonitorConfig };

@@ -1,42 +1,35 @@
-import { fileURLToPath } from "node:url";
-import { cloudflare } from "@cloudflare/vite-plugin";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import react from "@vitejs/plugin-react";
-import { applicationPorts } from "@template/config";
-import { previewDevVars } from "@template/config/vite";
-import { workerCompatibility } from "@template/config/worker";
+import type { ConfigEnv, UserConfig } from "vite-plus";
+import { appServer, previewDevVars } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import { devBoundary } from "@template/dev-boundary";
+import react from "@vitejs/plugin-react";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { workerCompatibility } from "@template/config/worker";
 
-const server = {
-  host: "127.0.0.1",
-  port: applicationPorts.admin,
-  strictPort: true,
-  allowedHosts: [".local"],
-};
-
-export default defineConfig(({ command, isPreview }) => ({
+// oxlint-disable-next-line import/no-default-export
+export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
+  build: { sourcemap: "hidden" },
   plugins: [
-    previewDevVars(fileURLToPath(new URL(".", import.meta.url))),
+    previewDevVars(import.meta.dirname),
     devBoundary("admin"),
     cloudflare({
       config: {
-        name: "template-admin",
-        main: "./src/server.ts",
+        assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
         compatibility_date: workerCompatibility.date,
         compatibility_flags: [...workerCompatibility.flags],
-        assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
         d1_databases: [localDatabase],
+        main: "./src/server.ts",
+        name: "template-admin",
       },
-      viteEnvironment: { name: "ssr" },
-      persistState: { path: localDatabasePersistence },
       inspectorPort: false,
+      persistState: { path: localDatabasePersistence },
+      viteEnvironment: { name: "ssr" },
     }),
     tanstackStart(),
     react(),
   ],
-  server,
-  preview: server,
-  build: { sourcemap: "hidden" },
+  preview: appServer("admin"),
+  server: appServer("admin"),
 }));

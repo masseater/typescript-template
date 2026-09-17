@@ -1,50 +1,91 @@
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { ErrorLocations, errorTypes } from "./errors.ts";
 import { RequestId, SpanId, TraceId, httpMethods } from "./protocol.ts";
 
-const bounded = (max: number) =>
-  Schema.Number.check(Schema.isFinite(), Schema.isBetween({ minimum: 0, maximum: max }));
+const maximumBatchSize = 32;
+const maximumMeasurement = 600_000;
+const maximumClockSkew = 60_000;
+const maximumEventAge = 3_600_000;
+const maximumStatus = 599;
+const minimumHttpStatus = 100;
 
-const fields = (labels: ReadonlySet<string>, now: number) => ({
-  route: Schema.String.check(Schema.makeFilter((value: string) => labels.has(value))),
-  start: bounded(now + 60_000).check(Schema.isGreaterThanOrEqualTo(now - 3_600_000)),
-  duration: bounded(600_000),
-  value: bounded(600_000),
+const Measurement = Schema.Number.check(
+  Schema.isFinite(),
+  Schema.isBetween({ maximum: maximumMeasurement, minimum: 0 }),
+);
+const fields = {
+  duration: Measurement,
   method: Schema.Literals(httpMethods),
-  traceId: TraceId,
-  spanId: SpanId,
   requestId: RequestId,
-});
-
-export const browserEvents = (labels: ReadonlySet<string>, now: number) => {
-  const common = fields(labels, now);
-  return Schema.Array(
-    Schema.Union([
-      Schema.Struct({
-        ...common,
-        kind: Schema.Literal("http"),
-        name: Schema.Literal("http.client.request"),
-        status: Schema.Int.check(
-          Schema.isBetween({ minimum: 0, maximum: 599 }),
-          Schema.makeFilter((value: number) => value === 0 || value >= 100),
-        ),
-      }),
-      Schema.Struct({
-        ...common,
-        kind: Schema.Literal("exception"),
-        name: Schema.Literals(["browser.error", "browser.unhandledrejection"]),
-        status: Schema.Literal(0),
-        errorType: Schema.Literals(errorTypes),
-        locations: ErrorLocations,
-      }),
-      Schema.Struct({
-        ...common,
-        kind: Schema.Literal("vital"),
-        name: Schema.Literals(["CLS", "INP", "LCP", "FCP", "TTFB"]),
-        status: Schema.Literal(0),
-      }),
-    ]),
-  ).check(Schema.isLengthBetween(1, 32));
+  route: Schema.String,
+  spanId: SpanId,
+  start: Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0)),
+  traceId: TraceId,
+  value: Measurement,
 };
+const HttpStatus = Schema.Int.check(
+  Schema.isBetween({ maximum: maximumStatus, minimum: minimumHttpStatus }),
+);
+const Unsent = Schema.Literal(0);
+const HttpEvent = Schema.Struct({
+  ...fields,
+  kind: Schema.Literal("http"),
+  name: Schema.Literal("http.client.request"),
+  status: Schema.Union([Unsent, HttpStatus]),
+});
+const ExceptionEvent = Schema.Struct({
+  ...fields,
+  errorType: Schema.Literals(errorTypes),
+  kind: Schema.Literal("exception"),
+  locations: ErrorLocations,
+  name: Schema.Literals(["browser.error", "browser.unhandledrejection"]),
+  status: Unsent,
+});
+const VitalEvent = Schema.Struct({
+  ...fields,
+  kind: Schema.Literal("vital"),
+  name: Schema.Literals(["CLS", "INP", "LCP", "FCP", "TTFB"]),
+  status: Unsent,
+});
+const BrowserEventSchema = Schema.Union([HttpEvent, ExceptionEvent, VitalEvent]);
+const BrowserEvents = Schema.Array(BrowserEventSchema).check(
+  Schema.isLengthBetween(1, maximumBatchSize),
+);
+const decodeEvents = Schema.decodeUnknownEffect(BrowserEvents, { onExcessProperty: "error" });
 
-export type BrowserEvent = ReturnType<typeof browserEvents>["Type"][number];
+type BrowserEvent = typeof BrowserEventSchema.Type;
+
+class BrowserEventsInvalid extends Schema.TaggedError<BrowserEventsInvalid>()(
+  "BrowserEventsInvalid",
+  {},
+) {}
+
+function placed(
+  events: readonly BrowserEvent[],
+  labels: Readonly<ReadonlySet<string>>,
+  now: number,
+): boolean {
+  return events.every(
+    (event) =>
+      labels.has(event.route) &&
+      event.start >= now - maximumEventAge &&
+      event.start <= now + maximumClockSkew,
+  );
+}
+
+function parseBrowserEvents(
+  input: unknown,
+  labels: Readonly<ReadonlySet<string>>,
+  now: number,
+): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> {
+  return decodeEvents(input).pipe(
+    Effect.mapError(() => new BrowserEventsInvalid()),
+    Effect.filterOrFail(
+      (events) => placed(events, labels, now),
+      () => new BrowserEventsInvalid(),
+    ),
+  );
+}
+
+export { maximumBatchSize, maximumMeasurement, parseBrowserEvents };
+export type { BrowserEvent };

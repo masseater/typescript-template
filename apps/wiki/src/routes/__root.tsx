@@ -1,41 +1,23 @@
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
-import { initBrowserTelemetry } from "@template/observability/browser";
-import { RootProvider } from "fumadocs-ui/provider/tanstack";
-import { useEffect } from "react";
-import styles from "../styles/app.css?url";
-import { translations } from "../lib/translations.ts";
-import { routes } from "../telemetry-routes.ts";
+import { RootDocument } from "#/components/root-document.tsx";
+import { createRootRoute } from "@tanstack/react-router";
+import styles from "#/styles/app.css?url";
 
-export const Route = createRootRoute({
-  head: () => ({
+interface RootHead {
+  links: { href: string; rel: string }[];
+  meta: ({ charSet: string } | { content: string; name: string } | { title: string })[];
+}
+
+function head(): RootHead {
+  return {
+    links: [{ href: styles, rel: "stylesheet" }],
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { content: "width=device-width, initial-scale=1", name: "viewport" },
       { title: "Wiki" },
     ],
-    links: [{ rel: "stylesheet", href: styles }],
-  }),
-  component: Root,
-});
-
-function Root() {
-  useEffect(() => {
-    const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
-    return () => {
-      telemetry.dispose();
-    };
-  }, []);
-  return (
-    <html lang="ja" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body className="flex min-h-screen flex-col">
-        <RootProvider i18n={{ locale: "ja", translations }}>
-          <Outlet />
-        </RootProvider>
-        <Scripts />
-      </body>
-    </html>
-  );
+  };
 }
+
+const Route = createRootRoute({ component: RootDocument, head });
+
+export { Route };

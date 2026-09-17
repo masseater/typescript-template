@@ -1,8 +1,8 @@
 import { Monitor, monitorHandler } from "@template/monitor";
 import type { MonitorBindings, Notify } from "@template/monitor";
-import { Effect } from "effect";
-import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
+import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
+import { Effect } from "effect";
 import type { HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
@@ -19,17 +19,20 @@ export class HealthMonitor extends Monitor<Bindings> {
     text: "アプリの死活監視が失敗しました。health_monitor.check_failed のログを確認してください。アプリが稼働しているとは判断しないでください。",
   };
 
-  protected check(notify: Notify) {
+  protected check(notify: Notify): Effect.Effect<object, unknown> {
     const { env, ctx } = this;
-    return Effect.gen(function* () {
+    return Effect.gen(function* program() {
       const config = yield* parseHealthMonitorConfig(env);
-      const results = yield* Effect.all(healthTargets(config).map(probeService), {
-        concurrency: "unbounded",
-      });
-      const previous = yield* Effect.promise(() => ctx.storage.get<HealthState>("state"));
+      const results = yield* Effect.all(
+        healthTargets(config).map((target) => probeService(target)),
+        {
+          concurrency: "unbounded",
+        },
+      );
+      const previous = yield* Effect.promise(async () => ctx.storage.get<HealthState>("state"));
       const decision = decideHealthAlerts(results, previous ?? {});
       const down = results.filter((result) => !result.healthy).map((result) => result.service);
-      if (decision.notifications.length > 0)
+      if (decision.notifications.length > 0) {
         yield* notify({
           subject:
             down.length > 0
@@ -37,14 +40,16 @@ export class HealthMonitor extends Monitor<Bindings> {
               : "Cloudflare Workers: すべてのアプリが復旧しました",
           text: formatHealthMessage(decision.notifications),
         });
-      yield* Effect.promise(() => ctx.storage.put("state", decision.state));
+      }
+      yield* Effect.promise(async () => ctx.storage.put("state", decision.state));
       return {
         down,
-        services: Object.fromEntries(results.map((result) => [result.service, result.detail])),
         notified: decision.notifications.length,
+        services: Object.fromEntries(results.map((result) => [result.service, result.detail])),
       };
     }).pipe(Effect.withSpan("HealthMonitor.check"));
   }
 }
 
+// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("health_monitor");

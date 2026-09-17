@@ -1,9 +1,33 @@
-import { expect, test } from "vite-plus/test";
-import rootManifest from "../../package.json" with { type: "json" };
+import { describe, expect, it } from "vite-plus/test";
 import { field, workspaceManifests } from "./dependencies.ts";
+import type { WorkspaceManifest } from "./dependencies.ts";
 import { scriptViolations } from "./scripts.ts";
 
-test.for([
+function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
+  return manifests.flatMap(({ manifest }) => {
+    const name = field(manifest, "name");
+    return typeof name === "string" ? [name] : [];
+  });
+}
+
+function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly string[]): string[] {
+  const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
+    const value = field(manifest, key);
+    return typeof value === "object" && value !== null ? Object.entries(value) : [];
+  });
+  return declared
+    .filter(([key, value]: readonly [string, unknown]) =>
+      tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
+    )
+    .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
+}
+
+const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
+  eager: true,
+  import: "default",
+});
+
+const packageManagerCommands = [
   "pnpm --filter @template/dev run setup",
   "pnpm -r --if-present build",
   "pnpm run test",
@@ -24,13 +48,9 @@ test.for([
   "vp run build; npm test",
   "vp run build\nyarn test",
   "vp run build || npx knip",
-])("rejects direct package manager calls: %s", (command) => {
-  expect(scriptViolations({ scripts: { probe: command } })).toEqual([
-    `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
-  ]);
-});
+];
 
-test.for([
+const vitePlusCommands = [
   "vp run --filter @template/dev setup",
   "vp run -r build",
   "vp exec knip",
@@ -39,46 +59,48 @@ test.for([
   "node tools/dev/src/cli.ts",
   "echo 'pnpm run test'",
   "vp run build -- --reporter pnpm",
-])("allows Vite+ entry points: %s", (command) => {
-  expect(scriptViolations({ scripts: { probe: command } })).toEqual([]);
-});
+];
 
-test("rejects malformed script definitions", () => {
-  expect(() => scriptViolations({ scripts: { setup: false } })).toThrow(
-    "Script setup must be a string",
-  );
-  expect(() => scriptViolations({ scripts: [] })).toThrow("scripts must be an object");
-  expect(() => scriptViolations({ scripts: { setup: "vp run 'broken" } })).toThrow(
-    "unfinished shell quote",
-  );
-});
-
-test("all repository workspace manifests run scripts through Vite+", () => {
-  const violations = [
-    { file: "package.json", manifest: rootManifest },
-    ...workspaceManifests,
-  ].flatMap(({ file, manifest }) =>
-    scriptViolations(manifest).map((violation) => `${file}: ${violation}`),
-  );
-  expect(violations).toEqual([]);
-});
-
-test("workspaces outside tools do not depend on tools packages", () => {
-  const tools = workspaceManifests.flatMap(({ area, manifest }) => {
-    const name = field(manifest, "name");
-    return area === "tools" && typeof name === "string" ? [name] : [];
+describe("workspace script conventions", () => {
+  it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
+    expect.assertions(1);
+    expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([
+      `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
+    ]);
   });
-  const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
-  const violations = consumers.flatMap(({ file, manifest }) => {
-    const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
-      const value = field(manifest, key);
-      return typeof value === "object" && value !== null ? Object.entries(value) : [];
-    });
-    return declared
-      .filter(([key, value]) =>
-        tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
-      )
-      .map(([key]) => `${file}: ${key}`);
+
+  it.for(vitePlusCommands)("allows Vite+ entry points: %s", (command) => {
+    expect.assertions(1);
+    expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([]);
   });
-  expect(violations).toEqual([]);
+
+  it("rejects malformed script definitions", () => {
+    expect.hasAssertions();
+    expect(() => scriptViolations({ scripts: { setup: false } })).toThrow(
+      "Script setup must be a string",
+    );
+    expect(() => scriptViolations({ scripts: [] })).toThrow("scripts must be an object");
+    expect(() => scriptViolations({ scripts: { setup: "vp run 'broken" } })).toThrow(
+      "unfinished shell quote",
+    );
+  });
+
+  it("all repository workspace manifests run scripts through Vite+", () => {
+    expect.assertions(1);
+    const manifests = [
+      { area: ".", file: "package.json", manifest: rootManifest["../../package.json"] },
+      ...workspaceManifests,
+    ];
+    const violations = manifests.flatMap(({ file, manifest }) =>
+      scriptViolations(manifest).map((violation) => `${file}: ${violation}`),
+    );
+    expect(violations).toStrictEqual([]);
+  });
+
+  it("workspaces outside tools do not depend on tools packages", () => {
+    expect.assertions(1);
+    const tools = packageNames(workspaceManifests.filter(({ area }) => area === "tools"));
+    const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
+    expect(consumers.flatMap((consumer) => toolReferences(consumer, tools))).toStrictEqual([]);
+  });
 });

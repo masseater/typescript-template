@@ -1,52 +1,68 @@
+import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
 import { fetchUsage } from "./billing.ts";
+import { setupServer } from "msw/node";
 
-const account = "a".repeat(32);
+const ACCOUNT_ID_LENGTH = 32;
+const BILLED_COST_USD = 2;
+
+const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billable-usage`;
 
-const withServer = (...handlers: Parameters<typeof setupServer>) =>
-  Effect.acquireRelease(
+function withServer(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ...handlers: Parameters<typeof setupServer>
+): Effect.Effect<SetupServer, never, Scope.Scope> {
+  return Effect.acquireRelease(
     Effect.sync(() => {
       const server = setupServer(...handlers);
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    (server) => Effect.sync(() => server.close()),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (server) =>
+      Effect.sync(() => {
+        server.close();
+      }),
   );
+}
 
 it.effect("fetches the official V1 endpoint using bearer authentication", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     yield* withServer(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(endpoint, ({ request }) => {
-        if (request.headers.get("authorization") !== "Bearer test-token")
+        if (request.headers.get("authorization") !== "Bearer test-token") {
+          // oxlint-disable-next-line unicorn/no-null
           return new HttpResponse(null, { status: 401 });
+        }
         return HttpResponse.json({
-          success: true,
           result: [
             {
+              BilledCost: BILLED_COST_USD,
               BillingAccountId: account,
               BillingCurrency: "USD",
               BillingPeriodStart: "2026-09-01T00:00:00Z",
-              ChargePeriodStart: "2026-09-14T00:00:00Z",
-              ChargePeriodEnd: "2026-09-15T00:00:00Z",
               ChargeCategory: "Usage",
+              ChargePeriodEnd: "2026-09-15T00:00:00Z",
+              ChargePeriodStart: "2026-09-14T00:00:00Z",
               ServiceName: "Workers",
-              BilledCost: 2,
             },
           ],
+          success: true,
         });
       }),
     );
     const usage = yield* fetchUsage(account, "test-token", new Date("2026-09-16T00:00:00Z"));
-    assert.strictEqual(usage.usageUsd, 2);
+    assert.strictEqual(usage.usageUsd, BILLED_COST_USD);
   }).pipe(Effect.scoped),
 );
 
 it.effect("does not return zero usage or expose response bodies on authorization failure", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     yield* withServer(
       http.get(endpoint, () =>
         HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),

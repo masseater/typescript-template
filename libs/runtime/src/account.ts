@@ -1,56 +1,63 @@
-import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
-import { checkDatabase } from "@template/db";
-import { Telemetry, ingestBrowser } from "@template/observability";
-import { Effect } from "effect";
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
-import { apiBridge, createApi, readJsonBody } from "./http.ts";
+import { Telemetry, httpStatus, ingestBrowser } from "@template/observability";
+import { createApi, readJsonBody } from "./http.ts";
+import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
+import type { AnyElysia } from "elysia";
+import type { ApiBridge } from "./http.ts";
 import type { AppServices } from "./index.ts";
+import { Effect } from "effect";
+import type { EmailVerificationFailed } from "@template/auth";
+import type { Failure } from "./failures.ts";
+import { checkDatabase } from "@template/db";
 
-export const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
+const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
 
-export const sessionApi = <R = never>(bridge: ReturnType<typeof apiBridge<AppServices | R>>) =>
-  createApi()
+const health = Effect.fn("health")(function* health() {
+  yield* checkDatabase();
+  const telemetry = yield* Telemetry;
+  return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
+});
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function emailVerificationFailure(error: EmailVerificationFailed): Failure {
+  return error.rateLimited
+    ? { message: "しばらく待ってから再度お試しください。", status: httpStatus.tooManyRequests }
+    : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
+}
+
+function sessionApi<Requirements = never>(
+  bridge: ApiBridge<AppServices | Requirements>,
+): AnyElysia {
+  return createApi()
     .all("/api/auth/*", bridge.raw(handleAuthRequest, unavailable))
     .post("/api/telemetry", bridge.raw(ingestBrowser, {}))
-    .get(
-      "/api/health",
-      bridge.route(
-        HealthView,
-        () =>
-          Effect.gen(function* () {
-            yield* checkDatabase();
-            const telemetry = yield* Telemetry;
-            return {
-              ok: true,
-              service: telemetry.serviceName,
-              release: telemetry.release,
-            } as const;
-          }),
-        unavailable,
-      ),
-    )
+    .get("/api/health", bridge.route(HealthView, health, unavailable))
     .get(
       "/api/session",
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       bridge.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
     );
+}
 
-export const accountApi = (bridge: ReturnType<typeof apiBridge<AppServices>>) =>
-  createApi()
+function accountApi(bridge: ApiBridge<AppServices>): AnyElysia {
+  return createApi()
     .use(sessionApi(bridge))
     .post(
       "/api/verify-email",
       bridge.route(
         EmailVerified,
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         (request) =>
           readJsonBody(EmailVerificationRequest, request).pipe(
             Effect.flatMap(({ token }) => verifyEmailToken(token, request.headers)),
           ),
         {
           ...unavailable,
-          EmailVerificationFailed: (error) =>
-            error.rateLimited
-              ? { status: 429, message: "しばらく待ってから再度お試しください。" }
-              : { status: 400, message: "確認リンクが無効か、有効期限が切れています。" },
+          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+          EmailVerificationFailed: (error) => emailVerificationFailure(error),
         },
       ),
     );
+}
+
+export { accountApi, sessionApi, unavailable };

@@ -1,54 +1,36 @@
-import { readWikiConfig } from "@template/config";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Effect, Layer } from "effect";
+import { Embedder, embedWith } from "./embedder.ts";
+import type { AppServices } from "./index.ts";
+import type { AuthFailure } from "@template/auth";
+import type { ConfigurationInvalid } from "@template/config";
+import type { TelemetryInvalid } from "@template/observability";
 import { configuredAppLayer } from "./index.ts";
+import { readWikiConfig } from "@template/config";
 
-const embeddingModel = "@cf/baai/bge-m3";
-const embeddingBatch = 32;
-const EmbeddingOutput = Schema.Struct({ data: Schema.Array(Schema.Array(Schema.Finite)) });
+type WikiServices = AppServices | Embedder;
 
-export class EmbeddingFailed extends Schema.TaggedError<EmbeddingFailed>()("EmbeddingFailed", {
-  reason: Schema.Literals(["unavailable", "invalid_output", "count_mismatch"]),
-}) {}
-
-export class Embedder extends Context.Service<
-  Embedder,
-  {
-    readonly available: boolean;
-    readonly embed: (
-      texts: readonly string[],
-    ) => Effect.Effect<readonly (readonly number[])[], EmbeddingFailed>;
-  }
->()("@template/runtime/Embedder") {}
-
-export type WikiServices = Layer.Success<ReturnType<typeof wikiLayer>>;
-
-export const wikiLayer = (env: unknown, routes: Readonly<Record<string, string>>) =>
-  Layer.unwrap(
+function wikiLayer(
+  env: unknown,
+  routes: Readonly<Record<string, string>>,
+): Layer.Layer<WikiServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
+  return Layer.unwrap(
     readWikiConfig(env).pipe(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.map((config) => {
-        const ai = config.AI;
-        const embed = Effect.fn("embed")(function* (texts: readonly string[]) {
-          if (ai === undefined) return yield* new EmbeddingFailed({ reason: "unavailable" });
-          const vectors: (readonly number[])[] = [];
-          for (let start = 0; start < texts.length; start += embeddingBatch) {
-            const text = texts.slice(start, start + embeddingBatch);
-            const output = yield* Effect.tryPromise({
-              try: () => ai.run(embeddingModel, { text }),
-              catch: () => new EmbeddingFailed({ reason: "unavailable" }),
-            });
-            const { data } = yield* Schema.decodeUnknownEffect(EmbeddingOutput)(output).pipe(
-              Effect.mapError(() => new EmbeddingFailed({ reason: "invalid_output" })),
-            );
-            if (data.length !== text.length)
-              return yield* new EmbeddingFailed({ reason: "count_mismatch" });
-            vectors.push(...data);
-          }
-          return vectors;
+        const embedder = Embedder.of({
+          available: config.AI !== undefined,
+          embed: embedWith(config.AI),
         });
         return Layer.merge(
-          Layer.succeed(Embedder, Embedder.of({ available: ai !== undefined, embed })),
+          Layer.succeed(Embedder, embedder),
           configuredAppLayer(config, "wiki", routes),
         );
       }),
     ),
   );
+}
+
+export { Embedder } from "./embedder.ts";
+export { EmbeddingFailed } from "./embedding-failed.ts";
+export { wikiLayer };
+export type { WikiServices };

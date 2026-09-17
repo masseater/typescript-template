@@ -1,48 +1,87 @@
-import assert from "node:assert/strict";
-import { createRequire } from "node:module";
-import * as pulumi from "@pulumi/pulumi";
-import * as cloudflare from "@pulumi/cloudflare";
+import { Worker, WorkerVersion } from "@pulumi/cloudflare";
+import { getProject, isSecret, runtime, secret } from "@pulumi/pulumi";
 import { Effect } from "effect";
+import type { Output } from "@pulumi/pulumi";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { createRequire } from "node:module";
+import { invariant } from "es-toolkit";
 import { validateAuthSecret } from "./config.ts";
 
-assert.notEqual(process.env["PULUMI_NODEJS_TYPESCRIPT"], "true");
-assert.equal(typeof cloudflare.Worker, "function");
-assert.equal(typeof cloudflare.WorkerVersion, "function");
-if (process.env["TEMPLATE_ENGINE_PROBE"] === "true") {
-  assert.equal(pulumi.runtime.hasEngine(), true);
-  assert.equal(pulumi.runtime.hasMonitor(), true);
-  assert.equal(pulumi.getProject(), "template-runtime-probe");
-  await pulumi.runtime.requirePulumiVersion(">=3.262.0");
+const PROBE_SECRET = "runtime-probe-not-a-real-secret-0001";
+
+interface RuntimeEvidence {
+  compilerLoaded: boolean;
+  engineConnected: boolean;
+  monitorConnected: boolean;
+  secretPreserved: boolean;
 }
-const value = pulumi.secret(
-  Effect.runSync(validateAuthSecret("runtime-probe-not-a-real-secret-0001")),
-);
-assert.equal(await pulumi.isSecret(value), true);
-await new Promise<void>((resolve) => {
-  value.apply((resolved) => {
-    assert.equal(resolved, "runtime-probe-not-a-real-secret-0001");
-    resolve();
+
+interface ProbeResult {
+  probeSecret: Output<string>;
+  runtimeEvidence: RuntimeEvidence;
+}
+
+function assertProvidersLoadedWithoutCompiler(): void {
+  // oxlint-disable-next-line node/no-process-env
+  invariant(process.env["PULUMI_NODEJS_TYPESCRIPT"] !== "true", "pulumi_typescript_enabled");
+  invariant(typeof Worker === "function", "worker_provider_missing");
+  invariant(typeof WorkerVersion === "function", "worker_version_provider_missing");
+}
+
+async function assertEngineConnected(): Promise<void> {
+  // oxlint-disable-next-line node/no-process-env
+  if (process.env["TEMPLATE_ENGINE_PROBE"] !== "true") {
+    return;
+  }
+  invariant(runtime.hasEngine(), "engine_not_connected");
+  invariant(runtime.hasMonitor(), "monitor_not_connected");
+  invariant(getProject() === "template-runtime-probe", "probe_project_mismatch");
+  await runtime.requirePulumiVersion(">=3.262.0");
+}
+
+async function resolvedValue(value: Readonly<Pick<Output<string>, "apply">>): Promise<string> {
+  // oxlint-disable-next-line promise/avoid-new
+  return new Promise((resolve) => {
+    value.apply((resolved) => {
+      resolve(resolved);
+    });
   });
-});
-const modules = Object.keys(createRequire(import.meta.url).cache);
-const compilerModules = modules.filter(
-  (module) =>
-    /\/(?:typescript(?:@[^/]+)?|ts-node(?:@[^/]+)?)\//.test(module) &&
-    !module.endsWith("/typescript/lib/version.cjs") &&
-    !module.endsWith("/typescript/package.json"),
-);
-assert.equal(compilerModules.length, 0);
-export const runtimeEvidence = {
-  engineConnected: pulumi.runtime.hasEngine(),
-  monitorConnected: pulumi.runtime.hasMonitor(),
-  compilerLoaded: false,
-  secretPreserved: await pulumi.isSecret(value),
-};
-export const probeSecret = value;
-console.log(
-  JSON.stringify({
-    event: "pulumi.runtime_verified",
+}
+
+function assertNoCompilerModules(): void {
+  const modules = Object.keys(createRequire(import.meta.url).cache);
+  const compilerModules = modules.filter(
+    (module) =>
+      /\/(?:typescript(?:@[^/]+)?|ts-node(?:@[^/]+)?)\//u.test(module) &&
+      !module.endsWith("/typescript/lib/version.cjs") &&
+      !module.endsWith("/typescript/package.json"),
+  );
+  invariant(compilerModules.length === 0, "compiler_modules_loaded");
+}
+
+async function probeRuntime(): Promise<ProbeResult> {
+  assertProvidersLoadedWithoutCompiler();
+  await assertEngineConnected();
+  const value = secret(await Effect.runPromise(validateAuthSecret(PROBE_SECRET)));
+  invariant(await isSecret(value), "probe_secret_not_secret");
+  invariant((await resolvedValue(value)) === PROBE_SECRET, "probe_secret_changed");
+  assertNoCompilerModules();
+  const runtimeEvidence = {
     compilerLoaded: false,
-    secretPreserved: true,
-  }),
-);
+    engineConnected: runtime.hasEngine(),
+    monitorConnected: runtime.hasMonitor(),
+    secretPreserved: await isSecret(value),
+  };
+  process.stdout.write(
+    `${JSON.stringify({
+      compilerLoaded: false,
+      event: "pulumi.runtime_verified",
+      secretPreserved: true,
+    })}\n`,
+  );
+  return { probeSecret: value, runtimeEvidence };
+}
+
+const { probeSecret, runtimeEvidence } = await probeRuntime();
+
+export { probeSecret, runtimeEvidence };

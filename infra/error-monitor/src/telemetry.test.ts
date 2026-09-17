@@ -1,95 +1,119 @@
+import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
 import { fetchErrorGroups } from "./telemetry.ts";
+import { setupServer } from "msw/node";
 
-const account = "a".repeat(32);
+const ACCOUNT_ID_LENGTH = 32;
+const GROUPED_EVENTS = 4;
+
+const account = "a".repeat(ACCOUNT_ID_LENGTH);
+const token = "test-token-000000000000";
+const window = { accountId: account, from: 1, to: 2, token };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/workers/observability/telemetry/query`;
+const fingerprintedAggregate = {
+  count: GROUPED_EVENTS,
+  groups: [
+    { key: "error.fingerprint", value: "0123abcd" },
+    { key: "service", value: "user-server" },
+    { key: "event", value: "application.error" },
+    { key: "error.type", value: "RangeError" },
+  ],
+  interval: 0,
+  sampleInterval: 1,
+  value: GROUPED_EVENTS,
+};
+const personalAggregate = {
+  count: 1,
+  groups: [{ key: "error.fingerprint", value: "private@example.com" }],
+  interval: 0,
+  sampleInterval: 1,
+  value: 1,
+};
+const queryResult = {
+  errors: [],
+  messages: [],
+  result: {
+    calculations: [
+      {
+        aggregates: [fingerprintedAggregate, personalAggregate],
+        calculation: "count",
+        series: [],
+      },
+    ],
+    run: {},
+    statistics: {},
+  },
+  success: true,
+};
 
-const withServer = (...handlers: Parameters<typeof setupServer>) =>
-  Effect.acquireRelease(
+function withServer(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ...handlers: Parameters<typeof setupServer>
+): Effect.Effect<SetupServer, never, Scope.Scope> {
+  return Effect.acquireRelease(
     Effect.sync(() => {
       const server = setupServer(...handlers);
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    (server) => Effect.sync(() => server.close()),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (server) =>
+      Effect.sync(() => {
+        server.close();
+      }),
   );
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function recordQuery(requests: unknown[]): Effect.Effect<SetupServer, never, Scope.Scope> {
+  return withServer(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    http.post(endpoint, async ({ request }) => {
+      if (request.headers.get("authorization") !== `Bearer ${token}`) {
+        return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
+      }
+      requests.push(await request.json());
+      return HttpResponse.json(queryResult);
+    }),
+  );
+}
 
 it.effect("groups fingerprinted error logs through the Workers Observability query API", () =>
-  Effect.gen(function* () {
-    let body: unknown;
-    yield* withServer(
-      http.post(endpoint, async ({ request }) => {
-        if (request.headers.get("authorization") !== "Bearer test-token-000000000000")
-          return new HttpResponse(null, { status: 401 });
-        body = await request.json();
-        return HttpResponse.json({
-          success: true,
-          errors: [],
-          messages: [],
-          result: {
-            run: {},
-            statistics: {},
-            calculations: [
-              {
-                calculation: "count",
-                series: [],
-                aggregates: [
-                  {
-                    count: 4,
-                    interval: 0,
-                    sampleInterval: 1,
-                    value: 4,
-                    groups: [
-                      { key: "error.fingerprint", value: "0123abcd" },
-                      { key: "service", value: "user-server" },
-                      { key: "event", value: "application.error" },
-                      { key: "error.type", value: "RangeError" },
-                    ],
-                  },
-                  {
-                    count: 1,
-                    interval: 0,
-                    sampleInterval: 1,
-                    value: 1,
-                    groups: [{ key: "error.fingerprint", value: "private@example.com" }],
-                  },
-                ],
-              },
-            ],
-          },
-        });
-      }),
-    );
-    assert.deepStrictEqual(yield* fetchErrorGroups(account, "test-token-000000000000", 1, 2), [
+  Effect.gen(function* program() {
+    const requests: unknown[] = [];
+    yield* recordQuery(requests);
+    assert.deepStrictEqual(yield* fetchErrorGroups(window), [
       {
+        count: GROUPED_EVENTS,
+        event: "application.error",
         fingerprint: "0123abcd",
         service: "user-server",
-        event: "application.error",
         type: "RangeError",
-        count: 4,
       },
     ]);
-    assert.deepInclude(body, { timeframe: { from: 1, to: 2 }, view: "calculations" });
+    const [body] = requests;
+    assert.deepInclude(body, {
+      timeframe: { from: window.from, to: window.to },
+      view: "calculations",
+    });
     assert.deepNestedInclude(body, {
-      "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
       "parameters.calculations[0].operator": "count",
+      "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
     });
   }).pipe(Effect.scoped),
 );
 
 it.effect("query failures are errors rather than an empty result", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     yield* withServer(
       http.post(endpoint, () =>
         HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
       ),
     );
-    const failure = yield* fetchErrorGroups(account, "test-token-000000000000", 1, 2).pipe(
-      Effect.flip,
-    );
+    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
     assert.strictEqual(failure.code, "telemetry_http_failed");
   }).pipe(Effect.scoped),
 );

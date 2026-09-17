@@ -1,75 +1,111 @@
+import { EmptyTestDatabase, d1Executor, runStatement } from "./testing.ts";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import { query } from "./index.ts";
-import { RemoteFailure } from "./remote-input.ts";
-import { parseRemoteInput } from "./remote-input.ts";
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
-import type { DatabaseExecutor } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
+import type { Database } from "./database.ts";
+import { Effect } from "effect";
+import type { RemoteFailure } from "./remote-input.ts";
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { getSessionSecurity } from "./security.ts";
-import { EmptyTestDatabase, TestBinding } from "./testing.ts";
+import { parseRemoteInput } from "./remote-input.ts";
+import { query } from "./database.ts";
+
+const HEX_ID_LENGTH = 32;
+const HASH_LENGTH = 64;
+const SESSION_LIFETIME_MS = 60_000;
+const TEST_TIMEOUT_MS = 60_000;
 
 const target = {
-  accountId: "a".repeat(32),
+  accountId: "a".repeat(HEX_ID_LENGTH),
   databaseId: "92b705e4-7b3b-42a9-9de3-700a33fa609c",
 };
+const executeFlags = ["--execute", "--confirm-database"] as const;
 
-const code = <A, R>(effect: Effect.Effect<A, RemoteFailure, R>) =>
-  effect.pipe(
+function code<Value, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, RemoteFailure, Requirements>,
+): Effect.Effect<RemoteFailure["code"], Value, Requirements> {
+  return effect.pipe(
     Effect.flip,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((failure) => failure.code),
   );
+}
 
-const tag = <A, E extends { readonly _tag: string }, R>(effect: Effect.Effect<A, E, R>) =>
-  effect.pipe(
+function tag<Value, Failure extends { readonly _tag: string }, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<string, Value, Requirements> {
+  return effect.pipe(
     Effect.flip,
     Effect.map((failure) => failure._tag),
   );
+}
 
-it.effect(
-  "requires explicit execution, exact target confirmation and a non-placeholder database",
-  () =>
-    Effect.gen(function* () {
-      assert.strictEqual(
-        yield* code(parseRemoteInput(["migrate"], target)),
-        "REMOTE_COMMAND_INVALID",
-      );
-      assert.strictEqual(
-        yield* code(
-          parseRemoteInput(
-            ["migrate", "--execute", "--confirm-database", target.databaseId],
-            target,
-          ),
-        ),
-        "REMOTE_INPUT_INVALID",
-      );
-      assert.strictEqual(
-        yield* code(
-          parseRemoteInput(["migrate", "--execute", "--confirm-database", "wrong"], {
-            ...target,
-            apiToken: "test-token-at-least-20-characters",
-          }),
-        ),
-        "REMOTE_TARGET_MISMATCH",
-      );
-      assert.strictEqual(
-        yield* code(
-          parseRemoteInput(["migrate", "--plan"], {
-            ...target,
-            databaseId: "00000000-0000-0000-0000-000000000001",
-          }),
-        ),
-        "REMOTE_INPUT_INVALID",
-      );
-      const parsed = yield* parseRemoteInput(["migrate", "--plan"], target);
-      assert.strictEqual(parsed.operation, "migrate");
-      assert.strictEqual(parsed.execute, false);
-    }),
+function insertUser(id: string, verified: boolean): Effect.Effect<void, unknown, Database> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return query(async (database): Promise<void> => {
+    await database.insert(user).values({
+      createdAt: new Date(),
+      email: `${id}@example.test`,
+      emailVerified: verified,
+      id,
+      name: id,
+      updatedAt: new Date(),
+    });
+  });
+}
+
+function insertSession(id: string, userId: string): Effect.Effect<void, unknown, Database> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return query(async (database): Promise<void> => {
+    await database.insert(session).values({
+      audience: "user",
+      authenticationMethod: "password",
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
+      id,
+      securityVersion: 0,
+      token: `${id}-token`,
+      updatedAt: new Date(),
+      userId,
+    });
+  });
+}
+
+it.effect("requires explicit execution and exact target confirmation", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* code(parseRemoteInput(["migrate"], target)),
+      "REMOTE_COMMAND_INVALID",
+    );
+    assert.strictEqual(
+      yield* code(parseRemoteInput(["migrate", ...executeFlags, target.databaseId], target)),
+      "REMOTE_INPUT_INVALID",
+    );
+    const withToken = { ...target, apiToken: "test-token-at-least-20-characters" };
+    assert.strictEqual(
+      yield* code(parseRemoteInput(["migrate", ...executeFlags, "wrong"], withToken)),
+      "REMOTE_TARGET_MISMATCH",
+    );
+  }),
+);
+
+it.effect("refuses placeholder databases and accepts a plan", () =>
+  Effect.gen(function* program() {
+    const placeholder = { ...target, databaseId: "00000000-0000-0000-0000-000000000001" };
+    assert.strictEqual(
+      yield* code(parseRemoteInput(["migrate", "--plan"], placeholder)),
+      "REMOTE_INPUT_INVALID",
+    );
+    const parsed = yield* parseRemoteInput(["migrate", "--plan"], target);
+    assert.strictEqual(parsed.operation, "migrate");
+    assert.isFalse(parsed.execute);
+  }),
 );
 
 it.effect("rejects missing bootstrap identity and surplus commands", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     assert.strictEqual(
       yield* code(parseRemoteInput(["bootstrap", "--plan"], target)),
       "REMOTE_INPUT_INVALID",
@@ -78,100 +114,80 @@ it.effect("rejects missing bootstrap identity and surplus commands", () =>
       yield* code(parseRemoteInput(["migrate", "--plan", "extra"], target)),
       "REMOTE_COMMAND_INVALID",
     );
+    const invalidEmail = { ...target, email: "private-invalid-email" };
     assert.strictEqual(
-      yield* code(
-        parseRemoteInput(["bootstrap", "--plan"], { ...target, email: "private-invalid-email" }),
-      ),
+      yield* code(parseRemoteInput(["bootstrap", "--plan"], invalidEmail)),
       "REMOTE_INPUT_INVALID",
     );
   }),
 );
 
 it.effect(
-  "applies real D1 migrations once, rejects changed history and preserves bootstrap protections",
+  "applies real D1 migrations once and rolls back an interrupted migration",
   () =>
-    Effect.gen(function* () {
-      const binding = yield* TestBinding;
-      const executor: DatabaseExecutor = {
-        batch: (queries) =>
-          Effect.tryPromise({
-            try: () =>
-              binding.batch(
-                queries.map((statement) =>
-                  binding.prepare(statement.sql).bind(...statement.params),
-                ),
-              ),
-            catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-          }).pipe(Effect.map((result) => result.map((item) => item.results))),
-      };
+    Effect.gen(function* program() {
+      const executor = yield* d1Executor();
       const migrations = yield* loadRemoteMigrations();
       assert.strictEqual(yield* migrateDatabase(executor, migrations), migrations.length);
       assert.strictEqual(yield* migrateDatabase(executor, migrations), 0);
-      const last = migrations.at(-1);
-      assert.isDefined(last);
+      const folderMillis = (migrations.at(-1)?.folderMillis ?? 0) + 1;
+      const interruptedMigration = {
+        folderMillis,
+        hash: "b".repeat(HASH_LENGTH),
+        sql: [
+          "CREATE TABLE interrupted_migration (id TEXT)",
+          "INSERT INTO missing_migration_table VALUES (1)",
+        ],
+      };
       assert.strictEqual(
-        yield* code(
-          migrateDatabase(executor, [
-            ...migrations,
-            {
-              hash: "b".repeat(64),
-              folderMillis: (last?.folderMillis ?? 0) + 1,
-              sql: [
-                "CREATE TABLE interrupted_migration (id TEXT)",
-                "INSERT INTO missing_migration_table VALUES (1)",
-              ],
-            },
-          ]),
-        ),
+        yield* code(migrateDatabase(executor, [...migrations, interruptedMigration])),
         "REMOTE_QUERY_FAILED",
       );
-      const interrupted = yield* Effect.promise(() =>
-        binding
-          .prepare("SELECT name FROM sqlite_master WHERE name = ?")
-          .bind("interrupted_migration")
-          .all(),
+      const interrupted = yield* runStatement(
+        "SELECT name FROM sqlite_master WHERE name = ?",
+        "interrupted_migration",
       );
       assert.deepStrictEqual(interrupted.results, []);
+    }).pipe(Effect.provide(EmptyTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect(
+  "rejects migrations whose applied history changed",
+  () =>
+    Effect.gen(function* program() {
+      const executor = yield* d1Executor();
+      const migrations = yield* loadRemoteMigrations();
+      yield* migrateDatabase(executor, migrations);
       const [first, ...rest] = migrations;
-      assert.isDefined(first);
-      if (first)
-        assert.strictEqual(
-          yield* code(migrateDatabase(executor, [{ ...first, hash: "c".repeat(64) }, ...rest])),
-          "REMOTE_MIGRATION_HISTORY_MISMATCH",
-        );
-      for (const [id, verified] of [
-        ["unverified", false],
-        ["first", true],
-        ["second", true],
-      ] as const)
-        yield* query((database) =>
-          database.insert(user).values({
-            id,
-            name: id,
-            email: `${id}@example.test`,
-            emailVerified: verified,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }),
-        );
-      for (const email of ["unverified@example.test", "missing@example.test"])
+      const changed =
+        first === undefined ? [] : [{ ...first, hash: "c".repeat(HASH_LENGTH) }, ...rest];
+      assert.strictEqual(
+        yield* code(migrateDatabase(executor, changed)),
+        "REMOTE_MIGRATION_HISTORY_MISMATCH",
+      );
+    }).pipe(Effect.provide(EmptyTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect(
+  "bootstraps only one verified administrator and revokes their earlier sessions",
+  () =>
+    Effect.gen(function* program() {
+      const executor = yield* d1Executor();
+      yield* migrateDatabase(executor, yield* loadRemoteMigrations());
+      yield* Effect.all([
+        insertUser("unverified", false),
+        insertUser("first", true),
+        insertUser("second", true),
+      ]);
+      for (const email of ["unverified@example.test", "missing@example.test"]) {
         assert.strictEqual(
           yield* code(bootstrapDatabase(executor, email)),
           "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
         );
-      yield* query((database) =>
-        database.insert(session).values({
-          id: "old-session",
-          token: "old-token",
-          userId: "first",
-          audience: "user",
-          securityVersion: 0,
-          authenticationMethod: "password",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          expiresAt: new Date(Date.now() + 60000),
-        }),
-      );
+      }
+      yield* insertSession("old-session", "first");
       yield* bootstrapDatabase(executor, "FIRST@example.test");
       assert.isNull(yield* getSessionSecurity("old-session", "user"));
       assert.strictEqual(
@@ -179,15 +195,29 @@ it.effect(
         "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
       );
       assert.strictEqual(yield* tag(bootstrapAdmin("second@example.test")), "BootstrapUnavailable");
+    }).pipe(Effect.provide(EmptyTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect(
+  "the database refuses to delete or demote the last administrator",
+  () =>
+    Effect.gen(function* program() {
+      const executor = yield* d1Executor();
+      yield* migrateDatabase(executor, yield* loadRemoteMigrations());
+      yield* insertUser("first", true);
+      yield* bootstrapDatabase(executor, "first@example.test");
       for (const statement of [
         "DELETE FROM user WHERE id = ?",
         "UPDATE user SET role = 'user' WHERE id = ?",
       ]) {
-        const failure = yield* Effect.tryPromise(() =>
-          binding.prepare(statement).bind("first").run(),
-        ).pipe(Effect.flip);
-        assert.include(String(failure.cause), "LAST_ADMIN_REQUIRED");
+        const failure = yield* runStatement(statement, "first").pipe(Effect.flip);
+        assert.instanceOf(failure, Error);
+        assert.include(
+          String(failure instanceof Error ? failure.cause : failure),
+          "LAST_ADMIN_REQUIRED",
+        );
       }
     }).pipe(Effect.provide(EmptyTestDatabase)),
-  { timeout: 60_000 },
+  { timeout: TEST_TIMEOUT_MS },
 );

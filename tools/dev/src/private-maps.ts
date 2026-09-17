@@ -1,9 +1,14 @@
+import { Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Dirent } from "node:fs";
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
-import { Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 
 class PrivateMapsFailure extends Schema.TaggedError<PrivateMapsFailure>()("PrivateMapsFailure", {
   reason: Schema.Literals([
@@ -14,58 +19,92 @@ class PrivateMapsFailure extends Schema.TaggedError<PrivateMapsFailure>()("Priva
   ]),
 }) {}
 
-const fileIo = <A>(operation: () => Promise<A>) =>
-  Effect.tryPromise({
-    try: operation,
-    catch: () => new PrivateMapsFailure({ reason: "file_io_failed" }),
-  });
+type MapEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
+
+interface MapMove {
+  readonly destination: string;
+  readonly source: string;
+}
+
+const PRIVATE_FILE_MODE = 0o600;
+const PRIVATE_DIRECTORY_MODE = 0o700;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
-const moveMaps: (
-  directory: string,
-  source: string,
-  destination: string,
-) => Effect.Effect<number, PrivateMapsFailure> = Effect.fn("moveMaps")(function* (
-  directory: string,
-  source: string,
-  destination: string,
-) {
-  if ((yield* fileIo(() => realpath(directory))) !== directory)
-    return yield* new PrivateMapsFailure({ reason: "directory_alias_forbidden" });
-  let moved = 0;
-  for (const entry of yield* fileIo(() => readdir(directory, { withFileTypes: true }))) {
-    if (entry.isSymbolicLink())
-      return yield* new PrivateMapsFailure({ reason: "symlink_forbidden" });
-    const file = path.join(directory, entry.name);
-    if (entry.isDirectory()) moved += yield* moveMaps(file, source, destination);
-    else if (entry.isFile() && entry.name.endsWith(".map")) {
-      const target = path.join(destination, path.relative(source, file));
-      yield* fileIo(() => mkdir(path.dirname(target), { recursive: true, mode: 0o700 }));
-      if ((yield* fileIo(() => realpath(path.dirname(target)))) !== path.dirname(target))
-        return yield* new PrivateMapsFailure({ reason: "private_directory_alias_forbidden" });
-      yield* fileIo(() => rename(file, target));
-      yield* fileIo(() => chmod(target, 0o600));
-      moved += 1;
-    }
+function fileIo<Value>(operation: () => Promise<Value>): Effect.Effect<Value, PrivateMapsFailure> {
+  return Effect.tryPromise({
+    catch: () => new PrivateMapsFailure({ reason: "file_io_failed" }),
+    try: operation,
+  });
+}
+
+function fail(reason: PrivateMapsFailure["reason"]): Effect.Effect<never, PrivateMapsFailure> {
+  return Effect.fail(new PrivateMapsFailure({ reason }));
+}
+
+const moveMap = Effect.fn("moveMap")(function* moveMap(file: string, move: MapMove) {
+  const target = path.join(move.destination, path.relative(move.source, file));
+  const directory = path.dirname(target);
+  yield* fileIo(async () => mkdir(directory, { mode: PRIVATE_DIRECTORY_MODE, recursive: true }));
+  if ((yield* fileIo(async () => realpath(directory))) !== directory) {
+    return yield* fail("private_directory_alias_forbidden");
   }
-  return moved;
+  yield* fileIo(async () => rename(file, target));
+  yield* fileIo(async () => chmod(target, PRIVATE_FILE_MODE));
+  return 1;
 });
 
+function moveEntry(
+  directory: string,
+  entry: MapEntry,
+  move: MapMove,
+): Effect.Effect<number, PrivateMapsFailure> {
+  if (entry.isSymbolicLink()) {
+    return fail("symlink_forbidden");
+  }
+  const file = path.join(directory, entry.name);
+  if (entry.isDirectory()) {
+    // oxlint-disable-next-line typescript/no-use-before-define
+    return moveMaps(file, move);
+  }
+  return entry.isFile() && entry.name.endsWith(".map") ? moveMap(file, move) : Effect.succeed(0);
+}
+
+function moveMaps(directory: string, move: MapMove): Effect.Effect<number, PrivateMapsFailure> {
+  return fileIo(async () => realpath(directory)).pipe(
+    Effect.flatMap((resolved) =>
+      resolved === directory
+        ? fileIo(async () => readdir(directory, { withFileTypes: true }))
+        : fail("directory_alias_forbidden"),
+    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap((entries) =>
+      Effect.forEach(entries, (entry: MapEntry) => moveEntry(directory, entry, move)),
+    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((moved) => moved.reduce((total, count) => total + count, 0)),
+  );
+}
+
+function moveApplicationMaps(application: string): Effect.Effect<void, PrivateMapsFailure> {
+  const source = path.join(root, "apps", application, "dist/client");
+  const destination = path.join(root, ".local", "source-maps", application, "client");
+  return moveMaps(source, { destination, source }).pipe(
+    Effect.flatMap((moved) =>
+      Effect.sync(() => {
+        process.stdout.write(
+          `${JSON.stringify({ audience: application, event: "build.source_maps_private", moved })}\n`,
+        );
+      }),
+    ),
+  );
+}
+
 NodeRuntime.runMain(
-  Effect.gen(function* () {
-    for (const application of applications) {
-      const source = path.join(root, "apps", application, "dist/client");
-      const destination = path.join(root, ".local", "source-maps", application, "client");
-      const moved = yield* moveMaps(source, source, destination);
-      console.log(
-        JSON.stringify({ event: "build.source_maps_private", audience: application, moved }),
-      );
-    }
-  }).pipe(
+  Effect.forEach(applications, moveApplicationMaps, { discard: true }).pipe(
     Effect.catchCause(() =>
       Effect.sync(() => {
-        console.error(JSON.stringify({ event: "build.source_maps_private_failed" }));
+        process.stderr.write(`${JSON.stringify({ event: "build.source_maps_private_failed" })}\n`);
         process.exitCode = 1;
       }),
     ),

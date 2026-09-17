@@ -1,169 +1,155 @@
-import type { AssetFetcher } from "@template/config";
-import { developmentServer } from "@template/config/mode";
-import {
-  CurrentRequest,
-  RequestRejected,
-  readJson,
-  rejectionStatus,
-  reportFailure,
-} from "@template/observability";
-import { Cause, Context, Effect, Exit, Schema } from "effect";
-import { Elysia } from "elysia";
+import type { CommonFailure, FailureTable, Tagged } from "./failures.ts";
+import type { CurrentRequest, RequestRejected } from "@template/observability";
+import { Effect, Exit, Schema } from "effect";
+import { httpStatus, readJson } from "@template/observability";
+import { jsonResponse, secureResponse } from "./responses.ts";
 import type { AnyElysia } from "elysia";
+import { AppOrigin } from "./app-origin.ts";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
+import type { Context } from "effect";
+import { Elysia } from "elysia";
+import { InputInvalid } from "./input-invalid.ts";
+import { developmentServer } from "@template/config/mode";
+import { failureResponse } from "./failures.ts";
 
-export class InputInvalid extends Schema.TaggedError<InputInvalid>()("InputInvalid", {}) {}
+type Decodable = Schema.Top & { readonly DecodingServices: never };
+type Handler<Value, Failures, Requirements> = (
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  request: Request,
+) => Effect.Effect<Value, Failures, Requirements | CurrentRequest>;
+type ElysiaHandler = (context: Readonly<Record<string, unknown>>) => Promise<Response>;
+interface PendingRequest<Requirements> {
+  readonly context: Context.Context<Requirements | CurrentRequest>;
+  readonly request: Request;
+}
+type PendingRequests<Requirements> = WeakMap<Request, PendingRequest<Requirements>>;
+interface ApiBridge<Requirements> {
+  readonly dispatch: (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    app: AnyElysia,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    request: Request,
+  ) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
+  readonly raw: <Failures extends Tagged>(
+    handler: Handler<Response, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ) => ElysiaHandler;
+  readonly route: <Value, Failures extends Tagged>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    response: Schema.Codec<Value, unknown>,
+    handler: Handler<Value, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ) => ElysiaHandler;
+}
 
-export type Failure = { readonly status: number; readonly message: string };
-export type FailureTable<E extends { readonly _tag: string }> = {
-  readonly [K in E["_tag"]]:
-    | Failure
-    | "unexpected"
-    | ((error: Extract<E, { readonly _tag: K }>) => Failure);
-};
+const failedMessage = "処理に失敗しました。";
 
-const invalidInput = "入力内容を確認してください。";
-const forbidden = "この操作は許可されていません。";
+function decodeInput<Contract extends Decodable>(
+  schema: Contract,
+  input: unknown,
+): Effect.Effect<Contract["Type"], InputInvalid> {
+  return Schema.decodeUnknownEffect(schema, { onExcessProperty: "error" })(input).pipe(
+    Effect.mapError(() => new InputInvalid()),
+  );
+}
 
-type CommonFailure =
-  | RequestRejected
-  | InputInvalid
-  | { readonly _tag: "SessionRequired" }
-  | { readonly _tag: "SessionInvalid" }
-  | { readonly _tag: "AdminRequired" }
-  | { readonly _tag: "AdminMfaRequired" };
-
-const commonFailures: FailureTable<CommonFailure> = {
-  RequestRejected: (error) => ({
-    status: rejectionStatus[error.reason],
-    message: error.reason === "invalid_json" ? invalidInput : forbidden,
-  }),
-  InputInvalid: { status: 400, message: invalidInput },
-  SessionRequired: { status: 401, message: "ログインしてください。" },
-  SessionInvalid: { status: 403, message: forbidden },
-  AdminRequired: { status: 403, message: forbidden },
-  AdminMfaRequired: { status: 403, message: forbidden },
-};
-
-export const privateHeaders = {
-  "cache-control": "no-store",
-  "x-content-type-options": "nosniff",
-} as const;
-
-export const jsonResponse = (value: unknown, status = 200) =>
-  Response.json(value, { status, headers: privateHeaders });
-
-export function secureResponse(response: Response): Response {
-  const headers = new Headers(response.headers);
-  headers.set("cache-control", "no-store");
-  headers.set("x-content-type-options", "nosniff");
-  headers.set("referrer-policy", "no-referrer");
-  headers.set("x-frame-options", "DENY");
-  headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
+function readJsonBody<Contract extends Decodable>(
+  schema: Contract,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  request: Request,
+): Effect.Effect<Contract["Type"], RequestRejected | InputInvalid, AppOrigin> {
+  return Effect.gen(function* readJsonBodyProgram() {
+    const input = yield* readJson(request, yield* AppOrigin);
+    return yield* decodeInput(schema, input);
   });
 }
 
-export class Assets extends Context.Service<Assets, AssetFetcher>()("@template/runtime/Assets") {}
+function readSearchParams<Contract extends Decodable>(
+  schema: Contract,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  request: Request,
+): Effect.Effect<Contract["Type"], InputInvalid> {
+  return decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));
+}
 
-export class AppOrigin extends Context.Service<AppOrigin, string>()(
-  "@template/runtime/AppOrigin",
-) {}
+function createApi(): AnyElysia {
+  return developmentServer
+    ? new Elysia({ aot: false })
+    : new Elysia({ adapter: CloudflareAdapter });
+}
 
-export const readJsonBody = <S extends Decodable>(schema: S, request: Request) =>
-  AppOrigin.use((origin) => readJson(request, origin)).pipe(
-    Effect.flatMap((input) => decodeInput(schema, input)),
-  );
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function compileApi(app: AnyElysia): AnyElysia {
+  return developmentServer ? app : app.compile();
+}
 
-export const readSearchParams = <S extends Decodable>(schema: S, request: Request) =>
-  decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));
-
-type Decodable = Schema.Top & { readonly DecodingServices: never };
-
-const decodeInput = <S extends Decodable>(schema: S, input: unknown) =>
-  Schema.decodeUnknownEffect(schema, { onExcessProperty: "error" })(input).pipe(
-    Effect.mapError(() => new InputInvalid()),
-  );
-
-const FailureShape = Schema.Struct({ status: Schema.Int, message: Schema.String });
-
-const toFailure = (table: object, error: { readonly _tag: string }) => {
-  const entry: unknown = Reflect.get(table, error._tag);
-  const failure: unknown =
-    typeof entry === "function" ? Reflect.apply(entry, undefined, [error]) : entry;
-  return Schema.is(FailureShape)(failure) ? failure : undefined;
-};
-
-export const createApi = () =>
-  developmentServer ? new Elysia({ aot: false }) : new Elysia({ adapter: CloudflareAdapter });
-
-export const compileApi = <App extends AnyElysia>(app: App): App =>
-  developmentServer ? app : app.compile();
-
-export const apiBridge = <R>() => {
-  const pending = new WeakMap<
-    Request,
-    { readonly context: Context.Context<R | CurrentRequest>; readonly request: Request }
-  >();
-
-  const dispatch = (app: AnyElysia, request: Request) =>
-    Effect.gen(function* () {
-      const routed = new Request(request.url, { method: request.method, headers: request.headers });
-      pending.set(routed, { context: yield* Effect.context<R | CurrentRequest>(), request });
+function dispatcher<Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  pending: PendingRequests<Requirements>,
+): ApiBridge<Requirements>["dispatch"] {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (app, request) =>
+    Effect.gen(function* dispatchRequest() {
+      const routed = new Request(request.url, { headers: request.headers, method: request.method });
+      pending.set(routed, {
+        context: yield* Effect.context<Requirements | CurrentRequest>(),
+        request,
+      });
       const response = yield* Effect.promise(async (): Promise<Response> => app.fetch(routed));
       return secureResponse(response);
     });
+}
 
-  const raw =
-    <E extends { readonly _tag: string }>(
-      handler: (request: Request) => Effect.Effect<Response, E, R | CurrentRequest>,
-      failures: FailureTable<Exclude<E, CommonFailure>>,
-    ) =>
-    ({ request }: { readonly request: Request }): Promise<Response> => {
-      const entry = pending.get(request);
-      if (entry === undefined)
-        return Promise.resolve(jsonResponse({ error: "処理に失敗しました。" }, 500));
-      const { context } = entry;
+function rawHandler<Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  pending: PendingRequests<Requirements>,
+): ApiBridge<Requirements>["raw"] {
+  return (handler, failures) =>
+    async ({ request }): Promise<Response> => {
+      const entry = request instanceof Request ? pending.get(request) : undefined;
+      if (entry === undefined) {
+        return jsonResponse({ error: failedMessage }, httpStatus.internalServerError);
+      }
       const program = handler(entry.request).pipe(
-        Effect.catchCause((cause) => {
-          const error = Cause.findErrorOption(cause);
-          const failure =
-            error._tag === "Some"
-              ? toFailure({ ...commonFailures, ...failures }, error.value)
-              : undefined;
-          return failure === undefined
-            ? reportFailure(cause).pipe(
-                Effect.as(
-                  jsonResponse(
-                    { error: "処理に失敗しました。リクエスト ID でログを確認してください。" },
-                    500,
-                  ),
-                ),
-              )
-            : Effect.succeed(jsonResponse({ error: failure.message }, failure.status));
-        }),
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        Effect.catchCause((cause) => failureResponse(failures, cause)),
+        Effect.provide(entry.context),
       );
-      return Effect.runPromiseExit(Effect.provide(program, context)).then((exit) =>
-        Exit.isSuccess(exit) ? exit.value : jsonResponse({ error: "処理に失敗しました。" }, 500),
-      );
+      const exit = await Effect.runPromiseExit(program);
+      return Exit.isSuccess(exit)
+        ? exit.value
+        : jsonResponse({ error: failedMessage }, httpStatus.internalServerError);
     };
+}
 
-  const route = <A, E extends { readonly _tag: string }>(
-    response: Schema.Codec<A, unknown>,
-    handler: (request: Request) => Effect.Effect<A, E, R | CurrentRequest>,
-    failures: FailureTable<Exclude<E, CommonFailure>>,
-  ) =>
-    raw(
+function routeHandler<Requirements>(
+  raw: ApiBridge<Requirements>["raw"],
+): ApiBridge<Requirements>["route"] {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (response, handler, failures) => {
+    const encode = Schema.encodeEffect(response);
+    return raw(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
         handler(request).pipe(
-          Effect.flatMap((value) => Schema.encodeEffect(response)(value).pipe(Effect.orDie)),
+          Effect.flatMap((value) => Effect.orDie(encode(value))),
           Effect.map((body) => jsonResponse(body)),
         ),
       failures,
     );
+  };
+}
 
-  return { dispatch, route, raw };
-};
+function apiBridge<Requirements>(): ApiBridge<Requirements> {
+  const pending: PendingRequests<Requirements> = new WeakMap();
+  const raw = rawHandler(pending);
+  return { dispatch: dispatcher(pending), raw, route: routeHandler(raw) };
+}
+
+export { AppOrigin } from "./app-origin.ts";
+export { Assets } from "./assets.ts";
+export { InputInvalid } from "./input-invalid.ts";
+export { jsonResponse, privateHeaders, secureResponse } from "./responses.ts";
+export { apiBridge, compileApi, createApi, readJsonBody, readSearchParams };
+export type { ApiBridge };
+export type { Failure, FailureTable } from "./failures.ts";

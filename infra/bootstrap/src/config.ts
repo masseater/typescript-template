@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-export class BootstrapFailure extends Schema.TaggedError<BootstrapFailure>()("BootstrapFailure", {
+class BootstrapFailure extends Schema.TaggedError<BootstrapFailure>()("BootstrapFailure", {
   code: Schema.Literals([
     "bootstrap_settings_invalid",
     "bootstrap_environment_invalid",
@@ -25,60 +25,84 @@ export class BootstrapFailure extends Schema.TaggedError<BootstrapFailure>()("Bo
   ]),
 }) {}
 
-export const fail = (code: BootstrapFailure["code"]) => Effect.fail(new BootstrapFailure({ code }));
+function fail(code: BootstrapFailure["code"]): Effect.Effect<never, BootstrapFailure> {
+  return Effect.fail(new BootstrapFailure({ code }));
+}
 
-const Hex32 = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/));
-const Bucket = Schema.String.check(Schema.isPattern(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/));
+const Hex32 = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
+const Bucket = Schema.String.check(Schema.isPattern(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/u));
 
 const Settings = Schema.Struct({ accountId: Hex32, bucket: Bucket });
 
 const Credentials = Schema.Struct({
+  accessKeyId: Hex32,
   accountId: Hex32,
   bucket: Bucket,
-  accessKeyId: Hex32,
-  secretAccessKey: Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/)),
+  secretAccessKey: Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/u)),
 });
 
-export const parseBootstrapConfig = Effect.fn("parseBootstrapConfig")(function* (input: unknown) {
+type StateCredentials = typeof Credentials.Type;
+
+const parseBootstrapConfig = Effect.fn("parseBootstrapConfig")(function* parseBootstrapConfig(
+  input: unknown,
+) {
   return yield* Schema.decodeUnknownEffect(Settings)(input).pipe(
     Effect.mapError(() => new BootstrapFailure({ code: "bootstrap_settings_invalid" })),
   );
 });
 
-export const backendUrl = Effect.fn("backendUrl")(function* (input: unknown) {
+const backendUrl = Effect.fn("backendUrl")(function* backendUrl(input: unknown) {
   const config = yield* parseBootstrapConfig(input);
   const query = new URLSearchParams({
+    awssdk: "v2",
     endpoint: `${config.accountId}.r2.cloudflarestorage.com`,
     region: "auto",
-    awssdk: "v2",
     s3ForcePathStyle: "true",
   });
   return `s3://${config.bucket}?${query.toString()}`;
 });
 
-export const selectObjectWritePermission = Effect.fn("selectObjectWritePermission")(function* (
-  groups: readonly { id: string; name: string; scopes: string[] }[],
-) {
-  const matches = groups.filter(
-    (group) =>
-      group.name === "Workers R2 Storage Bucket Item Write" &&
-      group.scopes.includes("com.cloudflare.edge.r2.bucket"),
-  );
-  const [match] = matches;
-  if (matches.length !== 1 || match === undefined || !/^[a-f0-9]{32}$/.test(match.id))
-    return yield* fail("r2_object_write_permission_unavailable");
-  return match.id;
-});
+const selectObjectWritePermission = Effect.fn("selectObjectWritePermission")(
+  function* selectObjectWritePermission(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    groups: readonly { id: string; name: string; scopes: string[] }[],
+  ) {
+    const matches = groups.filter(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (group) =>
+        group.name === "Workers R2 Storage Bucket Item Write" &&
+        group.scopes.includes("com.cloudflare.edge.r2.bucket"),
+    );
+    const [match] = matches;
+    if (matches.length !== 1 || match === undefined || !/^[a-f0-9]{32}$/u.test(match.id)) {
+      return yield* fail("r2_object_write_permission_unavailable");
+    }
+    return match.id;
+  },
+);
 
-export const bucketPolicyResources = Effect.fn("bucketPolicyResources")(function* (input: unknown) {
+const bucketPolicyResources = Effect.fn("bucketPolicyResources")(function* bucketPolicyResources(
+  input: unknown,
+) {
   const config = yield* parseBootstrapConfig(input);
   return JSON.stringify({
     [`com.cloudflare.edge.r2.bucket.${config.accountId}_default_${config.bucket}`]: "*",
   });
 });
 
-export const parseCredentials = Effect.fn("parseCredentials")(function* (input: unknown) {
+const parseCredentials = Effect.fn("parseCredentials")(function* parseCredentials(input: unknown) {
   return yield* Schema.decodeUnknownEffect(Credentials)(input).pipe(
     Effect.mapError(() => new BootstrapFailure({ code: "state_credentials_invalid" })),
   );
 });
+
+export {
+  BootstrapFailure,
+  backendUrl,
+  bucketPolicyResources,
+  fail,
+  parseBootstrapConfig,
+  parseCredentials,
+  selectObjectWritePermission,
+};
+export type { StateCredentials };

@@ -1,62 +1,87 @@
+import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { http, HttpResponse } from "msw";
 import type { HttpResponseResolver } from "msw";
-import { setupServer } from "msw/node";
+import type { ProbeResult } from "./probe.ts";
 import { probeService } from "./probe.ts";
-import type { HealthTarget } from "./probe.ts";
+import { setupServer } from "msw/node";
 
-const userTarget: HealthTarget = {
-  service: "user",
+function otherServiceHealth(): Response {
+  return HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "admin" });
+}
+
+function failedDependency(): Response {
+  return HttpResponse.json({ error: "処理に失敗しました。" }, { status: 500 });
+}
+
+function htmlPage(): Response {
+  return HttpResponse.text("<!doctype html>");
+}
+
+function networkError(): Response {
+  return HttpResponse.error();
+}
+
+const userTarget: Parameters<typeof probeService>[0] = {
   origin: "https://app.example.com",
+  service: "user",
 };
 
-const probe = (target: HealthTarget, resolver: HttpResponseResolver) =>
-  Effect.acquireUseRelease(
+function probe(
+  target: Parameters<typeof probeService>[0],
+  resolver: HttpResponseResolver,
+): Effect.Effect<ProbeResult> {
+  return Effect.acquireUseRelease(
     Effect.sync(() => {
       const server = setupServer(http.get(`${target.origin}/api/health`, resolver));
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
     () => probeService(target),
-    (server) => Effect.sync(() => server.close()),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (server) =>
+      Effect.sync(() => {
+        server.close();
+      }),
   );
+}
 
 it.effect("an application reporting its own service name and release is healthy", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     assert.deepStrictEqual(
       yield* probe(userTarget, () =>
-        HttpResponse.json({ ok: true, service: "user", release: "0123456789abcdef" }),
+        HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "user" }),
       ),
-      { service: "user", healthy: true, detail: "release_0123456789abcdef" },
+      { detail: "release_0123456789abcdef", healthy: true, service: "user" },
     );
   }),
 );
 
 for (const { name, resolver, detail } of [
   {
-    name: "answering for another application",
-    resolver: () => HttpResponse.json({ ok: true, service: "admin", release: "0123456789abcdef" }),
     detail: "payload_invalid",
+    name: "answering for another application",
+    resolver: otherServiceHealth,
   },
   {
-    name: "reporting a failed dependency",
-    resolver: () => HttpResponse.json({ error: "処理に失敗しました。" }, { status: 500 }),
     detail: "status_500",
+    name: "reporting a failed dependency",
+    resolver: failedDependency,
   },
   {
-    name: "returning something other than JSON",
-    resolver: () => HttpResponse.text("<!doctype html>"),
     detail: "body_unreadable",
+    name: "returning something other than JSON",
+    resolver: htmlPage,
   },
-  { name: "unreachable", resolver: () => HttpResponse.error(), detail: "unreachable" },
-])
+  { detail: "unreachable", name: "unreachable", resolver: networkError },
+]) {
   it.effect(`an application ${name} is unhealthy`, () =>
-    Effect.gen(function* () {
+    Effect.gen(function* program() {
       assert.deepStrictEqual(yield* probe(userTarget, resolver), {
-        service: "user",
-        healthy: false,
         detail,
+        healthy: false,
+        service: "user",
       });
     }),
   );
+}

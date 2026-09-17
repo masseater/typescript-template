@@ -1,42 +1,59 @@
+import { Schema } from "effect";
 import type { SessionView as SessionContract } from "@template/runtime/contracts";
 
-export type SessionView = typeof SessionContract.Type;
+const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return isRecord(value);
+}
 
-export function errorMessage(error: unknown): string {
+type SessionView = typeof SessionContract.Type;
+
+interface AuthResult<TData> {
+  readonly data: TData;
+  readonly error: Readonly<{ message?: string | undefined }> | null;
+}
+
+function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
 }
 
-export function requireSecureContext(): void {
-  if (!window.isSecureContext) throw new Error("パスキーには HTTPS または localhost が必要です。");
-}
-
-export function requireSuccess<T>(result: {
-  data: T;
-  error: { message?: string | undefined } | null;
-}): NonNullable<T> {
-  if (result.error) throw new Error(result.error.message ?? "認証サーバーが操作を拒否しました。");
-  if (result.data === null || result.data === undefined)
+function requireSuccess<TData>(result: AuthResult<TData>): NonNullable<TData> {
+  if (result.error) {
+    throw new Error(result.error.message ?? "認証サーバーが操作を拒否しました。");
+  }
+  if (result.data === null || result.data === undefined) {
     throw new Error("認証サーバーから結果が返りませんでした。");
+  }
   return result.data;
 }
 
-export function requirePasskeyUV(data: unknown, pathname: string): void {
+function requireSecureContext(): void {
+  if (!globalThis.isSecureContext) {
+    throw new Error("パスキーには HTTPS または localhost が必要です。");
+  }
+}
+
+function requirePasskeyUV(data: unknown, pathname: string): void {
   if (
     !pathname.endsWith("/passkey/generate-authenticate-options") &&
     !pathname.endsWith("/passkey/generate-register-options")
-  )
+  ) {
     return;
-  if (!isRecord(data)) throw new Error("パスキー設定の応答形式が不正です。");
+  }
+  if (!isUnknownRecord(data)) {
+    throw new Error("パスキー設定の応答形式が不正です。");
+  }
   if (pathname.endsWith("/passkey/generate-authenticate-options")) {
     data["userVerification"] = "required";
   } else {
     const selection = data["authenticatorSelection"];
-    if (selection !== undefined && !isRecord(selection)) {
+    if (selection !== undefined && !isUnknownRecord(selection)) {
       throw new Error("パスキー登録設定の応答形式が不正です。");
     }
     data["authenticatorSelection"] = { ...selection, userVerification: "required" };
   }
 }
+
+export { errorMessage, requirePasskeyUV, requireSecureContext, requireSuccess };
+export type { SessionView };

@@ -1,51 +1,59 @@
-import * as pulumi from "@pulumi/pulumi";
-import { Effect, Schema } from "effect";
 import { CloudflareFailure, parseSharedConfig, validateAuthSecret } from "./config.ts";
-import { projectName, stackReferenceName } from "./stacks.ts";
 import type { DependencyOf, StackName, StackOutputs } from "./stacks.ts";
+import { Effect, Schema } from "effect";
+import type { Output, StackReferenceOutputDetails } from "@pulumi/pulumi";
+import { StackReference, getProject, getStack, secret } from "@pulumi/pulumi";
+import { projectName, stackReferenceName } from "./stacks.ts";
+
+interface StackConsumer<Name extends string> {
+  readonly details: (name: Name) => Effect.Effect<StackReferenceOutputDetails, CloudflareFailure>;
+  readonly text: (name: Name) => Output<string>;
+}
 
 const OutputText = Schema.String.check(Schema.isMinLength(1));
 
-export const consume = <C extends StackName, S extends DependencyOf<C> & keyof StackOutputs>(
-  consumer: C,
-  source: S,
-) =>
-  Effect.gen(function* () {
-    if (pulumi.getProject() !== projectName(consumer))
-      return yield* new CloudflareFailure({ code: "stack_consumer_mismatch" });
-    const reference = new pulumi.StackReference(stackReferenceName(source, pulumi.getStack()));
-    return {
-      details: (name: StackOutputs[S]) =>
-        Effect.tryPromise({
-          try: () => reference.getOutputDetails(name),
-          catch: () => new CloudflareFailure({ code: "stack_output_invalid" }),
-        }),
-      text: (name: StackOutputs[S]) =>
-        reference
-          .requireOutput(name)
-          .apply((value: unknown) =>
-            Effect.runSync(
-              Schema.decodeUnknownEffect(OutputText)(value).pipe(
-                Effect.mapError(() => new CloudflareFailure({ code: "stack_output_invalid" })),
-              ),
-            ),
-          ),
-    };
-  });
+async function requireText(value: unknown): Promise<string> {
+  return Effect.runPromise(
+    Schema.decodeUnknownEffect(OutputText)(value).pipe(
+      Effect.mapError(() => new CloudflareFailure({ code: "stack_output_invalid" })),
+    ),
+  );
+}
 
-export const consumeSettings = <C extends StackName>(
-  consumer: C,
-  source: DependencyOf<C> & "settings",
-) =>
-  Effect.gen(function* () {
-    const reference = yield* consume(consumer, source);
-    const details = yield* reference.details("applicationSettings");
-    return {
-      settings: yield* parseSharedConfig(details.value),
-      authSecret: pulumi.secret(
-        reference
-          .text("authSecret")
-          .apply((value: unknown) => Effect.runSync(validateAuthSecret(value))),
-      ),
-    };
+function consume<
+  Consumer extends StackName,
+  Source extends DependencyOf<Consumer> & keyof StackOutputs,
+>(
+  consumer: Consumer,
+  source: Source,
+): Effect.Effect<StackConsumer<StackOutputs[Source]>, CloudflareFailure> {
+  if (getProject() !== projectName(consumer)) {
+    return Effect.fail(new CloudflareFailure({ code: "stack_consumer_mismatch" }));
+  }
+  const reference = new StackReference(stackReferenceName(source, getStack()));
+  return Effect.succeed({
+    details: (name) =>
+      Effect.tryPromise({
+        catch: () => new CloudflareFailure({ code: "stack_output_invalid" }),
+        try: async () => reference.getOutputDetails(name),
+      }),
+    text: (name) => reference.requireOutput(name).apply(requireText),
   });
+}
+
+const consumeSettings = Effect.fn("consumeSettings")(function* consumeSettings<
+  Consumer extends StackName,
+>(consumer: Consumer, source: Extract<DependencyOf<Consumer>, "settings">) {
+  const reference = yield* consume(consumer, source);
+  const details = yield* reference.details("applicationSettings");
+  return {
+    authSecret: secret(
+      reference
+        .text("authSecret")
+        .apply(async (value: unknown) => Effect.runPromise(validateAuthSecret(value))),
+    ),
+    settings: yield* parseSharedConfig(details.value),
+  };
+});
+
+export { consume, consumeSettings };

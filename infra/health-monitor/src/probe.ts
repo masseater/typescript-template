@@ -1,45 +1,70 @@
+import { Effect, Option, Schema } from "effect";
 import type { Application as HealthService } from "@template/config";
-import { Effect, Schema } from "effect";
 
-export interface HealthTarget {
+interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
 }
 
-export interface ProbeResult {
+interface ProbeResult {
   readonly service: HealthService;
   readonly healthy: boolean;
   readonly detail: string;
 }
 
+type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
+
+const REQUEST_TIMEOUT_MS = 10_000;
+
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
+  release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u)),
   service: Schema.String,
-  release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/)),
 });
 
-export const probeService = Effect.fn("probeService")(function* (target: HealthTarget) {
-  const result = (healthy: boolean, detail: string): ProbeResult => ({
-    service: target.service,
-    healthy,
-    detail,
-  });
-  const response = yield* Effect.tryPromise((signal) =>
-    fetch(`${target.origin}/api/health`, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
-      redirect: "manual",
-    }),
+function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
+  return { detail, healthy, service: target.service };
+}
+
+function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
+  return Effect.tryPromise(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    async (signal): Promise<ProbeResponse> =>
+      fetch(`${target.origin}/api/health`, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+      }),
   ).pipe(Effect.option);
-  if (response._tag === "None") return result(false, "unreachable");
-  const { status } = response.value;
-  if (!response.value.ok) return result(false, `status_${status}`);
-  const body = yield* Effect.tryPromise((): Promise<unknown> => response.value.json()).pipe(
+}
+
+const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
+  target: HealthTarget,
+  response: ProbeResponse,
+) {
+  const body = yield* Effect.tryPromise(async (): Promise<unknown> => response.json()).pipe(
     Effect.option,
   );
-  if (body._tag === "None") return result(false, "body_unreadable");
+  if (Option.isNone(body)) {
+    return probeResult(target, false, "body_unreadable");
+  }
   const payload = yield* Schema.decodeUnknownEffect(HealthPayload)(body.value).pipe(Effect.option);
-  if (payload._tag === "None" || payload.value.service !== target.service)
-    return result(false, "payload_invalid");
-  return result(true, `release_${payload.value.release}`);
+  if (Option.isNone(payload) || payload.value.service !== target.service) {
+    return probeResult(target, false, "payload_invalid");
+  }
+  return probeResult(target, true, `release_${payload.value.release}`);
 });
+
+const probeService = Effect.fn("probeService")(function* probeService(target: HealthTarget) {
+  const response = yield* requestHealth(target);
+  if (Option.isNone(response)) {
+    return probeResult(target, false, "unreachable");
+  }
+  if (!response.value.ok) {
+    return probeResult(target, false, `status_${response.value.status}`);
+  }
+  return yield* payloadResult(target, response.value);
+});
+
+export { probeService };
+export type { ProbeResult };

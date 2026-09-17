@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { VerifyEmailPage } from "@template/ui/auth";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/verify-email")({ component: VerifyEmailPage });
+const Route = createFileRoute("/verify-email")({ component: VerifyEmailPage });
+
+export { Route };

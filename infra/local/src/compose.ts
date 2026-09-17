@@ -1,9 +1,15 @@
-import { spawn } from "node:child_process";
-import { constants } from "node:fs";
-import { access } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { NodeRuntime } from "@effect/platform-node";
 import { Effect, Schema } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { access } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { constants } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { spawn } from "node:child_process";
+
+const FIRST_USER_ARGUMENT_INDEX = 2;
 
 class LocalServicesFailure extends Schema.TaggedError<LocalServicesFailure>()(
   "LocalServicesFailure",
@@ -13,43 +19,57 @@ class LocalServicesFailure extends Schema.TaggedError<LocalServicesFailure>()(
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const composeFile = fileURLToPath(new URL("../compose.yaml", import.meta.url));
 const bundledCompose = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose";
-const actions: Record<string, readonly string[]> = {
+const [action] = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
+const actions: Readonly<Record<string, readonly string[]>> = {
   config: ["config", "--quiet"],
-  up: ["up", "-d", "--wait"],
-  status: ["ps", "--format", "json"],
   logs: ["logs", "--no-color", "--tail", "100", "mailpit"],
+  status: ["ps", "--format", "json"],
+  up: ["up", "-d", "--wait"],
 };
 
-NodeRuntime.runMain(
-  Effect.gen(function* () {
-    const action = process.argv[2];
-    const args = action && Object.hasOwn(actions, action) ? actions[action] : undefined;
-    if (!args) return yield* new LocalServicesFailure({ code: "local_action_unknown" });
-    const bundled = yield* Effect.promise(() =>
-      access(bundledCompose, constants.X_OK).then(
-        () => true,
-        () => false,
-      ),
+function composeArguments(
+  name: string | undefined,
+): Effect.Effect<readonly string[], LocalServicesFailure> {
+  const args = name === undefined || !Object.hasOwn(actions, name) ? undefined : actions[name];
+  return args === undefined
+    ? Effect.fail(new LocalServicesFailure({ code: "local_action_unknown" }))
+    : Effect.succeed(args);
+}
+
+const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly string[]) {
+  const bundled = yield* Effect.promise(async () =>
+    access(bundledCompose, constants.X_OK).then(
+      () => true,
+      () => false,
+    ),
+  );
+  const failed = new LocalServicesFailure({ code: "compose_command_failed" });
+  return yield* Effect.callback<undefined, LocalServicesFailure>((resume) => {
+    const child = spawn(
+      bundled ? bundledCompose : "docker",
+      [...(bundled ? [] : ["compose"]), "-f", composeFile, ...args],
+      { cwd: root, stdio: "inherit" },
     );
-    yield* Effect.callback<void, LocalServicesFailure>((resume) => {
-      const child = spawn(
-        bundled ? bundledCompose : "docker",
-        [...(bundled ? [] : ["compose"]), "-f", composeFile, ...args],
-        { cwd: root, stdio: "inherit" },
-      );
-      const failed = new LocalServicesFailure({ code: "compose_command_failed" });
-      child.once("error", () => resume(Effect.fail(failed)));
-      child.once("exit", (code) => resume(code === 0 ? Effect.void : Effect.fail(failed)));
+    child.once("error", () => {
+      resume(Effect.fail(failed));
     });
-  }).pipe(
+    child.once("exit", (code) => {
+      resume(code === 0 ? Effect.undefined : Effect.fail(failed));
+    });
+  });
+});
+
+NodeRuntime.runMain(
+  composeArguments(action).pipe(
+    Effect.flatMap(runCompose),
     Effect.catchCause(() =>
       Effect.sync(() => {
-        console.error(
-          JSON.stringify({
-            ok: false,
+        process.stderr.write(
+          `${JSON.stringify({
             event: "local.services_command_failed",
+            ok: false,
             remediation: "Check the Docker daemon, then retry the requested action.",
-          }),
+          })}\n`,
         );
         process.exitCode = 1;
       }),

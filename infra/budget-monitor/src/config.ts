@@ -1,6 +1,6 @@
 import { Effect, Schema, SchemaTransformation } from "effect";
 
-export class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
+class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
   code: Schema.Literals([
     "budget_config_invalid",
     "budget_has_no_usage_allowance",
@@ -17,28 +17,40 @@ export class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFa
   ]),
 }) {}
 
-export const fail = (code: BudgetFailure["code"]) => Effect.fail(new BudgetFailure({ code }));
+function fail(code: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> {
+  return Effect.fail(new BudgetFailure({ code }));
+}
 
-const Decimal = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/)).pipe(
-  Schema.decodeTo(Schema.Number.check(Schema.isFinite()), SchemaTransformation.numberFromString),
+const MIN_BILLING_TOKEN_LENGTH = 20;
+
+const DecimalText = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/u));
+const FiniteNumber = Schema.Number.check(Schema.isFinite());
+const Decimal = DecimalText.pipe(
+  Schema.decodeTo(FiniteNumber, SchemaTransformation.numberFromString),
 );
 
 const BudgetEnvironment = Schema.Struct({
-  CLOUDFLARE_ACCOUNT_ID: Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/)),
-  BILLING_READ_TOKEN: Schema.String.check(Schema.isMinLength(20)),
+  BILLING_READ_TOKEN: Schema.String.check(Schema.isMinLength(MIN_BILLING_TOKEN_LENGTH)),
   BUDGET_JPY: Decimal.check(Schema.isGreaterThan(0)),
-  JPY_PER_USD: Decimal.check(Schema.isGreaterThan(0)),
+  CLOUDFLARE_ACCOUNT_ID: Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u)),
   FIXED_COST_USD: Decimal,
+  JPY_PER_USD: Decimal.check(Schema.isGreaterThan(0)),
   RESERVE_USD: Decimal,
 });
 
-export type BudgetConfig = typeof BudgetEnvironment.Type;
+type BudgetConfig = typeof BudgetEnvironment.Type;
 
-export const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* (input: unknown) {
+const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetConfig(
+  input: unknown,
+) {
   const config = yield* Schema.decodeUnknownEffect(BudgetEnvironment)(input).pipe(
     Effect.mapError(() => new BudgetFailure({ code: "budget_config_invalid" })),
   );
-  if (config.BUDGET_JPY / config.JPY_PER_USD <= config.FIXED_COST_USD + config.RESERVE_USD)
+  if (config.BUDGET_JPY / config.JPY_PER_USD <= config.FIXED_COST_USD + config.RESERVE_USD) {
     return yield* fail("budget_has_no_usage_allowance");
+  }
   return config;
 });
+
+export { BudgetFailure, fail, parseBudgetConfig };
+export type { BudgetConfig };

@@ -1,16 +1,20 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as cloudflare from "@pulumi/cloudflare";
+import { AccountToken, getAccountApiTokenPermissionGroupsListOutput } from "@pulumi/cloudflare";
 import { Effect } from "effect";
-import { selectAccountPermission } from "./config.ts";
+import type { Output } from "@pulumi/pulumi";
 import { consumeSettings } from "./reference.ts";
+import { secret } from "@pulumi/pulumi";
+import { selectAccountPermission } from "./config.ts";
 
 const { settings } = await Effect.runPromise(consumeSettings("tokens", "settings"));
-const permissions = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
+const permissions = getAccountApiTokenPermissionGroupsListOutput({
   accountId: settings.accountId,
 });
 
-function accountToken(name: string, permission: Parameters<typeof selectAccountPermission>[1]) {
-  const token = new cloudflare.AccountToken(
+function accountToken(
+  name: string,
+  permission: Parameters<typeof selectAccountPermission>[1],
+): Output<string> {
+  const token = new AccountToken(
     name,
     {
       accountId: settings.accountId,
@@ -20,8 +24,9 @@ function accountToken(name: string, permission: Parameters<typeof selectAccountP
           effect: "allow",
           permissionGroups: [
             {
-              id: permissions.results.apply((groups) =>
-                Effect.runSync(selectAccountPermission(groups, permission)),
+              // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+              id: permissions.results.apply(async (groups) =>
+                Effect.runPromise(selectAccountPermission(groups, permission)),
               ),
             },
           ],
@@ -31,11 +36,10 @@ function accountToken(name: string, permission: Parameters<typeof selectAccountP
     },
     { additionalSecretOutputs: ["value"] },
   );
-  return pulumi.secret(token.value);
+  return secret(token.value);
 }
 
-export const billingReadToken = accountToken("billing-read", "Billing Read");
-export const observabilityQueryToken = accountToken(
-  "observability-query",
-  "Workers Observability Write",
-);
+const billingReadToken = accountToken("billing-read", "Billing Read");
+const observabilityQueryToken = accountToken("observability-query", "Workers Observability Write");
+
+export { billingReadToken, observabilityQueryToken };

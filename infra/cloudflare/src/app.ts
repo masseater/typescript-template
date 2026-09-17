@@ -1,54 +1,111 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as cloudflare from "@pulumi/cloudflare";
-import type { Application } from "@template/config";
-import { fileURLToPath } from "node:url";
-import { Effect } from "effect";
-import { loadArtifacts } from "./artifacts.ts";
-import { archiveSourceMaps } from "./source-maps.ts";
+import type { Output, OutputInstance } from "@pulumi/pulumi";
 import { consume, consumeSettings } from "./reference.ts";
+import type { Application } from "@template/config";
+import { Effect } from "effect";
+import type { SharedConfig } from "./config.ts";
+import { WorkersCustomDomain } from "@pulumi/cloudflare";
+import { archiveSourceMaps } from "./source-maps.ts";
 import { deployWorker } from "./worker.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+import { interpolate } from "@pulumi/pulumi";
+import { loadArtifacts } from "./artifacts.ts";
+import type { types } from "@pulumi/cloudflare";
 
-export const deployApplication = Effect.fn("deployApplication")(function* (target: Application) {
-  const { settings, authSecret } = yield* consumeSettings(target, "settings");
+type WorkerVersionBinding = types.input.WorkerVersionBinding;
+type StringOutput = Readonly<OutputInstance<string>>;
+type Artifacts = Effect.Success<ReturnType<typeof loadArtifacts>>;
+
+interface Deployment {
+  origin: Output<string>;
+  workerName: Output<string>;
+}
+
+interface SharedOutputs {
+  readonly authSecret: StringOutput;
+  readonly databaseId: StringOutput;
+}
+
+interface Release {
+  readonly artifacts: Artifacts;
+  readonly origin: string;
+  readonly outputs: SharedOutputs;
+  readonly settings: SharedConfig;
+  readonly target: Application;
+}
+
+function runtimeBindings(release: Release): WorkerVersionBinding[] {
+  const plaintext = {
+    APP_ORIGIN: release.origin,
+    APP_RELEASE: release.artifacts.release,
+    EMAIL_FROM: release.settings.mailFrom,
+  };
+  return [
+    ...(release.target === "wiki" ? [{ name: "AI", type: "ai" }] : []),
+    { id: release.outputs.databaseId, name: "DB", type: "d1" },
+    { name: "AUTH_SECRET", text: release.outputs.authSecret, type: "secret_text" },
+    { allowedSenderAddresses: [release.settings.mailFrom], name: "EMAIL", type: "send_email" },
+    ...Object.entries(plaintext).map(([name, text]: readonly [string, string]) => ({
+      name,
+      text,
+      type: "plain_text",
+    })),
+  ];
+}
+
+const readSharedStack = Effect.fn("readSharedStack")(function* readSharedStack(
+  target: Application,
+) {
+  const { authSecret, settings } = yield* consumeSettings(target, "settings");
   const database = yield* consume(target, "database");
-  const origin = settings.origins[target];
+  const outputs: SharedOutputs = { authSecret, databaseId: database.text("databaseId") };
+  return { outputs, settings };
+});
+
+function versionArgs(release: Release): Parameters<typeof deployWorker>[1]["version"] {
+  return {
+    assets: { config: { runWorkerFirst: true }, directory: release.artifacts.clientDirectory },
+    bindings: [...runtimeBindings(release), { name: "ASSETS", type: "assets" }],
+    mainModule: release.artifacts.mainModule,
+    modules: [...release.artifacts.modules],
+  };
+}
+
+const loadReleaseArtifacts = Effect.fn("loadReleaseArtifacts")(function* loadReleaseArtifacts(
+  target: Application,
+) {
   const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
   const artifacts = yield* loadArtifacts(repositoryRoot, target);
   yield* archiveSourceMaps(repositoryRoot, target, artifacts.release);
-  const plaintext = {
-    APP_ORIGIN: origin,
-    APP_RELEASE: artifacts.release,
-    EMAIL_FROM: settings.mailFrom,
-  };
-  const bindings: cloudflare.types.input.WorkerVersionBinding[] = [
-    ...(target === "wiki" ? [{ type: "ai", name: "AI" }] : []),
-    { type: "d1", name: "DB", id: database.text("databaseId") },
-    { type: "secret_text", name: "AUTH_SECRET", text: authSecret },
-    { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
-    ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
-  ];
-  const { worker, deployment } = deployWorker(target, {
+  return artifacts;
+});
+
+const deployApplication = Effect.fn("deployApplication")(function* deployApplication(
+  target: Application,
+) {
+  const { outputs, settings } = yield* readSharedStack(target);
+  const origin = settings.origins[target];
+  const artifacts = yield* loadReleaseArtifacts(target);
+  const { deployment, worker } = deployWorker(target, {
     accountId: settings.accountId,
     name: `${settings.prefix}-${target}`,
-    version: {
-      mainModule: artifacts.mainModule,
-      modules: artifacts.modules,
-      assets: { directory: artifacts.clientDirectory, config: { runWorkerFirst: true } },
-      bindings: [...bindings, { type: "assets", name: "ASSETS" }],
-    },
+    version: versionArgs({ artifacts, origin, outputs, settings, target }),
   });
-  const domain = new cloudflare.WorkersCustomDomain(
+  const domain = new WorkersCustomDomain(
     `${target}-domain`,
     {
       accountId: settings.accountId,
-      zoneId: settings.zoneId,
-      service: worker.name,
       hostname: new URL(origin).hostname,
+      service: worker.name,
+      zoneId: settings.zoneId,
     },
     { dependsOn: [deployment] },
   );
-  return {
+  const deployed: Deployment = {
+    origin: interpolate`https://${domain.hostname}`,
     workerName: worker.name,
-    origin: pulumi.interpolate`https://${domain.hostname}`,
   };
+  return deployed;
 });
+
+export { deployApplication };

@@ -13,28 +13,36 @@ const RemoteFailureCode = Schema.Literals([
   "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
 ]);
 
-export class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
+class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
   code: RemoteFailureCode,
 }) {}
 
-export const fail = (code: typeof RemoteFailureCode.Type) =>
-  Effect.fail(new RemoteFailure({ code }));
+function fail(code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> {
+  return Effect.fail(new RemoteFailure({ code }));
+}
 
-const AccountId = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/));
+const AccountId = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const DatabaseId = Schema.String.check(
   Schema.isUUID(),
   Schema.makeFilter((value: string) => !value.startsWith("00000000-")),
 );
-const ApiToken = Schema.String.check(Schema.isMinLength(20), Schema.isPattern(/^[A-Za-z0-9_-]+$/));
+const MIN_API_TOKEN_LENGTH = 20;
+const PLAN_ARGUMENT_COUNT = 2;
+const EXECUTE_ARGUMENT_COUNT = 4;
+
+const ApiToken = Schema.String.check(
+  Schema.isMinLength(MIN_API_TOKEN_LENGTH),
+  Schema.isPattern(/^[A-Za-z0-9_-]+$/u),
+);
 
 const RemoteTarget = Schema.Struct({
   accountId: AccountId,
-  databaseId: DatabaseId,
   apiToken: Schema.optionalKey(ApiToken),
+  databaseId: DatabaseId,
   email: Schema.optionalKey(EmailAddress),
 });
 
-export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* (
+const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRemoteInput(
   args: readonly string[],
   input: unknown,
 ) {
@@ -42,11 +50,14 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* (
   if (
     (operation !== "migrate" && operation !== "bootstrap") ||
     !(
-      (mode === "--plan" && args.length === 2) ||
-      (mode === "--execute" && args.length === 4 && confirmationFlag === "--confirm-database")
+      (mode === "--plan" && args.length === PLAN_ARGUMENT_COUNT) ||
+      (mode === "--execute" &&
+        args.length === EXECUTE_ARGUMENT_COUNT &&
+        confirmationFlag === "--confirm-database")
     )
-  )
+  ) {
     return yield* fail("REMOTE_COMMAND_INVALID");
+  }
   const target = yield* Schema.decodeUnknownEffect(RemoteTarget)(input, {
     onExcessProperty: "error",
   }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
@@ -54,9 +65,13 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* (
     (operation === "bootstrap" && target.email === undefined) ||
     (operation === "migrate" && target.email !== undefined) ||
     (mode === "--execute" && target.apiToken === undefined)
-  )
+  ) {
     return yield* fail("REMOTE_INPUT_INVALID");
-  if (mode === "--execute" && confirmation !== target.databaseId)
+  }
+  if (mode === "--execute" && confirmation !== target.databaseId) {
     return yield* fail("REMOTE_TARGET_MISMATCH");
-  return { operation, execute: mode === "--execute", target };
+  }
+  return { execute: mode === "--execute", operation, target };
 });
+
+export { RemoteFailure, fail, parseRemoteInput };

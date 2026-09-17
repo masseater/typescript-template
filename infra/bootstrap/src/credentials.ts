@@ -1,63 +1,106 @@
-import { constants } from "node:fs";
-import { chmod, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
-import path from "node:path";
-import { Effect, Schema } from "effect";
 import { BootstrapFailure, fail, parseCredentials } from "./config.ts";
+import { Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { chmod, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { FileHandle } from "node:fs/promises";
+import type { StateCredentials } from "./config.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { constants } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { randomUUID } from "node:crypto";
+
+const OWNER_ONLY_DIRECTORY_MODE = 0o700;
+const OWNER_ONLY_FILE_MODE = 0o600;
+const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 
 class CredentialsAbsent extends Schema.TaggedError<CredentialsAbsent>()("CredentialsAbsent", {}) {}
 
-const failure = (code: BootstrapFailure["code"]) => () => new BootstrapFailure({ code });
+function failure(code: BootstrapFailure["code"]): () => BootstrapFailure {
+  return () => new BootstrapFailure({ code });
+}
 
-export const prepareStateDirectory = Effect.fn("prepareStateDirectory")(function* (
+const prepareStateDirectory = Effect.fn("prepareStateDirectory")(function* prepareStateDirectory(
   directory: string,
 ) {
   const unavailable = failure("state_directory_unavailable");
   yield* Effect.tryPromise({
-    try: () => mkdir(directory, { recursive: true, mode: 0o700 }),
     catch: unavailable,
+    try: async () => mkdir(directory, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true }),
   });
-  const resolved = yield* Effect.tryPromise({ try: () => realpath(directory), catch: unavailable });
-  if (resolved !== path.resolve(directory)) return yield* fail("state_directory_symlink_forbidden");
-  yield* Effect.tryPromise({ try: () => chmod(directory, 0o700), catch: unavailable });
+  const resolved = yield* Effect.tryPromise({
+    catch: unavailable,
+    try: async () => realpath(directory),
+  });
+  if (resolved !== path.resolve(directory)) {
+    return yield* fail("state_directory_symlink_forbidden");
+  }
+  yield* Effect.tryPromise({
+    catch: unavailable,
+    try: async () => chmod(directory, OWNER_ONLY_DIRECTORY_MODE),
+  });
 });
 
-const readable = <A>(run: () => Promise<A>) =>
-  Effect.tryPromise({
-    try: run,
+function readable<Value>(
+  run: () => Promise<Value>,
+): Effect.Effect<Value, BootstrapFailure | CredentialsAbsent> {
+  return Effect.tryPromise({
     catch: (error) =>
       error instanceof Error && "code" in error && error.code === "ENOENT"
         ? new CredentialsAbsent()
         : new BootstrapFailure({ code: "state_credentials_unreadable" }),
+    try: run,
   });
+}
 
-export const readCredentials = Effect.fn("readCredentials")(
-  function* (filename: string) {
-    const unreadable = failure("state_credentials_unreadable");
+const readOwnerOnlyFile = Effect.fn("readOwnerOnlyFile")(function* readOwnerOnlyFile(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  handle: FileHandle,
+) {
+  const metadata = yield* readable(async () => handle.stat());
+  const exposed =
+    // oxlint-disable-next-line no-bitwise
+    (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0;
+  if (!metadata.isFile() || metadata.nlink !== 1 || exposed) {
+    return yield* fail("state_credentials_unreadable");
+  }
+  const text = yield* readable(async () => handle.readFile("utf-8"));
+  const input = yield* Effect.try({
+    catch: failure("state_credentials_unreadable"),
+    try: (): unknown => JSON.parse(text),
+  });
+  return yield* parseCredentials(input).pipe(
+    Effect.mapError(failure("state_credentials_unreadable")),
+  );
+});
+
+function closeHandle(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  handle: FileHandle,
+): Effect.Effect<void> {
+  return Effect.tryPromise(async () => handle.close()).pipe(Effect.ignore);
+}
+
+const readCredentials = Effect.fn("readCredentials")(
+  function* readCredentialsFile(filename: string) {
     const directory = path.dirname(filename);
-    if ((yield* readable(() => realpath(directory))) !== path.resolve(directory))
-      return yield* Effect.fail(unreadable());
-    return yield* Effect.acquireUseRelease(
-      readable(() => open(filename, constants.O_RDONLY | constants.O_NOFOLLOW)),
-      (handle) =>
-        Effect.gen(function* () {
-          const metadata = yield* readable(() => handle.stat());
-          if (!metadata.isFile() || metadata.nlink !== 1 || (metadata.mode & 0o077) !== 0)
-            return yield* Effect.fail(unreadable());
-          const text = yield* readable(() => handle.readFile("utf8"));
-          const input = yield* Effect.try({
-            try: (): unknown => JSON.parse(text),
-            catch: unreadable,
-          });
-          return yield* parseCredentials(input).pipe(Effect.mapError(unreadable));
-        }),
-      (handle) => Effect.tryPromise(() => handle.close()).pipe(Effect.ignore),
+    if ((yield* readable(async () => realpath(directory))) !== path.resolve(directory)) {
+      return yield* fail("state_credentials_unreadable");
+    }
+    const credentials: StateCredentials = yield* Effect.acquireUseRelease(
+      // oxlint-disable-next-line no-bitwise
+      readable(async () => open(filename, constants.O_RDONLY | constants.O_NOFOLLOW)),
+      readOwnerOnlyFile,
+      closeHandle,
     );
+    return credentials;
   },
-  Effect.catchTag("CredentialsAbsent", () => Effect.succeed(undefined)),
+  Effect.catchTag("CredentialsAbsent", () => Effect.undefined),
 );
 
-export const writeCredentials = Effect.fn("writeCredentials")(function* (
+const writeCredentials = Effect.fn("writeCredentials")(function* writeCredentials(
   filename: string,
   input: unknown,
 ) {
@@ -67,25 +110,32 @@ export const writeCredentials = Effect.fn("writeCredentials")(function* (
   const temporary = `${filename}.${randomUUID()}.tmp`;
   yield* Effect.acquireUseRelease(
     Effect.tryPromise({
-      try: () =>
+      catch: writeFailed,
+      try: async () =>
         open(
           temporary,
+          // oxlint-disable-next-line no-bitwise
           constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
-          0o600,
+          OWNER_ONLY_FILE_MODE,
         ),
-      catch: writeFailed,
     }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (handle) =>
       Effect.tryPromise({
+        catch: writeFailed,
         try: async () => {
           await handle.writeFile(JSON.stringify(credentials));
           await handle.sync();
         },
-        catch: writeFailed,
       }),
-    (handle) => Effect.tryPromise(() => handle.close()).pipe(Effect.ignore),
+    closeHandle,
   );
-  yield* Effect.tryPromise({ try: () => rename(temporary, filename), catch: writeFailed }).pipe(
-    Effect.tapError(() => Effect.tryPromise(() => unlink(temporary)).pipe(Effect.ignore)),
+  yield* Effect.tryPromise({
+    catch: writeFailed,
+    try: async () => rename(temporary, filename),
+  }).pipe(
+    Effect.tapError(() => Effect.tryPromise(async () => unlink(temporary)).pipe(Effect.ignore)),
   );
 });
+
+export { prepareStateDirectory, readCredentials, writeCredentials };

@@ -1,43 +1,89 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
-import path from "node:path";
+import { fail, io } from "./artifact-io.ts";
 import type { Application } from "@template/config";
+import type { ArtifactFailure } from "./artifact-io.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Dirent } from "node:fs";
 import { Effect } from "effect";
-import { fail, io } from "./artifacts.ts";
-import type { ArtifactFailure } from "./artifacts.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 
-const copyMaps: (source: string, destination: string) => Effect.Effect<number, ArtifactFailure> =
-  Effect.fn("copyMaps")(function* (source: string, destination: string) {
-    const information = yield* Effect.tryPromise({
-      try: () => lstat(source),
-      catch: (cause) => ({ cause }),
-    }).pipe(
-      Effect.catch(({ cause: error }) =>
-        error instanceof Error && "code" in error && error.code === "ENOENT"
-          ? Effect.succeed(undefined)
-          : fail("artifact_io_failed"),
-      ),
-    );
-    if (!information) return 0;
-    if (!information.isDirectory()) return yield* fail("source_map_directory_invalid");
-    let copied = 0;
-    for (const entry of yield* io(() => readdir(source, { withFileTypes: true }))) {
-      if (entry.isSymbolicLink()) return yield* fail("source_map_symlink_forbidden");
-      const from = path.join(source, entry.name);
-      const to = path.join(destination, entry.name);
-      if (entry.isDirectory()) copied += yield* copyMaps(from, to);
-      else if (entry.isFile() && entry.name.endsWith(".map")) {
-        yield* io(async () => {
-          await mkdir(destination, { recursive: true, mode: 0o700 });
-          await copyFile(from, to);
-          await chmod(to, 0o600);
-        });
-        copied += 1;
-      }
-    }
-    return copied;
+const OWNER_ONLY_DIRECTORY_MODE = 0o700;
+const OWNER_ONLY_FILE_MODE = 0o600;
+
+type MapEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
+
+function isMissing(cause: unknown): boolean {
+  return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
+}
+
+function directoryExists(source: string): Effect.Effect<boolean, ArtifactFailure> {
+  return Effect.tryPromise({
+    catch: (cause) => ({ cause }),
+    try: async () => lstat(source),
+  }).pipe(
+    Effect.matchEffect({
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      onFailure: ({ cause }) =>
+        isMissing(cause) ? Effect.succeed(false) : fail("artifact_io_failed"),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      onSuccess: (information) =>
+        information.isDirectory() ? Effect.succeed(true) : fail("source_map_directory_invalid"),
+    }),
+  );
+}
+
+function copyMap(
+  from: string,
+  destination: string,
+  to: string,
+): Effect.Effect<number, ArtifactFailure> {
+  return io(async () => {
+    await mkdir(destination, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
+    await copyFile(from, to);
+    await chmod(to, OWNER_ONLY_FILE_MODE);
+    return 1;
   });
+}
 
-export const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* (
+function copyEntry(
+  entry: MapEntry,
+  source: string,
+  destination: string,
+): Effect.Effect<number, ArtifactFailure> {
+  if (entry.isSymbolicLink()) {
+    return fail("source_map_symlink_forbidden");
+  }
+  const from = path.join(source, entry.name);
+  const to = path.join(destination, entry.name);
+  if (entry.isDirectory()) {
+    // oxlint-disable-next-line typescript/no-use-before-define
+    return copyMaps(from, to);
+  }
+  return entry.isFile() && entry.name.endsWith(".map")
+    ? copyMap(from, destination, to)
+    : Effect.succeed(0);
+}
+
+function copyMaps(source: string, destination: string): Effect.Effect<number, ArtifactFailure> {
+  return directoryExists(source).pipe(
+    Effect.flatMap((exists) =>
+      exists
+        ? io(async () => readdir(source, { withFileTypes: true })).pipe(
+            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+            Effect.flatMap((entries) =>
+              Effect.all(entries.map((entry: MapEntry) => copyEntry(entry, source, destination))),
+            ),
+            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+            Effect.map((copied) => copied.reduce((total, count) => total + count, 0)),
+          )
+        : Effect.succeed(0),
+    ),
+  );
+}
+
+const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSourceMaps(
   repositoryRoot: string,
   target: Application,
   release: string,
@@ -45,10 +91,12 @@ export const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* (
   const privateMaps = path.join(repositoryRoot, ".local", "source-maps", target);
   const destination = path.join(privateMaps, "releases", release);
   return {
+    client: yield* copyMaps(path.join(privateMaps, "client"), path.join(destination, "client")),
     server: yield* copyMaps(
       path.join(repositoryRoot, "apps", target, "dist", "server"),
       path.join(destination, "server"),
     ),
-    client: yield* copyMaps(path.join(privateMaps, "client"), path.join(destination, "client")),
   };
 });
+
+export { archiveSourceMaps };

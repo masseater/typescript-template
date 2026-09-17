@@ -1,9 +1,9 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
 import { validateOutputRead, validateStateCommand } from "./state.ts";
+import { Effect } from "effect";
 
 it.effect("reads only the public database target outputs", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     yield* validateOutputRead("databaseId");
     yield* validateOutputRead("applicationSettings");
     const failure = yield* validateOutputRead("authSecret").pipe(Effect.flip);
@@ -12,7 +12,7 @@ it.effect("reads only the public database target outputs", () =>
 );
 
 it.effect("permits deployment commands without secret output", () =>
-  Effect.gen(function* () {
+  Effect.gen(function* program() {
     yield* validateStateCommand(["preview", "--cwd", "project"]);
     yield* validateStateCommand(["config", "set", "authSecret", "--secret"]);
   }),
@@ -28,10 +28,11 @@ for (const { args, error } of [
   { args: ["up", "-v=9"], error: "plaintext_secret_output_forbidden" },
   { args: ["up", "--logtostderr"], error: "plaintext_secret_output_forbidden" },
   { args: ["up", "--tracing", "file:trace"], error: "plaintext_secret_output_forbidden" },
-])
+]) {
   it.effect(`refuses secret output or backend switching: ${args.join(" ")}`, () =>
-    Effect.gen(function* () {
+    Effect.gen(function* program() {
       const failure = yield* validateStateCommand(args).pipe(Effect.flip);
       assert.strictEqual(failure.code, error);
     }),
   );
+}

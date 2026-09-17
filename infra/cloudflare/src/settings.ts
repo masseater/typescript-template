@@ -1,11 +1,13 @@
-import * as pulumi from "@pulumi/pulumi";
-import { Effect } from "effect";
 import { parseSharedConfig, validateAuthSecret } from "./config.ts";
+import { Config } from "@pulumi/pulumi";
+import { Effect } from "effect";
 
-const config = new pulumi.Config();
-export const applicationSettings = Effect.runSync(
+const config = new Config();
+const applicationSettings = await Effect.runPromise(
   parseSharedConfig(config.requireObject<unknown>("settings")),
 );
-export const authSecret = config
+const authSecret = config
   .requireSecret("authSecret")
-  .apply((value) => Effect.runSync(validateAuthSecret(value)));
+  .apply(async (value) => Effect.runPromise(validateAuthSecret(value)));
+
+export { applicationSettings, authSecret };

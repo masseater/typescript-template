@@ -1,204 +1,206 @@
-import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import { copyFile, lstat, mkdir, readdir, readFile, realpath, stat } from "node:fs/promises";
-import path from "node:path";
+import {
+  assertRealDirectory,
+  fail,
+  fileSha256,
+  files,
+  io,
+  jsonSha256,
+  sameContent,
+} from "./artifact-io.ts";
 import type { Application } from "@template/config";
-import { Effect, Schema } from "effect";
+import type { ArtifactFailure } from "./artifact-io.ts";
+import { Effect } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+import { stageClientFiles } from "./staging.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { stat } from "node:fs/promises";
 
-export class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFailure", {
-  code: Schema.Literals([
-    "artifact_io_failed",
-    "artifact_symlink_forbidden",
-    "artifact_file_type_invalid",
-    "artifact_directory_symlink_forbidden",
-    "private_client_artifact",
-    "client_artifacts_empty",
-    "worker_entry_missing_index_js",
-    "worker_entry_empty",
-    "worker_module_type_unsupported",
-    "server_css_without_public_asset",
-    "artifact_staging_symlink_forbidden",
-    "artifact_staging_link_forbidden",
-    "artifact_staging_contaminated",
-    "source_map_directory_invalid",
-    "source_map_symlink_forbidden",
-    "budget_worker_artifact_empty",
-    "error_worker_artifact_empty",
-    "health_worker_artifact_empty",
-  ]),
-}) {}
+const MAIN_MODULE = "index.js";
+const RELEASE_LENGTH = 16;
+const MODULE_CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
+  [".js", "application/javascript+module"],
+  [".mjs", "application/javascript+module"],
+  [".txt", "text/plain"],
+  [".wasm", "application/wasm"],
+]);
 
-export const fail = (code: ArtifactFailure["code"]) => Effect.fail(new ArtifactFailure({ code }));
+interface WorkerModule {
+  readonly contentFile: string;
+  readonly contentType: string;
+  readonly name: string;
+}
 
-export const io = <A>(run: () => Promise<A>) =>
-  Effect.tryPromise({ try: run, catch: () => new ArtifactFailure({ code: "artifact_io_failed" }) });
+interface Artifacts {
+  readonly clientDirectory: string;
+  readonly mainModule: string;
+  readonly modules: readonly WorkerModule[];
+  readonly release: string;
+}
 
-const sha256 = (content: string | Buffer) => createHash("sha256").update(content).digest("hex");
-
-const moduleTypes: Readonly<Record<string, string>> = {
-  ".js": "application/javascript+module",
-  ".mjs": "application/javascript+module",
-  ".wasm": "application/wasm",
-  ".txt": "text/plain",
-};
+interface BuildOutput {
+  readonly client: string;
+  readonly server: string;
+}
 
 function privateArtifact(relative: string): boolean {
   return relative
     .split(path.sep)
     .some(
       (name) =>
-        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*|Pulumi(?:\..*)?\.ya?ml)$/.test(
+        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*|Pulumi(?:\..*)?\.ya?ml)$/u.test(
           name,
-        ) || /\.(?:pem|key)$/.test(name),
+        ) || /\.(?:pem|key)$/u.test(name),
     );
 }
 
-const files: (directory: string) => Effect.Effect<string[], ArtifactFailure> = Effect.fn("files")(
-  function* (directory: string) {
-    const entries = yield* io(() => readdir(directory, { withFileTypes: true }));
-    const nested = yield* Effect.forEach(
-      entries,
-      (entry) =>
-        Effect.gen(function* () {
-          if (entry.isSymbolicLink()) return yield* fail("artifact_symlink_forbidden");
-          const filename = path.join(directory, entry.name);
-          if (entry.isDirectory()) return yield* files(filename);
-          if (!entry.isFile()) return yield* fail("artifact_file_type_invalid");
-          return [filename];
-        }),
-      { concurrency: "unbounded" },
-    );
-    return nested.flat().sort();
-  },
-);
-
-const copyStagedFile = Effect.fn("copyStagedFile")(function* (source: string, destination: string) {
-  yield* Effect.tryPromise({
-    try: () => copyFile(source, destination, constants.COPYFILE_EXCL),
-    catch: (cause) => ({ cause }),
-  }).pipe(
-    Effect.catch(({ cause: error }) =>
-      Effect.gen(function* () {
-        if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST")
-          return yield* fail("artifact_io_failed");
-        const existing = yield* io(() => lstat(destination));
-        if (!existing.isFile() || existing.nlink !== 1)
-          return yield* fail("artifact_staging_link_forbidden");
-        const [sourceContent, destinationContent] = yield* io(() =>
-          Promise.all([readFile(source), readFile(destination)]),
-        );
-        if (!sourceContent.equals(destinationContent))
-          return yield* fail("artifact_staging_contaminated");
-      }),
-    ),
-  );
+const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArtifactFiles(
+  client: string,
+) {
+  const allClientFiles = yield* files(client);
+  if (allClientFiles.some((file) => privateArtifact(path.relative(client, file)))) {
+    return yield* fail("private_client_artifact");
+  }
+  const clientFiles = allClientFiles.filter((file) => !file.endsWith(".map"));
+  if (clientFiles.length === 0) {
+    return yield* fail("client_artifacts_empty");
+  }
+  return clientFiles;
 });
 
-export const loadArtifacts = Effect.fn("loadArtifacts")(function* (
+function assertServerCssPublished(
+  output: BuildOutput,
+  cssFiles: readonly string[],
+  clientFiles: readonly string[],
+): Effect.Effect<void, ArtifactFailure> {
+  return Effect.all(
+    cssFiles.map((file) => {
+      const publicFile = path.join(output.client, path.relative(output.server, file));
+      const published = clientFiles.includes(publicFile)
+        ? sameContent(file, publicFile)
+        : Effect.succeed(false);
+      return published.pipe(
+        Effect.flatMap((same) => (same ? Effect.void : fail("server_css_without_public_asset"))),
+      );
+    }),
+    { concurrency: "unbounded", discard: true },
+  );
+}
+
+function workerModule(server: string, file: string): Effect.Effect<WorkerModule, ArtifactFailure> {
+  const contentType = MODULE_CONTENT_TYPES.get(path.extname(file));
+  return contentType === undefined
+    ? fail("worker_module_type_unsupported")
+    : Effect.succeed({
+        contentFile: file,
+        contentType,
+        name: path.relative(server, file).replaceAll(path.sep, "/"),
+      });
+}
+
+function sourceMapModules(
+  server: string,
+  serverFiles: readonly string[],
+  codeModules: readonly WorkerModule[],
+): WorkerModule[] {
+  const codeFiles = new Set(codeModules.map((module) => module.contentFile));
+  return serverFiles
+    .filter((file) => file.endsWith(".map") && codeFiles.has(file.slice(0, -".map".length)))
+    .map((file) => ({
+      contentFile: file,
+      contentType: "application/source-map",
+      name: path.relative(server, file).replaceAll(path.sep, "/"),
+    }));
+}
+
+const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerModules(
+  output: BuildOutput,
+  clientFiles: readonly string[],
+) {
+  const allServerFiles = (yield* files(output.server)).filter(
+    (file) => !privateArtifact(path.relative(output.server, file)),
+  );
+  const serverFiles = allServerFiles.filter((file) => !file.endsWith(".map"));
+  if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
+    return yield* fail("worker_entry_missing_index_js");
+  }
+  const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
+  const code = yield* Effect.all(
+    serverFiles
+      .filter((file) => path.extname(file) !== ".css")
+      .map((file) => workerModule(output.server, file)),
+  );
+  yield* assertServerCssPublished(output, cssFiles, clientFiles);
+  if ((yield* io(async () => stat(path.join(output.server, MAIN_MODULE)))).size === 0) {
+    return yield* fail("worker_entry_empty");
+  }
+  return { code, sourceMaps: sourceMapModules(output.server, allServerFiles, code) };
+});
+
+function clientDigest(
+  client: string,
+  clientFiles: readonly string[],
+): Effect.Effect<string, ArtifactFailure> {
+  return Effect.all(
+    clientFiles.map((file) =>
+      fileSha256(file).pipe(Effect.map((hash) => [path.relative(client, file), hash])),
+    ),
+    { concurrency: "unbounded" },
+  ).pipe(Effect.flatMap(jsonSha256));
+}
+
+function releaseId(
+  codeModules: readonly WorkerModule[],
+  digest: string,
+): Effect.Effect<string, ArtifactFailure> {
+  return Effect.all(
+    codeModules.map((module) =>
+      fileSha256(module.contentFile).pipe(Effect.map((hash) => [module.name, hash])),
+    ),
+    { concurrency: "unbounded" },
+  ).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap((manifest) => jsonSha256([manifest, digest])),
+    Effect.map((hash) => hash.slice(0, RELEASE_LENGTH)),
+  );
+}
+
+const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
   repositoryRoot: string,
   target: Application,
 ) {
   const root = path.join(repositoryRoot, "apps", target, "dist");
-  const server = path.join(root, "server");
-  const client = path.join(root, "client");
-  for (const directory of [root, server, client]) {
-    if ((yield* io(() => realpath(directory))) !== directory)
-      return yield* fail("artifact_directory_symlink_forbidden");
-  }
-  const allClientFiles = yield* files(client);
-  if (allClientFiles.some((file) => privateArtifact(path.relative(client, file))))
-    return yield* fail("private_client_artifact");
-  const clientFiles = allClientFiles.filter((file) => !file.endsWith(".map"));
-  if (clientFiles.length === 0) return yield* fail("client_artifacts_empty");
-  const allServerFiles = (yield* files(server)).filter(
-    (file) => !privateArtifact(path.relative(server, file)),
-  );
-  const serverFiles = allServerFiles.filter((file) => !file.endsWith(".map"));
-  const mainModule = "index.js";
-  if (!serverFiles.includes(path.join(server, mainModule)))
-    return yield* fail("worker_entry_missing_index_js");
-  const modules = yield* Effect.forEach(
-    serverFiles,
-    (file) =>
-      Effect.gen(function* () {
-        const extension = path.extname(file);
-        if (extension === ".css") {
-          const publicFile = path.join(client, path.relative(server, file));
-          if (!clientFiles.includes(publicFile))
-            return yield* fail("server_css_without_public_asset");
-          const [serverContent, publicContent] = yield* io(() =>
-            Promise.all([readFile(file), readFile(publicFile)]),
-          );
-          if (!serverContent.equals(publicContent))
-            return yield* fail("server_css_without_public_asset");
-          return undefined;
-        }
-        const contentType = moduleTypes[extension];
-        if (!contentType) return yield* fail("worker_module_type_unsupported");
-        return {
-          name: path.relative(server, file).replaceAll(path.sep, "/"),
-          contentFile: file,
-          contentSha256: sha256(yield* io(() => readFile(file))),
-          contentType,
-        };
-      }),
-    { concurrency: "unbounded" },
-  );
-  const codeModules = modules.filter((module) => module !== undefined);
-  const sourceMaps = yield* Effect.forEach(
-    allServerFiles.filter(
-      (file) =>
-        file.endsWith(".map") &&
-        codeModules.some((module) => module.contentFile === file.slice(0, -".map".length)),
+  const output: BuildOutput = {
+    client: path.join(root, "client"),
+    server: path.join(root, "server"),
+  };
+  yield* Effect.all(
+    [root, output.server, output.client].map((directory) =>
+      assertRealDirectory(directory, "artifact_directory_symlink_forbidden"),
     ),
-    (file) =>
-      io(() => readFile(file)).pipe(
-        Effect.map((content) => ({
-          name: path.relative(server, file).replaceAll(path.sep, "/"),
-          contentFile: file,
-          contentSha256: sha256(content),
-          contentType: "application/source-map",
-        })),
-      ),
-    { concurrency: "unbounded" },
+    { discard: true },
   );
-  if ((yield* io(() => stat(path.join(server, mainModule)))).size === 0)
-    return yield* fail("worker_entry_empty");
-  const manifest = yield* Effect.forEach(
-    clientFiles,
-    (file) =>
-      io(() => readFile(file)).pipe(
-        Effect.map((content) => [path.relative(client, file), sha256(content)]),
-      ),
-    { concurrency: "unbounded" },
-  );
-  const digest = sha256(JSON.stringify(manifest));
-  const release = sha256(
-    JSON.stringify([codeModules.map((module) => [module.name, module.contentSha256]), digest]),
-  ).slice(0, 16);
+  return output;
+});
+
+const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
+  repositoryRoot: string,
+  target: Application,
+) {
+  const output = yield* buildOutput(repositoryRoot, target);
+  const clientFiles = yield* clientArtifactFiles(output.client);
+  const { code, sourceMaps } = yield* loadWorkerModules(output, clientFiles);
+  const digest = yield* clientDigest(output.client, clientFiles);
+  const release = yield* releaseId(code, digest);
   const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
-  yield* io(() => mkdir(staging, { recursive: true }));
-  if ((yield* io(() => realpath(staging))) !== staging)
-    return yield* fail("artifact_staging_symlink_forbidden");
-  for (const source of clientFiles) {
-    const destination = path.join(staging, path.relative(client, source));
-    yield* io(() => mkdir(path.dirname(destination), { recursive: true }));
-    if ((yield* io(() => realpath(path.dirname(destination)))) !== path.dirname(destination))
-      return yield* fail("artifact_staging_symlink_forbidden");
-    yield* copyStagedFile(source, destination);
-  }
-  const stagedFiles = yield* files(staging);
-  if (
-    stagedFiles.length !== clientFiles.length ||
-    stagedFiles.some(
-      (file) => !clientFiles.includes(path.join(client, path.relative(staging, file))),
-    )
-  )
-    return yield* fail("artifact_staging_contaminated");
-  return {
-    mainModule,
-    modules: [...codeModules, ...sourceMaps],
+  yield* stageClientFiles(output.client, staging, clientFiles);
+  const artifacts: Artifacts = {
     clientDirectory: staging,
+    mainModule: MAIN_MODULE,
+    modules: [...code, ...sourceMaps],
     release,
   };
+  return artifacts;
 });
+
+export { loadArtifacts };
