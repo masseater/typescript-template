@@ -30,6 +30,7 @@
     "services:logs": "pnpm --filter @template/local run logs",
     "observe": "pnpm --filter @template/observe run observe",
     "observe:verify": "pnpm --filter @template/observe run verify",
+    "observe:symbolicate": "pnpm --silent --filter @template/observe run symbolicate",
     "observe:mcp": "pnpm --filter @template/local run mcp",
     "db:generate": "pnpm --filter @template/db run db:generate",
     "db:check": "pnpm --filter @template/db run db:check",

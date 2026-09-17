@@ -5,6 +5,7 @@
   "scripts": {
     "observe": "node src/cli.ts",
     "verify": "node src/verify.ts",
+    "symbolicate": "node src/symbolicate.ts",
     "test": "vp test run",
     "typecheck": "tsc --noEmit"
   },

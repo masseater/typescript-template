@@ -40,7 +40,7 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {
-      entry: ["src/cli.ts!", "src/verify.ts!"],
+      entry: ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/budget-monitor": {
