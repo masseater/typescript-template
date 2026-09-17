@@ -59,8 +59,8 @@
       "matchPackageNames": ["drizzle-orm", "drizzle-kit"]
     },
     {
-      "groupName": "pulumi",
-      "matchPackageNames": ["@pulumi/**"]
+      "groupName": "alchemy",
+      "matchPackageNames": ["alchemy", "@alchemy.run/**"]
     },
     {
       "groupName": "local observability services",

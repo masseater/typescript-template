@@ -53,6 +53,26 @@ export default defineConfig({
         rules: { "shadcn/no-restyle": "off" },
       },
       {
+        files: ["infra/cloudflare/src/**"],
+        rules: {
+          "eslint/new-cap": [
+            "error",
+            {
+              capIsNewExceptionPattern:
+                "^(?:Schema|Context|Data|ApiToken|D1|Email|Workers|RemovalPolicy)\\.",
+              capIsNewExceptions: [
+                "AccountApiToken",
+                "Database",
+                "DurableObject",
+                "SendEmail",
+                "Stack",
+                "Worker",
+              ],
+            },
+          ],
+        },
+      },
+      {
         files: ["**/*.test.ts", "**/*-fixture.ts"],
         plugins: ["vitest"],
         rules: {

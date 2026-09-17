@@ -30,7 +30,7 @@ const config: KnipConfig = {
         "src/check-stacks.ts!",
         "src/database-command.ts!",
       ],
-      project: ["src/**/*.ts!"],
+      project: ["src/**/*.ts!", "!src/bindings.ts!", "!src/verification-fixture.ts!"],
     },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],

@@ -1,3 +1,4 @@
+import { deploymentValues, secretViolations } from "./secrets.ts";
 import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -6,7 +7,8 @@ import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
-import { secretViolations } from "./secrets.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { readFile } from "node:fs/promises";
 
 interface StagedFailure {
   readonly file: string;
@@ -27,19 +29,34 @@ function git(args: readonly string[]): Effect.Effect<string, unknown> {
   );
 }
 
-function stagedFailure(file: string): Effect.Effect<StagedFailure[], unknown> {
+const environmentValues = Effect.suspend(() => {
+  // oxlint-disable-next-line node/no-process-env
+  const filename = process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"];
+  return filename === undefined || filename === ""
+    ? Effect.succeed<readonly string[]>([])
+    : Effect.tryPromise(async () => readFile(filename, "utf-8")).pipe(
+        Effect.map(deploymentValues),
+        Effect.orElseSucceed((): readonly string[] => []),
+      );
+});
+
+function stagedFailure(
+  file: string,
+  values: readonly string[],
+): Effect.Effect<StagedFailure[], unknown> {
   return git(["show", `:${file}`]).pipe(
     Effect.map((content) => {
-      const rules = secretViolations(file, content);
+      const rules = secretViolations(file, content, values);
       return rules.length > 0 ? [{ file, rules }] : [];
     }),
   );
 }
 
 const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
+  const values = yield* environmentValues;
   const listed = yield* git(["ls-files", "--cached", "-z"]);
   const files = listed.split("\0").filter(Boolean);
-  const failures = yield* Effect.all(files.map((file) => stagedFailure(file)));
+  const failures = yield* Effect.all(files.map((file) => stagedFailure(file, values)));
   return failures.flat();
 });
 
