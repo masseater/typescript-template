@@ -1,5 +1,6 @@
 import { applications, authenticationMethods, roles } from "@template/config";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-orm/effect-schema";
 import { sql } from "drizzle-orm";
 
 const user = sqliteTable(
@@ -51,4 +52,9 @@ const session = sqliteTable(
   ],
 );
 
-export { session, user };
+const UserRow = createSelectSchema(user);
+
+type UserRecord = typeof UserRow.Type;
+
+export { UserRow, session, user };
+export type { UserRecord };

@@ -1,17 +1,14 @@
 import { AppBody } from "./app-body";
+import type { Children } from "./shared/ui/types";
 import { HeadContent } from "@tanstack/react-router";
-import type { NavigationLink } from "./app-navigation";
 import type { ReactElement } from "react";
 import { initBrowserTelemetry } from "@template/observability/browser";
 import { useEffect } from "react";
 
 function AppShell({
-  navigation,
+  children,
   routes,
-}: Readonly<{
-  navigation: readonly NavigationLink[];
-  routes: Readonly<Record<string, string>>;
-}>): ReactElement {
+}: Children & Readonly<{ routes: Readonly<Record<string, string>> }>): ReactElement {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
     return (): void => {
@@ -23,7 +20,7 @@ function AppShell({
       <head>
         <HeadContent />
       </head>
-      <AppBody navigation={navigation} />
+      <AppBody>{children}</AppBody>
     </html>
   );
 }

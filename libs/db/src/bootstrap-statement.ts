@@ -1,6 +1,7 @@
 import { Effect, Schema, Struct } from "effect";
+import { DatabaseFailure } from "./database-failure.ts";
 import type { SQL } from "drizzle-orm";
-import { UserRow } from "./row-schema.ts";
+import { UserRow } from "./identity-schema.ts";
 import { query } from "./database.ts";
 import { sql } from "drizzle-orm";
 import { user } from "./schema.ts";
@@ -30,13 +31,14 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof EmailAddress.Type,
 ) {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  const [updated] = yield* query((database) =>
-    database.all<typeof BootstrappedAdmin.Type>(bootstrapStatement(email)),
-  );
-  if (!updated) {
+  const [updated] = yield* query(async (database) => database.all(bootstrapStatement(email)));
+  if (updated === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return updated;
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.mapError((cause) => new DatabaseFailure({ cause })),
+  );
 });
 
 export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement };

@@ -32,6 +32,9 @@ const StatementParams = Schema.Array(Schema.Union([Schema.String, Schema.Finite,
 
 const History = Schema.Array(Schema.Struct({ hash: Schema.String, name: Schema.String }));
 
+const APPLICATION_TABLES =
+  "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('__drizzle_migrations', '_cf_METADATA', 'd1_migrations')";
+
 const MIGRATIONS_TABLE =
   "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric, name text, applied_at TEXT)";
 
@@ -83,6 +86,10 @@ const migrateDatabase = Effect.fn("migrateDatabase")(function* migrateDatabase(
 ) {
   yield* executor.batch([{ params: [], sql: MIGRATIONS_TABLE }]);
   const applied = yield* readHistory(executor, migrations);
+  const [existing] = yield* executor.batch([{ params: [], sql: APPLICATION_TABLES }]);
+  if (applied === 0 && existing !== undefined && existing.length > 0) {
+    return yield* fail("REMOTE_MIGRATION_HISTORY_MISSING");
+  }
   for (const migration of migrations.slice(applied)) {
     yield* executor.batch([
       ...migration.sql.map((sql) => ({ params: [], sql })),

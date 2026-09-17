@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
-import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
+import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import type { D1Database } from "@cloudflare/workers-types";
 import { Database } from "./database.ts";
 import { NodeRuntime } from "@effect/platform-node";
@@ -11,7 +11,7 @@ const platform = Effect.acquireRelease(
     getPlatformProxy<{ DB: D1Database }>({
       configPath: await writeLocalDatabaseConfig(),
       envFiles: [],
-      persist: { path: `${localDatabasePersistence}/v3` },
+      persist: { path: localDatabaseStore },
       remoteBindings: false,
     }),
   ),
