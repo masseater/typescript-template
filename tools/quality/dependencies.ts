@@ -56,21 +56,31 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
   );
 }
 
-const retiredUiPackages: Readonly<Record<string, string>> = {
+const retiredPackages: Readonly<Record<string, string>> = {
+  "@pulumi/": "alchemy",
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  pulumi: "alchemy",
   "react-intl": "Paraglide JS",
   "smarthr-ui": "@template/ui/ui の shadcn/ui (Base UI) 部品",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
 
+function replacementFor(dependency: string): string | undefined {
+  const matched = Object.keys(retiredPackages).find(
+    (retired) =>
+      dependency === retired || (retired.endsWith("/") && dependency.startsWith(retired)),
+  );
+  return matched === undefined ? undefined : retiredPackages[matched];
+}
+
 function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
   return workspaces.flatMap(({ file, manifest }) =>
-    declaredDependencies(manifest)
-      .filter((dependency) => Object.hasOwn(retiredUiPackages, dependency))
-      .map(
-        (dependency) =>
-          `${file}: ${dependency} は置き換え済みです。${retiredUiPackages[dependency] ?? ""} を使ってください。`,
-      ),
+    declaredDependencies(manifest).flatMap((dependency) => {
+      const replacement = replacementFor(dependency);
+      return replacement === undefined
+        ? []
+        : [`${file}: ${dependency} は置き換え済みです。${replacement} を使ってください。`];
+    }),
   );
 }
 
@@ -78,7 +88,7 @@ export {
   applicationDependencyViolations,
   field,
   retiredDependencyViolations,
-  retiredUiPackages,
+  retiredPackages,
   workspaceManifests,
 };
 export type { WorkspaceManifest };

@@ -1,7 +1,7 @@
 import {
   applicationDependencyViolations,
   retiredDependencyViolations,
-  retiredUiPackages,
+  retiredPackages,
   workspaceManifests,
 } from "./dependencies.ts";
 import { describe, expect, it } from "vite-plus/test";
@@ -40,8 +40,12 @@ describe("application package boundaries", () => {
   });
 });
 
-describe("replaced UI packages", () => {
-  it.for(Object.keys(retiredUiPackages))("rejects a workspace that declares %s", (dependency) => {
+describe("replaced packages", () => {
+  const retired = Object.keys(retiredPackages).map((name) =>
+    name.endsWith("/") ? `${name}cloudflare` : name,
+  );
+
+  it.for(retired)("rejects a workspace that declares %s", (dependency) => {
     expect.hasAssertions();
     const violations = retiredDependencyViolations([
       {

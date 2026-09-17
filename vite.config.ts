@@ -74,6 +74,19 @@ export default defineConfig({
         rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
       },
       {
+        files: ["infra/cloudflare/src/**"],
+        rules: {
+          "eslint/new-cap": [
+            "error",
+            {
+              capIsNewExceptionPattern:
+                "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers)\\.",
+              capIsNewExceptions: ["DurableObject", "Stack", "Worker"],
+            },
+          ],
+        },
+      },
+      {
         files: ["**/*.test.ts", "**/*-fixture.ts"],
         plugins: ["vitest"],
         rules: {

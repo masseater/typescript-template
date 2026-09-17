@@ -95,12 +95,12 @@ it.effect(
       yield* run(async () => writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" }));
       const artifacts = yield* loadArtifacts(root, "user");
       assert.deepStrictEqual(
-        artifacts.modules.map((module) => [module.name, module.contentType]),
-        [
-          ["chunks/handler.js", "application/javascript+module"],
-          ["index.js", "application/javascript+module"],
-          ["index.js.map", "application/source-map"],
-        ],
+        artifacts.modules.map((module) => module.name),
+        ["chunks/handler.js", "index.js", "index.js.map"],
+      );
+      assert.deepStrictEqual(
+        (yield* run(async () => readdir(path.dirname(artifacts.mainModule)))).toSorted(),
+        ["chunks", "index.js", "index.js.map"],
       );
       assert.match(artifacts.release, /^[0-9a-f]{16}$/u);
       assert.deepStrictEqual(yield* run(async () => readdir(artifacts.clientDirectory)), [
@@ -186,7 +186,6 @@ for (const filename of [
   "private.key",
   ".git/config",
   ".vite/manifest.json",
-  "Pulumi.production.yaml",
 ]) {
   it.effect(`refuses private client artifact ${filename} before copying anything`, () =>
     Effect.gen(function* program() {

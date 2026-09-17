@@ -1,6 +1,0 @@
-name: template-settings
-runtime:
-  name: nodejs
-  options:
-    typescript: false
-main: ../src/settings.ts

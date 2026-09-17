@@ -1,0 +1,42 @@
+const HEX_ID_LENGTH = 32;
+const AUTH_SECRET_LENGTH = 32;
+
+const verificationSettings = {
+  accountId: "a".repeat(HEX_ID_LENGTH),
+  budget: {
+    budgetJpy: 5000,
+    fixedCostUsd: 5,
+    jpyPerUsd: 150,
+    recipients: ["billing@example.com"],
+    reserveUsd: 2,
+  },
+  mailFrom: "mail@example.com",
+  observabilitySampling: 1,
+  origins: {
+    admin: "https://admin.example.com",
+    user: "https://user.example.com",
+    wiki: "https://wiki.example.com",
+  },
+  prefix: "template-verify",
+  zoneId: "b".repeat(HEX_ID_LENGTH),
+};
+
+const verificationEnvironment: Readonly<Record<string, string>> = {
+  ALERT_EMAIL: verificationSettings.budget.recipients.join(","),
+  BUDGET_JPY: String(verificationSettings.budget.budgetJpy),
+  CLOUDFLARE_ACCOUNT_ID: verificationSettings.accountId,
+  CLOUDFLARE_API_TOKEN: "stack-verification-not-a-real-token",
+  CLOUDFLARE_ZONE_ID: verificationSettings.zoneId,
+  TEMPLATE_ADMIN_ORIGIN: verificationSettings.origins.admin,
+  TEMPLATE_AUTH_SECRET: "v".repeat(AUTH_SECRET_LENGTH),
+  TEMPLATE_FIXED_COST_USD: String(verificationSettings.budget.fixedCostUsd),
+  TEMPLATE_JPY_PER_USD: String(verificationSettings.budget.jpyPerUsd),
+  TEMPLATE_MAIL_FROM: verificationSettings.mailFrom,
+  TEMPLATE_OBSERVABILITY_SAMPLING: String(verificationSettings.observabilitySampling),
+  TEMPLATE_PREFIX: verificationSettings.prefix,
+  TEMPLATE_RESERVE_USD: String(verificationSettings.budget.reserveUsd),
+  TEMPLATE_USER_ORIGIN: verificationSettings.origins.user,
+  TEMPLATE_WIKI_ORIGIN: verificationSettings.origins.wiki,
+};
+
+export { verificationEnvironment, verificationSettings };
