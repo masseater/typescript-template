@@ -6,9 +6,7 @@
     ".": "./src/server.ts",
     "./browser": "./src/browser.ts"
   },
-  "scripts": {
-    "test": "vp test run"
-  },
+  "scripts": {},
   "dependencies": {
     "web-vitals": "6.2.2"
   }
