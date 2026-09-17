@@ -7,6 +7,7 @@ import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
 import { aliasVisitor } from "./alias-visitor.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
+import { layersVisitor } from "./layers.ts";
 import { memoizationVisitor } from "./memoization.ts";
 import { reportViolation } from "./lint-context.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
@@ -256,6 +257,12 @@ export default definePlugin({
       create: environmentVisitor,
       meta: metadata(
         "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Effect の Schema で検証してください。",
+      ),
+    },
+    layers: {
+      create: layersVisitor,
+      meta: metadata(
+        "Feature-Sliced Design のアプリでは、src の直下に置けるのは app・pages・widgets・features・entities・shared の各レイヤーだけです。ファイルをいずれかのレイヤーのスライスかセグメントへ移してください。レイヤーの外は steiger の検査が届きません。",
       ),
     },
     "no-internal-mocks": {
