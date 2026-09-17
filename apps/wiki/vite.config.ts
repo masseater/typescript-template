@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
-import { previewDevVars } from "@template/config/vite";
+import { localRuntimeToolsOnLoopback, previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { devBoundary } from "@template/dev-boundary";
@@ -12,6 +12,7 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
+    localRuntimeToolsOnLoopback(),
     previewDevVars(fileURLToPath(new URL(".", import.meta.url))),
     devBoundary("wiki"),
     cloudflare({

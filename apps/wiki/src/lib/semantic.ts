@@ -31,6 +31,17 @@ export function createSemanticIndex(loadDocuments: () => Promise<SemanticDocumen
   };
 }
 
+export function exactMatchesFirst(
+  query: string,
+  keywordPages: readonly string[],
+  textOf: (url: string) => string,
+) {
+  const needle = query.trim().toLowerCase();
+  if (needle === "") return [...keywordPages];
+  const exact = keywordPages.filter((url) => textOf(url).toLowerCase().includes(needle));
+  return [...exact, ...keywordPages.filter((url) => !exact.includes(url))];
+}
+
 export function rankPages(
   semantic: readonly { url: string; score: number }[],
   keywordPages: readonly string[],
