@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { normalizeUsersSearch, userListRequestPath } from "#users-search.ts";
+import { normalizeUsersSearch, userListQuery } from "#users-search.ts";
 
 const KEYWORD_LIMIT = 100;
 const NUMERIC_KEYWORD = 2026;
@@ -54,15 +54,23 @@ describe("users page search normalization", () => {
   });
 });
 
-describe("user list request path", () => {
+describe("user list request query", () => {
   it("turns the page number into an offset and forwards the filters", () => {
     expect.hasAssertions();
-    expect(userListRequestPath({ keyword: "花子", page: 3, role: "user", verified: true })).toBe(
-      "/api/users?limit=50&offset=100&keyword=%E8%8A%B1%E5%AD%90&role=user&emailVerified=true",
+    expect(userListQuery({ keyword: "花子", page: 3, role: "user", verified: true })).toStrictEqual(
+      {
+        emailVerified: "true",
+        keyword: "花子",
+        limit: "50",
+        offset: "100",
+        role: "user",
+      },
     );
-    expect(userListRequestPath({ verified: false })).toBe(
-      "/api/users?limit=50&offset=0&emailVerified=false",
-    );
-    expect(userListRequestPath({})).toBe("/api/users?limit=50&offset=0");
+    expect(userListQuery({ verified: false })).toStrictEqual({
+      emailVerified: "false",
+      limit: "50",
+      offset: "0",
+    });
+    expect(userListQuery({})).toStrictEqual({ limit: "50", offset: "0" });
   });
 });

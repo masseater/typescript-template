@@ -1,10 +1,55 @@
-import type { LintContext, Node } from "./lint-context.ts";
-import { propertyName, staticText } from "./references.ts";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
 
+const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
+
 function filename(context: LintContext): string {
   return context.filename.replaceAll("\\", "/");
+}
+
+function definesFileRoute(context: LintContext, node: Node): boolean {
+  return (
+    node.type === "CallExpression" &&
+    node.callee.type === "CallExpression" &&
+    origins(context, node.callee.callee).some((origin) => origin[1] === "createFileRoute")
+  );
+}
+
+function routeOptions(node: Node): NodeOf<"ObjectExpression">["properties"] {
+  const [options] = node.type === "CallExpression" ? node.arguments : [];
+  return options?.type === "ObjectExpression" ? options.properties : [];
+}
+
+function servesElysia(context: LintContext, node: Node): boolean {
+  if (node.type === "ObjectExpression") {
+    return node.properties.some(
+      (property) => property.type === "SpreadElement" && servesElysia(context, property.argument),
+    );
+  }
+  return (
+    node.type === "CallExpression" &&
+    origins(context, node.callee).some(
+      (origin) => origin.join(".") === elysiaServerOrigin.join("."),
+    )
+  );
+}
+
+function reportForeignServer(context: LintContext, node: Node): void {
+  if (!definesFileRoute(context, node)) {
+    return;
+  }
+  for (const property of routeOptions(node)) {
+    if (property.type !== "Property") {
+      reportViolation(context, property);
+    } else if (
+      propertyName(context, property) === "server" &&
+      !servesElysia(context, property.value)
+    ) {
+      reportViolation(context, property);
+    }
+  }
 }
 
 function effectStackVisitor(context: LintContext): Visitor {
@@ -24,6 +69,11 @@ function effectStackVisitor(context: LintContext): Visitor {
     }
   }
   return {
+    CallExpression(node: Node): void {
+      if (startRoute) {
+        reportForeignServer(context, node);
+      }
+    },
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
         check(node.source, false);
@@ -42,11 +92,6 @@ function effectStackVisitor(context: LintContext): Visitor {
     ImportExpression(node: Node): void {
       if (node.type === "ImportExpression") {
         check(node.source, false);
-      }
-    },
-    Property(node: Node): void {
-      if (startRoute && node.type === "Property" && propertyName(context, node) === "handlers") {
-        reportViolation(context, node);
       }
     },
   };

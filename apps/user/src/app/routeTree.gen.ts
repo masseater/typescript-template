@@ -16,6 +16,7 @@ import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
+import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
@@ -53,6 +54,11 @@ const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => PublicRoute,
 } as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MemberSettingsProfileRoute = MemberSettingsProfileRouteImport.update({
   id: '/settings/profile',
   path: '/settings/profile',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
+  '/api/$': typeof ApiSplatRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/users/': typeof MemberUsersIndexRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
+  '/api/$': typeof ApiSplatRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/users': typeof MemberUsersIndexRoute
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/_public/login': typeof PublicLoginRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
+  '/api/$': typeof ApiSplatRoute
   '/_public/': typeof PublicIndexRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/verify-email'
+    | '/api/$'
     | '/settings/profile'
     | '/users/$id'
     | '/users/'
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/verify-email'
+    | '/api/$'
     | '/settings/profile'
     | '/users/$id'
     | '/users'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/_public/login'
     | '/_public/signup'
     | '/_public/verify-email'
+    | '/api/$'
     | '/_public/'
     | '/_member/settings/profile'
     | '/_member/users/$id'
@@ -140,6 +152,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   MemberRoute: typeof MemberRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
+  ApiSplatRoute: typeof ApiSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/verify-email'
       preLoaderRoute: typeof PublicVerifyEmailRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_member/settings/profile': {
       id: '/_member/settings/profile'
@@ -254,6 +274,7 @@ const PublicRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   MemberRoute: MemberRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
+  ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

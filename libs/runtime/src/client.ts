@@ -1,11 +1,20 @@
 import { Result, Schema } from "effect";
+import type { AnyElysia } from "elysia";
 import { ErrorBody } from "./contracts.ts";
+import { httpStatus } from "@template/observability";
+import { treaty } from "@elysiajs/eden";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 
-interface JsonMutation {
-  readonly body: unknown;
-  readonly method: "PATCH" | "DELETE" | "POST";
+interface ApiFailure {
+  readonly status: number;
+  readonly value: unknown;
+}
+
+interface ApiReply {
+  readonly data: unknown;
+  readonly error: ApiFailure | null;
+  readonly response: Readonly<Pick<Response, "headers">>;
 }
 
 function decodeJson<Contract extends Decodable>(
@@ -19,8 +28,11 @@ function decodeJson<Contract extends Decodable>(
   return decoded.success;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function failureMessage(reply: Readonly<Response>, body: unknown): string {
+function failureMessage(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  reply: Readonly<Pick<Response, "headers" | "status">>,
+  body: unknown,
+): string {
   const failure = Schema.decodeUnknownResult(ErrorBody)(body);
   const message = Result.isSuccess(failure)
     ? failure.success.error
@@ -29,32 +41,48 @@ function failureMessage(reply: Readonly<Response>, body: unknown): string {
   return requestId === "" ? message : `${message} リクエスト ID: ${requestId}`;
 }
 
-async function send(path: string, mutation: JsonMutation | undefined): Promise<Response> {
-  if (!path.startsWith("/api/") || path.startsWith("//")) {
-    throw new Error("同じアプリの API を指定してください。");
+function apiData<Contract extends Decodable>(
+  contract: Contract,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  reply: ApiReply,
+): Contract["Type"] {
+  if (reply.error !== null) {
+    throw new Error(
+      failureMessage(
+        { headers: reply.response.headers, status: reply.error.status },
+        reply.error.value,
+      ),
+    );
   }
-  return fetch(path, {
-    cache: "no-store",
-    credentials: "same-origin",
-    method: mutation?.method ?? "GET",
-    redirect: "error",
-    ...(mutation
-      ? { body: JSON.stringify(mutation.body), headers: { "content-type": "application/json" } }
-      : {}),
+  return decodeJson(contract, reply.data);
+}
+
+const absent = {
+  notFound: httpStatus.notFound,
+  unauthorized: httpStatus.unauthorized,
+} as const;
+
+function apiDataOrNone<Contract extends Decodable>(
+  contract: Contract,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  reply: ApiReply,
+  absentStatus: (typeof absent)[keyof typeof absent] = absent.unauthorized,
+): Contract["Type"] | undefined {
+  return reply.error?.status === absentStatus ? undefined : apiData(contract, reply);
+}
+
+function apiServerClient<App extends AnyElysia>(
+  app: App,
+  headers: Readonly<Record<string, string>>,
+): ReturnType<typeof treaty<App, string>> {
+  return treaty(app, { headers, parseDate: false });
+}
+
+function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
+  return treaty<App>(globalThis.location.origin, {
+    fetch: { cache: "no-store", credentials: "same-origin", redirect: "error" },
+    parseDate: false,
   });
 }
 
-async function requestJson<Contract extends Decodable>(
-  path: string,
-  contract: Contract,
-  mutation?: JsonMutation,
-): Promise<Contract["Type"]> {
-  const reply = await send(path, mutation);
-  const body: unknown = await reply.json();
-  if (!reply.ok) {
-    throw new Error(failureMessage(reply, body));
-  }
-  return decodeJson(contract, body);
-}
-
-export { decodeJson, requestJson };
+export { absent, apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson, failureMessage };

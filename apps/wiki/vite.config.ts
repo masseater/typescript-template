@@ -2,6 +2,7 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 import {
   appRun,
   appServer,
+  importProtection,
   previewDevVars,
   reactCompiler,
   withoutEnvFileLoader,
@@ -36,7 +37,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     }),
     fumadocsMdx(),
     tailwindcss(),
-    ...withoutEnvFileLoader(tanstackStart()),
+    ...withoutEnvFileLoader(tanstackStart({ importProtection })),
     reactCompiler(),
   ],
   preview: appServer("wiki"),

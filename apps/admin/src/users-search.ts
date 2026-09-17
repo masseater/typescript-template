@@ -45,22 +45,15 @@ function normalizeUsersSearch(raw: unknown): UsersSearch {
   };
 }
 
-function userListRequestPath(search: UsersSearch): string {
-  const params = new URLSearchParams({
+function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
+  return {
     limit: String(usersPageSize),
     offset: String(((search.page ?? 1) - 1) * usersPageSize),
-  });
-  for (const [name, value] of [
-    ["keyword", search.keyword],
-    ["role", search.role],
-    ["emailVerified", search.verified === undefined ? undefined : String(search.verified)],
-  ] as const) {
-    if (value !== undefined) {
-      params.set(name, value);
-    }
-  }
-  return `/api/users?${params.toString()}`;
+    ...(search.keyword === undefined ? {} : { keyword: search.keyword }),
+    ...(search.role === undefined ? {} : { role: search.role }),
+    ...(search.verified === undefined ? {} : { emailVerified: String(search.verified) }),
+  };
 }
 
-export { normalizeUsersSearch, userListRequestPath };
+export { normalizeUsersSearch, userListQuery };
 export type { UsersSearch };

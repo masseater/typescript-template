@@ -65,12 +65,32 @@ const forbiddenCode = [
   ],
   [
     "apps/user/src/routes/api.probe.ts",
-    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
     "effect-stack",
   ],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: ownServer() });',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { own } from "../own.ts"; export const Route = createFileRoute("/api/$")({ ...own });',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { handlers: userApi } });',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: { ...ownServer(), middleware: [] } });',
     "effect-stack",
   ],
   [
@@ -104,21 +124,6 @@ const dependencyBypasses = [
   ["db-root-remote-laundering", "libs/db/src/index.ts", 'export * from "./remote";'],
   ["db-root-bootstrap-laundering", "libs/db/src/index.ts", 'export * from "./bootstrap-local";'],
   ["db-root-testing-laundering", "libs/db/src/index.ts", 'export * from "./testing";'],
-  [
-    "app-deployment-config",
-    "apps/user/src/probe.ts",
-    'import { secretsFile } from "@template/config/deployment";',
-  ],
-  [
-    "config-root-deployment-laundering",
-    "libs/config/src/index.ts",
-    'export * from "./deployment.ts";',
-  ],
-  [
-    "shared-deployment-config",
-    "libs/auth/src/probe.ts",
-    'export const load = () => import("@template/config/deployment");',
-  ],
   [
     "user-relative-remote",
     "apps/user/src/probe.ts",
@@ -221,9 +226,6 @@ const validBoundaries = [
   ["libs/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
   ["tools/dev/src/probe.ts", 'export * from "@template/db/remote";'],
   ["infra/cloudflare/src/probe.ts", 'export * from "@template/db/remote";'],
-  ["infra/cloudflare/src/probe.ts", 'export * from "@template/config/deployment";'],
-  ["libs/config/src/deployment.ts", 'export { homedir } from "node:os";'],
-  ["apps/user/src/app/probe.ts", 'export * from "@template/config";'],
   ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/db";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/ui/signup";'],
@@ -241,6 +243,15 @@ const validBoundaries = [
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { ...elysiaServer(userApi), middleware: [] } });',
+  ],
+  ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;
 
 const singleReports = [
