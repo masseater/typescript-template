@@ -1,15 +1,22 @@
 import type { KnipConfig } from "knip";
 
+const application = {
+  ignoreDependencies: ["cloudflare"],
+  project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
+};
+
 const config: KnipConfig = {
   ignoreDependencies: ["vite", "vitest"],
   workspaces: {
     ".": {
-      ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
+      ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo", "steiger"],
       project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],
     },
-    "apps/*": {
-      ignoreDependencies: ["cloudflare"],
-      project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
+    "apps/*": application,
+    "apps/user": {
+      ...application,
+      entry: ["src/app/server.ts!", "src/app/router.tsx!", "src/app/routes/**/*.tsx!"],
+      ignore: ["src/app/routeTree.gen.ts"],
     },
     "infra/budget-monitor": {
       entry: ["src/worker.ts!", "src/inspect.ts!"],

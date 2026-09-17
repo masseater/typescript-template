@@ -1,4 +1,4 @@
-import { ProfilePage } from "#components/profile-page.tsx";
+import { ProfilePage } from "#pages/profile/index.ts";
 import { createFileRoute } from "@tanstack/react-router";
 
 const Route = createFileRoute("/")({ component: ProfilePage });

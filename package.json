@@ -14,6 +14,7 @@
     "@types/node": "catalog:",
     "effect": "catalog:",
     "knip": "6.35.1",
+    "steiger": "0.6.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
