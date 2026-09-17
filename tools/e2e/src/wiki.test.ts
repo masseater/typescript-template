@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { createStack } from "./stack.ts";
 import { ensure, object, string, safeFailure } from "./support.ts";
-import { verifyBrowserSignals, verifyCorrelation } from "./telemetry.ts";
+import { verifyBrowserSignals, verifyCorrelation, verifyExplorerBoundary } from "./telemetry.ts";
 
 async function mcp(origin: string, id: number, method: string, params: Record<string, unknown>) {
   const response = await fetch(`${origin}/mcp`, {
@@ -40,7 +40,7 @@ test("public wiki Worker: Markdown pages, keyword search without Workers AI, MCP
   const stack = await createStack();
   let stage = "pages";
   try {
-    const started = Math.floor(Date.now() / 1000);
+    const started = Date.now();
     const reader = stack.browser("wiki-reader");
     await reader.open(stack.wikiOrigin, "/");
     await reader.waitText("この wiki は");
@@ -61,7 +61,7 @@ test("public wiki Worker: Markdown pages, keyword search without Workers AI, MCP
     );
     ensure(search.status === 200 && Array.isArray(search.data), "E2E_WIKI_SEARCH_FAILED");
     ensure(object(search.data[0])["url"] === "/authentication", "E2E_WIKI_KEYWORD_RANKING_WRONG");
-    await verifyCorrelation(search, "wiki", []);
+    await verifyCorrelation(stack.wikiOrigin, search, "wiki", []);
     await reader.commands(
       ["find", "role", "button", "click", "--name", "検索 ⌘ K", "--exact"],
       ["wait", 'input[placeholder="検索"]'],
@@ -84,7 +84,7 @@ test("public wiki Worker: Markdown pages, keyword search without Workers AI, MCP
       Array.isArray(results) && object(results[0])["url"] === "/deploy",
       "E2E_WIKI_MCP_KEYWORD_RANKING_WRONG",
     );
-    await verifyCorrelation(found, "wiki", []);
+    await verifyCorrelation(stack.wikiOrigin, found, "wiki", []);
     const page = await mcp(stack.wikiOrigin, 3, "tools/call", {
       name: "get_page",
       arguments: { url: "/deploy" },
@@ -96,7 +96,8 @@ test("public wiki Worker: Markdown pages, keyword search without Workers AI, MCP
       'setTimeout(() => { throw new Error("E2E wiki browser exception"); }, 0); true',
     );
     await reader.open(stack.wikiOrigin, "/");
-    await verifyBrowserSignals("wiki", started);
+    await verifyBrowserSignals(stack.wikiOrigin, "wiki", started);
+    await verifyExplorerBoundary(stack.wikiOrigin);
   } catch (error) {
     throw safeFailure(error, stage);
   } finally {

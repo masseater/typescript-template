@@ -1,17 +1,30 @@
-import { ensure, grafana, json, object, poll, string } from "./support.ts";
+import { request as httpRequest } from "node:http";
+import { ensure, object, poll, string } from "./support.ts";
 import type { Browser } from "./browser.ts";
-import { assertPrivate, relatedSpans, traceSpans } from "./observation.ts";
+import { assertPrivate, explorerQuery, relatedSpans, structuredEvent } from "./observation.ts";
 import type { ObservedRequest } from "./observation.ts";
 
-async function query(route: string, parameters: Record<string, string>) {
-  return json(
-    `${grafana}/api/datasources/proxy/uid/${route}?${new URLSearchParams(parameters).toString()}`,
+type Service = "user" | "admin" | "wiki";
+
+async function requestTelemetry(origin: string, requestId: string) {
+  const pattern = `request_id\\":\\"${requestId}`;
+  const logs = await explorerQuery(
+    origin,
+    "SELECT trace_id, span_id, level, message FROM logs WHERE instr(message, ?) > 0 ORDER BY ts_ms",
+    [pattern],
   );
+  const spans = await explorerQuery(
+    origin,
+    "SELECT trace_id, span_id, parent_id, name, kind, duration_ms, outcome, json(attributes) AS attributes FROM spans WHERE trace_id IN (SELECT trace_id FROM logs WHERE instr(message, ?) > 0) ORDER BY start_ms",
+    [pattern],
+  );
+  return { logs, spans };
 }
 
 export async function verifyCorrelation(
+  origin: string,
   response: { requestId: unknown; traceparent: unknown },
-  service: "user" | "admin" | "wiki",
+  service: Service,
   forbidden: readonly string[],
   observed?: ObservedRequest,
 ) {
@@ -19,94 +32,56 @@ export async function verifyCorrelation(
   const traceparent = string(response.traceparent);
   ensure(/^[0-9a-f-]{36}$/.test(requestId), "E2E_REQUEST_ID_MISSING");
   ensure(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/.test(traceparent), "E2E_TRACE_CONTEXT_MISSING");
-  const traceId = traceparent.split("-")[1];
-  ensure(traceId, "E2E_TRACE_ID_MISSING");
-  const start = String(Math.floor(Date.now() / 1000) - 300);
   await poll(
     async () => {
-      const end = String(Math.ceil(Date.now() / 1000));
-      const logs = await query("loki/loki/api/v1/query_range", {
-        query: `{service_name="${service}-server"} | request_id="${requestId}"`,
-        start,
-        end,
-        limit: "100",
-      });
-      const serialized = JSON.stringify(logs);
-      assertPrivate(logs, forbidden);
-      if (!serialized.includes(traceId)) return false;
-      const traceResponse = await fetch(
-        `${grafana}/api/datasources/proxy/uid/tempo/api/traces/${traceId}`,
-        { signal: AbortSignal.timeout(10_000) },
+      const telemetry = await requestTelemetry(origin, requestId);
+      assertPrivate(telemetry, forbidden);
+      const events = telemetry.logs.map((row) => structuredEvent(row["message"]));
+      const server = events.find(
+        (event) =>
+          event?.["event"] === "http.server.request" &&
+          event["service"] === `${service}-server` &&
+          event["request_id"] === requestId &&
+          event["trace_id"] === traceparent.split("-")[1],
       );
-      if (traceResponse.status === 404) return false;
-      ensure(traceResponse.ok, "E2E_TRACE_QUERY_FAILED");
-      const traces: unknown = await traceResponse.json();
-      const traceText = JSON.stringify(traces);
-      assertPrivate(traces, forbidden);
-      if (!traceText.includes(`${service}-server`)) return false;
-      if (observed && !relatedSpans(traceSpans(traces), observed, service)) return false;
-      const metrics = object(
-        await query("prometheus/api/v1/query", {
-          query: `http_server_request_duration_seconds_count{service_name="${service}-server"}`,
-        }),
-      );
-      const data = object(metrics["data"]);
-      assertPrivate(metrics, forbidden);
-      if (!Array.isArray(data["result"]) || data["result"].length === 0) return false;
-      const exemplars = await query("prometheus/api/v1/query_exemplars", {
-        query: `http_server_request_duration_seconds_bucket{service_name="${service}-server"}`,
-        start,
-        end,
-      });
-      assertPrivate(exemplars, forbidden);
-      if (!JSON.stringify(exemplars).includes(traceId)) return false;
-      if (observed?.clientTraceparent) {
-        const browserLogs = await query("loki/loki/api/v1/query_range", {
-          query: `{service_name="${service}-browser"} | request_id="${requestId}"`,
-          start,
-          end,
-          limit: "100",
-        });
-        const browserExemplars = await query("prometheus/api/v1/query_exemplars", {
-          query: `http_client_request_duration_seconds_bucket{service_name="${service}-browser"}`,
-          start,
-          end,
-        });
-        assertPrivate(browserLogs, forbidden);
-        assertPrivate(browserExemplars, forbidden);
-        if (
-          !JSON.stringify(browserLogs).includes(traceId) ||
-          !JSON.stringify(browserExemplars).includes(traceId)
-        )
-          return false;
-      }
+      if (!server) return false;
+      if (
+        !telemetry.spans.some((span) => span["parent_id"] === null && span["duration_ms"] !== null)
+      )
+        return false;
+      if (observed && !relatedSpans(telemetry.spans, events, observed, service)) return false;
       return true;
     },
     (complete) => complete,
-    "E2E_REAL_LOG_TRACE_METRIC_CORRELATION_MISSING",
+    "E2E_REAL_LOG_TRACE_CORRELATION_MISSING",
     60_000,
   );
 }
 
 export async function verifyJourneyTelemetry(
-  participants: readonly { browser: Browser; service: "user" | "admin" | "wiki" }[],
+  participants: readonly { browser: Browser; service: Service; origin: string }[],
   forbidden: readonly string[],
-  started: number,
+  startedMs: number,
 ) {
   const observations = await Promise.all(
-    participants.map(async ({ browser, service }) => ({
+    participants.map(async ({ browser, service, origin }) => ({
       ...(await browser.finishObservation()),
       service,
+      origin,
     })),
   );
   const secrets = [...new Set([...forbidden, ...observations.flatMap((entry) => entry.secrets)])];
   const requests = new Map<
     string,
-    { request: ObservedRequest; service: "user" | "admin" | "wiki" }
+    { request: ObservedRequest; service: Service; origin: string }
   >();
   for (const observation of observations) {
     for (const request of observation.requests)
-      requests.set(request.requestId, { request, service: observation.service });
+      requests.set(request.requestId, {
+        request,
+        service: observation.service,
+        origin: observation.origin,
+      });
   }
   ensure(requests.size > 0, "E2E_OPERATION_OBSERVATIONS_MISSING");
   ensure(
@@ -117,55 +92,92 @@ export async function verifyJourneyTelemetry(
   );
   ensure(
     [...requests.values()].some(
-      ({ request }) => request.path === "/api/auth/verify-email" && request.status < 400,
+      ({ request }) => request.path === "/api/verify-email" && request.status < 400,
     ),
     "E2E_EMAIL_VERIFICATION_OBSERVATION_MISSING",
   );
-  for (const { request, service } of requests.values())
-    await verifyCorrelation(request, service, secrets, request);
-  for (const service of new Set(participants.map((participant) => participant.service))) {
-    const logs = object(
-      await query("loki/loki/api/v1/query_range", {
-        query: `{service_name=~"${service}-(server|browser)"}`,
-        start: String(started),
-        end: String(Math.ceil(Date.now() / 1000)),
-        limit: "5000",
-      }),
+  for (const { request, service, origin } of requests.values())
+    await verifyCorrelation(origin, request, service, secrets, request);
+  for (const origin of new Set(participants.map((participant) => participant.origin))) {
+    const logs = await explorerQuery(
+      origin,
+      "SELECT trace_id, level, message FROM logs WHERE ts_ms >= ? LIMIT 10000",
+      [startedMs],
     );
+    ensure(logs.length > 0 && logs.length < 10000, "E2E_PRIVACY_LOG_WINDOW_INCOMPLETE");
     assertPrivate(logs, secrets);
-    const streams = object(logs["data"])["result"];
-    ensure(Array.isArray(streams), "E2E_LOG_RESULT_INVALID");
-    const entries = streams.reduce((total: number, stream: unknown) => {
-      const values = object(stream)["values"];
-      ensure(Array.isArray(values), "E2E_LOG_VALUES_INVALID");
-      return total + values.length;
-    }, 0);
-    ensure(entries > 0 && entries < 5000, "E2E_PRIVACY_LOG_WINDOW_INCOMPLETE");
-    const metrics = await query("prometheus/api/v1/query", {
-      query: `{service_name=~"${service}-(server|browser)"}`,
-    });
-    assertPrivate(metrics, secrets);
+    const spans = await explorerQuery(
+      origin,
+      "SELECT trace_id, name, error, json(attributes) AS attributes FROM spans WHERE start_ms >= ? LIMIT 10000",
+      [startedMs],
+    );
+    ensure(spans.length > 0 && spans.length < 10000, "E2E_PRIVACY_TRACE_WINDOW_INCOMPLETE");
+    assertPrivate(spans, secrets);
   }
 }
 
-export async function verifyBrowserSignals(service: "user" | "admin" | "wiki", start: number) {
+export async function verifyBrowserSignals(origin: string, service: Service, startedMs: number) {
   await poll(
     async () => {
-      const logs = await query("loki/loki/api/v1/query_range", {
-        query: `{service_name="${service}-browser"}`,
-        start: String(start),
-        end: String(Math.ceil(Date.now() / 1000)),
-        limit: "1000",
-      });
-      const text = JSON.stringify(logs);
+      const events = (
+        await explorerQuery(
+          origin,
+          "SELECT message FROM logs WHERE ts_ms >= ? AND instr(message, ?) > 0 LIMIT 10000",
+          [startedMs, `service\\":\\"${service}-browser`],
+        )
+      ).map((row) => structuredEvent(row["message"]));
       return (
-        text.includes("http.client.request") &&
-        text.includes("browser.error") &&
-        /LCP|FCP|TTFB/.test(text)
+        events.some((event) => event?.["event"] === "http.client.request") &&
+        events.some(
+          (event) =>
+            event?.["event"] === "browser.error" &&
+            /^[0-9a-f]{8}$/.test(String(event["error.fingerprint"])),
+        ) &&
+        events.some((event) => /^(?:LCP|FCP|TTFB)$/.test(String(event?.["event"])))
       );
     },
     (complete) => complete,
     "E2E_BROWSER_HTTP_EXCEPTION_VITALS_MISSING",
     60_000,
+  );
+}
+
+function foreignHostStatus(origin: string, pathname: string): Promise<number> {
+  const url = new URL(pathname, origin);
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(
+      url,
+      { method: "GET", headers: { host: "attacker.example" }, timeout: 10_000 },
+      (response) => {
+        response.resume();
+        resolve(response.statusCode ?? 0);
+      },
+    );
+    request.once("error", reject);
+    request.once("timeout", () => request.destroy(new Error("E2E_LOCAL_EXPLORER_TIMEOUT")));
+    request.end();
+  });
+}
+
+export async function verifyExplorerBoundary(origin: string) {
+  for (const pathname of [
+    "/cdn-cgi/local/explorer/api/d1/database",
+    "/cdn-cgi/local/explorer/api/local/observability/query",
+  ]) {
+    const response = await fetch(`${origin}${pathname}`, {
+      headers: { origin: "https://attacker.example" },
+      signal: AbortSignal.timeout(10_000),
+      redirect: "manual",
+    });
+    await response.body?.cancel();
+    ensure(response.status === 403, "E2E_LOCAL_EXPLORER_ACCEPTS_FOREIGN_ORIGIN");
+    ensure(
+      (await foreignHostStatus(origin, pathname)) === 403,
+      "E2E_LOCAL_EXPLORER_ACCEPTS_FOREIGN_HOST",
+    );
+  }
+  ensure(
+    object((await explorerQuery(origin, "SELECT 1 AS ok", []))[0])["ok"] === 1,
+    "E2E_LOCAL_EXPLORER_UNAVAILABLE",
   );
 }

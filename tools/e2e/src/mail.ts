@@ -7,8 +7,9 @@ export function verificationLink(text: string, origin: string): string {
     const url = new URL(link);
     if (
       url.origin === origin &&
-      url.pathname === "/api/auth/verify-email" &&
-      url.searchParams.get("token")
+      url.pathname === "/verify-email" &&
+      url.search === "" &&
+      new URLSearchParams(url.hash.slice(1)).get("token")
     )
       return url.href;
   }
@@ -48,9 +49,13 @@ export async function verifyEmail(
   owned.add(messageId);
   const message = object(await json(`${mailpit}/api/v1/message/${encodeURIComponent(messageId)}`));
   const link = verificationLink(string(message["Text"]), origin);
-  const token = new URL(link).searchParams.get("token");
+  const token = new URLSearchParams(new URL(link).hash.slice(1)).get("token");
   ensure(token, "E2E_VERIFICATION_TOKEN_MISSING");
   browser.secrets.add(token);
   browser.secrets.add(email);
-  await browser.commands(["open", link], ["wait", 'input[name="email"]']);
+  await browser.commands(
+    ["open", link],
+    ["wait", "--url", "**/login"],
+    ["wait", 'input[name="email"]'],
+  );
 }
