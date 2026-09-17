@@ -4,6 +4,8 @@ import type { SettingsContext } from "./mfa-types";
 import type { TextInput } from "./use-text-input";
 import { noop } from "es-toolkit";
 
+const passkeyListPath = "/api/auth/passkey/list-user-passkeys";
+
 function textInput(value = ""): TextInput {
   return { handleChange: noop, setValue: noop, value };
 }
@@ -45,4 +47,12 @@ function settingsContext(overrides: Partial<SettingsContext> = {}): SettingsCont
   };
 }
 
-export { failedAction, idleAction, pendingAction, session, settingsContext, textInput };
+export {
+  failedAction,
+  idleAction,
+  passkeyListPath,
+  pendingAction,
+  session,
+  settingsContext,
+  textInput,
+};

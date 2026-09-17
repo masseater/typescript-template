@@ -1,15 +1,15 @@
 import { HttpResponse, http } from "msw";
+import { passkeyListPath, session } from "./story-fixture";
 import { MFASettings } from "./mfa";
 import { expect } from "storybook/test";
 import preview from "../.storybook/preview";
-import { session } from "./story-fixture";
-
-const listPath = "/api/auth/passkey/list-user-passkeys";
 
 const meta = preview.meta({
   args: { session: session() },
   beforeEach: ({ msw }) => {
-    msw.use(http.get(listPath, () => HttpResponse.json([{ id: "passkey_01", name: "iPhone" }])));
+    msw.use(
+      http.get(passkeyListPath, () => HttpResponse.json([{ id: "passkey_01", name: "iPhone" }])),
+    );
   },
   component: MFASettings,
 });
