@@ -130,15 +130,13 @@ const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserS
   userId: string,
 ) {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  yield* query((database) =>
-    database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
-  );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  yield* query((database) =>
-    database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
-  );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  yield* query((database) => database.delete(session).where(eq(session.userId, userId)));
+  yield* query(async (database): Promise<void> => {
+    await database.batch([
+      database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+      database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+      database.delete(session).where(eq(session.userId, userId)),
+    ]);
+  });
 });
 
 const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
