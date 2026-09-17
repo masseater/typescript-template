@@ -7,17 +7,18 @@ import {
   jsonSha256,
   sameContent,
 } from "./artifact-io.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { readFile, stat } from "node:fs/promises";
 import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 import { stageClientFiles } from "./staging.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { stat } from "node:fs/promises";
 
 const MAIN_MODULE = "index.js";
 const RELEASE_LENGTH = 16;
+const SERVER_ONLY_MARKERS: readonly string[] = ["drizzle:entityKind", "better-auth/api"];
 const MODULE_CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
   [".js", "application/javascript+module"],
   [".mjs", "application/javascript+module"],
@@ -54,6 +55,12 @@ function privateArtifact(relative: string): boolean {
     );
 }
 
+function carriesServerOnlyCode(file: string): Effect.Effect<boolean, ArtifactFailure> {
+  return io(async () => readFile(file, "utf-8")).pipe(
+    Effect.map((source) => SERVER_ONLY_MARKERS.some((marker) => source.includes(marker))),
+  );
+}
+
 const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArtifactFiles(
   client: string,
 ) {
@@ -64,6 +71,13 @@ const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArt
   const clientFiles = allClientFiles.filter((file) => !file.endsWith(".map"));
   if (clientFiles.length === 0) {
     return yield* fail("client_artifacts_empty");
+  }
+  const scripts = yield* Effect.all(
+    clientFiles.filter((file) => /\.m?js$/u.test(file)).map((file) => carriesServerOnlyCode(file)),
+    { concurrency: "unbounded" },
+  );
+  if (scripts.includes(true)) {
+    return yield* fail("server_only_code_in_client");
   }
   return clientFiles;
 });

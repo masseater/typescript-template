@@ -15,6 +15,7 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
     "artifact_file_type_invalid",
     "artifact_directory_symlink_forbidden",
     "private_client_artifact",
+    "server_only_code_in_client",
     "client_artifacts_empty",
     "worker_entry_missing_index_js",
     "worker_entry_empty",
