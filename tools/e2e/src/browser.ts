@@ -8,7 +8,7 @@ import type { ObservedRequest } from "./observation.ts";
 export const enabledButton = (name: string) => [
   "wait",
   "--fn",
-  `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent?.trim()) === ${JSON.stringify(name)})`,
+  `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\\s+/g, "") === ${JSON.stringify(name.replace(/\s+/g, ""))})`,
 ];
 
 const rateLimitWindow = 11_000;

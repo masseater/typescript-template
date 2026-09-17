@@ -232,6 +232,7 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
       enabledButton("認証アプリを解除"),
       ["fill", 'input[name="password"]', alice.password],
       button("認証アプリを解除"),
+      ["wait", "--url", "**/login?recovery=setup"],
       ["wait", 'input[name="email"]'],
       enabledButton("ログイン"),
       ["fill", 'input[name="email"]', alice.email],
