@@ -1,7 +1,6 @@
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
-  ignoreBinaries: ["tailscale"],
   ignoreDependencies: ["vite", "vitest"],
   workspaces: {
     ".": {
@@ -37,7 +36,7 @@ const config: KnipConfig = {
     },
     "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
     "tools/dev": {
-      entry: ["src/cli.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
+      entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {

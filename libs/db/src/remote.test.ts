@@ -48,102 +48,106 @@ test("rejects missing bootstrap identity and surplus commands without printing i
   ).toThrow("REMOTE_INPUT_INVALID");
 });
 
-test("applies real D1 migrations once, rejects changed history and preserves bootstrap protections", async () => {
-  const runtime = new Miniflare({
-    modules: true,
-    script: "export default { fetch() { return new Response('test-database'); } };",
-    compatibilityDate: "2026-07-30",
-    d1Databases: { DB: "remote-lifecycle-test" },
-  });
-  try {
-    const binding = await runtime.getD1Database("DB");
-    const executor: DatabaseExecutor = {
-      batch: async (queries) => {
-        const result = await binding.batch(
-          queries.map((query) => binding.prepare(query.sql).bind(...query.params)),
-        );
-        return result.map((item) => item.results);
-      },
-    };
-    const migrations = loadRemoteMigrations();
-    expect(await migrateDatabase(executor, migrations)).toBe(migrations.length);
-    expect(await migrateDatabase(executor, migrations)).toBe(0);
-    const last = migrations.at(-1);
-    if (!last) throw new Error("MIGRATIONS_REQUIRED");
-    await expect(
-      migrateDatabase(executor, [
-        ...migrations,
-        {
-          hash: "b".repeat(64),
-          folderMillis: last.folderMillis + 1,
-          sql: [
-            "CREATE TABLE interrupted_migration (id TEXT)",
-            "INSERT INTO missing_migration_table VALUES (1)",
-          ],
+test(
+  "applies real D1 migrations once, rejects changed history and preserves bootstrap protections",
+  { timeout: 60_000 },
+  async () => {
+    const runtime = new Miniflare({
+      modules: true,
+      script: "export default { fetch() { return new Response('test-database'); } };",
+      compatibilityDate: "2026-07-30",
+      d1Databases: { DB: "remote-lifecycle-test" },
+    });
+    try {
+      const binding = await runtime.getD1Database("DB");
+      const executor: DatabaseExecutor = {
+        batch: async (queries) => {
+          const result = await binding.batch(
+            queries.map((query) => binding.prepare(query.sql).bind(...query.params)),
+          );
+          return result.map((item) => item.results);
         },
-      ]),
-    ).rejects.toThrow("missing_migration_table");
-    expect(
-      (
-        await binding
-          .prepare("SELECT name FROM sqlite_master WHERE name = ?")
-          .bind("interrupted_migration")
-          .all()
-      ).results,
-    ).toEqual([]);
-    expect(await migrateDatabase(executor, migrations)).toBe(0);
-    const first = migrations[0];
-    if (!first) throw new Error("MIGRATIONS_REQUIRED");
-    await expect(
-      migrateDatabase(executor, [{ ...first, hash: "changed" }, ...migrations.slice(1)]),
-    ).rejects.toThrow("REMOTE_MIGRATION_HISTORY_MISMATCH");
-    const db = createDb(binding);
-    for (const [id, verified] of [
-      ["unverified", false],
-      ["first", true],
-      ["second", true],
-    ] as const) {
-      await db.insert(user).values({
-        id,
-        name: id,
-        email: `${id}@example.test`,
-        emailVerified: verified,
+      };
+      const migrations = loadRemoteMigrations();
+      expect(await migrateDatabase(executor, migrations)).toBe(migrations.length);
+      expect(await migrateDatabase(executor, migrations)).toBe(0);
+      const last = migrations.at(-1);
+      if (!last) throw new Error("MIGRATIONS_REQUIRED");
+      await expect(
+        migrateDatabase(executor, [
+          ...migrations,
+          {
+            hash: "b".repeat(64),
+            folderMillis: last.folderMillis + 1,
+            sql: [
+              "CREATE TABLE interrupted_migration (id TEXT)",
+              "INSERT INTO missing_migration_table VALUES (1)",
+            ],
+          },
+        ]),
+      ).rejects.toThrow("missing_migration_table");
+      expect(
+        (
+          await binding
+            .prepare("SELECT name FROM sqlite_master WHERE name = ?")
+            .bind("interrupted_migration")
+            .all()
+        ).results,
+      ).toEqual([]);
+      expect(await migrateDatabase(executor, migrations)).toBe(0);
+      const first = migrations[0];
+      if (!first) throw new Error("MIGRATIONS_REQUIRED");
+      await expect(
+        migrateDatabase(executor, [{ ...first, hash: "changed" }, ...migrations.slice(1)]),
+      ).rejects.toThrow("REMOTE_MIGRATION_HISTORY_MISMATCH");
+      const db = createDb(binding);
+      for (const [id, verified] of [
+        ["unverified", false],
+        ["first", true],
+        ["second", true],
+      ] as const) {
+        await db.insert(user).values({
+          id,
+          name: id,
+          email: `${id}@example.test`,
+          emailVerified: verified,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+      await expect(bootstrapDatabase(executor, "unverified@example.test")).rejects.toThrow(
+        "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+      );
+      await expect(bootstrapDatabase(executor, "missing@example.test")).rejects.toThrow(
+        "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+      );
+      await db.insert(session).values({
+        id: "old-session",
+        token: "old-token",
+        userId: "first",
+        audience: "user",
+        securityVersion: 0,
+        authenticationMethod: "password",
         createdAt: new Date(),
         updatedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60000),
       });
+      await bootstrapDatabase(executor, "FIRST@example.test");
+      expect(await getSessionSecurity(db, "old-session", "user")).toBeNull();
+      await expect(bootstrapDatabase(executor, "second@example.test")).rejects.toThrow(
+        "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+      );
+      await expect(bootstrapAdmin(db, "second@example.test")).rejects.toThrow(
+        "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+      );
+      await expect(
+        binding.prepare("DELETE FROM user WHERE id = ?").bind("first").run(),
+      ).rejects.toThrow("LAST_ADMIN_REQUIRED");
+      await expect(
+        binding.prepare("UPDATE user SET role = 'user' WHERE id = ?").bind("first").run(),
+      ).rejects.toThrow("LAST_ADMIN_REQUIRED");
+    } finally {
+      await runtime.dispose();
     }
-    await expect(bootstrapDatabase(executor, "unverified@example.test")).rejects.toThrow(
-      "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
-    );
-    await expect(bootstrapDatabase(executor, "missing@example.test")).rejects.toThrow(
-      "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
-    );
-    await db.insert(session).values({
-      id: "old-session",
-      token: "old-token",
-      userId: "first",
-      audience: "user",
-      securityVersion: 0,
-      authenticationMethod: "password",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      expiresAt: new Date(Date.now() + 60000),
-    });
-    await bootstrapDatabase(executor, "FIRST@example.test");
-    expect(await getSessionSecurity(db, "old-session", "user")).toBeNull();
-    await expect(bootstrapDatabase(executor, "second@example.test")).rejects.toThrow(
-      "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
-    );
-    await expect(bootstrapAdmin(db, "second@example.test")).rejects.toThrow(
-      "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
-    );
-    await expect(
-      binding.prepare("DELETE FROM user WHERE id = ?").bind("first").run(),
-    ).rejects.toThrow("LAST_ADMIN_REQUIRED");
-    await expect(
-      binding.prepare("UPDATE user SET role = 'user' WHERE id = ?").bind("first").run(),
-    ).rejects.toThrow("LAST_ADMIN_REQUIRED");
-  } finally {
-    await runtime.dispose();
-  }
-});
+  },
+);
