@@ -29,7 +29,7 @@ export function isLocalDevelopmentOrigin(value: string): boolean {
   const url = new URL(value);
   return (
     loopbackHosts.includes(url.hostname) ||
-    (url.protocol === "https:" && /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/.test(url.hostname))
+    (url.protocol === "https:" && /^[a-z0-9-]+\.local$/.test(url.hostname))
   );
 }
 

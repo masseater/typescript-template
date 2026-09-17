@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 
 function command(args: string[], input: string) {
   return new Promise<{ code: number | null; output: string; error: string }>((resolve, reject) => {

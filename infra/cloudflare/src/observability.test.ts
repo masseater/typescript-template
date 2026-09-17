@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { workerObservability } from "./observability.ts";
 
 test("app and budget Worker policy disables automatic request logging but retains structured logs", () => {

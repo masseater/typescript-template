@@ -1,4 +1,4 @@
-import { expect, test as baseTest } from "vitest";
+import { expect, test as baseTest } from "vite-plus/test";
 import { createDb, getProfile, updateProfile } from "./index.ts";
 import { instrumentD1 } from "./instrumentation.ts";
 import type { DatabaseOperation, DatabaseTrace } from "./instrumentation.ts";

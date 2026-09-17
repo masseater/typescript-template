@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { assertPublicFile, secretValues, assertEntries, assertSeparation } from "./artifacts.ts";
 import type { ArtifactPair } from "./artifacts.ts";
 

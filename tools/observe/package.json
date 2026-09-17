@@ -5,8 +5,7 @@
   "scripts": {
     "observe": "node src/cli.ts",
     "verify": "node src/verify.ts",
-    "test": "vp test run",
-    "typecheck": "tsc --noEmit"
+    "test": "vp test run"
   },
   "dependencies": {
     "valibot": "1.5.0"

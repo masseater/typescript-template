@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
 import { errorMessage, requireSuccess, requirePasskeyUV, sessionSchema } from "./protocol";
 

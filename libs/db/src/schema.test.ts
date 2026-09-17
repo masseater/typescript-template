@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { generateSQLiteDrizzleJson } from "drizzle-kit/api";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { schema } from "./schema.ts";
 
 test("Drizzle models match the latest generated migration snapshot", async () => {
