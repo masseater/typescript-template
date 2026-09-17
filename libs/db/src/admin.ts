@@ -1,20 +1,42 @@
 import { Effect, Schema } from "effect";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { auditEvent, user } from "./schema.ts";
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import type { Database } from "./database.ts";
 import type { DatabaseFailure } from "./database-failure.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import type { Role } from "@template/config";
+import type { SQL } from "drizzle-orm";
 import { TargetUnavailable } from "./target-unavailable.ts";
 import { query } from "./database.ts";
+import { roles } from "@template/config";
 
 const MAX_PAGE_SIZE = 100;
 
 const UserPage = Schema.Struct({
+  emailVerified: Schema.optionalKey(Schema.Boolean),
+  keyword: Schema.optionalKey(Schema.String),
   limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  role: Schema.optionalKey(Schema.Literals(roles)),
 });
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function containsKeyword(column: typeof user.name | typeof user.email, keyword: string): SQL {
+  const pattern = `%${keyword.replaceAll(/[\\%_]/gu, String.raw`\$&`)}%`;
+  return sql`${column} LIKE ${pattern} ESCAPE '\\'`;
+}
+
+function matchesPage(page: typeof UserPage.Type): SQL | undefined {
+  const { emailVerified, keyword, role } = page;
+  return and(
+    keyword === undefined
+      ? undefined
+      : or(containsKeyword(user.name, keyword), containsKeyword(user.email, keyword)),
+    role === undefined ? undefined : eq(user.role, role),
+    emailVerified === undefined ? undefined : eq(user.emailVerified, emailVerified),
+  );
+}
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function mentionsLastAdmin(failure: DatabaseFailure): boolean {
@@ -50,18 +72,21 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
         emailVerified: user.emailVerified,
         id: user.id,
         name: user.name,
-        profile: user.profile,
         role: user.role,
+        twoFactorEnabled: user.twoFactorEnabled,
       })
       .from(user)
-      .where(liveAdmin(database, sessionId))
+      .where(and(liveAdmin(database, sessionId), matchesPage(page)))
       .orderBy(desc(user.createdAt), user.id)
       .limit(page.limit)
       .offset(page.offset),
   );
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [total] = yield* query((database) =>
-    database.select({ count: count() }).from(user).where(liveAdmin(database, sessionId)),
+    database
+      .select({ count: count() })
+      .from(user)
+      .where(and(liveAdmin(database, sessionId), matchesPage(page))),
   );
   return { total: total?.count ?? 0, users };
 });
