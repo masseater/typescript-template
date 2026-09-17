@@ -56,6 +56,11 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
       ignoreDependencies: ["cloudflare"],
     },
+    "infra/health-monitor": {
+      entry: ["src/worker.ts!"],
+      project: ["src/**/*.ts!"],
+      ignoreDependencies: ["cloudflare"],
+    },
   },
 };
 

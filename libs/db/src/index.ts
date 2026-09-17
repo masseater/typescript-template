@@ -43,6 +43,10 @@ const profileColumns = {
   profile: user.profile,
 };
 
+export const checkDatabase = Effect.fn("checkDatabase")(function* () {
+  yield* query((database) => database.select({ id: user.id }).from(user).limit(1));
+});
+
 export const getProfile = Effect.fn("getProfile")(function* (userId: string) {
   const [profile] = yield* query((database) =>
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),

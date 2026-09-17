@@ -27,6 +27,7 @@
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
     "@template/error-monitor": "workspace:*",
+    "@template/health-monitor": "workspace:*",
     "@template/infra-bootstrap": "workspace:*",
     "effect": "4.0.0-rc.112"
   },

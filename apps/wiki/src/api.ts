@@ -1,4 +1,5 @@
-import { ingestBrowser } from "@template/observability";
+import { Telemetry, ingestBrowser } from "@template/observability";
+import { HealthView } from "@template/runtime/contracts";
 import { apiBridge, compileApi, createApi, jsonResponse } from "@template/runtime/http";
 import type { WikiServices } from "@template/runtime/wiki";
 import { Effect } from "effect";
@@ -8,6 +9,17 @@ const bridge = apiBridge<WikiServices>();
 
 const api = createApi()
   .post("/api/telemetry", bridge.raw(ingestBrowser, {}))
+  .get(
+    "/api/health",
+    bridge.route(
+      HealthView,
+      () =>
+        Telemetry.use((telemetry) =>
+          Effect.succeed({ ok: true, service: "wiki", release: telemetry.release } as const),
+        ),
+      {},
+    ),
+  )
   .get(
     "/api/search",
     bridge.raw((request) => {

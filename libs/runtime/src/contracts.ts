@@ -65,3 +65,9 @@ export const RoleChanged = Schema.Struct({ id: Schema.String, role: Role });
 export const UserDeletion = Schema.Struct({ id: Identifier });
 
 export const UserDeleted = Schema.Struct({ id: Schema.String });
+
+export const HealthView = Schema.Struct({
+  ok: Schema.Literal(true),
+  service: Schema.Literals(["user", "admin", "wiki"]),
+  release: Schema.String,
+});

@@ -1,7 +1,8 @@
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
-import { ingestBrowser } from "@template/observability";
+import { checkDatabase } from "@template/db";
+import { Telemetry, ingestBrowser } from "@template/observability";
 import { Effect } from "effect";
-import { EmailVerificationRequest, EmailVerified, SessionView } from "./contracts.ts";
+import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
 import { apiBridge, createApi, readJsonBody } from "./http.ts";
 import type { AppServices } from "./index.ts";
 
@@ -11,6 +12,23 @@ export const accountApi = (bridge: ReturnType<typeof apiBridge<AppServices>>) =>
   createApi()
     .all("/api/auth/*", bridge.raw(handleAuthRequest, unavailable))
     .post("/api/telemetry", bridge.raw(ingestBrowser, {}))
+    .get(
+      "/api/health",
+      bridge.route(
+        HealthView,
+        () =>
+          Effect.gen(function* () {
+            yield* checkDatabase();
+            const telemetry = yield* Telemetry;
+            return {
+              ok: true,
+              service: telemetry.serviceName,
+              release: telemetry.release,
+            } as const;
+          }),
+        unavailable,
+      ),
+    )
     .get(
       "/api/session",
       bridge.route(SessionView, (request) => verifySession(request.headers, true), unavailable),

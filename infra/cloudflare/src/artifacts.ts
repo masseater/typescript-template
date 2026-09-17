@@ -24,6 +24,7 @@ export class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("Arti
     "source_map_symlink_forbidden",
     "budget_worker_artifact_empty",
     "error_worker_artifact_empty",
+    "health_worker_artifact_empty",
   ]),
 }) {}
 
