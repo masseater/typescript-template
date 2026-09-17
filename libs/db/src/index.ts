@@ -49,6 +49,5 @@ export type { DrizzleDatabase } from "./database.ts";
 export { schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export { getMember, listMembers } from "./members.ts";
-export { UserRow } from "./identity-schema.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { checkDatabase, getProfile, updateProfile };

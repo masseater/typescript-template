@@ -5,8 +5,14 @@ import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { importVisitor, reportViolation } from "./lint-context.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
+import {
+  nodeRuntimeModules,
+  runsInWorkerRuntime,
+  testRuntimeVisitor,
+  workerRuntimeModules,
+  workerTestSuffix,
+} from "./test-runtime.ts";
 import { origins, propertyName, staticText } from "./references.ts";
-import { testRuntimeVisitor, workerTestSuffix } from "./test-runtime.ts";
 import type { Origin } from "./references.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
@@ -178,13 +184,7 @@ function memoizationVisitor(context: LintContext): Visitor {
 }
 
 function workerFetchVisitor(context: LintContext): Visitor {
-  const current = filename(context);
-  if (
-    !/\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u.test(current) ||
-    /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(
-      current,
-    )
-  ) {
+  if (!runsInWorkerRuntime(filename(context))) {
     return {};
   }
   return {
@@ -255,7 +255,7 @@ export default definePlugin({
     "test-runtime": {
       create: testRuntimeVisitor,
       meta: metadata(
-        `Worker のランタイムで動くテストは ${workerTestSuffix} という名前にして cloudflare:test / cloudflare:workers を使い、Node でしか動かないテストは ${workerTestSuffix} 以外の名前にして node: や msw/node を使ってください。名前がテストの実行先を決めるので、両方を 1 つのファイルに混ぜられません。`,
+        `Worker のランタイムで動くテストは ${workerTestSuffix} という名前にして ${workerRuntimeModules.join(" / ")} を使い、Node でしか動かないテストは ${workerTestSuffix} 以外の名前にして ${nodeRuntimeModules.join(" / ")} を使ってください。名前がテストの実行先を決めるので、両方を 1 つのファイルに混ぜられません。`,
       ),
     },
     "worker-fetch": {

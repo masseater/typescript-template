@@ -53,3 +53,20 @@ describe("the name of a test file decides which runtime runs it", () => {
     ).toBe(false);
   });
 });
+
+const unsupportedRedirect =
+  'export const send = () => fetch("https://api", { redirect: "error" });';
+
+describe("the rules about the Worker runtime reach the tests that run in it", () => {
+  it.for([
+    ["libs/observability/src/server.ts", true],
+    [`libs/observability/src/server${workerTestSuffix}`, true],
+    ["libs/observability/src/server.test.ts", false],
+    ["libs/observability/src/browser.ts", false],
+    [`libs/ui/src/probe${workerTestSuffix}`, false],
+    [`tools/quality/probe${workerTestSuffix}`, false],
+  ] as const)("reports redirect: error in %s as %s", ([name, violates]) => {
+    expect.hasAssertions();
+    expect(reported("worker-fetch", name, unsupportedRedirect)).toBe(violates);
+  });
+});

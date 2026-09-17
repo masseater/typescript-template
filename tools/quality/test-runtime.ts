@@ -7,21 +7,54 @@ const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
 const workerTestFile = /\.worker\.test\.[cm]?[jt]sx?$/u;
 const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
-const workerRuntimeModule = /^cloudflare:/u;
-const nodeRuntimeModule =
-  /^(?:node:|msw\/node$|miniflare$|wrangler$|drizzle-kit(?:\/|$)|@effect\/platform-node(?:\/|$))/u;
+const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
+const browserOrNodeOnly =
+  /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/(?:remote|testing-node)[^/]*\.ts$/u;
+const nodeRuntimeModules = [
+  "node:",
+  "msw/node",
+  "miniflare",
+  "wrangler",
+  "drizzle-kit",
+  "@effect/platform-node",
+] as const;
+const workerRuntimeModules = ["cloudflare:test", "cloudflare:workers"] as const;
+
+function importsAnyOf(specifiers: readonly string[], source: string): boolean {
+  return specifiers.some(
+    (specifier) =>
+      source === specifier ||
+      source.startsWith(`${specifier}/`) ||
+      (specifier.endsWith(":") && source.startsWith(specifier)),
+  );
+}
+
+function runsInWorkerRuntime(current: string): boolean {
+  return (
+    deployedToWorkers.test(current) &&
+    !browserOrNodeOnly.test(current) &&
+    (!testFile.test(current) || workerTestFile.test(current))
+  );
+}
 
 function testRuntimeVisitor(context: LintContext): Visitor {
   const current = context.filename.replaceAll("\\", "/");
   if (!testFile.test(current)) {
     return {};
   }
-  const forbidden = workerTestFile.test(current) ? nodeRuntimeModule : workerRuntimeModule;
+  const forbidden = workerTestFile.test(current) ? nodeRuntimeModules : workerRuntimeModules;
   return importVisitor((node: Node) => {
-    if (forbidden.test(staticText(context, node) ?? "")) {
+    if (importsAnyOf(forbidden, staticText(context, node) ?? "")) {
       reportViolation(context, node);
     }
   });
 }
 
-export { testRuntimeVisitor, workerTestSuffix, workerTests };
+export {
+  nodeRuntimeModules,
+  runsInWorkerRuntime,
+  testRuntimeVisitor,
+  workerRuntimeModules,
+  workerTestSuffix,
+  workerTests,
+};
