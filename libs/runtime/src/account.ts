@@ -2,7 +2,6 @@ import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from
 import { Telemetry, httpStatus, ingestBrowser } from "@template/observability";
 import { createApi, readJsonBody } from "./http.ts";
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
-import type { AnyElysia } from "elysia";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 import { Effect } from "effect";
@@ -25,7 +24,7 @@ function emailVerificationFailure(error: EmailVerificationFailed): Failure {
     : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
 }
 
-function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>): AnyElysia {
+function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi()
     .all("/api/auth/*", api.raw(handleAuthRequest, unavailable))
     .post("/api/telemetry", api.raw(ingestBrowser, {}))
@@ -37,7 +36,7 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     );
 }
 
-function accountApi(api: ApiRoutes<AppServices>): AnyElysia {
+function accountApi(api: ApiRoutes<AppServices>) {
   return createApi()
     .use(sessionApi(api))
     .post(

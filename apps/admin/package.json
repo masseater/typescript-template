@@ -11,6 +11,7 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@elysiajs/eden": "1.4.9",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@template/auth": "workspace:*",

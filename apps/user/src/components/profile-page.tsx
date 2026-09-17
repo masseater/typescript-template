@@ -2,12 +2,15 @@ import { Page, Status } from "@template/ui/ui";
 import { ProfileEditor } from "#components/profile-editor.tsx";
 import type { ReactElement } from "react";
 import { SignOutButton } from "@template/ui/auth";
+import { getRouteApi } from "@tanstack/react-router";
 import { useProfileForm } from "#profile-form.ts";
 import { useSession } from "@template/ui";
 
+const route = getRouteApi("/");
+
 function ProfilePage(): ReactElement {
   const { session, loading, error: sessionError } = useSession();
-  const form = useProfileForm(session?.user.id);
+  const form = useProfileForm(route.useLoaderData());
   const shownError = form.error === "" ? sessionError : form.error;
   return (
     <Page title="プロフィール">

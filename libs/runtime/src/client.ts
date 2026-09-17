@@ -3,9 +3,15 @@ import { ErrorBody } from "./contracts.ts";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 
-interface JsonMutation {
-  readonly body: unknown;
-  readonly method: "PATCH" | "DELETE" | "POST";
+interface ApiFailure {
+  readonly status: number;
+  readonly value: unknown;
+}
+
+interface ApiReply {
+  readonly data: unknown;
+  readonly error: ApiFailure | null;
+  readonly response: Readonly<Pick<Response, "headers">>;
 }
 
 function decodeJson<Contract extends Decodable>(
@@ -20,41 +26,25 @@ function decodeJson<Contract extends Decodable>(
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function failureMessage(reply: Readonly<Response>, body: unknown): string {
-  const failure = Schema.decodeUnknownResult(ErrorBody)(body);
-  const message = Result.isSuccess(failure)
-    ? failure.success.error
-    : `リクエストに失敗しました（HTTP ${reply.status}）。`;
-  const requestId = reply.headers.get("x-request-id") ?? "";
+function failureMessage(reply: ApiReply, failure: ApiFailure): string {
+  const body = Schema.decodeUnknownResult(ErrorBody)(failure.value);
+  const message = Result.isSuccess(body)
+    ? body.success.error
+    : `リクエストに失敗しました（HTTP ${failure.status}）。`;
+  const requestId = reply.response.headers.get("x-request-id") ?? "";
   return requestId === "" ? message : `${message} リクエスト ID: ${requestId}`;
 }
 
-async function send(path: string, mutation: JsonMutation | undefined): Promise<Response> {
-  if (!path.startsWith("/api/") || path.startsWith("//")) {
-    throw new Error("同じアプリの API を指定してください。");
-  }
-  return fetch(path, {
-    cache: "no-store",
-    credentials: "same-origin",
-    method: mutation?.method ?? "GET",
-    redirect: "error",
-    ...(mutation
-      ? { body: JSON.stringify(mutation.body), headers: { "content-type": "application/json" } }
-      : {}),
-  });
-}
-
-async function requestJson<Contract extends Decodable>(
-  path: string,
+function apiData<Contract extends Decodable>(
   contract: Contract,
-  mutation?: JsonMutation,
-): Promise<Contract["Type"]> {
-  const reply = await send(path, mutation);
-  const body: unknown = await reply.json();
-  if (!reply.ok) {
-    throw new Error(failureMessage(reply, body));
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  reply: ApiReply,
+): Contract["Type"] {
+  if (reply.error !== null) {
+    throw new Error(failureMessage(reply, reply.error));
   }
-  return decodeJson(contract, body);
+  return decodeJson(contract, reply.data);
 }
 
-export { decodeJson, requestJson };
+export { apiData, decodeJson };
+export type { ApiReply };

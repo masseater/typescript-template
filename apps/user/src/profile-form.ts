@@ -1,8 +1,9 @@
 import type { ChangeEventHandler, SubmitEventHandler } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ProfileView } from "@template/runtime/contracts";
+import { apiData } from "@template/runtime/client";
 import { errorMessage } from "@template/ui";
-import { requestJson } from "@template/runtime/client";
+import { userClient } from "#api-client.ts";
 
 type ProfileData = typeof ProfileView.Type;
 
@@ -22,19 +23,15 @@ interface ProfileForm extends ProfileDraft {
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
 }
 
-async function loadProfile(): Promise<ProfileData> {
-  return requestJson("/api/profile", ProfileView);
-}
-
 async function saveProfile(name: string, profile: string): Promise<ProfileData> {
-  return requestJson("/api/profile", ProfileView, { body: { name, profile }, method: "PATCH" });
+  return apiData(ProfileView, await userClient().profile.patch({ name, profile }));
 }
 
 type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
 
-function useProfileDraft(): ProfileDraft {
-  const [name, setName] = useState("");
-  const [profile, setProfile] = useState("");
+function useProfileDraft(loaded: Readonly<ProfileData> | undefined): ProfileDraft {
+  const [name, setName] = useState(loaded?.name ?? "");
+  const [profile, setProfile] = useState(loaded?.profile ?? "");
   const handleNameChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
     (event: FieldEvent) => {
       setName(event.target.value);
@@ -53,35 +50,12 @@ function useProfileDraft(): ProfileDraft {
 
 type FormSubmission = Readonly<{ preventDefault: () => void }>;
 
-function useProfileForm(userId: string | undefined): ProfileForm {
-  const draft = useProfileDraft();
+function useProfileForm(loaded: Readonly<ProfileData> | undefined): ProfileForm {
+  const draft = useProfileDraft(loaded);
   const { name, profile, show } = draft;
-  const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [failure, setFailure] = useState("");
-  useEffect(() => {
-    const controller = { active: true };
-    async function load(): Promise<void> {
-      try {
-        const data = await loadProfile();
-        if (controller.active) {
-          show(data);
-          setReady(true);
-        }
-      } catch (error) {
-        if (controller.active) {
-          setFailure(errorMessage(error));
-        }
-      }
-    }
-    if ((userId ?? "") !== "") {
-      void load();
-    }
-    return (): void => {
-      controller.active = false;
-    };
-  }, [show, userId]);
   const handleSubmit = useCallback<SubmitEventHandler<HTMLFormElement>>(
     (event: FormSubmission) => {
       event.preventDefault();
@@ -101,7 +75,7 @@ function useProfileForm(userId: string | undefined): ProfileForm {
     },
     [name, profile, show],
   );
-  return { ...draft, error: failure, handleSubmit, message, pending, ready };
+  return { ...draft, error: failure, handleSubmit, message, pending, ready: loaded !== undefined };
 }
 
 export { useProfileForm };

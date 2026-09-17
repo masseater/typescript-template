@@ -5,8 +5,9 @@ import {
 } from "@template/runtime/contracts";
 import { useCallback, useEffect, useState } from "react";
 import type { MouseEventHandler } from "react";
+import { adminClient } from "#api-client.ts";
+import { apiData } from "@template/runtime/client";
 import { errorMessage } from "@template/ui";
-import { requestJson } from "@template/runtime/client";
 import { usersPageSize } from "#users-pagination.ts";
 
 type ManagedUser = (typeof UserListContract.Type)["users"][number];
@@ -36,7 +37,8 @@ interface UserManagement extends UserListState, UserMutationState {
 }
 
 async function fetchUsers(offset: number): Promise<UserList> {
-  return requestJson(`/api/users?limit=${usersPageSize}&offset=${offset}`, UserListContract);
+  const query = { limit: usersPageSize, offset };
+  return apiData(UserListContract, await adminClient().users.get({ query }));
 }
 
 function confirmationText(user: ManagedUser, method: MutationMethod): string {
@@ -45,10 +47,14 @@ function confirmationText(user: ManagedUser, method: MutationMethod): string {
     : `${user.email} の権限を変更しますか？`;
 }
 
-function mutationBody(user: ManagedUser, method: MutationMethod): Readonly<Record<string, string>> {
-  return method === "DELETE"
-    ? { id: user.id }
-    : { id: user.id, role: user.role === "admin" ? "user" : "admin" };
+async function mutateUser(user: ManagedUser, method: MutationMethod): Promise<void> {
+  const { users } = adminClient();
+  if (method === "DELETE") {
+    apiData(UserDeleted, await users.delete({ id: user.id }));
+    return;
+  }
+  const role = user.role === "admin" ? "user" : "admin";
+  apiData(RoleChanged, await users.patch({ id: user.id, role }));
 }
 
 function useUserPaging(): Pick<UserListState, "handleNext" | "handlePrevious" | "offset"> {
@@ -116,9 +122,7 @@ function useUserMutation(
       setMessage("");
       async function update(): Promise<void> {
         try {
-          await (method === "DELETE"
-            ? requestJson("/api/users", UserDeleted, { body: mutationBody(user, method), method })
-            : requestJson("/api/users", RoleChanged, { body: mutationBody(user, method), method }));
+          await mutateUser(user, method);
           setMessage(
             method === "DELETE"
               ? "ユーザーを削除しました。"

@@ -56,21 +56,31 @@ function toFailure(table: object, error: unknown): Failure | undefined {
   return isFailure(failure) ? failure : undefined;
 }
 
-function failureResponse(
+function reportedFailure(
   table: object,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   cause: Readonly<Cause.Cause<unknown>>,
-): Effect.Effect<Response> {
+): Effect.Effect<Failure> {
   const error = Cause.findErrorOption(cause);
   const failure = Option.isSome(error)
     ? toFailure({ ...commonFailures, ...table }, error.value)
     : undefined;
   if (failure !== undefined) {
-    return Effect.succeed(jsonResponse({ error: failure.message }, failure.status));
+    return Effect.succeed(failure);
   }
-  const unexpected = jsonResponse({ error: unexpectedMessage }, httpStatus.internalServerError);
+  const unexpected = { message: unexpectedMessage, status: httpStatus.internalServerError };
   return reportFailure(cause).pipe(Effect.as(unexpected));
 }
 
-export { failureResponse };
+function failureResponse(
+  table: object,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  cause: Readonly<Cause.Cause<unknown>>,
+): Effect.Effect<Response> {
+  return reportedFailure(table, cause).pipe(
+    Effect.map((failure) => jsonResponse({ error: failure.message }, failure.status)),
+  );
+}
+
+export { failureResponse, reportedFailure };
 export type { CommonFailure, Failure, FailureTable, Tagged };

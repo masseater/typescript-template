@@ -1,5 +1,11 @@
 import type { ConfigEnv, UserConfig } from "vite-plus";
-import { appRun, appServer, previewDevVars, withoutEnvFileLoader } from "@template/config/vite";
+import {
+  appRun,
+  appServer,
+  clientBoundary,
+  previewDevVars,
+  withoutEnvFileLoader,
+} from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
@@ -14,6 +20,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
   build: { sourcemap: "hidden" },
   plugins: [
     previewDevVars(import.meta.dirname),
+    clientBoundary(),
     devBoundary("admin"),
     cloudflare({
       config: {

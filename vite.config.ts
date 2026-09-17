@@ -150,8 +150,14 @@ export default defineConfig({
       "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
       "shadcn/no-unknown-classes": "error",
       "typescript/consistent-return": "off",
-      "typescript/explicit-function-return-type": ["error", { allowedNames: ["createAuth"] }],
-      "typescript/explicit-module-boundary-types": ["error", { allowedNames: ["createAuth"] }],
+      "typescript/explicit-function-return-type": [
+        "error",
+        { allowedNames: ["accountApi", "createApi", "createAuth", "sessionApi"] },
+      ],
+      "typescript/explicit-module-boundary-types": [
+        "error",
+        { allowedNames: ["accountApi", "createApi", "createAuth", "sessionApi"] },
+      ],
       "typescript/no-explicit-any": "error",
       "typescript/no-floating-promises": "error",
       "typescript/no-misused-promises": "error",
