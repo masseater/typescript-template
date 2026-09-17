@@ -1,47 +1,31 @@
 import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
+import type { D1Database } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
+import { getPlatformProxy } from "wrangler";
+import { migrateD1 } from "./migrate-d1.ts";
 
-// oxlint-disable-next-line typescript/strict-void-return
-const run = promisify(execFile);
-const wrangler = path.join(
-  path.dirname(createRequire(import.meta.url).resolve("wrangler/package.json")),
-  "bin/wrangler.js",
+const platform = Effect.acquireRelease(
+  Effect.promise(async () =>
+    getPlatformProxy<{ DB: D1Database }>({
+      configPath: await writeLocalDatabaseConfig(),
+      envFiles: [],
+      persist: { path: `${localDatabasePersistence}/v3` },
+      remoteBindings: false,
+    }),
+  ),
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (proxy) => Effect.promise(async () => proxy.dispose()),
 );
-
-const MAX_OUTPUT_BYTES = 16_777_216;
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const config = yield* Effect.tryPromise(async () => writeLocalDatabaseConfig());
-    const { stdout } = yield* Effect.tryPromise(async () =>
-      run(
-        process.execPath,
-        [
-          wrangler,
-          "d1",
-          "migrations",
-          "apply",
-          "DB",
-          "--local",
-          "--config",
-          config,
-          "--persist-to",
-          localDatabasePersistence,
-        ],
-        { maxBuffer: MAX_OUTPUT_BYTES },
-      ),
-    );
-    process.stdout.write(stdout);
+    const { env } = yield* platform;
+    const applied = yield* migrateD1(env.DB);
+    // oxlint-disable-next-line no-console
+    console.log(JSON.stringify({ action: "local_migration", applied, success: true }));
   }).pipe(
+    Effect.scoped,
     Effect.catchCause(() =>
       Effect.sync(() => {
         // oxlint-disable-next-line no-console

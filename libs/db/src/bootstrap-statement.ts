@@ -1,11 +1,16 @@
-import { Effect, Schema } from "effect";
-import type { Role } from "@template/config";
+import { Effect, Schema, Struct } from "effect";
 import type { SQL } from "drizzle-orm";
+import { UserRow } from "./row-schema.ts";
 import { query } from "./database.ts";
 import { sql } from "drizzle-orm";
 import { user } from "./schema.ts";
 
 const EmailAddress = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
+
+const BootstrappedAdmin = Schema.Struct({
+  ...Struct.pick(UserRow.fields, ["email", "id"]),
+  role: Schema.Literal("admin"),
+});
 
 function bootstrapStatement(email: typeof EmailAddress.Type): SQL {
   return sql`UPDATE ${user}
@@ -26,7 +31,7 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 ) {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [updated] = yield* query((database) =>
-    database.all<{ id: string; email: string; role: Role }>(bootstrapStatement(email)),
+    database.all<typeof BootstrappedAdmin.Type>(bootstrapStatement(email)),
   );
   if (!updated) {
     return yield* new BootstrapUnavailable();
@@ -34,4 +39,4 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   return updated;
 });
 
-export { EmailAddress, bootstrapAdmin, bootstrapStatement };
+export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement };

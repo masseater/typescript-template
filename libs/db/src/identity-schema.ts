@@ -1,12 +1,12 @@
 import { applications, authenticationMethods, roles } from "@template/config";
-import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 const user = sqliteTable(
   "user",
   {
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    email: text("email").notNull().unique(),
+    email: text("email").notNull(),
     emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
     id: text("id").primaryKey(),
     image: text("image"),
@@ -18,7 +18,10 @@ const user = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (table) => [check("user_role", sql`${table.role} IN ('user', 'admin')`)],
+  (table) => [
+    uniqueIndex("user_email_unique").on(table.email),
+    check("user_role", sql`${table.role} IN ('user', 'admin')`),
+  ],
 );
 
 const session = sqliteTable(
@@ -34,7 +37,7 @@ const session = sqliteTable(
     id: text("id").primaryKey(),
     ipAddress: text("ip_address"),
     securityVersion: integer("security_version").notNull(),
-    token: text("token").notNull().unique(),
+    token: text("token").notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     userAgent: text("user_agent"),
     userId: text("user_id")
@@ -42,7 +45,10 @@ const session = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
   },
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (table) => [index("session_user_id_idx").on(table.userId)],
+  (table) => [
+    index("session_user_id_idx").on(table.userId),
+    uniqueIndex("session_token_unique").on(table.token),
+  ],
 );
 
 export { session, user };

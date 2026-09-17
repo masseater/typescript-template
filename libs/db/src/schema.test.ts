@@ -1,40 +1,27 @@
 import { describe, expect, it } from "vite-plus/test";
-import { Schema } from "effect";
-import { generateSQLiteDrizzleJson } from "drizzle-kit/api";
+import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
 import { schema } from "./schema.ts";
 
-const migrationMeta: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../migrations/meta/*.json",
+type SqliteSnapshot = Parameters<typeof generateMigration>[0];
+
+const snapshots: Readonly<Record<string, SqliteSnapshot>> = import.meta.glob(
+  "../migrations/*/snapshot.json",
   { eager: true, import: "default" },
 );
 
-const SNAPSHOT_NUMBER_WIDTH = 4;
-const parseJournal = Schema.decodeUnknownPromise(
-  Schema.Struct({ entries: Schema.Array(Schema.Unknown) }),
-);
-const parseSnapshot = Schema.decodeUnknownPromise(
-  Schema.Struct({ tables: Schema.Record(Schema.String, Schema.Unknown) }),
-);
-
-async function readLatestSnapshotTables(): Promise<unknown> {
-  const journal = await parseJournal(migrationMeta["../migrations/meta/_journal.json"]);
-  const snapshotNumber = String(journal.entries.length - 1).padStart(SNAPSHOT_NUMBER_WIDTH, "0");
-  const snapshot = await parseSnapshot(
-    migrationMeta[`../migrations/meta/${snapshotNumber}_snapshot.json`],
-  );
-  return snapshot.tables;
-}
-
-async function generateSerializedTables(): Promise<unknown> {
-  const generated = await parseSnapshot(await generateSQLiteDrizzleJson(schema));
-  const serialized = JSON.stringify(generated.tables);
-  return JSON.parse(serialized);
+async function pendingStatements(): Promise<readonly string[]> {
+  const latest = Object.keys(snapshots)
+    .toSorted((left, right) => left.localeCompare(right))
+    .at(-1);
+  const applied = latest === undefined ? undefined : snapshots[latest];
+  return applied === undefined
+    ? ["no migration snapshot found"]
+    : generateMigration(applied, await generateDrizzleJson(schema));
 }
 
 describe("drizzle schema", () => {
   it("drizzle models match the latest generated migration snapshot", async () => {
     expect.hasAssertions();
-    const generated = await generateSerializedTables();
-    expect(generated).toStrictEqual(await readLatestSnapshotTables());
+    await expect(pendingStatements()).resolves.toStrictEqual([]);
   });
 });

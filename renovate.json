@@ -55,7 +55,8 @@
     },
     {
       "groupName": "drizzle",
-      "matchPackageNames": ["drizzle-orm", "drizzle-kit"]
+      "matchPackageNames": ["drizzle-orm", "drizzle-kit"],
+      "followTag": "rc"
     },
     {
       "groupName": "pulumi",
