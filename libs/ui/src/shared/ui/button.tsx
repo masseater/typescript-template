@@ -24,16 +24,6 @@ const buttonVariants = cva(
   },
 );
 
-type ButtonProps = Children &
-  Readonly<{
-    "aria-label"?: string;
-    disabled?: boolean;
-    onClick?: MouseEventHandler;
-    size?: "medium" | "small";
-    type: "button" | "submit";
-    variant?: "danger" | "primary" | "secondary";
-  }>;
-
 function Button({
   "aria-label": ariaLabel,
   children,
@@ -42,7 +32,15 @@ function Button({
   size,
   type,
   variant,
-}: ButtonProps): ReactElement {
+}: Children &
+  Readonly<{
+    "aria-label"?: string;
+    disabled?: boolean;
+    onClick?: MouseEventHandler;
+    size?: "medium" | "small";
+    type: "button" | "submit";
+    variant?: "danger" | "primary" | "secondary";
+  }>): ReactElement {
   return (
     <ButtonPrimitive
       data-slot="button"

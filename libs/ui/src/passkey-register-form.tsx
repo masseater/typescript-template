@@ -1,4 +1,4 @@
-import { Button, Field } from "./shared/ui";
+import { Button, Field, FormColumn } from "./shared/ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import type { SettingsContext } from "./mfa-types";
@@ -18,7 +18,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
   const { action, onNotice, onNoticeClear, recovery, session } = context;
   const { run } = action;
   const name = useTextInput();
-  const { setValue: setName, value: nameValue } = name;
+  const { handleChange: setName, value: nameValue } = name;
   const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
     (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
       event.preventDefault();
@@ -38,19 +38,19 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <Field
           label="パスキーの名前"
           name="passkey-name"
           maxLength={100}
           required
           value={nameValue}
-          onChange={name.handleChange}
+          onValueChange={name.handleChange}
         />
         <Button type="submit" disabled={action.blocked || recoveringAdmin}>
           パスキーを登録
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

@@ -1,12 +1,12 @@
-import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { useCallback, useState } from "react";
+import type { SubmitEventHandler } from "react";
 import type { UsersSearch } from "#users-search.ts";
 import { normalizeUsersSearch } from "#users-search.ts";
 import { useNavigate } from "@tanstack/react-router";
 
 interface UserFilterForm {
   readonly handleClear: () => void;
-  readonly handleKeywordChange: ChangeEventHandler<HTMLInputElement>;
+  readonly handleKeywordChange: (value: string) => void;
   readonly handleRoleChange: (role: string) => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
   readonly handleVerifiedChange: (verified: string) => void;
@@ -22,12 +22,6 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
   const [verified, setVerified] = useState<string>(
     search.verified === undefined ? "" : String(search.verified),
   );
-  const handleKeywordChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
-    (event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "value">> }>) => {
-      setKeyword(event.target.value);
-    },
-    [],
-  );
   const handleSubmit = useCallback<SubmitEventHandler<HTMLFormElement>>(
     (event: Readonly<{ preventDefault: () => void }>) => {
       event.preventDefault();
@@ -40,7 +34,7 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
   }, [navigate]);
   return {
     handleClear,
-    handleKeywordChange,
+    handleKeywordChange: setKeyword,
     handleRoleChange: setRole,
     handleSubmit,
     handleVerifiedChange: setVerified,

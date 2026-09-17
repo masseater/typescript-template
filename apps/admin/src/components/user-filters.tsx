@@ -20,7 +20,7 @@ function UserFilters({ search }: Readonly<{ search: UsersSearch }>): ReactElemen
           type="search"
           maxLength={maximumKeywordLength}
           value={form.keyword}
-          onChange={form.handleKeywordChange}
+          onValueChange={form.handleKeywordChange}
         />
       </div>
       <div className="w-32">

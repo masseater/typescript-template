@@ -15,7 +15,7 @@ function ChallengeCodeField({
       autoComplete="off"
       required
       value={code.value}
-      onChange={code.handleChange}
+      onValueChange={code.handleChange}
     />
   ) : (
     <TotpField code={code} />
