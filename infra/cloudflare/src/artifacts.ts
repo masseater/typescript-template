@@ -42,9 +42,10 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
     throw new Error("private_client_artifact");
   const clientFiles = allClientFiles.filter((file) => !file.endsWith(".map"));
   if (clientFiles.length === 0) throw new Error("client_artifacts_empty");
-  const serverFiles = (await files(server)).filter(
-    (file) => !file.endsWith(".map") && !privateArtifact(path.relative(server, file)),
+  const allServerFiles = (await files(server)).filter(
+    (file) => !privateArtifact(path.relative(server, file)),
   );
+  const serverFiles = allServerFiles.filter((file) => !file.endsWith(".map"));
   const mainModule = "index.js";
   if (!serverFiles.includes(path.join(server, mainModule)))
     throw new Error("worker_entry_missing_index_js");
@@ -79,6 +80,23 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
       };
     }),
   );
+  const codeModules = modules.filter((module) => module !== undefined);
+  const sourceMaps = await Promise.all(
+    allServerFiles
+      .filter(
+        (file) =>
+          file.endsWith(".map") &&
+          codeModules.some((module) => module.contentFile === file.slice(0, -".map".length)),
+      )
+      .map(async (file) => ({
+        name: path.relative(server, file).replaceAll(path.sep, "/"),
+        contentFile: file,
+        contentSha256: createHash("sha256")
+          .update(await readFile(file))
+          .digest("hex"),
+        contentType: "application/source-map",
+      })),
+  );
   if ((await stat(path.join(server, mainModule))).size === 0) throw new Error("worker_entry_empty");
   const manifest = await Promise.all(
     clientFiles.map(async (file) => [
@@ -89,6 +107,12 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
     ]),
   );
   const digest = createHash("sha256").update(JSON.stringify(manifest)).digest("hex");
+  const release = createHash("sha256")
+    .update(
+      JSON.stringify([codeModules.map((module) => [module.name, module.contentSha256]), digest]),
+    )
+    .digest("hex")
+    .slice(0, 16);
   const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
   await mkdir(staging, { recursive: true });
   if ((await realpath(staging)) !== staging) throw new Error("artifact_staging_symlink_forbidden");
@@ -119,7 +143,8 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
   }
   return {
     mainModule,
-    modules: modules.filter((module) => module !== undefined),
+    modules: [...codeModules, ...sourceMaps],
     clientDirectory: staging,
+    release,
   };
 }

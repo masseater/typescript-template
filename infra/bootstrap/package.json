@@ -6,9 +6,8 @@
     "./state": "./src/state.ts"
   },
   "scripts": {
-    "test": "vp test run --config vitest.config.ts",
-    "setup": "tsx src/setup.ts",
-    "with-state": "tsx src/run.ts"
+    "setup": "node src/setup.ts",
+    "with-state": "node src/run.ts"
   },
   "dependencies": {
     "@pulumi/cloudflare": "6.20.0",
@@ -17,7 +16,6 @@
   },
   "devDependencies": {
     "@types/node": "24.12.0",
-    "tsx": "^4.20.0",
     "typescript": "7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"

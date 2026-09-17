@@ -3,11 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare:local": "node src/compose.ts prepare",
     "config": "node src/compose.ts config",
     "up": "node src/compose.ts up",
     "status": "node src/compose.ts status",
-    "logs": "node src/compose.ts logs",
-    "mcp": "node src/compose.ts mcp"
+    "logs": "node src/compose.ts logs"
   }
 }

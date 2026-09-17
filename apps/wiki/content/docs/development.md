@@ -12,14 +12,14 @@ curl -fsSL https://vite.plus | bash
 vp install
 ```
 
-ローカル用の認証情報と各アプリの `.dev.vars` を作り、観測基盤の設定を用意します。
+ローカル用の認証情報と各アプリの `.dev.vars` を作り、メール受信用のサービスを起動します。
 
 ```bash
 vp run dev:setup
 vp run services:up
 ```
 
-`vp run services:up` は Grafana LGTM と Mailpit を起動します。Grafana は `http://localhost:3100`、Mailpit は `http://localhost:8025` で開けます。
+`vp run services:up` は Mailpit を起動します。Mailpit は `http://localhost:8025` で開けます。ログとトレースは各アプリに組み込まれた Cloudflare の Local Explorer に記録され、`http://localhost:<ポート>/cdn-cgi/local/explorer` で開けます。
 
 ## アプリの起動と停止
 
@@ -38,7 +38,7 @@ vp run dev:stop user
 | admin  | `http://localhost:3002` |
 | wiki   | `http://localhost:3003` |
 
-`vp run dev:start` は portless の LAN モードも起動し、`https://template-user.local`、`https://template-admin.local`、`https://template-wiki.local`、`https://template-grafana.local`、`https://template-mailpit.local` で同じ LAN の端末から開けるようにします。別の PC で開くときは、`vp run dev:connect` が表示する証明書の信頼コマンドをその PC で一度だけ実行してください。
+`vp run dev:start` は portless の LAN モードも起動し、`https://template-user.local`、`https://template-admin.local`、`https://template-wiki.local`、`https://template-mailpit.local` で同じ LAN の端末から開けるようにします。別の PC で開くときは、`vp run dev:connect` が表示する証明書の信頼コマンドをその PC で一度だけ実行してください。Local Explorer はローカル以外の Host からの要求を拒否するため、LAN の端末からは開けません。
 
 ## ブラウザで操作する
 

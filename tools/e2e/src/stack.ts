@@ -6,33 +6,10 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { localDatabase } from "@template/db/local";
 import { Browser } from "./browser.ts";
-import {
-  ensure,
-  grafana,
-  json,
-  mailpit,
-  object,
-  poll,
-  root,
-  run,
-  shellQuote,
-  string,
-} from "./support.ts";
+import { ensure, json, mailpit, object, poll, root, run, shellQuote, string } from "./support.ts";
 
 async function prerequisites() {
-  const checks = [
-    ["Mailpit:8025", () => json(`${mailpit}/api/v1/info`)],
-    ["Grafana:3100", () => json(`${grafana}/api/health`)],
-    [
-      "OTLP:4318",
-      () =>
-        json("http://127.0.0.1:4318/v1/traces", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: '{"resourceSpans":[]}',
-        }),
-    ],
-  ] as const;
+  const checks = [["Mailpit:8025", () => json(`${mailpit}/api/v1/info`)]] as const;
   const results = await Promise.allSettled(checks.map(([, check]) => check()));
   const missing = checks
     .filter((_, index) => results[index]?.status === "rejected")
@@ -229,6 +206,7 @@ export async function createStack() {
           compatibility_date: built["compatibility_date"],
           compatibility_flags: built["compatibility_flags"],
           rules: built["rules"],
+          observability: built["observability"],
           no_bundle: true,
           assets: {
             directory: path.join(builtDirectory, "client"),
@@ -256,7 +234,6 @@ export async function createStack() {
         envFile,
         [
           `APP_ORIGIN=${origin}`,
-          "OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318",
           ...(audience === "wiki"
             ? []
             : [
@@ -274,7 +251,7 @@ export async function createStack() {
       const launch = path.join(directory, `${audience}.fish`);
       await writeFile(
         launch,
-        `set -x X_LOCAL_EXPLORER false\nexec ${shellQuote(process.execPath)} ${shellQuote(wrangler)} dev --local --config ${shellQuote(config)} --env-file ${shellQuote(envFile)} --persist-to ${shellQuote(persist)} --ip localhost --port ${reservation.port} --inspector-port 0 --show-interactive-dev-session=false >${shellQuote(path.join(directory, `${audience}.log`))} 2>&1\n`,
+        `exec ${shellQuote(process.execPath)} ${shellQuote(wrangler)} dev --local --config ${shellQuote(config)} --env-file ${shellQuote(envFile)} --persist-to ${shellQuote(persist)} --ip localhost --port ${reservation.port} --inspector-port 0 --show-interactive-dev-session=false >${shellQuote(path.join(directory, `${audience}.log`))} 2>&1\n`,
         { mode: 0o600 },
       );
     }

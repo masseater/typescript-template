@@ -5,7 +5,6 @@ test("reads only the public database target outputs", () => {
   expect(() => validateOutputRead("databaseId")).not.toThrow();
   expect(() => validateOutputRead("applicationSettings")).not.toThrow();
   expect(() => validateOutputRead("authSecret")).toThrow("state_output_not_allowed");
-  expect(() => validateOutputRead("otelHeaders")).toThrow("state_output_not_allowed");
 });
 
 test("permits deployment commands without secret output", () => {

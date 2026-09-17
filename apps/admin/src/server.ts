@@ -1,38 +1,26 @@
 import handler from "@tanstack/react-start/server-entry";
 import { createRuntime } from "@template/runtime";
-import { jsonResponse, secureResponse } from "@template/runtime/http";
-import { withSentryRequest } from "@template/observability/sentry-server";
+import { secureResponse } from "@template/runtime/http";
 import { enforceAdminAccess, localAccessCookie } from "./access.ts";
 import { routes } from "./telemetry-routes.ts";
 
 export default {
-  async fetch(
-    request: Request,
-    bindings: unknown,
-    executionContext: {
-      waitUntil(promise: Promise<unknown>): void;
-      passThroughOnException(): void;
-    },
-  ) {
+  async fetch(request: Request, bindings: unknown) {
     const runtime = createRuntime(bindings, "admin", routes);
-    return runtime.telemetry.wrapRequest(
-      request,
-      async (incoming, correlation) => {
-        const denied = await enforceAdminAccess(incoming, bindings);
-        if (denied) return denied;
-        const response = await route(incoming, correlation);
-        const cookie = await localAccessCookie(bindings);
-        if (!cookie) return response;
-        const headers = new Headers(response.headers);
-        headers.append("set-cookie", cookie);
-        return new Response(response.body, {
-          status: response.status,
-          statusText: response.statusText,
-          headers,
-        });
-      },
-      executionContext,
-    );
+    return runtime.telemetry.wrapRequest(request, async (incoming, correlation) => {
+      const denied = await enforceAdminAccess(incoming, bindings);
+      if (denied) return denied;
+      const response = await route(incoming, correlation);
+      const cookie = await localAccessCookie(bindings);
+      if (!cookie) return response;
+      const headers = new Headers(response.headers);
+      headers.append("set-cookie", cookie);
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    });
 
     async function route(incoming: Request, correlation: Parameters<typeof runtime.forRequest>[0]) {
       let path: string;
@@ -43,18 +31,12 @@ export default {
       }
       if (path.endsWith(".map")) return new Response(null, { status: 404 });
       if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
-      if (path === "/api/telemetry")
-        return runtime.telemetry.ingestBrowser(incoming, executionContext);
-      if (path === "/api/client-config") return jsonResponse({ sentry: runtime.config.sentry });
-      const action = async () =>
-        secureResponse(
-          await handler.fetch(incoming, {
-            context: { runtime: runtime.forRequest(correlation), correlation },
-          }),
-        );
-      return runtime.config.sentry
-        ? withSentryRequest(runtime.config.sentry, incoming, executionContext, correlation, action)
-        : action();
+      if (path === "/api/telemetry") return runtime.telemetry.ingestBrowser(incoming);
+      return secureResponse(
+        await handler.fetch(incoming, {
+          context: { runtime: runtime.forRequest(correlation), correlation },
+        }),
+      );
     }
   },
 };

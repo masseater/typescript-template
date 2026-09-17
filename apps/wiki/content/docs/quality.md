@@ -7,11 +7,11 @@ description: コミット前とプッシュ前に自動で走る検査と、そ�
 
 `vp run check` は lint、型検査、未使用コードの検出、秘密情報の混入検査を順に実行します。Git の pre-commit フックからも同じ内容が走ります。
 
-lint のエラーは `vp run lint:fix` で自動修正できるものから直します。独自ルールのメッセージには直し方が書いてあるので、本文を読んでから修正します。
+lint のエラーは `vp check --fix` で自動修正できるものから直します。独自ルールのメッセージには直し方が書いてあるので、本文を読んでから修正します。
 
 ## プッシュ前の検査
 
-pre-push フックは単体テスト、ビルド、成果物の検査、実ブラウザでの E2E テストまで実行します。E2E テストは本物の Worker、D1、Mailpit、Grafana LGTM を使うので、先に `vp run services:up` でローカルサービスを起動しておきます。
+pre-push フックは単体テスト、ビルド、成果物の検査、実ブラウザでの E2E テストまで実行します。E2E テストは本物の Worker、D1、Mailpit、Local Explorer を使うので、先に `vp run services:up` で Mailpit を起動しておきます。
 
 ## フックを飛ばさない
 

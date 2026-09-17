@@ -2,14 +2,10 @@ import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
 import { workerCompatibility } from "@template/config/worker";
 import { fileURLToPath } from "node:url";
-import {
-  appPolicy,
-  parseSharedConfig,
-  sentryRuntimeBindings,
-  validateAuthSecret,
-} from "./config.ts";
+import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
 import type { AppTarget } from "./config.ts";
 import { loadArtifacts } from "./artifacts.ts";
+import { archiveSourceMaps } from "./source-maps.ts";
 import { workerObservability } from "./observability.ts";
 
 export async function deployApplication(target: AppTarget) {
@@ -18,10 +14,9 @@ export async function deployApplication(target: AppTarget) {
   const rawSettings = await shared.getOutputDetails("applicationSettings");
   const settings = parseSharedConfig(rawSettings.value);
   const policy = appPolicy(settings, target);
-  const artifacts = await loadArtifacts(
-    fileURLToPath(new URL("../../../", import.meta.url)),
-    target,
-  );
+  const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
+  const artifacts = await loadArtifacts(repositoryRoot, target);
+  await archiveSourceMaps(repositoryRoot, target, artifacts.release);
   const worker = new cloudflare.Worker(`${target}-worker`, {
     accountId: settings.accountId,
     name: policy.name,
@@ -49,7 +44,7 @@ export async function deployApplication(target: AppTarget) {
       : undefined;
   const plaintext = {
     APP_ORIGIN: policy.origin,
-    OTEL_EXPORTER_OTLP_ENDPOINT: settings.otelEndpoint,
+    APP_RELEASE: artifacts.release,
     ...(target === "wiki" ? {} : { EMAIL_FROM: settings.mailFrom }),
   };
   const bindings: cloudflare.types.input.WorkerVersionBinding[] = [
@@ -67,13 +62,7 @@ export async function deployApplication(target: AppTarget) {
           },
           { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
         ]),
-    {
-      type: "secret_text",
-      name: "OTEL_EXPORTER_OTLP_HEADERS",
-      text: shared.requireOutput("otelHeaders"),
-    },
     ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
-    ...sentryRuntimeBindings(settings),
     ...(access
       ? [
           { type: "plain_text", name: "ACCESS_AUD", text: access.aud },
