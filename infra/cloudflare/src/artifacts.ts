@@ -1,3 +1,4 @@
+import { Context, Effect } from "effect";
 import {
   assertRealDirectory,
   fail,
@@ -11,11 +12,12 @@ import {
 import { readFile, stat } from "node:fs/promises";
 import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
-import { Effect } from "effect";
+import { archiveSourceMaps } from "./source-maps.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+import { retainGenerations } from "./retention.ts";
 import { stageFiles } from "./staging.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -27,6 +29,13 @@ function monitorArtifact(unit: string): string {
 }
 
 const RELEASE_LENGTH = 16;
+const STAGED_DIGESTS_KEPT = 1;
+const ARCHIVED_RELEASES_KEPT = 5;
+
+const ArtifactWrites = Context.Reference<boolean>("template/cloudflare/ArtifactWrites", {
+  defaultValue: () => false,
+});
+
 const SERVER_ONLY_MARKERS: readonly string[] = ["drizzle:entityKind", "better-auth/api"];
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
 
@@ -42,9 +51,11 @@ const workerModuleGlobs = [
 
 interface Artifacts {
   readonly clientDirectory: string;
+  readonly clientFiles: readonly string[];
   readonly mainModule: string;
   readonly modules: readonly WorkerModule[];
   readonly release: string;
+  readonly uploaded: string;
 }
 
 interface BuildOutput {
@@ -207,6 +218,38 @@ const digests = Effect.fn("digests")(function* digests(
   return { release: release.slice(0, RELEASE_LENGTH), uploaded };
 });
 
+function stagedRoot(repository: string, target: Application): string {
+  return path.join(repository, "infra", "cloudflare", ".artifacts", target);
+}
+
+const materialize = Effect.fn("materialize")(function* materialize(
+  place: { readonly repository: string; readonly target: Application },
+  output: BuildOutput,
+  artifacts: Artifacts,
+) {
+  yield* Effect.all([
+    stageFiles(output.client, artifacts.clientDirectory, artifacts.clientFiles),
+    stageFiles(
+      output.server,
+      path.dirname(artifacts.mainModule),
+      artifacts.modules.map((module) => module.contentFile),
+    ),
+  ]);
+  yield* archiveSourceMaps(place.repository, place.target, artifacts.release);
+  yield* Effect.all([
+    retainGenerations(
+      stagedRoot(place.repository, place.target),
+      artifacts.uploaded,
+      STAGED_DIGESTS_KEPT,
+    ),
+    retainGenerations(
+      path.join(place.repository, ".local", "source-maps", place.target, "releases"),
+      artifacts.release,
+      ARCHIVED_RELEASES_KEPT,
+    ),
+  ]);
+});
+
 const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
   repository: string,
   target: Application,
@@ -216,22 +259,19 @@ const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
   const { code, sourceMaps } = yield* loadWorkerModules(output, clientFiles);
   const modules = [...code, ...sourceMaps];
   const { release, uploaded } = yield* digests(output, clientFiles, { code, modules });
-  const staging = path.join(repository, "infra", "cloudflare", ".artifacts", target, uploaded);
+  const staging = path.join(stagedRoot(repository, target), uploaded);
   const artifacts: Artifacts = {
     clientDirectory: path.join(staging, "client"),
+    clientFiles,
     mainModule: path.join(staging, "server", MAIN_MODULE),
     modules,
     release,
+    uploaded,
   };
-  yield* Effect.all([
-    stageFiles(output.client, artifacts.clientDirectory, clientFiles),
-    stageFiles(
-      output.server,
-      path.dirname(artifacts.mainModule),
-      modules.map((module) => module.contentFile),
-    ),
-  ]);
+  if (yield* ArtifactWrites) {
+    yield* materialize({ repository, target }, output, artifacts);
+  }
   return artifacts;
 });
 
-export { loadArtifacts, monitorArtifact, repositoryRoot, workerModuleGlobs };
+export { ArtifactWrites, loadArtifacts, monitorArtifact, repositoryRoot, workerModuleGlobs };

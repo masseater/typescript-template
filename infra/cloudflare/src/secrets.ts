@@ -1,7 +1,12 @@
-import { Cause, Effect, Option } from "effect";
+import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
 const FAILED_EXIT_CODE = 1;
+
+const FailureKeys = Schema.Array(Schema.String);
+const isCoded = Schema.is(
+  Schema.Struct({ code: Schema.String, keys: Schema.optional(FailureKeys) }),
+);
 
 function withVerifiedSecrets<Value, Failure, Requirements>(
   secrets: Readonly<{ contents: string }>,
@@ -12,17 +17,14 @@ function withVerifiedSecrets<Value, Failure, Requirements>(
 }
 
 function describeFailure(failure: unknown): Readonly<Record<string, unknown>> {
-  if (typeof failure !== "object" || failure === null) {
-    return { code: "unknown_failure" };
+  if (isCoded(failure)) {
+    return {
+      code: failure.code,
+      ...(failure.keys === undefined ? {} : { keys: [...failure.keys] }),
+    };
   }
-  const code: unknown = Reflect.get(failure, "code");
-  const keys: unknown = Reflect.get(failure, "keys");
-  const reason: unknown = Reflect.get(failure, "message");
-  return {
-    ...(typeof code === "string" ? { code } : {}),
-    ...(Array.isArray(keys) ? { keys: keys.map(String) } : {}),
-    ...(typeof code === "string" || typeof reason !== "string" ? {} : { reason }),
-  };
+  const reason: unknown = Predicate.hasProperty(failure, "message") ? failure.message : undefined;
+  return typeof reason === "string" ? { reason } : { code: "unknown_failure" };
 }
 
 function reportCause(
@@ -38,12 +40,4 @@ function reportCause(
   });
 }
 
-function reportRejection(event: string, failure: unknown): Effect.Effect<void> {
-  return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
-    console.error(JSON.stringify({ event, ...describeFailure(failure) }));
-    process.exitCode = FAILED_EXIT_CODE;
-  });
-}
-
-export { describeFailure, reportCause, reportRejection, withVerifiedSecrets };
+export { describeFailure, reportCause, withVerifiedSecrets };

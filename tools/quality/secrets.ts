@@ -3,7 +3,16 @@ import { privateDeploymentKeys } from "@template/config/deployment";
 const ASSIGNMENT_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<value>.*)$/u;
 const QUOTED_PATTERN = /^(?<quote>["'])(?<body>.*)\k<quote>$/u;
 
-function deploymentValues(content: string): string[] {
+interface DeploymentValue {
+  readonly key: string;
+  readonly value: string;
+}
+
+function byKey(left: DeploymentValue, right: DeploymentValue): number {
+  return left.key.localeCompare(right.key);
+}
+
+function deploymentValues(content: string): DeploymentValue[] {
   return content
     .split("\n")
     .flatMap((line) => {
@@ -14,9 +23,9 @@ function deploymentValues(content: string): string[] {
         return [];
       }
       const unquoted = QUOTED_PATTERN.exec(value)?.groups?.["body"] ?? value;
-      return unquoted === "" ? [] : [unquoted];
+      return unquoted === "" ? [] : [{ key, value: unquoted }];
     })
-    .toSorted();
+    .toSorted(byKey);
 }
 
 function privateFile(filename: string): boolean {
@@ -37,13 +46,16 @@ const contentRules: Readonly<Record<string, RegExp>> = {
 function secretViolations(
   filename: string,
   content: string,
-  environmentValues: readonly string[] = [],
+  environmentValues: readonly DeploymentValue[] = [],
 ): string[] {
   return [
     ...(privateFile(filename) ? ["private-file"] : []),
     ...Object.keys(contentRules).filter((rule) => contentRules[rule]?.test(content) === true),
-    ...(environmentValues.some((value) => content.includes(value)) ? ["deployment-value"] : []),
+    ...environmentValues.flatMap(({ key, value }) =>
+      content.includes(value) ? [`deployment-value:${key}`] : [],
+    ),
   ];
 }
 
 export { deploymentValues, secretViolations };
+export type { DeploymentValue };

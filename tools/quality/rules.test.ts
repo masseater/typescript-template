@@ -105,6 +105,21 @@ const dependencyBypasses = [
   ["db-root-bootstrap-laundering", "libs/db/src/index.ts", 'export * from "./bootstrap-local";'],
   ["db-root-testing-laundering", "libs/db/src/index.ts", 'export * from "./testing";'],
   [
+    "app-deployment-config",
+    "apps/user/src/probe.ts",
+    'import { secretsFile } from "@template/config/deployment";',
+  ],
+  [
+    "config-root-deployment-laundering",
+    "libs/config/src/index.ts",
+    'export * from "./deployment.ts";',
+  ],
+  [
+    "shared-deployment-config",
+    "libs/auth/src/probe.ts",
+    'export const load = () => import("@template/config/deployment");',
+  ],
+  [
     "user-relative-remote",
     "apps/user/src/probe.ts",
     'export * from "../../../libs/db/src/remote";',
@@ -206,6 +221,9 @@ const validBoundaries = [
   ["libs/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
   ["tools/dev/src/probe.ts", 'export * from "@template/db/remote";'],
   ["infra/cloudflare/src/probe.ts", 'export * from "@template/db/remote";'],
+  ["infra/cloudflare/src/probe.ts", 'export * from "@template/config/deployment";'],
+  ["libs/config/src/deployment.ts", 'export { homedir } from "node:os";'],
+  ["apps/user/src/app/probe.ts", 'export * from "@template/config";'],
   ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/db";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/ui/signup";'],

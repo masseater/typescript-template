@@ -32,7 +32,6 @@ const authenticationMethods = ["password", ...strongAuthenticationMethods, "reco
 const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
 
 export {
-  applicationCapabilities,
   applicationPorts,
   applications,
   authenticationMethods,

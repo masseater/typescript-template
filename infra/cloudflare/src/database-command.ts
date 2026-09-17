@@ -1,8 +1,8 @@
 import { Config, Effect, Redacted } from "effect";
+import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { reportCause, withVerifiedSecrets } from "./secrets.ts";
 import { CloudflareFailure } from "./config.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { lookupDatabaseId } from "./database-lookup.ts";
 import { runRemoteDatabaseCommand } from "@template/db/remote";
 import { settings } from "./settings.ts";
 import { verifiedSecrets } from "./credentials.ts";
@@ -42,7 +42,7 @@ NodeRuntime.runMain(
     const databaseId = yield* lookupDatabaseId({
       accountId: config.accountId,
       apiToken: token,
-      name: `${config.prefix}-db`,
+      name: databaseName(config.prefix),
     });
     const email = args[0] === "bootstrap" ? yield* readBootstrapEmail : "";
     const result = yield* runRemoteDatabaseCommand(args, {

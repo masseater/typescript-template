@@ -8,6 +8,10 @@ const DatabaseList = Schema.Struct({
   success: Schema.Literal(true),
 });
 
+function databaseName(prefix: string): string {
+  return `${prefix}-db`;
+}
+
 function unavailable(): CloudflareFailure {
   return new CloudflareFailure({ code: "database_output_unavailable", keys: [] });
 }
@@ -66,4 +70,4 @@ const lookupDatabaseId = Effect.fn("lookupDatabaseId")(function* lookupDatabaseI
   return found;
 });
 
-export { findDatabaseId, lookupDatabaseId };
+export { databaseName, findDatabaseId, lookupDatabaseId };

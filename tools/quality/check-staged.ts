@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 import { deploymentValues, secretViolations } from "./secrets.ts";
+import type { DeploymentValue } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
@@ -47,12 +48,12 @@ const environmentValues = read(path.join(root, "package.json")).pipe(
   Effect.flatMap(Schema.decodeUnknownEffect(Manifest)),
   Effect.flatMap(({ name }) => read(secretsFile(name))),
   Effect.map(deploymentValues),
-  Effect.orElseSucceed((): readonly string[] => []),
+  Effect.orElseSucceed((): readonly DeploymentValue[] => []),
 );
 
 function stagedFailure(
   file: string,
-  values: readonly string[],
+  values: readonly DeploymentValue[],
 ): Effect.Effect<StagedFailure[], unknown> {
   return git(["show", `:${file}`]).pipe(
     Effect.map((content) => {

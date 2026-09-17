@@ -106,4 +106,7 @@ const verifiedSecrets = Effect.fn("verifiedSecrets")(function* verifiedSecrets()
   return yield* verifySecretsFile(secretsFile(yield* projectName));
 });
 
+type DeploymentSecrets = Readonly<Effect.Success<ReturnType<typeof verifiedSecrets>>>;
+
 export { verifiedSecrets, verifySecretsFile };
+export type { DeploymentSecrets };

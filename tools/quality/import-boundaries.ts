@@ -101,6 +101,15 @@ function escapesPackage({ location }: Importer, target: ImportTarget): boolean {
   );
 }
 
+function reachesDeploymentConfig(importer: Importer, target: ImportTarget): boolean {
+  const { location } = importer;
+  return (
+    (/^@template\/config\/deployment$/u.test(target.clean) ||
+      /\/libs\/config\/src\/deployment(?:\.[cm]?ts)?$/u.test(target.resolved)) &&
+    (location?.area === "apps" || location?.area === "libs")
+  );
+}
+
 function reachesTools({ location }: Importer, target: ImportTarget): boolean {
   return (
     (location?.area === "apps" || location?.area === "libs" || location?.area === "infra") &&
@@ -174,6 +183,7 @@ function wikiImportsDatabase({ location }: Importer, target: ImportTarget): bool
 const importRules: readonly ImportRule[] = [
   crossesApplication,
   escapesPackage,
+  reachesDeploymentConfig,
   reachesTools,
   leaksDatabaseAdmin,
   leaksDatabaseOperations,
