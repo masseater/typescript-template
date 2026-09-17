@@ -17,6 +17,7 @@ import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
 
 type Occupancy = "free" | "taken";
+type Presence = "absent" | "present";
 
 const monitorSuffixes = ["budget", "errors", "health"] as const;
 const tokenSuffixes = ["billing-read", "observability-query"] as const;
@@ -33,6 +34,10 @@ function hostnames(config: SharedConfig): readonly string[] {
 
 function occupancy(taken: boolean): Occupancy {
   return taken ? "taken" : "free";
+}
+
+function presence(found: boolean): Presence {
+  return found ? "present" : "absent";
 }
 
 function overlaps(found: readonly string[], claimed: readonly string[]): Occupancy {
@@ -88,11 +93,11 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
     database: yield* databaseVerdict(access, config, store),
     deployToken: yield* tokenVerdict(access),
     dnsRecords: yield* dnsVerdict(access, config),
-    secretsStore: occupancy((yield* secretsStoreCount(access)) > 0),
-    stateStore: occupancy(yield* stateStorePresent(access)),
+    secretsStore: presence((yield* secretsStoreCount(access)) > 0),
+    stateStore: presence(yield* stateStorePresent(access)),
     workerDomains: overlaps(yield* attachedHostnames(access), hostnames(config)),
     workerNames: overlaps(yield* workerNames(access), declaredNames(config.prefix)),
-    workersSubdomain: occupancy((yield* workersSubdomain(access)) !== undefined),
+    workersSubdomain: presence((yield* workersSubdomain(access)) !== undefined),
   };
 });
 
@@ -102,7 +107,7 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
   const occupied = ["database", "dnsRecords", "workerDomains", "workerNames"] as const;
   return [
     ...occupied.filter((name) => inspection[name] === "taken"),
-    ...(inspection.workersSubdomain === "free" ? ["workersSubdomain"] : []),
+    ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
     ...(inspection.deployToken !== "unreadable" && inspection.deployToken.length > 0
       ? ["deployToken"]
       : []),
