@@ -9,7 +9,7 @@
     "./security": "./src/security.ts",
     "./testing": "./src/testing.ts",
     "./remote": "./src/remote-command.ts",
-    "./migrations": "./src/migrate-files.ts",
+    "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts"
   },
   "scripts": {

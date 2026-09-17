@@ -14,12 +14,12 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;
-      readonly TEST_MIGRATIONS: string;
+      readonly TEST_MIGRATIONS: unknown;
     }
   }
 }
 
-const migrations = Schema.decodeUnknownEffect(Schema.fromJsonString(MigrationFiles));
+const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
 function getSchemaShape(): Record<string, string[]> {
   return Object.fromEntries(

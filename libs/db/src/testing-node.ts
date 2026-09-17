@@ -3,7 +3,10 @@ import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import { Database } from "./database.ts";
 import { Miniflare } from "miniflare";
 import type { RemoteFailure } from "./remote-input.ts";
+import { localDatabase } from "./local.ts";
 import { prepareBatch } from "./migrate-d1.ts";
+
+const miniflareCompatibilityDate = "2026-07-30";
 
 interface D1HttpBatchResponse {
   readonly result: D1Result[];
@@ -46,12 +49,12 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
   Effect.acquireRelease(
     Effect.promise(async () => {
       const runtime = new Miniflare({
-        compatibilityDate: "2026-07-30",
-        d1Databases: { DB: "template-test" },
+        compatibilityDate: miniflareCompatibilityDate,
+        d1Databases: { [localDatabase.binding]: localDatabase.database_name },
         modules: true,
         script: "export default { fetch() { return new Response('test-database'); } };",
       });
-      return { database: await runtime.getD1Database("DB"), runtime };
+      return { database: await runtime.getD1Database(localDatabase.binding), runtime };
     }),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ({ runtime }) => Effect.promise(async () => runtime.dispose()),
