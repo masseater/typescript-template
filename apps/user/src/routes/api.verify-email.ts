@@ -11,7 +11,16 @@ export const Route = createFileRoute("/api/verify-email")({
             v.strictObject({ token: v.pipe(v.string(), v.minLength(1), v.maxLength(4096)) }),
             await readJson(request, context.runtime.config.APP_ORIGIN),
           );
-          await context.runtime.auth.api.verifyEmail({ query: { token } });
+          const verification = new URL("/api/auth/verify-email", context.runtime.config.APP_ORIGIN);
+          verification.searchParams.set("token", token);
+          const response = await context.runtime.auth.handler(
+            new Request(verification, { method: "GET", headers: request.headers }),
+          );
+          await response.body?.cancel();
+          if (!response.ok)
+            throw Object.assign(new Error("EMAIL_VERIFICATION_FAILED"), {
+              statusCode: response.status === 429 ? 429 : 400,
+            });
           return { verified: true };
         }, context.runtime.reportError),
     },
