@@ -38,7 +38,6 @@ interface ConnectionReport {
   readonly admin: string;
   readonly adminCredentialsFile: string;
   readonly event: "local.lan_access";
-  readonly grafana: string;
   readonly mailpit: string;
   readonly reachableFrom: "devices on the same LAN that trust the local certificate authority";
   readonly user: string;
@@ -94,7 +93,6 @@ async function connection(): Promise<ConnectionReport> {
     admin: origins.admin,
     adminCredentialsFile: fileURLToPath(credentialsFile),
     event: "local.lan_access",
-    grafana: lanOrigin("grafana"),
     mailpit: lanOrigin("mailpit"),
     reachableFrom: "devices on the same LAN that trust the local certificate authority",
     user: origins.user,

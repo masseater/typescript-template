@@ -1,5 +1,5 @@
-import type { Audience, Database, DatabaseOperation, Role } from "@template/db";
-import { BrowserClient, HTTP_FOUND, PASSWORD } from "./browser-client.ts";
+import type { Audience, Database, Role } from "@template/db";
+import { BrowserClient, PASSWORD } from "./browser-client.ts";
 import { HttpResponse, http } from "msw";
 import { test as baseTest, expect } from "vite-plus/test";
 import { createAuth, verifySession } from "./index.ts";
@@ -25,11 +25,6 @@ interface AuthTestDependencies {
   ) => Promise<unknown>;
 }
 
-interface RecordedQuery {
-  readonly duration: number;
-  readonly operation: DatabaseOperation;
-}
-
 interface MailpitMessage {
   readonly From: Readonly<{ Email: string }>;
   readonly To: readonly Readonly<{ Email: string }>[];
@@ -44,7 +39,6 @@ interface VerifyRequest {
 }
 
 interface AuthFixture {
-  readonly queries: readonly RecordedQuery[];
   readonly setUserRole: (
     input: Readonly<{ role: Role; sessionId: string; targetId: string }>,
   ) => Promise<unknown>;
@@ -60,6 +54,7 @@ interface AuthFixture {
 interface MailScope {
   readonly userAuth: Readonly<Pick<Auth, "handler">>;
   readonly verificationUrl: (email: string) => string | undefined;
+  readonly verifyToken: (token: string) => Promise<unknown>;
 }
 
 interface FixtureScope {
@@ -112,23 +107,6 @@ function startMailServer(
   return server;
 }
 
-function createTracedDatabase(binding: TestDatabase["binding"]): {
-  database: Database;
-  queries: RecordedQuery[];
-} {
-  const queries: RecordedQuery[] = [];
-  async function trace<Result>(
-    operation: DatabaseOperation,
-    execute: () => Promise<Result>,
-  ): Promise<Result> {
-    const started = performance.now();
-    const result = await execute();
-    queries.push({ duration: performance.now() - started, operation });
-    return result;
-  }
-  return { database: createDb(binding, trace), queries };
-}
-
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createAudienceAuth(database: Database, audience: Audience): Auth {
   return createAuth({
@@ -147,11 +125,14 @@ async function verifyEmailOf(scope: MailScope, email: string): Promise<void> {
   if (url === undefined) {
     throw new Error("MAIL_DELIVERY_INVALID");
   }
-  expect(new URL(url).searchParams.get("callbackURL")).toBe("/login");
-  const response = await scope.userAuth.handler(new Request(url));
-  if (!response.ok && response.status !== HTTP_FOUND) {
-    throw new Error(`Verification failed: ${response.status}`);
+  const link = new URL(url);
+  expect(link.pathname).toBe("/verify-email");
+  expect(link.search).toBe("");
+  const token = new URLSearchParams(link.hash.slice(1)).get("token");
+  if (token === null) {
+    throw new Error("VERIFICATION_TOKEN_MISSING");
   }
+  await scope.verifyToken(token);
 }
 
 async function registerUser(
@@ -177,12 +158,16 @@ async function registerVerifiedUser(scope: MailScope, email: string): Promise<Br
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createFixture(scope: FixtureScope, queries: readonly RecordedQuery[]): AuthFixture {
+function createFixture(scope: FixtureScope): AuthFixture {
   const { auths, database, verificationUrl } = scope;
-  const mail = { userAuth: auths.user, verificationUrl };
+  const mail = {
+    userAuth: auths.user,
+    verificationUrl,
+    verifyToken: async (token: string): Promise<unknown> =>
+      auths.user.api.verifyEmail({ query: { token } }),
+  };
   return {
     client: (audience) => new BrowserClient(auths[audience], ORIGINS[audience]),
-    queries,
     register: async (email) => registerUser(auths.user, email),
     registerAdmin: async (email) => {
       const client = await registerVerifiedUser(mail, email);
@@ -208,7 +193,7 @@ function createAuthTest(dependencies: AuthTestDependencies): TestAPI<{ fixture: 
   return baseTest.extend<{ fixture: AuthFixture }>({
     fixture: async ({}: object, provide) => {
       const testDatabase = await dependencies.createTestDatabase();
-      const { database, queries } = createTracedDatabase(testDatabase.binding);
+      const database = createDb(testDatabase.binding);
       const mailbox = new Map<string, string>();
       const mailServer = startMailServer((email, url) => {
         mailbox.set(email, url);
@@ -219,10 +204,12 @@ function createAuthTest(dependencies: AuthTestDependencies): TestAPI<{ fixture: 
       };
       try {
         await provide(
-          createFixture(
-            { auths, database, dependencies, verificationUrl: (email) => mailbox.get(email) },
-            queries,
-          ),
+          createFixture({
+            auths,
+            database,
+            dependencies,
+            verificationUrl: (email) => mailbox.get(email),
+          }),
         );
       } finally {
         mailServer.close();

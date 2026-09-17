@@ -5,7 +5,7 @@
   "scripts": {
     "observe": "node src/cli.ts",
     "verify": "node src/verify.ts",
-    "test": "vp test run"
+    "symbolicate": "node src/symbolicate.ts"
   },
   "dependencies": {
     "es-toolkit": "1.52.0",

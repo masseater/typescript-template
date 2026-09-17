@@ -9,7 +9,6 @@ interface TotpEnrollment {
 
 const PASSWORD = "test-password-safe-123";
 const HTTP_OK = 200;
-const HTTP_FOUND = 302;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 
@@ -112,7 +111,6 @@ async function enableTotp(client: Readonly<BrowserClient>): Promise<TotpEnrollme
 export {
   BrowserClient,
   HTTP_FORBIDDEN,
-  HTTP_FOUND,
   HTTP_NOT_FOUND,
   HTTP_OK,
   PASSWORD,

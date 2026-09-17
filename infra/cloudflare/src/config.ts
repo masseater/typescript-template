@@ -8,18 +8,15 @@ import {
   minValue,
   number,
   object,
-  optional,
   parse,
   pipe,
   readonly,
-  record,
   regex,
   safeParse,
   string,
   url,
 } from "valibot";
 import type { InferOutput } from "valibot";
-import { sentrySchemas } from "@template/config";
 
 const MAX_ADMIN_EMAILS = 50;
 const MAX_BUDGET_RECIPIENTS = 10;
@@ -34,9 +31,9 @@ const origin = pipe(
   string(),
   url(),
   check((value) => {
-    const parsed = new URL(value);
+    const parsed = URL.parse(value);
     return (
-      parsed.protocol === "https:" &&
+      parsed?.protocol === "https:" &&
       parsed.origin === value &&
       !parsed.hostname.endsWith(".workers.dev") &&
       !parsed.username &&
@@ -44,27 +41,9 @@ const origin = pipe(
     );
   }),
 );
-const httpsUrl = pipe(
-  string(),
-  url(),
-  check((value) => {
-    const parsed = new URL(value);
-    return (
-      parsed.protocol === "https:" &&
-      !parsed.username &&
-      !parsed.password &&
-      !parsed.search &&
-      !parsed.hash
-    );
-  }),
-);
 const accessIssuer = pipe(
   origin,
-  check((value) => new URL(value).hostname.endsWith(".cloudflareaccess.com")),
-);
-const sentryDsn = pipe(
-  sentrySchemas.dsn,
-  check((value) => new URL(value).protocol === "https:"),
+  check((value) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true),
 );
 const budgetSchema = object({
   budgetJpy: positive,
@@ -80,29 +59,14 @@ const sharedSchema = object({
   adminOrigin: origin,
   budget: budgetSchema,
   mailFrom: emailAddress,
-  otelEndpoint: httpsUrl,
   prefix: pipe(string(), regex(/^[a-z][a-z0-9-]{2,35}$/u)),
-  sentryDsn: optional(sentryDsn),
-  sentryEnvironment: optional(sentrySchemas.environment),
-  sentryRelease: optional(sentrySchemas.release),
   userOrigin: origin,
   wikiOrigin: origin,
   zoneId: id,
 });
-const headerValue = pipe(
-  string(),
-  check((item) => !/[\r\n]/u.test(item)),
-);
-const otelHeadersSchema = record(
-  pipe(string(), regex(/^[!#$%&'*+.^_`|~0-9a-zA-Z-]+$/u)),
-  headerValue,
-);
 
 type SharedConfig = InferOutput<typeof sharedSchema>;
 type AppTarget = "user" | "admin" | "wiki";
-type SentrySettings = Readonly<
-  Pick<SharedConfig, "sentryDsn" | "sentryEnvironment" | "sentryRelease">
->;
 type AppOrigins = Readonly<
   Pick<SharedConfig, "adminOrigin" | "prefix" | "userOrigin" | "wikiOrigin">
 >;
@@ -110,12 +74,6 @@ type AppOrigins = Readonly<
 interface DeploymentCommand {
   operation: "preview" | "up";
   target: "shared" | AppTarget;
-}
-
-interface PlainTextBinding {
-  readonly name: string;
-  readonly text: string;
-  readonly type: "plain_text";
 }
 
 interface AppPolicy {
@@ -131,10 +89,6 @@ interface PermissionGroup {
   readonly scopes: readonly string[];
 }
 
-function present(value: string | undefined): value is string {
-  return value !== undefined && value !== "";
-}
-
 function parseDeploymentCommand(args: readonly string[]): DeploymentCommand {
   const [operation, target] = args;
   if (
@@ -145,15 +99,6 @@ function parseDeploymentCommand(args: readonly string[]): DeploymentCommand {
     throw new Error("deployment_command_invalid");
   }
   return { operation, target };
-}
-
-function assertSentryComplete(config: SentrySettings): void {
-  if (
-    present(config.sentryDsn) &&
-    (!present(config.sentryEnvironment) || !present(config.sentryRelease))
-  ) {
-    throw new Error("sentry_environment_and_release_required");
-  }
 }
 
 function assertDistinctOrigins(config: AppOrigins): void {
@@ -175,24 +120,9 @@ function parseSharedConfig(input: unknown): SharedConfig {
     throw new Error("cloudflare_settings_invalid");
   }
   const config = parsed.output;
-  assertSentryComplete(config);
   assertDistinctOrigins(config);
   assertBudgetAllowance(config.budget);
   return config;
-}
-
-function sentryRuntimeBindings(config: SentrySettings): PlainTextBinding[] {
-  if (!present(config.sentryDsn)) {
-    return [];
-  }
-  if (!present(config.sentryEnvironment) || !present(config.sentryRelease)) {
-    throw new Error("sentry_environment_and_release_required");
-  }
-  return [
-    { name: "SENTRY_DSN", text: config.sentryDsn, type: "plain_text" },
-    { name: "SENTRY_ENVIRONMENT", text: config.sentryEnvironment, type: "plain_text" },
-    { name: "SENTRY_RELEASE", text: config.sentryRelease, type: "plain_text" },
-  ];
 }
 
 function validateAuthSecret(secret: string): string {
@@ -200,19 +130,6 @@ function validateAuthSecret(secret: string): string {
     throw new Error("auth_secret_invalid");
   }
   return secret;
-}
-
-function validateOtelHeaders(value: string): string {
-  try {
-    const input: unknown = JSON.parse(value);
-    const result = safeParse(otelHeadersSchema, input);
-    if (!result.success) {
-      throw new Error("invalid");
-    }
-    return JSON.stringify(result.output);
-  } catch {
-    throw new Error("otel_headers_invalid");
-  }
 }
 
 function appPolicy(config: AppOrigins, target: AppTarget): AppPolicy {
@@ -224,24 +141,41 @@ function appPolicy(config: AppOrigins, target: AppTarget): AppPolicy {
   };
 }
 
-function selectReadPermission(groups: readonly PermissionGroup[]): string {
+function selectPermission(
+  groups: readonly PermissionGroup[],
+  permission: Readonly<{ error: string; name: string }>,
+): string {
   const matches = groups.filter(
-    (group) => group.name === "Billing Read" && group.scopes.includes("com.cloudflare.api.account"),
+    (group) =>
+      group.name === permission.name && group.scopes.includes("com.cloudflare.api.account"),
   );
   const [match] = matches;
   if (matches.length !== 1 || match === undefined) {
-    throw new Error("billing_read_permission_unavailable");
+    throw new Error(permission.error);
   }
   return parse(id, match.id);
+}
+
+function selectReadPermission(groups: readonly PermissionGroup[]): string {
+  return selectPermission(groups, {
+    error: "billing_read_permission_unavailable",
+    name: "Billing Read",
+  });
+}
+
+function selectObservabilityQueryPermission(groups: readonly PermissionGroup[]): string {
+  return selectPermission(groups, {
+    error: "observability_query_permission_unavailable",
+    name: "Workers Observability Write",
+  });
 }
 
 export {
   appPolicy,
   parseDeploymentCommand,
   parseSharedConfig,
+  selectObservabilityQueryPermission,
   selectReadPermission,
-  sentryRuntimeBindings,
   validateAuthSecret,
-  validateOtelHeaders,
 };
 export type { AppTarget, SharedConfig };

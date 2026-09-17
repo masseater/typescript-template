@@ -1,98 +1,39 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import { access, constants, lstat, mkdir, open } from "node:fs/promises";
+import { access, constants } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
-const OWNER_ONLY_DIRECTORY_MODE = 0o700;
-const OWNER_ONLY_FILE_MODE = 0o600;
-const GROUP_AND_OTHER_PERMISSIONS = 0o077;
-const GENERATED_SECRET_BYTES = 32;
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
 const root = `${import.meta.dirname}/../../..`;
-const local = `${root}/.local`;
-const envFile = `${local}/observability.env`;
 const composeFile = `${import.meta.dirname}/../compose.yaml`;
 const bundledCompose = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose";
 const [action] = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
 const actions: Readonly<Record<string, readonly string[]>> = {
   config: ["config", "--quiet"],
-  logs: ["logs", "--no-color", "--tail", "100", "lgtm", "grafana-mcp"],
-  mcp: [
-    "run",
-    "--rm",
-    "-T",
-    "grafana-mcp",
-    "-t",
-    "stdio",
-    "--disable-write",
-    "--enabled-tools",
-    "search,datasource,prometheus,loki",
-  ],
+  logs: ["logs", "--no-color", "--tail", "100", "mailpit"],
   status: ["ps", "--format", "json"],
   up: ["up", "-d", "--wait"],
 };
 
-async function assertOwnerOnlyCredentials(): Promise<void> {
-  const metadata = await lstat(envFile);
-  // oxlint-disable-next-line no-bitwise
-  if (!metadata.isFile() || (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0) {
-    throw new Error("Local credentials must be a regular file with mode 0600");
-  }
-}
-
-function generatedSecret(): string {
-  return Buffer.from(crypto.getRandomValues(new Uint8Array(GENERATED_SECRET_BYTES))).toString(
-    "base64url",
-  );
-}
-
-async function writeCredentialsIfMissing(): Promise<void> {
-  try {
-    const handle = await open(envFile, "wx", OWNER_ONLY_FILE_MODE);
-    try {
-      await handle.writeFile(
-        `GRAFANA_ADMIN_PASSWORD=${generatedSecret()}\nMCP_GRAFANA_SERVER_TOKEN=${generatedSecret()}\n`,
-      );
-    } finally {
-      await handle.close();
-    }
-  } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "EEXIST")) {
-      throw error;
-    }
-  }
-}
-
-async function prepare(): Promise<void> {
-  await mkdir(local, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
-  await writeCredentialsIfMissing();
-  await assertOwnerOnlyCredentials();
-  process.stdout.write(
-    `${JSON.stringify({ event: "local.observability_prepared", ok: true, secretsPrinted: false })}\n`,
-  );
-}
-
 function composeArguments(name: string | undefined): readonly string[] {
   const args = name === undefined || !Object.hasOwn(actions, name) ? undefined : actions[name];
   if (args === undefined) {
-    throw new Error("Unknown local observability action");
+    throw new Error("Unknown local service action");
   }
   return args;
 }
 
 async function runCompose(args: readonly string[]): Promise<void> {
-  await access(envFile, constants.R_OK);
-  await assertOwnerOnlyCredentials();
   const bundled = await access(bundledCompose, constants.X_OK).then(
     () => true,
     () => false,
   );
   const child = spawn(
     bundled ? bundledCompose : "docker",
-    [...(bundled ? [] : ["compose"]), "--env-file", envFile, "-f", composeFile, ...args],
+    [...(bundled ? [] : ["compose"]), "-f", composeFile, ...args],
     { cwd: root, stdio: "inherit" },
   );
   const exitArguments: unknown[] = await once(child, "exit");
@@ -102,23 +43,14 @@ async function runCompose(args: readonly string[]): Promise<void> {
   }
 }
 
-async function runAction(name: string | undefined): Promise<void> {
-  if (name === "prepare") {
-    await prepare();
-    return;
-  }
-  await runCompose(composeArguments(name));
-}
-
 try {
-  await runAction(action);
+  await runCompose(composeArguments(action));
 } catch {
   process.stderr.write(
     `${JSON.stringify({
-      event: "local.observability_command_failed",
+      event: "local.services_command_failed",
       ok: false,
-      remediation:
-        "Run prepare:local, check root .local credentials permissions and the Docker daemon, then retry the requested action.",
+      remediation: "Check the Docker daemon, then retry the requested action.",
     })}\n`,
   );
   process.exitCode = 1;

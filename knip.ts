@@ -35,6 +35,11 @@ const config: KnipConfig = {
       ],
       project: ["src/**/*.ts!"],
     },
+    "infra/error-monitor": {
+      entry: ["src/worker.ts!"],
+      ignoreDependencies: ["cloudflare"],
+      project: ["src/**/*.ts!"],
+    },
     "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
     "libs/auth": {
       project: ["src/**/*.ts!", "!src/auth-test-fixture.ts!", "!src/browser-client.ts!"],
@@ -48,7 +53,7 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
     },
     "tools/observe": {
-      entry: ["src/cli.ts!", "src/verify.ts!"],
+      entry: ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
       project: ["src/**/*.ts!"],
     },
   },

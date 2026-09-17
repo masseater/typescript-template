@@ -23,7 +23,6 @@ interface ProbeResult {
 
 function assertProvidersLoadedWithoutCompiler(): void {
   invariant(readEnvironment().PULUMI_NODEJS_TYPESCRIPT !== "true", "pulumi_typescript_enabled");
-  invariant(process.execArgv.includes("tsx"), "tsx_not_loaded");
   invariant(typeof Worker === "function", "worker_provider_missing");
   invariant(typeof WorkerVersion === "function", "worker_version_provider_missing");
   invariant(typeof ZeroTrustAccessApplication === "function", "access_provider_missing");

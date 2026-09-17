@@ -1,11 +1,9 @@
 import { maxLength, minLength, parse, pipe, strictObject, string, trim } from "valibot";
 import { schema, user } from "./schema.ts";
 import type { D1Database } from "@cloudflare/workers-types";
-import type { DatabaseTrace } from "./database-trace.ts";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
-import { instrumentD1 } from "./instrumentation.ts";
 
 type Audience = "user" | "admin";
 type Role = "user" | "admin";
@@ -13,8 +11,8 @@ type DatabaseBinding = D1Database;
 type Database = DrizzleD1Database<typeof schema> & { $client: DatabaseBinding };
 type Profile = Pick<typeof user.$inferSelect, "email" | "id" | "name" | "profile">;
 
-function createDb(binding: Readonly<DatabaseBinding>, trace?: DatabaseTrace): Database {
-  return drizzle(trace ? instrumentD1(binding, trace) : binding, { schema });
+function createDb(binding: Readonly<DatabaseBinding>): Database {
+  return drizzle(binding, { schema });
 }
 
 const NAME_MAX_LENGTH = 100;
@@ -65,4 +63,3 @@ async function updateProfile(
 export { createDb, getProfile, updateProfile };
 export { schema } from "./schema.ts";
 export type { Audience, Database, DatabaseBinding, Role };
-export type { DatabaseOperation, DatabaseTrace } from "./database-trace.ts";

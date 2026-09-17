@@ -1,28 +1,23 @@
-import type { Attributes, ServiceName } from "./protocol.ts";
-import type { ExecutionContext, Exporter } from "./exporter.ts";
-import { logRecord, millisecondsPerSecond, spanKind, spanRecord } from "./protocol.ts";
+import { logError, logInfo } from "./log.ts";
 import type { BrowserEvent } from "./events.ts";
-import { histogram } from "./metrics.ts";
+import type { ServiceName } from "./protocol.ts";
+import { errorFingerprint } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { parseBrowserEvents } from "./events.ts";
 
 interface Ingress {
-  readonly exporter: Exporter;
   readonly labels: Readonly<ReadonlySet<string>>;
+  readonly release: string;
   readonly serviceName: ServiceName;
 }
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & {
   readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
   readonly headers: Readonly<Pick<Headers, "get">>;
 };
+type LogFields = Readonly<Record<string, string | number | boolean>>;
 interface IngressWindow {
   start: number;
   count: number;
-}
-interface Measurement {
-  readonly name: string;
-  readonly unit: string;
-  readonly value: number;
 }
 
 const maximumBodyBytes = 32_768;
@@ -100,59 +95,41 @@ function admit(serviceName: ServiceName, count: number): boolean {
   return true;
 }
 
-function measurement(event: BrowserEvent): Measurement {
+function kindFields(event: BrowserEvent): LogFields {
   if (event.kind === "http") {
     return {
-      name: "http.client.request.duration",
-      unit: "s",
-      value: event.duration / millisecondsPerSecond,
+      "http.request.method": event.method,
+      "http.response.status_code": event.status,
     };
   }
   if (event.kind === "exception") {
-    return { name: "browser.exception", unit: "1", value: 1 };
+    return {
+      "error.fingerprint": errorFingerprint(event.errorType, event.locations),
+      "error.locations": event.locations,
+      "error.type": event.errorType,
+    };
   }
-  return {
-    name: `browser.web_vital.${event.name.toLowerCase()}`,
-    unit: event.name === "CLS" ? "1" : "ms",
-    value: event.value,
-  };
+  return {};
 }
 
-function eventAttributes(event: BrowserEvent): Attributes {
-  return {
-    "http.route": event.route,
-    "telemetry.source": "untrusted-browser",
-    ...(event.kind === "http"
-      ? { "http.request.method": event.method, "http.response.status_code": event.status }
-      : {}),
-  };
-}
-
-function recordBrowserEvent(exporter: Exporter, event: BrowserEvent): void {
-  const values = eventAttributes(event);
+function recordBrowserEvent(ingress: Ingress, event: BrowserEvent): void {
   const failed =
     event.kind === "exception" ||
     (event.kind === "http" && (event.status === 0 || event.status >= httpStatus.badRequest));
-  const end = event.start + event.duration;
-  const { name } = event;
-  const logValues = { ...values, "duration.ms": event.duration, "measurement.value": event.value };
-  exporter.enqueue({
-    records: [logRecord({ context: event, failed, name, time: end, values: logValues })],
-    runtime: "browser",
-    signal: "logs",
-  });
-  const kind = event.kind === "http" ? spanKind.client : spanKind.internal;
-  exporter.enqueue({
-    records: [spanRecord({ context: event, end, failed, kind, name, start: event.start, values })],
-    runtime: "browser",
-    signal: "traces",
-  });
-  exporter.enqueue({
-    records: [
-      histogram({ ...measurement(event), context: event, end, start: event.start, values }),
-    ],
-    runtime: "browser",
-    signal: "metrics",
+  const log = failed ? logError : logInfo;
+  log({
+    duration_ms: event.duration,
+    event: event.name,
+    "http.route": event.route,
+    measurement_value: event.value,
+    release: ingress.release,
+    request_id: event.requestId,
+    service: `${ingress.serviceName}-browser`,
+    span_id: event.spanId,
+    start: new Date(event.start).toISOString(),
+    "telemetry.source": "untrusted-browser",
+    trace_id: event.traceId,
+    ...kindFields(event),
   });
 }
 
@@ -188,19 +165,14 @@ async function acceptEvents(
   });
 }
 
-async function ingestBrowser(
-  ingress: Ingress,
-  request: IngressRequest,
-  executionContext?: ExecutionContext,
-): Promise<Response> {
+async function ingestBrowser(ingress: Ingress, request: IngressRequest): Promise<Response> {
   const events = await acceptEvents(ingress, request);
   if (events instanceof Response) {
     return events;
   }
   for (const event of events) {
-    recordBrowserEvent(ingress.exporter, event);
+    recordBrowserEvent(ingress, event);
   }
-  ingress.exporter.flushInBackground(executionContext);
   return emptyResponse(httpStatus.accepted);
 }
 

@@ -17,6 +17,16 @@ const event = {
   traceId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   value: 0,
 };
+const exception = {
+  ...event,
+  errorType: "TypeError",
+  kind: "exception",
+  locations: "/assets/index-abc.js:1:234\n/assets/auth-def.js:5:6",
+  method: "GET",
+  name: "browser.error",
+  status: 0,
+  value: 1,
+};
 
 describe("browser ingress events", () => {
   it("accepts a well-formed event", () => {
@@ -47,5 +57,33 @@ describe("browser ingress events", () => {
     ).toThrow("value");
     const oversized = Array.from({ length: maximumBatchSize + 1 }, () => event);
     expect(() => parseBrowserEvents(oversized, labels, now)).toThrow("batch");
+  });
+});
+
+describe("browser exception events", () => {
+  it("carry only a known error type and bounded stack locations", () => {
+    expect.hasAssertions();
+    expect(parseBrowserEvents([exception], labels, now)).toStrictEqual([exception]);
+    expect(() => parseBrowserEvents([{ ...exception, errorType: "Custom" }], labels, now)).toThrow(
+      "event",
+    );
+    expect(() =>
+      parseBrowserEvents([{ ...exception, locations: "private@example.com" }], labels, now),
+    ).toThrow("event");
+  });
+
+  it("require error details only on exceptions", () => {
+    expect.hasAssertions();
+    const withoutDetails = {
+      ...event,
+      kind: "exception",
+      name: "browser.error",
+      status: 0,
+      value: 1,
+    };
+    expect(() => parseBrowserEvents([withoutDetails], labels, now)).toThrow("fields");
+    expect(() => parseBrowserEvents([{ ...event, errorType: "TypeError" }], labels, now)).toThrow(
+      "fields",
+    );
   });
 });

@@ -6,7 +6,6 @@ import type { AppConfig } from "@template/config";
 import type { Auth } from "@template/auth";
 import { createDb } from "@template/db";
 import { createInstrumentation } from "@template/observability";
-import { reportSentryError } from "@template/observability/sentry-server";
 
 type Session = Awaited<ReturnType<typeof verifySession>>;
 
@@ -23,7 +22,7 @@ interface RequestRuntime {
 }
 
 interface Runtime {
-  readonly config: Pick<AppConfig, "ASSETS" | "sentry">;
+  readonly config: Pick<AppConfig, "ASSETS">;
   readonly forRequest: (correlation: RequestContext) => RequestRuntime;
   readonly telemetry: Instrumentation;
 }
@@ -36,10 +35,7 @@ interface AppRequestContext {
 interface RequestRuntimeInput {
   readonly audience: Audience;
   readonly config: Readonly<
-    Pick<
-      AppConfig,
-      "APP_ORIGIN" | "AUTH_SECRET" | "EMAIL" | "EMAIL_FROM" | "MAILPIT_URL" | "sentry"
-    >
+    Pick<AppConfig, "APP_ORIGIN" | "AUTH_SECRET" | "EMAIL" | "EMAIL_FROM" | "MAILPIT_URL">
   > & { readonly DB: Readonly<AppConfig["DB"]> };
   readonly correlation: RequestContext;
   readonly telemetry: Instrumentation;
@@ -49,23 +45,15 @@ function createRequestRuntime(input: RequestRuntimeInput): RequestRuntime {
   const { audience, config, correlation, telemetry } = input;
   function reportError(error: unknown): void {
     telemetry.reportError(correlation, error);
-    if (config.sentry) {
-      reportSentryError(error);
-    }
   }
-  const database = createDb(config.DB, async (operation, execute) =>
-    telemetry.withDbSpan(correlation, operation, execute),
-  );
+  const database = createDb(config.DB);
   const auth = createAuth({
     audience,
     baseURL: config.APP_ORIGIN,
     database,
     onError: reportError,
     secret: config.AUTH_SECRET,
-    sendVerificationEmail: async (message) =>
-      telemetry.withExternalSpan(correlation, "email", async (child) =>
-        sendVerificationEmail(config, message, child.traceparent),
-      ),
+    sendVerificationEmail: async (message) => sendVerificationEmail(config, message),
   });
   return {
     auth,
@@ -85,13 +73,12 @@ function createRuntime(
 ): Runtime {
   const config = readConfig(bindings);
   const telemetry = createInstrumentation({
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers: config.otelHeaders,
+    release: config.APP_RELEASE,
     routes,
     serviceName: audience,
   });
   return {
-    config: { ASSETS: config.ASSETS, sentry: config.sentry },
+    config: { ASSETS: config.ASSETS },
     forRequest: (correlation) => createRequestRuntime({ audience, config, correlation, telemetry }),
     telemetry,
   };

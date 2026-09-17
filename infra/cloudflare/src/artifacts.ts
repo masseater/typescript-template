@@ -14,6 +14,7 @@ import type { AppTarget } from "./config.ts";
 import path from "node:path";
 
 const MAIN_MODULE = "index.js";
+const RELEASE_LENGTH = 16;
 const MODULE_CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
   [".js", "application/javascript+module"],
   [".mjs", "application/javascript+module"],
@@ -32,6 +33,7 @@ interface Artifacts {
   readonly clientDirectory: string;
   readonly mainModule: string;
   readonly modules: readonly WorkerModule[];
+  readonly release: string;
 }
 
 interface BuildOutput {
@@ -105,9 +107,7 @@ async function clientArtifactFiles(client: string): Promise<string[]> {
 
 async function serverArtifactFiles(server: string): Promise<string[]> {
   const serverFiles = await files(server);
-  return serverFiles.filter(
-    (file) => !file.endsWith(".map") && !privateArtifact(path.relative(server, file)),
-  );
+  return serverFiles.filter((file) => !privateArtifact(path.relative(server, file)));
 }
 
 async function assertServerCssPublished(
@@ -145,35 +145,70 @@ async function workerModules(
   );
 }
 
+async function sourceMapModules(
+  server: string,
+  serverFiles: readonly string[],
+  codeModules: readonly WorkerModule[],
+): Promise<WorkerModule[]> {
+  const codeFiles = new Set(codeModules.map((module) => module.contentFile));
+  return Promise.all(
+    serverFiles
+      .filter((file) => file.endsWith(".map") && codeFiles.has(file.slice(0, -".map".length)))
+      .map(async (file) => ({
+        contentFile: file,
+        contentSha256: await fileSha256(file),
+        contentType: "application/source-map",
+        name: path.relative(server, file).replaceAll(path.sep, "/"),
+      })),
+  );
+}
+
+async function assertWorkerEntryNotEmpty(server: string): Promise<void> {
+  const entry = await stat(path.join(server, MAIN_MODULE));
+  if (entry.size === 0) {
+    throw new Error("worker_entry_empty");
+  }
+}
+
 async function loadWorkerModules(
   output: BuildOutput,
   clientFiles: readonly string[],
-): Promise<WorkerModule[]> {
-  const serverFiles = await serverArtifactFiles(output.server);
+): Promise<Readonly<{ code: WorkerModule[]; sourceMaps: WorkerModule[] }>> {
+  const allServerFiles = await serverArtifactFiles(output.server);
+  const serverFiles = allServerFiles.filter((file) => !file.endsWith(".map"));
   if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
     throw new Error("worker_entry_missing_index_js");
   }
   const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
-  const [modules] = await Promise.all([
+  const [code] = await Promise.all([
     workerModules(
       output.server,
       serverFiles.filter((file) => path.extname(file) !== ".css"),
     ),
     assertServerCssPublished(output, cssFiles, clientFiles),
   ]);
-  const entry = await stat(path.join(output.server, MAIN_MODULE));
-  if (entry.size === 0) {
-    throw new Error("worker_entry_empty");
-  }
-  return modules;
+  await assertWorkerEntryNotEmpty(output.server);
+  return { code, sourceMaps: await sourceMapModules(output.server, allServerFiles, code) };
+}
+
+async function sha256Hex(value: unknown): Promise<string> {
+  const encoded = new TextEncoder().encode(JSON.stringify(value));
+  return Buffer.from(await crypto.subtle.digest("SHA-256", encoded)).toString("hex");
 }
 
 async function clientDigest(client: string, clientFiles: readonly string[]): Promise<string> {
   const manifest = await Promise.all(
     clientFiles.map(async (file) => [path.relative(client, file), await fileSha256(file)]),
   );
-  const encodedManifest = new TextEncoder().encode(JSON.stringify(manifest));
-  return Buffer.from(await crypto.subtle.digest("SHA-256", encodedManifest)).toString("hex");
+  return sha256Hex(manifest);
+}
+
+async function releaseId(codeModules: readonly WorkerModule[], digest: string): Promise<string> {
+  const hash = await sha256Hex([
+    codeModules.map((module) => [module.name, module.contentSha256]),
+    digest,
+  ]);
+  return hash.slice(0, RELEASE_LENGTH);
 }
 
 async function assertExistingStagedCopy(
@@ -235,11 +270,17 @@ async function loadArtifacts(repositoryRoot: string, target: AppTarget): Promise
     }),
   );
   const clientFiles = await clientArtifactFiles(output.client);
-  const modules = await loadWorkerModules(output, clientFiles);
+  const { code, sourceMaps } = await loadWorkerModules(output, clientFiles);
   const digest = await clientDigest(output.client, clientFiles);
+  const release = await releaseId(code, digest);
   const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
   await stageClientFiles(output.client, staging, clientFiles);
-  return { clientDirectory: staging, mainModule: MAIN_MODULE, modules };
+  return {
+    clientDirectory: staging,
+    mainModule: MAIN_MODULE,
+    modules: [...code, ...sourceMaps],
+    release,
+  };
 }
 
 export { loadArtifacts };

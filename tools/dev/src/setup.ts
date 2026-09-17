@@ -30,7 +30,6 @@ interface SetupReport {
 const adminPasswordBytes = 32;
 const authSecretBytes = 48;
 const jsonIndentation = 2;
-const otlpEndpoint = "http://127.0.0.1:4318";
 
 async function credentialsExist(): Promise<boolean> {
   try {
@@ -65,12 +64,11 @@ function appVariables(app: App, credentials: Credentials): Record<string, string
   return {
     APP_ORIGIN: origins[app],
     ...(app === "wiki"
-      ? { OTEL_EXPORTER_OTLP_ENDPOINT: otlpEndpoint }
+      ? {}
       : {
           AUTH_SECRET: credentials.authSecret,
           EMAIL_FROM: "no-reply@example.test",
           MAILPIT_URL: "http://127.0.0.1:8025",
-          OTEL_EXPORTER_OTLP_ENDPOINT: otlpEndpoint,
         }),
     ...(app === "admin"
       ? {

@@ -99,7 +99,6 @@ async function writeProbeProject(project: string): Promise<void> {
       "  name: nodejs",
       "  options:",
       "    typescript: false",
-      "    nodeargs: --import tsx",
       `main: ${JSON.stringify(probeProgram)}`,
       "",
     ].join("\n"),
@@ -132,7 +131,6 @@ function sandboxEnvironment(isolated: string, state: string): NodeJS.ProcessEnv 
     PULUMI_SKIP_UPDATE_CHECK: "true",
     TEMPLATE_ENGINE_PROBE: "true",
     TMPDIR: path.join(isolated, "tmp"),
-    TSX_DISABLE_CACHE: "1",
     USER: username,
   };
 }

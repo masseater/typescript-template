@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
+import { ValiError } from "valibot";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",
   AUTH_SECRET: "test-environment-secret-not-for-any-deployment",
   EMAIL_FROM: "sender@example.test",
   MAILPIT_URL: "http://127.0.0.1:8025",
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318",
 };
 
 describe("local development origins", () => {
@@ -25,6 +25,18 @@ describe("local development origins", () => {
     ];
     expect(publicOrigins.filter((origin) => isLocalDevelopmentOrigin(origin))).toStrictEqual([]);
   });
+
+  it("validates local configuration and defaults the release to local", () => {
+    expect.hasAssertions();
+    const result = readEnvironment(local);
+    expect({ local: result.local, release: result.APP_RELEASE }).toStrictEqual({
+      local: true,
+      release: "local",
+    });
+    expect(() => readEnvironment({ ...local, APP_RELEASE: "private@example.com" })).toThrow(
+      ValiError,
+    );
+  });
 });
 
 describe("application origins and secrets", () => {
@@ -42,52 +54,12 @@ describe("application origins and secrets", () => {
     );
   });
 
-  it("rejects weak session secrets and pathful application origins", () => {
+  it("rejects weak session secrets and pathful or unparsable application origins", () => {
     expect.hasAssertions();
     expect(() => readEnvironment({ ...local, AUTH_SECRET: "weak" })).toThrow("32");
     expect(() => readEnvironment({ ...local, APP_ORIGIN: "http://localhost:3001/path" })).toThrow(
       "An origin without a path is required",
     );
-  });
-});
-
-describe("exporter headers", () => {
-  it("validates local configuration and exporter header structure", () => {
-    expect.hasAssertions();
-    const result = readEnvironment({
-      ...local,
-      OTEL_EXPORTER_OTLP_HEADERS: JSON.stringify({ authorization: "test-only" }),
-    });
-    expect({ local: result.local, otelHeaders: result.otelHeaders }).toStrictEqual({
-      local: true,
-      otelHeaders: { authorization: "test-only" },
-    });
-  });
-
-  it("rejects non-string exporter credential values", () => {
-    expect.hasAssertions();
-    expect(() =>
-      readEnvironment({
-        ...local,
-        OTEL_EXPORTER_OTLP_HEADERS: JSON.stringify({ authorization: 42 }),
-      }),
-    ).toThrow("string");
-  });
-});
-
-describe("sentry settings", () => {
-  it("requires explicit environment and release when Sentry delivery is enabled", () => {
-    expect.hasAssertions();
-    expect(readEnvironment(local).sentry).toBeUndefined();
-    const dsn = "https://public-key@sentry.example.test/1";
-    expect(() => readEnvironment({ ...local, SENTRY_DSN: dsn })).toThrow("string");
-    expect(
-      readEnvironment({
-        ...local,
-        SENTRY_DSN: dsn,
-        SENTRY_ENVIRONMENT: "preview",
-        SENTRY_RELEASE: "test-1",
-      }).sentry,
-    ).toStrictEqual({ dsn, environment: "preview", release: "test-1" });
+    expect(() => readEnvironment({ ...local, APP_ORIGIN: "not-a-url" })).toThrow(ValiError);
   });
 });

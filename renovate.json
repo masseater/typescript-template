@@ -54,10 +54,6 @@
       "matchPackageNames": ["better-auth", "@better-auth/**"]
     },
     {
-      "groupName": "sentry",
-      "matchPackageNames": ["@sentry/**"]
-    },
-    {
       "groupName": "drizzle",
       "matchPackageNames": ["drizzle-orm", "drizzle-kit"]
     },
@@ -68,10 +64,6 @@
     {
       "groupName": "local observability services",
       "matchManagers": ["docker-compose"]
-    },
-    {
-      "groupName": "script runners",
-      "matchPackageNames": ["tsx", "esbuild"]
     }
   ]
 }

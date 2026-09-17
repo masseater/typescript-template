@@ -9,12 +9,8 @@ import {
   ZeroTrustAccessApplication,
 } from "@pulumi/cloudflare";
 import type { WorkerVersionArgs, types } from "@pulumi/cloudflare";
-import {
-  appPolicy,
-  parseSharedConfig,
-  sentryRuntimeBindings,
-  validateAuthSecret,
-} from "./config.ts";
+import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
+import { archiveSourceMaps } from "./source-maps.ts";
 import { loadArtifacts } from "./artifacts.ts";
 import { workerObservability } from "./observability.ts";
 
@@ -32,7 +28,6 @@ interface Deployment {
 interface SharedOutputs {
   readonly authSecret: StringOutput;
   readonly databaseId: StringOutput;
-  readonly otelHeaders: StringOutput;
 }
 
 interface SharedStack {
@@ -53,6 +48,7 @@ interface Release {
 interface BindingSources {
   readonly accessAudience: StringOutput | undefined;
   readonly origin: string;
+  readonly release: string;
   readonly settings: SharedConfig;
   readonly shared: SharedOutputs;
   readonly target: AppTarget;
@@ -119,22 +115,16 @@ function accessBindings(sources: BindingSources): WorkerVersionBinding[] {
 function runtimeBindings(sources: BindingSources): WorkerVersionBinding[] {
   const plaintext = {
     APP_ORIGIN: sources.origin,
-    OTEL_EXPORTER_OTLP_ENDPOINT: sources.settings.otelEndpoint,
+    APP_RELEASE: sources.release,
     ...(sources.target === "wiki" ? {} : { EMAIL_FROM: sources.settings.mailFrom }),
   };
   return [
     ...targetBindings(sources),
-    {
-      name: "OTEL_EXPORTER_OTLP_HEADERS",
-      text: sources.shared.otelHeaders,
-      type: "secret_text",
-    },
     ...Object.entries(plaintext).map(([name, text]: readonly [string, string]) => ({
       name,
       text,
       type: "plain_text",
     })),
-    ...sentryRuntimeBindings(sources.settings),
     ...accessBindings(sources),
   ];
 }
@@ -146,7 +136,6 @@ async function readSharedStack(): Promise<SharedStack> {
     outputs: {
       authSecret: shared.requireOutput("authSecret").apply(authSecret),
       databaseId: shared.requireOutput("databaseId").apply(stackString),
-      otelHeaders: shared.requireOutput("otelHeaders").apply(stackString),
     },
     settings: parseSharedConfig(rawSettings.value),
   };
@@ -156,6 +145,7 @@ function versionArgs(release: Release): WorkerVersionArgs {
   const bindings = runtimeBindings({
     accessAudience: release.accessAudience,
     origin: release.policy.origin,
+    release: release.artifacts.release,
     settings: release.settings,
     shared: release.outputs,
     target: release.target,
@@ -172,10 +162,17 @@ function versionArgs(release: Release): WorkerVersionArgs {
   };
 }
 
+async function loadReleaseArtifacts(target: AppTarget): Promise<Release["artifacts"]> {
+  const repositoryRoot = `${import.meta.dirname}/../../..`;
+  const artifacts = await loadArtifacts(repositoryRoot, target);
+  await archiveSourceMaps({ release: artifacts.release, repositoryRoot, target });
+  return artifacts;
+}
+
 async function deployApplication(target: AppTarget): Promise<Deployment> {
   const { outputs, settings } = await readSharedStack();
   const policy = appPolicy(settings, target);
-  const artifacts = await loadArtifacts(`${import.meta.dirname}/../../..`, target);
+  const artifacts = await loadReleaseArtifacts(target);
   const worker = new Worker(`${target}-worker`, {
     accountId: settings.accountId,
     name: policy.name,

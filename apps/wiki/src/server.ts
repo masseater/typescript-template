@@ -4,21 +4,17 @@ import { createWikiSearch } from "./lib/search.ts";
 import { handleMcp } from "./lib/mcp.ts";
 import handler from "@tanstack/react-start/server-entry";
 import { routes } from "./telemetry-routes.ts";
-import { withSentryRequest } from "@template/observability/sentry-server";
 
-type WorkerExecutionContext = Readonly<{
-  waitUntil: (promise: Readonly<Promise<unknown>>) => void;
-  passThroughOnException: () => void;
-}>;
 type WikiRuntime = ReturnType<typeof createWikiRuntime>;
 
 interface RequestScope {
   readonly request: Request;
   readonly runtime: WikiRuntime;
   readonly correlation: Parameters<WikiRuntime["reportError"]>[0];
-  readonly executionContext: WorkerExecutionContext;
 }
 
+const HTTP_BAD_REQUEST = 400;
+const HTTP_NOT_FOUND = 404;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const MAX_QUERY_LENGTH = 200;
 
@@ -33,7 +29,7 @@ function requestPath(request: Readonly<Pick<Request, "url">>): string | undefine
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function handleApplication(scope: RequestScope, path: string): Promise<Response> {
   const { correlation, request, runtime } = scope;
-  const search = createWikiSearch(runtime.embedder(correlation), (failure) => {
+  const search = createWikiSearch(runtime.embedder(), (failure) => {
     runtime.reportError(correlation, failure);
   });
   if (path === "/api/search") {
@@ -48,44 +44,26 @@ async function handleApplication(scope: RequestScope, path: string): Promise<Res
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function handleWithReporting(scope: RequestScope, path: string): Promise<Response> {
-  const { correlation, executionContext, request, runtime } = scope;
-  async function action(): Promise<Response> {
-    return handleApplication(scope, path);
-  }
+  const { correlation, runtime } = scope;
   try {
-    return await (runtime.config.sentry
-      ? withSentryRequest({
-          action,
-          configuration: runtime.config.sentry,
-          context: executionContext,
-          correlation,
-          request,
-        })
-      : action());
+    return await handleApplication(scope, path);
   } catch (error) {
     runtime.reportError(correlation, error);
     return jsonResponse({ error: "処理に失敗しました。" }, HTTP_INTERNAL_SERVER_ERROR);
   }
 }
 
-function localResponse(runtime: WikiRuntime, path: string): Response | undefined {
-  if (path.endsWith(".map")) {
-    return new Response(undefined, { status: 404 });
-  }
-  if (path === "/api/client-config") {
-    return jsonResponse({ sentry: runtime.config.sentry });
-  }
-  return undefined;
-}
-
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function forwardedResponse(scope: RequestScope, path: string): Promise<Response | undefined> {
-  const { executionContext, request, runtime } = scope;
+  const { request, runtime } = scope;
+  if (path.endsWith(".map")) {
+    return new Response(undefined, { status: HTTP_NOT_FOUND });
+  }
   if (path.startsWith("/assets/")) {
     return runtime.config.ASSETS.fetch(request);
   }
   if (path === "/api/telemetry") {
-    return runtime.telemetry.ingestBrowser(request, executionContext);
+    return runtime.telemetry.ingestBrowser(request);
   }
   return undefined;
 }
@@ -94,29 +72,19 @@ async function forwardedResponse(scope: RequestScope, path: string): Promise<Res
 async function handleRequest(scope: RequestScope): Promise<Response> {
   const path = requestPath(scope.request);
   if (path === undefined) {
-    return new Response(undefined, { status: 400 });
+    return new Response(undefined, { status: HTTP_BAD_REQUEST });
   }
-  return (
-    localResponse(scope.runtime, path) ??
-    (await forwardedResponse(scope, path)) ??
-    (await handleWithReporting(scope, path))
-  );
+  return (await forwardedResponse(scope, path)) ?? (await handleWithReporting(scope, path));
 }
 
 const worker = {
-  async fetch(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    request: Request,
-    bindings: unknown,
-    executionContext: WorkerExecutionContext,
-  ): Promise<Response> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  async fetch(request: Request, bindings: unknown): Promise<Response> {
     const runtime = createWikiRuntime(bindings, routes);
     return runtime.telemetry.wrapRequest(
       request,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      async (incoming, correlation) =>
-        handleRequest({ correlation, executionContext, request: incoming, runtime }),
-      executionContext,
+      async (incoming, correlation) => handleRequest({ correlation, request: incoming, runtime }),
     );
   },
 };

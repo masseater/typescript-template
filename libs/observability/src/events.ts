@@ -1,8 +1,9 @@
+import { errorType, validErrorLocations } from "./errors.ts";
 import { validRequestId, validSpanId, validTraceId } from "./protocol.ts";
 import type { Correlation } from "./protocol.ts";
+import type { ErrorType } from "./errors.ts";
 
-interface BrowserEvent extends Correlation {
-  readonly kind: "http" | "exception" | "vital";
+interface EventFields extends Correlation {
   readonly route: string;
   readonly start: number;
   readonly duration: number;
@@ -19,9 +20,21 @@ interface BrowserEvent extends Correlation {
     | "TTFB";
   readonly value: number;
 }
+interface HttpEvent extends EventFields {
+  readonly kind: "http";
+}
+interface VitalEvent extends EventFields {
+  readonly kind: "vital";
+}
+interface ExceptionEvent extends EventFields {
+  readonly kind: "exception";
+  readonly errorType: ErrorType;
+  readonly locations: string;
+}
+type BrowserEvent = HttpEvent | ExceptionEvent | VitalEvent;
 type UntrustedFields = Readonly<Record<string, unknown>>;
 
-const keys: readonly (keyof BrowserEvent)[] = [
+const keys: readonly string[] = [
   "kind",
   "route",
   "start",
@@ -34,6 +47,7 @@ const keys: readonly (keyof BrowserEvent)[] = [
   "spanId",
   "requestId",
 ];
+const exceptionKeys: readonly string[] = [...keys, "errorType", "locations"];
 const methods: ReadonlySet<unknown> = new Set([
   "GET",
   "POST",
@@ -65,7 +79,11 @@ function finite(value: unknown, max: number): value is number {
 }
 
 function hasExactKeys(item: UntrustedFields): boolean {
-  return Object.keys(item).length === keys.length && keys.every((key) => Object.hasOwn(item, key));
+  const expected = item["kind"] === "exception" ? exceptionKeys : keys;
+  return (
+    Object.keys(item).length === expected.length &&
+    expected.every((key) => Object.hasOwn(item, key))
+  );
 }
 
 function validMeasurements(
@@ -103,9 +121,14 @@ function validKind(item: UntrustedFields): boolean {
   if (status !== 0) {
     return false;
   }
-  return (
-    (kind === "exception" && exceptionNames.has(name)) || (kind === "vital" && vitalNames.has(name))
-  );
+  if (kind === "exception") {
+    return (
+      exceptionNames.has(name) &&
+      errorType(item["errorType"]) !== undefined &&
+      validErrorLocations(item["locations"])
+    );
+  }
+  return kind === "vital" && vitalNames.has(name);
 }
 
 function isBrowserEvent(

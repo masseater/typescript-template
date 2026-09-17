@@ -2,21 +2,18 @@ import {
   appPolicy,
   parseDeploymentCommand,
   parseSharedConfig,
+  selectObservabilityQueryPermission,
   selectReadPermission,
-  sentryRuntimeBindings,
   validateAuthSecret,
-  validateOtelHeaders,
 } from "./config.ts";
 import { describe, expect, it } from "vite-plus/test";
-import { readEnvironment, readWikiConfig } from "@template/config";
+import { readWikiConfig } from "@template/config";
 
 const HEX_32_LENGTH = 32;
 const AUTH_SECRET_LENGTH = 32;
-const MAX_SENTRY_ENVIRONMENT_LENGTH = 64;
-const MAX_SENTRY_RELEASE_LENGTH = 128;
 
 const authSecret = "x".repeat(AUTH_SECRET_LENGTH);
-const sentryDsn = "https://key@sentry.example.com/1";
+const release = "0123456789abcdef";
 const assetsBinding = { fetch: async (): Promise<Response> => new Response() };
 const settings = {
   accessIssuer: "https://team.cloudflareaccess.com",
@@ -31,26 +28,11 @@ const settings = {
     reserveUsd: 2,
   },
   mailFrom: "mail@example.com",
-  otelEndpoint: "https://telemetry.example.com/otlp",
   prefix: "template-test",
   userOrigin: "https://user.example.com",
   wikiOrigin: "https://wiki.example.com",
   zoneId: "b".repeat(HEX_32_LENGTH),
 };
-const completeSentry = { sentryDsn, sentryEnvironment: "production", sentryRelease: "rev-1" };
-
-function appRuntime(
-  config: ReturnType<typeof parseSharedConfig>,
-  target: "admin" | "user",
-): ReturnType<typeof readEnvironment> {
-  return readEnvironment({
-    APP_ORIGIN: appPolicy(config, target).origin,
-    AUTH_SECRET: authSecret,
-    EMAIL_FROM: config.mailFrom,
-    OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
-    ...Object.fromEntries(sentryRuntimeBindings(config).map(({ name, text }) => [name, text])),
-  });
-}
 
 describe("deployment commands", () => {
   it("rejects ignored arguments instead of selecting an unintended stack", () => {
@@ -68,106 +50,6 @@ describe("deployment commands", () => {
     });
     expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
   });
-});
-
-describe("sentry runtime bindings", () => {
-  it("omitting the Sentry DSN disables all Sentry runtime bindings", () => {
-    expect.hasAssertions();
-    expect(sentryRuntimeBindings(parseSharedConfig(settings))).toStrictEqual([]);
-    expect(
-      sentryRuntimeBindings(
-        parseSharedConfig({ ...settings, sentryEnvironment: "production", sentryRelease: "rev-1" }),
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it.each([{}, { sentryEnvironment: "production" }, { sentryRelease: "rev-1" }] as const)(
-    "a Sentry DSN requires environment and release: %j",
-    (additional) => {
-      expect.hasAssertions();
-      expect(() => parseSharedConfig({ ...settings, sentryDsn, ...additional })).toThrow(
-        "sentry_environment_and_release_required",
-      );
-    },
-  );
-
-  it.each(["sentryEnvironment", "sentryRelease"])("rejects blank %s", (name) => {
-    expect.hasAssertions();
-    expect(() => parseSharedConfig({ ...settings, ...completeSentry, [name]: " " })).toThrow(
-      "cloudflare_settings_invalid",
-    );
-  });
-
-  it("binds complete Sentry settings at runtime", () => {
-    expect.hasAssertions();
-    const config = parseSharedConfig({ ...settings, ...completeSentry });
-    expect(sentryRuntimeBindings(config)).toStrictEqual([
-      { name: "SENTRY_DSN", text: config.sentryDsn, type: "plain_text" },
-      { name: "SENTRY_ENVIRONMENT", text: "production", type: "plain_text" },
-      { name: "SENTRY_RELEASE", text: "rev-1", type: "plain_text" },
-    ]);
-  });
-});
-
-describe("sentry settings rejected by the runtime", () => {
-  it.each([
-    { sentryEnvironment: "Production" },
-    { sentryEnvironment: " production" },
-    { sentryEnvironment: "prod/blue" },
-    { sentryEnvironment: "a".repeat(MAX_SENTRY_ENVIRONMENT_LENGTH + 1) },
-    { sentryRelease: "release@1" },
-    { sentryRelease: "release/1" },
-    { sentryRelease: "release 1" },
-    { sentryRelease: "a".repeat(MAX_SENTRY_RELEASE_LENGTH + 1) },
-  ] as const)("rejects settings the runtime cannot consume: %j", (overrides) => {
-    expect.hasAssertions();
-    const config = { ...settings, ...completeSentry, ...overrides };
-    expect(() => parseSharedConfig(config)).toThrow("cloudflare_settings_invalid");
-    expect(() =>
-      readEnvironment({
-        APP_ORIGIN: settings.userOrigin,
-        AUTH_SECRET: authSecret,
-        EMAIL_FROM: settings.mailFrom,
-        OTEL_EXPORTER_OTLP_ENDPOINT: settings.otelEndpoint,
-        SENTRY_DSN: config.sentryDsn,
-        SENTRY_ENVIRONMENT: config.sentryEnvironment,
-        SENTRY_RELEASE: config.sentryRelease,
-      }),
-    ).toThrow("Invalid format");
-  });
-});
-
-describe("generated sentry bindings", () => {
-  it.each(["user", "admin"] as const)(
-    "generated %s bindings without Sentry disable runtime Sentry",
-    (target) => {
-      expect.hasAssertions();
-      expect(appRuntime(parseSharedConfig(settings), target).sentry).toBeUndefined();
-    },
-  );
-
-  it.each([
-    ["user", "production", "release_1.2-ABC"],
-    ["admin", "production", "release_1.2-ABC"],
-    ["user", "a".repeat(MAX_SENTRY_ENVIRONMENT_LENGTH), "A".repeat(MAX_SENTRY_RELEASE_LENGTH)],
-    ["admin", "a".repeat(MAX_SENTRY_ENVIRONMENT_LENGTH), "A".repeat(MAX_SENTRY_RELEASE_LENGTH)],
-  ] as const)(
-    "generated %s bindings are accepted by the real runtime: %s %s",
-    (target, environment, release) => {
-      expect.hasAssertions();
-      const config = parseSharedConfig({
-        ...settings,
-        sentryDsn,
-        sentryEnvironment: environment,
-        sentryRelease: release,
-      });
-      expect(appRuntime(config, target).sentry).toStrictEqual({
-        dsn: sentryDsn,
-        environment,
-        release,
-      });
-    },
-  );
 });
 
 describe("application policy", () => {
@@ -196,17 +78,16 @@ describe("application policy", () => {
 });
 
 describe("wiki runtime settings", () => {
-  it("the wiki reads its runtime settings without authentication or database bindings", () => {
+  it("the wiki reads its production settings without authentication or database bindings", () => {
     expect.hasAssertions();
     const config = parseSharedConfig(settings);
     const runtime = readWikiConfig({
       APP_ORIGIN: appPolicy(config, "wiki").origin,
+      APP_RELEASE: release,
       ASSETS: assetsBinding,
-      OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
-      OTEL_EXPORTER_OTLP_HEADERS: "{}",
     });
     expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
-    expect(runtime.sentry).toBeUndefined();
+    expect(runtime.APP_RELEASE).toBe(release);
     expect(runtime.AI).toBeUndefined();
   });
 
@@ -219,7 +100,6 @@ describe("wiki runtime settings", () => {
         AI: ai,
         APP_ORIGIN: appPolicy(config, "wiki").origin,
         ASSETS: assetsBinding,
-        OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
       }).AI,
     ).toBe(ai);
   });
@@ -232,6 +112,7 @@ describe("shared settings validation", () => {
     "https://admin.example.com/",
     "https://admin.example.com?x=1",
     "https://app.team.workers.dev",
+    "not-a-url",
   ])("rejects unsafe admin origin %s", (adminOrigin) => {
     expect.hasAssertions();
     expect(() => parseSharedConfig({ ...settings, adminOrigin })).toThrow(
@@ -272,16 +153,24 @@ describe("credential validation", () => {
     expect(() => selectReadPermission([read, read])).toThrow("billing_read_permission_unavailable");
   });
 
-  it("secret and exporter validation errors do not include their inputs", () => {
+  it("secret validation errors do not include their inputs", () => {
     expect.hasAssertions();
     expect(() => validateAuthSecret("private-value")).toThrow("auth_secret_invalid");
     expect(validateAuthSecret(authSecret)).toBe(authSecret);
-    expect(validateOtelHeaders('{"Authorization":"Bearer sample"}')).toBe(
-      '{"Authorization":"Bearer sample"}',
-    );
-    expect(() => validateOtelHeaders(String.raw`{"Authorization":"bad\nheader"}`)).toThrow(
-      "otel_headers_invalid",
-    );
-    expect(() => validateOtelHeaders("private-not-json")).toThrow("otel_headers_invalid");
+  });
+
+  it("the error monitor token may only run Workers Observability queries", () => {
+    expect.hasAssertions();
+    const write = {
+      id: "d".repeat(HEX_32_LENGTH),
+      name: "Workers Observability Write",
+      scopes: ["com.cloudflare.api.account"],
+    };
+    expect(
+      selectObservabilityQueryPermission([write, { ...write, name: "Workers Scripts Write" }]),
+    ).toBe(write.id);
+    expect(() =>
+      selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
+    ).toThrow("observability_query_permission_unavailable");
   });
 });

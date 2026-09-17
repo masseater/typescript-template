@@ -1,37 +1,27 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Instrumentation } from "./server.ts";
 import { createInstrumentation } from "./server.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { execFile } from "node:child_process";
 import { httpStatus } from "./http-status.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { promisify } from "node:util";
 
 const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const spanId = "bbbbbbbbbbbbbbbb";
 const telemetryUrl = "http://localhost/api/telemetry";
 const created = 201;
 const noContent = 204;
-const queuedDbCalls = 98;
 const oversizedBody = 32_769;
+const probeTimeoutMilliseconds = 20_000;
 const jsonHeaders = { "content-type": "application/json", origin: "http://localhost" };
 
 function setup(): Instrumentation {
   return createInstrumentation({
-    endpoint: "http://127.0.0.1:1",
+    release: "test",
     routes: { "/": "home", "/api/telemetry": "telemetry" },
     serviceName: "user",
   });
-}
-
-function requestContext(): {
-  requestId: string;
-  spanId: string;
-  traceId: string;
-  traceparent: string;
-} {
-  return {
-    requestId: crypto.randomUUID(),
-    spanId,
-    traceId,
-    traceparent: `00-${traceId}-${spanId}-01`,
-  };
 }
 
 function browserEvent(): Record<string, unknown> {
@@ -50,27 +40,6 @@ function browserEvent(): Record<string, unknown> {
   };
 }
 
-interface TrackedRun {
-  readonly background: Promise<unknown>[];
-  readonly executionContext: {
-    readonly waitUntil: (promise: Readonly<Promise<unknown>>) => void;
-  };
-  readonly instrumentation: Instrumentation;
-}
-
-function trackedRun(instrumentation: Instrumentation = setup()): TrackedRun {
-  const background: Promise<unknown>[] = [];
-  return {
-    background,
-    executionContext: {
-      waitUntil: (promise) => {
-        background.push(promise);
-      },
-    },
-    instrumentation,
-  };
-}
-
 async function ingestStatus(
   instrumentation: Instrumentation,
   init?: Readonly<{
@@ -83,126 +52,109 @@ async function ingestStatus(
   return response.status;
 }
 
-const unavailable = new Response(undefined, { status: httpStatus.serviceUnavailable });
-const providerFailure = new Error("private provider failure");
+function logLines(output: string): unknown[] {
+  return output
+    .split("\n")
+    .filter((line) => line !== "")
+    .map((line): unknown => JSON.parse(line));
+}
 
-describe("external spans", () => {
-  it("preserve non-HTTP results, real responses and original failures", async () => {
-    expect.hasAssertions();
-    const instrumentation = setup();
-    const context = requestContext();
-    const delivered = { messageId: crypto.randomUUID() };
-    await expect(
-      instrumentation.withExternalSpan(context, "email", async () => delivered),
-    ).resolves.toBe(delivered);
-    await expect(
-      instrumentation.withExternalSpan(context, "email", async () => {
-        await Promise.resolve();
-      }),
-    ).resolves.toBeUndefined();
-    await expect(
-      instrumentation.withExternalSpan(context, "email", async () => unavailable),
-    ).resolves.toBe(unavailable);
-    await expect(
-      instrumentation.withExternalSpan(context, "email", async () => {
-        throw providerFailure;
-      }),
-    ).rejects.toBe(providerFailure);
-    expect(instrumentation.diagnostics()).toStrictEqual({
-      droppedRecords: 0,
-      exportFailures: 0,
-      queuedBatches: 12,
-    });
-  });
+const probe = `
+import { createInstrumentation } from "./src/server.ts";
+const instrumentation = createInstrumentation({
+  serviceName: "user",
+  release: "abc123",
+  routes: { "/": "home" },
 });
+const base = {
+  route: "home",
+  start: Date.now(),
+  duration: 25,
+  traceId: "a".repeat(32),
+  spanId: "b".repeat(16),
+  requestId: "11111111-1111-4111-8111-111111111111",
+};
+const response = await instrumentation.ingestBrowser(
+  new Request("http://localhost/api/telemetry", {
+    method: "POST",
+    headers: { origin: "http://localhost", "content-type": "application/json" },
+    body: JSON.stringify([
+      { ...base, kind: "http", status: 201, method: "POST", name: "http.client.request", value: 0 },
+      {
+        ...base,
+        kind: "exception",
+        status: 0,
+        method: "GET",
+        name: "browser.error",
+        value: 1,
+        errorType: "TypeError",
+        locations: "/assets/index-abc.js:1:234",
+      },
+    ]),
+  }),
+);
+await instrumentation
+  .wrapRequest(new Request("http://localhost/"), () => {
+    throw new RangeError("private@example.test");
+  })
+  .catch(() => undefined);
+console.info(JSON.stringify({ event: "probe.done", status: response.status }));
+`;
 
 describe("request wrapping", () => {
-  it("collector failure cannot replace the real HTTP response and waitUntil settles without rejection", async () => {
+  it("the real HTTP response keeps its body and headers and gains correlation headers", async () => {
     expect.hasAssertions();
-    const { background, executionContext, instrumentation } = trackedRun();
-    const response = await instrumentation.wrapRequest(
+    const response = await setup().wrapRequest(
       new Request("http://localhost/?token=private"),
       () =>
         new Response("actual response", {
           headers: { "set-cookie": "session=private; HttpOnly" },
           status: created,
         }),
-      executionContext,
     );
-    await Promise.all(background);
-    const text = await response.text();
     expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/u);
     expect(response.headers.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/u);
     expect({
       cookie: response.headers.get("set-cookie"),
-      diagnostics: instrumentation.diagnostics(),
       status: response.status,
-      text,
+      text: await response.text(),
     }).toStrictEqual({
       cookie: "session=private; HttpOnly",
-      diagnostics: { droppedRecords: 3, exportFailures: 1, queuedBatches: 0 },
       status: created,
       text: "actual response",
     });
-    await expect(instrumentation.flush()).resolves.toBeUndefined();
   });
 
-  it("collector failure cannot replace a handler exception", async () => {
+  it("handler exceptions are rethrown unchanged", async () => {
     expect.hasAssertions();
-    const { background, executionContext, instrumentation } = trackedRun();
     const failure = new Error("sensitive application error");
     function handler(): Response {
       throw failure;
     }
-    await expect(
-      instrumentation.wrapRequest(new Request("http://localhost/"), handler, executionContext),
-    ).rejects.toBe(failure);
-    await Promise.all(background);
-    expect(instrumentation.diagnostics().exportFailures).toBe(1);
+    await expect(setup().wrapRequest(new Request("http://localhost/"), handler)).rejects.toBe(
+      failure,
+    );
   });
 });
 
 describe("trace propagation", () => {
   it("browser trace parent is propagated but caller-controlled request IDs are replaced", async () => {
     expect.hasAssertions();
-    const { background, executionContext, instrumentation } = trackedRun();
     const incoming = new Request("http://localhost/", {
       headers: { traceparent: `00-${traceId}-${spanId}-01`, "x-request-id": "private@example.com" },
     });
     const observed: { traceId?: string; requestId?: string } = {};
-    const response = await instrumentation.wrapRequest(
+    const response = await setup().wrapRequest(
       incoming,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (_request, context) => {
         Object.assign(observed, { requestId: context.requestId, traceId: context.traceId });
         return new Response(undefined, { status: noContent });
       },
-      executionContext,
     );
-    await Promise.all(background);
     expect(observed.traceId).toBe(traceId);
     expect(observed.requestId).not.toBe("private@example.com");
     expect(response.headers.get("traceparent")).toMatch(new RegExp(`^00-${traceId}-`, "u"));
-  });
-});
-
-describe("export queue", () => {
-  it("bounded queue drops countable records without breaking database action results", async () => {
-    expect.hasAssertions();
-    const instrumentation = setup();
-    const context = requestContext();
-    const indexes = Array.from({ length: queuedDbCalls }, (_unused, index) => index);
-    const results = await Promise.all(
-      indexes.map(async (index) =>
-        instrumentation.withDbSpan(context, "SELECT", async () => index),
-      ),
-    );
-    expect(results).toStrictEqual(indexes);
-    expect(instrumentation.diagnostics()).toStrictEqual({
-      droppedRecords: 4,
-      exportFailures: 0,
-      queuedBatches: 192,
-    });
   });
 });
 
@@ -218,9 +170,7 @@ describe("browser ingress", () => {
       }),
     ).resolves.toBe(httpStatus.forbidden);
   });
-});
 
-describe("browser ingress bodies", () => {
   it("rejects arbitrary bodies and excessive payloads", async () => {
     expect.hasAssertions();
     const instrumentation = setup();
@@ -240,30 +190,52 @@ describe("browser ingress bodies", () => {
     await expect(
       ingestStatus(instrumentation, { body, headers: jsonHeaders, method: "POST" }),
     ).resolves.toBe(httpStatus.badRequest);
-    expect(instrumentation.diagnostics().queuedBatches).toBe(0);
   });
+});
 
-  it("valid ingress is service-scoped and accepts events without exposing exporter secrets", async () => {
+describe("structured log lines", () => {
+  it("browser events and server errors become structured log lines", async () => {
     expect.hasAssertions();
-    const { background, executionContext, instrumentation } = trackedRun(
-      createInstrumentation({
-        endpoint: "http://127.0.0.1:1",
-        headers: { authorization: "Bearer private" },
-        routes: { "/": "home" },
-        serviceName: "admin",
-      }),
+    // oxlint-disable-next-line typescript/strict-void-return
+    const result = await promisify(execFile)(
+      process.execPath,
+      ["--input-type=module", "-e", probe],
+      { cwd: `${import.meta.dirname}/..`, timeout: probeTimeoutMilliseconds },
     );
-    const body = JSON.stringify([browserEvent()]);
-    const request = new Request(telemetryUrl, { body, headers: jsonHeaders, method: "POST" });
-    const response = await instrumentation.ingestBrowser(request, executionContext);
-    await Promise.all(background);
-    expect(response.status).toBe(httpStatus.accepted);
-    await expect(response.text()).resolves.toBe("");
-    expect(JSON.stringify([...response.headers])).not.toContain("private");
-    expect(instrumentation.diagnostics()).toStrictEqual({
-      droppedRecords: 3,
-      exportFailures: 1,
-      queuedBatches: 0,
-    });
+    expect(logLines(result.stdout)).toStrictEqual([
+      expect.objectContaining({
+        event: "http.client.request",
+        "http.response.status_code": created,
+        release: "abc123",
+        service: "user-browser",
+        trace_id: traceId,
+      }),
+      { event: "probe.done", status: httpStatus.accepted },
+    ]);
+    const stderr = logLines(result.stderr);
+    expect(stderr).toStrictEqual([
+      expect.objectContaining({
+        "error.locations": "/assets/index-abc.js:1:234",
+        "error.type": "TypeError",
+        event: "browser.error",
+        request_id: "11111111-1111-4111-8111-111111111111",
+        service: "user-browser",
+      }),
+      expect.objectContaining({
+        "error.type": "RangeError",
+        event: "application.error",
+        release: "abc123",
+        service: "user-server",
+      }),
+      expect.objectContaining({
+        event: "http.server.request",
+        release: "abc123",
+        status: httpStatus.internalServerError,
+      }),
+    ]);
+    expect(JSON.stringify(stderr)).toMatch(
+      /"error\.fingerprint":"[0-9a-f]{8}".*"error\.fingerprint":"[0-9a-f]{8}"/u,
+    );
+    expect(result.stderr).not.toContain("private@example.test");
   });
 });

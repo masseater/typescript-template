@@ -90,6 +90,7 @@ function createDatabaseHooks(database: Database, audience: Audience): DatabaseHo
 
 function createEmailVerification(
   sendVerificationEmail: AuthOptions["sendVerificationEmail"],
+  origin: string,
 ): EmailVerificationOptions {
   return {
     autoSignInAfterVerification: false,
@@ -97,10 +98,10 @@ function createEmailVerification(
     sendOnSignUp: true,
     sendVerificationEmail: async ({
       user,
-      url,
-    }: Readonly<{ user: Readonly<{ email: string }>; url: string }>) => {
-      const link = new URL(url);
-      link.searchParams.set("callbackURL", "/login");
+      token,
+    }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
+      const link = new URL("/verify-email", origin);
+      link.hash = new URLSearchParams({ token }).toString();
       await sendVerificationEmail({ email: user.email, url: link.href });
     },
   };
@@ -197,7 +198,7 @@ function createAuth(options: AuthOptions) {
     database: drizzleAdapter(database, { provider: "sqlite", schema, transaction: false }),
     databaseHooks: createDatabaseHooks(database, audience),
     emailAndPassword: createEmailAndPassword(audience),
-    emailVerification: createEmailVerification(options.sendVerificationEmail),
+    emailVerification: createEmailVerification(options.sendVerificationEmail, origin),
     hooks: createRequestHooks(database, audience),
     logger: createLogger(options.onError),
     plugins: [

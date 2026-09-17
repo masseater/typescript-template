@@ -21,6 +21,11 @@ const forbiddenCode = [
     'const mode = "error"; export const send = () => fetch("https://api", { redirect: mode });',
     "project(worker-fetch)",
   ],
+  [
+    "infra/error-monitor/src/telemetry.ts",
+    'export const send = () => fetch("https://api", { redirect: "error" });',
+    "project(worker-fetch)",
+  ],
 ] as const;
 
 const dependencyBypasses = [

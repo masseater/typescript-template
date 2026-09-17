@@ -7,16 +7,15 @@
     "#*": "./src/*"
   },
   "scripts": {
-    "dev": "X_LOCAL_EXPLORER=false vp dev",
+    "dev": "vp dev",
     "build": "vp build",
-    "preview": "X_LOCAL_EXPLORER=false vp preview"
+    "preview": "vp preview"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.36",
     "@tanstack/react-start": "1.168.54",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
-    "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
     "jose": "6.2.12",

@@ -29,7 +29,10 @@ export default defineConfig({
       ".local-agents/**",
       "**/.wrangler/**",
     ],
-    jsPlugins: ["./tools/quality/rules.ts"],
+    jsPlugins: [
+      "./tools/quality/rules.ts",
+      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+    ],
     options: {
       denyWarnings: true,
       reportUnusedDisableDirectives: "error",
@@ -122,6 +125,7 @@ export default defineConfig({
       ],
       "typescript/require-await": "off",
       "unicorn/text-encoding-identifier-case": ["error", { withDash: true }],
+      "vite-plus/prefer-vite-plus-imports": "error",
     },
   },
   test: {

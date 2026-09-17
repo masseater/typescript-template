@@ -13,6 +13,7 @@ import { BrowserEventQueue } from "./browser-queue.ts";
 import type { Correlation } from "./protocol.ts";
 import type { EventQueue } from "./browser-queue.ts";
 import type { Metric } from "web-vitals";
+import { errorAttributes } from "./errors.ts";
 import { maximumMeasurement } from "./events.ts";
 
 interface BrowserTelemetryOptions {
@@ -142,13 +143,11 @@ function patchFetch(setup: FetchInstrumentation): () => void {
   };
 }
 
-function documentEvent(
+function documentFields(
   recorder: Recorder,
-  fields: Pick<BrowserEvent, "kind" | "name" | "value">,
-): BrowserEvent {
+): Omit<BrowserEvent, "errorType" | "kind" | "locations" | "name" | "value"> {
   return {
     ...recorder.documentContext,
-    ...fields,
     duration: 0,
     method: "GET",
     route: routeLabel(globalThis.location.pathname, recorder.routes),
@@ -161,18 +160,27 @@ function documentEvent(
 function recordException(
   recorder: Recorder,
   name: "browser.error" | "browser.unhandledrejection",
+  error: unknown,
 ): void {
-  recorder.queue.enqueue(documentEvent(recorder, { kind: "exception", name, value: 1 }));
+  const attributes = errorAttributes(error);
+  recorder.queue.enqueue({
+    ...documentFields(recorder),
+    errorType: attributes["error.type"],
+    kind: "exception",
+    locations: attributes["error.locations"],
+    name,
+    value: 1,
+  });
   recorder.queue.flushInBackground();
 }
 
 function listen(recorder: Recorder): () => void {
   const { queue } = recorder;
-  function errorListener(): void {
-    recordException(recorder, "browser.error");
+  function errorListener(event: Readonly<Pick<ErrorEvent, "error">>): void {
+    recordException(recorder, "browser.error", event.error);
   }
-  function rejectionListener(): void {
-    recordException(recorder, "browser.unhandledrejection");
+  function rejectionListener(event: Readonly<Pick<PromiseRejectionEvent, "reason">>): void {
+    recordException(recorder, "browser.unhandledrejection", event.reason);
   }
   function visibilityListener(): void {
     if (document.visibilityState === "hidden") {
@@ -197,7 +205,12 @@ function listen(recorder: Recorder): () => void {
 function observeVitals(recorder: Recorder): void {
   function recordVital(metric: Readonly<Pick<Metric, "name" | "value">>): void {
     const value = Math.min(Math.max(metric.value, 0), maximumMeasurement);
-    recorder.queue.enqueue(documentEvent(recorder, { kind: "vital", name: metric.name, value }));
+    recorder.queue.enqueue({
+      ...documentFields(recorder),
+      kind: "vital",
+      name: metric.name,
+      value,
+    });
     if (!recorder.queue.disposed) {
       recorder.queue.flushInBackground();
     }

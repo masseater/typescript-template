@@ -1,10 +1,11 @@
 export const routes = {
   "/": "users",
   "/api/auth/*": "auth",
-  "/api/client-config": "client-config",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
   "/api/users": "users-api",
+  "/api/verify-email": "verify-email-api",
   "/login": "login",
   "/security": "security",
+  "/verify-email": "verify-email",
 } as const;

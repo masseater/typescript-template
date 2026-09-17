@@ -10,26 +10,37 @@ import {
 import { Config, secret } from "@pulumi/pulumi";
 import {
   parseSharedConfig,
+  selectObservabilityQueryPermission,
   selectReadPermission,
   validateAuthSecret,
-  validateOtelHeaders,
 } from "./config.ts";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
+import { errorWorkerArtifact } from "@template/error-monitor/artifact";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 import { workerObservability } from "./observability.ts";
 
+const FULL_ROLLOUT_PERCENTAGE = 100;
+
+async function artifactSha256(artifact: string, emptyError: string): Promise<string> {
+  const content = await readFile(artifact);
+  if (content.length === 0) {
+    throw new Error(emptyError);
+  }
+  return Buffer.from(await crypto.subtle.digest("SHA-256", content)).toString("hex");
+}
+
 const config = new Config();
 const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
 const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-const otelHeaders = (config.getSecret("otelHeaders") ?? secret("{}")).apply(validateOtelHeaders);
-const budgetContent = await readFile(budgetWorkerArtifact);
-if (budgetContent.length === 0) {
-  throw new Error("budget_worker_artifact_empty");
-}
-const budgetContentSha256 = Buffer.from(
-  await crypto.subtle.digest("SHA-256", budgetContent),
-).toString("hex");
+const budgetContentSha256 = await artifactSha256(
+  budgetWorkerArtifact,
+  "budget_worker_artifact_empty",
+);
+const errorContentSha256 = await artifactSha256(errorWorkerArtifact, "error_worker_artifact_empty");
+const accountResources = JSON.stringify({
+  [`com.cloudflare.api.account.${settings.accountId}`]: "*",
+});
 const database = new D1Database(
   "shared-db",
   {
@@ -50,7 +61,7 @@ const billingToken = new AccountToken(
       {
         effect: "allow",
         permissionGroups: [{ id: permissions.results.apply(selectReadPermission) }],
-        resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
+        resources: accountResources,
       },
     ],
   },
@@ -101,7 +112,7 @@ const budgetDeployment = new WorkersDeployment("budget-deployment", {
   accountId: settings.accountId,
   scriptName: budgetWorker.name,
   strategy: "percentage",
-  versions: [{ percentage: 100, versionId: budgetVersion.id }],
+  versions: [{ percentage: FULL_ROLLOUT_PERCENTAGE, versionId: budgetVersion.id }],
 });
 const schedule = new WorkersCronTrigger(
   "budget-schedule",
@@ -113,10 +124,84 @@ const schedule = new WorkersCronTrigger(
   { dependsOn: [budgetDeployment] },
 );
 
+const observabilityToken = new AccountToken(
+  "error-query-token",
+  {
+    accountId: settings.accountId,
+    name: `${settings.prefix}-observability-query`,
+    policies: [
+      {
+        effect: "allow",
+        permissionGroups: [{ id: permissions.results.apply(selectObservabilityQueryPermission) }],
+        resources: accountResources,
+      },
+    ],
+  },
+  { additionalSecretOutputs: ["value"] },
+);
+const errorWorker = new Worker("error-worker", {
+  accountId: settings.accountId,
+  name: `${settings.prefix}-errors`,
+  observability: workerObservability,
+  subdomain: { enabled: false, previewsEnabled: false },
+});
+const errorVersion = new WorkerVersion("error-version", {
+  accountId: settings.accountId,
+  bindings: [
+    { className: "ErrorMonitor", name: "MONITOR", type: "durable_object_namespace" },
+    {
+      allowedDestinationAddresses: [...settings.budget.recipients],
+      allowedSenderAddresses: [settings.mailFrom],
+      name: "EMAIL",
+      type: "send_email",
+    },
+    {
+      name: "OBSERVABILITY_TOKEN",
+      text: secret(observabilityToken.value),
+      type: "secret_text",
+    },
+    ...Object.entries({
+      ALERT_FROM: settings.mailFrom,
+      ALERT_TO: settings.budget.recipients.join(","),
+      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
+    }).map(([name, text]: readonly [string, string]) => ({ name, text, type: "plain_text" })),
+  ],
+  compatibilityDate: "2026-09-16",
+  compatibilityFlags: ["nodejs_compat"],
+  mainModule: "index.js",
+  migrations: { newSqliteClasses: ["ErrorMonitor"], newTag: "v1" },
+  modules: [
+    {
+      contentFile: errorWorkerArtifact,
+      contentSha256: errorContentSha256,
+      contentType: "application/javascript+module",
+      name: "index.js",
+    },
+  ],
+  workerId: errorWorker.id,
+});
+const errorDeployment = new WorkersDeployment("error-deployment", {
+  accountId: settings.accountId,
+  scriptName: errorWorker.name,
+  strategy: "percentage",
+  versions: [{ percentage: FULL_ROLLOUT_PERCENTAGE, versionId: errorVersion.id }],
+});
+const errorSchedule = new WorkersCronTrigger(
+  "error-schedule",
+  {
+    accountId: settings.accountId,
+    schedules: [{ cron: "*/5 * * * *" }],
+    scriptName: errorWorker.name,
+  },
+  { dependsOn: [errorDeployment] },
+);
+
 const databaseId = database.id;
 const applicationSettings = settings;
 const budgetWorkerName = budgetWorker.name;
 const budgetScheduleId = schedule.id;
+const errorWorkerName = errorWorker.name;
+const errorScheduleId = errorSchedule.id;
 
 export {
   applicationSettings,
@@ -124,5 +209,6 @@ export {
   budgetScheduleId,
   budgetWorkerName,
   databaseId,
-  otelHeaders,
+  errorScheduleId,
+  errorWorkerName,
 };

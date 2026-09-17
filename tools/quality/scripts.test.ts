@@ -1,47 +1,15 @@
 import { describe, expect, it } from "vite-plus/test";
+import { field, readWorkspaceManifests } from "./dependencies.ts";
+import type { WorkspaceManifest } from "./dependencies.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { scriptViolations } from "./scripts.ts";
 
-interface WorkspaceManifest {
-  readonly manifest: unknown;
-  readonly name: string;
-}
+const root = new URL("../../", import.meta.url).href;
 
-const root = new URL("../../", import.meta.url);
-
-function field(manifest: unknown, key: string): unknown {
-  return typeof manifest === "object" && manifest !== null
-    ? Object.getOwnPropertyDescriptor(manifest, key)?.value
-    : undefined;
-}
-
-async function workspaceDirectories(areas: readonly string[]): Promise<string[]> {
-  const directories = await Promise.all(
-    areas.map(async (area) => {
-      const entries = await readdir(new URL(`${area}/`, root), { withFileTypes: true });
-      return entries
-        .filter((entry: Readonly<{ isDirectory: () => boolean }>) => entry.isDirectory())
-        .map((entry: Readonly<{ name: string }>) => `${area}/${entry.name}`);
-    }),
-  );
-  return directories.flat();
-}
-
-async function manifestsIn(directories: readonly string[]): Promise<WorkspaceManifest[]> {
-  const found = await Promise.all(
-    directories.map(async (directory): Promise<WorkspaceManifest[]> => {
-      const files = await readdir(new URL(`${directory}/`, root));
-      if (!files.includes("package.json")) {
-        return [];
-      }
-      const location = new URL(`${directory}/package.json`, root);
-      const name = location.href.slice(root.href.length);
-      const manifest: unknown = JSON.parse(await readFile(location, "utf-8"));
-      return [{ manifest, name }];
-    }),
-  );
-  return found.flat();
+async function rootManifest(): Promise<WorkspaceManifest> {
+  const manifest: unknown = JSON.parse(await readFile(new URL("package.json", root), "utf-8"));
+  return { area: ".", file: "package.json", manifest };
 }
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
@@ -51,7 +19,7 @@ function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   });
 }
 
-function toolReferences({ manifest, name }: WorkspaceManifest, tools: readonly string[]): string[] {
+function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly string[]): string[] {
   const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
     const value = field(manifest, key);
     return typeof value === "object" && value !== null ? Object.entries(value) : [];
@@ -60,7 +28,7 @@ function toolReferences({ manifest, name }: WorkspaceManifest, tools: readonly s
     .filter(([key, value]: readonly [string, unknown]) =>
       tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
     )
-    .map(([key]: readonly [string, unknown]) => `${name}: ${key}`);
+    .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
 }
 
 const packageManagerCommands = [
@@ -123,18 +91,18 @@ describe("workspace script conventions", () => {
 
   it("all repository workspace manifests run scripts through Vite+", async () => {
     expect.assertions(1);
-    const directories = await workspaceDirectories(["apps", "libs", "infra", "tools"]);
-    const manifests = await manifestsIn([".", ...directories]);
-    const violations = manifests.flatMap(({ manifest, name }) =>
-      scriptViolations(manifest).map((violation) => `${name}: ${violation}`),
+    const manifests = [await rootManifest(), ...(await readWorkspaceManifests(root))];
+    const violations = manifests.flatMap(({ file, manifest }) =>
+      scriptViolations(manifest).map((violation) => `${file}: ${violation}`),
     );
     expect(violations).toStrictEqual([]);
   });
 
   it("workspaces outside tools do not depend on tools packages", async () => {
     expect.assertions(1);
-    const tools = packageNames(await manifestsIn(await workspaceDirectories(["tools"])));
-    const consumers = await manifestsIn(await workspaceDirectories(["apps", "libs", "infra"]));
+    const workspaces = await readWorkspaceManifests(root);
+    const tools = packageNames(workspaces.filter(({ area }) => area === "tools"));
+    const consumers = workspaces.filter(({ area }) => area !== "tools");
     expect(consumers.flatMap((consumer) => toolReferences(consumer, tools))).toStrictEqual([]);
   });
 });

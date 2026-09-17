@@ -72,14 +72,17 @@ async function withUserBuild(run: (build: UserBuild) => Promise<void>): Promise<
 }
 
 describe("worker artifact staging", () => {
-  it("uploads all server chunks but excludes private client source maps", async () => {
+  it("uploads server chunks with their source maps but excludes private client source maps", async () => {
     expect.hasAssertions();
-    await withUserBuild(async ({ client, root }) => {
+    await withUserBuild(async ({ client, root, server }) => {
+      await writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" });
       const artifacts = await loadArtifacts(root, "user");
-      expect(artifacts.modules.map((module) => module.name)).toStrictEqual([
-        "chunks/handler.js",
-        "index.js",
+      expect(artifacts.modules.map((module) => [module.name, module.contentType])).toStrictEqual([
+        ["chunks/handler.js", "application/javascript+module"],
+        ["index.js", "application/javascript+module"],
+        ["index.js.map", "application/source-map"],
       ]);
+      expect(artifacts.release).toMatch(/^[0-9a-f]{16}$/u);
       await expect(readdir(artifacts.clientDirectory)).resolves.toStrictEqual([
         "app.js",
         "styles.css",
@@ -129,6 +132,21 @@ describe("worker artifact integrity", () => {
       await writeFile(path.join(client, "app.js"), "export const publicValue = 2;");
       const second = await loadArtifacts(root, "user");
       expect(second.clientDirectory).not.toBe(first.clientDirectory);
+      expect(second.release).not.toBe(first.release);
+    });
+  });
+
+  it("derives the release from code and client content but not from source maps", async () => {
+    expect.hasAssertions();
+    await withUserBuild(async ({ root, server }) => {
+      await writeFiles(server, { "index.js.map": "{}" });
+      const first = await loadArtifacts(root, "user");
+      await writeFile(path.join(server, "index.js.map"), '{"version":3}');
+      const mapChanged = await loadArtifacts(root, "user");
+      await writeFile(path.join(server, "chunks/handler.js"), "export default { changed: true };");
+      const codeChanged = await loadArtifacts(root, "user");
+      expect(mapChanged.release).toBe(first.release);
+      expect(codeChanged.release).not.toBe(first.release);
     });
   });
 });

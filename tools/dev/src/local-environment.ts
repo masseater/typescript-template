@@ -40,8 +40,8 @@ const credentialSchema = strictObject({
   authSecret: pipe(string(), minLength(authSecretMinimumLength)),
 });
 const ports = { admin: 3002, user: 3001, wiki: 3003 };
-const routes = { ...ports, grafana: 3100, mailpit: 8025 };
-const routeNames = ["user", "admin", "wiki", "grafana", "mailpit"] as const;
+const routes = { ...ports, mailpit: 8025 };
+const routeNames = ["user", "admin", "wiki", "mailpit"] as const;
 const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 
 type App = (typeof apps)[number];

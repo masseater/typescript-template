@@ -1,29 +1,79 @@
-type ErrorAttributes = Readonly<Record<"error.locations" | "error.type", string>>;
+const errorTypes = [
+  "Error",
+  "TypeError",
+  "RangeError",
+  "SyntaxError",
+  "ReferenceError",
+  "URIError",
+  "EvalError",
+  "AggregateError",
+  "APIError",
+] as const;
 
-const maximumLocations = 20;
-
-function errorAttributes(error: unknown): ErrorAttributes {
-  const name = error instanceof Error ? error.name : "Error";
-  const type = [
-    "Error",
-    "TypeError",
-    "RangeError",
-    "SyntaxError",
-    "ReferenceError",
-    "URIError",
-    "EvalError",
-    "AggregateError",
-    "APIError",
-  ].includes(name)
-    ? name
-    : "Error";
-  const locations =
-    error instanceof Error
-      ? (error.stack?.match(/(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+/gu) ?? [])
-          .slice(0, maximumLocations)
-          .join("\n")
-      : "";
-  return { "error.locations": locations, "error.type": type };
+type ErrorType = (typeof errorTypes)[number];
+interface ErrorAttributes {
+  readonly "error.fingerprint": string;
+  readonly "error.locations": string;
+  readonly "error.type": ErrorType;
 }
 
-export { errorAttributes };
+const maximumLocations = 20;
+const maximumLocationsLength = 2048;
+const maximumLocationLength = 256;
+const fingerprintFrames = 5;
+const fingerprintWidth = 8;
+const hexRadix = 16;
+const fnvOffsetBasis = 2_166_136_261;
+const fnvPrime = 16_777_619;
+const locationSource = String.raw`(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+`;
+const locationPattern = new RegExp(locationSource, "gu");
+const locationLine = new RegExp(`^${locationSource}$`, "u");
+
+function errorType(value: unknown): ErrorType | undefined {
+  return errorTypes.find((candidate) => candidate === value);
+}
+
+function errorLocations(stack: string | undefined): string {
+  return Array.from(
+    stack?.matchAll(locationPattern) ?? [],
+    ([location = ""]: readonly string[]) => location,
+  )
+    .slice(0, maximumLocations)
+    .join("\n");
+}
+
+function validErrorLocations(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length <= maximumLocationsLength &&
+    (value === "" ||
+      value
+        .split("\n")
+        .every((line) => locationLine.test(line) && line.length <= maximumLocationLength))
+  );
+}
+
+function errorFingerprint(type: ErrorType, locations: string): string {
+  const frames = locations.split("\n").slice(0, fingerprintFrames).join("\n");
+  let hash = fnvOffsetBasis;
+  for (const character of `${type}\n${frames}`) {
+    // oxlint-disable-next-line no-bitwise
+    hash ^= character.codePointAt(0) ?? 0;
+    // oxlint-disable-next-line no-bitwise
+    hash = Math.imul(hash, fnvPrime) >>> 0;
+  }
+  return hash.toString(hexRadix).padStart(fingerprintWidth, "0");
+}
+
+function errorAttributes(error: unknown): ErrorAttributes {
+  const type = errorType(error instanceof Error ? error.name : undefined) ?? "Error";
+  const locations = error instanceof Error ? errorLocations(error.stack) : "";
+  return {
+    "error.fingerprint": errorFingerprint(type, locations),
+    "error.locations": locations,
+    "error.type": type,
+  };
+}
+
+export { errorAttributes, errorFingerprint, errorType, validErrorLocations };
+export type { ErrorType };

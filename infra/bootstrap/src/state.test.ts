@@ -13,9 +13,6 @@ describe("pulumi state command guard", () => {
     expect(() => {
       validateOutputRead("authSecret");
     }).toThrow("state_output_not_allowed");
-    expect(() => {
-      validateOutputRead("otelHeaders");
-    }).toThrow("state_output_not_allowed");
   });
 
   it("permits deployment commands without secret output", () => {

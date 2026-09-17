@@ -247,8 +247,8 @@ function mockVisitor(context: LintContext): Visitor {
 function workerFetchVisitor(context: LintContext): Visitor {
   const current = filename(context);
   if (
-    !/\/(?:apps|libs|infra\/budget-monitor)\//u.test(current) ||
-    /\/libs\/ui\/|\/libs\/observability\/src\/(?:sentry-)?browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(
+    !/\/(?:apps|libs|infra\/(?:budget|error)-monitor)\//u.test(current) ||
+    /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(
       current,
     )
   ) {
