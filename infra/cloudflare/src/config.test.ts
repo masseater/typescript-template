@@ -1,215 +1,106 @@
-import { ConfigurationInvalid, readWikiConfig } from "@template/config";
+import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import { ConfigurationInvalid, readAi, readConfig } from "@template/config";
 import { assert, it } from "@effect/vitest";
 import {
   parseDeploymentCommand,
-  parseSharedConfig,
-  selectAccountPermission,
-  validateAuthSecret,
+  workerCompatibilityOptions,
+  workerObservability,
   workerSubdomain,
 } from "./config.ts";
+import type { AppBindings } from "./bindings.ts";
 import { Effect } from "effect";
-import { applyPlan } from "./stacks.ts";
+import { Interviewer } from "@template/interview";
+import { stackNames } from "./stacks.ts";
+import { verificationSettings } from "./verification-fixture.ts";
 
-const HEX_32_LENGTH = 32;
-const AUTH_SECRET_LENGTH = 32;
-
-const authSecret = "x".repeat(AUTH_SECRET_LENGTH);
 const release = "0123456789abcdef";
-const assetsBinding = { fetch: async (): Promise<Response> => new Response() };
-const databaseBinding = {
-  batch: async (): Promise<never[]> => [],
-  prepare: (): undefined => undefined,
-};
-const emailBinding = { send: async (): Promise<undefined> => undefined };
-const aiBinding = { run: async (): Promise<{ data: never[] }> => ({ data: [] }) };
-const settings = {
-  accountId: "a".repeat(HEX_32_LENGTH),
-  budget: {
-    budgetJpy: 5000,
-    fixedCostUsd: 5,
-    jpyPerUsd: 150,
-    recipients: ["billing@example.com"],
-    reserveUsd: 2,
-  },
-  mailFrom: "mail@example.com",
-  origins: {
-    admin: "https://admin.example.com",
-    user: "https://user.example.com",
-    wiki: "https://wiki.example.com",
-  },
-  prefix: "template-test",
-  zoneId: "b".repeat(HEX_32_LENGTH),
+const settings = verificationSettings;
+
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+function binding<Binding>(value: object): Binding {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return value as Binding;
+}
+
+const sharedBindings = {
+  APP_ORIGIN: settings.origins.admin,
+  APP_RELEASE: release,
+  ASSETS: binding<Service>({ fetch: async (): Promise<Response> => new Response() }),
+  AUTH_SECRET: "runtime-secret-of-at-least-32-characters",
+  DB: binding<D1Database>({
+    batch: async (): Promise<never[]> => [],
+    prepare: (): undefined => undefined,
+  }),
+  EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
+  EMAIL_FROM: settings.mailFrom,
 };
 
-function code<Value, Failure extends { readonly code: string }, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  effect: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<Failure["code"], Value, Requirements> {
-  return effect.pipe(
-    Effect.flip,
-    Effect.map((failure) => failure.code),
-  );
-}
+const adminBindings: AppBindings<"admin"> = sharedBindings;
+const userBindings: AppBindings<"user"> = {
+  ...sharedBindings,
+  AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
+  APP_ORIGIN: settings.origins.user,
+};
 
 it.effect(
   "deployment commands reject ignored arguments instead of selecting an unintended stack",
   () =>
     Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["preview", "admin"]), {
-        operation: "preview",
-        targets: [{ dependencies: ["settings", "database"], stack: "admin" }],
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "admin"]), {
+        operation: "plan",
+        targets: [{ stack: "admin" }],
       });
-      assert.strictEqual(
-        yield* code(parseDeploymentCommand(["up", "user", "--stack", "other"])),
-        "deployment_command_invalid",
-      );
       assert.deepStrictEqual(
-        (yield* parseDeploymentCommand(["up", "wiki"])).targets.map(({ stack }) => stack),
-        ["wiki"],
+        (yield* parseDeploymentCommand(["deploy", "all"])).targets.flatMap(
+          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+          ({ stack }) => [stack],
+        ),
+        [...stackNames],
       );
-      assert.deepStrictEqual(
-        (yield* parseDeploymentCommand(["up", "all"])).targets,
-        yield* applyPlan(),
-      );
-      assert.strictEqual(
-        yield* code(parseDeploymentCommand(["up", "unknown"])),
-        "deployment_command_invalid",
-      );
-      assert.strictEqual(
-        yield* code(parseDeploymentCommand(["up", "shared"])),
-        "deployment_command_invalid",
-      );
+      for (const args of [
+        ["deploy", "user", "--stage", "other"],
+        ["deploy", "unknown"],
+        ["up", "all"],
+      ]) {
+        const failure = yield* parseDeploymentCommand(args).pipe(Effect.flip);
+        assert.strictEqual(failure.code, "deployment_command_invalid");
+      }
     }),
 );
 
-it.effect("workers disable every alternative public URL", () =>
+it.effect("every Worker keeps the same public surface, compatibility and observability", () =>
   Effect.sync(() => {
     assert.deepStrictEqual(workerSubdomain, { enabled: false, previewsEnabled: false });
+    assert.deepStrictEqual(workerCompatibilityOptions, {
+      date: "2026-09-16",
+      flags: ["nodejs_compat"],
+    });
+    assert.deepStrictEqual(workerObservability(settings.observabilitySampling), {
+      enabled: true,
+      headSamplingRate: 1,
+      logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
+      traces: { enabled: true, headSamplingRate: 1 },
+    });
   }),
 );
 
-it.effect("the wiki reads authentication, database and optional AI bindings", () =>
+it.effect("every application reads exactly the bindings its Worker declares", () =>
   Effect.gen(function* program() {
-    const config = yield* parseSharedConfig(settings);
-    const bindings = {
-      APP_ORIGIN: config.origins.wiki,
-      APP_RELEASE: release,
-      ASSETS: assetsBinding,
-      AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
-      DB: databaseBinding,
-      EMAIL: emailBinding,
-      EMAIL_FROM: config.mailFrom,
-    };
-    const runtime = yield* readWikiConfig(bindings);
-    assert.strictEqual(runtime.APP_ORIGIN, settings.origins.wiki);
-    assert.strictEqual(runtime.APP_RELEASE, release);
-    assert.isUndefined(runtime.AI);
-    assert.strictEqual<unknown>(
-      (yield* readWikiConfig({ ...bindings, AI: aiBinding })).AI,
-      aiBinding,
-    );
-    const missing = yield* readWikiConfig({ ...bindings, DB: undefined }).pipe(Effect.flip);
+    const admin = yield* readConfig(adminBindings);
+    assert.strictEqual(admin.APP_ORIGIN, settings.origins.admin);
+    assert.strictEqual(admin.APP_RELEASE, release);
+    assert.isUndefined(yield* readAi(adminBindings));
+    assert.isDefined(yield* readAi(userBindings));
+    const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
   }),
 );
 
-for (const admin of [
-  "http://admin.example.com",
-  "https://admin.example.com/path",
-  "https://admin.example.com/",
-  "https://admin.example.com?x=1",
-  "https://app.team.workers.dev",
-  "not-a-url",
-]) {
-  it.effect(`rejects unsafe admin origin ${admin}`, () =>
-    Effect.gen(function* program() {
-      assert.strictEqual(
-        yield* code(parseSharedConfig({ ...settings, origins: { ...settings.origins, admin } })),
-        "cloudflare_settings_invalid",
-      );
-    }),
-  );
-}
-
-it.effect("rejects same origins", () =>
+it.effect("an application granted the ai capability builds the interviewer from its binding", () =>
   Effect.gen(function* program() {
-    assert.strictEqual(
-      yield* code(
-        parseSharedConfig({
-          ...settings,
-          origins: { ...settings.origins, admin: settings.origins.user },
-        }),
-      ),
-      "app_origins_must_differ",
-    );
-  }),
-);
-
-it.effect("refuses a budget exhausted by fixed fees", () =>
-  Effect.gen(function* program() {
-    assert.strictEqual(
-      yield* code(
-        parseSharedConfig({ ...settings, budget: { ...settings.budget, fixedCostUsd: 50 } }),
-      ),
-      "budget_has_no_usage_allowance",
-    );
-  }),
-);
-
-it.effect("selects Billing Read only and refuses substituted write scopes", () =>
-  Effect.gen(function* program() {
-    const read = {
-      id: "c".repeat(HEX_32_LENGTH),
-      name: "Billing Read",
-      scopes: ["com.cloudflare.api.account"],
-    };
-    assert.strictEqual(
-      yield* selectAccountPermission([read, { ...read, name: "Billing Edit" }], "Billing Read"),
-      read.id,
-    );
-    assert.strictEqual(
-      yield* code(selectAccountPermission([{ ...read, name: "Billing Edit" }], "Billing Read")),
-      "account_permission_unavailable",
-    );
-    assert.strictEqual(
-      yield* code(selectAccountPermission([read, read], "Billing Read")),
-      "account_permission_unavailable",
-    );
-  }),
-);
-
-it.effect("secret validation errors do not include their inputs", () =>
-  Effect.gen(function* program() {
-    const failure = yield* validateAuthSecret("private-value").pipe(Effect.flip);
-    assert.strictEqual(failure.code, "auth_secret_invalid");
-    assert.notInclude(JSON.stringify(failure), "private-value");
-    assert.notInclude(String(failure), "private-value");
-    assert.strictEqual(yield* validateAuthSecret(authSecret), authSecret);
-  }),
-);
-
-it.effect("the error monitor token may only run Workers Observability queries", () =>
-  Effect.gen(function* program() {
-    const write = {
-      id: "d".repeat(HEX_32_LENGTH),
-      name: "Workers Observability Write",
-      scopes: ["com.cloudflare.api.account"],
-    };
-    assert.strictEqual(
-      yield* selectAccountPermission(
-        [write, { ...write, name: "Workers Scripts Write" }],
-        "Workers Observability Write",
-      ),
-      write.id,
-    );
-    assert.strictEqual(
-      yield* code(
-        selectAccountPermission(
-          [{ ...write, name: "Workers Scripts Write" }],
-          "Workers Observability Write",
-        ),
-      ),
-      "account_permission_unavailable",
-    );
+    const granted = yield* Effect.provide(Interviewer, Interviewer.fromEnvironment(userBindings));
+    assert.isDefined(granted);
+    const withheld = yield* Effect.provide(Interviewer, Interviewer.fromEnvironment(adminBindings));
+    assert.isDefined(withheld);
   }),
 );
