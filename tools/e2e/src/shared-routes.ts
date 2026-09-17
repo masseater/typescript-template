@@ -8,6 +8,7 @@ export async function verifySharedRoutes(stack: Stack) {
     {
       origin: stack.userOrigin,
       browser: stack.browser("shared-user"),
+      headers: {},
       documentTitle: "ユーザーアプリ",
       home: "プロフィール",
       login: "ログイン",
@@ -17,6 +18,9 @@ export async function verifySharedRoutes(stack: Stack) {
     {
       origin: stack.adminOrigin,
       browser: adminBrowser,
+      headers: {
+        authorization: `Basic ${Buffer.from(`${stack.basicUser}:${stack.basicPassword}`).toString("base64")}`,
+      },
       documentTitle: "管理者アプリ",
       home: "ユーザー管理",
       login: "管理者ログイン",
@@ -26,13 +30,17 @@ export async function verifySharedRoutes(stack: Stack) {
   ];
   for (const contract of contracts) {
     const { browser, origin } = contract;
+    const rendered = await fetch(`${origin}/login`, {
+      headers: contract.headers,
+      signal: AbortSignal.timeout(10_000),
+    });
+    ensure(
+      rendered.ok && (await rendered.text()).includes(`<title>${contract.documentTitle}</title>`),
+      "E2E_SHARED_DOCUMENT_TITLE_MISMATCH",
+    );
     await browser.open(origin, "/login");
     await browser.commands(["wait", 'input[name="email"]']);
     await browser.waitText(contract.login);
-    ensure(
-      (await browser.evaluate("document.title")) === contract.documentTitle,
-      "E2E_SHARED_DOCUMENT_TITLE_MISMATCH",
-    );
     ensure(
       JSON.stringify(
         await browser.evaluate(
