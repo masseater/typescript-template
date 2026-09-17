@@ -64,7 +64,7 @@ function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] 
 }
 
 function reactCompiler(): PluginOption[] {
-  return react({ compiler: true });
+  return react({ compiler: { logDiagnostics: true } });
 }
 
 function appServer(app: Application): ServerOptions {

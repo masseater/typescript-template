@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { reported, reportedRules, ruleNames } from "./lint-harness.ts";
+import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
 import { field } from "./dependencies.ts";
 import plugin from "./rules.ts";
 
@@ -21,6 +21,11 @@ const forbiddenCode = [
   [
     "libs/ui/src/probe.ts",
     'import { useCallback } from "react"; export const fn = () => useCallback(() => 0, []);',
+    "no-manual-memoization",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import React from "react"; export const Panel = React.memo(() => null);',
     "no-manual-memoization",
   ],
   [
@@ -220,6 +225,14 @@ const validBoundaries = [
   ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
 ] as const;
 
+const singleReports = [
+  [
+    "no-manual-memoization",
+    'import React from "react"; export const Panel = React.memo(() => null);',
+  ],
+  ["no-internal-mocks", 'import vitest from "vitest"; vitest.mock("owned-module");'],
+] as const;
+
 describe("project lint rules on dependency boundaries", () => {
   it("every project rule is tested and enabled", () => {
     expect.hasAssertions();
@@ -232,6 +245,11 @@ describe("project lint rules on dependency boundaries", () => {
   it.for(forbiddenCode)("rejects forbidden code in %s", ([name, code, rule]) => {
     expect.hasAssertions();
     expect(reported(rule, name, code)).toBe(true);
+  });
+
+  it.for(singleReports)("reports a default import member call once: %s", ([rule, code]) => {
+    expect.hasAssertions();
+    expect(reportCount(rule, "libs/ui/src/probe.ts", code)).toBe(1);
   });
 
   it.for(dependencyBypasses)("rejects dependency bypass: %s", ([_label, name, code]) => {

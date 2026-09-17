@@ -11,14 +11,11 @@ interface SignUpFieldsProps {
   readonly onSent: (sent: boolean) => void;
 }
 
-interface SignUpSubmission {
-  readonly email: TextInput;
-  readonly name: TextInput;
-  readonly onSent: (sent: boolean) => void;
-  readonly password: TextInput;
-}
-
-async function signUp({ email, name, onSent, password }: SignUpSubmission): Promise<void> {
+async function signUp(
+  fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
+  onSent: (sent: boolean) => void,
+): Promise<void> {
+  const { email, name, password } = fields;
   requireSuccess(
     await authClient.signUp.email({
       callbackURL: "/login",
@@ -37,7 +34,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
   const password = useTextInput();
   function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
     event.preventDefault();
-    action.run(async () => signUp({ email, name, onSent, password }));
+    action.run(async () => signUp({ email, name, password }, onSent));
   }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>

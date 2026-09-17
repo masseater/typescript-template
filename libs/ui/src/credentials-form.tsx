@@ -20,7 +20,7 @@ async function signIn({
   onAuthenticated,
   onChallenge,
   password,
-}: CredentialsFormProps): Promise<void> {
+}: Omit<CredentialsFormProps, "action">): Promise<void> {
   const data = requireSuccess(
     await authClient.signIn.email({ email: email.value, password: password.value }),
   );

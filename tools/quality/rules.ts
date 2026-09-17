@@ -1,14 +1,13 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-import { aliasVisitor } from "./alias-visitor.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
-import { memoizationVisitor } from "./memoization.ts";
 import { reportViolation } from "./lint-context.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
 
@@ -28,6 +27,7 @@ const mockSources = new Set([
   "test",
   "bun:test",
 ]);
+const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -195,17 +195,16 @@ function environmentVisitor(context: LintContext): Visitor {
 }
 
 function mockVisitor(context: LintContext): Visitor {
-  return {
-    ...aliasVisitor(context, isMock),
-    CallExpression(node: Node): void {
-      if (
-        node.type === "CallExpression" &&
-        origins(context, node.callee).some((origin) => isMock(origin))
-      ) {
-        reportViolation(context, node.callee);
-      }
-    },
-  };
+  return originVisitor(context, isMock);
+}
+
+function isManualMemoization(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  return source === "react" && members.some((member) => memoizationApis.has(member));
+}
+
+function memoizationVisitor(context: LintContext): Visitor {
+  return originVisitor(context, isManualMemoization);
 }
 
 function workerFetchVisitor(context: LintContext): Visitor {
