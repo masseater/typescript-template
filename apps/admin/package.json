@@ -1,0 +1,36 @@
+{
+  "name": "@template/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "X_LOCAL_EXPLORER=false vp dev",
+    "build": "vp build && pnpm --filter @template/dev run private-maps admin",
+    "preview": "X_LOCAL_EXPLORER=false vp preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "1.170.36",
+    "@tanstack/react-start": "1.168.54",
+    "@template/db": "workspace:*",
+    "@template/observability": "workspace:*",
+    "@template/runtime": "workspace:*",
+    "@template/ui": "workspace:*",
+    "jose": "6.2.12",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "smarthr-ui": "99.6.1",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.54.10",
+    "@cloudflare/workers-types": "5.20260916.1",
+    "@types/node": "24.12.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.132.0"
+  }
+}

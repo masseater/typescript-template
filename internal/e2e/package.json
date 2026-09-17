@@ -1,0 +1,22 @@
+{
+  "name": "@template/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vp test run --config e2e.config.ts",
+    "test:unit": "vp test run --config vite.config.ts",
+    "test:artifacts": "vp test run --config artifacts.config.ts",
+    "browser:version": "agent-browser --version",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@template/db": "workspace:*",
+    "@types/node": "24.12.0",
+    "agent-browser": "0.37.1",
+    "typescript": "7.0.2",
+    "valibot": "1.5.0",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.132.0"
+  }
+}

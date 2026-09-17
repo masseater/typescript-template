@@ -1,0 +1,26 @@
+packages:
+  - apps/*
+  - packages/*
+  - infra/*
+  - internal/*
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
+  vitest: 4.1.11
+  "@vitest/runner": 4.1.11
+  "@vitest/expect": 4.1.11
+  "@vitest/spy": 4.1.11
+  "@vitest/utils": 4.1.11
+allowBuilds:
+  esbuild: true
+  workerd: true
+  vite-plus: true
+  "@parcel/watcher": true
+  canvas: false
+  msw: false
+  protobufjs: true
+  agent-browser: false
+minimumReleaseAgeExclude:
+  - "@cloudflare/vite-plugin@1.54.10"
+  - "@cloudflare/workers-types@5.20260916.1"
+  - miniflare@5.20260915.0-alpha
+  - wrangler@4.132.0

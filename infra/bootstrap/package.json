@@ -1,0 +1,26 @@
+{
+  "name": "@template/infra-bootstrap",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./state": "./src/state.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run --config vitest.config.ts",
+    "setup": "tsx src/setup.ts",
+    "with-state": "tsx src/run.ts"
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "6.20.0",
+    "@pulumi/pulumi": "3.262.0",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.0",
+    "tsx": "^4.20.0",
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11"
+  }
+}

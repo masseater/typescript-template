@@ -1,0 +1,117 @@
+import type { D1Database } from "@cloudflare/workers-types";
+import * as v from "valibot";
+
+const absoluteUrl = v.pipe(v.string(), v.url());
+export const sentrySchemas = {
+  dsn: absoluteUrl,
+  environment: v.pipe(v.string(), v.regex(/^[a-z0-9.-]{1,64}$/)),
+  release: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,128}$/)),
+};
+const origin = v.pipe(
+  absoluteUrl,
+  v.check((value) => new URL(value).origin === value, "An origin without a path is required"),
+);
+const scalarSchema = v.object({
+  APP_ORIGIN: origin,
+  AUTH_SECRET: v.pipe(v.string(), v.minLength(32)),
+  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
+  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
+  EMAIL_FROM: v.pipe(v.string(), v.email()),
+  MAILPIT_URL: v.optional(origin),
+  SENTRY_DSN: v.optional(sentrySchemas.dsn),
+  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
+  SENTRY_RELEASE: v.optional(sentrySchemas.release),
+});
+
+export type EmailMessage = { to: string; from: string; subject: string; text: string };
+export type EmailBinding = { send(message: EmailMessage): Promise<unknown> };
+type AssetBinding = { fetch(request: Request): Promise<Response> };
+
+function hasFunction(value: unknown, key: string): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    key in value &&
+    typeof Reflect.get(value, key) === "function"
+  );
+}
+
+export function readEnvironment(input: unknown) {
+  const scalars = v.parse(scalarSchema, input);
+  const sentry =
+    scalars.SENTRY_DSN === undefined
+      ? null
+      : {
+          dsn: scalars.SENTRY_DSN,
+          environment: v.parse(sentrySchemas.environment, scalars.SENTRY_ENVIRONMENT),
+          release: v.parse(sentrySchemas.release, scalars.SENTRY_RELEASE),
+        };
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(new URL(scalars.APP_ORIGIN).hostname);
+  if (!local && new URL(scalars.APP_ORIGIN).protocol !== "https:")
+    throw new Error("HTTPS is required outside localhost");
+  if (
+    scalars.MAILPIT_URL &&
+    (!local || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(scalars.MAILPIT_URL).hostname))
+  )
+    throw new Error("Mailpit is restricted to local development");
+  const otelHeaders =
+    scalars.OTEL_EXPORTER_OTLP_HEADERS === undefined
+      ? {}
+      : v.parse(
+          v.record(v.string(), v.string()),
+          JSON.parse(scalars.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
+        );
+  return { ...scalars, otelHeaders, local, sentry };
+}
+
+export function readConfig(input: unknown) {
+  const scalars = readEnvironment(input);
+  const bindings = v.parse(
+    v.object({
+      DB: v.custom<D1Database>(
+        (value) => hasFunction(value, "prepare") && hasFunction(value, "batch"),
+      ),
+      ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
+      EMAIL: v.optional(v.custom<EmailBinding>((value) => hasFunction(value, "send"))),
+    }),
+    input,
+  );
+  if (!scalars.MAILPIT_URL && !bindings.EMAIL)
+    throw new Error("An email delivery binding is required");
+  return { ...scalars, ...bindings };
+}
+
+export type AppConfig = ReturnType<typeof readConfig>;
+
+export async function sendVerificationEmail(
+  config: Pick<AppConfig, "APP_ORIGIN" | "EMAIL_FROM" | "MAILPIT_URL" | "EMAIL">,
+  message: { email: string; url: string },
+  traceparent?: string,
+): Promise<void> {
+  if (new URL(message.url).origin !== config.APP_ORIGIN)
+    throw new Error("Email link origin mismatch");
+  const email: EmailMessage = {
+    from: config.EMAIL_FROM,
+    to: message.email,
+    subject: "メールアドレスの確認",
+    text: `次のリンクでメールアドレスを確認してください。\n${message.url}`,
+  };
+  if (config.MAILPIT_URL) {
+    const response = await fetch(`${config.MAILPIT_URL}/api/v1/send`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(traceparent ? { traceparent } : {}) },
+      body: JSON.stringify({
+        From: { Email: email.from },
+        To: [{ Email: email.to }],
+        Subject: email.subject,
+        Text: email.text,
+      }),
+      signal: AbortSignal.timeout(10_000),
+      redirect: "manual",
+    });
+    if (!response.ok) throw new Error(`Email delivery failed (${response.status})`);
+    return;
+  }
+  if (!config.EMAIL) throw new Error("Email delivery binding is missing");
+  await config.EMAIL.send(email);
+}

@@ -1,0 +1,3 @@
+.state/
+Pulumi.*.yaml
+!Pulumi.yaml

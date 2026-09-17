@@ -1,0 +1,38 @@
+{
+  "name": "@template/infra-cloudflare",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./config": "./src/config.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run --config vitest.config.ts",
+    "verify:artifacts": "tsx src/check-artifacts.ts",
+    "verify:engine": "tsx src/engine-check.ts",
+    "preview:shared": "tsx src/cli.ts preview shared",
+    "preview:user": "tsx src/cli.ts preview user",
+    "preview:admin": "tsx src/cli.ts preview admin",
+    "deploy:shared": "tsx src/cli.ts up shared",
+    "deploy:user": "tsx src/cli.ts up user",
+    "deploy:admin": "tsx src/cli.ts up admin",
+    "db:migrate:remote": "tsx src/database.ts migrate",
+    "db:bootstrap:remote": "tsx src/database.ts bootstrap"
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "6.20.0",
+    "@pulumi/pulumi": "3.262.0",
+    "@template/budget-monitor": "workspace:*",
+    "@template/config": "workspace:*",
+    "@template/db": "workspace:*",
+    "@template/infra-bootstrap": "workspace:*",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.0",
+    "tsx": "^4.20.0",
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11"
+  }
+}

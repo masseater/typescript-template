@@ -1,0 +1,25 @@
+{
+  "name": "@template/dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "private-maps": "node src/private-maps.ts",
+    "browser-command": "node src/cli.ts browser-command",
+    "connect": "node src/cli.ts connect",
+    "setup": "node src/cli.ts setup",
+    "start": "node src/cli.ts start",
+    "stop": "node src/cli.ts stop",
+    "status": "node src/cli.ts status",
+    "logs": "node src/cli.ts logs",
+    "browser": "node src/cli.ts browser",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "agent-browser": "0.37.1",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.0",
+    "typescript": "7.0.2"
+  }
+}
