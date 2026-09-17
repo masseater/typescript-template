@@ -2,7 +2,9 @@ import {
   appStylesheetViolations,
   designSystemComponents,
   designSystemProbe,
+  partsDirectory,
   smarthrTokens,
+  storylessParts,
   stylesheetPath,
   stylesheetSource,
   tokenViolations,
@@ -19,6 +21,22 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const lint = field(configs["../../vite.config.ts"], "lint");
+
+const previews: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../libs/ui/.storybook/preview.ts",
+  { eager: true, import: "default" },
+);
+
+function composedParameters(preview: unknown): unknown {
+  return typeof preview === "object" && preview !== null && "composed" in preview
+    ? field(preview.composed, "parameters")
+    : undefined;
+}
+
+function storybookProjects(): unknown[] {
+  const projects: unknown = field(field(configs["../../vite.config.ts"], "test"), "projects");
+  return Array.isArray(projects) ? projects : [];
+}
 
 function restrictedImportNames(): string[] {
   const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
@@ -155,5 +173,33 @@ describe("design system lint", () => {
   it.for(restyled)("%s reports a screen that restyles a part", ([rule, className]) => {
     expect.hasAssertions();
     expect(reports(rule, className)).toBe(true);
+  });
+});
+
+describe("part stories", () => {
+  it("looks for stories in the parts directory components.json points at", () => {
+    expect.hasAssertions();
+    expect(partsDirectory()).toMatch(/libs\/ui\/src\/shared\/ui$/u);
+  });
+
+  it("keeps a story next to every part", () => {
+    expect.hasAssertions();
+    expect(storylessParts(partsDirectory())).toStrictEqual([]);
+  });
+
+  it("reports a directory whose components have no stories", () => {
+    expect.hasAssertions();
+    expect(storylessParts("libs/ui/src")).not.toStrictEqual([]);
+  });
+
+  it("runs the stories as a test project of this repository", () => {
+    expect.hasAssertions();
+    expect(storybookProjects()).toContain("./libs/ui/.storybook/vitest.config.ts");
+  });
+
+  it("fails a story on an accessibility violation", () => {
+    expect.hasAssertions();
+    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.ts"]);
+    expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 });

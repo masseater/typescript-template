@@ -1,6 +1,6 @@
-import { project } from "@shadcn/lint";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { project } from "@shadcn/lint";
 
 const designSystemProbe = "apps/user/src/routes/probe.tsx";
 
@@ -79,6 +79,29 @@ function designSystemComponents(): string[] {
   return [...project.componentsFor(designSystemProbe).files.keys()].toSorted();
 }
 
+const storySuffix = ".stories.tsx";
+
+function partsDirectory(): string {
+  return project.componentsFor(designSystemProbe).dir ?? "";
+}
+
+function storyName(part: string): string {
+  return part.replace(/\.tsx$/u, storySuffix);
+}
+
+function storylessParts(directory: string): string[] {
+  // oxlint-disable-next-line node/no-sync
+  const files = readdirSync(directory).filter((file) => file.endsWith(".tsx"));
+  const stories = new Set(files.filter((file) => file.endsWith(storySuffix)));
+  return files
+    .filter((file) => !stories.has(file) && !stories.has(storyName(file)))
+    .map(
+      (file) =>
+        `${file}: 部品の隣に ${storyName(file)} を置いてください。story がない部品はブラウザテストと a11y 検査を受けません。`,
+    )
+    .toSorted();
+}
+
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.css",
 );
@@ -126,7 +149,9 @@ export {
   appStylesheetViolations,
   designSystemComponents,
   designSystemProbe,
+  partsDirectory,
   smarthrTokens,
+  storylessParts,
   stylesheetPath,
   stylesheetSource,
   tokenViolations,
