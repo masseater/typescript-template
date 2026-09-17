@@ -1,190 +1,124 @@
-import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
-import { auditEvent, session, user } from "./schema.ts";
-import {
-  integer,
-  is,
-  maxValue,
-  minValue,
-  number,
-  optional,
-  parse,
-  picklist,
-  pipe,
-  strictObject,
-} from "valibot";
-import { roles, strongAuthenticationMethods } from "@template/config";
-import type { Database } from "./index.ts";
+import { Effect, Schema } from "effect";
+import { and, count, desc, eq } from "drizzle-orm";
+import { auditEvent, user } from "./schema.ts";
+import { liveAdmin, requireAdmin } from "./admin-session.ts";
+import type { Database } from "./database.ts";
+import type { DatabaseFailure } from "./database-failure.ts";
+import { LastAdminRequired } from "./last-admin-required.ts";
 import type { Role } from "@template/config";
-import type { SQL } from "drizzle-orm";
-import type { SessionSecurity } from "./security.ts";
-import { alias } from "drizzle-orm/sqlite-core";
-import { bootstrapStatement } from "./bootstrap-statement.ts";
-import { getSessionSecurity } from "./security.ts";
+import { TargetUnavailable } from "./target-unavailable.ts";
+import { query } from "./database.ts";
 
-type ManagedUser = Pick<
-  typeof user.$inferSelect,
-  "createdAt" | "email" | "emailVerified" | "id" | "name" | "profile" | "role"
->;
-interface UserPage {
-  total: number;
-  users: ManagedUser[];
-}
-type AuditAction = typeof auditEvent.$inferInsert.action;
+const MAX_PAGE_SIZE = 100;
 
-const PAGE_LIMIT_MAX = 100;
-const PAGE_LIMIT_DEFAULT = 50;
-
-const pageLimitSchema = pipe(number(), integer(), minValue(1), maxValue(PAGE_LIMIT_MAX));
-const pageOffsetSchema = pipe(number(), integer(), minValue(0));
-const pageInput = strictObject({
-  limit: optional(pageLimitSchema, PAGE_LIMIT_DEFAULT),
-  offset: optional(pageOffsetSchema, 0),
+const UserPage = Schema.Struct({
+  limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
+  offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
 });
-const roleSchema = picklist(roles);
-const strongMethodSchema = picklist(strongAuthenticationMethods);
 
-function reportMutationFailure(error: unknown): never {
-  for (let current: unknown = error; current instanceof Error; current = current.cause) {
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function mentionsLastAdmin(failure: DatabaseFailure): boolean {
+  for (let current: unknown = failure.cause; current instanceof Error; current = current.cause) {
     if (current.message.includes("LAST_ADMIN_REQUIRED")) {
-      throw new Error("LAST_ADMIN_REQUIRED");
+      return true;
     }
   }
-  throw error;
+  return false;
 }
 
-async function requireAdmin(
-  database: Readonly<Pick<Database, "select">>,
+function protectLastAdmin<Value, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
+): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> {
+  return effect.pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.mapError((failure) => (mentionsLastAdmin(failure) ? new LastAdminRequired() : failure)),
+  );
+}
+
+const listUsers = Effect.fn("listUsers")(function* listUsers(
   sessionId: string,
-): Promise<SessionSecurity> {
-  const actor = await getSessionSecurity(database, sessionId, "admin");
-  if (
-    actor?.user.role !== "admin" ||
-    !actor.user.emailVerified ||
-    !is(strongMethodSchema, actor.session.authenticationMethod)
-  ) {
-    throw new Error("ADMIN_STRONG_SESSION_REQUIRED");
-  }
-  return actor;
-}
-
-function liveAdmin(database: Readonly<Pick<Database, "select">>, sessionId: string): SQL {
-  const actor = alias(user, "actor");
-  const unexpired = gt(session.expiresAt, new Date());
-  const strongSession = inArray(session.authenticationMethod, [...strongAuthenticationMethods]);
-  const liveAdminSession = and(
-    eq(session.id, sessionId),
-    eq(session.audience, "admin"),
-    eq(actor.role, "admin"),
-    eq(actor.emailVerified, true),
-    eq(session.securityVersion, actor.securityVersion),
-    unexpired,
-    strongSession,
-  );
-  const sessionOwner = eq(session.userId, actor.id);
-  return exists(
+  page: typeof UserPage.Type,
+) {
+  yield* requireAdmin(sessionId);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const users = yield* query((database) =>
     database
-      .select({ id: session.id })
-      .from(session)
-      .innerJoin(actor, sessionOwner)
-      .where(liveAdminSession),
+      .select({
+        createdAt: user.createdAt,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        id: user.id,
+        name: user.name,
+        profile: user.profile,
+        role: user.role,
+      })
+      .from(user)
+      .where(liveAdmin(database, sessionId))
+      .orderBy(desc(user.createdAt), user.id)
+      .limit(page.limit)
+      .offset(page.offset),
   );
-}
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [total] = yield* query((database) =>
+    database.select({ count: count() }).from(user).where(liveAdmin(database, sessionId)),
+  );
+  return { total: total?.count ?? 0, users };
+});
 
-async function recordAudit(
-  database: Readonly<Pick<Database, "insert">>,
-  event: Readonly<{ action: AuditAction; actorId: string; targetId: string }>,
-): Promise<void> {
-  await database.insert(auditEvent).values({
-    ...event,
-    createdAt: new Date(),
-    id: crypto.randomUUID(),
+function recordAudit(
+  actorId: string,
+  targetId: string,
+  action: "role_changed" | "user_deleted",
+): Effect.Effect<void, DatabaseFailure, Database> {
+  const event = { action, actorId, createdAt: new Date(), id: crypto.randomUUID(), targetId };
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return query(async (database): Promise<void> => {
+    await database.insert(auditEvent).values(event);
   });
 }
 
-async function listUsers(
-  database: Readonly<Pick<Database, "select">>,
-  sessionId: string,
-  input: unknown = {},
-): Promise<UserPage> {
-  await requireAdmin(database, sessionId);
-  const page = parse(pageInput, input);
-  const users = await database
-    .select({
-      createdAt: user.createdAt,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      id: user.id,
-      name: user.name,
-      profile: user.profile,
-      role: user.role,
-    })
-    .from(user)
-    .where(liveAdmin(database, sessionId))
-    .orderBy(desc(user.createdAt), user.id)
-    .limit(page.limit)
-    .offset(page.offset);
-  const [total] = await database
-    .select({ count: count() })
-    .from(user)
-    .where(liveAdmin(database, sessionId));
-  return { total: total?.count ?? 0, users };
-}
-
-async function setUserRole({
-  database,
-  role,
-  sessionId,
-  targetId,
-}: Readonly<{
-  database: Readonly<Pick<Database, "insert" | "select" | "update">>;
-  role: Role;
-  sessionId: string;
-  targetId: string;
-}>): Promise<{ id: string; role: Role }> {
-  parse(roleSchema, role);
-  const actor = await requireAdmin(database, sessionId);
-  const [updated] = await database
-    .update(user)
-    .set({ role, updatedAt: new Date() })
-    .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
-    .returning({ id: user.id, role: user.role })
-    .catch(reportMutationFailure);
-  if (!updated) {
-    throw new Error("USER_NOT_FOUND_OR_AUTHORITY_REVOKED");
-  }
-  await recordAudit(database, { action: "role_changed", actorId: actor.user.id, targetId });
-  return updated;
-}
-
-async function deleteUser(
-  database: Readonly<Pick<Database, "delete" | "insert" | "select">>,
+const setUserRole = Effect.fn("setUserRole")(function* setUserRole(
   sessionId: string,
   targetId: string,
-): Promise<{ id: string }> {
-  const actor = await requireAdmin(database, sessionId);
-  const [removed] = await database
-    .delete(user)
-    .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
-    .returning({ id: user.id })
-    .catch(reportMutationFailure);
-  if (!removed) {
-    throw new Error("USER_NOT_FOUND_OR_AUTHORITY_REVOKED");
-  }
-  await recordAudit(database, { action: "user_deleted", actorId: actor.user.id, targetId });
-  return removed;
-}
-
-async function bootstrapAdmin(
-  database: Readonly<Pick<Database, "all">>,
-  address: string,
-): Promise<{ email: string; id: string; role: Role }> {
-  const [updated] = await database.all<{ email: string; id: string; role: Role }>(
-    bootstrapStatement(address),
-  );
+  role: Role,
+) {
+  const actor = yield* requireAdmin(sessionId);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [updated] = yield* query((database) =>
+    database
+      .update(user)
+      .set({ role, updatedAt: new Date() })
+      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
+      .returning({ id: user.id, role: user.role }),
+  ).pipe(protectLastAdmin);
   if (!updated) {
-    throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
+    return yield* new TargetUnavailable();
   }
+  yield* recordAudit(actor.user.id, targetId, "role_changed");
   return updated;
-}
+});
 
-export { bootstrapAdmin, deleteUser, listUsers, setUserRole };
+const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
+  sessionId: string,
+  targetId: string,
+) {
+  const actor = yield* requireAdmin(sessionId);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [removed] = yield* query((database) =>
+    database
+      .delete(user)
+      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
+      .returning({ id: user.id }),
+  ).pipe(protectLastAdmin);
+  if (!removed) {
+    return yield* new TargetUnavailable();
+  }
+  yield* recordAudit(actor.user.id, targetId, "user_deleted");
+  return removed;
+});
+
+export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+export { LastAdminRequired } from "./last-admin-required.ts";
+export { TargetUnavailable } from "./target-unavailable.ts";
+export { UserPage, deleteUser, listUsers, setUserRole };

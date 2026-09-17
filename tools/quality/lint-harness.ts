@@ -3,6 +3,8 @@ import plugin from "./rules.ts";
 
 type RuleName =
   | "boundaries"
+  | "effect-failures"
+  | "effect-stack"
   | "environment-boundary"
   | "no-internal-mocks"
   | "test-import-graph"
@@ -10,6 +12,8 @@ type RuleName =
 
 const ruleNames: readonly RuleName[] = [
   "boundaries",
+  "effect-failures",
+  "effect-stack",
   "environment-boundary",
   "no-internal-mocks",
   "test-import-graph",

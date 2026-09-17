@@ -1,6 +1,9 @@
 import type { Input, Output } from "@pulumi/pulumi";
 import { Worker, WorkerVersion, WorkersCronTrigger, WorkersDeployment } from "@pulumi/cloudflare";
 import type { WorkerVersionArgs, types } from "@pulumi/cloudflare";
+import { fail, io } from "./artifact-io.ts";
+import type { ArtifactFailure } from "./artifact-io.ts";
+import { Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 import { secret } from "@pulumi/pulumi";
@@ -13,6 +16,7 @@ type VersionArgs = Omit<
   "accountId" | "compatibilityDate" | "compatibilityFlags" | "workerId"
 >;
 type WorkerVersionBinding = types.input.WorkerVersionBinding;
+type MonitorResource = "budget" | "error" | "health";
 
 interface WorkerDeployment {
   readonly deployment: WorkersDeployment;
@@ -72,11 +76,16 @@ function deployWorker(resource: string, options: WorkerOptions): WorkerDeploymen
   return { deployment, worker };
 }
 
-async function assertArtifact(resource: string, artifact: string): Promise<void> {
-  const content = await readFile(artifact);
-  if (content.length === 0) {
-    throw new Error(`${resource}_worker_artifact_empty`);
-  }
+function assertArtifact(
+  resource: MonitorResource,
+  artifact: string,
+): Effect.Effect<void, ArtifactFailure> {
+  return io(async () => readFile(artifact)).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.flatMap((content) =>
+      content.length === 0 ? fail(`${resource}_worker_artifact_empty`) : Effect.void,
+    ),
+  );
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -113,12 +122,12 @@ function monitorBindings(
   ];
 }
 
-async function deployMonitor(
-  resource: string,
+const deployMonitor = Effect.fn("deployMonitor")(function* deployMonitor(
+  resource: MonitorResource,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options: MonitorOptions,
-): Promise<MonitorDeployment> {
-  await assertArtifact(resource, options.artifact);
+) {
+  yield* assertArtifact(resource, options.artifact);
   const { deployment, worker } = deployWorker(resource, {
     accountId: options.accountId,
     name: options.name,
@@ -140,7 +149,8 @@ async function deployMonitor(
     { accountId: options.accountId, schedules: [{ cron: options.cron }], scriptName: worker.name },
     { dependsOn: [deployment] },
   );
-  return { scheduleId: schedule.id, workerName: worker.name };
-}
+  const monitor: MonitorDeployment = { scheduleId: schedule.id, workerName: worker.name };
+  return monitor;
+});
 
 export { deployMonitor, deployWorker };

@@ -1,101 +1,47 @@
-import type { AppConfig, Application } from "@template/config";
-import type { Instrumentation, RequestContext } from "@template/observability";
-import { createAuth, verifySession } from "@template/auth";
+import type { AppConfig, Application, ConfigurationInvalid } from "@template/config";
+import { Effect, Layer } from "effect";
 import { readConfig, sendVerificationEmail } from "@template/config";
-import type { Auth } from "@template/auth";
-import type { Database } from "@template/db";
-import { createDb } from "@template/db";
-import { createInstrumentation } from "@template/observability";
+import { AppOrigin } from "./app-origin.ts";
+import { Assets } from "./assets.ts";
+import { Auth } from "@template/auth";
+import type { AuthFailure } from "@template/auth";
+import { Database } from "@template/db";
+import { Telemetry } from "@template/observability";
+import type { TelemetryInvalid } from "@template/observability";
 
-type Session = Awaited<ReturnType<typeof verifySession>>;
+type AppServices = Auth | Database | AppOrigin | Assets | Telemetry;
 
-interface RequestRuntime {
-  readonly audience: Application;
-  readonly auth: Auth;
-  readonly config: { readonly APP_ORIGIN: string; readonly APP_RELEASE: string };
-  readonly database: Database;
-  readonly reportError: (error: unknown) => void;
-  readonly session: (
-    request: Readonly<{ headers: Readonly<Headers> }>,
-    allowEnrollment?: boolean,
-  ) => Promise<Session>;
-  readonly telemetry: Instrumentation;
-}
-
-interface Runtime {
-  readonly config: Pick<AppConfig, "ASSETS">;
-  readonly forRequest: (correlation: RequestContext) => RequestRuntime;
-  readonly telemetry: Instrumentation;
-}
-
-interface AppRequestContext {
-  runtime: RequestRuntime;
-  correlation: RequestContext;
-}
-
-interface RequestRuntimeInput {
-  readonly audience: Application;
-  readonly config: Readonly<
-    Pick<
-      AppConfig,
-      "APP_ORIGIN" | "APP_RELEASE" | "AUTH_SECRET" | "EMAIL" | "EMAIL_FROM" | "MAILPIT_URL"
-    >
-  > & { readonly DB: Readonly<AppConfig["DB"]> };
-  readonly correlation: RequestContext;
-  readonly telemetry: Instrumentation;
-}
-
-function createRequestRuntime(input: RequestRuntimeInput): RequestRuntime {
-  const { audience, config, correlation, telemetry } = input;
-  function reportError(error: unknown): void {
-    telemetry.reportError(correlation, error);
-  }
-  const database = createDb(config.DB);
-  const auth = createAuth({
-    audience,
-    baseURL: config.APP_ORIGIN,
-    database,
-    onError: reportError,
-    secret: config.AUTH_SECRET,
-    sendVerificationEmail: async (message) => sendVerificationEmail(config, message),
-  });
-  return {
-    audience,
-    auth,
-    config: { APP_ORIGIN: config.APP_ORIGIN, APP_RELEASE: config.APP_RELEASE },
-    database,
-    reportError,
-    session: async (request, allowEnrollment = false) =>
-      verifySession({ allowEnrollment, audience, auth, database, headers: request.headers }),
-    telemetry,
-  };
-}
-
-function buildRuntime(
+function configuredAppLayer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   config: AppConfig,
   audience: Application,
   routes: Readonly<Record<string, string>>,
-): Runtime {
-  const telemetry = createInstrumentation({
-    release: config.APP_RELEASE,
-    routes,
-    serviceName: audience,
-  });
-  return {
-    config: { ASSETS: config.ASSETS },
-    forRequest: (correlation) => createRequestRuntime({ audience, config, correlation, telemetry }),
-    telemetry,
-  };
+): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> {
+  const auth = Auth.layer({
+    audience,
+    baseURL: config.APP_ORIGIN,
+    secret: config.AUTH_SECRET,
+    sendVerificationEmail: (message) => sendVerificationEmail(config, message),
+  }).pipe(Layer.provideMerge(Database.layer(config.DB)));
+  const telemetry = Telemetry.layer({ release: config.APP_RELEASE, routes, serviceName: audience });
+  const services = Layer.mergeAll(
+    auth,
+    Layer.succeed(AppOrigin, config.APP_ORIGIN),
+    Layer.succeed(Assets, config.ASSETS),
+  );
+  return services.pipe(Layer.provideMerge(telemetry));
 }
 
-function createRuntime(
-  bindings: unknown,
+function appLayer(
+  env: unknown,
   audience: Exclude<Application, "wiki">,
   routes: Readonly<Record<string, string>>,
-): Runtime {
-  return buildRuntime(readConfig(bindings), audience, routes);
+): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
+  return Layer.unwrap(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    readConfig(env).pipe(Effect.map((config) => configuredAppLayer(config, audience, routes))),
+  );
 }
 
-export { buildRuntime, createRuntime };
-export type { AppRequestContext, RequestRuntime, Runtime };
+export { appLayer, configuredAppLayer };
+export type { AppServices };

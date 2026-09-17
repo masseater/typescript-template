@@ -1,14 +1,19 @@
-import type { Embedder, SemanticDocument } from "./semantic.ts";
+import { Cause, Effect } from "effect";
+import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
 import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
+import type { Context } from "effect";
+import { Embedder } from "@template/runtime/wiki";
 import type { SearchServer } from "fumadocs-core/search/server";
 import type { SortedResult } from "fumadocs-core/search";
+import type { WikiServices } from "@template/runtime/wiki";
 import { createFromSource } from "fumadocs-core/search/server";
 import { llms } from "fumadocs-core/source";
+import { reportFailure } from "@template/observability";
 import { source } from "./source.ts";
 
 type WikiPage = ReturnType<typeof source.getPages>[number];
-type SemanticResult = Awaited<ReturnType<ReturnType<typeof createSemanticIndex>>>[number];
 type KeywordResult = Awaited<ReturnType<SearchServer["search"]>>[number];
+type SearchOptions = Parameters<SearchServer["search"]>[1];
 type StructuredData = WikiPage["data"]["structuredData"];
 type WikiPageView = Readonly<{
   url: string;
@@ -67,10 +72,6 @@ function pageOf(url: string): string {
   return url.split("#")[0] ?? url;
 }
 
-const processedTexts: { pending: Promise<ReadonlyMap<string, string>> | undefined } = {
-  pending: undefined,
-};
-
 async function readProcessedTexts(): Promise<ReadonlyMap<string, string>> {
   const entries = await Promise.all(
     source
@@ -84,21 +85,25 @@ async function readProcessedTexts(): Promise<ReadonlyMap<string, string>> {
   return new Map(entries);
 }
 
-async function loadProcessedTexts(): Promise<ReadonlyMap<string, string>> {
-  processedTexts.pending ??= readProcessedTexts();
-  try {
-    return await processedTexts.pending;
-  } catch (error) {
-    processedTexts.pending = undefined;
-    throw error;
-  }
-}
+const textCache: { texts: ReadonlyMap<string, string> | undefined } = { texts: undefined };
+const processedTexts = Effect.suspend(() =>
+  textCache.texts === undefined
+    ? Effect.promise(readProcessedTexts).pipe(
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        Effect.tap((texts) =>
+          Effect.sync(() => {
+            textCache.texts = texts;
+          }),
+        ),
+      )
+    : Effect.succeed(textCache.texts),
+);
 
 function pageResults(
   url: string,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   keywordResults: readonly KeywordResult[],
-  semanticResults: readonly SemanticResult[],
+  semanticResults: readonly SemanticMatch[],
 ): SortedResult[] {
   const page = source
     .getPages()
@@ -131,48 +136,54 @@ function pageResults(
   ];
 }
 
-async function semanticSearch(
-  embed: Embedder | undefined,
-  query: string,
-  reportError: (error: unknown) => void,
-): Promise<SemanticResult[]> {
-  if (!embed) {
+const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(query: string) {
+  const { available } = yield* Embedder;
+  if (!available) {
     return [];
   }
-  try {
-    return await semantic(embed, query);
-  } catch (error) {
-    reportError(error);
-    return [];
-  }
-}
+  return yield* semantic(query).pipe(
+    Effect.matchEffect({
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      onFailure: (error) => reportFailure(Cause.fail(error)).pipe(Effect.as([])),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      onSuccess: (matches) => Effect.succeed(matches),
+    }),
+  );
+});
 
-function createWikiSearch(
-  embed: Embedder | undefined,
-  reportError: (error: unknown) => void,
-): SearchServer {
+const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
+  query: string,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  options?: SearchOptions,
+) {
+  const [keywordResults, texts, semanticResults] = yield* Effect.all(
+    [
+      Effect.promise(async () => keyword.search(query, options)),
+      processedTexts,
+      semanticSearch(query),
+    ],
+    { concurrency: "unbounded" },
+  );
+  const keywordPages = [
+    ...new Set(
+      keywordResults.map((result: Readonly<Pick<KeywordResult, "url">>) => pageOf(result.url)),
+    ),
+  ];
+  const pages = rankPages(
+    semanticResults.map((match) => ({ score: match.score, url: pageOf(match.document.url) })),
+    exactMatchesFirst(query, keywordPages, (url) => texts.get(url) ?? ""),
+    options?.limit ?? DEFAULT_PAGE_LIMIT,
+  );
+  return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));
+});
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function searchServer(context: Context.Context<WikiServices>): SearchServer {
   return {
     export: async () => keyword.export(),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    async search(query, options) {
-      const [keywordResults, texts, semanticResults] = await Promise.all([
-        keyword.search(query, options),
-        loadProcessedTexts(),
-        semanticSearch(embed, query, reportError),
-      ]);
-      const keywordPages = [
-        ...new Set(
-          keywordResults.map((result: Readonly<Pick<KeywordResult, "url">>) => pageOf(result.url)),
-        ),
-      ];
-      const pages = rankPages(
-        semanticResults.map((match) => ({ score: match.score, url: pageOf(match.document.url) })),
-        exactMatchesFirst(query, keywordPages, (url) => texts.get(url) ?? ""),
-        options?.limit ?? DEFAULT_PAGE_LIMIT,
-      );
-      return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));
-    },
+    search: async (query, options) => Effect.runPromiseWith(context)(searchWiki(query, options)),
   };
 }
 
-export { createWikiSearch, wikiLlms };
+export { searchServer, searchWiki, wikiLlms };

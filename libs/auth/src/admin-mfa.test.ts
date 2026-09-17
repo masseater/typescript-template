@@ -1,206 +1,172 @@
-import type { BrowserClient, TotpEnrollment } from "./browser-client.ts";
 import {
+  Fixture,
   HTTP_FORBIDDEN,
   HTTP_OK,
   PASSWORD,
+  TEST_TIMEOUT,
+  bootstrapVerifiedAdmin,
   enableTotp,
-  expectSignedIn,
+  failureTag,
+  registerVerified,
   signIn,
-} from "./browser-client.ts";
-import { bootstrapAdmin, setUserRole } from "@template/db/admin";
-import { describe, expect } from "vite-plus/test";
-import type { Application } from "@template/config";
-import type { AuthFixture } from "./auth-test-fixture.ts";
-import { createAuthTest } from "./auth-test-fixture.ts";
-import { createTestDatabase } from "@template/db/testing";
+  signInAs,
+  withAuth,
+} from "./auth-test-fixture.ts";
+import { assert, it } from "@effect/vitest";
+import { BrowserClient } from "./browser-client.ts";
+import { Effect } from "effect";
 
-const it = createAuthTest({ bootstrapAdmin, createTestDatabase, setUserRole });
-const ADMIN_EMAIL = "admin@example.com";
-const AUDIENCES = ["user", "admin"] as const;
-const TOTP_URI_PATTERN = /^otpauth:\/\/totp\//u;
+const email = "admin@example.com";
+const totpUriPattern = /^otpauth:\/\/totp\//u;
 
-interface WeakAdminSession {
-  readonly authenticator: TotpEnrollment["authenticator"];
-  readonly old: BrowserClient;
+function totpUri(body: unknown): string {
+  return typeof body === "object" && body !== null ? String(Reflect.get(body, "totpURI")) : "";
 }
 
-async function signedInAdmin(fixture: AuthFixture): Promise<BrowserClient> {
-  await fixture.registerAdmin(ADMIN_EMAIL);
-  const admin = fixture.client("admin");
-  await expectSignedIn(admin, ADMIN_EMAIL);
-  return admin;
-}
-
-async function userWithStaleSession(fixture: AuthFixture, email: string): Promise<BrowserClient> {
-  const enrollment = await fixture.registerVerified(email);
-  await expectSignedIn(enrollment, email);
-  const old = fixture.client("user");
-  await expectSignedIn(old, email);
-  await enableTotp(enrollment);
-  return old;
-}
-
-async function adminWithStaleSession(fixture: AuthFixture): Promise<BrowserClient> {
-  await fixture.registerAdmin(ADMIN_EMAIL);
-  const first = fixture.client("admin");
-  const old = fixture.client("admin");
-  await signIn(first, ADMIN_EMAIL);
-  await signIn(old, ADMIN_EMAIL);
-  await enableTotp(first);
-  return old;
-}
-
-async function adminWithWeakSession(
-  fixture: AuthFixture,
-  audience: Application,
-): Promise<WeakAdminSession> {
-  await fixture.registerAdmin(ADMIN_EMAIL);
-  const old = fixture.client(audience);
-  await expectSignedIn(old, ADMIN_EMAIL);
-  const enrollment = fixture.client("admin");
-  await expectSignedIn(enrollment, ADMIN_EMAIL);
-  const { authenticator } = await enableTotp(enrollment);
-  return { authenticator, old };
-}
-
-async function adminRecoverySession(
-  fixture: AuthFixture,
-  audience: Application,
-): Promise<BrowserClient> {
-  await fixture.registerAdmin(ADMIN_EMAIL);
-  const enrollment = fixture.client("admin");
-  await expectSignedIn(enrollment, ADMIN_EMAIL);
-  const { backupCodes } = await enableTotp(enrollment);
-  const recovery = fixture.client(audience);
-  const login = await signIn(recovery, ADMIN_EMAIL);
-  await expect(login.json()).resolves.toMatchObject({ twoFactorRedirect: true });
-  const recovered = await recovery.request("/two-factor/verify-backup-code", {
-    code: backupCodes[0],
-  });
-  expect(recovered.status).toBe(HTTP_OK);
-  return recovery;
-}
-
-describe("admin enrollment", () => {
-  it("admin enrollment session cannot access CRM until real TOTP verification", async ({
-    fixture,
-  }: Readonly<{ fixture: AuthFixture }>) => {
-    expect.hasAssertions();
-    const admin = await signedInAdmin(fixture);
-    const verify = { audience: "admin" as const, headers: admin.headers() };
-    await expect(fixture.verify(verify)).rejects.toThrow("ADMIN_MFA_REQUIRED");
-    const enrolling = await fixture.verify({ ...verify, allowEnrollment: true });
-    await enableTotp(admin);
-    const enrolled = await fixture.verify({ ...verify, headers: admin.headers() });
-    expect(enrolling.strong).toBe(false);
-    expect(enrolled.strong).toBe(true);
-  });
-
-  it("old weak admin session cannot enroll another factor after MFA enrollment", async ({
-    fixture,
-  }: Readonly<{ fixture: AuthFixture }>) => {
-    expect.hasAssertions();
-    const old = await adminWithStaleSession(fixture);
-    const attempt = await old.request("/passkey/generate-register-options");
-    expect(attempt.status).toBe(HTTP_FORBIDDEN);
-    await expect(attempt.json()).resolves.toMatchObject({ message: "EXISTING_FACTOR_REQUIRED" });
-    const failedCode = await old.request("/two-factor/verify-totp", { code: "invalid-code" });
-    const enrolling = await fixture.verify({
-      allowEnrollment: true,
-      audience: "admin",
-      headers: old.headers(),
-    });
-    expect(failedCode.ok).toBe(false);
-    expect(enrolling.strong).toBe(false);
-    await expect(fixture.verify({ audience: "admin", headers: old.headers() })).rejects.toThrow(
-      "ADMIN_MFA_REQUIRED",
-    );
-  });
+const assertTotpUriDenied = Effect.fn("assertTotpUriDenied")(function* assertTotpUriDenied(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  client: Readonly<BrowserClient>,
+) {
+  const denied = yield* client.json("/two-factor/get-totp-uri", { password: PASSWORD });
+  assert.strictEqual(denied.status, HTTP_FORBIDDEN);
+  assert.deepInclude(denied.body, { message: "ADMIN_MFA_REQUIRED" });
+  assert.notProperty(denied.body, "totpURI");
 });
 
-describe("totp secret for weak admin sessions", () => {
-  it.for(AUDIENCES)(
-    "weak admin session cannot retrieve TOTP secret through %s app",
-    async (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
-      expect.hasAssertions();
-      const { old } = await adminWithWeakSession(fixture, audience);
-      const denied = await old.request("/two-factor/get-totp-uri", { password: PASSWORD });
-      const body: unknown = await denied.json();
-      const weak = await fixture.verify({
-        allowEnrollment: true,
-        audience,
-        headers: old.headers(),
-      });
-      expect(denied.status).toBe(HTTP_FORBIDDEN);
-      expect(body).toMatchObject({ message: "ADMIN_MFA_REQUIRED" });
-      expect(body).not.toHaveProperty("totpURI");
-      expect(weak.strong).toBe(false);
-    },
+const assertTotpUriAllowed = Effect.fn("assertTotpUriAllowed")(function* assertTotpUriAllowed(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  client: Readonly<BrowserClient>,
+) {
+  const allowed = yield* client.json("/two-factor/get-totp-uri", { password: PASSWORD });
+  assert.strictEqual(allowed.status, HTTP_OK);
+  assert.match(totpUri(allowed.body), totpUriPattern);
+});
+
+const recoverySession = Effect.fn("recoverySession")(function* recoverySession(
+  audience: "user" | "admin",
+) {
+  yield* bootstrapVerifiedAdmin(email);
+  const { backupCodes } = yield* enableTotp(yield* signInAs("admin", email));
+  const client = new BrowserClient((yield* Fixture)[audience]);
+  const login = yield* client.json("/sign-in/email", { email, password: PASSWORD });
+  assert.deepInclude(login.body, { twoFactorRedirect: true });
+  const code = { code: backupCodes[0] };
+  const verified = yield* client.request("/two-factor/verify-backup-code", code);
+  assert.strictEqual(verified.status, HTTP_OK);
+  return client;
+});
+
+it.effect(
+  "admin enrollment session cannot access CRM until real TOTP verification",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        yield* bootstrapVerifiedAdmin(email);
+        const client = yield* signInAs("admin", email);
+        assert.strictEqual(yield* failureTag(client.verify()), "AdminMfaRequired");
+        assert.strictEqual((yield* client.verify(true)).strong, false);
+        yield* enableTotp(client);
+        assert.strictEqual((yield* client.verify()).strong, true);
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+it.effect(
+  "TOTP sign-in has no usable session until valid second factor",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        const client = yield* registerVerified("totp@example.com");
+        yield* signIn(client, "totp@example.com");
+        const { authenticator } = yield* enableTotp(client);
+        yield* client.request("/sign-out", {});
+        const challenge = yield* client.json("/sign-in/email", {
+          email: "totp@example.com",
+          password: PASSWORD,
+        });
+        assert.deepInclude(challenge.body, { twoFactorRedirect: true });
+        assert.strictEqual(yield* failureTag(client.verify()), "SessionRequired");
+        assert.isFalse((yield* client.request("/two-factor/verify-totp", { code: "x" })).ok);
+        yield* client.request("/two-factor/verify-totp", { code: authenticator.generate() });
+        assert.strictEqual((yield* client.verify()).strong, true);
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+it.effect(
+  "old weak admin session cannot enroll another factor after MFA enrollment",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        yield* bootstrapVerifiedAdmin(email);
+        const first = yield* signInAs("admin", email);
+        const old = yield* signInAs("admin", email);
+        yield* enableTotp(first);
+        const attempt = yield* old.json("/passkey/generate-register-options");
+        assert.strictEqual(attempt.status, HTTP_FORBIDDEN);
+        assert.deepInclude(attempt.body, { message: "EXISTING_FACTOR_REQUIRED" });
+        assert.isFalse((yield* old.request("/two-factor/verify-totp", { code: "x" })).ok);
+        const weak = [(yield* old.verify(true)).strong, yield* failureTag(old.verify())];
+        assert.deepStrictEqual(weak, [false, "AdminMfaRequired"]);
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+for (const audience of ["user", "admin"] as const) {
+  it.effect(
+    `weak admin session cannot retrieve TOTP secret through ${audience} app`,
+    () =>
+      withAuth(
+        Effect.gen(function* program() {
+          yield* bootstrapVerifiedAdmin(email);
+          const old = yield* signInAs(audience, email);
+          const { authenticator } = yield* enableTotp(yield* signInAs("admin", email));
+          yield* assertTotpUriDenied(old);
+          assert.strictEqual((yield* old.verify(true)).strong, false);
+          const code = { code: authenticator.generate() };
+          assert.strictEqual((yield* old.request("/two-factor/verify-totp", code)).status, HTTP_OK);
+          assert.strictEqual((yield* old.verify(true)).strong, true);
+          yield* assertTotpUriAllowed(old);
+        }),
+      ),
+    TEST_TIMEOUT,
   );
-});
 
-describe("totp secret after second factor", () => {
-  it.for(AUDIENCES)(
-    "weak admin session retrieves TOTP secret after a valid second factor through %s app",
-    async (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
-      expect.hasAssertions();
-      const { authenticator, old } = await adminWithWeakSession(fixture, audience);
-      const verified = await old.request("/two-factor/verify-totp", {
-        code: authenticator.generate(),
-      });
-      const current = await fixture.verify({
-        allowEnrollment: true,
-        audience,
-        headers: old.headers(),
-      });
-      const allowed = await old.request("/two-factor/get-totp-uri", { password: PASSWORD });
-      expect(verified.status).toBe(HTTP_OK);
-      expect(current.strong).toBe(true);
-      expect(allowed.status).toBe(HTTP_OK);
-      await expect(allowed.json()).resolves.toHaveProperty(
-        "totpURI",
-        expect.stringMatching(TOTP_URI_PATTERN),
-      );
-    },
+  it.effect(
+    `admin recovery session cannot retrieve TOTP secret through ${audience} app`,
+    () =>
+      withAuth(
+        Effect.gen(function* program() {
+          const recovery = yield* recoverySession(audience);
+          const current = yield* recovery.verify(true);
+          assert.deepStrictEqual(
+            [current.session.authenticationMethod, current.strong],
+            ["recovery", false],
+          );
+          yield* assertTotpUriDenied(recovery);
+        }),
+      ),
+    TEST_TIMEOUT,
   );
-});
+}
 
-describe("totp secret for recovery sessions", () => {
-  it.for(AUDIENCES)(
-    "admin recovery session cannot retrieve TOTP secret through %s app",
-    async (audience, { fixture }: Readonly<{ fixture: AuthFixture }>) => {
-      expect.hasAssertions();
-      const recovery = await adminRecoverySession(fixture, audience);
-      const current = await fixture.verify({
-        allowEnrollment: true,
-        audience,
-        headers: recovery.headers(),
-      });
-      expect(current.session.authenticationMethod).toBe("recovery");
-      expect(current.strong).toBe(false);
-      const denied = await recovery.request("/two-factor/get-totp-uri", { password: PASSWORD });
-      const body: unknown = await denied.json();
-      expect(denied.status).toBe(HTTP_FORBIDDEN);
-      expect(body).toMatchObject({ message: "ADMIN_MFA_REQUIRED" });
-      expect(body).not.toHaveProperty("totpURI");
-    },
-  );
-});
-
-describe("totp secret for regular users", () => {
-  it("regular user can still retrieve TOTP URI with their password", async ({
-    fixture,
-  }: Readonly<{ fixture: AuthFixture }>) => {
-    expect.hasAssertions();
-    const old = await userWithStaleSession(fixture, "reader@example.com");
-    const current = await fixture.verify({ audience: "user", headers: old.headers() });
-    const response = await old.request("/two-factor/get-totp-uri", { password: PASSWORD });
-    expect(current.user.role).toBe("user");
-    expect(current.strong).toBe(false);
-    expect(response.status).toBe(HTTP_OK);
-    await expect(response.json()).resolves.toHaveProperty(
-      "totpURI",
-      expect.stringMatching(TOTP_URI_PATTERN),
-    );
-  });
-});
+it.effect(
+  "regular user can still retrieve TOTP URI with their password",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        const reader = "reader@example.com";
+        const enrollment = yield* registerVerified(reader);
+        assert.strictEqual((yield* signIn(enrollment, reader)).status, HTTP_OK);
+        const old = yield* signInAs("user", reader);
+        yield* enableTotp(enrollment);
+        const current = yield* old.verify();
+        assert.deepStrictEqual([current.user.role, current.strong], ["user", false]);
+        yield* assertTotpUriAllowed(old);
+      }),
+    ),
+  TEST_TIMEOUT,
+);

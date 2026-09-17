@@ -1,254 +1,164 @@
-import type { Application, Role } from "@template/config";
-import { BrowserClient, PASSWORD } from "./browser-client.ts";
-import { HttpResponse, http } from "msw";
-import { test as baseTest, expect } from "vite-plus/test";
-import { createAuth, verifySession } from "./index.ts";
-import type { Auth } from "./index.ts";
+import { BrowserClient, origins } from "./browser-client.ts";
+import { Context, Effect, Layer, Schema } from "effect";
+import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@template/db/testing";
+import { mailConfig, mailServer, mailbox } from "./mail-fixture.ts";
+import type { Application } from "@template/config";
+import { Auth } from "./auth.ts";
+import type { AuthFailure } from "./auth-failure.ts";
 import type { Database } from "@template/db";
-import type { StrictRequest } from "msw";
-import type { TestAPI } from "vite-plus/test";
-import { authorizeMcpRequest } from "./mcp.ts";
-import { createDb } from "@template/db";
+import type { Scope } from "effect";
+import { URI } from "otpauth";
+import { assert } from "@effect/vitest";
 import { sendVerificationEmail } from "@template/config";
-import { setupServer } from "msw/node";
 
-interface TestDatabase {
-  readonly binding: Parameters<typeof createDb>[0];
-  readonly dispose: () => Promise<void>;
+type AuthService = Auth["Service"];
+type TestServices = Layer.Success<typeof TestDatabase>;
+
+const PASSWORD = "test-password-safe-123";
+const HTTP_OK = 200;
+const HTTP_CREATED = 201;
+const HTTP_FOUND = 302;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_FORBIDDEN = 403;
+const HTTP_NOT_FOUND = 404;
+const TEST_TIMEOUT = { timeout: 60_000 };
+const secret = "integration-test-secret-at-least-32-characters-long";
+const TotpEnrollment = Schema.Struct({
+  backupCodes: Schema.Array(Schema.String),
+  totpURI: Schema.String,
+});
+
+class Fixture extends Context.Service<
+  Fixture,
+  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
+>()("AuthTestFixture") {}
+
+function decodeOrDie<Contract extends Schema.Top & { readonly DecodingServices: never }>(
+  contract: Contract,
+  input: unknown,
+): Effect.Effect<Contract["Type"]> {
+  return Schema.decodeUnknownEffect(contract)(input).pipe(Effect.orDie);
 }
 
-interface AuthTestDependencies {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly bootstrapAdmin: (database: Database, address: string) => Promise<unknown>;
-  readonly createTestDatabase: () => Promise<TestDatabase>;
-  readonly setUserRole: (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    input: Readonly<{ database: Database; role: Role; sessionId: string; targetId: string }>,
-  ) => Promise<unknown>;
-}
-
-interface MailpitMessage {
-  readonly From: Readonly<{ Email: string }>;
-  readonly To: readonly Readonly<{ Email: string }>[];
-  readonly Subject: string;
-  readonly Text: string;
-}
-
-interface VerifyRequest {
-  readonly allowEnrollment?: boolean;
-  readonly audience: Application;
-  readonly headers: Readonly<Headers>;
-}
-
-interface AuthFixture {
-  readonly setUserRole: (
-    input: Readonly<{ role: Role; sessionId: string; targetId: string }>,
-  ) => Promise<unknown>;
-  readonly auth: (audience: Application) => Auth;
-  readonly authOptions: (audience: Application) => Auth["options"];
-  readonly authorizeMcp: (token?: string) => ReturnType<typeof authorizeMcpRequest>;
-  readonly changeRole: (email: string, role: Role) => Promise<void>;
-  readonly client: (audience: Application) => BrowserClient;
-  readonly forgetMail: (email: string) => void;
-  readonly hasMail: (email: string) => boolean;
-  readonly origin: (audience: Application) => string;
-  readonly register: (email: string) => Promise<BrowserClient>;
-  readonly registerAdmin: (email: string) => Promise<BrowserClient>;
-  readonly registerVerified: (email: string) => Promise<BrowserClient>;
-  readonly verify: (request: VerifyRequest) => ReturnType<typeof verifySession>;
-  readonly verifyEmail: (email: string) => Promise<void>;
-}
-
-interface MailScope {
-  readonly userAuth: Readonly<Pick<Auth, "handler">>;
-  readonly verificationUrl: (email: string) => string | undefined;
-  readonly verifyToken: (token: string) => Promise<unknown>;
-}
-
-interface FixtureScope {
-  readonly auths: Readonly<Record<Application, Auth>>;
-  readonly database: Database;
-  readonly dependencies: AuthTestDependencies;
-  readonly mailbox: Map<string, string>;
-}
-
-const SECRET = "integration-test-secret-at-least-32-characters-long";
-const MAIL_CONFIG = {
-  EMAIL_FROM: "no-reply@example.test",
-  MAILPIT_URL: "http://127.0.0.1:8025",
-};
-const ORIGINS = {
-  admin: "http://localhost:4102",
-  user: "http://localhost:4101",
-  wiki: "http://localhost:4103",
-} as const;
-
-function recordMail(
-  deliver: (email: string, url: string) => void,
-  message: MailpitMessage,
-): Response {
-  if (message.From.Email !== MAIL_CONFIG.EMAIL_FROM || message.Subject !== "メールアドレスの確認") {
-    return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
-  }
-  const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
-  if (url === undefined) {
-    return HttpResponse.json({ error: "VERIFICATION_URL_REQUIRED" }, { status: 400 });
-  }
-  for (const recipient of message.To) {
-    deliver(recipient.Email, url);
-  }
-  return HttpResponse.json({ ID: crypto.randomUUID() });
-}
-
-function startMailServer(
-  deliver: (email: string, url: string) => void,
-): ReturnType<typeof setupServer> {
-  const server = setupServer(
-    http.post<never, MailpitMessage>(
-      `${MAIL_CONFIG.MAILPIT_URL}/api/v1/send`,
-      async ({
-        request,
-      }: Readonly<{ request: Readonly<Pick<StrictRequest<MailpitMessage>, "json">> }>) =>
-        recordMail(deliver, await request.json()),
-    ),
-  );
-  server.listen({ onUnhandledRequest: "error" });
-  return server;
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createAudienceAuth(database: Database, audience: Application): Auth {
-  return createAuth({
+function authFor(
+  audience: Application,
+): Effect.Effect<AuthService, AuthFailure, Database | Scope.Scope> {
+  const layer = Auth.layer({
     audience,
-    baseURL: ORIGINS[audience],
-    database,
-    secret: SECRET,
-    sendVerificationEmail: async (message) => {
-      await sendVerificationEmail({ ...MAIL_CONFIG, APP_ORIGIN: ORIGINS[audience] }, message);
-    },
+    baseURL: origins[audience],
+    secret,
+    sendVerificationEmail: (message) =>
+      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, message),
   });
-}
-
-async function verifyEmailOf(scope: MailScope, email: string): Promise<void> {
-  const url = scope.verificationUrl(email);
-  if (url === undefined) {
-    throw new Error("MAIL_DELIVERY_INVALID");
-  }
-  const link = new URL(url);
-  expect(link.pathname).toBe("/verify-email");
-  expect(link.search).toBe("");
-  const token = new URLSearchParams(link.hash.slice(1)).get("token");
-  if (token === null) {
-    throw new Error("VERIFICATION_TOKEN_MISSING");
-  }
-  await scope.verifyToken(token);
-}
-
-async function registerUser(
-  userAuth: Readonly<Pick<Auth, "handler">>,
-  email: string,
-): Promise<BrowserClient> {
-  const client = new BrowserClient(userAuth, ORIGINS.user);
-  const response = await client.request("/sign-up/email", {
-    email,
-    name: email,
-    password: PASSWORD,
-  });
-  if (!response.ok) {
-    throw new Error(`Registration failed: ${response.status}`);
-  }
-  return client;
-}
-
-async function registerVerifiedUser(scope: MailScope, email: string): Promise<BrowserClient> {
-  const client = await registerUser(scope.userAuth, email);
-  await verifyEmailOf(scope, email);
-  return client;
-}
-
-async function authorizeMcp(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  { auths, database }: FixtureScope,
-  token: string | undefined,
-): ReturnType<typeof authorizeMcpRequest> {
-  return authorizeMcpRequest({
-    auth: auths.wiki,
-    database,
-    origin: ORIGINS.wiki,
-    request: new Request(`${ORIGINS.wiki}/mcp`, {
-      headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
-      method: "POST",
-    }),
-  });
+  return Layer.build(layer).pipe(Effect.map((context) => Context.get(context, Auth)));
 }
+
+const fixture = Layer.effect(
+  Fixture,
+  Effect.gen(function* buildFixture() {
+    return Fixture.of({
+      admin: yield* authFor("admin"),
+      user: yield* authFor("user"),
+      wiki: yield* authFor("wiki"),
+    });
+  }),
+).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
+
+function withAuth<Value>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, unknown, Fixture | TestServices>,
+): Effect.Effect<Value, unknown> {
+  return effect.pipe(Effect.provide(fixture));
+}
+
+function withEmptyDatabase<Value>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, unknown, TestServices>,
+): Effect.Effect<Value, unknown> {
+  return effect.pipe(Effect.provide(EmptyTestDatabase));
+}
+
+const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
+  const { user } = yield* Fixture;
+  const link = new URL(mailbox.get(email) ?? "http://invalid.test/");
+  assert.deepStrictEqual([link.pathname, link.search], ["/verify-email", ""]);
+  const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
+  yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
+});
+
+const register = Effect.fn("register")(function* register(email: string) {
+  const { user } = yield* Fixture;
+  const client = new BrowserClient(user);
+  const signUp = { email, name: email, password: PASSWORD };
+  assert.isTrue((yield* client.request("/sign-up/email", signUp)).ok);
+  return client;
+});
+
+const registerVerified = Effect.fn("registerVerified")(function* registerVerified(email: string) {
+  const client = yield* register(email);
+  yield* verifyEmail(email);
+  return client;
+});
+
+const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
+  email: string,
+) {
+  yield* registerVerified(email);
+  yield* bootstrapAdmin(email);
+});
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createFixture(scope: FixtureScope): AuthFixture {
-  const { auths, database, mailbox } = scope;
-  const mail = {
-    userAuth: auths.user,
-    verificationUrl: (email: string): string | undefined => mailbox.get(email),
-    verifyToken: async (token: string): Promise<unknown> =>
-      auths.user.api.verifyEmail({ query: { token } }),
-  };
-  return {
-    auth: (audience) => auths[audience],
-    authOptions: (audience) => auths[audience].options,
-    authorizeMcp: async (token) => authorizeMcp(scope, token),
-    changeRole: async (email, role) => {
-      const context = await auths.wiki.$context;
-      await context.internalAdapter.updateUserByEmail(email, { role });
-    },
-    client: (audience) => new BrowserClient(auths[audience], ORIGINS[audience]),
-    forgetMail: (email) => {
-      mailbox.delete(email);
-    },
-    hasMail: (email) => mailbox.has(email),
-    origin: (audience) => ORIGINS[audience],
-    register: async (email) => registerUser(auths.user, email),
-    registerAdmin: async (email) => {
-      const client = await registerVerifiedUser(mail, email);
-      await scope.dependencies.bootstrapAdmin(database, email);
-      return client;
-    },
-    registerVerified: async (email) => registerVerifiedUser(mail, email),
-    setUserRole: async (input) => scope.dependencies.setUserRole({ ...input, database }),
-    verify: async ({ allowEnrollment, audience, headers }) =>
-      verifySession({
-        audience,
-        auth: auths[audience],
-        database,
-        headers,
-        ...(allowEnrollment === undefined ? {} : { allowEnrollment }),
-      }),
-    verifyEmail: async (email) => verifyEmailOf(mail, email),
-  };
+function signIn(client: Readonly<BrowserClient>, email: string): Effect.Effect<Response> {
+  return client.request("/sign-in/email", { email, password: PASSWORD });
 }
 
-function createAuthTest(dependencies: AuthTestDependencies): TestAPI<{ fixture: AuthFixture }> {
-  return baseTest.extend<{ fixture: AuthFixture }>({
-    fixture: async ({}: object, provide) => {
-      const testDatabase = await dependencies.createTestDatabase();
-      const database = createDb(testDatabase.binding);
-      const mailbox = new Map<string, string>();
-      const mailServer = startMailServer((email, url) => {
-        mailbox.set(email, url);
-      });
-      const auths = {
-        admin: createAudienceAuth(database, "admin"),
-        user: createAudienceAuth(database, "user"),
-        wiki: createAudienceAuth(database, "wiki"),
-      };
-      await auths.wiki.$context;
-      try {
-        await provide(createFixture({ auths, database, dependencies, mailbox }));
-      } finally {
-        mailServer.close();
-        await testDatabase.dispose();
-      }
-    },
-  });
+const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application, email: string) {
+  const client = new BrowserClient((yield* Fixture)[audience]);
+  assert.strictEqual((yield* signIn(client, email)).status, HTTP_OK);
+  return client;
+});
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: Readonly<BrowserClient>) {
+  const response = yield* client.json("/two-factor/enable", { password: PASSWORD });
+  assert.strictEqual(response.status, HTTP_OK);
+  const enrollment = yield* decodeOrDie(TotpEnrollment, response.body);
+  const authenticator = URI.parse(enrollment.totpURI);
+  const code = { code: authenticator.generate() };
+  assert.strictEqual((yield* client.request("/two-factor/verify-totp", code)).status, HTTP_OK);
+  return { authenticator, backupCodes: enrollment.backupCodes };
+});
+
+function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  effect: Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<string, Value, Requirements> {
+  return effect.pipe(
+    Effect.flip,
+    Effect.map((error) => error._tag),
+  );
 }
 
-export { createAuthTest };
-export type { AuthFixture };
+export {
+  Fixture,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_FOUND,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  PASSWORD,
+  TEST_TIMEOUT,
+  authFor,
+  bootstrapVerifiedAdmin,
+  decodeOrDie,
+  enableTotp,
+  failureTag,
+  register,
+  registerVerified,
+  signIn,
+  signInAs,
+  withAuth,
+  withEmptyDatabase,
+};

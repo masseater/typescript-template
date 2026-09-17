@@ -1,25 +1,29 @@
+import { applicationPorts, applications } from "@template/config";
+import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { chmod, open, readFile } from "node:fs/promises";
 import {
-  apps,
   lanOrigin,
   logFileUrl,
-  origins,
-  ports,
   readCredentials,
   readyPaths,
   root,
+  routeNames,
   run,
   running,
   socket,
 } from "./local-environment.ts";
-import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, open, readFile } from "node:fs/promises";
 import type { App } from "./local-environment.ts";
+import { Effect } from "effect";
+import type { LocalCommandFailure } from "./failure.ts";
+import { fileIo } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 import { privateFileMode } from "./private-files.ts";
 
-interface ApplicationStatus {
+interface AppStatus {
   readonly app: App;
   readonly httpStatus: number | null;
   readonly logFile: string;
@@ -28,108 +32,104 @@ interface ApplicationStatus {
 }
 
 interface StatusReport {
-  readonly apps: readonly ApplicationStatus[];
+  readonly apps: readonly AppStatus[];
   readonly event: "local.application_status";
   readonly functionalVerification: "not-proven-by-status";
 }
 
-interface ConnectionReport {
-  readonly admin: string;
-  readonly event: "local.lan_access";
-  readonly mailpit: string;
-  readonly reachableFrom: "devices on the same LAN that trust the local certificate authority";
-  readonly user: string;
-  readonly wiki: string;
-  readonly windowsTrustCommand: string;
-}
-
-interface LogReport {
-  readonly app: App;
-  readonly log: string;
-}
-
 const statusTimeoutMilliseconds = 3000;
 
-async function httpStatus(app: App): Promise<number | null> {
-  try {
-    const response = await fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
-      redirect: "manual",
-      signal: AbortSignal.timeout(statusTimeoutMilliseconds),
-    });
-    return response.status;
-  } catch {
-    // oxlint-disable-next-line unicorn/no-null
-    return null;
-  }
+function httpStatus(app: App): Effect.Effect<number | null> {
+  return Effect.tryPromise(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    async (signal) =>
+      fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
+        redirect: "manual",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
+      }),
+  ).pipe(
+    Effect.match({
+      // oxlint-disable-next-line unicorn/no-null
+      onFailure: () => null,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      onSuccess: (response) => response.status,
+    }),
+  );
 }
 
-async function status(): Promise<StatusReport> {
-  const reports = apps.map(async (app): Promise<ApplicationStatus> => {
-    const processRunning = await running(app);
-    return {
+function appStatus(app: App): Effect.Effect<AppStatus> {
+  return Effect.all({ httpStatus: httpStatus(app), processRunning: running(app) }).pipe(
+    Effect.map((observed) => ({
       app,
-      httpStatus: await httpStatus(app),
       logFile: fileURLToPath(logFileUrl(app)),
-      origin: origins[app],
-      processRunning,
-    };
-  });
-  return {
-    apps: await Promise.all(reports),
+      origin: lanOrigin(app),
+      ...observed,
+    })),
+  );
+}
+
+const status = Effect.fn("status")(function* status() {
+  const report: StatusReport = {
+    apps: yield* Effect.forEach(applications, appStatus, { concurrency: "unbounded" }),
     event: "local.application_status",
     functionalVerification: "not-proven-by-status",
   };
-}
+  return report;
+});
 
 function windowsTrustCommand(certificate: string): string {
   return `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`;
 }
 
-async function connection(): Promise<ConnectionReport> {
-  await ensureGateway();
+const connection = Effect.fn("connection")(function* connection() {
+  yield* ensureGateway();
+  const certificate = yield* certificateAuthorityBase64();
   return {
-    admin: origins.admin,
     event: "local.lan_access",
-    mailpit: lanOrigin("mailpit"),
     reachableFrom: "devices on the same LAN that trust the local certificate authority",
-    user: origins.user,
-    wiki: origins.wiki,
-    windowsTrustCommand: windowsTrustCommand(await certificateAuthorityBase64()),
+    ...Object.fromEntries(routeNames.map((name) => [name, lanOrigin(name)])),
+    windowsTrustCommand: windowsTrustCommand(certificate),
   };
-}
+});
 
-async function launch(app: App): Promise<void> {
+const launch = Effect.fn("launch")(function* launch(app: App) {
   const log = fileURLToPath(logFileUrl(app));
-  const logFile = await open(log, "a", privateFileMode);
-  await logFile.close();
-  await chmod(log, privateFileMode);
-  const vitePlus = JSON.stringify(fileURLToPath(import.meta.resolve("vite-plus/bin")));
-  const command = `exec ${JSON.stringify(process.execPath)} ${vitePlus} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
-  await run(
+  yield* Effect.acquireUseRelease(
+    fileIo(async () => open(log, "a", privateFileMode)),
+    () => Effect.void,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (file) => fileIo(async () => file.close()),
+  );
+  yield* fileIo(async () => chmod(log, privateFileMode));
+  const vp = JSON.stringify(path.join(root, "node_modules/.bin/vp"));
+  const command = `exec ${vp} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
+  return yield* run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],
     { cwd: root },
   );
-}
+});
 
-async function start(app: App): Promise<StatusReport> {
-  await readCredentials();
-  await ensureGateway();
-  if (!(await running(app))) {
-    await launch(app);
+const start = Effect.fn("start")(function* start(app: App) {
+  yield* readCredentials();
+  yield* ensureGateway();
+  if (!(yield* running(app))) {
+    yield* launch(app);
   }
-  return status();
-}
+  return yield* status();
+});
 
-async function stop(app: App): Promise<StatusReport> {
-  if (await running(app)) {
-    await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
+const stop = Effect.fn("stop")(function* stop(app: App) {
+  if (yield* running(app)) {
+    yield* run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
   }
-  return status();
-}
+  return yield* status();
+});
 
-async function logs(app: App): Promise<LogReport> {
-  return { app, log: await readFile(logFileUrl(app), "utf-8") };
+function logs(app: App): Effect.Effect<{ app: App; log: string }, LocalCommandFailure> {
+  return fileIo(async () => readFile(logFileUrl(app), "utf-8")).pipe(
+    Effect.map((log) => ({ app, log })),
+  );
 }
 
 export { connection, logs, start, status, stop };

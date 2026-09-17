@@ -1,12 +1,13 @@
 import type { Correlation, HttpMethod } from "./protocol.ts";
 import {
   httpMethod,
+  isRequestId,
+  isRoutes,
   randomHex,
-  requestIdSchema,
   routeLabel,
+  routeMessage,
   spanIdBytes,
   traceIdBytes,
-  validateRoutes,
 } from "./protocol.ts";
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 import type { BrowserEvent } from "./events.ts";
@@ -14,7 +15,6 @@ import { BrowserEventQueue } from "./browser-queue.ts";
 import type { EventQueue } from "./browser-queue.ts";
 import type { Metric } from "web-vitals";
 import { errorAttributes } from "./errors.ts";
-import { is } from "valibot";
 import { maximumMeasurement } from "./events.ts";
 
 interface BrowserTelemetryOptions {
@@ -86,7 +86,7 @@ function responseOutcome(
 ): Pick<BrowserEvent, "requestId" | "status"> {
   const serverRequestId = response.headers.get("x-request-id");
   return {
-    requestId: is(requestIdSchema, serverRequestId) ? serverRequestId : fallbackRequestId,
+    requestId: isRequestId(serverRequestId) ? serverRequestId : fallbackRequestId,
     status: response.status,
   };
 }
@@ -223,8 +223,14 @@ function observeVitals(recorder: Recorder): void {
   onTTFB(recordVital);
 }
 
+function assertRoutes(routes: Readonly<Record<string, string>>): void {
+  if (!isRoutes(routes)) {
+    throw new Error(routeMessage);
+  }
+}
+
 function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetry {
-  validateRoutes(options.routes);
+  assertRoutes(options.routes);
   const { endpoint, routes } = options;
   const send = globalThis.fetch.bind(globalThis);
   const queue = new BrowserEventQueue(async (events) => {

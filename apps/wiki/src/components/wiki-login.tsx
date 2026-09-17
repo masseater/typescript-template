@@ -1,10 +1,11 @@
-import { object, parse, string } from "valibot";
 import { LoginPage } from "@template/ui/auth";
 import type { ReactElement } from "react";
+import { Schema } from "effect";
 import { UIProvider } from "@template/ui";
+import { decodeJson } from "@template/runtime/client";
 
 const HTTP_FORBIDDEN = 403;
-const redirectSchema = object({ url: string() });
+const Redirect = Schema.Struct({ url: Schema.String });
 
 async function requestContinuation(oauthQuery: string): Promise<Response> {
   return fetch("/api/auth/oauth2/continue", {
@@ -23,7 +24,7 @@ async function continuationTarget(oauthQuery: string): Promise<string> {
   if (!response.ok) {
     throw new Error("連携の許可を続けられませんでした。");
   }
-  return parse(redirectSchema, await response.json()).url;
+  return decodeJson(Redirect, await response.json()).url;
 }
 
 async function continueAuthorization(): Promise<void> {

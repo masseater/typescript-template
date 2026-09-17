@@ -1,22 +1,15 @@
-import { array, boolean, number, object, parse, picklist, string } from "valibot";
+import {
+  RoleChanged,
+  UserDeleted,
+  UserList as UserListContract,
+} from "@template/runtime/contracts";
 import { useCallback, useEffect, useState } from "react";
-import type { InferOutput } from "valibot";
 import type { MouseEventHandler } from "react";
 import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
-import { roles } from "@template/config";
 import { usersPageSize } from "#users-pagination.ts";
 
-const userSchema = object({
-  email: string(),
-  emailVerified: boolean(),
-  id: string(),
-  name: string(),
-  role: picklist(roles),
-});
-const usersSchema = object({ total: number(), users: array(userSchema) });
-
-type ManagedUser = Readonly<InferOutput<typeof userSchema>>;
+type ManagedUser = (typeof UserListContract.Type)["users"][number];
 interface UserList {
   readonly total: number;
   readonly users: readonly ManagedUser[];
@@ -43,8 +36,7 @@ interface UserManagement extends UserListState, UserMutationState {
 }
 
 async function fetchUsers(offset: number): Promise<UserList> {
-  const body = await requestJson(`/api/users?limit=${usersPageSize}&offset=${offset}`);
-  return parse(usersSchema, body);
+  return requestJson(`/api/users?limit=${usersPageSize}&offset=${offset}`, UserListContract);
 }
 
 function confirmationText(user: ManagedUser, method: MutationMethod): string {
@@ -124,7 +116,9 @@ function useUserMutation(
       setMessage("");
       async function update(): Promise<void> {
         try {
-          await requestJson("/api/users", { body: mutationBody(user, method), method });
+          await (method === "DELETE"
+            ? requestJson("/api/users", UserDeleted, { body: mutationBody(user, method), method })
+            : requestJson("/api/users", RoleChanged, { body: mutationBody(user, method), method }));
           setMessage(
             method === "DELETE"
               ? "ユーザーを削除しました。"

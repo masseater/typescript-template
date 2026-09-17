@@ -1,18 +1,11 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createHash, createPublicKey } from "node:crypto";
-import {
-  inheritedEnvironment,
-  local,
-  logFileUrl,
-  root,
-  routeNames,
-  routes,
-  run,
-  running,
-  socket,
-} from "./local-environment.ts";
+import { failure, fileIo } from "./failure.ts";
+import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, readFile } from "node:fs/promises";
+import { Effect } from "effect";
+import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 import { privateDirectoryMode } from "./private-files.ts";
@@ -25,56 +18,64 @@ const portlessHome = new URL("portless/", local);
 const certificateAuthority = new URL("ca.pem", portlessHome);
 const portless = fileURLToPath(new URL("../node_modules/.bin/portless", import.meta.url));
 const portlessEnvironment = {
-  ...inheritedEnvironment,
+  // oxlint-disable-next-line node/no-process-env
+  ...process.env,
   PORTLESS_STATE_DIR: fileURLToPath(portlessHome),
   PORTLESS_SYNC_HOSTS: "0",
 };
 
-async function browserLaunchArguments(): Promise<string[]> {
-  const authority = createPublicKey(await readFile(certificateAuthority, "utf-8"));
-  const pin = createHash("sha256")
-    .update(authority.export({ format: "der", type: "spki" }))
-    .digest("base64");
-  return [
-    "--args",
-    `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local 127.0.0.1`,
-  ];
-}
+const browserLaunchArguments = Effect.fn("browserLaunchArguments")(
+  function* browserLaunchArguments() {
+    const certificate = yield* fileIo(async () => readFile(certificateAuthority, "utf-8"));
+    const authority = yield* Effect.try({
+      catch: () => failure("file_io_failed"),
+      try: () => createPublicKey(certificate),
+    });
+    const pin = createHash("sha256")
+      .update(authority.export({ format: "der", type: "spki" }))
+      .digest("base64");
+    return [
+      "--args",
+      `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local 127.0.0.1`,
+    ];
+  },
+);
 
-async function launchGateway(): Promise<void> {
-  const log = fileURLToPath(logFileUrl(gatewaySession));
-  const entry = fileURLToPath(new URL("gateway.ts", import.meta.url));
-  const command = `exec node ${JSON.stringify(entry)} ${proxyPort} >> ${JSON.stringify(log)} 2>&1`;
-  await run(
+function launchGateway(): Effect.Effect<unknown, LocalCommandFailure> {
+  const log = fileURLToPath(new URL("logs/gateway.log", local));
+  const gateway = JSON.stringify(fileURLToPath(new URL("gateway.ts", import.meta.url)));
+  const command = `exec node ${gateway} ${proxyPort} >> ${JSON.stringify(log)} 2>&1`;
+  return run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", root, "fish", "-c", command],
     { cwd: root },
   );
 }
 
-async function ensureGateway(): Promise<void> {
-  await mkdir(portlessHome, { mode: privateDirectoryMode, recursive: true });
-  await run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
+const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
+  yield* fileIo(async () => mkdir(portlessHome, { mode: privateDirectoryMode, recursive: true }));
+  yield* run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
     cwd: root,
     env: portlessEnvironment,
     timeout: proxyStartTimeoutMilliseconds,
   });
-  for (const name of routeNames) {
-    // oxlint-disable-next-line no-await-in-loop
-    await run(portless, ["alias", `template-${name}`, String(routes[name]), "--force"], {
+  yield* Effect.forEach(routeNames, (name) =>
+    run(portless, ["alias", `template-${name}`, String(routes[name]), "--force"], {
       cwd: root,
       env: portlessEnvironment,
       timeout: aliasTimeoutMilliseconds,
-    });
+    }),
+  );
+  if (!(yield* running(gatewaySession))) {
+    yield* launchGateway();
   }
-  if (!(await running(gatewaySession))) {
-    await launchGateway();
-  }
-}
+});
 
-async function certificateAuthorityBase64(): Promise<string> {
-  const certificate = await readFile(certificateAuthority);
-  return certificate.toString("base64");
+function certificateAuthorityBase64(): Effect.Effect<string, LocalCommandFailure> {
+  return fileIo(async () => readFile(certificateAuthority)).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((certificate) => certificate.toString("base64")),
+  );
 }
 
 export { browserLaunchArguments, certificateAuthorityBase64, ensureGateway };

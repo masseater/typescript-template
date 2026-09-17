@@ -1,13 +1,14 @@
 import { Page, Status, UIProvider } from "@template/ui";
-import { object, optional, parse, string } from "valibot";
 import { useCallback, useEffect, useState } from "react";
 import { ConsentActions } from "./consent-actions.tsx";
 import type { ReactElement } from "react";
+import { Schema } from "effect";
+import { decodeJson } from "@template/runtime/client";
 import { getRouteApi } from "@tanstack/react-router";
 
 const HTTP_UNAUTHORIZED = 401;
 const consentRoute = getRouteApi("/consent");
-const clientSchema = object({ client_name: optional(string()) });
+const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
 async function loadClientName(clientId: string): Promise<string | undefined> {
   const response = await fetch(
@@ -21,7 +22,7 @@ async function loadClientName(clientId: string): Promise<string | undefined> {
   if (!response.ok) {
     throw new Error("クライアントの情報を取得できませんでした。");
   }
-  return parse(clientSchema, await response.json()).client_name ?? clientId;
+  return decodeJson(ClientView, await response.json()).client_name ?? clientId;
 }
 
 function messageOf(cause: unknown): string {

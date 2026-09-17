@@ -1,6 +1,7 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
+import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
@@ -238,10 +239,22 @@ export default definePlugin({
         "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。",
       ),
     },
+    "effect-failures": {
+      create: effectFailuresVisitor,
+      meta: metadata(
+        "effect を使うファイルでは throw と try/catch を使えません。失敗は Schema.TaggedError で型に載せ、Effect.fail・Effect.try・Effect.tryPromise・Result.try で扱ってください。better-auth のフックが要求する APIError だけは throw できます。",
+      ),
+    },
+    "effect-stack": {
+      create: effectStackVisitor,
+      meta: metadata(
+        "入力検証は valibot ではなく effect の Schema で行ってください。Elysia アプリは libs/runtime/src/http.ts の createApi で作り、TanStack Start の server route に HTTP ハンドラーを定義しないでください。Worker は起動時にしか Elysia の AOT コードを生成できないため、API は Worker エントリから静的に読み込む必要があります。",
+      ),
+    },
     "environment-boundary": {
       create: environmentVisitor,
       meta: metadata(
-        "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Valibot で検証してください。",
+        "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Effect の Schema で検証してください。",
       ),
     },
     "no-internal-mocks": {

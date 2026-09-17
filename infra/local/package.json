@@ -7,5 +7,9 @@
     "up": "node src/compose.ts up",
     "status": "node src/compose.ts status",
     "logs": "node src/compose.ts logs"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:"
   }
 }

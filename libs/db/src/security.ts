@@ -1,4 +1,5 @@
 import type { Application, StrongAuthenticationMethod } from "@template/config";
+import { Effect, Schema } from "effect";
 import { and, count, eq, gt } from "drizzle-orm";
 import {
   oauthAccessToken,
@@ -9,137 +10,152 @@ import {
   user,
   verification,
 } from "./schema.ts";
-import type { Database } from "./index.ts";
+import { query } from "./database.ts";
 
-type User = typeof user.$inferSelect;
-interface SessionSecurity {
-  session: typeof session.$inferSelect;
-  user: User;
-}
+class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 
-async function hasVerificationAudience(
-  database: Readonly<Pick<Database, "select">>,
-  identifier: string,
-  audience: Application,
-): Promise<boolean> {
-  const unexpired = gt(verification.expiresAt, new Date());
-  const [record] = await database
-    .select({ id: verification.id })
-    .from(verification)
-    .where(
-      and(eq(verification.identifier, identifier), eq(verification.audience, audience), unexpired),
-    )
-    .limit(1);
-  return record !== undefined;
-}
+const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
+  function* hasVerificationAudience(identifier: string, audience: Application) {
+    const now = new Date();
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    const [record] = yield* query((database) =>
+      database
+        .select({ id: verification.id })
+        .from(verification)
+        .where(
+          and(
+            eq(verification.identifier, identifier),
+            eq(verification.audience, audience),
+            gt(verification.expiresAt, now),
+          ),
+        )
+        .limit(1),
+    );
+    return record !== undefined;
+  },
+);
 
-async function findUser(
-  database: Readonly<Pick<Database, "select">>,
-  userId: string,
-): Promise<User | undefined> {
-  const [record] = await database.select().from(user).where(eq(user.id, userId)).limit(1);
-  return record;
-}
+const findUser = Effect.fn("findUser")(function* findUser(userId: string) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [record] = yield* query((database) =>
+    database.select().from(user).where(eq(user.id, userId)).limit(1),
+  );
+  // oxlint-disable-next-line unicorn/no-null
+  return record ?? null;
+});
 
-async function findPasskeyUser(
-  database: Readonly<Pick<Database, "select">>,
+const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
   credentialId: string,
   audience: Application,
-): Promise<User | undefined> {
-  const [record] = await database
-    .select({ user })
-    .from(passkey)
-    .innerJoin(user, eq(passkey.userId, user.id))
-    .where(and(eq(passkey.credentialID, credentialId), eq(passkey.audience, audience)))
-    .limit(1);
-  return record?.user;
-}
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [record] = yield* query((database) =>
+    database
+      .select({ user })
+      .from(passkey)
+      .innerJoin(user, eq(passkey.userId, user.id))
+      .where(and(eq(passkey.credentialID, credentialId), eq(passkey.audience, audience)))
+      .limit(1),
+  );
+  // oxlint-disable-next-line unicorn/no-null
+  return record?.user ?? null;
+});
 
-async function hasEnrolledFactor(
-  database: Readonly<Pick<Database, "select">>,
+const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFactor(
   userId: string,
   audience: Application,
-): Promise<boolean> {
-  const [keys] = await database
-    .select({ count: count() })
-    .from(passkey)
-    .where(and(eq(passkey.userId, userId), eq(passkey.audience, audience)));
-  const [totp] = await database
-    .select({ id: twoFactor.id })
-    .from(twoFactor)
-    .where(and(eq(twoFactor.userId, userId), eq(twoFactor.verified, true)))
-    .limit(1);
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [keys] = yield* query((database) =>
+    database
+      .select({ count: count() })
+      .from(passkey)
+      .where(and(eq(passkey.userId, userId), eq(passkey.audience, audience))),
+  );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [totp] = yield* query((database) =>
+    database
+      .select({ id: twoFactor.id })
+      .from(twoFactor)
+      .where(and(eq(twoFactor.userId, userId), eq(twoFactor.verified, true)))
+      .limit(1),
+  );
   return (keys?.count ?? 0) > 0 || totp !== undefined;
-}
+});
 
-async function getSessionSecurity(
-  database: Readonly<Pick<Database, "select">>,
+const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionSecurity(
   sessionId: string,
   audience: Application,
-): Promise<SessionSecurity | undefined> {
-  const unexpired = gt(session.expiresAt, new Date());
-  const [record] = await database
-    .select({ session, user })
-    .from(session)
-    .innerJoin(user, eq(session.userId, user.id))
-    .where(
-      and(
-        eq(session.id, sessionId),
-        eq(session.audience, audience),
-        eq(session.securityVersion, user.securityVersion),
-        unexpired,
-      ),
-    )
-    .limit(1);
-  return record;
-}
+) {
+  const now = new Date();
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [record] = yield* query((database) =>
+    database
+      .select({ session, user })
+      .from(session)
+      .innerJoin(user, eq(session.userId, user.id))
+      .where(
+        and(
+          eq(session.id, sessionId),
+          eq(session.audience, audience),
+          eq(session.securityVersion, user.securityVersion),
+          gt(session.expiresAt, now),
+        ),
+      )
+      .limit(1),
+  );
+  // oxlint-disable-next-line unicorn/no-null
+  return record ?? null;
+});
 
-async function markSessionStrong({
-  audience,
-  database,
-  method,
-  sessionId,
-}: Readonly<{
-  audience: Application;
-  database: Readonly<Pick<Database, "update">>;
-  method: StrongAuthenticationMethod;
-  sessionId: string;
-}>): Promise<void> {
-  const [updated] = await database
-    .update(session)
-    .set({
-      authenticatedAt: new Date(),
-      authenticationMethod: method,
-    })
-    .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
-    .returning({ id: session.id });
+const markSessionStrong = Effect.fn("markSessionStrong")(function* markSessionStrong(
+  sessionId: string,
+  audience: Application,
+  method: StrongAuthenticationMethod,
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [updated] = yield* query((database) =>
+    database
+      .update(session)
+      .set({ authenticatedAt: new Date(), authenticationMethod: method })
+      .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
+      .returning({ id: session.id }),
+  );
   if (!updated) {
-    throw new Error("SESSION_REVOKED");
+    return yield* new SessionRevoked();
   }
-}
+});
 
-async function revokeUserSessions(
-  database: Readonly<Pick<Database, "delete">>,
+const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserSessions(
   userId: string,
-): Promise<void> {
-  await database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId));
-  await database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId));
-  await database.delete(session).where(eq(session.userId, userId));
-}
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  yield* query((database) =>
+    database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+  );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  yield* query((database) =>
+    database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+  );
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  yield* query((database) => database.delete(session).where(eq(session.userId, userId)));
+});
 
-async function findWikiReader(
-  database: Readonly<Pick<Database, "select">>,
-  userId: string,
-): Promise<{ id: string } | undefined> {
-  const [record] = await database
-    .select({ id: user.id })
-    .from(user)
-    .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
-    .limit(1);
-  return record;
-}
+const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const [record] = yield* query((database) =>
+    database
+      .select({ id: user.id })
+      .from(user)
+      .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
+      .limit(1),
+  );
+  // oxlint-disable-next-line unicorn/no-null
+  return record ?? null;
+});
 
 export {
+  SessionRevoked,
   findPasskeyUser,
   findUser,
   findWikiReader,
@@ -149,4 +165,3 @@ export {
   markSessionStrong,
   revokeUserSessions,
 };
-export type { SessionSecurity };

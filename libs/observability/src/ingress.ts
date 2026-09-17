@@ -1,20 +1,13 @@
-import { clientErrorSchema, readJson } from "./request.ts";
+import { Effect, Result } from "effect";
+import { readJson, rejectionStatus } from "./request.ts";
 import type { Application } from "@template/config";
 import type { BrowserEvent } from "./events.ts";
 import type { JsonRequest } from "./request.ts";
-import type { LogSink } from "./log.ts";
+import { Telemetry } from "./telemetry.ts";
 import { errorFingerprint } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
-import { is } from "valibot";
 import { parseBrowserEvents } from "./events.ts";
-import { writeLog } from "./log.ts";
 
-interface Ingress {
-  readonly log: LogSink;
-  readonly labels: Readonly<ReadonlySet<string>>;
-  readonly release: string;
-  readonly serviceName: Application;
-}
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
 type LogFields = Readonly<Record<string, string | number | boolean>>;
 interface IngressWindow {
@@ -68,65 +61,61 @@ function kindFields(event: BrowserEvent): LogFields {
   return {};
 }
 
-function recordBrowserEvent(ingress: Ingress, event: BrowserEvent): void {
+function recordBrowserEvent(serviceName: Application, event: BrowserEvent): Effect.Effect<void> {
   const failed =
     event.kind === "exception" ||
     (event.kind === "http" && (event.status === 0 || event.status >= httpStatus.badRequest));
-  writeLog(ingress.log, failed ? "error" : "info", {
+  const attributes = {
     duration_ms: event.duration,
-    event: event.name,
     "http.route": event.route,
     measurement_value: event.value,
-    release: ingress.release,
     request_id: event.requestId,
-    service: `${ingress.serviceName}-browser`,
+    service: `${serviceName}-browser`,
     span_id: event.spanId,
     start: new Date(event.start).toISOString(),
     "telemetry.source": "untrusted-browser",
     trace_id: event.traceId,
     ...kindFields(event),
-  });
+  };
+  return failed ? Effect.logError(event.name, attributes) : Effect.logInfo(event.name, attributes);
 }
 
-async function readEvents(
-  ingress: Ingress,
-  request: IngressRequest,
-): Promise<BrowserEvent[] | Response> {
+const readEvents = Effect.fn("readEvents")(function* readEvents(request: IngressRequest) {
+  const telemetry = yield* Telemetry;
+  const input = yield* Effect.result(
+    readJson(request, new URL(request.url).origin, maximumBodyBytes),
+  );
+  if (Result.isFailure(input)) {
+    return emptyResponse(rejectionStatus[input.failure.reason]);
+  }
+  const events = yield* Effect.result(
+    parseBrowserEvents(input.success, telemetry.labels, Date.now()),
+  );
+  if (Result.isFailure(events)) {
+    return emptyResponse(httpStatus.badRequest);
+  }
+  return events.success;
+});
+
+const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(request: IngressRequest) {
   if (request.method !== "POST") {
     return emptyResponse(httpStatus.methodNotAllowed, { ...noStore, allow: "POST" });
   }
-  try {
-    const body = await readJson(request, new URL(request.url).origin, maximumBodyBytes);
-    return parseBrowserEvents(body, ingress.labels, Date.now());
-  } catch (error) {
-    return emptyResponse(is(clientErrorSchema, error) ? error.statusCode : httpStatus.badRequest);
-  }
-}
-
-async function acceptEvents(
-  ingress: Ingress,
-  request: IngressRequest,
-): Promise<BrowserEvent[] | Response> {
-  const events = await readEvents(ingress, request);
-  if (events instanceof Response || admit(ingress.serviceName, events.length)) {
-    return events;
-  }
-  return emptyResponse(httpStatus.tooManyRequests, {
-    ...noStore,
-    "retry-after": retryAfterSeconds,
-  });
-}
-
-async function ingestBrowser(ingress: Ingress, request: IngressRequest): Promise<Response> {
-  const events = await acceptEvents(ingress, request);
+  const { serviceName } = yield* Telemetry;
+  const events = yield* readEvents(request);
   if (events instanceof Response) {
     return events;
   }
-  for (const event of events) {
-    recordBrowserEvent(ingress, event);
+  if (!admit(serviceName, events.length)) {
+    return emptyResponse(httpStatus.tooManyRequests, {
+      ...noStore,
+      "retry-after": retryAfterSeconds,
+    });
   }
+  yield* Effect.forEach(events, (event) => recordBrowserEvent(serviceName, event), {
+    discard: true,
+  });
   return emptyResponse(httpStatus.accepted);
-}
+});
 
 export { ingestBrowser };
-export type { IngressRequest };

@@ -38,7 +38,7 @@ function packageLocation(current: string): PackageLocation | undefined {
 function importerOf(current: string): Importer {
   return {
     current,
-    isTest: /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(current),
+    isTest: /(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$/u.test(current),
     location: packageLocation(current),
   };
 }
@@ -72,6 +72,16 @@ function isWithinDatabase(importer: Importer): boolean {
 
 function isDatabaseRoot(importer: Importer): boolean {
   return isWithinDatabase(importer) && /\/src\/index\.[cm]?[jt]s$/u.test(importer.current);
+}
+
+function isDatabaseRuntime(importer: Importer): boolean {
+  return (
+    isWithinDatabase(importer) &&
+    !importer.isTest &&
+    !/\/src\/(?:remote[^/]*|bootstrap[^/]*|migrate[^/]*|testing)\.[cm]?[jt]s$/u.test(
+      importer.current,
+    )
+  );
 }
 
 function crossesApplication(importer: Importer, target: ImportTarget): boolean {
@@ -122,7 +132,7 @@ function leaksDatabaseOperations(importer: Importer, target: ImportTarget): bool
     importsOperations &&
     (importer.location?.area === "apps" ||
       (importer.location?.area === "libs" &&
-        (isDatabaseRoot(importer) || (!isWithinDatabase(importer) && !testSupport))))
+        (isDatabaseRuntime(importer) || (!isWithinDatabase(importer) && !testSupport))))
   );
 }
 

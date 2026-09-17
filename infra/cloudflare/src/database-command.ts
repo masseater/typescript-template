@@ -1,41 +1,67 @@
-import { object, parse, string } from "valibot";
-import { readEnvironment } from "./environment.ts";
+import { Effect, Schema } from "effect";
+import { CloudflareFailure } from "./config.ts";
+import { NodeRuntime } from "@effect/platform-node";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
 import { readStackOutput } from "@template/infra-bootstrap/state";
 import { runRemoteDatabaseCommand } from "@template/db/remote";
 
+const Settings = Schema.Struct({ accountId: Schema.String });
+
+function inputInvalid(): CloudflareFailure {
+  return new CloudflareFailure({ code: "database_input_invalid" });
+}
+
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
-const settingsSchema = object({ accountId: string() });
-
-async function readStandardInput(): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) {
-    if (!Buffer.isBuffer(chunk)) {
-      throw new TypeError("database_input_invalid");
+const readBootstrapEmail = Effect.tryPromise({
+  catch: inputInvalid,
+  try: async () => {
+    const chunks: unknown[] = [];
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk);
     }
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString("utf-8").trim();
-}
+    return chunks;
+  },
+}).pipe(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  Effect.flatMap((chunks) =>
+    chunks.every((chunk) => Buffer.isBuffer(chunk))
+      ? Effect.succeed(Buffer.concat(chunks).toString("utf-8").trim())
+      : Effect.fail(inputInvalid()),
+  ),
+);
 
-try {
-  const args = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
-  const [operation, mode] = args;
-  const settings = parse(
-    settingsSchema,
-    await readStackOutput(`${import.meta.dirname}/../settings`, "applicationSettings"),
-  );
-  const databaseId = await readStackOutput(`${import.meta.dirname}/../database`, "databaseId");
-  const email = operation === "bootstrap" ? await readStandardInput() : "";
-  const apiToken = readEnvironment().CLOUDFLARE_API_TOKEN;
-  const result = await runRemoteDatabaseCommand(args, {
-    accountId: settings.accountId,
-    databaseId,
-    ...(mode === "--execute" && apiToken !== undefined && apiToken !== "" ? { apiToken } : {}),
-    ...(email === "" ? {} : { email }),
-  });
-  process.stdout.write(`${JSON.stringify(result)}\n`);
-} catch {
-  process.stderr.write(`${JSON.stringify({ event: "cloudflare.database_command_failed" })}\n`);
-  process.exitCode = 1;
-}
+NodeRuntime.runMain(
+  Effect.gen(function* program() {
+    const args = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
+    const settings = yield* readStackOutput(
+      fileURLToPath(new URL("../settings", import.meta.url)),
+      "applicationSettings",
+    ).pipe(Effect.flatMap(Schema.decodeUnknownEffect(Settings)));
+    const databaseId = yield* readStackOutput(
+      fileURLToPath(new URL("../database", import.meta.url)),
+      "databaseId",
+    );
+    const email = args[0] === "bootstrap" ? yield* readBootstrapEmail : "";
+    // oxlint-disable-next-line node/no-process-env
+    const apiToken = process.env["CLOUDFLARE_API_TOKEN"];
+    const result = yield* runRemoteDatabaseCommand(args, {
+      accountId: settings.accountId,
+      databaseId,
+      ...(args[1] === "--execute" && apiToken !== undefined && apiToken !== "" ? { apiToken } : {}),
+      ...(email === "" ? {} : { email }),
+    });
+    // oxlint-disable-next-line no-console
+    console.info(JSON.stringify(result));
+  }).pipe(
+    Effect.catchCause(() =>
+      Effect.sync(() => {
+        // oxlint-disable-next-line no-console
+        console.error(JSON.stringify({ event: "cloudflare.database_command_failed" }));
+        process.exitCode = 1;
+      }),
+    ),
+  ),
+  { disableErrorReporting: true },
+);

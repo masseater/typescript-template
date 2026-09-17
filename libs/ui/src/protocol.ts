@@ -1,33 +1,13 @@
-import {
-  boolean,
-  email,
-  is,
-  object,
-  picklist,
-  pipe,
-  readonly,
-  record,
-  string,
-  unknown,
-} from "valibot";
-import type { InferOutput } from "valibot";
-import { roles } from "@template/config";
+import { Schema } from "effect";
+import type { SessionView as SessionContract } from "@template/runtime/contracts";
 
-const unknownRecordSchema = record(string(), unknown());
-const emailSchema = pipe(string(), email());
-const sessionUserSchema = pipe(
-  object({
-    email: emailSchema,
-    id: string(),
-    name: string(),
-    role: picklist(roles),
-    twoFactorEnabled: boolean(),
-  }),
-  readonly(),
-);
-const sessionSchema = pipe(object({ strong: boolean(), user: sessionUserSchema }), readonly());
+const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
 
-type SessionView = InferOutput<typeof sessionSchema>;
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return isRecord(value);
+}
+
+type SessionView = typeof SessionContract.Type;
 
 interface AuthResult<TData> {
   readonly data: TData;
@@ -61,19 +41,19 @@ function requirePasskeyUV(data: unknown, pathname: string): void {
   ) {
     return;
   }
-  if (!is(unknownRecordSchema, data)) {
+  if (!isUnknownRecord(data)) {
     throw new Error("パスキー設定の応答形式が不正です。");
   }
   if (pathname.endsWith("/passkey/generate-authenticate-options")) {
     data["userVerification"] = "required";
   } else {
     const selection = data["authenticatorSelection"];
-    if (selection !== undefined && !is(unknownRecordSchema, selection)) {
+    if (selection !== undefined && !isUnknownRecord(selection)) {
       throw new Error("パスキー登録設定の応答形式が不正です。");
     }
     data["authenticatorSelection"] = { ...selection, userVerification: "required" };
   }
 }
 
-export { errorMessage, requirePasskeyUV, requireSecureContext, requireSuccess, sessionSchema };
+export { errorMessage, requirePasskeyUV, requireSecureContext, requireSuccess };
 export type { SessionView };

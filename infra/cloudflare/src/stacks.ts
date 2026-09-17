@@ -1,3 +1,4 @@
+import { Effect, Schema } from "effect";
 import type { Application } from "@template/config";
 
 const application = ["settings", "database"] as const;
@@ -39,6 +40,10 @@ interface PlannedStack {
   readonly stack: StackName;
 }
 
+class StackFailure extends Schema.TaggedError<StackFailure>()("StackFailure", {
+  code: Schema.Literal("stack_dependency_cycle"),
+}) {}
+
 function projectName(stack: StackName): string {
   return `template-${stack}`;
 }
@@ -47,25 +52,49 @@ function stackReferenceName(source: StackName, environment: string): string {
   return `organization/${projectName(source)}/${environment}`;
 }
 
-function applyPlan(): PlannedStack[] {
-  const ordered: StackName[] = [];
-  function visit(stack: StackName, visiting: readonly StackName[]): void {
-    if (ordered.includes(stack)) {
-      return;
-    }
-    if (visiting.includes(stack)) {
-      throw new Error("stack_dependency_cycle");
-    }
-    for (const dependency of stackDependencies[stack]) {
-      visit(dependency, [...visiting, stack]);
-    }
-    ordered.push(stack);
-  }
-  for (const stack of stackOrder) {
-    visit(stack, []);
-  }
-  return ordered.map((stack) => ({ dependencies: stackDependencies[stack], stack }));
+function visitStack(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ordered: StackName[],
+  stack: StackName,
+  visiting: readonly StackName[],
+): Effect.Effect<void, StackFailure> {
+  // oxlint-disable-next-line typescript/no-use-before-define
+  return Effect.suspend(() => visitUnordered(ordered, stack, visiting));
 }
 
-export { applyPlan, projectName, stackReferenceName };
+function visitUnordered(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  ordered: StackName[],
+  stack: StackName,
+  visiting: readonly StackName[],
+): Effect.Effect<void, StackFailure> {
+  if (ordered.includes(stack)) {
+    return Effect.void;
+  }
+  if (visiting.includes(stack)) {
+    return Effect.fail(new StackFailure({ code: "stack_dependency_cycle" }));
+  }
+  return Effect.all(
+    stackDependencies[stack].map((dependency) =>
+      visitStack(ordered, dependency, [...visiting, stack]),
+    ),
+  ).pipe(
+    Effect.tap(() =>
+      Effect.sync(() => {
+        ordered.push(stack);
+      }),
+    ),
+    Effect.asVoid,
+  );
+}
+
+const applyPlan = Effect.fn("applyPlan")(function* applyPlan() {
+  const ordered: StackName[] = [];
+  yield* Effect.all(stackOrder.map((stack) => visitStack(ordered, stack, [])));
+  return ordered.map((stack): PlannedStack => ({ dependencies: stackDependencies[stack], stack }));
+});
+
+const stackNames = stackOrder;
+
+export { applyPlan, projectName, stackNames, stackReferenceName };
 export type { DependencyOf, StackName, StackOutputs };

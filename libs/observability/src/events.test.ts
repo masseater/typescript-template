@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vite-plus/test";
+import { assert, describe, it } from "@effect/vitest";
 import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
-import { ValiError } from "valibot";
+import { Effect } from "effect";
 
 const now = 1_800_000_000_000;
 const staleMilliseconds = 4_000_000;
@@ -29,62 +29,53 @@ const exception = {
   value: 1,
 };
 
+function rejected(input: unknown): Effect.Effect<boolean> {
+  return parseBrowserEvents(input, labels, now).pipe(
+    Effect.match({ onFailure: () => true, onSuccess: () => false }),
+  );
+}
+
+function rejectedAll(inputs: readonly unknown[]): Effect.Effect<readonly boolean[]> {
+  return Effect.forEach(inputs, rejected);
+}
+
 describe("browser ingress events", () => {
-  it("accepts a well-formed event", () => {
-    expect.hasAssertions();
-    expect(parseBrowserEvents([event], labels, now)).toStrictEqual([event]);
-  });
+  it.effect("accepts a well-formed event", () =>
+    Effect.gen(function* program() {
+      assert.deepStrictEqual<unknown>(yield* parseBrowserEvents([event], labels, now), [event]);
+    }),
+  );
 
-  it("rejects PII, arbitrary fields and forged labels", () => {
-    expect.hasAssertions();
-    expect(() =>
-      parseBrowserEvents([{ ...event, profile: "private biography" }], labels, now),
-    ).toThrow(ValiError);
-    expect(() =>
-      parseBrowserEvents([{ ...event, route: "private@example.com" }], labels, now),
-    ).toThrow(ValiError);
-    expect(() =>
-      parseBrowserEvents([{ ...event, name: "Bearer private-token" }], labels, now),
-    ).toThrow(ValiError);
-  });
-
-  it("rejects unbounded measurements and batches", () => {
-    expect.hasAssertions();
-    expect(() => parseBrowserEvents([{ ...event, duration: Infinity }], labels, now)).toThrow(
-      ValiError,
-    );
-    expect(() =>
-      parseBrowserEvents([{ ...event, start: now - staleMilliseconds }], labels, now),
-    ).toThrow(ValiError);
-    const oversized = Array.from({ length: maximumBatchSize + 1 }, () => event);
-    expect(() => parseBrowserEvents(oversized, labels, now)).toThrow(ValiError);
-  });
+  it.effect("rejects PII, arbitrary fields, forged labels and unbounded batches", () =>
+    Effect.gen(function* program() {
+      const results = yield* rejectedAll([
+        [{ ...event, profile: "private biography" }],
+        [{ ...event, route: "private@example.com" }],
+        [{ ...event, name: "Bearer private-token" }],
+        [{ ...event, duration: Infinity }],
+        [{ ...event, start: now - staleMilliseconds }],
+        Array.from({ length: maximumBatchSize + 1 }, () => event),
+        [],
+      ]);
+      assert.isTrue(results.every(Boolean));
+    }),
+  );
 });
 
 describe("browser exception events", () => {
-  it("carry only a known error type and bounded stack locations", () => {
-    expect.hasAssertions();
-    expect(parseBrowserEvents([exception], labels, now)).toStrictEqual([exception]);
-    expect(() => parseBrowserEvents([{ ...exception, errorType: "Custom" }], labels, now)).toThrow(
-      ValiError,
-    );
-    expect(() =>
-      parseBrowserEvents([{ ...exception, locations: "private@example.com" }], labels, now),
-    ).toThrow(ValiError);
-  });
-
-  it("require error details only on exceptions", () => {
-    expect.hasAssertions();
-    const withoutDetails = {
-      ...event,
-      kind: "exception",
-      name: "browser.error",
-      status: 0,
-      value: 1,
-    };
-    expect(() => parseBrowserEvents([withoutDetails], labels, now)).toThrow(ValiError);
-    expect(() => parseBrowserEvents([{ ...event, errorType: "TypeError" }], labels, now)).toThrow(
-      ValiError,
-    );
-  });
+  it.effect("carry only a known error type and bounded stack locations", () =>
+    Effect.gen(function* program() {
+      assert.deepStrictEqual<unknown>(yield* parseBrowserEvents([exception], labels, now), [
+        exception,
+      ]);
+      const { errorType: _type, locations: _locations, ...withoutDetails } = exception;
+      const results = yield* rejectedAll([
+        [{ ...exception, errorType: "Custom" }],
+        [{ ...exception, locations: "private@example.com" }],
+        [withoutDetails],
+        [{ ...event, errorType: "TypeError" }],
+      ]);
+      assert.isTrue(results.every(Boolean));
+    }),
+  );
 });

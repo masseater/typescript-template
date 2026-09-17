@@ -10,14 +10,15 @@
     "with-state": "node src/run.ts"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@pulumi/cloudflare": "catalog:",
     "@pulumi/pulumi": "catalog:",
-    "valibot": "catalog:"
+    "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite": "catalog:"
   }
 }

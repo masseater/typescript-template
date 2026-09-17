@@ -1,10 +1,10 @@
 import { Worker, WorkerVersion } from "@pulumi/cloudflare";
 import { getProject, isSecret, runtime, secret } from "@pulumi/pulumi";
+import { Effect } from "effect";
 import type { Output } from "@pulumi/pulumi";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createRequire } from "node:module";
 import { invariant } from "es-toolkit";
-import { readEnvironment } from "./environment.ts";
 import { validateAuthSecret } from "./config.ts";
 
 const PROBE_SECRET = "runtime-probe-not-a-real-secret-0001";
@@ -22,13 +22,15 @@ interface ProbeResult {
 }
 
 function assertProvidersLoadedWithoutCompiler(): void {
-  invariant(readEnvironment().PULUMI_NODEJS_TYPESCRIPT !== "true", "pulumi_typescript_enabled");
+  // oxlint-disable-next-line node/no-process-env
+  invariant(process.env["PULUMI_NODEJS_TYPESCRIPT"] !== "true", "pulumi_typescript_enabled");
   invariant(typeof Worker === "function", "worker_provider_missing");
   invariant(typeof WorkerVersion === "function", "worker_version_provider_missing");
 }
 
 async function assertEngineConnected(): Promise<void> {
-  if (readEnvironment().TEMPLATE_ENGINE_PROBE !== "true") {
+  // oxlint-disable-next-line node/no-process-env
+  if (process.env["TEMPLATE_ENGINE_PROBE"] !== "true") {
     return;
   }
   invariant(runtime.hasEngine(), "engine_not_connected");
@@ -60,7 +62,7 @@ function assertNoCompilerModules(): void {
 async function probeRuntime(): Promise<ProbeResult> {
   assertProvidersLoadedWithoutCompiler();
   await assertEngineConnected();
-  const value = secret(validateAuthSecret(PROBE_SECRET));
+  const value = secret(await Effect.runPromise(validateAuthSecret(PROBE_SECRET)));
   invariant(await isSecret(value), "probe_secret_not_secret");
   invariant((await resolvedValue(value)) === PROBE_SECRET, "probe_secret_changed");
   assertNoCompilerModules();
