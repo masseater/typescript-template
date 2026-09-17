@@ -2,13 +2,41 @@ import { useState } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { Button, Stack } from "smarthr-ui";
 import { authClient } from "./client";
-import { Field, Status } from "./primitives";
+import { MFASettings } from "./mfa";
+import { Field, Page, Status } from "./primitives";
 import { requireSuccess } from "./protocol";
+import { useSession } from "./session";
 import { useAction } from "./action";
 
-export { MFASettings } from "./mfa";
+export function LoginPage({ title, signUp }: { title: string; signUp: boolean }): ReactElement {
+  return (
+    <Page title={title}>
+      <LoginForm />
+      {signUp && <a href="/signup">新規登録</a>}
+    </Page>
+  );
+}
 
-export function LoginForm(): ReactElement {
+export function SecurityPage({ title }: { title: string }): ReactElement {
+  const { session, loading, error } = useSession();
+  return (
+    <Page title={title}>
+      {loading ? (
+        <Status>読み込み中です。</Status>
+      ) : session ? (
+        <>
+          <MFASettings session={session} />
+          <SignOutButton />
+        </>
+      ) : (
+        <a href="/login">ログインしてください。</a>
+      )}
+      {error && <Status error>{error}</Status>}
+    </Page>
+  );
+}
+
+function LoginForm(): ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
