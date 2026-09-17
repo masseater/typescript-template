@@ -32,7 +32,7 @@ description: 外に状態を残す資源を、リポジトリの宣言だけか�
   - MUST: 他の利用者が、所有者の公開した出力を通してそれを使う形にする
   - PROHIBIT: 利用する側の宣言に同じ実体を書く
 
-管理 API から読み書きできる設定値をすべて宣言に置くことは [AGENTS.md](https://github.com/philtzjp/infrastructure/blob/main/AGENTS.md) の運用ルールが決めている。
+管理 API から読み書きできる設定値をすべて宣言に置くことは `AGENTS.md` の運用ルールが決めている。
 
 ## 恒久と使い捨ての線
 
@@ -70,8 +70,6 @@ description: 外に状態を残す資源を、リポジトリの宣言だけか�
   - PROHIBIT: 除外のための一覧、離脱を表す印、別の場所にある対応表で可否を表す
 - PROHIBIT: 許可リストが持っている情報を、その外側に複製する
 - IF: どの外部サービスのどのアカウントがこのリポジトリのものかを判断する; THEN
-  - MUST: `llm/MANAGED-PROJECTS.md` の記録で確かめる
-  - MUST: 追加・削除・識別子の変更のたびに同じ記録を更新する
   - PROHIBIT: 名前が似ていることを根拠に、そのアカウントを自分のものとみなす
     - 外部サービスのアカウントは複数のリポジトリで共有されており、取り違えると他のリポジトリの資源を操作する
 
@@ -102,9 +100,8 @@ description: 外に状態を残す資源を、リポジトリの宣言だけか�
   - 読み取りだけを許された主体でも、差分の計算までは通る。権限の不足は適用の段階で初めて表面化する
 - IF: 適用する主体が、自分自身の権限を書き換えられる範囲を持つ; THEN
   - MUST: その単位の適用を、CI から実行しない判断を含めて検討する
-  - MUST: 手元からの実行に限る場合は、その理由を [infra/AGENTS.md](https://github.com/philtzjp/infrastructure/blob/main/infra/AGENTS.md) に書く
 
-繰り返し行う操作を CI から実行できる形にすることは [AGENTS.md](https://github.com/philtzjp/infrastructure/blob/main/AGENTS.md) の運用ルールが決めている。
+繰り返し行う操作を CI から実行できる形にすることは `AGENTS.md` の運用ルールが決めている。
 
 ## 適用が済んだと言える条件
 
