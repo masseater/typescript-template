@@ -48,5 +48,5 @@ export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
 export { schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
-export { getMember } from "./members.ts";
+export { getMember, listMembers } from "./members.ts";
 export { checkDatabase, getProfile, updateProfile };
