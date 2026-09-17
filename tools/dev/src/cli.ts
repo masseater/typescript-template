@@ -20,11 +20,58 @@ const credentialSchema = v.strictObject({
   adminUser: v.literal("operator"),
   adminPassword: v.pipe(v.string(), v.minLength(24)),
 });
+const ports = { user: 3001, admin: 3002, wiki: 3003 };
+const servicePorts = { grafana: 3100, mailpit: 8025 };
+const tailnetSchema = v.object({
+  BackendState: v.string(),
+  Self: v.object({ DNSName: v.string() }),
+});
+
+async function tailnetHost(): Promise<string | null> {
+  const output = await run("tailscale", ["status", "--json"], { cwd: root }).then(
+    (result) => result.stdout,
+    () => null,
+  );
+  if (!output) return null;
+  const parsed = v.safeParse(tailnetSchema, JSON.parse(output) as unknown);
+  if (!parsed.success || parsed.output.BackendState !== "Running") return null;
+  const host = parsed.output.Self.DNSName.replace(/\.$/, "");
+  return /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/.test(host) ? host : null;
+}
+
+const host = await tailnetHost();
+const originFor = (port: number) => (host ? `https://${host}:${port}` : `http://localhost:${port}`);
 const origins = {
-  user: "http://localhost:3001",
-  admin: "http://localhost:3002",
-  wiki: "http://localhost:3003",
+  user: originFor(ports.user),
+  admin: originFor(ports.admin),
+  wiki: originFor(ports.wiki),
 };
+const browserSettings = `${JSON.stringify({
+  allowedDomains: ["localhost", "127.0.0.1", ...(host ? [host] : [])],
+  restoreSave: "never",
+})}\n`;
+
+async function publish(port: number, enabled: boolean) {
+  if (!host) return;
+  await run(
+    "tailscale",
+    enabled
+      ? ["serve", "--bg", `--https=${port}`, `http://127.0.0.1:${port}`]
+      : ["serve", `--https=${port}`, "off"],
+    { cwd: root, timeout: 20_000 },
+  );
+}
+
+async function replacePrivateFile(path: URL, content: string) {
+  const file = await open(path, "w", 0o600);
+  try {
+    await file.writeFile(content);
+  } finally {
+    await file.close();
+  }
+  await chmod(path, 0o600);
+}
+
 const readyPaths = { user: "/login", admin: "/login", wiki: "/" };
 
 async function writePrivateFile(path: URL, content: string) {
@@ -54,10 +101,7 @@ async function setup() {
   await mkdir(local, { recursive: true, mode: 0o700 });
   await mkdir(new URL("logs/", local), { recursive: true, mode: 0o700 });
   await mkdir(browserSocket, { recursive: true, mode: 0o700 });
-  await writePrivateFile(
-    browserConfig,
-    `${JSON.stringify({ allowedDomains: ["localhost", "127.0.0.1"], restoreSave: "never" })}\n`,
-  );
+  await replacePrivateFile(browserConfig, browserSettings);
   const exists = await stat(credentialsFile).then(
     () => true,
     (error: unknown) => {
@@ -95,7 +139,7 @@ async function setup() {
       Object.entries(values)
         .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
         .join("\n") + "\n";
-    await writePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
+    await replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
   }
   return {
     ok: true,
@@ -139,27 +183,24 @@ async function status() {
   };
 }
 
-function connection(destination: string | undefined) {
-  const target = v.parse(
-    v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+$/)),
-    destination,
-  );
+async function connection() {
+  if (!host) throw new Error("Tailscale is required for access from other computers");
+  for (const port of Object.values(servicePorts)) await publish(port, true);
   return {
-    event: "local.connection_instructions",
-    mainComputerCommand: `ssh -N -o ExitOnForwardFailure=yes -L 3001:localhost:3001 -L 3002:localhost:3002 -L 3003:localhost:3003 -L 3100:localhost:3100 -L 8025:localhost:8025 ${target}`,
+    event: "local.remote_access",
+    reachableFrom: "devices in the same tailnet",
     user: origins.user,
     admin: origins.admin,
     wiki: origins.wiki,
-    grafana: "http://localhost:3100",
-    mailpit: "http://localhost:8025",
+    grafana: originFor(servicePorts.grafana),
+    mailpit: originFor(servicePorts.mailpit),
     adminCredentialsFile: fileURLToPath(credentialsFile),
-    passkeyOrigin: "localhost; use the forwarded URLs without replacing the hostname with a LAN IP",
-    mainComputerVerification: "must-be-performed-on-the-main-computer",
   };
 }
 
 async function start(app: App) {
   await readCredentials();
+  await publish(ports[app], true);
   if (!(await running(app))) {
     const log = fileURLToPath(new URL(`logs/${app}.log`, local));
     const logFile = await open(log, "a", 0o600);
@@ -178,15 +219,13 @@ async function start(app: App) {
 async function stop(app: App) {
   if (await running(app))
     await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
+  await publish(ports[app], false);
   return status();
 }
 
 async function browser(app: App) {
   await mkdir(browserSocket, { recursive: true, mode: 0o700 });
-  await writePrivateFile(
-    browserConfig,
-    `${JSON.stringify({ allowedDomains: ["localhost", "127.0.0.1"], restoreSave: "never" })}\n`,
-  );
+  await replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
   const args = ["--config", fileURLToPath(browserConfig), "--session", session];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: fileURLToPath(browserSocket) };
@@ -247,7 +286,7 @@ try {
   const action = process.argv[2];
   if (action === "setup") console.log(JSON.stringify(await setup()));
   else if (action === "status") console.log(JSON.stringify(await status()));
-  else if (action === "connect") console.log(JSON.stringify(connection(process.argv[3])));
+  else if (action === "connect") console.log(JSON.stringify(await connection()));
   else {
     const app = v.parse(appSchema, process.argv[3]);
     if (action === "start") console.log(JSON.stringify(await start(app)));

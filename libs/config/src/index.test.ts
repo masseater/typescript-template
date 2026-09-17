@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { readEnvironment } from "./index.ts";
+import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",
@@ -22,6 +22,22 @@ test("rejects Mailpit for public application origins", () => {
   expect(() => readEnvironment({ ...local, APP_ORIGIN: "https://app.example.test" })).toThrow(
     "Mailpit is restricted to local development",
   );
+});
+
+test("treats only loopback and HTTPS tailnet hosts as local development", () => {
+  expect(
+    readEnvironment({ ...local, APP_ORIGIN: "https://mac-mini.tail2ee823.ts.net:3001" }).local,
+  ).toBe(true);
+  expect(() =>
+    readEnvironment({ ...local, APP_ORIGIN: "http://mac-mini.tail2ee823.ts.net:3001" }),
+  ).toThrow("HTTPS is required outside localhost");
+  for (const origin of [
+    "https://ts.net",
+    "https://example.ts.net",
+    "https://mac-mini.tail2ee823.ts.net.example.test",
+    "https://app.example.test",
+  ])
+    expect(isLocalDevelopmentOrigin(origin)).toBe(false);
 });
 
 test("requires HTTPS for non-local origins", () => {

@@ -23,6 +23,22 @@ const scalarSchema = v.object({
   SENTRY_RELEASE: v.optional(sentrySchemas.release),
 });
 
+const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
+
+export function isLocalDevelopmentOrigin(value: string): boolean {
+  const url = new URL(value);
+  return (
+    loopbackHosts.includes(url.hostname) ||
+    (url.protocol === "https:" && /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/.test(url.hostname))
+  );
+}
+
+function requireSecureOrigin(value: string) {
+  const url = new URL(value);
+  if (!loopbackHosts.includes(url.hostname) && url.protocol !== "https:")
+    throw new Error("HTTPS is required outside localhost");
+}
+
 export type EmailMessage = { to: string; from: string; subject: string; text: string };
 export type EmailBinding = { send(message: EmailMessage): Promise<unknown> };
 type AssetBinding = { fetch(request: Request): Promise<Response> };
@@ -46,12 +62,11 @@ export function readEnvironment(input: unknown) {
           environment: v.parse(sentrySchemas.environment, scalars.SENTRY_ENVIRONMENT),
           release: v.parse(sentrySchemas.release, scalars.SENTRY_RELEASE),
         };
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(new URL(scalars.APP_ORIGIN).hostname);
-  if (!local && new URL(scalars.APP_ORIGIN).protocol !== "https:")
-    throw new Error("HTTPS is required outside localhost");
+  requireSecureOrigin(scalars.APP_ORIGIN);
+  const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   if (
     scalars.MAILPIT_URL &&
-    (!local || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(scalars.MAILPIT_URL).hostname))
+    (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
   )
     throw new Error("Mailpit is restricted to local development");
   const otelHeaders =
@@ -128,9 +143,7 @@ const wikiSchema = v.object({
 
 export function readWikiConfig(input: unknown) {
   const config = v.parse(wikiSchema, input);
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(new URL(config.APP_ORIGIN).hostname);
-  if (!local && new URL(config.APP_ORIGIN).protocol !== "https:")
-    throw new Error("HTTPS is required outside localhost");
+  requireSecureOrigin(config.APP_ORIGIN);
   return {
     APP_ORIGIN: config.APP_ORIGIN,
     ASSETS: config.ASSETS,

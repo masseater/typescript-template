@@ -31,6 +31,8 @@ pnpm dev:stop user
 | admin  | `http://localhost:3002` |
 | wiki   | `http://localhost:3003` |
 
+Tailscale に接続しているマシンでは、`localhost` の代わりに `https://<マシン名>.<tailnet>.ts.net:<ポート>` で起動します。同じ tailnet の別の PC から、そのままブラウザで開けます。`pnpm dev:connect` を実行すると、Grafana と Mailpit も tailnet に公開し、各 URL を表示します。
+
 ## ブラウザで操作する
 
 `pnpm dev:browser user` で agent-browser を開きます。admin を開くと、ローカル用の管理者認証情報が自動で設定されます。

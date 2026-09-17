@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { isLocalDevelopmentOrigin } from "@template/config";
 import * as v from "valibot";
 
 const localSchema = v.object({
@@ -54,13 +55,9 @@ async function localGateToken(user: string, password: string): Promise<string> {
     .replace(/=+$/, "");
 }
 
-function isLocalOrigin(origin: string): boolean {
-  return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(origin).hostname);
-}
-
 export async function localAccessCookie(bindings: unknown): Promise<string | null> {
   const { APP_ORIGIN } = v.parse(v.object({ APP_ORIGIN: v.pipe(v.string(), v.url()) }), bindings);
-  if (!isLocalOrigin(APP_ORIGIN)) return null;
+  if (!isLocalDevelopmentOrigin(APP_ORIGIN)) return null;
   const config = v.parse(localSchema, bindings);
   const token = await localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD);
   return `${localGateCookie}=${token}; Path=/; HttpOnly; SameSite=Strict`;
@@ -71,7 +68,7 @@ export async function enforceAdminAccess(
   bindings: unknown,
 ): Promise<Response | null> {
   const { APP_ORIGIN } = v.parse(v.object({ APP_ORIGIN: v.pipe(v.string(), v.url()) }), bindings);
-  const local = isLocalOrigin(APP_ORIGIN);
+  const local = isLocalDevelopmentOrigin(APP_ORIGIN);
   const unauthorized = () =>
     new Response("Authentication required", {
       status: 401,
