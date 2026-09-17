@@ -2,6 +2,9 @@
   "name": "@template/dev",
   "private": true,
   "type": "module",
+  "exports": {
+    "./vite-boundary": "./src/vite-boundary.ts"
+  },
   "scripts": {
     "private-maps": "node src/private-maps.ts",
     "browser-command": "node src/cli.ts browser-command",
@@ -20,6 +23,8 @@
   },
   "devDependencies": {
     "@types/node": "24.12.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11"
   }
 }

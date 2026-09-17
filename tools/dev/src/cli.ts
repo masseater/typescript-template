@@ -17,10 +17,8 @@ const socket = `template-${rootHash}`;
 const apps = ["user", "admin", "wiki"] as const;
 type App = (typeof apps)[number];
 const appSchema = v.picklist(apps);
-const credentialSchema = v.strictObject({
+const credentialSchema = v.object({
   authSecret: v.pipe(v.string(), v.minLength(32)),
-  adminUser: v.literal("operator"),
-  adminPassword: v.pipe(v.string(), v.minLength(24)),
 });
 const ports = { user: 3001, admin: 3002, wiki: 3003 };
 const servicePorts = { grafana: 3100, mailpit: 8025 };
@@ -121,31 +119,19 @@ async function setup() {
       throw error;
     },
   );
-  const credentials = exists
-    ? await readCredentials()
-    : {
-        authSecret: randomBytes(48).toString("base64url"),
-        adminUser: "operator",
-        adminPassword: randomBytes(32).toString("base64url"),
-      };
-  await writePrivateFile(credentialsFile, `${JSON.stringify(credentials, null, 2)}\n`);
+  if (!exists)
+    await writePrivateFile(
+      credentialsFile,
+      `${JSON.stringify({ authSecret: randomBytes(48).toString("base64url") }, null, 2)}\n`,
+    );
+  const credentials = await readCredentials();
   for (const app of apps) {
     const values = {
       APP_ORIGIN: origins[app],
-      ...(app === "wiki"
-        ? { OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318" }
-        : {
-            AUTH_SECRET: credentials.authSecret,
-            OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318",
-            EMAIL_FROM: "no-reply@example.test",
-            MAILPIT_URL: "http://127.0.0.1:8025",
-          }),
-      ...(app === "admin"
-        ? {
-            LOCAL_ADMIN_USER: credentials.adminUser,
-            LOCAL_ADMIN_PASSWORD: credentials.adminPassword,
-          }
-        : {}),
+      AUTH_SECRET: credentials.authSecret,
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318",
+      EMAIL_FROM: "no-reply@example.test",
+      MAILPIT_URL: "http://127.0.0.1:8025",
     };
     const content =
       Object.entries(values)
@@ -206,7 +192,6 @@ async function connection() {
     wiki: origins.wiki,
     grafana: originFor(servicePorts.grafana),
     mailpit: originFor(servicePorts.mailpit),
-    adminCredentialsFile: fileURLToPath(credentialsFile),
   };
 }
 
@@ -241,26 +226,6 @@ async function browser(app: App) {
   const session = `template-local-${app}`;
   const args = ["--config", fileURLToPath(browserConfig), "--session", session];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  if (app === "admin") {
-    const credentials = await readCredentials();
-    const child = spawn("agent-browser", [...args, "batch", "--bail", "--json"], {
-      cwd: root,
-      env,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    child.stdout.resume();
-    child.stderr.resume();
-    child.stdin.end(
-      JSON.stringify([["set", "credentials", credentials.adminUser, credentials.adminPassword]]),
-    );
-    await new Promise<void>((resolve, reject) => {
-      child.once("error", () => reject(new Error("Could not start agent-browser")));
-      child.once("exit", (code) => {
-        if (code === 0) resolve();
-        else reject(new Error("Could not configure local browser authentication"));
-      });
-    });
-  }
   await run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
     cwd: root,
     env,

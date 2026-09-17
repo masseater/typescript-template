@@ -57,6 +57,7 @@ export default defineConfig({
     include: [
       "libs/**/*.test.ts",
       "apps/**/*.test.ts",
+      "tools/dev/**/*.test.ts",
       "tools/quality/**/*.test.ts",
       "tools/observe/**/*.test.ts",
       "infra/**/*.test.ts",

@@ -33,11 +33,6 @@ const sharedSchema = v.object({
   userOrigin: origin,
   adminOrigin: origin,
   wikiOrigin: origin,
-  accessIssuer: v.pipe(
-    origin,
-    v.check((value) => new URL(value).hostname.endsWith(".cloudflareaccess.com")),
-  ),
-  adminEmails: v.pipe(v.array(v.pipe(v.string(), v.email())), v.minLength(1), v.maxLength(50)),
   otelEndpoint: httpsUrl,
   sentryDsn: v.optional(
     v.pipe(

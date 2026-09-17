@@ -12,7 +12,7 @@ type Build = {
   server: Map<string, Buffer>;
 };
 export type ArtifactPair = { user: Build; admin: Build; wiki: Build; secrets: readonly string[] };
-const adminMarkers = ["ADMIN_STRONG_SESSION_REQUIRED", "LOCAL_ADMIN_PASSWORD"];
+const adminMarkers = ["ADMIN_STRONG_SESSION_REQUIRED"];
 const adminRoute = /["'`]\/api\/users(?:["'`?])/;
 const wikiMarker = "@cf/baai/bge-m3";
 const privateWikiSource = /(?:^|\/)(?:apps\/(?:user|admin)|libs\/(?:db|auth|ui))\//;

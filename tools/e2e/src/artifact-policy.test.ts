@@ -22,7 +22,7 @@ function data(): ArtifactPair {
         [
           "index.js",
           Buffer.from(
-            'export default { audience: "admin", markers: ["ADMIN_STRONG_SESSION_REQUIRED", "LOCAL_ADMIN_PASSWORD", "/api/users"] }',
+            'export default { audience: "admin", markers: ["ADMIN_STRONG_SESSION_REQUIRED", "/api/users"] }',
           ),
         ],
       ]),

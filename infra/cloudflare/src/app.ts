@@ -27,25 +27,6 @@ export async function deployApplication(target: AppTarget) {
     subdomain: policy.subdomain,
     observability: workerObservability,
   });
-  const access =
-    target === "admin"
-      ? new cloudflare.ZeroTrustAccessApplication("admin-access", {
-          accountId: settings.accountId,
-          name: `${settings.prefix}-admin-access`,
-          type: "self_hosted",
-          destinations: [{ type: "worker", workerId: worker.id }],
-          sessionDuration: "8h",
-          httpOnlyCookieAttribute: true,
-          policies: [
-            {
-              name: "named-admins",
-              decision: "allow",
-              precedence: 1,
-              includes: settings.adminEmails.map((email) => ({ email: { email } })),
-            },
-          ],
-        })
-      : undefined;
   const plaintext = {
     APP_ORIGIN: policy.origin,
     OTEL_EXPORTER_OTLP_ENDPOINT: settings.otelEndpoint,
@@ -73,27 +54,17 @@ export async function deployApplication(target: AppTarget) {
     },
     ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
     ...sentryRuntimeBindings(settings),
-    ...(access
-      ? [
-          { type: "plain_text", name: "ACCESS_AUD", text: access.aud },
-          { type: "plain_text", name: "ACCESS_ISSUER", text: settings.accessIssuer },
-        ]
-      : []),
   ];
-  const version = new cloudflare.WorkerVersion(
-    `${target}-version`,
-    {
-      accountId: settings.accountId,
-      workerId: worker.id,
-      compatibilityDate: "2026-09-16",
-      compatibilityFlags: ["nodejs_compat"],
-      mainModule: artifacts.mainModule,
-      modules: artifacts.modules,
-      assets: { directory: artifacts.clientDirectory, config: policy.assets },
-      bindings: [...bindings, { type: "assets", name: "ASSETS" }],
-    },
-    { dependsOn: access ? [access] : [] },
-  );
+  const version = new cloudflare.WorkerVersion(`${target}-version`, {
+    accountId: settings.accountId,
+    workerId: worker.id,
+    compatibilityDate: "2026-09-16",
+    compatibilityFlags: ["nodejs_compat"],
+    mainModule: artifacts.mainModule,
+    modules: artifacts.modules,
+    assets: { directory: artifacts.clientDirectory, config: policy.assets },
+    bindings: [...bindings, { type: "assets", name: "ASSETS" }],
+  });
   const deployment = new cloudflare.WorkersDeployment(`${target}-deployment`, {
     accountId: settings.accountId,
     scriptName: worker.name,
@@ -108,11 +79,10 @@ export async function deployApplication(target: AppTarget) {
       service: worker.name,
       hostname: new URL(policy.origin).hostname,
     },
-    { dependsOn: [deployment, ...(access ? [access] : [])] },
+    { dependsOn: [deployment] },
   );
   return {
     workerName: worker.name,
     origin: pulumi.interpolate`https://${domain.hostname}`,
-    accessAudience: access?.aud,
   };
 }

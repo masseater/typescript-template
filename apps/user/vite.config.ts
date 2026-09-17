@@ -3,11 +3,11 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
-import { userDevBoundary } from "./dev-boundary.ts";
+import { devBoundary } from "@template/dev/vite-boundary";
 
 export default defineConfig(({ command, isPreview }) => ({
   plugins: [
-    userDevBoundary(),
+    devBoundary("user"),
     cloudflare({
       ...(command === "serve" && !isPreview
         ? { config: { assets: { binding: "ASSETS", run_worker_first: false } } }

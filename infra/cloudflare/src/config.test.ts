@@ -17,8 +17,6 @@ const settings = {
   userOrigin: "https://user.example.com",
   adminOrigin: "https://admin.example.com",
   wikiOrigin: "https://wiki.example.com",
-  accessIssuer: "https://team.cloudflareaccess.com",
-  adminEmails: ["admin@example.com"],
   otelEndpoint: "https://telemetry.example.com/otlp",
   mailFrom: "mail@example.com",
   budget: {
@@ -211,12 +209,9 @@ test.each([
   );
 });
 
-test("rejects same origins and empty management allowlists", () => {
+test("rejects same origins", () => {
   expect(() => parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })).toThrow(
     "app_origins_must_differ",
-  );
-  expect(() => parseSharedConfig({ ...settings, adminEmails: [] })).toThrow(
-    "cloudflare_settings_invalid",
   );
 });
 

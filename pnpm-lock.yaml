@@ -201,9 +201,6 @@ importers:
       '@tanstack/react-start':
         specifier: 1.168.54
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)
-      '@template/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@template/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -216,9 +213,6 @@ importers:
       '@template/ui':
         specifier: workspace:*
         version: link:../../libs/ui
-      jose:
-        specifier: 6.2.12
-        version: 6.2.12
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -238,6 +232,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260916.1
         version: 5.20260916.1
+      '@template/dev':
+        specifier: workspace:*
+        version: link:../../tools/dev
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
@@ -256,9 +253,6 @@ importers:
       vite-plus:
         specifier: 0.3.2
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
       wrangler:
         specifier: 4.132.0
         version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
@@ -302,6 +296,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260916.1
         version: 5.20260916.1
+      '@template/dev':
+        specifier: workspace:*
+        version: link:../../tools/dev
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
@@ -372,6 +369,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
+      '@template/dev':
+        specifier: workspace:*
+        version: link:../../tools/dev
       '@types/mdx':
         specifier: 2.0.14
         version: 2.0.14
@@ -689,6 +689,12 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite-plus:
+        specifier: 0.3.2
+        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   tools/e2e:
     devDependencies:
@@ -10028,7 +10034,7 @@ snapshots:
       '@testing-library/dom': 10.4.2
       '@testing-library/user-event': 14.6.7(@testing-library/dom@10.4.2)
       '@vitest/browser': 4.1.11(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(vitest@4.1.11)
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -10056,7 +10062,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
@@ -13650,7 +13656,7 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/node': 24.12.0
-      '@vitest/browser-preview': 4.1.11(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(vitest@4.1.11)
+      '@vitest/browser-preview': 4.1.11(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(vitest@4.1.11)
     transitivePeerDependencies:
       - msw
 

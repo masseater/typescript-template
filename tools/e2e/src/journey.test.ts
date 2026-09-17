@@ -119,10 +119,7 @@ async function cookieAudienceDenied(browser: Browser, stack: Stack) {
     .join("; ");
   ensure(forged.length > 0, "E2E_USER_SESSION_COOKIE_MISSING");
   const response = await fetch(`${stack.adminOrigin}/api/users`, {
-    headers: {
-      cookie: forged,
-      authorization: `Basic ${Buffer.from(`${stack.basicUser}:${stack.basicPassword}`).toString("base64")}`,
-    },
+    headers: { cookie: forged },
     signal: AbortSignal.timeout(5000),
   });
   ensure([401, 403].includes(response.status), "E2E_USER_COOKIE_ACCEPTED_BY_ADMIN");
@@ -248,7 +245,6 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
     stage = "admin-weak-auth";
     await stack.bootstrap(owner.email);
     const admin = stack.browser("admin");
-    await admin.commands(["set", "credentials", stack.basicUser, stack.basicPassword]);
     await admin.login(stack.adminOrigin, owner.email, owner.password);
     await admin.waitText("追加認証を完了してください。");
     ensure((await admin.api("/api/users")).status === 403, "E2E_WEAK_ADMIN_SESSION_ACCEPTED");
@@ -309,7 +305,6 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
     );
     stage = "admin-backup-code-recovery";
     const recoveringAdmin = stack.browser("recovering-admin");
-    await recoveringAdmin.commands(["set", "credentials", stack.basicUser, stack.basicPassword]);
     await submitBackupCode(
       recoveringAdmin,
       stack.adminOrigin,
@@ -386,7 +381,6 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
       owner.password,
       alice.password,
       bob.password,
-      stack.basicPassword,
       uri,
       originalEnrollment.uri,
       ...originalEnrollment.backupCodes,

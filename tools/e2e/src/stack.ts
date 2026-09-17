@@ -81,8 +81,6 @@ export async function createStack() {
   let userOrigin = "";
   let adminOrigin = "";
   let wikiOrigin = "";
-  const basicUser = `gate-${id}`;
-  const basicPassword = randomBytes(32).toString("base64url");
   const authSecret = randomBytes(48).toString("base64url");
   const databaseId = randomUUID();
   const persist = path.join(directory, "d1");
@@ -256,16 +254,9 @@ export async function createStack() {
         [
           `APP_ORIGIN=${origin}`,
           "OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318",
-          ...(audience === "wiki"
-            ? []
-            : [
-                `AUTH_SECRET=${authSecret}`,
-                "EMAIL_FROM=e2e@example.test",
-                `MAILPIT_URL=${mailpit}`,
-              ]),
-          ...(audience === "admin"
-            ? [`LOCAL_ADMIN_USER=${basicUser}`, `LOCAL_ADMIN_PASSWORD=${basicPassword}`]
-            : []),
+          `AUTH_SECRET=${authSecret}`,
+          "EMAIL_FROM=e2e@example.test",
+          `MAILPIT_URL=${mailpit}`,
           "",
         ].join("\n"),
         { mode: 0o600 },
@@ -298,7 +289,7 @@ export async function createStack() {
     );
     for (const [audience, reservation, origin, readyPath, ready] of [
       ["user", userPort, userOrigin, "/login", 200],
-      ["admin", adminPort, adminOrigin, "/login", 401],
+      ["admin", adminPort, adminOrigin, "/login", 200],
       ["wiki", wikiPort, wikiOrigin, "/", 200],
     ] as const) {
       await reservation.close();
@@ -348,8 +339,6 @@ export async function createStack() {
       userOrigin,
       adminOrigin,
       wikiOrigin,
-      basicUser,
-      basicPassword,
       account,
       browser,
       bootstrap,
