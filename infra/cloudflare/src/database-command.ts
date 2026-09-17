@@ -1,40 +1,41 @@
-import { fileURLToPath } from "node:url";
-import { runRemoteDatabaseCommand } from "@template/db/remote";
+import { object, parse, string } from "valibot";
+import { readEnvironment } from "./environment.ts";
 import { readStackOutput } from "@template/infra-bootstrap/state";
-import * as v from "valibot";
+import { runRemoteDatabaseCommand } from "@template/db/remote";
 
-const settingsSchema = v.object({ accountId: v.string() });
+const FIRST_USER_ARGUMENT_INDEX = 2;
+
+const settingsSchema = object({ accountId: string() });
+
+async function readStandardInput(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError("database_input_invalid");
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf-8").trim();
+}
 
 try {
-  const args = process.argv.slice(2);
-  const settings = v.parse(
+  const args = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
+  const [operation, mode] = args;
+  const settings = parse(
     settingsSchema,
-    await readStackOutput(
-      fileURLToPath(new URL("../settings", import.meta.url)),
-      "applicationSettings",
-    ),
+    await readStackOutput(`${import.meta.dirname}/../settings`, "applicationSettings"),
   );
-  const databaseId = await readStackOutput(
-    fileURLToPath(new URL("../database", import.meta.url)),
-    "databaseId",
-  );
-  const chunks: Buffer[] = [];
-  if (args[0] === "bootstrap") {
-    for await (const chunk of process.stdin) {
-      if (!Buffer.isBuffer(chunk)) throw new Error("database_input_invalid");
-      chunks.push(chunk);
-    }
-  }
-  const email = Buffer.concat(chunks).toString("utf8").trim();
-  const apiToken = process.env["CLOUDFLARE_API_TOKEN"];
+  const databaseId = await readStackOutput(`${import.meta.dirname}/../database`, "databaseId");
+  const email = operation === "bootstrap" ? await readStandardInput() : "";
+  const apiToken = readEnvironment().CLOUDFLARE_API_TOKEN;
   const result = await runRemoteDatabaseCommand(args, {
     accountId: settings.accountId,
     databaseId,
-    ...(args[1] === "--execute" && apiToken ? { apiToken } : {}),
-    ...(email ? { email } : {}),
+    ...(mode === "--execute" && apiToken !== undefined && apiToken !== "" ? { apiToken } : {}),
+    ...(email === "" ? {} : { email }),
   });
-  console.info(JSON.stringify(result));
+  process.stdout.write(`${JSON.stringify(result)}\n`);
 } catch {
-  console.error(JSON.stringify({ event: "cloudflare.database_command_failed" }));
+  process.stderr.write(`${JSON.stringify({ event: "cloudflare.database_command_failed" })}\n`);
   process.exitCode = 1;
 }

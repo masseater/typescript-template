@@ -1,10 +1,15 @@
-import { execFile } from "node:child_process";
-import { createRequire } from "node:module";
-import path from "node:path";
-import { promisify } from "node:util";
 import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { createRequire } from "node:module";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { promisify } from "node:util";
 
-const run = promisify(execFile);
+const MAX_OUTPUT_BYTES = 16_777_216;
+
 const wrangler = path.join(
   path.dirname(createRequire(import.meta.url).resolve("wrangler/package.json")),
   "bin/wrangler.js",
@@ -12,7 +17,8 @@ const wrangler = path.join(
 
 try {
   const config = await writeLocalDatabaseConfig();
-  const { stdout } = await run(
+  // oxlint-disable-next-line typescript/strict-void-return
+  const { stdout } = await promisify(execFile)(
     process.execPath,
     [
       wrangler,
@@ -26,10 +32,10 @@ try {
       "--persist-to",
       localDatabasePersistence,
     ],
-    { maxBuffer: 16 * 1024 * 1024 },
+    { maxBuffer: MAX_OUTPUT_BYTES },
   );
   process.stdout.write(stdout);
 } catch {
-  console.error(JSON.stringify({ action: "local_migration", success: false }));
+  process.stderr.write(`${JSON.stringify({ action: "local_migration", success: false })}\n`);
   process.exitCode = 1;
 }

@@ -1,46 +1,39 @@
-import { fileURLToPath } from "node:url";
+import type { ConfigEnv, UserConfig } from "vite-plus";
+import { appServer, previewDevVars } from "@template/config/vite";
+import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { defineConfig } from "vite-plus";
+import { devBoundary } from "@template/dev-boundary";
+import { fumadocsMdx } from "fumadocs-mdx/vite";
+import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import react from "@vitejs/plugin-react";
-import { fumadocsMdx } from "fumadocs-mdx/vite";
-import { applicationPorts } from "@template/config";
-import { previewDevVars } from "@template/config/vite";
 import { workerCompatibility } from "@template/config/worker";
-import { localDatabase, localDatabasePersistence } from "@template/db/local";
-import { devBoundary } from "@template/dev-boundary";
-import { defineConfig } from "vite-plus";
 
-const server = {
-  host: "127.0.0.1",
-  port: applicationPorts.wiki,
-  strictPort: true,
-  allowedHosts: [".local"],
-};
-
-export default defineConfig(({ command, isPreview }) => ({
+// oxlint-disable-next-line import/no-default-export
+export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
+  build: { sourcemap: "hidden" },
   plugins: [
-    previewDevVars(fileURLToPath(new URL(".", import.meta.url))),
+    previewDevVars(import.meta.dirname),
     devBoundary("wiki"),
     cloudflare({
       config: {
-        name: "template-wiki",
-        main: "./src/server.ts",
+        assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
         compatibility_date: workerCompatibility.date,
         compatibility_flags: [...workerCompatibility.flags],
-        assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
         d1_databases: [localDatabase],
+        main: "./src/server.ts",
+        name: "template-wiki",
       },
-      viteEnvironment: { name: "ssr" },
-      persistState: { path: localDatabasePersistence },
       inspectorPort: false,
+      persistState: { path: localDatabasePersistence },
+      viteEnvironment: { name: "ssr" },
     }),
     fumadocsMdx(),
     tailwindcss(),
     tanstackStart(),
     react(),
   ],
-  server,
-  preview: server,
-  build: { sourcemap: "hidden" },
+  preview: appServer("wiki"),
+  server: appServer("wiki"),
 }));

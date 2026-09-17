@@ -1,57 +1,60 @@
-import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { array, maxLength, minLength, object, parse, picklist, pipe, regex, string } from "valibot";
 import { applications } from "@template/config";
-import * as v from "valibot";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
 import { symbolicate } from "./source-maps.ts";
+
+const maximumLocations = 20;
+const locationList = array(string());
+const inputSchema = object({
+  app: picklist(applications),
+  locations: pipe(locationList, minLength(1), maxLength(maximumLocations)),
+  release: pipe(string(), regex(/^[0-9a-f]{16}$/u)),
+});
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     app: { type: "string" },
+    help: { default: false, type: "boolean" },
     release: { type: "string" },
-    help: { type: "boolean", default: false },
   },
 });
 
 if (values.help) {
-  console.info(
-    JSON.stringify({
-      usage:
-        "vp run --filter @template/observe symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
+  process.stdout.write(
+    `${JSON.stringify({
       locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
       readOnly: true,
-    }),
+      usage:
+        "vp run --filter @template/observe symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
+    })}\n`,
   );
 } else {
   try {
-    const input = v.parse(
-      v.object({
-        app: v.picklist(applications),
-        release: v.pipe(v.string(), v.regex(/^[0-9a-f]{16}$/)),
-        locations: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(20)),
-      }),
-      {
-        app: values.app,
-        release: values.release,
-        locations: positionals.flatMap((value) => value.split("\n")).filter(Boolean),
-      },
-    );
+    const input = parse(inputSchema, {
+      app: values.app,
+      locations: positionals.flatMap((value) => value.split("\n")).filter((line) => line !== ""),
+      release: values.release,
+    });
     const frames = await symbolicate(
-      fileURLToPath(new URL("../../../", import.meta.url)),
-      input.app,
-      input.release,
-      input.locations,
-    );
-    console.info(
-      JSON.stringify({
-        event: "observe.symbolicated",
+      {
         app: input.app,
         release: input.release,
+        repositoryRoot: `${import.meta.dirname}/../../..`,
+      },
+      input.locations,
+    );
+    process.stdout.write(
+      `${JSON.stringify({
+        app: input.app,
+        event: "observe.symbolicated",
         frames,
-      }),
+        release: input.release,
+      })}\n`,
     );
   } catch {
-    console.error(JSON.stringify({ event: "observe.symbolicate_failed" }));
+    process.stderr.write(`${JSON.stringify({ event: "observe.symbolicate_failed" })}\n`);
     process.exitCode = 1;
   }
 }

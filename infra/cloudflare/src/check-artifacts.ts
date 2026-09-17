@@ -1,22 +1,22 @@
-import { fileURLToPath } from "node:url";
 import { applications } from "@template/config";
 import { loadArtifacts } from "./artifacts.ts";
 
 try {
-  const root = fileURLToPath(new URL("../../../", import.meta.url));
-  for (const target of applications) {
-    const artifacts = await loadArtifacts(root, target);
-    console.log(
-      JSON.stringify({
+  const root = `${import.meta.dirname}/../../..`;
+  const verified = await Promise.all(
+    applications.map(async (target) => {
+      const artifacts = await loadArtifacts(root, target);
+      return {
         event: "artifacts.verified",
-        target,
         mainModule: artifacts.mainModule,
         modules: artifacts.modules.length,
         privateAssetsExcluded: true,
-      }),
-    );
-  }
+        target,
+      } as const;
+    }),
+  );
+  process.stdout.write(verified.map((entry) => `${JSON.stringify(entry)}\n`).join(""));
 } catch {
-  console.error(JSON.stringify({ event: "artifacts.invalid" }));
+  process.stderr.write(`${JSON.stringify({ event: "artifacts.invalid" })}\n`);
   process.exitCode = 1;
 }

@@ -1,15 +1,26 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as cloudflare from "@pulumi/cloudflare";
-import { selectAccountPermission } from "./config.ts";
+import { AccountToken, getAccountApiTokenPermissionGroupsListOutput } from "@pulumi/cloudflare";
+import type { AccountPermission } from "./config.ts";
+import type { Output } from "@pulumi/pulumi";
 import { consumeSettings } from "./reference.ts";
+import { secret } from "@pulumi/pulumi";
+import { selectAccountPermission } from "./config.ts";
+
+type PermissionGroups = readonly Readonly<{
+  id: string;
+  name: string;
+  scopes: readonly string[];
+}>[];
 
 const { settings } = await consumeSettings("tokens", "settings");
-const permissions = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
+const permissions = getAccountApiTokenPermissionGroupsListOutput({
   accountId: settings.accountId,
 });
 
-function accountToken(name: string, permission: Parameters<typeof selectAccountPermission>[1]) {
-  const token = new cloudflare.AccountToken(
+function accountToken(name: string, permission: AccountPermission): Output<string> {
+  const permissionId = permissions.results.apply((groups: PermissionGroups) =>
+    selectAccountPermission(groups, permission),
+  );
+  const token = new AccountToken(
     name,
     {
       accountId: settings.accountId,
@@ -17,24 +28,17 @@ function accountToken(name: string, permission: Parameters<typeof selectAccountP
       policies: [
         {
           effect: "allow",
-          permissionGroups: [
-            {
-              id: permissions.results.apply((groups) =>
-                selectAccountPermission(groups, permission),
-              ),
-            },
-          ],
+          permissionGroups: [{ id: permissionId }],
           resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
         },
       ],
     },
     { additionalSecretOutputs: ["value"] },
   );
-  return pulumi.secret(token.value);
+  return secret(token.value);
 }
 
-export const billingReadToken = accountToken("billing-read", "Billing Read");
-export const observabilityQueryToken = accountToken(
-  "observability-query",
-  "Workers Observability Write",
-);
+const billingReadToken = accountToken("billing-read", "Billing Read");
+const observabilityQueryToken = accountToken("observability-query", "Workers Observability Write");
+
+export { billingReadToken, observabilityQueryToken };

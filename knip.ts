@@ -12,8 +12,12 @@ const config: KnipConfig = {
     "apps/wiki": {
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
-    "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+    "infra/bootstrap": {
+      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
+      project: ["src/**/*.ts!"],
+    },
+    "infra/budget-monitor": {
+      entry: ["src/worker.ts!", "src/inspect.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
@@ -35,23 +39,6 @@ const config: KnipConfig = {
       ],
       project: ["src/**/*.ts!"],
     },
-    "infra/bootstrap": {
-      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
-      project: ["src/**/*.ts!"],
-    },
-    "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
-    "tools/dev": {
-      entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
-      project: ["src/**/*.ts!"],
-    },
-    "tools/observe": {
-      entry: ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
-      project: ["src/**/*.ts!"],
-    },
-    "infra/budget-monitor": {
-      entry: ["src/worker.ts!", "src/inspect.ts!"],
-      project: ["src/**/*.ts!"],
-    },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],
       project: ["src/**/*.ts!"],
@@ -60,7 +47,29 @@ const config: KnipConfig = {
       entry: ["src/worker.ts!"],
       project: ["src/**/*.ts!"],
     },
+    "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
+    "libs/auth": {
+      project: [
+        "src/**/*.ts!",
+        "!src/auth-test-fixture.ts!",
+        "!src/browser-client.ts!",
+        "!src/wiki-oauth-fixture.ts!",
+      ],
+    },
+    "libs/db": {
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+      project: ["src/**/*.ts!"],
+    },
+    "tools/dev": {
+      entry: ["src/cli.ts!", "src/gateway.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
+      project: ["src/**/*.ts!"],
+    },
+    "tools/observe": {
+      entry: ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
+      project: ["src/**/*.ts!"],
+    },
   },
 };
 
+// oxlint-disable-next-line import/no-default-export
 export default config;

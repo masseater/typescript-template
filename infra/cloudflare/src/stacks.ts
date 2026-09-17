@@ -2,51 +2,70 @@ import type { Application } from "@template/config";
 
 const application = ["settings", "database"] as const;
 const stackDependencies = {
-  settings: [],
-  database: ["settings"],
-  tokens: ["settings"],
+  admin: application,
   "budget-monitor": ["settings", "tokens"],
+  database: ["settings"],
   "error-monitor": ["settings", "tokens"],
   "health-monitor": ["settings"],
+  settings: [],
+  tokens: ["settings"],
   user: application,
-  admin: application,
   wiki: application,
-} as const satisfies Record<string, readonly string[]> & Record<Application, typeof application>;
+} as const satisfies Readonly<Record<string, readonly string[]>> &
+  Readonly<Record<Application, typeof application>>;
+const stackOrder = [
+  "settings",
+  "database",
+  "tokens",
+  "budget-monitor",
+  "error-monitor",
+  "health-monitor",
+  "user",
+  "admin",
+  "wiki",
+] as const satisfies readonly (keyof typeof stackDependencies)[];
 
-export type StackName = keyof typeof stackDependencies;
-export type DependencyOf<T extends StackName> = (typeof stackDependencies)[T][number];
+type StackName = keyof typeof stackDependencies;
+type DependencyOf<Consumer extends StackName> = (typeof stackDependencies)[Consumer][number];
 
-export interface StackOutputs {
-  settings: "applicationSettings" | "authSecret";
-  database: "databaseId";
-  tokens: "billingReadToken" | "observabilityQueryToken";
+interface StackOutputs {
+  readonly database: "databaseId";
+  readonly settings: "applicationSettings" | "authSecret";
+  readonly tokens: "billingReadToken" | "observabilityQueryToken";
 }
 
-function isStackName(value: unknown): value is StackName {
-  return typeof value === "string" && Object.hasOwn(stackDependencies, value);
+interface PlannedStack {
+  readonly dependencies: readonly StackName[];
+  readonly stack: StackName;
 }
 
-const stackNames = Object.keys(stackDependencies).filter(isStackName);
-
-export function projectName(stack: StackName): string {
+function projectName(stack: StackName): string {
   return `template-${stack}`;
 }
 
-export function stackReferenceName(source: StackName, environment: string): string {
+function stackReferenceName(source: StackName, environment: string): string {
   return `organization/${projectName(source)}/${environment}`;
 }
 
-export function applyPlan(): { stack: StackName; dependencies: readonly StackName[] }[] {
+function applyPlan(): PlannedStack[] {
   const ordered: StackName[] = [];
-  const visiting = new Set<StackName>();
-  const visit = (stack: StackName) => {
-    if (ordered.includes(stack)) return;
-    if (visiting.has(stack)) throw new Error("stack_dependency_cycle");
-    visiting.add(stack);
-    for (const dependency of stackDependencies[stack]) visit(dependency);
-    visiting.delete(stack);
+  function visit(stack: StackName, visiting: readonly StackName[]): void {
+    if (ordered.includes(stack)) {
+      return;
+    }
+    if (visiting.includes(stack)) {
+      throw new Error("stack_dependency_cycle");
+    }
+    for (const dependency of stackDependencies[stack]) {
+      visit(dependency, [...visiting, stack]);
+    }
     ordered.push(stack);
-  };
-  for (const stack of stackNames) visit(stack);
-  return ordered.map((stack) => ({ stack, dependencies: stackDependencies[stack] }));
+  }
+  for (const stack of stackOrder) {
+    visit(stack, []);
+  }
+  return ordered.map((stack) => ({ dependencies: stackDependencies[stack], stack }));
 }
+
+export { applyPlan, projectName, stackReferenceName };
+export type { DependencyOf, StackName, StackOutputs };

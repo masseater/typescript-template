@@ -1,3 +1,6 @@
-import { join } from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 
-export const errorWorkerArtifact = join(import.meta.dirname, "../dist/index.js");
+const errorWorkerArtifact = path.join(import.meta.dirname, "../dist/index.js");
+
+export { errorWorkerArtifact };

@@ -8,7 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth": "./src/auth.tsx",
-    "./shell": "./src/shell.tsx",
+    "./shell": "./src/shell.ts",
     "./signup": "./src/signup.tsx",
     "./styles.css": "./src/styles.css"
   },
@@ -19,6 +19,7 @@
     "@template/config": "workspace:*",
     "@template/observability": "workspace:*",
     "better-auth": "catalog:",
+    "es-toolkit": "1.52.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-intl": "10.2.2",

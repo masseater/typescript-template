@@ -1,50 +1,87 @@
-import * as v from "valibot";
+import {
+  array,
+  check,
+  email,
+  finite,
+  maxLength,
+  minLength,
+  minValue,
+  number,
+  object,
+  parse,
+  picklist,
+  pipe,
+  readonly,
+  regex,
+  safeParse,
+  strictTuple,
+  string,
+  url,
+} from "valibot";
+import type { InferOutput } from "valibot";
 import { applyPlan } from "./stacks.ts";
 
-const id = v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/));
-const positive = v.pipe(v.number(), v.finite(), v.minValue(Number.MIN_VALUE));
-const nonnegative = v.pipe(v.number(), v.finite(), v.minValue(0));
-const origin = v.pipe(
-  v.string(),
-  v.url(),
-  v.check((value) => {
-    const url = URL.parse(value);
+const MAX_BUDGET_RECIPIENTS = 10;
+const MIN_AUTH_SECRET_LENGTH = 32;
+
+const id = pipe(string(), regex(/^[a-f0-9]{32}$/u));
+const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
+const nonnegative = pipe(number(), finite(), minValue(0));
+const emailAddress = pipe(string(), email());
+const origin = pipe(
+  string(),
+  url(),
+  check((value) => {
+    const parsed = URL.parse(value);
     return (
-      url?.protocol === "https:" &&
-      url.origin === value &&
-      !url.hostname.endsWith(".workers.dev") &&
-      !url.username &&
-      !url.password
+      parsed?.protocol === "https:" &&
+      parsed.origin === value &&
+      !parsed.hostname.endsWith(".workers.dev") &&
+      !parsed.username &&
+      !parsed.password
     );
   }),
 );
-const sharedSchema = v.object({
-  accountId: id,
-  zoneId: id,
-  prefix: v.pipe(v.string(), v.regex(/^[a-z][a-z0-9-]{2,35}$/)),
-  origins: v.object({ user: origin, admin: origin, wiki: origin }),
-  mailFrom: v.pipe(v.string(), v.email()),
-  budget: v.object({
-    budgetJpy: positive,
-    jpyPerUsd: positive,
-    fixedCostUsd: nonnegative,
-    reserveUsd: nonnegative,
-    recipients: v.pipe(v.array(v.pipe(v.string(), v.email())), v.minLength(1), v.maxLength(10)),
-  }),
+const budgetSchema = object({
+  budgetJpy: positive,
+  fixedCostUsd: nonnegative,
+  jpyPerUsd: positive,
+  recipients: pipe(array(emailAddress), minLength(1), maxLength(MAX_BUDGET_RECIPIENTS), readonly()),
+  reserveUsd: nonnegative,
 });
-
-export type SharedConfig = v.InferOutput<typeof sharedSchema>;
-
-export const workerSubdomain = { enabled: false, previewsEnabled: false };
-
-const deploymentCommand = v.strictTuple([
-  v.picklist(["preview", "up"]),
-  v.picklist(["all", ...applyPlan().map(({ stack }) => stack)]),
+const sharedSchema = object({
+  accountId: id,
+  budget: budgetSchema,
+  mailFrom: emailAddress,
+  origins: object({ admin: origin, user: origin, wiki: origin }),
+  prefix: pipe(string(), regex(/^[a-z][a-z0-9-]{2,35}$/u)),
+  zoneId: id,
+});
+const deploymentCommandSchema = strictTuple([
+  picklist(["preview", "up"]),
+  picklist(["all", ...applyPlan().map(({ stack }) => stack)]),
 ]);
 
-export function parseDeploymentCommand(args: readonly string[]) {
-  const parsed = v.safeParse(deploymentCommand, args);
-  if (!parsed.success) throw new Error("deployment_command_invalid");
+type SharedConfig = InferOutput<typeof sharedSchema>;
+type DeploymentCommand = Readonly<{
+  operation: InferOutput<typeof deploymentCommandSchema>[0];
+  targets: ReturnType<typeof applyPlan>;
+}>;
+type AccountPermission = "Billing Read" | "Workers Observability Write";
+
+interface PermissionGroup {
+  readonly id: string;
+  readonly name: string;
+  readonly scopes: readonly string[];
+}
+
+const workerSubdomain = { enabled: false, previewsEnabled: false } as const;
+
+function parseDeploymentCommand(args: readonly string[]): DeploymentCommand {
+  const parsed = safeParse(deploymentCommandSchema, args);
+  if (!parsed.success) {
+    throw new Error("deployment_command_invalid");
+  }
   const [operation, target] = parsed.output;
   const plan = applyPlan();
   return {
@@ -53,33 +90,56 @@ export function parseDeploymentCommand(args: readonly string[]) {
   };
 }
 
-export function parseSharedConfig(input: unknown): SharedConfig {
-  const parsed = v.safeParse(sharedSchema, input);
-  if (!parsed.success) throw new Error("cloudflare_settings_invalid");
-  const config = parsed.output;
+function assertDistinctOrigins(config: Readonly<Pick<SharedConfig, "origins">>): void {
   const origins = Object.values(config.origins);
-  if (new Set(origins).size !== origins.length) throw new Error("app_origins_must_differ");
-  if (
-    config.budget.budgetJpy / config.budget.jpyPerUsd <=
-    config.budget.fixedCostUsd + config.budget.reserveUsd
-  ) {
+  if (new Set(origins).size !== origins.length) {
+    throw new Error("app_origins_must_differ");
+  }
+}
+
+function assertBudgetAllowance(budget: Readonly<Omit<SharedConfig["budget"], "recipients">>): void {
+  if (budget.budgetJpy / budget.jpyPerUsd <= budget.fixedCostUsd + budget.reserveUsd) {
     throw new Error("budget_has_no_usage_allowance");
   }
+}
+
+function parseSharedConfig(input: unknown): SharedConfig {
+  const parsed = safeParse(sharedSchema, input);
+  if (!parsed.success) {
+    throw new Error("cloudflare_settings_invalid");
+  }
+  const config = parsed.output;
+  assertDistinctOrigins(config);
+  assertBudgetAllowance(config.budget);
   return config;
 }
 
-export function validateAuthSecret(secret: string): string {
-  if (secret.length < 32 || secret.trim() !== secret) throw new Error("auth_secret_invalid");
+function validateAuthSecret(secret: string): string {
+  if (secret.length < MIN_AUTH_SECRET_LENGTH || secret.trim() !== secret) {
+    throw new Error("auth_secret_invalid");
+  }
   return secret;
 }
 
-export function selectAccountPermission(
-  groups: readonly { id: string; name: string; scopes: string[] }[],
-  name: "Billing Read" | "Workers Observability Write",
+function selectAccountPermission(
+  groups: readonly PermissionGroup[],
+  name: AccountPermission,
 ): string {
   const matches = groups.filter(
     (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
   );
-  if (matches.length !== 1) throw new Error("account_permission_unavailable");
-  return v.parse(id, matches[0]!.id);
+  const [match] = matches;
+  if (matches.length !== 1 || match === undefined) {
+    throw new Error("account_permission_unavailable");
+  }
+  return parse(id, match.id);
 }
+
+export {
+  parseDeploymentCommand,
+  parseSharedConfig,
+  selectAccountPermission,
+  validateAuthSecret,
+  workerSubdomain,
+};
+export type { AccountPermission, SharedConfig };

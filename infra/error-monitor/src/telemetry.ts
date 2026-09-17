@@ -1,82 +1,112 @@
-import * as v from "valibot";
+import {
+  array,
+  boolean,
+  literal,
+  looseObject,
+  number,
+  object,
+  optional,
+  safeParse,
+  string,
+  union,
+} from "valibot";
 
+interface ErrorGroup {
+  readonly fingerprint: string;
+  readonly service: string;
+  readonly event: string;
+  readonly type: string;
+  readonly count: number;
+}
+
+interface QueryWindow {
+  readonly accountId: string;
+  readonly token: string;
+  readonly from: number;
+  readonly to: number;
+}
+
+type GroupValue = Readonly<{ key: string; value: string | number | boolean }>;
+type Aggregate = Readonly<{ count: number; groups?: readonly GroupValue[] | undefined }>;
+type Calculation = Readonly<{ aggregates: readonly Aggregate[] }>;
+
+const REQUEST_TIMEOUT_MS = 15_000;
+const QUERY_LIMIT = 50;
 const groupKeys = ["error.fingerprint", "service", "event", "error.type"] as const;
-const group = v.object({ key: v.string(), value: v.union([v.string(), v.number(), v.boolean()]) });
-const envelope = v.object({
-  success: v.literal(true),
-  result: v.looseObject({
-    calculations: v.optional(
-      v.array(
-        v.looseObject({
-          aggregates: v.array(
-            v.looseObject({ count: v.number(), groups: v.optional(v.array(group)) }),
-          ),
-        }),
-      ),
-      [],
-    ),
-  }),
+const scalar = union([string(), number(), boolean()]);
+const groupValue = object({ key: string(), value: scalar });
+const aggregate = looseObject({ count: number(), groups: optional(array(groupValue)) });
+const calculation = looseObject({ aggregates: array(aggregate) });
+const calculations = array(calculation);
+const envelope = object({
+  result: looseObject({ calculations: optional(calculations, []) }),
+  success: literal(true),
 });
 
-export interface ErrorGroup {
-  fingerprint: string;
-  service: string;
-  event: string;
-  type: string;
-  count: number;
+function errorGroup(item: Aggregate): ErrorGroup[] {
+  const values = new Map(
+    (item.groups ?? []).map((entry: GroupValue) => [entry.key, String(entry.value)]),
+  );
+  const fingerprint = values.get("error.fingerprint");
+  if (fingerprint === undefined || !/^[0-9a-f]{8}$/u.test(fingerprint)) {
+    return [];
+  }
+  return [
+    {
+      count: item.count,
+      event: values.get("event") ?? "unknown",
+      fingerprint,
+      service: values.get("service") ?? "unknown",
+      type: values.get("error.type") ?? "Error",
+    },
+  ];
 }
 
-export async function fetchErrorGroups(
-  accountId: string,
-  token: string,
-  from: number,
-  to: number,
-): Promise<ErrorGroup[]> {
-  if (!/^[a-f0-9]{32}$/.test(accountId)) throw new Error("telemetry_account_invalid");
+function queryBody(window: QueryWindow): string {
+  return JSON.stringify({
+    parameters: {
+      calculations: [{ alias: "events", operator: "count" }],
+      datasets: [],
+      filters: [{ key: "error.fingerprint", operation: "exists", type: "string" }],
+      groupBys: groupKeys.map((value) => ({ type: "string", value })),
+      limit: QUERY_LIMIT,
+    },
+    queryId: "error-monitor",
+    timeframe: { from: window.from, to: window.to },
+    view: "calculations",
+  });
+}
+
+async function fetchErrorGroups(window: QueryWindow): Promise<ErrorGroup[]> {
+  if (!/^[a-f0-9]{32}$/u.test(window.accountId)) {
+    throw new Error("telemetry_account_invalid");
+  }
   const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/observability/telemetry/query`,
+    `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
     {
-      method: "POST",
+      body: queryBody(window),
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: "application/json",
+        Authorization: `Bearer ${window.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        queryId: "error-monitor",
-        timeframe: { from, to },
-        view: "calculations",
-        parameters: {
-          datasets: [],
-          filters: [{ key: "error.fingerprint", operation: "exists", type: "string" }],
-          calculations: [{ operator: "count", alias: "events" }],
-          groupBys: groupKeys.map((value) => ({ type: "string", value })),
-          limit: 50,
-        },
-      }),
-      signal: AbortSignal.timeout(15_000),
+      method: "POST",
       redirect: "manual",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     },
   );
-  if (!response.ok) throw new Error("telemetry_http_failed");
-  const parsed = v.safeParse(envelope, await response.json());
-  if (!parsed.success) throw new Error("telemetry_response_invalid");
-  return parsed.output.result.calculations.flatMap((calculation) =>
-    calculation.aggregates.flatMap((aggregate) => {
-      const values = Object.fromEntries(
-        (aggregate.groups ?? []).map((item) => [item.key, String(item.value)]),
-      );
-      const fingerprint = values["error.fingerprint"];
-      if (!fingerprint || !/^[0-9a-f]{8}$/.test(fingerprint)) return [];
-      return [
-        {
-          fingerprint,
-          service: values["service"] ?? "unknown",
-          event: values["event"] ?? "unknown",
-          type: values["error.type"] ?? "Error",
-          count: aggregate.count,
-        },
-      ];
-    }),
+  if (!response.ok) {
+    throw new Error("telemetry_http_failed");
+  }
+  const body: unknown = await response.json();
+  const parsed = safeParse(envelope, body);
+  if (!parsed.success) {
+    throw new Error("telemetry_response_invalid");
+  }
+  return parsed.output.result.calculations.flatMap((entry: Calculation) =>
+    entry.aggregates.flatMap((item: Aggregate) => errorGroup(item)),
   );
 }
+
+export { fetchErrorGroups };
+export type { ErrorGroup };

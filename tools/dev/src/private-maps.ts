@@ -1,35 +1,63 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { privateDirectoryMode, privateFileMode } from "./private-files.ts";
 import { applications } from "@template/config";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
-async function moveMaps(source: string, destination: string, directory = source): Promise<number> {
-  if ((await realpath(directory)) !== directory)
-    throw new Error("Source map directory alias is forbidden");
-  let moved = 0;
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.isSymbolicLink()) throw new Error("Source map symlink is forbidden");
-    const file = path.join(directory, entry.name);
-    if (entry.isDirectory()) moved += await moveMaps(source, destination, file);
-    else if (entry.isFile() && entry.name.endsWith(".map")) {
-      const target = path.join(destination, path.relative(source, file));
-      await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      if ((await realpath(path.dirname(target))) !== path.dirname(target))
-        throw new Error("Private source map directory alias is forbidden");
-      await rename(file, target);
-      await chmod(target, 0o600);
-      moved += 1;
-    }
-  }
-  return moved;
+interface MapTarget {
+  readonly destination: string;
+  readonly source: string;
 }
 
-for (const application of applications) {
-  const moved = await moveMaps(
-    path.join(root, "apps", application, "dist/client"),
-    path.join(root, ".local", "source-maps", application, "client"),
+async function sourceMaps(directory: string): Promise<string[]> {
+  if ((await realpath(directory)) !== directory) {
+    throw new Error("Source map directory alias is forbidden");
+  }
+  const entries = await readdir(directory, { withFileTypes: true });
+  type Entry = Readonly<(typeof entries)[number]>;
+  if (entries.some((entry: Entry) => entry.isSymbolicLink())) {
+    throw new Error("Source map symlink is forbidden");
+  }
+  const nested = await Promise.all(
+    entries
+      .filter((entry: Entry) => entry.isDirectory())
+      .map(async (entry: Entry) => sourceMaps(path.join(directory, entry.name))),
   );
-  console.log(JSON.stringify({ event: "build.source_maps_private", audience: application, moved }));
+  const files = entries
+    .filter((entry: Entry) => entry.isFile() && entry.name.endsWith(".map"))
+    .map((entry: Entry) => path.join(directory, entry.name));
+  return [...files, ...nested.flat()];
 }
+
+async function movePrivately({ destination, source }: MapTarget, file: string): Promise<void> {
+  const target = path.join(destination, path.relative(source, file));
+  const targetDirectory = path.dirname(target);
+  await mkdir(targetDirectory, { mode: privateDirectoryMode, recursive: true });
+  if ((await realpath(targetDirectory)) !== targetDirectory) {
+    throw new Error("Private source map directory alias is forbidden");
+  }
+  await rename(file, target);
+  await chmod(target, privateFileMode);
+}
+
+async function movePrivateMaps(audience: string): Promise<string> {
+  const target = {
+    destination: path.join(root, ".local", "source-maps", audience, "client"),
+    source: path.join(root, "apps", audience, "dist/client"),
+  };
+  const maps = await sourceMaps(target.source);
+  await Promise.all(
+    maps.map(async (file) => {
+      await movePrivately(target, file);
+    }),
+  );
+  return `${JSON.stringify({ audience, event: "build.source_maps_private", moved: maps.length })}\n`;
+}
+
+const reports = await Promise.all(applications.map(async (audience) => movePrivateMaps(audience)));
+process.stdout.write(reports.join(""));

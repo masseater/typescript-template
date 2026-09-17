@@ -1,6 +1,8 @@
-import * as pulumi from "@pulumi/pulumi";
 import { parseSharedConfig, validateAuthSecret } from "./config.ts";
+import { Config } from "@pulumi/pulumi";
 
-const config = new pulumi.Config();
-export const applicationSettings = parseSharedConfig(config.requireObject<unknown>("settings"));
-export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
+const config = new Config();
+const applicationSettings = parseSharedConfig(config.requireObject<unknown>("settings"));
+const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
+
+export { applicationSettings, authSecret };

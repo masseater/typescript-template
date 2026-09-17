@@ -1,6 +1,5 @@
-import { and, count, eq, gt } from "drizzle-orm";
 import type { Application, StrongAuthenticationMethod } from "@template/config";
-import type { Database } from "./index.ts";
+import { and, count, eq, gt } from "drizzle-orm";
 import {
   oauthAccessToken,
   oauthRefreshToken,
@@ -10,46 +9,57 @@ import {
   user,
   verification,
 } from "./schema.ts";
+import type { Database } from "./index.ts";
 
-export async function hasVerificationAudience(
-  database: Database,
+type User = typeof user.$inferSelect;
+interface SessionSecurity {
+  session: typeof session.$inferSelect;
+  user: User;
+}
+
+async function hasVerificationAudience(
+  database: Readonly<Pick<Database, "select">>,
   identifier: string,
   audience: Application,
-) {
+): Promise<boolean> {
+  const unexpired = gt(verification.expiresAt, new Date());
   const [record] = await database
     .select({ id: verification.id })
     .from(verification)
     .where(
-      and(
-        eq(verification.identifier, identifier),
-        eq(verification.audience, audience),
-        gt(verification.expiresAt, new Date()),
-      ),
+      and(eq(verification.identifier, identifier), eq(verification.audience, audience), unexpired),
     )
     .limit(1);
   return record !== undefined;
 }
 
-export async function findUser(database: Database, userId: string) {
+async function findUser(
+  database: Readonly<Pick<Database, "select">>,
+  userId: string,
+): Promise<User | undefined> {
   const [record] = await database.select().from(user).where(eq(user.id, userId)).limit(1);
-  return record ?? null;
+  return record;
 }
 
-export async function findPasskeyUser(
-  database: Database,
+async function findPasskeyUser(
+  database: Readonly<Pick<Database, "select">>,
   credentialId: string,
   audience: Application,
-) {
+): Promise<User | undefined> {
   const [record] = await database
     .select({ user })
     .from(passkey)
     .innerJoin(user, eq(passkey.userId, user.id))
     .where(and(eq(passkey.credentialID, credentialId), eq(passkey.audience, audience)))
     .limit(1);
-  return record?.user ?? null;
+  return record?.user;
 }
 
-export async function hasEnrolledFactor(database: Database, userId: string, audience: Application) {
+async function hasEnrolledFactor(
+  database: Readonly<Pick<Database, "select">>,
+  userId: string,
+  audience: Application,
+): Promise<boolean> {
   const [keys] = await database
     .select({ count: count() })
     .from(passkey)
@@ -62,11 +72,12 @@ export async function hasEnrolledFactor(database: Database, userId: string, audi
   return (keys?.count ?? 0) > 0 || totp !== undefined;
 }
 
-export async function getSessionSecurity(
-  database: Database,
+async function getSessionSecurity(
+  database: Readonly<Pick<Database, "select">>,
   sessionId: string,
   audience: Application,
-) {
+): Promise<SessionSecurity | undefined> {
+  const unexpired = gt(session.expiresAt, new Date());
   const [record] = await database
     .select({ session, user })
     .from(session)
@@ -76,41 +87,66 @@ export async function getSessionSecurity(
         eq(session.id, sessionId),
         eq(session.audience, audience),
         eq(session.securityVersion, user.securityVersion),
-        gt(session.expiresAt, new Date()),
+        unexpired,
       ),
     )
     .limit(1);
-  return record ?? null;
+  return record;
 }
 
-export async function markSessionStrong(
-  database: Database,
-  sessionId: string,
-  audience: Application,
-  method: StrongAuthenticationMethod,
-) {
+async function markSessionStrong({
+  audience,
+  database,
+  method,
+  sessionId,
+}: Readonly<{
+  audience: Application;
+  database: Readonly<Pick<Database, "update">>;
+  method: StrongAuthenticationMethod;
+  sessionId: string;
+}>): Promise<void> {
   const [updated] = await database
     .update(session)
     .set({
-      authenticationMethod: method,
       authenticatedAt: new Date(),
+      authenticationMethod: method,
     })
     .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
     .returning({ id: session.id });
-  if (!updated) throw new Error("SESSION_REVOKED");
+  if (!updated) {
+    throw new Error("SESSION_REVOKED");
+  }
 }
 
-export async function revokeUserSessions(database: Database, userId: string) {
+async function revokeUserSessions(
+  database: Readonly<Pick<Database, "delete">>,
+  userId: string,
+): Promise<void> {
   await database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId));
   await database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId));
   await database.delete(session).where(eq(session.userId, userId));
 }
 
-export async function findWikiReader(database: Database, userId: string) {
+async function findWikiReader(
+  database: Readonly<Pick<Database, "select">>,
+  userId: string,
+): Promise<{ id: string } | undefined> {
   const [record] = await database
     .select({ id: user.id })
     .from(user)
     .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
     .limit(1);
-  return record ?? null;
+  return record;
 }
+
+export {
+  findPasskeyUser,
+  findUser,
+  findWikiReader,
+  getSessionSecurity,
+  hasEnrolledFactor,
+  hasVerificationAudience,
+  markSessionStrong,
+  revokeUserSessions,
+};
+export type { SessionSecurity };

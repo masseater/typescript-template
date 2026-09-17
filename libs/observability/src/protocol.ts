@@ -1,60 +1,84 @@
-import * as v from "valibot";
+import { is, parse, picklist, pipe, record, regex, string } from "valibot";
 
-export type Correlation = { traceId: string; spanId: string; requestId: string };
+type RouteEntry = readonly [string, string];
+type HttpMethod = (typeof httpMethods)[number];
+interface Correlation {
+  readonly traceId: string;
+  readonly spanId: string;
+  readonly requestId: string;
+}
+interface ParentContext {
+  readonly parentSpanId: string;
+  readonly traceId: string;
+}
 
-export const httpMethods = [
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "OPTIONS",
-  "HEAD",
-  "_OTHER",
-] as const;
-export const traceIdSchema = v.pipe(v.string(), v.regex(/^(?!0+$)[0-9a-f]{32}$/));
-export const spanIdSchema = v.pipe(v.string(), v.regex(/^(?!0+$)[0-9a-f]{16}$/));
-export const requestIdSchema = v.pipe(
-  v.string(),
-  v.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
+const traceIdBytes = 16;
+const spanIdBytes = 8;
+const hexRadix = 16;
+const hexByteWidth = 2;
+const routeMessage = "Telemetry routes require fixed paths and bounded labels";
+
+const httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "_OTHER"] as const;
+const httpMethodSchema = picklist(httpMethods);
+const traceIdSchema = pipe(string(), regex(/^(?!0+$)[0-9a-f]{32}$/u));
+const spanIdSchema = pipe(string(), regex(/^(?!0+$)[0-9a-f]{16}$/u));
+const requestIdSchema = pipe(
+  string(),
+  regex(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
 );
-const routesSchema = v.record(
-  v.pipe(
-    v.string(),
-    v.regex(
-      /^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/,
-      "Telemetry routes require fixed paths and bounded labels",
-    ),
-  ),
-  v.pipe(
-    v.string(),
-    v.regex(/^[a-z][a-z0-9_.-]{0,63}$/, "Telemetry routes require fixed paths and bounded labels"),
-  ),
-);
+const routePathSchema = pipe(string(), regex(/^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u, routeMessage));
+const routeLabelSchema = pipe(string(), regex(/^[a-z][a-z0-9_.-]{0,63}$/u, routeMessage));
+const routesSchema = record(routePathSchema, routeLabelSchema);
 
-export const randomHex = (bytes: number): string =>
-  Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
-    byte.toString(16).padStart(2, "0"),
+function randomHex(bytes: number): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
+    byte.toString(hexRadix).padStart(hexByteWidth, "0"),
   ).join("");
+}
 
-export function parentContext(value: string | null) {
-  const [, traceId, parentSpanId] = value?.match(/^00-([0-9a-f]{32})-([0-9a-f]{16})-0[01]$/) ?? [];
-  return v.is(traceIdSchema, traceId) && v.is(spanIdSchema, parentSpanId)
-    ? { traceId, parentSpanId }
+function parentContext(value: string | null): ParentContext | undefined {
+  const groups = value?.match(
+    /^00-(?<traceId>[0-9a-f]{32})-(?<parentSpanId>[0-9a-f]{16})-0[01]$/u,
+  )?.groups;
+  const traceId = groups?.["traceId"];
+  const parentSpanId = groups?.["parentSpanId"];
+  return is(traceIdSchema, traceId) && is(spanIdSchema, parentSpanId)
+    ? { parentSpanId, traceId }
     : undefined;
 }
 
-export const httpMethod = (method: string) =>
-  v.is(v.picklist(httpMethods), method) ? method : "_OTHER";
+function httpMethod(method: string): HttpMethod {
+  return is(httpMethodSchema, method) ? method : "_OTHER";
+}
 
-export function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
-  if (Object.hasOwn(routes, pathname)) return routes[pathname] ?? "unmatched";
+function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
+  if (Object.hasOwn(routes, pathname)) {
+    return routes[pathname] ?? "unmatched";
+  }
   const prefixes = Object.entries(routes)
-    .filter(([path]) => path.endsWith("/*"))
-    .sort(([left], [right]) => right.length - left.length);
-  return prefixes.find(([path]) => pathname.startsWith(path.slice(0, -1)))?.[1] ?? "unmatched";
+    .filter(([path]: RouteEntry) => path.endsWith("/*"))
+    .toSorted(([left]: RouteEntry, [right]: RouteEntry) => right.length - left.length);
+  return (
+    prefixes.find(([path]: RouteEntry) => pathname.startsWith(path.slice(0, -1)))?.[1] ??
+    "unmatched"
+  );
 }
 
-export function validateRoutes(routes: Readonly<Record<string, string>>) {
-  v.parse(routesSchema, routes);
+function validateRoutes(routes: Readonly<Record<string, string>>): void {
+  parse(routesSchema, routes);
 }
+
+export {
+  httpMethod,
+  httpMethods,
+  parentContext,
+  randomHex,
+  requestIdSchema,
+  routeLabel,
+  spanIdBytes,
+  spanIdSchema,
+  traceIdBytes,
+  traceIdSchema,
+  validateRoutes,
+};
+export type { Correlation, HttpMethod };

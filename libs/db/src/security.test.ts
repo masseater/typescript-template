@@ -1,9 +1,4 @@
-import { eq } from "drizzle-orm";
-import { expect, test as baseTest } from "vite-plus/test";
-import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
-import { getProfile, updateProfile } from "./index.ts";
 import type { Application, Role } from "@template/config";
-import type { Database } from "./index.ts";
 import {
   account,
   oauthAccessToken,
@@ -13,11 +8,22 @@ import {
   session,
   user,
 } from "./schema.ts";
+import { test as baseTest, expect } from "vite-plus/test";
+import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
+import { getProfile, updateProfile } from "./index.ts";
+import type { Database } from "./index.ts";
 import { createTestDatabase } from "./testing.ts";
+import { eq } from "drizzle-orm";
 
-const test = baseTest.extend<{ db: Database }>({
-  db: async ({}, provide) => {
+const SESSION_LIFETIME_MS = 60_000;
+
+type SessionRequest = Readonly<{ audience: Application; strong?: boolean; userId: string }>;
+type TestDatabase = Readonly<Pick<Database, "all" | "delete" | "insert" | "select" | "update">>;
+type Context = Readonly<{ db: TestDatabase }>;
+
+const test = baseTest.extend<Context>({
+  db: async ({}: Readonly<object>, provide) => {
     const resource = await createTestDatabase();
     try {
       await provide(resource.database);
@@ -27,40 +33,45 @@ const test = baseTest.extend<{ db: Database }>({
   },
 });
 
-async function addUser(db: Database, id: string, role: Role = "user") {
+async function addUser(db: TestDatabase, id: string, role: Role = "user"): Promise<void> {
   await db.insert(user).values({
+    createdAt: new Date(),
+    email: `${id}@example.com`,
+    emailVerified: true,
     id,
     name: id,
-    email: `${id}@example.com`,
     role,
-    emailVerified: true,
-    createdAt: new Date(),
     updatedAt: new Date(),
   });
 }
 
-async function addSession(db: Database, userId: string, audience: Application, strong = true) {
+async function addSession(
+  db: TestDatabase,
+  { audience, strong = true, userId }: SessionRequest,
+): Promise<string> {
   const id = crypto.randomUUID();
   const [owner] = await db.select().from(user).where(eq(user.id, userId));
-  if (!owner) throw new Error("USER_REQUIRED");
+  if (!owner) {
+    throw new Error("USER_REQUIRED");
+  }
   await db.insert(session).values({
-    id,
-    token: crypto.randomUUID(),
-    userId,
     audience,
-    securityVersion: owner.securityVersion,
     authenticationMethod: strong ? "password_totp" : "password",
     createdAt: new Date(),
+    expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
+    id,
+    securityVersion: owner.securityVersion,
+    token: crypto.randomUUID(),
     updatedAt: new Date(),
-    expiresAt: new Date(Date.now() + 60_000),
+    userId,
   });
   return id;
 }
 
-test("persists Unicode profile and rejects attempts to update role", async ({ db }) => {
+test("persists Unicode profile and rejects attempts to update role", async ({ db }: Context) => {
   await addUser(db, "reader");
   await updateProfile(db, "reader", { name: "日本語 العربية 🐈", profile: "私は開発者です。" });
-  expect(await getProfile(db, "reader")).toMatchObject({
+  await expect(getProfile(db, "reader")).resolves.toMatchObject({
     name: "日本語 العربية 🐈",
     profile: "私は開発者です。",
   });
@@ -69,155 +80,175 @@ test("persists Unicode profile and rejects attempts to update role", async ({ db
   ).rejects.toThrow("Invalid key");
 });
 
-test("rejects weak admin and cross-audience sessions", async ({ db }) => {
+test("rejects weak admin and cross-audience sessions", async ({ db }: Context) => {
   await addUser(db, "administrator", "admin");
-  const weak = await addSession(db, "administrator", "admin", false);
-  const wrongAudience = await addSession(db, "administrator", "user");
+  const weak = await addSession(db, { audience: "admin", strong: false, userId: "administrator" });
+  const wrongAudience = await addSession(db, { audience: "user", userId: "administrator" });
   await expect(listUsers(db, weak)).rejects.toThrow("ADMIN_STRONG_SESSION_REQUIRED");
   await expect(listUsers(db, wrongAudience)).rejects.toThrow("ADMIN_STRONG_SESSION_REQUIRED");
-  const strong = await addSession(db, "administrator", "admin");
-  expect((await listUsers(db, strong)).users).toHaveLength(1);
+  const strong = await addSession(db, { audience: "admin", userId: "administrator" });
+  await expect(listUsers(db, strong)).resolves.toMatchObject({ users: [{ id: "administrator" }] });
 });
 
-test("role change invalidates both audiences immediately", async ({ db }) => {
+test("role change invalidates both audiences immediately", async ({ db }: Context) => {
   await addUser(db, "actor", "admin");
   await addUser(db, "target", "admin");
-  const actor = await addSession(db, "actor", "admin");
-  const targetAdmin = await addSession(db, "target", "admin");
-  const targetUser = await addSession(db, "target", "user");
-  await setUserRole(db, actor, "target", "user");
-  expect(await getSessionSecurity(db, targetAdmin, "admin")).toBeNull();
-  expect(await getSessionSecurity(db, targetUser, "user")).toBeNull();
+  const actor = await addSession(db, { audience: "admin", userId: "actor" });
+  const targetAdmin = await addSession(db, { audience: "admin", userId: "target" });
+  const targetUser = await addSession(db, { audience: "user", userId: "target" });
+  await setUserRole({ database: db, role: "user", sessionId: actor, targetId: "target" });
+  await expect(getSessionSecurity(db, targetAdmin, "admin")).resolves.toBeUndefined();
+  await expect(getSessionSecurity(db, targetUser, "user")).resolves.toBeUndefined();
 });
 
-async function addOAuthGrant(db: Database, userId: string) {
+async function addOAuthGrant(db: TestDatabase, userId: string): Promise<void> {
   const clientId = `client-${userId}`;
-  await db.insert(oauthClient).values({ id: clientId, clientId, redirectUris: "[]" });
+  const scopes = '["wiki:read"]';
+  await db.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" });
   await db.insert(oauthRefreshToken).values({
-    id: `refresh-${userId}`,
-    token: `refresh-token-${userId}`,
     clientId,
+    id: `refresh-${userId}`,
+    scopes,
+    token: `refresh-token-${userId}`,
     userId,
-    scopes: '["wiki:read"]',
   });
   await db.insert(oauthAccessToken).values({
+    clientId,
     id: `access-${userId}`,
-    token: `access-token-${userId}`,
-    clientId,
-    userId,
     refreshId: `refresh-${userId}`,
-    scopes: '["wiki:read"]',
-  });
-  await db.insert(oauthConsent).values({
-    id: `consent-${userId}`,
-    clientId,
+    scopes,
+    token: `access-token-${userId}`,
     userId,
-    scopes: '["wiki:read"]',
   });
+  await db.insert(oauthConsent).values({ clientId, id: `consent-${userId}`, scopes, userId });
 }
 
-async function oauthGrantCounts(db: Database, userId: string) {
-  return {
-    access: (await db.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)))
-      .length,
-    refresh: (await db.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)))
-      .length,
-    consent: (await db.select().from(oauthConsent).where(eq(oauthConsent.userId, userId))).length,
-  };
+async function oauthGrantCounts(
+  db: TestDatabase,
+  userId: string,
+): Promise<Record<"access" | "consent" | "refresh", number>> {
+  const [access, refresh, consent] = await Promise.all([
+    db.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+    db.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+    db.select().from(oauthConsent).where(eq(oauthConsent.userId, userId)),
+  ]);
+  return { access: access.length, consent: consent.length, refresh: refresh.length };
 }
 
-test("role change revokes wiki reading and every OAuth grant of the user", async ({ db }) => {
+test("role change revokes wiki reading and every OAuth grant of the user", async ({
+  db,
+}: Context) => {
   await addUser(db, "actor", "admin");
   await addUser(db, "reader", "admin");
-  const actor = await addSession(db, "actor", "admin");
+  const actor = await addSession(db, { audience: "admin", userId: "actor" });
   await addOAuthGrant(db, "reader");
-  expect(await findWikiReader(db, "reader")).toEqual({ id: "reader" });
-  await setUserRole(db, actor, "reader", "user");
-  expect(await findWikiReader(db, "reader")).toBeNull();
-  expect(await oauthGrantCounts(db, "reader")).toEqual({ access: 0, refresh: 0, consent: 0 });
+  await expect(findWikiReader(db, "reader")).resolves.toStrictEqual({ id: "reader" });
+  await setUserRole({ database: db, role: "user", sessionId: actor, targetId: "reader" });
+  await expect(findWikiReader(db, "reader")).resolves.toBeUndefined();
+  await expect(oauthGrantCounts(db, "reader")).resolves.toStrictEqual({
+    access: 0,
+    consent: 0,
+    refresh: 0,
+  });
 });
 
-test("revoking sessions also revokes OAuth tokens but keeps consent", async ({ db }) => {
+test("revoking sessions also revokes OAuth tokens but keeps consent", async ({ db }: Context) => {
   await addUser(db, "reader", "admin");
-  const wiki = await addSession(db, "reader", "wiki");
+  const wiki = await addSession(db, { audience: "wiki", userId: "reader" });
   await addOAuthGrant(db, "reader");
   await revokeUserSessions(db, "reader");
-  expect(await getSessionSecurity(db, wiki, "wiki")).toBeNull();
-  expect(await oauthGrantCounts(db, "reader")).toEqual({ access: 0, refresh: 0, consent: 1 });
+  await expect(getSessionSecurity(db, wiki, "wiki")).resolves.toBeUndefined();
+  await expect(oauthGrantCounts(db, "reader")).resolves.toStrictEqual({
+    access: 0,
+    consent: 1,
+    refresh: 0,
+  });
 });
 
-test("deleting a user removes OAuth grants", async ({ db }) => {
+test("deleting a user removes OAuth grants", async ({ db }: Context) => {
   await addUser(db, "actor", "admin");
   await addUser(db, "reader");
-  const actor = await addSession(db, "actor", "admin");
+  const actor = await addSession(db, { audience: "admin", userId: "actor" });
   await addOAuthGrant(db, "reader");
   await deleteUser(db, actor, "reader");
-  expect(await oauthGrantCounts(db, "reader")).toEqual({ access: 0, refresh: 0, consent: 0 });
+  await expect(oauthGrantCounts(db, "reader")).resolves.toStrictEqual({
+    access: 0,
+    consent: 0,
+    refresh: 0,
+  });
 });
 
-test("wiki reading requires a verified administrator", async ({ db }) => {
+test("wiki reading requires a verified administrator", async ({ db }: Context) => {
   await addUser(db, "member");
   await db.insert(user).values({
+    createdAt: new Date(),
+    email: "unverified@example.com",
+    emailVerified: false,
     id: "unverified",
     name: "unverified",
-    email: "unverified@example.com",
     role: "admin",
-    emailVerified: false,
-    createdAt: new Date(),
     updatedAt: new Date(),
   });
-  expect(await findWikiReader(db, "member")).toBeNull();
-  expect(await findWikiReader(db, "unverified")).toBeNull();
-  expect(await findWikiReader(db, "missing")).toBeNull();
+  await expect(findWikiReader(db, "member")).resolves.toBeUndefined();
+  await expect(findWikiReader(db, "unverified")).resolves.toBeUndefined();
+  await expect(findWikiReader(db, "missing")).resolves.toBeUndefined();
 });
 
-test("protects final administrator and credentials during deletion", async ({ db }) => {
+test("protects final administrator and credentials during deletion", async ({ db }: Context) => {
   await addUser(db, "last", "admin");
   await db.insert(account).values({
-    id: "credential",
     accountId: "last",
-    providerId: "credential",
-    userId: "last",
-    password: "not-used-for-authentication-in-db-test",
     createdAt: new Date(),
+    id: "credential",
+    password: "not-used-for-authentication-in-db-test",
+    providerId: "credential",
     updatedAt: new Date(),
+    userId: "last",
   });
-  const actor = await addSession(db, "last", "admin");
+  const actor = await addSession(db, { audience: "admin", userId: "last" });
   await expect(deleteUser(db, actor, "last")).rejects.toThrow("LAST_ADMIN_REQUIRED");
-  await expect(setUserRole(db, actor, "last", "user")).rejects.toThrow("LAST_ADMIN_REQUIRED");
-  expect(await db.select().from(account)).toHaveLength(1);
-  expect((await getSessionSecurity(db, actor, "admin"))?.user.role).toBe("admin");
+  await expect(
+    setUserRole({ database: db, role: "user", sessionId: actor, targetId: "last" }),
+  ).rejects.toThrow("LAST_ADMIN_REQUIRED");
+  await expect(db.select().from(account)).resolves.toHaveLength(1);
+  await expect(getSessionSecurity(db, actor, "admin")).resolves.toMatchObject({
+    user: { role: "admin" },
+  });
 });
 
-test("simultaneous self-demotions cannot remove all administrators", async ({ db }) => {
-  await addUser(db, "a", "admin");
-  await addUser(db, "b", "admin");
-  const a = await addSession(db, "a", "admin");
-  const b = await addSession(db, "b", "admin");
+test("simultaneous self-demotions cannot remove all administrators", async ({ db }: Context) => {
+  await addUser(db, "alpha", "admin");
+  await addUser(db, "beta", "admin");
+  const alpha = await addSession(db, { audience: "admin", userId: "alpha" });
+  const beta = await addSession(db, { audience: "admin", userId: "beta" });
   const outcomes = await Promise.allSettled([
-    setUserRole(db, a, "a", "user"),
-    setUserRole(db, b, "b", "user"),
+    setUserRole({ database: db, role: "user", sessionId: alpha, targetId: "alpha" }),
+    setUserRole({ database: db, role: "user", sessionId: beta, targetId: "beta" }),
   ]);
-  expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
-  expect(await db.select().from(user).where(eq(user.role, "admin"))).toHaveLength(1);
+  expect(
+    outcomes.filter((result: Readonly<{ status: string }>) => result.status === "fulfilled"),
+  ).toHaveLength(1);
+  await expect(db.select().from(user).where(eq(user.role, "admin"))).resolves.toHaveLength(1);
 });
 
-test("deletion removes credentials and all sessions", async ({ db }) => {
+test("deletion removes credentials and all sessions", async ({ db }: Context) => {
   await addUser(db, "actor", "admin");
   await addUser(db, "target");
-  const actor = await addSession(db, "actor", "admin");
-  const target = await addSession(db, "target", "user");
+  const actor = await addSession(db, { audience: "admin", userId: "actor" });
+  const target = await addSession(db, { audience: "user", userId: "target" });
   await deleteUser(db, actor, "target");
-  expect(await getProfile(db, "target")).toBeNull();
-  expect(await getSessionSecurity(db, target, "user")).toBeNull();
+  await expect(getProfile(db, "target")).resolves.toBeNull();
+  await expect(getSessionSecurity(db, target, "user")).resolves.toBeUndefined();
 });
 
-test("first administrator bootstrap is atomic and one-time", async ({ db }) => {
-  await addUser(db, "a");
-  await addUser(db, "b");
+test("first administrator bootstrap is atomic and one-time", async ({ db }: Context) => {
+  await addUser(db, "alpha");
+  await addUser(db, "beta");
   const outcomes = await Promise.allSettled([
-    bootstrapAdmin(db, "a@example.com"),
-    bootstrapAdmin(db, "b@example.com"),
+    bootstrapAdmin(db, "alpha@example.com"),
+    bootstrapAdmin(db, "beta@example.com"),
   ]);
-  expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+  expect(
+    outcomes.filter((result: Readonly<{ status: string }>) => result.status === "fulfilled"),
+  ).toHaveLength(1);
 });

@@ -1,29 +1,36 @@
-import { expect, test } from "vite-plus/test";
-import { explorerOrigin, requestTelemetry, structuredMessage } from "./explorer.ts";
+import { describe, expect, it } from "vite-plus/test";
+import { explorerOrigin, requestTelemetry, withEvent } from "./explorer.ts";
 
-test("Local Explorer queries only target loopback HTTP app origins", () => {
-  expect(explorerOrigin("http://127.0.0.1:3001/").href).toBe("http://127.0.0.1:3001/");
-  for (const app of [
-    "https://127.0.0.1:3001/",
-    "http://mac-mini.tail2ee823.ts.net:3001/",
-    "http://user:secret@127.0.0.1:3001/",
-    "http://127.0.0.1:3001/cdn-cgi/local/explorer",
-  ])
-    expect(() => explorerOrigin(app)).toThrow("loopback");
-});
+const loopbackApp = "http://127.0.0.1:3001/";
+const unrelatedMessage = 42;
 
-test("structured console lines are decoded from the Local Explorer message encoding", () => {
-  const line = JSON.stringify({ event: "application.error", request_id: "x" });
-  expect(structuredMessage(JSON.stringify([line]))).toEqual({
-    event: "application.error",
-    request_id: "x",
+describe("local explorer queries", () => {
+  it("only target loopback HTTP app origins", () => {
+    expect.hasAssertions();
+    expect(explorerOrigin(loopbackApp).href).toBe(loopbackApp);
+    for (const app of [
+      "https://127.0.0.1:3001/",
+      "http://mac-mini.tail2ee823.ts.net:3001/",
+      "http://user:secret@127.0.0.1:3001/",
+      "http://127.0.0.1:3001/cdn-cgi/local/explorer",
+    ]) {
+      expect(() => explorerOrigin(app)).toThrow("loopback");
+    }
   });
-  expect(structuredMessage(JSON.stringify(["GET http://localhost/"]))).toBeUndefined();
-  expect(structuredMessage(42)).toBeUndefined();
-});
 
-test("request lookups refuse identifiers that could widen the message match", async () => {
-  await expect(requestTelemetry("http://127.0.0.1:3001/", "%")).rejects.toThrow(
-    "Invalid request ID",
-  );
+  it("decodes structured console lines from the Local Explorer message encoding", () => {
+    expect.hasAssertions();
+    const line = JSON.stringify({ event: "application.error", request_id: "x" });
+    expect(withEvent({ message: JSON.stringify([line]), trace_id: "t" })).toStrictEqual({
+      event: { event: "application.error", request_id: "x" },
+      trace_id: "t",
+    });
+    expect(withEvent({ message: JSON.stringify(["GET http://localhost/"]) }).event).toBeUndefined();
+    expect(withEvent({ message: unrelatedMessage }).event).toBeUndefined();
+  });
+
+  it("refuses request identifiers that could widen the message match", async () => {
+    expect.hasAssertions();
+    await expect(requestTelemetry(loopbackApp, "%")).rejects.toThrow("Invalid request ID");
+  });
 });

@@ -1,56 +1,91 @@
-import * as v from "valibot";
+import {
+  array,
+  finite,
+  integer,
+  literal,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  number,
+  object,
+  parse,
+  picklist,
+  pipe,
+  strictObject,
+  string,
+  union,
+  variant,
+} from "valibot";
 import { errorLocationsSchema, errorTypes } from "./errors.ts";
 import { httpMethods, requestIdSchema, spanIdSchema, traceIdSchema } from "./protocol.ts";
+import type { InferOutput } from "valibot";
 
-const bounded = (max: number) => v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(max));
+const maximumBatchSize = 32;
+const maximumMeasurement = 600_000;
+const maximumClockSkew = 60_000;
+const maximumEventAge = 3_600_000;
+const maximumStatus = 599;
+const minimumHttpStatus = 100;
 
-function browserEventsSchema(labels: ReadonlySet<string>, now: number) {
-  const fields = {
-    route: v.picklist([...labels]),
-    start: v.pipe(bounded(now + 60_000), v.minValue(now - 3_600_000)),
-    duration: bounded(600_000),
-    value: bounded(600_000),
-    method: v.picklist(httpMethods),
-    traceId: traceIdSchema,
-    spanId: spanIdSchema,
-    requestId: requestIdSchema,
-  };
-  return v.pipe(
-    v.array(
-      v.variant("kind", [
-        v.strictObject({
-          ...fields,
-          kind: v.literal("http"),
-          name: v.literal("http.client.request"),
-          status: v.union([v.literal(0), v.pipe(bounded(599), v.integer(), v.minValue(100))]),
-        }),
-        v.strictObject({
-          ...fields,
-          kind: v.literal("exception"),
-          name: v.picklist(["browser.error", "browser.unhandledrejection"]),
-          status: v.literal(0),
-          errorType: v.picklist(errorTypes),
-          locations: errorLocationsSchema,
-        }),
-        v.strictObject({
-          ...fields,
-          kind: v.literal("vital"),
-          name: v.picklist(["CLS", "INP", "LCP", "FCP", "TTFB"]),
-          status: v.literal(0),
-        }),
-      ]),
-    ),
-    v.minLength(1),
-    v.maxLength(32),
-  );
-}
+const measurement = pipe(number(), finite(), minValue(0), maxValue(maximumMeasurement));
+const fields = {
+  duration: measurement,
+  method: picklist(httpMethods),
+  requestId: requestIdSchema,
+  route: string(),
+  spanId: spanIdSchema,
+  start: pipe(number(), finite(), minValue(0)),
+  traceId: traceIdSchema,
+  value: measurement,
+};
+const httpStatusSchema = pipe(
+  number(),
+  integer(),
+  minValue(minimumHttpStatus),
+  maxValue(maximumStatus),
+);
+const unsentStatus = literal(0);
+const requestStatus = union([unsentStatus, httpStatusSchema]);
+const eventSchema = variant("kind", [
+  strictObject({
+    ...fields,
+    kind: literal("http"),
+    name: literal("http.client.request"),
+    status: requestStatus,
+  }),
+  strictObject({
+    ...fields,
+    errorType: picklist(errorTypes),
+    kind: literal("exception"),
+    locations: errorLocationsSchema,
+    name: picklist(["browser.error", "browser.unhandledrejection"]),
+    status: literal(0),
+  }),
+  strictObject({
+    ...fields,
+    kind: literal("vital"),
+    name: picklist(["CLS", "INP", "LCP", "FCP", "TTFB"]),
+    status: literal(0),
+  }),
+]);
+const eventsSchema = pipe(array(eventSchema), minLength(1), maxLength(maximumBatchSize));
 
-export type BrowserEvent = v.InferOutput<ReturnType<typeof browserEventsSchema>>[number];
+type BrowserEvent = InferOutput<typeof eventSchema>;
 
-export function parseBrowserEvents(
+function parseBrowserEvents(
   input: unknown,
-  labels: ReadonlySet<string>,
+  labels: Readonly<ReadonlySet<string>>,
   now: number,
 ): BrowserEvent[] {
-  return v.parse(browserEventsSchema(labels, now), input);
+  const events = parse(eventsSchema, input);
+  const placement = object({
+    route: picklist([...labels]),
+    start: pipe(number(), minValue(now - maximumEventAge), maxValue(now + maximumClockSkew)),
+  });
+  parse(array(placement), events);
+  return events;
 }
+
+export { maximumBatchSize, maximumMeasurement, parseBrowserEvents };
+export type { BrowserEvent };
