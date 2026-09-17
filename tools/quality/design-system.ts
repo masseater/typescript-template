@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { project } from "@shadcn/lint";
 
-const designSystemProbe = "apps/user/src/routes/probe.tsx";
+const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
 
 const smarthrTokens: Readonly<Record<string, string>> = {
   "--danger": "#e01e5a",

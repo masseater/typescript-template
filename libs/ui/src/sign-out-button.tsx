@@ -1,20 +1,10 @@
 import { ActionStatus } from "./action-status";
 import { Button } from "./shared/ui";
 import type { ReactElement } from "react";
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
-import { useAction } from "./action";
-import { useCallback } from "react";
+import { useSignOut } from "./use-sign-out";
 
 function SignOutButton(): ReactElement {
-  const action = useAction();
-  const { run } = action;
-  const signOut = useCallback(() => {
-    run(async () => {
-      requireSuccess(await authClient.signOut());
-      globalThis.location.assign("/login");
-    });
-  }, [run]);
+  const { action, signOut } = useSignOut();
   return (
     <>
       <Button type="button" disabled={action.blocked} onClick={signOut}>
