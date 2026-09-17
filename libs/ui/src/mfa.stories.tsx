@@ -1,0 +1,29 @@
+import { HttpResponse, http } from "msw";
+import { MFASettings } from "./mfa";
+import { expect } from "storybook/test";
+import preview from "../.storybook/preview";
+import { session } from "./story-fixture";
+
+const listPath = "/api/auth/passkey/list-user-passkeys";
+
+const meta = preview.meta({
+  args: { session: session() },
+  beforeEach: ({ msw }) => {
+    msw.use(http.get(listPath, () => HttpResponse.json([{ id: "passkey_01", name: "iPhone" }])));
+  },
+  component: MFASettings,
+});
+
+const NotEnrolled = meta.story({
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("iPhone")).toBeInTheDocument();
+  },
+});
+
+const Enrolled = meta.story({ args: { session: session({ twoFactorEnabled: true }) } });
+
+const Admin = meta.story({
+  args: { session: session({ role: "admin", twoFactorEnabled: true }) },
+});
+
+export { Admin, Enrolled, NotEnrolled };

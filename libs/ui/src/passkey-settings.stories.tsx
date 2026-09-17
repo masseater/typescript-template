@@ -1,0 +1,50 @@
+import { HttpResponse, http } from "msw";
+import { PasskeySettings } from "./passkey-settings";
+import { expect } from "storybook/test";
+import preview from "../.storybook/preview";
+import { settingsContext } from "./story-fixture";
+
+const listPath = "/api/auth/passkey/list-user-passkeys";
+
+const meta = preview.meta({ args: { context: settingsContext() }, component: PasskeySettings });
+
+const Registered = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(
+      http.get(listPath, () =>
+        HttpResponse.json([
+          { id: "passkey_01", name: "MacBook Pro" },
+          { id: "passkey_02", name: "iPhone" },
+        ]),
+      ),
+    );
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("MacBook Pro")).toBeInTheDocument();
+  },
+});
+
+const Empty = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(http.get(listPath, () => HttpResponse.json([])));
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("登録されたパスキーはありません。")).toBeInTheDocument();
+  },
+});
+
+const Failed = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(
+      http.get(listPath, () =>
+        HttpResponse.json({ message: "パスキーの取得に失敗しました。" }, { status: 500 }),
+      ),
+    );
+  },
+  parameters: { a11y: { test: "todo" } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("alert")).toBeInTheDocument();
+  },
+});
+
+export { Empty, Failed, Registered };
