@@ -37,10 +37,22 @@ test("uploads server chunks with their source maps but excludes private client s
     await writeFile(path.join(server, "index.js.map"), "{}");
     await writeFile(path.join(server, "orphan.js.map"), "{}");
     const artifacts = await loadArtifacts(root, "user");
-    expect(artifacts.modules.map((module) => [module.name, module.contentType])).toEqual([
-      ["chunks/handler.js", "application/javascript+module"],
-      ["index.js", "application/javascript+module"],
-      ["index.js.map", "application/source-map"],
+    expect(artifacts.modules).toStrictEqual([
+      {
+        name: "chunks/handler.js",
+        contentFile: path.join(server, "chunks/handler.js"),
+        contentType: "application/javascript+module",
+      },
+      {
+        name: "index.js",
+        contentFile: path.join(server, "index.js"),
+        contentType: "application/javascript+module",
+      },
+      {
+        name: "index.js.map",
+        contentFile: path.join(server, "index.js.map"),
+        contentType: "application/source-map",
+      },
     ]);
     expect(artifacts.release).toMatch(/^[0-9a-f]{16}$/);
     expect(await readdir(artifacts.clientDirectory)).toEqual(["app.js", "styles.css"]);

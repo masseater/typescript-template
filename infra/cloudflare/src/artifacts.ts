@@ -79,35 +79,32 @@ export async function loadArtifacts(repositoryRoot: string, target: Application)
       return {
         name: path.relative(server, file).replaceAll(path.sep, "/"),
         contentFile: file,
-        contentSha256: await sha256(file),
         contentType,
       };
     }),
   );
   const codeModules = modules.filter((module) => module !== undefined);
-  const sourceMaps = await Promise.all(
-    allServerFiles
-      .filter(
-        (file) =>
-          file.endsWith(".map") &&
-          codeModules.some((module) => module.contentFile === file.slice(0, -".map".length)),
-      )
-      .map(async (file) => ({
-        name: path.relative(server, file).replaceAll(path.sep, "/"),
-        contentFile: file,
-        contentSha256: await sha256(file),
-        contentType: "application/source-map",
-      })),
-  );
+  const sourceMaps = allServerFiles
+    .filter(
+      (file) =>
+        file.endsWith(".map") &&
+        codeModules.some((module) => module.contentFile === file.slice(0, -".map".length)),
+    )
+    .map((file) => ({
+      name: path.relative(server, file).replaceAll(path.sep, "/"),
+      contentFile: file,
+      contentType: "application/source-map",
+    }));
   if ((await stat(path.join(server, mainModule))).size === 0) throw new Error("worker_entry_empty");
   const manifest = await Promise.all(
     clientFiles.map(async (file) => [path.relative(client, file), await sha256(file)]),
   );
   const digest = createHash("sha256").update(JSON.stringify(manifest)).digest("hex");
+  const moduleManifest = await Promise.all(
+    codeModules.map(async (module) => [module.name, await sha256(module.contentFile)]),
+  );
   const release = createHash("sha256")
-    .update(
-      JSON.stringify([codeModules.map((module) => [module.name, module.contentSha256]), digest]),
-    )
+    .update(JSON.stringify([moduleManifest, digest]))
     .digest("hex")
     .slice(0, 16);
   const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
