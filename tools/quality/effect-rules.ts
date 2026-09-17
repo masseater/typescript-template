@@ -17,12 +17,9 @@ function definesFileRoute(context: LintContext, node: Node): boolean {
   );
 }
 
-function routeOptions(node: Node): NodeOf<"Property">[] {
+function routeOptions(node: Node): NodeOf<"ObjectExpression">["properties"] {
   const [options] = node.type === "CallExpression" ? node.arguments : [];
-  if (options?.type !== "ObjectExpression") {
-    return [];
-  }
-  return options.properties.filter((property) => property.type === "Property");
+  return options?.type === "ObjectExpression" ? options.properties : [];
 }
 
 function servesElysia(context: LintContext, node: Node): boolean {
@@ -39,7 +36,12 @@ function reportForeignServer(context: LintContext, node: Node): void {
     return;
   }
   for (const property of routeOptions(node)) {
-    if (propertyName(context, property) === "server" && !servesElysia(context, property.value)) {
+    if (property.type !== "Property") {
+      reportViolation(context, property);
+    } else if (
+      propertyName(context, property) === "server" &&
+      !servesElysia(context, property.value)
+    ) {
       reportViolation(context, property);
     }
   }

@@ -60,6 +60,11 @@ const forbiddenCode = [
   ],
   [
     "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { own } from "../own.ts"; export const Route = createFileRoute("/api/$")({ ...own });',
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { handlers: userApi } });',
     "effect-stack",
   ],
