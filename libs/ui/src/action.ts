@@ -1,9 +1,16 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { errorMessage } from "./protocol";
+
+const subscribeNothing = () => () => undefined;
 
 export function useAction() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hydrated = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  );
   const active = useRef(false);
   const run = useCallback((action: () => Promise<void>) => {
     if (active.current) return;
@@ -17,5 +24,5 @@ export function useAction() {
         setPending(false);
       });
   }, []);
-  return { pending, error, run };
+  return { pending, blocked: pending || !hydrated, error, run };
 }

@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { randomUUID } from "node:crypto";
+import { enabledButton } from "./browser.ts";
 import type { Browser, Cdp } from "./browser.ts";
 import { createStack } from "./stack.ts";
 import type { Stack } from "./stack.ts";
@@ -16,6 +17,7 @@ async function register(stack: Stack, browser: Browser, account: Account) {
   await browser.open(stack.userOrigin, "/signup");
   await browser.commands(
     ["wait", 'input[name="name"]'],
+    enabledButton("登録して確認メールを送信"),
     ["fill", 'input[name="name"]', account.name],
     ["fill", 'input[name="email"]', account.email],
     ["fill", 'input[name="password"]', account.password],
@@ -43,6 +45,7 @@ async function enrollTotp(browser: Browser, origin: string, password: string) {
   await browser.open(origin, "/security");
   await browser.commands(
     ["wait", 'input[name="password"]'],
+    enabledButton("認証アプリの登録を開始"),
     ["fill", 'input[name="password"]', password],
     button("認証アプリの登録を開始"),
     ["wait", "#totp-uri"],
@@ -226,9 +229,11 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
     );
     await verifyRecoverySession(aliceBrowser);
     await aliceBrowser.commands(
+      enabledButton("認証アプリを解除"),
       ["fill", 'input[name="password"]', alice.password],
       button("認証アプリを解除"),
       ["wait", 'input[name="email"]'],
+      enabledButton("ログイン"),
       ["fill", 'input[name="email"]', alice.email],
       ["fill", 'input[name="password"]', alice.password],
       button("ログイン"),
@@ -259,7 +264,7 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
 
     stage = "passkey";
     await admin.open(stack.adminOrigin, "/security");
-    await admin.commands(["wait", 'input[name="passkey-name"]']);
+    await admin.commands(["wait", 'input[name="passkey-name"]'], enabledButton("パスキーを登録"));
     cdp = await admin.connectCdp();
     const authenticatorId = await cdp.authenticator();
     await admin.commands(

@@ -91,6 +91,14 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
         aria-busy={action.pending}
       >
         <Stack>
+          <input
+            type="email"
+            name="username"
+            autoComplete="username"
+            value={session.user.email}
+            readOnly
+            hidden
+          />
           <Field
             label="設定変更を確認するパスワード"
             name="password"
@@ -103,7 +111,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
           <Button
             type="submit"
             disabled={
-              action.pending ||
+              action.blocked ||
               enrollment !== null ||
               (session.user.role === "admin" &&
                 (session.user.twoFactorEnabled || (recovery === "1" && !session.strong)))
@@ -158,7 +166,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
               />
-              <Button type="submit" disabled={action.pending || !saved}>
+              <Button type="submit" disabled={action.blocked || !saved}>
                 確認して認証アプリを有効化
               </Button>
             </Stack>
@@ -194,7 +202,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
           <Button
             type="submit"
             disabled={
-              action.pending ||
+              action.blocked ||
               (session.user.role === "admin" && !session.strong && recovery === "1")
             }
           >
@@ -215,7 +223,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
               {passkey.name || "名前のないパスキー"}
               <Button
                 type="button"
-                disabled={action.pending}
+                disabled={action.blocked}
                 onClick={() =>
                   action.run(async () => {
                     if (
@@ -235,7 +243,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
       )}
       <Button
         type="button"
-        disabled={action.pending}
+        disabled={action.blocked}
         onClick={() => {
           void loadPasskeys();
         }}

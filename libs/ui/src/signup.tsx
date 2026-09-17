@@ -58,7 +58,7 @@ export function SignUpForm(): ReactElement {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-            <Button type="submit" variant="primary" disabled={action.pending}>
+            <Button type="submit" variant="primary" disabled={action.blocked}>
               登録して確認メールを送信
             </Button>
           </Stack>

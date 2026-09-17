@@ -5,6 +5,12 @@ import { decodeBrowserBatch, ensure, object, poll, run, string, root } from "./s
 import { collectSecrets, header } from "./observation.ts";
 import type { ObservedRequest } from "./observation.ts";
 
+export const enabledButton = (name: string) => [
+  "wait",
+  "--fn",
+  `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent?.trim()) === ${JSON.stringify(name)})`,
+];
+
 const rateLimitWindow = 11_000;
 const rateLimitRetries = 3;
 
@@ -48,7 +54,24 @@ export class Browser {
 
   async commands(...commands: string[][]) {
     if (!this.observer) await this.observe();
-    return this.execute(...commands);
+    const expanded = commands.flatMap((command): { command: string[]; wait: boolean }[] => {
+      const [find, locator, role, action, flag, name] = command;
+      if (
+        find !== "find" ||
+        locator !== "role" ||
+        role !== "button" ||
+        action !== "click" ||
+        flag !== "--name" ||
+        name === undefined
+      )
+        return [{ command, wait: false }];
+      return [
+        { command: enabledButton(name), wait: true },
+        { command, wait: false },
+      ];
+    });
+    const results = await this.execute(...expanded.map((entry) => entry.command));
+    return results.filter((_, index) => !expanded[index]?.wait);
   }
 
   async finishObservation() {
@@ -225,6 +248,7 @@ export class Browser {
     await this.open(origin, "/login");
     await this.commands(
       ["wait", 'input[name="email"]'],
+      enabledButton("ログイン"),
       ["fill", 'input[name="email"]', email],
       ["fill", 'input[name="password"]', password],
     );

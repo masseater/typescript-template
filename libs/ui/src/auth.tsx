@@ -97,7 +97,7 @@ export function LoginForm(): ReactElement {
               />
             </>
           )}
-          <Button type="submit" variant="primary" disabled={action.pending}>
+          <Button type="submit" variant="primary" disabled={action.blocked}>
             {challenge
               ? backupMode
                 ? "バックアップコードでログイン"
@@ -109,7 +109,7 @@ export function LoginForm(): ReactElement {
       {!challenge && (
         <Button
           type="button"
-          disabled={action.pending}
+          disabled={action.blocked}
           onClick={() =>
             action.run(async () => {
               if (!window.isSecureContext)
@@ -125,7 +125,7 @@ export function LoginForm(): ReactElement {
       {challenge && (
         <Button
           type="button"
-          disabled={action.pending}
+          disabled={action.blocked}
           onClick={() => {
             setBackupMode(!backupMode);
             setCode("");
@@ -137,7 +137,7 @@ export function LoginForm(): ReactElement {
       {challenge && (
         <Button
           type="button"
-          disabled={action.pending}
+          disabled={action.blocked}
           onClick={() => {
             setChallenge(false);
             setBackupMode(false);
@@ -159,7 +159,7 @@ export function SignOutButton() {
     <>
       <Button
         type="button"
-        disabled={action.pending}
+        disabled={action.blocked}
         onClick={() =>
           action.run(async () => {
             requireSuccess(await authClient.signOut());
