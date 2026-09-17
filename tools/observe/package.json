@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "observe": "node src/cli.ts",
-    "verify": "node src/verify.ts",
-    "test": "vp test run"
+    "verify": "node src/verify.ts"
   },
   "dependencies": {
     "valibot": "1.5.0"

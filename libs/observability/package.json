@@ -9,9 +9,7 @@
     "./sentry-server": "./src/sentry-server.ts",
     "./sentry-browser": "./src/sentry-browser.ts"
   },
-  "scripts": {
-    "test": "vp test run"
-  },
+  "scripts": {},
   "dependencies": {
     "@cloudflare/workers-types": "5.20260916.1",
     "@sentry/cloudflare": "10.74.0",
