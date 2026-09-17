@@ -32,8 +32,10 @@ const RELEASE_LENGTH = 16;
 const STAGED_DIGESTS_KEPT = 1;
 const ARCHIVED_RELEASES_KEPT = 5;
 
-const ArtifactWrites = Context.Reference<boolean>("template/cloudflare/ArtifactWrites", {
-  defaultValue: () => false,
+type ArtifactMode = "describe" | "publish" | "stage";
+
+const ArtifactWrites = Context.Reference<ArtifactMode>("template/cloudflare/ArtifactWrites", {
+  defaultValue: (): ArtifactMode => "describe",
 });
 
 const SERVER_ONLY_MARKERS: readonly string[] = ["drizzle:entityKind", "better-auth/api"];
@@ -227,6 +229,10 @@ const materialize = Effect.fn("materialize")(function* materialize(
   output: BuildOutput,
   artifacts: Artifacts,
 ) {
+  const mode = yield* ArtifactWrites;
+  if (mode === "describe") {
+    return;
+  }
   yield* Effect.all([
     stageFiles(output.client, artifacts.clientDirectory, artifacts.clientFiles),
     stageFiles(
@@ -236,6 +242,9 @@ const materialize = Effect.fn("materialize")(function* materialize(
     ),
   ]);
   yield* archiveSourceMaps(place.repository, place.target, artifacts.release);
+  if (mode !== "publish") {
+    return;
+  }
   yield* Effect.all([
     retainGenerations(
       stagedRoot(place.repository, place.target),
@@ -268,10 +277,9 @@ const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
     release,
     uploaded,
   };
-  if (yield* ArtifactWrites) {
-    yield* materialize({ repository, target }, output, artifacts);
-  }
+  yield* materialize({ repository, target }, output, artifacts);
   return artifacts;
 });
 
 export { ArtifactWrites, loadArtifacts, monitorArtifact, repositoryRoot, workerModuleGlobs };
+export type { ArtifactMode };

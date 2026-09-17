@@ -9,11 +9,11 @@ import { setupServer } from "msw/node";
 const HEX_ID_LENGTH = 32;
 const FORBIDDEN_STATUS = 403;
 
-const target = {
+const access = {
   accountId: "a".repeat(HEX_ID_LENGTH),
   apiToken: "test-private-token-at-least-20-characters",
-  name: "template-db",
 };
+const target = { ...access, name: "template-db" };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database`;
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 
@@ -51,14 +51,14 @@ it.effect("resolves the database the stack owns by its declared name", () =>
         });
       }),
     );
-    assert.strictEqual(yield* lookupDatabaseId(target), databaseId);
+    assert.strictEqual(yield* lookupDatabaseId(access, target.name), databaseId);
   }).pipe(Effect.scoped),
 );
 
 it.effect("reports an unused name so a first deploy is not silently adopted", () =>
   Effect.gen(function* program() {
     yield* mockServer(http.get(endpoint, () => HttpResponse.json({ result: [], success: true })));
-    assert.isUndefined(yield* findDatabaseId(target));
+    assert.isUndefined(yield* findDatabaseId(access, target.name));
   }).pipe(Effect.scoped),
 );
 
@@ -69,14 +69,14 @@ it.effect("reports a name already taken by an unrelated database", () =>
         HttpResponse.json({ result: [{ name: target.name, uuid: databaseId }], success: true }),
       ),
     );
-    assert.strictEqual(yield* findDatabaseId(target), databaseId);
+    assert.strictEqual(yield* findDatabaseId(access, target.name), databaseId);
   }).pipe(Effect.scoped),
 );
 
 it.effect("refuses to guess when the account exposes no matching database", () =>
   Effect.gen(function* program() {
     yield* mockServer(http.get(endpoint, () => HttpResponse.json({ result: [], success: true })));
-    const failure = yield* lookupDatabaseId(target).pipe(Effect.flip);
+    const failure = yield* lookupDatabaseId(access, target.name).pipe(Effect.flip);
     assert.strictEqual(failure.code, "database_output_unavailable");
   }).pipe(Effect.scoped),
 );
@@ -86,7 +86,7 @@ it.effect("reports a refused token instead of continuing", () =>
     yield* mockServer(
       http.get(endpoint, () => HttpResponse.json({ success: false }, { status: FORBIDDEN_STATUS })),
     );
-    const failure = yield* lookupDatabaseId(target).pipe(Effect.flip);
+    const failure = yield* lookupDatabaseId(access, target.name).pipe(Effect.flip);
     assert.strictEqual(failure.code, "database_output_unavailable");
   }).pipe(Effect.scoped),
 );

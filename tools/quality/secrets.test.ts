@@ -87,6 +87,34 @@ describe("staged secret detection", () => {
   });
 });
 
+describe("short deployment prefixes", () => {
+  const values = deploymentValues('TEMPLATE_PREFIX="acme"\n');
+
+  it.for([
+    "const name = 'acme';",
+    'const db = "acme-db";',
+    "export const worker = `acme-user`;",
+    "# acme",
+    "run --stage acme",
+    "https://acme.example.com",
+  ])("detects the prefix written into the tree: %s", (content) => {
+    expect.assertions(1);
+    expect(secretViolations("infra/cloudflare/src/app.ts", content, values)).toStrictEqual([
+      "deployment-value:TEMPLATE_PREFIX",
+    ]);
+  });
+
+  it.for([
+    "const placement = 1;",
+    "export const acmecorp = 2;",
+    "import { acmeish } from './x';",
+    "const x = 'bacme';",
+  ])("does not fire on a longer word that merely contains it: %s", (content) => {
+    expect.assertions(1);
+    expect(secretViolations("infra/cloudflare/src/app.ts", content, values)).toStrictEqual([]);
+  });
+});
+
 describe("deployment value leaks", () => {
   it("names the key whose value was found without printing the value", () => {
     expect.hasAssertions();

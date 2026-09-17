@@ -1,24 +1,23 @@
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { assertDatabaseNameFree, assertDatabaseUnclaimed } from "./database-guard.ts";
-import { describeFailure, reportCause } from "./secrets.ts";
+import { describeCause, describeFailure } from "./secrets.ts";
+import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect } from "effect";
+import { InMemoryService } from "alchemy/State";
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
-import { layer } from "alchemy/Alchemist";
+import type { StateService } from "alchemy/State";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { setupServer } from "msw/node";
+import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-const OK_EXIT_CODE = 0;
-const FAILED_EXIT_CODE = 1;
-
 const target = { accountId: verificationSettings.accountId, prefix: verificationSettings.prefix };
-const secrets = {
-  contents: "CLOUDFLARE_API_TOKEN=guard-test-not-a-real-token\n",
-  filename: "cloudflare.env",
-};
+const access = { accountId: target.accountId, apiToken: "guard-test-not-a-real-token" };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database`;
 const databaseName = `${target.prefix}-db`;
+const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
+const otherDatabaseId = "11111111-2222-3333-4444-555555555555";
 
 function mockServer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -38,57 +37,91 @@ function mockServer(
   );
 }
 
-function recordedExitCode(): Effect.Effect<() => number, never, Scope.Scope> {
-  return Effect.acquireRelease(
-    Effect.sync(() => {
-      const previous = process.exitCode;
-      process.exitCode = OK_EXIT_CODE;
-      return { observe: (): number => Number(process.exitCode), previous };
-    }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (recorded) =>
-      Effect.sync(() => {
-        process.exitCode = recorded.previous;
-      }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ).pipe(Effect.map((recorded) => recorded.observe));
+function storedDatabase(uuid: string): CreatedResourceState {
+  return {
+    attr: { databaseId: uuid, databaseName },
+    bindings: [],
+    downstream: [],
+    fqn: "Database",
+    instanceId: "instance",
+    logicalId: "Database",
+    namespace: undefined,
+    props: { name: databaseName },
+    providerVersion: 1,
+    resourceType: "Cloudflare.D1Database",
+    status: "created",
+  };
+}
+
+function store(uuid?: string): Effect.Effect<StateService> {
+  // oxlint-disable-next-line new-cap
+  return InMemoryService(
+    uuid === undefined
+      ? {}
+      : { [stackName("database")]: { [target.prefix]: { Database: storedDatabase(uuid) } } },
+  );
 }
 
 const unusedName = http.get(endpoint, () => HttpResponse.json({ result: [], success: true }));
 const takenName = http.get(endpoint, () =>
-  HttpResponse.json({
-    result: [{ name: databaseName, uuid: "92b705e4-7b3b-42a9-9de3-700a33fa609c" }],
-    success: true,
-  }),
+  HttpResponse.json({ result: [{ name: databaseName, uuid: databaseId }], success: true }),
 );
 
 it.effect("lets a first deploy through without reaching for the state store", () =>
   Effect.gen(function* program() {
     yield* mockServer(unusedName);
-    assert.isUndefined(yield* assertDatabaseNameFree(secrets, target));
-    assert.isUndefined(yield* assertDatabaseUnclaimed(secrets, target));
-  }).pipe(Effect.provide(layer()), Effect.scoped),
+    assert.isUndefined(
+      yield* assertDatabaseUnclaimed(
+        access,
+        target,
+        Effect.die("the state store must not be consulted when the name is free"),
+      ),
+    );
+  }).pipe(Effect.scoped),
 );
 
-it.effect("stops the account check with the key to change when the name is already taken", () =>
+it.effect("lets a repeat deploy through when state records the database it just found", () =>
   Effect.gen(function* program() {
     yield* mockServer(takenName);
-    const failure = yield* assertDatabaseNameFree(secrets, target).pipe(Effect.flip);
-    assert.deepStrictEqual(describeFailure(failure), {
-      code: "database_name_taken",
-      keys: ["TEMPLATE_PREFIX"],
-    });
+    assert.isUndefined(yield* assertDatabaseUnclaimed(access, target, store(databaseId)));
+  }).pipe(Effect.scoped),
+);
+
+it.effect("stops when the name resolves to a database this stage never created", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(takenName);
+    for (const recorded of [store(), store(otherDatabaseId)]) {
+      const failure = yield* assertDatabaseUnclaimed(access, target, recorded).pipe(Effect.flip);
+      assert.deepStrictEqual(describeFailure(failure, []), {
+        code: "database_name_taken",
+        keys: ["TEMPLATE_PREFIX"],
+      });
+    }
+  }).pipe(Effect.scoped),
+);
+
+it.effect("stops instead of guessing when the state store cannot be read", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(takenName);
+    const outcome = yield* assertDatabaseUnclaimed(
+      access,
+      target,
+      Effect.fail({ _tag: "StateStoreUnreachable" } as const),
+    ).pipe(Effect.exit);
+    assert.isTrue(outcome._tag === "Failure");
   }).pipe(Effect.scoped),
 );
 
 it.effect("reports a taken name as a failed run rather than continuing", () =>
   Effect.gen(function* program() {
     yield* mockServer(takenName);
-    const exitCode = yield* recordedExitCode();
-    yield* assertDatabaseNameFree(secrets, target).pipe(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      Effect.catchCause((cause) => reportCause("account.rejected", cause)),
+    const cause = yield* assertDatabaseUnclaimed(access, target, store()).pipe(
+      Effect.sandbox,
+      Effect.flip,
     );
-    assert.strictEqual(exitCode(), FAILED_EXIT_CODE);
+    assert.deepStrictEqual(describeCause(cause, []), {
+      code: "database_name_taken",
+      keys: ["TEMPLATE_PREFIX"],
+    });
   }).pipe(Effect.scoped),
 );

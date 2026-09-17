@@ -1,21 +1,42 @@
-import { reportCause, withVerifiedSecrets } from "./secrets.ts";
+import { blocked, inspectAccount } from "./account-inspection.ts";
+import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { assertDatabaseNameFree } from "./database-guard.ts";
-import { settings } from "./settings.ts";
-import { verifiedSecrets } from "./credentials.ts";
+import { layer } from "alchemy/Alchemist";
+import { reportCause } from "./secrets.ts";
+
+const EVENT = "account.rejected";
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const secrets = yield* verifiedSecrets();
-    const config = yield* withVerifiedSecrets(secrets, settings);
-    yield* assertDatabaseNameFree(secrets, config);
-    // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ databaseAlreadyExists: false, event: "account.inspected" }));
+    const { access, confidential, config, secrets } = yield* deploymentAccess();
+    yield* Effect.gen(function* inspected() {
+      const inspection = yield* inspectAccount(access, config, stateStore(secrets));
+      const refused = blocked(inspection);
+      // oxlint-disable-next-line no-console
+      console.log(
+        JSON.stringify({
+          blocked: refused,
+          checks: inspection,
+          event: "account.inspected",
+          ok: refused.length === 0,
+        }),
+      );
+      if (refused.length > 0) {
+        process.exitCode = 1;
+      }
+    }).pipe(
+      Effect.provide(layer()),
+      Effect.scoped,
+      Effect.catchCause(
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        (cause) => reportCause(EVENT, cause, confidential),
+      ),
+    );
   }).pipe(
     Effect.catchCause(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause("account.rejected", cause),
+      (cause) => reportCause(EVENT, cause),
     ),
   ),
   { disableErrorReporting: true },

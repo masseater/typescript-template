@@ -7,14 +7,19 @@ import { workerCompatibility } from "@template/config/worker";
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
     "deployment_command_invalid",
+    "account_read_unavailable",
     "app_origins_must_differ",
     "budget_has_no_usage_allowance",
     "database_input_invalid",
     "database_name_taken",
     "database_output_unavailable",
+    "deploy_token_permissions_missing",
+    "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
+    "plan_removes_bindings",
     "plan_removes_resources",
-    "prefix_too_short_for_leak_scan",
+    "secrets_store_already_present",
+    "state_store_name_taken",
   ]),
   keys: Schema.Array(Schema.String),
 }) {}
@@ -28,9 +33,8 @@ function fail(
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
-const MIN_PREFIX_LENGTH = 8;
 const CONFIRMATION_LENGTH = 16;
-const CONFIRMATION_PATTERN = /^[0-9a-f]{16}$/u;
+const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 
 const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
@@ -141,9 +145,6 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
   if (duplicated.length > 0) {
     return yield* fail("app_origins_must_differ", duplicated);
   }
-  if (config.prefix.length < MIN_PREFIX_LENGTH) {
-    return yield* fail("prefix_too_short_for_leak_scan", ["TEMPLATE_PREFIX"]);
-  }
   if (
     config.budget.budgetJpy / config.budget.jpyPerUsd <=
     config.budget.fixedCostUsd + config.budget.reserveUsd
@@ -158,6 +159,7 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
 });
 
 type DeploymentRequest = Effect.Success<ReturnType<typeof parseDeploymentCommand>>;
+type DeploymentTarget = Pick<SharedConfig, "accountId" | "prefix">;
 
 export {
   AuthSecret,
@@ -179,4 +181,4 @@ export {
   workerObservability,
   workerSubdomain,
 };
-export type { DeploymentRequest, SharedConfig };
+export type { DeploymentRequest, DeploymentTarget, SharedConfig };

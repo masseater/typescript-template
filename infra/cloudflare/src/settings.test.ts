@@ -40,7 +40,7 @@ it.effect("a rejected deployment input names its key without repeating its value
       ConfigProvider,
       fromDotEnvContents("TEMPLATE_AUTH_SECRET=too-short\n"),
     ).pipe(Effect.flip);
-    const described = JSON.stringify(describeFailure(failure));
+    const described = JSON.stringify(describeFailure(failure, []));
     assert.include(described, "TEMPLATE_AUTH_SECRET");
     assert.notInclude(described, "too-short");
   }),

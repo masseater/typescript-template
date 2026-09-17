@@ -77,7 +77,7 @@ const userBuild: Effect.Effect<UserBuild, never, Scope.Scope> = temporaryRoot.pi
 );
 
 function load(root: string, target: Application): ReturnType<typeof loadArtifacts> {
-  return loadArtifacts(root, target).pipe(Effect.provideService(ArtifactWrites, true));
+  return loadArtifacts(root, target).pipe(Effect.provideService(ArtifactWrites, "publish"));
 }
 
 function failureCode(
@@ -139,6 +139,25 @@ it.effect("resolves the upload without writing anything outside a deployment", (
     assert.deepStrictEqual(
       yield* run(async () => readdir(path.join(root, ".local")).catch(() => [])),
       [],
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("leaves earlier digests alone while a preview is still awaiting approval", () =>
+  Effect.gen(function* program() {
+    const { client, root } = yield* userBuild;
+    const first = yield* loadArtifacts(root, "user").pipe(
+      Effect.provideService(ArtifactWrites, "stage"),
+    );
+    yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 4;"));
+    const second = yield* loadArtifacts(root, "user").pipe(
+      Effect.provideService(ArtifactWrites, "stage"),
+    );
+    assert.deepStrictEqual(
+      (yield* run(async () =>
+        readdir(path.join(root, "infra", "cloudflare", ".artifacts", "user")),
+      )).toSorted(),
+      [first.uploaded, second.uploaded].toSorted(),
     );
   }).pipe(Effect.scoped),
 );

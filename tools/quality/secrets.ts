@@ -43,6 +43,20 @@ const contentRules: Readonly<Record<string, RegExp>> = {
   "private-key": /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/u,
 };
 
+const WORD_BOUNDED_KEYS: ReadonlySet<string> = new Set(["TEMPLATE_PREFIX"]);
+const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/gu;
+
+function wordBounded(value: string): RegExp {
+  return new RegExp(
+    `(?<![0-9A-Za-z])${value.replaceAll(REGEXP_METACHARACTERS, String.raw`\$&`)}(?![0-9A-Za-z])`,
+    "u",
+  );
+}
+
+function leaks(content: string, { key, value }: DeploymentValue): boolean {
+  return WORD_BOUNDED_KEYS.has(key) ? wordBounded(value).test(content) : content.includes(value);
+}
+
 function secretViolations(
   filename: string,
   content: string,
@@ -51,8 +65,8 @@ function secretViolations(
   return [
     ...(privateFile(filename) ? ["private-file"] : []),
     ...Object.keys(contentRules).filter((rule) => contentRules[rule]?.test(content) === true),
-    ...environmentValues.flatMap(({ key, value }) =>
-      content.includes(value) ? [`deployment-value:${key}`] : [],
+    ...environmentValues.flatMap((entry) =>
+      leaks(content, entry) ? [`deployment-value:${entry.key}`] : [],
     ),
   ];
 }

@@ -1,18 +1,23 @@
-import type { DeploymentRequest, SharedConfig } from "./config.ts";
+import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
-import { acceptPlan, planConfirmation, planReport } from "./plan-confirmation.ts";
+import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+import type { ArtifactMode } from "./artifacts.ts";
 import { ArtifactWrites } from "./artifacts.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
 import { Effect } from "effect";
-import type { PlanReport } from "./plan-confirmation.ts";
+import type { PlannedStack } from "./plan-confirmation.ts";
 import type { ProgressEvent } from "alchemy/Alchemist";
 import type { StackName } from "./stacks.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-import { stackName } from "./stacks.ts";
+import { stateStore } from "./deployment-access.ts";
 
-type DeploymentTarget = Pick<SharedConfig, "accountId" | "prefix">;
+interface Deployment {
+  readonly access: { readonly accountId: string; readonly apiToken: string };
+  readonly secrets: DeploymentSecrets;
+  readonly target: DeploymentTarget;
+}
 
 const alchemist = layer();
 
@@ -40,73 +45,88 @@ function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effe
 
 const planStack = Effect.fn("planStack")(function* planStack(
   stack: StackName,
-  envFile: string,
-  stage: string,
+  deployment: Deployment,
 ) {
   const snapshot = yield* StackRoute.plan({
     operation: "deploy",
     target: {
       entrypoint: fileURLToPath(new URL(`${stack}.ts`, import.meta.url)),
-      envFile,
-      stage,
+      envFile: deployment.secrets.filename,
+      stage: deployment.target.prefix,
     },
   });
-  return { report: planReport(snapshot), snapshot };
+  return { planned: plannedStack(snapshot), snapshot };
 });
 
-function announce(report: PlanReport, stack: StackName): Effect.Effect<void> {
+function announce(
+  planned: PlannedStack,
+  stack: StackName,
+  confirmation?: string,
+): Effect.Effect<void> {
   return write({
-    confirmation: planConfirmation(report),
+    ...(confirmation === undefined ? {} : { confirmation }),
     event: "cloudflare.planned",
-    plan: report,
+    plan: planReport(planned),
     stack,
   });
 }
 
-const planAll = Effect.fn("planAll")(function* planAll(
+const previewStack = Effect.fn("previewStack")(function* previewStack(
+  stack: StackName,
+  deployment: Deployment,
+) {
+  const { planned } = yield* planStack(stack, deployment);
+  yield* announce(planned, stack, planConfirmation(planned, deployment.access.accountId));
+});
+
+const previewStacks = Effect.fn("previewStacks")(function* previewStacks(
   stacks: readonly StackName[],
-  secrets: DeploymentSecrets,
-  target: DeploymentTarget,
+  deployment: Deployment,
 ) {
   for (const stack of stacks) {
-    const { report } = yield* planStack(stack, secrets.filename, target.prefix);
-    yield* announce(report, stack);
+    yield* previewStack(stack, deployment).pipe(
+      Effect.tapCause(() => write({ event: "cloudflare.plan_failed", stack })),
+    );
   }
 });
 
 const applyStack = Effect.fn("applyStack")(function* applyStack(
   requested: { readonly confirmation: string; readonly stack: StackName },
-  secrets: DeploymentSecrets,
-  target: DeploymentTarget,
+  deployment: Deployment,
 ) {
   const { confirmation, stack } = requested;
   if (stack === "database") {
-    yield* assertDatabaseUnclaimed(secrets, target);
+    yield* assertDatabaseUnclaimed(
+      deployment.access,
+      deployment.target,
+      stateStore(deployment.secrets),
+    );
   }
-  const { report, snapshot } = yield* planStack(stack, secrets.filename, target.prefix);
-  yield* announce(report, stack);
-  yield* acceptPlan(report, confirmation);
+  const { planned, snapshot } = yield* planStack(stack, deployment);
+  yield* announce(planned, stack);
+  yield* acceptPlan(planned, { accountId: deployment.access.accountId, confirmation });
   yield* StackRoute.apply(snapshot).pipe(
     Effect.provideService(Progress, reportProgress(stack)),
     Effect.asVoid,
   );
-  yield* write({ event: "cloudflare.applied", stack: stackName(stack) });
+  yield* write({ event: "cloudflare.applied", stack });
 });
 
 const runDeployment = Effect.fn("runDeployment")(function* runDeployment(
   request: DeploymentRequest,
-  secrets: DeploymentSecrets,
-  target: DeploymentTarget,
+  deployment: Deployment,
 ) {
+  const mode: ArtifactMode = request.operation === "plan" ? "stage" : "publish";
   const run =
     request.operation === "plan"
-      ? planAll(request.stacks, secrets, target)
-      : applyStack(request, secrets, target);
+      ? previewStacks(request.stacks, deployment)
+      : applyStack(request, deployment);
   yield* run.pipe(
-    Effect.provideService(ArtifactWrites, true),
+    Effect.provideService(ArtifactWrites, mode),
     Effect.provide(alchemist),
     Effect.scoped,
   );
 });
 
 export { runDeployment };
+export type { Deployment };
