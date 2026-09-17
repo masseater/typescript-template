@@ -36,18 +36,19 @@
       ]
     },
     {
-      "groupName": "smarthr-ui",
-      "matchPackageNames": [
-        "smarthr-ui",
-        "styled-components",
-        "@types/styled-components",
-        "react-intl"
-      ]
+      "groupName": "tailwindcss",
+      "matchPackageNames": ["tailwindcss", "@tailwindcss/**"]
     },
     {
-      "matchPackageNames": ["styled-components", "@types/styled-components", "react-intl"],
-      "matchUpdateTypes": ["major"],
-      "dependencyDashboardApproval": true
+      "groupName": "design system",
+      "matchPackageNames": [
+        "@base-ui/**",
+        "shadcn",
+        "@shadcn/**",
+        "cn",
+        "class-variance-authority",
+        "lucide-react"
+      ]
     },
     {
       "groupName": "better-auth",

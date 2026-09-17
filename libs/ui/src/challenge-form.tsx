@@ -1,7 +1,7 @@
-import { Button, Stack } from "smarthr-ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
+import { Button } from "./shared/ui";
 import { ChallengeCodeField } from "./challenge-code-field";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
@@ -51,12 +51,12 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
   );
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <Stack>
+      <div className="flex w-full max-w-md flex-col gap-4">
         <ChallengeCodeField backup={mode === "backup"} code={code} />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           {mode === "backup" ? "バックアップコードでログイン" : "確認コードでログイン"}
         </Button>
-      </Stack>
+      </div>
     </form>
   );
 }

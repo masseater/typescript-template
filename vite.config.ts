@@ -38,6 +38,7 @@ export default defineConfig({
     jsPlugins: [
       "./tools/quality/rules.ts",
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+      "@shadcn/lint",
     ],
     options: {
       denyWarnings: true,
@@ -47,6 +48,10 @@ export default defineConfig({
       typeCheck: true,
     },
     overrides: [
+      {
+        files: ["libs/ui/src/shared/ui/**"],
+        rules: { "shadcn/no-restyle": "off" },
+      },
       {
         files: ["**/*.test.ts", "**/*-fixture.ts"],
         plugins: ["vitest"],
@@ -92,6 +97,22 @@ export default defineConfig({
           ignoreTypeIndexes: true,
         },
       ],
+      "eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              message: "@template/ui/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              name: "smarthr-ui",
+            },
+            {
+              message: "Tailwind CSS v4 のユーティリティを使ってください。",
+              name: "styled-components",
+            },
+            { message: "Paraglide JS を使ってください。", name: "react-intl" },
+          ],
+        },
+      ],
       "eslint/no-ternary": "off",
       "eslint/no-undef": "off",
       "eslint/no-undefined": "off",
@@ -114,12 +135,17 @@ export default defineConfig({
       "project/test-import-graph": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
+      "react/forbid-component-props": ["error", { forbid: ["style"] }],
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/jsx-no-literals": "off",
-      "react/jsx-props-no-spreading": ["error", { exceptions: ["Input"] }],
+      "react/jsx-props-no-spreading": "error",
       "react/only-export-components": ["error", { allowExportNames: ["Route"] }],
       "react/react-in-jsx-scope": "off",
       "react/rules-of-hooks": "error",
+      "shadcn/no-arbitrary-values": "error",
+      "shadcn/no-raw-colors": "error",
+      "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
+      "shadcn/no-unknown-classes": "error",
       "typescript/consistent-return": "off",
       "typescript/explicit-function-return-type": ["error", { allowedNames: ["createAuth"] }],
       "typescript/explicit-module-boundary-types": ["error", { allowedNames: ["createAuth"] }],

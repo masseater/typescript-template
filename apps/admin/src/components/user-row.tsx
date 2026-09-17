@@ -1,6 +1,6 @@
 import type { ManagedUser, MutationMethod } from "#user-management.ts";
+import { TableCell, TableRow } from "@template/ui/ui";
 import type { ReactElement } from "react";
-import { Td } from "smarthr-ui";
 import { UserActions } from "#components/user-actions.tsx";
 
 function UserRow({
@@ -13,15 +13,15 @@ function UserRow({
   user: ManagedUser;
 }>): ReactElement {
   return (
-    <tr>
-      <Td>{user.name}</Td>
-      <Td>{user.email}</Td>
-      <Td>{user.emailVerified ? "確認済み" : "未確認"}</Td>
-      <Td>{user.role}</Td>
-      <Td>
+    <TableRow>
+      <TableCell>{user.name}</TableCell>
+      <TableCell>{user.email}</TableCell>
+      <TableCell>{user.emailVerified ? "確認済み" : "未確認"}</TableCell>
+      <TableCell>{user.role}</TableCell>
+      <TableCell>
         <UserActions user={user} pending={pending} onMutation={onMutation} />
-      </Td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 

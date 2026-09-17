@@ -1,5 +1,5 @@
 import { ActionStatus } from "./action-status";
-import { Button } from "smarthr-ui";
+import { Button } from "./shared/ui";
 import type { ReactElement } from "react";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";

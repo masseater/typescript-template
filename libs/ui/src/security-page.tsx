@@ -1,15 +1,14 @@
+import { Page, Status } from "./shared/ui";
 import { MFASettings } from "./mfa";
-import { Page } from "./page";
 import type { ReactElement } from "react";
 import { SignOutButton } from "./sign-out-button";
-import { Status } from "./status";
 import { useSession } from "./use-session";
 
 function SecurityPage({ title }: Readonly<{ title: string }>): ReactElement {
   const { session, loading, error } = useSession();
   return (
     <Page title={title}>
-      {loading && <Status>読み込み中です。</Status>}
+      {loading && <Status variant="pending">読み込み中です。</Status>}
       {!loading && session && (
         <>
           <MFASettings session={session} />
@@ -17,7 +16,7 @@ function SecurityPage({ title }: Readonly<{ title: string }>): ReactElement {
         </>
       )}
       {!loading && !session && <a href="/login">ログインしてください。</a>}
-      {(error ?? "") !== "" && <Status error>{error}</Status>}
+      {(error ?? "") !== "" && <Status variant="error">{error}</Status>}
     </Page>
   );
 }

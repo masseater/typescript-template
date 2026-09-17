@@ -1,7 +1,6 @@
-import { Button, Stack } from "smarthr-ui";
+import { Button, Field } from "./shared/ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
-import { Field } from "./field";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -57,7 +56,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
   const submit = useSignUpSubmit({ action, email, name, onSent, password });
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <Stack>
+      <div className="flex w-full max-w-md flex-col gap-4">
         <Field
           label="ユーザー名"
           name="name"
@@ -90,7 +89,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
         <Button type="submit" variant="primary" disabled={action.blocked}>
           登録して確認メールを送信
         </Button>
-      </Stack>
+      </div>
     </form>
   );
 }
