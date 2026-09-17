@@ -2,7 +2,6 @@ export { Button } from "./button";
 export { Checkbox } from "./checkbox";
 export { Field } from "./field";
 export { Heading } from "./heading";
-export { Input } from "./input";
 export { Label } from "./label";
 export { Page } from "./page";
 export { Stack } from "./stack";
