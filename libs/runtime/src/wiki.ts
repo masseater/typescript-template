@@ -1,7 +1,6 @@
 import { readWikiConfig } from "@template/config";
 import { createInstrumentation } from "@template/observability";
 import type { RequestContext } from "@template/observability";
-import { reportSentryError } from "@template/observability/sentry-server";
 import * as v from "valibot";
 
 const embeddingModel = "@cf/baai/bge-m3";
@@ -18,11 +17,10 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
   });
   const ai = config.AI;
   return {
-    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN, sentry: config.sentry },
+    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN },
     telemetry,
     reportError(correlation: RequestContext, error: unknown) {
       telemetry.reportError(correlation, error);
-      if (config.sentry) reportSentryError(error);
     },
     embedder(correlation: RequestContext) {
       if (!ai) return null;

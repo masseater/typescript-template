@@ -1,12 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
 import { fileURLToPath } from "node:url";
-import {
-  appPolicy,
-  parseSharedConfig,
-  sentryRuntimeBindings,
-  validateAuthSecret,
-} from "./config.ts";
+import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
 import type { AppTarget } from "./config.ts";
 import { loadArtifacts } from "./artifacts.ts";
 import { workerObservability } from "./observability.ts";
@@ -72,7 +67,6 @@ export async function deployApplication(target: AppTarget) {
       text: shared.requireOutput("otelHeaders"),
     },
     ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
-    ...sentryRuntimeBindings(settings),
     ...(access
       ? [
           { type: "plain_text", name: "ACCESS_AUD", text: access.aud },

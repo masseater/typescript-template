@@ -1,6 +1,5 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { initBrowserTelemetry } from "@template/observability/browser";
-import { connectBrowserSentry } from "@template/observability/sentry-browser";
 import { UIProvider } from "@template/ui";
 import styles from "@template/ui/styles.css?url";
 import { useEffect } from "react";
@@ -21,9 +20,7 @@ export const Route = createRootRoute({
 function Root() {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
-    const disconnectSentry = connectBrowserSentry();
     return () => {
-      disconnectSentry();
       telemetry.dispose();
     };
   }, []);

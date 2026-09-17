@@ -154,7 +154,7 @@ export class Browser {
           if (
             !["localhost", "127.0.0.1"].includes(url.hostname) ||
             !url.pathname.startsWith("/api/") ||
-            ["/api/telemetry", "/api/client-config"].includes(url.pathname)
+            url.pathname === "/api/telemetry"
           )
             return;
           for (const key of ["token", "code"]) {

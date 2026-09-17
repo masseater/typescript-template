@@ -205,7 +205,7 @@ export default definePlugin({
         const current = filename(context);
         if (
           !/\/(?:apps|libs|infra\/budget-monitor)\//.test(current) ||
-          /\/libs\/ui\/|\/libs\/observability\/src\/(?:sentry-)?browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(
+          /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(
             current,
           )
         )

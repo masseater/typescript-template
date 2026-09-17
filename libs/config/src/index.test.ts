@@ -61,17 +61,3 @@ test("rejects non-string exporter credential values", () => {
     }),
   ).toThrow("string");
 });
-
-test("requires explicit environment and release when Sentry delivery is enabled", () => {
-  expect(readEnvironment(local).sentry).toBeNull();
-  const dsn = "https://public-key@sentry.example.test/1";
-  expect(() => readEnvironment({ ...local, SENTRY_DSN: dsn })).toThrow("string");
-  expect(
-    readEnvironment({
-      ...local,
-      SENTRY_DSN: dsn,
-      SENTRY_ENVIRONMENT: "preview",
-      SENTRY_RELEASE: "test-1",
-    }).sentry,
-  ).toEqual({ dsn, environment: "preview", release: "test-1" });
-});

@@ -65,7 +65,7 @@ test.for([
 
 test("rejects actual local secret values without exposing their content in errors", () => {
   const secrets = secretValues(
-    'AUTH_SECRET="public-policy-canary"\nAPP_ORIGIN=http://localhost:3001\nSENTRY_DSN=https://public@example.test/1\n',
+    'AUTH_SECRET="public-policy-canary"\nAPP_ORIGIN=http://localhost:3001\nOTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318\n',
   );
   expect(secrets).toEqual(["public-policy-canary"]);
   expect(() =>

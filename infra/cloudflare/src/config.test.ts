@@ -1,11 +1,10 @@
 import { expect, test } from "vitest";
-import { readEnvironment, readWikiConfig } from "@template/config";
+import { readWikiConfig } from "@template/config";
 import {
   appPolicy,
   parseSharedConfig,
   parseDeploymentCommand,
   selectReadPermission,
-  sentryRuntimeBindings,
   validateAuthSecret,
   validateOtelHeaders,
 } from "./config.ts";
@@ -42,122 +41,6 @@ test("deployment commands reject ignored arguments instead of selecting an unint
   expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
 });
 
-test("omitting the Sentry DSN disables all Sentry runtime bindings", () => {
-  expect(sentryRuntimeBindings(parseSharedConfig(settings))).toEqual([]);
-  expect(
-    sentryRuntimeBindings(
-      parseSharedConfig({ ...settings, sentryEnvironment: "production", sentryRelease: "rev-1" }),
-    ),
-  ).toEqual([]);
-});
-
-test.each([{}, { sentryEnvironment: "production" }, { sentryRelease: "rev-1" }])(
-  "a Sentry DSN requires environment and release: %j",
-  (additional) => {
-    expect(() =>
-      parseSharedConfig({
-        ...settings,
-        sentryDsn: "https://key@sentry.example.com/1",
-        ...additional,
-      }),
-    ).toThrow("sentry_environment_and_release_required");
-  },
-);
-
-test.each(["sentryEnvironment", "sentryRelease"])("rejects blank %s", (name) => {
-  expect(() =>
-    parseSharedConfig({
-      ...settings,
-      sentryDsn: "https://key@sentry.example.com/1",
-      sentryEnvironment: "production",
-      sentryRelease: "rev-1",
-      [name]: " ",
-    }),
-  ).toThrow("cloudflare_settings_invalid");
-});
-
-test("binds complete Sentry settings at runtime", () => {
-  const config = parseSharedConfig({
-    ...settings,
-    sentryDsn: "https://key@sentry.example.com/1",
-    sentryEnvironment: "production",
-    sentryRelease: "rev-1",
-  });
-  expect(sentryRuntimeBindings(config)).toEqual([
-    { type: "plain_text", name: "SENTRY_DSN", text: config.sentryDsn },
-    { type: "plain_text", name: "SENTRY_ENVIRONMENT", text: "production" },
-    { type: "plain_text", name: "SENTRY_RELEASE", text: "rev-1" },
-  ]);
-});
-
-test.each([
-  { sentryEnvironment: "Production" },
-  { sentryEnvironment: " production" },
-  { sentryEnvironment: "prod/blue" },
-  { sentryEnvironment: "a".repeat(65) },
-  { sentryRelease: "release@1" },
-  { sentryRelease: "release/1" },
-  { sentryRelease: "release 1" },
-  { sentryRelease: "a".repeat(129) },
-])("rejects settings the runtime cannot consume: %j", (overrides) => {
-  const config = {
-    ...settings,
-    sentryDsn: "https://key@sentry.example.com/1",
-    sentryEnvironment: "production",
-    sentryRelease: "rev-1",
-    ...overrides,
-  };
-  expect(() => parseSharedConfig(config)).toThrow("cloudflare_settings_invalid");
-  expect(() =>
-    readEnvironment({
-      APP_ORIGIN: settings.userOrigin,
-      AUTH_SECRET: "x".repeat(32),
-      OTEL_EXPORTER_OTLP_ENDPOINT: settings.otelEndpoint,
-      EMAIL_FROM: settings.mailFrom,
-      SENTRY_DSN: config.sentryDsn,
-      SENTRY_ENVIRONMENT: config.sentryEnvironment,
-      SENTRY_RELEASE: config.sentryRelease,
-    }),
-  ).toThrow("Invalid format");
-});
-
-test.each([
-  {},
-  {
-    sentryDsn: "https://key@sentry.example.com/1",
-    sentryEnvironment: "production",
-    sentryRelease: "release_1.2-ABC",
-  },
-  {
-    sentryDsn: "https://key@sentry.example.com/1",
-    sentryEnvironment: "a".repeat(64),
-    sentryRelease: "A".repeat(128),
-  },
-])("generated bindings are accepted by the real runtime: %j", (sentry) => {
-  const config = parseSharedConfig({ ...settings, ...sentry });
-  const bindings = Object.fromEntries(
-    sentryRuntimeBindings(config).map(({ name, text }) => [name, text]),
-  );
-  for (const target of ["user", "admin"] as const) {
-    const runtime = readEnvironment({
-      APP_ORIGIN: appPolicy(config, target).origin,
-      AUTH_SECRET: "x".repeat(32),
-      OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
-      EMAIL_FROM: config.mailFrom,
-      ...bindings,
-    });
-    expect(runtime.sentry).toEqual(
-      config.sentryDsn
-        ? {
-            dsn: config.sentryDsn,
-            environment: config.sentryEnvironment,
-            release: config.sentryRelease,
-          }
-        : null,
-    );
-  }
-});
-
 test("user and admin are distinct deployments with all alternative public URLs disabled", () => {
   const config = parseSharedConfig(settings);
   expect(appPolicy(config, "user")).toEqual({
@@ -186,7 +69,6 @@ test("the wiki reads its runtime settings without authentication or database bin
     ASSETS: { fetch: () => Promise.resolve(new Response()) },
   });
   expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
-  expect(runtime.sentry).toBeNull();
   expect(runtime.AI).toBeNull();
   const ai = { run: () => Promise.resolve({ data: [] }) };
   expect(

@@ -6,5 +6,4 @@ export const routes = {
   "/api/session": "session",
   "/api/users": "users-api",
   "/api/telemetry": "telemetry",
-  "/api/client-config": "client-config",
 } as const;

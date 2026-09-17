@@ -10,7 +10,6 @@ import {
   validateRoutes,
 } from "./protocol.ts";
 import { parseBrowserEvents } from "./events.ts";
-import { sentryBoundary } from "./sentry.ts";
 
 const context = {
   traceId: "a".repeat(32),
@@ -163,57 +162,4 @@ test("route matching accepts terminal wildcards, prioritizes exact paths and nev
   expect(routeLabel("/api/authentic", routes)).toBe("api");
   expect(() => validateRoutes({ "/api/*/token": "bad" })).toThrow("bounded labels");
   expect(() => validateRoutes({ "/api/**": "bad" })).toThrow("bounded labels");
-});
-
-test("Sentry enables configured delivery while stripping private event fields", () => {
-  const config = sentryBoundary({
-    dsn: "https://public-key@sentry.example.com/1",
-    environment: "local",
-    release: "test-1",
-  });
-  expect(config.enabled).toBe(true);
-  expect(config.sendDefaultPii).toBe(false);
-  const sanitized = config.beforeSend({
-    type: undefined,
-    user: { email: "private@example.test" },
-    request: { url: "https://example.test/?token=secret", cookies: { session: "secret" } },
-    extra: { password: "secret" },
-    message: "private@example.test",
-    exception: {
-      values: [
-        {
-          type: "TypeError",
-          value: "secret",
-          stacktrace: {
-            frames: [
-              {
-                filename: "https://example.test/assets/app.js?token=secret",
-                lineno: 12,
-                vars: { password: "secret" },
-                pre_context: ["secret"],
-              },
-            ],
-          },
-        },
-      ],
-    },
-  });
-  expect(JSON.stringify(sanitized)).not.toMatch(/secret|private@example/);
-  expect(sanitized?.exception?.values?.[0]?.type).toBe("TypeError");
-  expect(sanitized?.exception?.values?.[0]?.stacktrace?.frames?.[0]?.lineno).toBe(12);
-  expect(config.beforeSendTransaction()).toBeNull();
-  expect(config.beforeBreadcrumb()).toBeNull();
-  expect(() =>
-    sentryBoundary({
-      dsn: "https://user:secret@example.com/1",
-      environment: "local",
-      release: "test",
-    }),
-  ).toThrow("DSN");
-});
-
-test("Sentry without a DSN does not enable external delivery", () => {
-  const config = sentryBoundary({ environment: "local", release: "test" });
-  expect(config.enabled).toBe(false);
-  expect(config.beforeSend({ type: undefined })).toBeNull();
 });

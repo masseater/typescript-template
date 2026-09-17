@@ -1,5 +1,4 @@
 import handler from "@tanstack/react-start/server-entry";
-import { withSentryRequest } from "@template/observability/sentry-server";
 import { jsonResponse, secureResponse } from "@template/runtime/http";
 import { createWikiRuntime } from "@template/runtime/wiki";
 import { handleMcp } from "./lib/mcp.ts";
@@ -29,8 +28,7 @@ export default {
         if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
         if (path === "/api/telemetry")
           return runtime.telemetry.ingestBrowser(incoming, executionContext);
-        if (path === "/api/client-config") return jsonResponse({ sentry: runtime.config.sentry });
-        const action = async () => {
+        try {
           const search = createWikiSearch(runtime.embedder(correlation), (error) =>
             runtime.reportError(correlation, error),
           );
@@ -40,17 +38,6 @@ export default {
           }
           if (path === "/mcp") return secureResponse(await handleMcp(incoming, search));
           return secureResponse(await handler.fetch(incoming));
-        };
-        try {
-          return await (runtime.config.sentry
-            ? withSentryRequest(
-                runtime.config.sentry,
-                incoming,
-                executionContext,
-                correlation,
-                action,
-              )
-            : action());
         } catch (error) {
           runtime.reportError(correlation, error);
           return jsonResponse({ error: "処理に失敗しました。" }, 500);

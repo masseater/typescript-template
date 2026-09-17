@@ -1,6 +1,5 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { initBrowserTelemetry } from "@template/observability/browser";
-import { connectBrowserSentry } from "@template/observability/sentry-browser";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { useEffect } from "react";
 import styles from "../styles/app.css?url";
@@ -22,9 +21,7 @@ export const Route = createRootRoute({
 function Root() {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
-    const disconnectSentry = connectBrowserSentry();
     return () => {
-      disconnectSentry();
       telemetry.dispose();
     };
   }, []);

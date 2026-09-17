@@ -4,21 +4,13 @@
   "type": "module",
   "exports": {
     ".": "./src/server.ts",
-    "./browser": "./src/browser.ts",
-    "./sentry": "./src/sentry.ts",
-    "./sentry-server": "./src/sentry-server.ts",
-    "./sentry-browser": "./src/sentry-browser.ts"
+    "./browser": "./src/browser.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vp test run"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "5.20260916.1",
-    "@sentry/cloudflare": "10.74.0",
-    "@sentry/react": "10.74.0",
-    "react": "19.3.0",
-    "valibot": "1.5.0",
     "web-vitals": "6.2.2"
   }
 }

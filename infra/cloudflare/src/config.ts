@@ -1,5 +1,4 @@
 import * as v from "valibot";
-import { sentrySchemas } from "@template/config";
 
 const id = v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/));
 const positive = v.pipe(v.number(), v.finite(), v.minValue(Number.MIN_VALUE));
@@ -39,14 +38,6 @@ const sharedSchema = v.object({
   ),
   adminEmails: v.pipe(v.array(v.pipe(v.string(), v.email())), v.minLength(1), v.maxLength(50)),
   otelEndpoint: httpsUrl,
-  sentryDsn: v.optional(
-    v.pipe(
-      sentrySchemas.dsn,
-      v.check((value) => new URL(value).protocol === "https:"),
-    ),
-  ),
-  sentryEnvironment: v.optional(sentrySchemas.environment),
-  sentryRelease: v.optional(sentrySchemas.release),
   mailFrom: v.pipe(v.string(), v.email()),
   budget: v.object({
     budgetJpy: positive,
@@ -75,8 +66,6 @@ export function parseSharedConfig(input: unknown): SharedConfig {
   const parsed = v.safeParse(sharedSchema, input);
   if (!parsed.success) throw new Error("cloudflare_settings_invalid");
   const config = parsed.output;
-  if (config.sentryDsn && (!config.sentryEnvironment || !config.sentryRelease))
-    throw new Error("sentry_environment_and_release_required");
   if (new Set([config.userOrigin, config.adminOrigin, config.wikiOrigin]).size !== 3)
     throw new Error("app_origins_must_differ");
   if (
@@ -86,17 +75,6 @@ export function parseSharedConfig(input: unknown): SharedConfig {
     throw new Error("budget_has_no_usage_allowance");
   }
   return config;
-}
-
-export function sentryRuntimeBindings(config: SharedConfig) {
-  if (!config.sentryDsn) return [];
-  if (!config.sentryEnvironment || !config.sentryRelease)
-    throw new Error("sentry_environment_and_release_required");
-  return [
-    { type: "plain_text", name: "SENTRY_DSN", text: config.sentryDsn },
-    { type: "plain_text", name: "SENTRY_ENVIRONMENT", text: config.sentryEnvironment },
-    { type: "plain_text", name: "SENTRY_RELEASE", text: config.sentryRelease },
-  ];
 }
 
 export function validateAuthSecret(secret: string): string {

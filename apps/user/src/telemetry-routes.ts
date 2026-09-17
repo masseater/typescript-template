@@ -7,5 +7,4 @@ export const routes = {
   "/api/session": "session",
   "/api/profile": "profile-api",
   "/api/telemetry": "telemetry",
-  "/api/client-config": "client-config",
 } as const;

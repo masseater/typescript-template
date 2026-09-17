@@ -2,11 +2,6 @@ import type { D1Database } from "@cloudflare/workers-types";
 import * as v from "valibot";
 
 const absoluteUrl = v.pipe(v.string(), v.url());
-export const sentrySchemas = {
-  dsn: absoluteUrl,
-  environment: v.pipe(v.string(), v.regex(/^[a-z0-9.-]{1,64}$/)),
-  release: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,128}$/)),
-};
 const origin = v.pipe(
   absoluteUrl,
   v.check((value) => new URL(value).origin === value, "An origin without a path is required"),
@@ -18,9 +13,6 @@ const scalarSchema = v.object({
   OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
   EMAIL_FROM: v.pipe(v.string(), v.email()),
   MAILPIT_URL: v.optional(origin),
-  SENTRY_DSN: v.optional(sentrySchemas.dsn),
-  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
-  SENTRY_RELEASE: v.optional(sentrySchemas.release),
 });
 
 const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
@@ -55,14 +47,6 @@ function hasFunction(value: unknown, key: string): boolean {
 
 export function readEnvironment(input: unknown) {
   const scalars = v.parse(scalarSchema, input);
-  const sentry =
-    scalars.SENTRY_DSN === undefined
-      ? null
-      : {
-          dsn: scalars.SENTRY_DSN,
-          environment: v.parse(sentrySchemas.environment, scalars.SENTRY_ENVIRONMENT),
-          release: v.parse(sentrySchemas.release, scalars.SENTRY_RELEASE),
-        };
   requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   if (
@@ -77,7 +61,7 @@ export function readEnvironment(input: unknown) {
           v.record(v.string(), v.string()),
           JSON.parse(scalars.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
         );
-  return { ...scalars, otelHeaders, local, sentry };
+  return { ...scalars, otelHeaders, local };
 }
 
 export function readConfig(input: unknown) {
@@ -136,9 +120,6 @@ const wikiSchema = v.object({
   APP_ORIGIN: origin,
   OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
   OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
-  SENTRY_DSN: v.optional(sentrySchemas.dsn),
-  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
-  SENTRY_RELEASE: v.optional(sentrySchemas.release),
   ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
   AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
 });
@@ -158,13 +139,5 @@ export function readWikiConfig(input: unknown) {
             v.record(v.string(), v.string()),
             JSON.parse(config.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
           ),
-    sentry:
-      config.SENTRY_DSN === undefined
-        ? null
-        : {
-            dsn: config.SENTRY_DSN,
-            environment: v.parse(sentrySchemas.environment, config.SENTRY_ENVIRONMENT),
-            release: v.parse(sentrySchemas.release, config.SENTRY_RELEASE),
-          },
   };
 }
