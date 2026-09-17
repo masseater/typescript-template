@@ -2,7 +2,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import type { D1Database } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
-import { bootstrapAdmin } from "./admin.ts";
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { EmailAddress } from "./bootstrap-statement.ts";
 import { Database } from "./index.ts";
 import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";

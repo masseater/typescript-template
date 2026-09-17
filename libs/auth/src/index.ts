@@ -339,10 +339,12 @@ export class Auth extends Context.Service<
         const context = yield* Effect.context<Database>();
         const run = <A, E>(effect: Effect.Effect<A, E, Database>) =>
           Effect.runPromiseWith(context)(effect);
-        return Auth.of({
-          audience: options.audience,
-          instance: createAuth(options, database, run),
+        const instance = createAuth(options, database, run);
+        yield* Effect.tryPromise({
+          try: () => instance.$context,
+          catch: (cause) => new AuthFailure({ cause }),
         });
+        return Auth.of({ audience: options.audience, instance });
       }),
     );
   }

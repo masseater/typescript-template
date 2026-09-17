@@ -114,6 +114,12 @@ export default definePlugin({
             /\/libs\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|testing)(?:[/.]|$)/.test(resolved);
           const withinDb = area === "libs" && owner === "db";
           const dbRoot = withinDb && /\/src\/index\.[cm]?[jt]s$/.test(current);
+          const dbRuntime =
+            withinDb &&
+            !isTest &&
+            !/\/src\/(?:remote[^/]*|bootstrap[^/]*|migrate[^/]*|testing)\.[cm]?[jt]s$/.test(
+              current,
+            );
           const packageEscape =
             relative &&
             root !== undefined &&
@@ -130,7 +136,8 @@ export default definePlugin({
             (dbOperations &&
               (area === "apps" ||
                 (area === "libs" &&
-                  (dbRoot || (!withinDb && !(isTest && /\/testing(?:[/.]|$)/.test(resolved))))))) ||
+                  (dbRuntime ||
+                    (!withinDb && !(isTest && /\/testing(?:[/.]|$)/.test(resolved))))))) ||
             (!withinDb &&
               /^(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|node:sqlite|pg|postgres)(?:\/|$)/.test(
                 clean,

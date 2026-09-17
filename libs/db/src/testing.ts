@@ -57,3 +57,4 @@ const database = Layer.unwrap(
 export const TestDatabase = database.pipe(Layer.provideMerge(binding(true)));
 
 export const EmptyTestDatabase = database.pipe(Layer.provideMerge(binding(false)));
+export { bootstrapAdmin } from "./bootstrap-statement.ts";

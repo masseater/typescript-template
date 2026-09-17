@@ -1,7 +1,8 @@
 import { assert, it } from "@effect/vitest";
 import { eq } from "drizzle-orm";
 import { Effect, Exit } from "effect";
-import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
+import { deleteUser, listUsers, setUserRole } from "./admin.ts";
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { getProfile, query, updateProfile } from "./index.ts";
 import type { Audience, Role } from "./index.ts";
 import {

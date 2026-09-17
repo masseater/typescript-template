@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { bootstrapAdmin } from "./admin.ts";
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { query } from "./index.ts";
 import { RemoteFailure } from "./remote-input.ts";
 import { parseRemoteInput } from "./remote-input.ts";

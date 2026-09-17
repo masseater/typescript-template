@@ -1,8 +1,6 @@
 import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
-import { bootstrapStatement } from "./bootstrap-statement.ts";
-import type { EmailAddress } from "./bootstrap-statement.ts";
 import { DatabaseFailure, query } from "./index.ts";
 import type { DrizzleDatabase, Role } from "./index.ts";
 import { auditEvent, session, user } from "./schema.ts";
@@ -20,11 +18,6 @@ export class LastAdminRequired extends Schema.TaggedError<LastAdminRequired>()(
 
 export class TargetUnavailable extends Schema.TaggedError<TargetUnavailable>()(
   "TargetUnavailable",
-  {},
-) {}
-
-export class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
-  "BootstrapUnavailable",
   {},
 ) {}
 
@@ -145,14 +138,4 @@ export const deleteUser = Effect.fn("deleteUser")(function* (sessionId: string, 
   if (!removed) return yield* new TargetUnavailable();
   yield* recordAudit(actor.user.id, targetId, "user_deleted");
   return removed;
-});
-
-export const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* (
-  email: typeof EmailAddress.Type,
-) {
-  const [updated] = yield* query((database) =>
-    database.all<{ id: string; email: string; role: Role }>(bootstrapStatement(email)),
-  );
-  if (!updated) return yield* new BootstrapUnavailable();
-  return updated;
 });

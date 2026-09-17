@@ -235,6 +235,8 @@ test.for([
     'export const load = () => import("@template/ui/signup");',
   ],
   ["wiki-app", "apps/user/src/probe.ts", 'import "@template/wiki";'],
+  ["db-admin-bootstrap", "libs/db/src/admin.ts", 'import "./bootstrap-statement.ts";'],
+  ["db-security-remote", "libs/db/src/security.ts", 'import "./remote-input.ts";'],
 ] as const)("rejects dependency bypass: %s", ([_label, name, code]) => {
   expect(reported("boundaries", name, code)).toBe(true);
 });
@@ -334,6 +336,8 @@ test.for([
   ["infra/cloudflare/src/probe.ts", "export const value = process.env;"],
   ["tools/observe/src/probe.ts", "export const value = process.env;"],
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
+  ["libs/db/src/remote-input.ts", 'import "./bootstrap-statement.ts";'],
+  ["libs/db/src/testing.ts", 'export { bootstrapAdmin } from "./bootstrap-statement.ts";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
 ] as const)("allows valid boundary in %s", ([name, code]) => {
   expect(reportedRules(name, code)).toEqual([]);

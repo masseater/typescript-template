@@ -1,8 +1,14 @@
 import { assert, it } from "@effect/vitest";
 import { sendVerificationEmail } from "@template/config";
 import type { Audience, Database } from "@template/db";
-import { bootstrapAdmin, setUserRole } from "@template/db/admin";
-import { TestBinding, TestDatabase, getSchemaShape } from "@template/db/testing";
+import { setUserRole } from "@template/db/admin";
+import {
+  EmptyTestDatabase,
+  TestBinding,
+  TestDatabase,
+  bootstrapAdmin,
+  getSchemaShape,
+} from "@template/db/testing";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Layer, Schema } from "effect";
 import { http, HttpResponse } from "msw";
@@ -155,9 +161,11 @@ class Fixture extends Context.Service<
 const fixture = Layer.effect(
   Fixture,
   Effect.gen(function* () {
-    const wiki = yield* authFor("wiki");
-    yield* Effect.promise(() => wiki.instance.$context);
-    return Fixture.of({ user: yield* authFor("user"), admin: yield* authFor("admin"), wiki });
+    return Fixture.of({
+      user: yield* authFor("user"),
+      admin: yield* authFor("admin"),
+      wiki: yield* authFor("wiki"),
+    });
   }),
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
 
@@ -217,6 +225,16 @@ const authTest = (
   name: string,
   body: () => Effect.Effect<void, unknown, Fixture | Database | TestBinding>,
 ) => it.effect(name, () => body().pipe(Effect.provide(fixture)), { timeout: 60_000 });
+
+it.effect(
+  "wiki auth finishes OAuth provider initialization while its layer is built",
+  () =>
+    Effect.gen(function* () {
+      assert.strictEqual(yield* failureTag(Effect.scoped(authFor("wiki"))), "AuthFailure");
+      assert.strictEqual((yield* Effect.scoped(authFor("user"))).audience, "user");
+    }).pipe(Effect.provide(EmptyTestDatabase)),
+  { timeout: 60_000 },
+);
 
 authTest("requires an actual email verification before password login", () =>
   Effect.gen(function* () {
