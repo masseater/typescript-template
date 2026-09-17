@@ -79,7 +79,10 @@ export default defineConfig({
     ],
     rules: {
       "eslint/func-style": ["error", "declaration"],
-      "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." }],
+      "eslint/new-cap": [
+        "error",
+        { capIsNewExceptionPattern: "^(?:Schema|Context|Data|handlers)\\." },
+      ],
       "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
       "eslint/no-magic-numbers": [
         "error",

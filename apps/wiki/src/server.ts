@@ -1,11 +1,7 @@
-import { ManagedRuntime } from "effect";
-import { env } from "cloudflare:workers";
-import { routes } from "./telemetry-routes.ts";
-import { serveApp } from "@template/runtime/worker";
-import { wikiLayer } from "@template/runtime/wiki";
+import { createAppWorker } from "@template/runtime/app";
+import { runtime } from "./runtime.ts";
+import { wikiApi } from "./api.ts";
 import { wikiRoute } from "./routing.ts";
 
-const runtime = ManagedRuntime.make(wikiLayer(env, routes));
-
 // oxlint-disable-next-line import/no-default-export
-export default serveApp(runtime, wikiRoute);
+export default createAppWorker({ api: wikiApi, route: wikiRoute, runtime });

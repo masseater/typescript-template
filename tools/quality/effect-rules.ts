@@ -1,10 +1,21 @@
 import type { LintContext, Node } from "./lint-context.ts";
-import { propertyName, staticText } from "./references.ts";
+import { origins, propertyName, staticText } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
 
+const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
+
 function filename(context: LintContext): string {
   return context.filename.replaceAll("\\", "/");
+}
+
+function servesElysia(context: LintContext, node: Node): boolean {
+  return (
+    node.type === "CallExpression" &&
+    origins(context, node.callee).some(
+      (origin) => origin.join(".") === elysiaServerOrigin.join("."),
+    )
+  );
 }
 
 function effectStackVisitor(context: LintContext): Visitor {
@@ -45,7 +56,11 @@ function effectStackVisitor(context: LintContext): Visitor {
       }
     },
     Property(node: Node): void {
-      if (startRoute && node.type === "Property" && propertyName(context, node) === "handlers") {
+      if (!startRoute || node.type !== "Property") {
+        return;
+      }
+      const name = propertyName(context, node);
+      if (name === "handlers" || (name === "server" && !servesElysia(context, node.value))) {
         reportViolation(context, node);
       }
     },

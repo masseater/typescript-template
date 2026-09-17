@@ -1,22 +1,22 @@
 import { ProfileUpdate, ProfileView } from "@template/runtime/contracts";
 import { UserNotFound, getProfile, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
-import { apiBridge, compileApi, createApi, readJsonBody } from "@template/runtime/http";
-import type { AppServices } from "@template/runtime";
+import { apiRoutes, createApi, readJsonBody } from "@template/runtime/http";
 import { Effect } from "effect";
+import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
-const bridge = apiBridge<AppServices>();
+const api = apiRoutes(runtime);
 const failures = {
   ...unavailable,
   UserNotFound: { message: "対象が見つかりません。", status: 404 },
 };
 
-const api = createApi()
-  .use(accountApi(bridge))
+const userApi = createApi()
+  .use(accountApi(api))
   .get(
     "/api/profile",
-    bridge.route(
+    api.route(
       ProfileView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -33,7 +33,7 @@ const api = createApi()
   )
   .patch(
     "/api/profile",
-    bridge.route(
+    api.route(
       ProfileView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -46,7 +46,4 @@ const api = createApi()
     ),
   );
 
-const userApi = compileApi(api);
-const dispatchUserApi = bridge.dispatch;
-
-export { dispatchUserApi, userApi };
+export { userApi };

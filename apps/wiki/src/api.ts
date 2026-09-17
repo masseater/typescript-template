@@ -1,11 +1,12 @@
-import { apiBridge, compileApi, createApi, jsonResponse } from "@template/runtime/http";
+import { apiRoutes, createApi, jsonResponse } from "@template/runtime/http";
 import { Effect } from "effect";
 import type { WikiServices } from "@template/runtime/wiki";
+import { runtime } from "./runtime.ts";
 import { searchWiki } from "./lib/search.ts";
 import { sessionApi } from "@template/runtime/account";
 
 const maximumQueryLength = 200;
-const bridge = apiBridge<WikiServices>();
+const api = apiRoutes(runtime);
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function search(request: Request): Effect.Effect<Response, never, WikiServices> {
@@ -18,9 +19,6 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
     : Effect.succeed(jsonResponse([]));
 }
 
-const api = createApi().use(sessionApi(bridge)).get("/api/search", bridge.raw(search, {}));
+const wikiApi = createApi().use(sessionApi(api)).get("/api/search", api.raw(search, {}));
 
-const wikiApi = compileApi(api);
-const dispatchWikiApi = bridge.dispatch;
-
-export { dispatchWikiApi, wikiApi };
+export { wikiApi };

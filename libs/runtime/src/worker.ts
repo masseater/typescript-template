@@ -78,4 +78,4 @@ function serveApp<Requirements>(
 }
 
 export { serveApp, serveWorker };
-export type { FetchWorker };
+export type { AppRoute, FetchWorker };

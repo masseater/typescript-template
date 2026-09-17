@@ -7,19 +7,13 @@ import {
   UserListQuery,
 } from "@template/runtime/contracts";
 import { accountApi, unavailable } from "@template/runtime/account";
-import {
-  apiBridge,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@template/runtime/http";
+import { apiRoutes, createApi, readJsonBody, readSearchParams } from "@template/runtime/http";
 import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
-import type { AppServices } from "@template/runtime";
 import { Effect } from "effect";
+import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
-const bridge = apiBridge<AppServices>();
+const api = apiRoutes(runtime);
 const forbidden = { message: "この操作は許可されていません。", status: 403 };
 const failures = {
   ...unavailable,
@@ -28,11 +22,11 @@ const failures = {
   TargetUnavailable: { message: "対象が存在しないか、操作権限が失効しています。", status: 409 },
 };
 
-const api = createApi()
-  .use(accountApi(bridge))
+const adminApi = createApi()
+  .use(accountApi(api))
   .get(
     "/api/users",
-    bridge.route(
+    api.route(
       UserList,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -46,7 +40,7 @@ const api = createApi()
   )
   .patch(
     "/api/users",
-    bridge.route(
+    api.route(
       RoleChanged,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -60,7 +54,7 @@ const api = createApi()
   )
   .delete(
     "/api/users",
-    bridge.route(
+    api.route(
       UserDeleted,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -73,7 +67,4 @@ const api = createApi()
     ),
   );
 
-const adminApi = compileApi(api);
-const dispatchAdminApi = bridge.dispatch;
-
-export { adminApi, dispatchAdminApi };
+export { adminApi };

@@ -3,7 +3,7 @@ import { Telemetry, httpStatus, ingestBrowser } from "@template/observability";
 import { createApi, readJsonBody } from "./http.ts";
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
 import type { AnyElysia } from "elysia";
-import type { ApiBridge } from "./http.ts";
+import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 import { Effect } from "effect";
 import type { EmailVerificationFailed } from "@template/auth";
@@ -25,26 +25,24 @@ function emailVerificationFailure(error: EmailVerificationFailed): Failure {
     : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
 }
 
-function sessionApi<Requirements = never>(
-  bridge: ApiBridge<AppServices | Requirements>,
-): AnyElysia {
+function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>): AnyElysia {
   return createApi()
-    .all("/api/auth/*", bridge.raw(handleAuthRequest, unavailable))
-    .post("/api/telemetry", bridge.raw(ingestBrowser, {}))
-    .get("/api/health", bridge.route(HealthView, health, unavailable))
+    .all("/api/auth/*", api.raw(handleAuthRequest, unavailable))
+    .post("/api/telemetry", api.raw(ingestBrowser, {}))
+    .get("/api/health", api.route(HealthView, health, unavailable))
     .get(
       "/api/session",
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      bridge.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
+      api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
     );
 }
 
-function accountApi(bridge: ApiBridge<AppServices>): AnyElysia {
+function accountApi(api: ApiRoutes<AppServices>): AnyElysia {
   return createApi()
-    .use(sessionApi(bridge))
+    .use(sessionApi(api))
     .post(
       "/api/verify-email",
-      bridge.route(
+      api.route(
         EmailVerified,
         // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         (request) =>
