@@ -1,6 +1,7 @@
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 import type { Metric } from "web-vitals";
-import { httpMethod, randomHex, routeLabel, validRequestId, validateRoutes } from "./protocol.ts";
+import * as v from "valibot";
+import { httpMethod, randomHex, requestIdSchema, routeLabel, validateRoutes } from "./protocol.ts";
 import { errorAttributes } from "./errors.ts";
 import type { BrowserEvent } from "./events.ts";
 
@@ -89,7 +90,7 @@ export function initBrowserTelemetry(options: BrowserTelemetryOptions) {
       const response = await send(request);
       status = response.status;
       const serverRequestId = response.headers.get("x-request-id");
-      if (validRequestId(serverRequestId)) requestId = serverRequestId;
+      if (v.is(requestIdSchema, serverRequestId)) requestId = serverRequestId;
       return response;
     } finally {
       enqueue({

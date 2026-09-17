@@ -1,3 +1,5 @@
+import * as v from "valibot";
+
 export const errorTypes = [
   "Error",
   "TypeError",
@@ -20,18 +22,19 @@ function errorLocations(stack: string | undefined): string {
     .join("\n");
 }
 
-export function validErrorLocations(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length <= 2048 &&
-    (value === "" ||
+export const errorLocationsSchema = v.pipe(
+  v.string(),
+  v.maxLength(2048),
+  v.check(
+    (value) =>
+      value === "" ||
       value
         .split("\n")
         .every(
-          (line) => new RegExp(`^${locationPattern.source}$`).test(line) && line.length <= 256,
-        ))
-  );
-}
+          (line) => line.length <= 256 && new RegExp(`^${locationPattern.source}$`).test(line),
+        ),
+  ),
+);
 
 export function errorFingerprint(type: ErrorType, locations: string): string {
   let hash = 0x811c9dc5;

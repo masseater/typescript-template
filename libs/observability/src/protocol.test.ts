@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { expect, test } from "vite-plus/test";
 import { parentContext, routeLabel, validateRoutes } from "./protocol.ts";
 import { parseBrowserEvents } from "./events.ts";
@@ -43,18 +44,18 @@ test("browser ingress rejects PII, arbitrary fields, forged labels and unbounded
   expect(parseBrowserEvents([event], labels, now)).toEqual([event]);
   expect(() =>
     parseBrowserEvents([{ ...event, profile: "private biography" }], labels, now),
-  ).toThrow("fields");
+  ).toThrow(v.ValiError);
   expect(() =>
     parseBrowserEvents([{ ...event, route: "private@example.com" }], labels, now),
-  ).toThrow("value");
+  ).toThrow(v.ValiError);
   expect(() =>
     parseBrowserEvents([{ ...event, name: "Bearer private-token" }], labels, now),
-  ).toThrow("event");
+  ).toThrow(v.ValiError);
   expect(() => parseBrowserEvents([{ ...event, duration: Infinity }], labels, now)).toThrow(
-    "value",
+    v.ValiError,
   );
   expect(() => parseBrowserEvents([{ ...event, start: now - 4_000_000 }], labels, now)).toThrow(
-    "value",
+    v.ValiError,
   );
   expect(() =>
     parseBrowserEvents(
@@ -62,7 +63,7 @@ test("browser ingress rejects PII, arbitrary fields, forged labels and unbounded
       labels,
       now,
     ),
-  ).toThrow("batch");
+  ).toThrow(v.ValiError);
 });
 
 test("browser exceptions carry only a known error type and bounded stack locations", () => {
@@ -79,15 +80,15 @@ test("browser exceptions carry only a known error type and bounded stack locatio
   };
   expect(parseBrowserEvents([exception], labels, now)).toEqual([exception]);
   expect(() => parseBrowserEvents([{ ...exception, errorType: "Custom" }], labels, now)).toThrow(
-    "event",
+    v.ValiError,
   );
   expect(() =>
     parseBrowserEvents([{ ...exception, locations: "private@example.com" }], labels, now),
-  ).toThrow("event");
+  ).toThrow(v.ValiError);
   const { errorType: _type, locations: _locations, ...withoutDetails } = exception;
-  expect(() => parseBrowserEvents([withoutDetails], labels, now)).toThrow("fields");
+  expect(() => parseBrowserEvents([withoutDetails], labels, now)).toThrow(v.ValiError);
   expect(() => parseBrowserEvents([{ ...event, errorType: "TypeError" }], labels, now)).toThrow(
-    "fields",
+    v.ValiError,
   );
 });
 
