@@ -1,20 +1,7 @@
 import type { ComponentProps, ReactElement } from "react";
-import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
+import { controlClassName, fieldClassName, labelClassName } from "./control";
+import { FieldErrors } from "./field-errors";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
-
-const validationMessages: readonly (readonly [keyof ValidityState, string])[] = [
-  ["valueMissing", "入力してください。"],
-  ["typeMismatch", "正しい形式で入力してください。"],
-  ["patternMismatch", "指定された形式で入力してください。"],
-  ["tooShort", "文字数が足りません。"],
-  ["tooLong", "文字数が多すぎます。"],
-];
-
-const errors = validationMessages.map(([match, message]) => (
-  <FieldPrimitive.Error key={match} match={match} className={errorClassName}>
-    {message}
-  </FieldPrimitive.Error>
-));
 
 const textarea = <textarea />;
 
@@ -72,7 +59,7 @@ function Field({
         onValueChange={onValueChange}
         className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
       />
-      {errors}
+      <FieldErrors />
     </FieldPrimitive.Root>
   );
 }

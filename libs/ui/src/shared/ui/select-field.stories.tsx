@@ -25,6 +25,6 @@ export const Selects = meta.story({
   args: { onValueChange: fn() },
   play: async ({ args, canvas }) => {
     await userEvent.selectOptions(canvas.getByLabelText("権限"), "admin");
-    await expect(args.onValueChange).toHaveBeenCalledWith("admin");
+    await expect(args.onValueChange).toHaveBeenCalledWith("admin", expect.anything());
   },
 });
