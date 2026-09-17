@@ -456,15 +456,9 @@ importers:
       lucide-react:
         specifier: 1.46.0
         version: 1.46.0(react@19.3.0)
-      mdast-util-to-markdown:
-        specifier: 2.1.2
-        version: 2.1.2
       mermaid:
         specifier: 12.0.0
         version: 12.0.0
-      next-themes:
-        specifier: 0.4.6
-        version: 0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react:
         specifier: 'catalog:'
         version: 19.3.0
@@ -474,9 +468,6 @@ importers:
       smarthr-ui:
         specifier: 'catalog:'
         version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@10.2.2))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
-      unist-util-visit:
-        specifier: 5.1.0
-        version: 5.1.0
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -499,9 +490,6 @@ importers:
       '@template/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
-      '@types/mdast':
-        specifier: 4.0.4
-        version: 4.0.4
       '@types/mdx':
         specifier: 2.0.14
         version: 2.0.14
