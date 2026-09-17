@@ -235,9 +235,11 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
       ["wait", "--url", "**/login?recovery=setup"],
       ["wait", 'input[name="email"]'],
       enabledButton("ログイン"),
-      ["fill", 'input[name="email"]', alice.email],
-      ["fill", 'input[name="password"]', alice.password],
     );
+    await aliceBrowser.fillStable([
+      ['input[name="email"]', alice.email],
+      ['input[name="password"]', alice.password],
+    ]);
     await aliceBrowser.submitAuthentication("/api/auth/sign-in/email", [button("ログイン")]);
     await aliceBrowser.waitText("新しい認証アプリを登録してください。");
     const restoredEnrollment = await enrollTotp(aliceBrowser, stack.userOrigin, alice.password);

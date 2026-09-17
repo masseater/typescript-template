@@ -254,14 +254,23 @@ export class Browser {
     }
   }
 
+  async fillStable(fields: readonly (readonly [string, string])[]) {
+    const filled = `[${fields.map(([selector]) => `(document.querySelector(${JSON.stringify(selector)})?.value.length ?? 0) > 0`).join(",")}].every(Boolean)`;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await this.commands(...fields.map(([selector, value]) => ["fill", selector, value]));
+      await delay(500);
+      if ((await this.evaluate(filled)) === true) return;
+    }
+    throw new Error("E2E_FORM_INPUT_RESET");
+  }
+
   async login(origin: string, email: string, password: string) {
     await this.open(origin, "/login");
-    await this.commands(
-      ["wait", 'input[name="email"]'],
-      enabledButton("ログイン"),
-      ["fill", 'input[name="email"]', email],
-      ["fill", 'input[name="password"]', password],
-    );
+    await this.commands(["wait", 'input[name="email"]'], enabledButton("ログイン"));
+    await this.fillStable([
+      ['input[name="email"]', email],
+      ['input[name="password"]', password],
+    ]);
     await this.submitAuthentication("/api/auth/sign-in/email", [
       ["find", "role", "button", "click", "--name", "ログイン", "--exact"],
     ]);
