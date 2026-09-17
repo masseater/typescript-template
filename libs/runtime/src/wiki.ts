@@ -16,7 +16,11 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
   });
   const ai = config.AI;
   return {
-    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN },
+    config: {
+      ASSETS: config.ASSETS,
+      APP_ORIGIN: config.APP_ORIGIN,
+      APP_RELEASE: config.APP_RELEASE,
+    },
     telemetry,
     reportError(correlation: RequestContext, error: unknown) {
       telemetry.reportError(correlation, error);

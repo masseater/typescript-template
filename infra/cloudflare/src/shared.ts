@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
 import { errorWorkerArtifact } from "@template/error-monitor/artifact";
+import { healthWorkerArtifact } from "@template/health-monitor/artifact";
 import { workerObservability } from "./observability.ts";
 import {
   parseSharedConfig,
@@ -175,9 +176,68 @@ const errorSchedule = new cloudflare.WorkersCronTrigger(
   { dependsOn: [errorDeployment] },
 );
 
+const healthContent = await readFile(healthWorkerArtifact);
+if (healthContent.length === 0) throw new Error("health_worker_artifact_empty");
+const healthWorker = new cloudflare.Worker("health-worker", {
+  accountId: settings.accountId,
+  name: `${settings.prefix}-health`,
+  subdomain: { enabled: false, previewsEnabled: false },
+  observability: workerObservability,
+});
+const healthVersion = new cloudflare.WorkerVersion("health-version", {
+  accountId: settings.accountId,
+  workerId: healthWorker.id,
+  compatibilityDate: "2026-09-16",
+  compatibilityFlags: ["nodejs_compat"],
+  mainModule: "index.js",
+  modules: [
+    {
+      name: "index.js",
+      contentType: "application/javascript+module",
+      contentFile: healthWorkerArtifact,
+      contentSha256: createHash("sha256").update(healthContent).digest("hex"),
+    },
+  ],
+  migrations: { newTag: "v1", newSqliteClasses: ["HealthMonitor"] },
+  bindings: [
+    { type: "durable_object_namespace", name: "MONITOR", className: "HealthMonitor" },
+    {
+      type: "send_email",
+      name: "EMAIL",
+      allowedSenderAddresses: [settings.mailFrom],
+      allowedDestinationAddresses: settings.budget.recipients,
+    },
+    ...Object.entries({
+      USER_ORIGIN: settings.userOrigin,
+      ADMIN_ORIGIN: settings.adminOrigin,
+      WIKI_ORIGIN: settings.wikiOrigin,
+      ACCESS_ISSUER: settings.accessIssuer,
+      ALERT_FROM: settings.mailFrom,
+      ALERT_TO: settings.budget.recipients.join(","),
+    }).map(([name, text]) => ({ type: "plain_text", name, text })),
+  ],
+});
+const healthDeployment = new cloudflare.WorkersDeployment("health-deployment", {
+  accountId: settings.accountId,
+  scriptName: healthWorker.name,
+  strategy: "percentage",
+  versions: [{ versionId: healthVersion.id, percentage: 100 }],
+});
+const healthSchedule = new cloudflare.WorkersCronTrigger(
+  "health-schedule",
+  {
+    accountId: settings.accountId,
+    scriptName: healthWorker.name,
+    schedules: [{ cron: "37 * * * *" }],
+  },
+  { dependsOn: [healthDeployment] },
+);
+
 export const databaseId = database.id;
 export const applicationSettings = settings;
 export const budgetWorkerName = budgetWorker.name;
 export const budgetScheduleId = schedule.id;
 export const errorWorkerName = errorWorker.name;
 export const errorScheduleId = errorSchedule.id;
+export const healthWorkerName = healthWorker.name;
+export const healthScheduleId = healthSchedule.id;
