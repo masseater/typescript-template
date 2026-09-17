@@ -105,6 +105,8 @@
   --color-overlay: var(--overlay);
   --color-scrim: var(--scrim);
 
+  --container-column: 28rem;
+
   --radius-*: initial;
   --radius-sm: 4px;
   --radius-md: 6px;
