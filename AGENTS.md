@@ -6,7 +6,7 @@
 
 ファイルを編集する時は必ず git worktree を使用すること。main ブランチが開いている場所のブランチを変更してはいけない。
 
-main への merge には Mergify の merge queue が使える。
+main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の merge queue に入れる。
 
 コードの簡潔さや様式より、機械検査による問題検出、実アプリの直接操作による実測データの直接照会を優先する。
 
