@@ -23,6 +23,11 @@ function routeOptions(node: Node): NodeOf<"ObjectExpression">["properties"] {
 }
 
 function servesElysia(context: LintContext, node: Node): boolean {
+  if (node.type === "ObjectExpression") {
+    return node.properties.some(
+      (property) => property.type === "SpreadElement" && servesElysia(context, property.argument),
+    );
+  }
   return (
     node.type === "CallExpression" &&
     origins(context, node.callee).some(

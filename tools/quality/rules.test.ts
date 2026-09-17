@@ -89,6 +89,11 @@ const forbiddenCode = [
     "effect-stack",
   ],
   [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: { ...ownServer(), middleware: [] } });',
+    "effect-stack",
+  ],
+  [
     "libs/shared/src/probe.ts",
     'import { Effect } from "effect"; export const run = () => { if (Effect) throw new Error("x"); };',
     "effect-failures",
@@ -241,6 +246,10 @@ const validBoundaries = [
   [
     "apps/user/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
+    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { ...elysiaServer(userApi), middleware: [] } });',
   ],
   ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;
