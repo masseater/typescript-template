@@ -128,8 +128,6 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | ★5     | `@smarthr/wareki`                                  | 和暦を変換します                                         |
 | ★5     | Storybook 10、`@storybook/addon-mcp`、Vitest addon | AI が部品を参照、再利用、テストできるようにします        |
 | ★4     | Storybook a11y addon（axe）                        | 描画結果の a11y 違反を検出します                         |
-| ★4     | Figma MCP                                          | Figma の画面から変数名とバリアント情報を AI に渡します   |
-| ★3     | Figma Code Connect                                 | Figma の部品を `shared/ui` の部品に対応付けます          |
 | ★3     | `temporal-polyfill`                                | Safari でも Temporal を使えるようにします                |
 | ★2     | Motion                                             | アニメーションを担います                                 |
 
