@@ -1,3 +1,4 @@
+import { controlClassName, fieldClassName, labelClassName } from "./control";
 import { expect, waitFor } from "storybook/test";
 import { FieldErrors } from "./field-errors";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
@@ -7,9 +8,9 @@ import preview from "../../../.storybook/preview";
 const meta = preview.meta({
   component: FieldErrors,
   render: (): ReactElement => (
-    <FieldPrimitive.Root validationMode="onBlur">
-      <FieldPrimitive.Label>ユーザー名</FieldPrimitive.Label>
-      <FieldPrimitive.Control required maxLength={4} />
+    <FieldPrimitive.Root validationMode="onBlur" className={fieldClassName}>
+      <FieldPrimitive.Label className={labelClassName}>ユーザー名</FieldPrimitive.Label>
+      <FieldPrimitive.Control required maxLength={4} className={controlClassName} />
       <FieldErrors />
     </FieldPrimitive.Root>
   ),
