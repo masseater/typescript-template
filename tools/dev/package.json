@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "agent-browser": "0.37.1",
+    "portless": "0.15.6",
     "valibot": "1.5.0"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { execFile, spawn } from "node:child_process";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createPublicKey, randomBytes } from "node:crypto";
 import { chmod, lstat, mkdir, open, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,44 +24,60 @@ const credentialSchema = v.strictObject({
 });
 const ports = { user: 3001, admin: 3002, wiki: 3003 };
 const servicePorts = { grafana: 3100, mailpit: 8025 };
-const tailnetSchema = v.object({
-  BackendState: v.string(),
-  Self: v.object({ DNSName: v.string() }),
-});
-
-async function tailnetHost(): Promise<string | null> {
-  const output = await run("tailscale", ["status", "--json"], { cwd: root }).then(
-    (result) => result.stdout,
-    () => null,
-  );
-  if (!output) return null;
-  const parsed = v.safeParse(tailnetSchema, JSON.parse(output) as unknown);
-  if (!parsed.success || parsed.output.BackendState !== "Running") return null;
-  const host = parsed.output.Self.DNSName.replace(/\.$/, "");
-  return /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/.test(host) ? host : null;
-}
-
-const host = await tailnetHost();
-const originFor = (port: number) => (host ? `https://${host}:${port}` : `http://localhost:${port}`);
+const routes = { ...ports, ...servicePorts };
+const routeNames = ["user", "admin", "wiki", "grafana", "mailpit"] as const;
+const hostname = (name: (typeof routeNames)[number]) => `template-${name}.local`;
 const origins = {
-  user: originFor(ports.user),
-  admin: originFor(ports.admin),
-  wiki: originFor(ports.wiki),
+  user: `https://${hostname("user")}`,
+  admin: `https://${hostname("admin")}`,
+  wiki: `https://${hostname("wiki")}`,
+};
+const proxyPort = 1355;
+const portlessHome = new URL("portless/", local);
+const portless = fileURLToPath(new URL("../node_modules/.bin/portless", import.meta.url));
+const portlessEnvironment = {
+  ...process.env,
+  PORTLESS_STATE_DIR: fileURLToPath(portlessHome),
+  PORTLESS_SYNC_HOSTS: "0",
 };
 const browserSettings = `${JSON.stringify({
-  allowedDomains: ["localhost", "127.0.0.1", ...(host ? [host] : [])],
+  allowedDomains: ["localhost", "127.0.0.1", ...routeNames.map((name) => hostname(name))],
   restoreSave: "never",
 })}\n`;
 
-async function publish(port: number, enabled: boolean) {
-  if (!host) return;
-  await run(
-    "tailscale",
-    enabled
-      ? ["serve", "--bg", `--https=${port}`, `http://127.0.0.1:${port}`]
-      : ["serve", `--https=${port}`, "off"],
-    { cwd: root, timeout: 20_000 },
-  );
+async function browserLaunchArguments() {
+  const authority = createPublicKey(await readFile(new URL("ca.pem", portlessHome), "utf8"));
+  const pin = createHash("sha256")
+    .update(authority.export({ type: "spki", format: "der" }))
+    .digest("base64");
+  return [
+    "--args",
+    `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local 127.0.0.1`,
+  ];
+}
+
+async function ensureGateway() {
+  await mkdir(portlessHome, { recursive: true, mode: 0o700 });
+  await run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
+    cwd: root,
+    env: portlessEnvironment,
+    timeout: 60_000,
+  });
+  for (const name of routeNames)
+    await run(portless, ["alias", `template-${name}`, String(routes[name]), "--force"], {
+      cwd: root,
+      env: portlessEnvironment,
+      timeout: 30_000,
+    });
+  if (!(await running("gateway"))) {
+    const log = fileURLToPath(new URL("logs/gateway.log", local));
+    const command = `exec node ${JSON.stringify(fileURLToPath(new URL("gateway.ts", import.meta.url)))} ${proxyPort} >> ${JSON.stringify(log)} 2>&1`;
+    await run(
+      "tmux",
+      ["-L", socket, "new-session", "-d", "-s", "gateway", "-c", root, "fish", "-c", command],
+      { cwd: root },
+    );
+  }
 }
 
 async function replacePrivateFile(path: URL, content: string) {
@@ -172,7 +188,7 @@ async function status() {
   const results = await Promise.all(
     apps.map(async (app) => {
       const live = await running(app);
-      const response = await fetch(`${origins[app]}${readyPaths[app]}`, {
+      const response = await fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
         redirect: "manual",
         signal: AbortSignal.timeout(3000),
       }).then(
@@ -196,23 +212,24 @@ async function status() {
 }
 
 async function connection() {
-  if (!host) throw new Error("Tailscale is required for access from other computers");
-  for (const port of Object.values(servicePorts)) await publish(port, true);
+  await ensureGateway();
+  const certificate = await readFile(new URL("ca.pem", portlessHome));
   return {
-    event: "local.remote_access",
-    reachableFrom: "devices in the same tailnet",
+    event: "local.lan_access",
+    reachableFrom: "devices on the same LAN that trust the local certificate authority",
     user: origins.user,
     admin: origins.admin,
     wiki: origins.wiki,
-    grafana: originFor(servicePorts.grafana),
-    mailpit: originFor(servicePorts.mailpit),
+    grafana: `https://${hostname("grafana")}`,
+    mailpit: `https://${hostname("mailpit")}`,
     adminCredentialsFile: fileURLToPath(credentialsFile),
+    windowsTrustCommand: `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate.toString("base64")}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`,
   };
 }
 
 async function start(app: App) {
   await readCredentials();
-  await publish(ports[app], true);
+  await ensureGateway();
   if (!(await running(app))) {
     const log = fileURLToPath(new URL(`logs/${app}.log`, local));
     const logFile = await open(log, "a", 0o600);
@@ -231,7 +248,6 @@ async function start(app: App) {
 async function stop(app: App) {
   if (await running(app))
     await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
-  await publish(ports[app], false);
   return status();
 }
 
@@ -239,7 +255,13 @@ async function browser(app: App) {
   const socketDirectory = await browserSocketDirectory();
   await replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
-  const args = ["--config", fileURLToPath(browserConfig), "--session", session];
+  const args = [
+    "--config",
+    fileURLToPath(browserConfig),
+    ...(await browserLaunchArguments()),
+    "--session",
+    session,
+  ];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   if (app === "admin") {
     const credentials = await readCredentials();
@@ -279,7 +301,14 @@ async function browserCommand(app: App, args: string[]) {
   const socketDirectory = await browserSocketDirectory();
   const child = spawn(
     "agent-browser",
-    ["--config", fileURLToPath(browserConfig), "--session", `template-local-${app}`, ...args],
+    [
+      "--config",
+      fileURLToPath(browserConfig),
+      ...(await browserLaunchArguments()),
+      "--session",
+      `template-local-${app}`,
+      ...args,
+    ],
     {
       cwd: root,
       env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
