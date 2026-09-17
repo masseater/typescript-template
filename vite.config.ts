@@ -10,6 +10,7 @@ function textModule(code: string, id: string): string | undefined {
 export default defineConfig({
   fmt: {
     ignorePatterns: [
+      "**/mockServiceWorker.js",
       "**/routeTree.gen.ts",
       ".local/**",
       ".local-agents/**",
@@ -28,6 +29,7 @@ export default defineConfig({
       suspicious: "error",
     },
     ignorePatterns: [
+      "**/mockServiceWorker.js",
       "**/routeTree.gen.ts",
       "**/dist/**",
       "**/node_modules/**",
@@ -93,6 +95,22 @@ export default defineConfig({
           "vitest/prefer-to-be-truthy": "off",
           "vitest/require-test-timeout": "off",
           "vitest/valid-expect": ["error", { maxArgs: 2 }],
+        },
+      },
+      {
+        files: [
+          "libs/ui/src/shared/ui/table.stories.tsx",
+          "libs/ui/src/shared/ui/table-cell.stories.tsx",
+          "libs/ui/src/shared/ui/table-head.stories.tsx",
+        ],
+        rules: { "react/jsx-max-depth": "off" },
+      },
+      {
+        files: ["**/*.stories.tsx"],
+        rules: {
+          "import/group-exports": "off",
+          "import/no-relative-parent-imports": "off",
+          "typescript/prefer-readonly-parameter-types": "off",
         },
       },
     ],
@@ -230,12 +248,21 @@ export default defineConfig({
   },
   test: {
     clearMocks: false,
-    include: [
-      "libs/**/*.test.ts",
-      "apps/**/*.test.ts",
-      "tools/quality/**/*.test.ts",
-      "tools/observe/**/*.test.ts",
-      "infra/**/*.test.ts",
+    projects: [
+      {
+        extends: true,
+        test: {
+          include: [
+            "libs/**/*.test.ts",
+            "apps/**/*.test.ts",
+            "tools/quality/**/*.test.ts",
+            "tools/observe/**/*.test.ts",
+            "infra/**/*.test.ts",
+          ],
+          name: "node",
+        },
+      },
+      "./libs/ui/.storybook/vitest.config.ts",
     ],
     restoreMocks: false,
     testTimeout: 30_000,

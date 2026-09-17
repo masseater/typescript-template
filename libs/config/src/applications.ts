@@ -1,6 +1,7 @@
 const USER_PORT = 3001;
 const ADMIN_PORT = 3002;
 const WIKI_PORT = 3003;
+const STORYBOOK_PORT = 3051;
 
 const applications = ["user", "admin", "wiki"] as const;
 type Application = (typeof applications)[number];
@@ -30,6 +31,7 @@ const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
 type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
 const authenticationMethods = ["password", ...strongAuthenticationMethods, "recovery"] as const;
 const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
+const storybookPort = STORYBOOK_PORT;
 
 export {
   applicationCapabilities,
@@ -39,6 +41,7 @@ export {
   grants,
   loopbackHosts,
   roles,
+  storybookPort,
   strongAuthenticationMethods,
 };
 export type { Application, Capability, CapabilityOf, Role, StrongAuthenticationMethod };

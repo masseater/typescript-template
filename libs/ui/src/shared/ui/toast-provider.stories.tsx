@@ -1,0 +1,37 @@
+import { expect, screen, userEvent } from "storybook/test";
+import { Button } from "./button";
+import type { ReactElement } from "react";
+import { ToastProvider } from "./toast-provider";
+import preview from "../../../.storybook/preview";
+import { useToast } from "./use-toast";
+
+function ToastTrigger(): ReactElement {
+  const toast = useToast();
+  function success(): void {
+    toast("success", "利用者の権限を変更しました。");
+  }
+  function failure(): void {
+    toast("error", "利用者の権限を変更できませんでした。");
+  }
+  return (
+    <div className="flex gap-2">
+      <Button type="button" variant="primary" onClick={success}>
+        成功の通知を出す
+      </Button>
+      <Button type="button" variant="danger" onClick={failure}>
+        失敗の通知を出す
+      </Button>
+    </div>
+  );
+}
+
+const meta = preview.meta({ args: { children: <ToastTrigger /> }, component: ToastProvider });
+
+export const Default = meta.story();
+
+export const Success = meta.story({
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" }));
+    await expect(await screen.findByText("利用者の権限を変更しました。")).toBeInTheDocument();
+  },
+});
