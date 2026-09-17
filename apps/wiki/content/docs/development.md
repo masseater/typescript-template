@@ -31,7 +31,7 @@ pnpm dev:stop user
 | admin  | `http://localhost:3002` |
 | wiki   | `http://localhost:3003` |
 
-Tailscale に接続しているマシンでは、`localhost` の代わりに `https://<マシン名>.<tailnet>.ts.net:<ポート>` で起動します。同じ tailnet の別の PC から、そのままブラウザで開けます。`pnpm dev:connect` を実行すると、Grafana と Mailpit も tailnet に公開し、各 URL を表示します。
+`pnpm dev:start` は portless の LAN モードも起動し、`https://template-user.local`、`https://template-admin.local`、`https://template-wiki.local`、`https://template-grafana.local`、`https://template-mailpit.local` で同じ LAN の端末から開けるようにします。別の PC で開くときは、`pnpm dev:connect` が表示する証明書の信頼コマンドをその PC で一度だけ実行してください。
 
 ## ブラウザで操作する
 
