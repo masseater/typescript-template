@@ -1,6 +1,0 @@
-name: template-admin
-runtime:
-  name: nodejs
-  options:
-    typescript: false
-main: ../src/admin.ts

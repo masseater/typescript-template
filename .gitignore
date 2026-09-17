@@ -14,5 +14,4 @@ dist/
 *.tsbuildinfo
 test-results/
 playwright-report/
-Pulumi.*.yaml
-!Pulumi.example.yaml
+.alchemy/

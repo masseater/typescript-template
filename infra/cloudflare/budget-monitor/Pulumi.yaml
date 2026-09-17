@@ -1,6 +1,0 @@
-name: template-budget-monitor
-runtime:
-  name: nodejs
-  options:
-    typescript: false
-main: ../src/budget-monitor.ts

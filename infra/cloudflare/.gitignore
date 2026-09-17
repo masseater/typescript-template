@@ -1,3 +1,2 @@
-**/Pulumi.*.yaml
-!**/Pulumi.yaml
 .artifacts/
+.alchemy/
