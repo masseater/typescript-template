@@ -1,5 +1,4 @@
 import { expect, waitFor } from "storybook/test";
-import { page, userEvent } from "vite-plus/test/browser/context";
 import { Field } from "./field";
 import { noop } from "es-toolkit";
 import preview from "../../../.storybook/preview";
@@ -64,6 +63,7 @@ export const TooShort = meta.story({
   },
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);
     await userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short");
     await userEvent.tab();
@@ -77,6 +77,7 @@ export const Missing = meta.story({
   args: { label: "ユーザー名", name: "name", required: true, value: undefined },
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);
     await userEvent.fill(rendered.getByLabelText("ユーザー名"), "x");
     await userEvent.fill(rendered.getByLabelText("ユーザー名"), "");

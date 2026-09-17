@@ -1,5 +1,4 @@
 import { expect, waitFor } from "storybook/test";
-import { page, userEvent } from "vite-plus/test/browser/context";
 import { SignUpFields } from "./signup-fields";
 import { noop } from "es-toolkit";
 import preview from "../.storybook/preview";
@@ -21,6 +20,7 @@ export const Pending = meta.story({
 export const RejectsShortPassword = meta.story({
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);
     await userEvent.fill(rendered.getByLabelText("ユーザー名"), "山田 太郎");
     await userEvent.fill(rendered.getByLabelText("メールアドレス"), "taro@example.com");
