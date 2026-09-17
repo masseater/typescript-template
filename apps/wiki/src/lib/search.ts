@@ -2,7 +2,7 @@ import { llms } from "fumadocs-core/source";
 import { createFromSource } from "fumadocs-core/search/server";
 import type { SortedResult } from "fumadocs-core/search";
 import type { SearchServer } from "fumadocs-core/search/server";
-import { createSemanticIndex, rankPages } from "./semantic.ts";
+import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
 import type { Embedder, SemanticDocument } from "./semantic.ts";
 import { source } from "./source.ts";
 
@@ -41,6 +41,19 @@ export const wikiLlms = llms(source, {
 
 const pageOf = (url: string) => url.split("#")[0] ?? url;
 
+let processedTexts: Promise<Map<string, string>> | undefined;
+const loadProcessedTexts = () =>
+  (processedTexts ??= Promise.all(
+    source
+      .getPages()
+      .map(async (page) => [page.url, await page.data.getText("processed")] as const),
+  )
+    .then((entries) => new Map(entries))
+    .catch((error: unknown) => {
+      processedTexts = undefined;
+      throw error;
+    }));
+
 export function createWikiSearch(
   embed: Embedder | null,
   reportError: (error: unknown) => void,
@@ -48,8 +61,9 @@ export function createWikiSearch(
   return {
     export: () => keyword.export(),
     async search(query, options) {
-      const [keywordResults, semanticResults] = await Promise.all([
+      const [keywordResults, texts, semanticResults] = await Promise.all([
         keyword.search(query, options),
+        loadProcessedTexts(),
         embed
           ? semantic(embed, query).catch((error: unknown) => {
               reportError(error);
@@ -62,7 +76,11 @@ export function createWikiSearch(
           url: pageOf(match.document.url),
           score: match.score,
         })),
-        [...new Set(keywordResults.map((result) => pageOf(result.url)))],
+        exactMatchesFirst(
+          query,
+          [...new Set(keywordResults.map((result) => pageOf(result.url)))],
+          (url) => texts.get(url) ?? "",
+        ),
         options?.limit ?? 5,
       );
       return pages.flatMap((url): SortedResult[] => {
