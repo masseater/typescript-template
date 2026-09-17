@@ -1,7 +1,5 @@
 import { is, literal, object, string } from "valibot";
-import type { Root } from "mdast";
-import { toMarkdown } from "mdast-util-to-markdown";
-import { visit } from "unist-util-visit";
+import type { LLMsOptions } from "fumadocs-core/mdx-plugins";
 
 const chartAttribute = object({
   name: literal("chart"),
@@ -9,23 +7,18 @@ const chartAttribute = object({
   value: string(),
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function remarkMermaidSource(): (tree: Root) => void {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  return (tree) => {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    visit(tree, "mdxJsxFlowElement", (node) => {
-      if (node.name !== "Mermaid") {
-        return;
-      }
-      for (const attribute of node.attributes) {
-        if (is(chartAttribute, attribute)) {
-          const text = toMarkdown({ lang: "mermaid", type: "code", value: attribute.value });
-          node.data = { ...node.data, _stringify: { text: text.trimEnd() } };
-        }
-      }
-    });
-  };
-}
+const processedMarkdown: LLMsOptions = {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types, max-params
+  stringify(node, parent, state, info) {
+    const chart =
+      node.type === "mdxJsxFlowElement" && node.name === "Mermaid"
+        ? // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+          node.attributes.find((attribute) => is(chartAttribute, attribute))
+        : undefined;
+    return is(chartAttribute, chart)
+      ? state.handle({ lang: "mermaid", type: "code", value: chart.value }, parent, state, info)
+      : undefined;
+  },
+};
 
-export { remarkMermaidSource };
+export { processedMarkdown };
