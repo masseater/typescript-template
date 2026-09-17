@@ -14,6 +14,7 @@ export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<str
   const ai = config.AI;
   return {
     ...runtime,
+    config: { ...runtime.config, APP_RELEASE: config.APP_RELEASE },
     forRequest(correlation: RequestContext) {
       const request = runtime.forRequest(correlation);
       return {

@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiProfileRouteImport } from './routes/api.profile'
 import { Route as ApiSessionRouteImport } from './routes/api.session'
 import { Route as ApiVerifyEmailRouteImport } from './routes/api.verify-email'
@@ -44,6 +45,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProfileRoute = ApiProfileRouteImport.update({
   id: '/api/profile',
   path: '/api/profile',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/session': typeof ApiSessionRoute
   '/api/verify-email': typeof ApiVerifyEmailRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/session': typeof ApiSessionRoute
   '/api/verify-email': typeof ApiVerifyEmailRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/session': typeof ApiSessionRoute
   '/api/verify-email': typeof ApiVerifyEmailRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/signup'
     | '/verify-email'
+    | '/api/health'
     | '/api/profile'
     | '/api/session'
     | '/api/verify-email'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/signup'
     | '/verify-email'
+    | '/api/health'
     | '/api/profile'
     | '/api/session'
     | '/api/verify-email'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/signup'
     | '/verify-email'
+    | '/api/health'
     | '/api/profile'
     | '/api/session'
     | '/api/verify-email'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   SecurityRoute: typeof SecurityRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiProfileRoute: typeof ApiProfileRoute
   ApiSessionRoute: typeof ApiSessionRoute
   ApiVerifyEmailRoute: typeof ApiVerifyEmailRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/profile': {
       id: '/api/profile'
       path: '/api/profile'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   SecurityRoute: SecurityRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiSessionRoute: ApiSessionRoute,
   ApiVerifyEmailRoute: ApiVerifyEmailRoute,

@@ -8,5 +8,6 @@ export const routes = {
   "/api/session": "session",
   "/api/profile": "profile-api",
   "/api/verify-email": "verify-email-api",
+  "/api/health": "health",
   "/api/telemetry": "telemetry",
 } as const;

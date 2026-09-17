@@ -31,6 +31,8 @@ export default {
       if (path.endsWith(".map")) return new Response(null, { status: 404 });
       if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
       if (path === "/api/telemetry") return runtime.telemetry.ingestBrowser(incoming);
+      if (path === "/api/health")
+        return jsonResponse({ ok: true, service: "wiki", release: runtime.config.APP_RELEASE });
       const context = runtime.forRequest(correlation);
       try {
         if (path.startsWith("/api/auth/") || path.startsWith("/.well-known/oauth-"))

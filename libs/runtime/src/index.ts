@@ -41,7 +41,8 @@ export function buildRuntime(
         sendVerificationEmail: (message) => sendVerificationEmail(config, message),
       });
       return {
-        config: { APP_ORIGIN: config.APP_ORIGIN },
+        config: { APP_ORIGIN: config.APP_ORIGIN, APP_RELEASE: config.APP_RELEASE },
+        audience,
         database,
         telemetry,
         auth,
