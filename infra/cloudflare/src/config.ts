@@ -91,3 +91,31 @@ export function selectReadPermission(
   if (matches.length !== 1) throw new Error("billing_read_permission_unavailable");
   return v.parse(id, matches[0]!.id);
 }
+
+export function selectObservabilityQueryPermission(
+  groups: readonly { id: string; name: string; scopes: string[] }[],
+): string {
+  const matches = groups.filter(
+    (group) =>
+      group.name === "Workers Observability Write" &&
+      group.scopes.includes("com.cloudflare.api.account"),
+  );
+  if (matches.length !== 1) throw new Error("observability_query_permission_unavailable");
+  return v.parse(id, matches[0]!.id);
+}
+
+export function validateAlertWebhookUrl(value: string): string {
+  const result = v.safeParse(
+    v.pipe(
+      v.string(),
+      v.url(),
+      v.check((item) => {
+        const url = URL.parse(item);
+        return url?.protocol === "https:" && !url.username && !url.password && !url.hash;
+      }),
+    ),
+    value,
+  );
+  if (!result.success) throw new Error("alert_webhook_url_invalid");
+  return result.output;
+}

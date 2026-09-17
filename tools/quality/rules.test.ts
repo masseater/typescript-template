@@ -64,6 +64,11 @@ test.for([
     'const mode = "error"; export const send = () => fetch("https://api", { redirect: mode });',
     "project(worker-fetch)",
   ],
+  [
+    "infra/error-monitor/src/webhook.ts",
+    'export const send = () => fetch("https://hooks", { redirect: "error" });',
+    "project(worker-fetch)",
+  ],
 ] as const)("rejects forbidden code in %s", async ([name, code, diagnostic], { directory }) => {
   const target = path.join(directory, name);
   await mkdir(path.dirname(target), { recursive: true });

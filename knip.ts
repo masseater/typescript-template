@@ -48,6 +48,11 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
       ignoreDependencies: ["cloudflare"],
     },
+    "infra/error-monitor": {
+      entry: ["src/worker.ts!"],
+      project: ["src/**/*.ts!"],
+      ignoreDependencies: ["cloudflare"],
+    },
     "tools/e2e": {
       project: ["src/**/*.ts"],
     },

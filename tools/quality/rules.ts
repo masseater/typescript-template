@@ -204,7 +204,7 @@ export default definePlugin({
       create(context) {
         const current = filename(context);
         if (
-          !/\/(?:apps|libs|infra\/budget-monitor)\//.test(current) ||
+          !/\/(?:apps|libs|infra\/(?:budget|error)-monitor)\//.test(current) ||
           /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(
             current,
           )

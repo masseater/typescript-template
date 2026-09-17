@@ -4,7 +4,9 @@ import {
   appPolicy,
   parseSharedConfig,
   parseDeploymentCommand,
+  selectObservabilityQueryPermission,
   selectReadPermission,
+  validateAlertWebhookUrl,
   validateAuthSecret,
 } from "./config.ts";
 
@@ -119,4 +121,32 @@ test("selects Billing Read only and refuses substituted write scopes", () => {
 test("secret validation errors do not include their inputs", () => {
   expect(() => validateAuthSecret("private-value")).toThrow("auth_secret_invalid");
   expect(validateAuthSecret("x".repeat(32))).toBe("x".repeat(32));
+});
+
+test("the error monitor token may only run Workers Observability queries", () => {
+  const write = {
+    id: "d".repeat(32),
+    name: "Workers Observability Write",
+    scopes: ["com.cloudflare.api.account"],
+  };
+  expect(
+    selectObservabilityQueryPermission([write, { ...write, name: "Workers Scripts Write" }]),
+  ).toBe(write.id);
+  expect(() =>
+    selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
+  ).toThrow("observability_query_permission_unavailable");
+});
+
+test.each([
+  "http://hooks.example.com/x",
+  "https://user:pass@hooks.example.com/x",
+  "private-not-a-url",
+])("alert webhook %s is refused without echoing the input", (value) => {
+  expect(() => validateAlertWebhookUrl(value)).toThrow(/^alert_webhook_url_invalid$/);
+});
+
+test("Discord's Slack-compatible webhook URL is accepted", () => {
+  expect(validateAlertWebhookUrl("https://discord.com/api/webhooks/1/token/slack")).toBe(
+    "https://discord.com/api/webhooks/1/token/slack",
+  );
 });
