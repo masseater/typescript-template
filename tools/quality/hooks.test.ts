@@ -26,7 +26,10 @@ describe("git hooks", () => {
       "../../.vite-hooks/pre-push": "vp run prepush\n",
     });
     expect(script("precommit")).toBe("vp run check");
-    expect(rootConfig["../../vite.config.ts"]?.run?.tasks?.["check"]).toContain("vp check");
+    expect(rootConfig["../../vite.config.ts"]?.run?.tasks?.["check"]).toHaveProperty(
+      ["command", 0],
+      "vp check",
+    );
     expect(script("prepush")).toContain("vp test run --changed origin/main");
   });
 });
