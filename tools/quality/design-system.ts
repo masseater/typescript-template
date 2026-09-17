@@ -2,7 +2,7 @@ import { project } from "@shadcn/lint";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFileSync } from "node:fs";
 
-const designSystemProbe = "apps/user/src/routes/probe.tsx";
+const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
 
 const smarthrTokens: Readonly<Record<string, string>> = {
   "--danger": "#e01e5a",

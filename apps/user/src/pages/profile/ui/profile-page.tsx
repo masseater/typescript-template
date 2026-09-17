@@ -1,8 +1,8 @@
 import { Page, Status } from "@template/ui/ui";
-import { ProfileEditor } from "#components/profile-editor.tsx";
+import { ProfileEditor } from "./profile-editor.tsx";
 import type { ReactElement } from "react";
 import { SignOutButton } from "@template/ui/auth";
-import { useProfileForm } from "#profile-form.ts";
+import { useProfileForm } from "#pages/profile/model/profile-form.ts";
 import { useSession } from "@template/ui";
 
 function ProfilePage(): ReactElement {
