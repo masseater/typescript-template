@@ -32,7 +32,7 @@ main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の 
 
 - viteplus
 - cloudflare
-- pulumi
+- alchemy
 - typescript
 - tanstack start
 - elysia

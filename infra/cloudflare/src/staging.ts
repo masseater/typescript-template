@@ -40,26 +40,24 @@ const stageFile = Effect.fn("stageFile")(function* stageFile(source: string, des
   );
 });
 
-const stageClientFiles = Effect.fn("stageClientFiles")(function* stageClientFiles(
-  client: string,
+const stageFiles = Effect.fn("stageFiles")(function* stageFiles(
+  source: string,
   staging: string,
-  clientFiles: readonly string[],
+  sourceFiles: readonly string[],
 ) {
   yield* io(async () => mkdir(staging, { recursive: true }));
   yield* assertRealDirectory(staging, "artifact_staging_symlink_forbidden");
   yield* Effect.all(
-    clientFiles.map((source) =>
-      stageFile(source, path.join(staging, path.relative(client, source))),
-    ),
+    sourceFiles.map((file) => stageFile(file, path.join(staging, path.relative(source, file)))),
     { concurrency: "unbounded", discard: true },
   );
   const stagedFiles = yield* files(staging);
   const unexpected = stagedFiles.some(
-    (file) => !clientFiles.includes(path.join(client, path.relative(staging, file))),
+    (file) => !sourceFiles.includes(path.join(source, path.relative(staging, file))),
   );
-  if (stagedFiles.length !== clientFiles.length || unexpected) {
+  if (stagedFiles.length !== sourceFiles.length || unexpected) {
     return yield* fail("artifact_staging_contaminated");
   }
 });
 
-export { stageClientFiles };
+export { stageFiles };

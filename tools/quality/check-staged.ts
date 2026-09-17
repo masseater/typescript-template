@@ -1,12 +1,17 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
+import { deploymentValues, secretViolations } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
-import { secretViolations } from "./secrets.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { readFile } from "node:fs/promises";
+import { secretsFile } from "@template/config/deployment";
 
 interface StagedFailure {
   readonly file: string;
@@ -27,19 +32,41 @@ function git(args: readonly string[]): Effect.Effect<string, unknown> {
   );
 }
 
-function stagedFailure(file: string): Effect.Effect<StagedFailure[], unknown> {
+const Manifest = Schema.fromJsonString(Schema.Struct({ name: Schema.String }));
+
+class Unreadable extends Schema.TaggedError<Unreadable>()("Unreadable", {}) {}
+
+function read(filename: string): Effect.Effect<string, Unreadable> {
+  return Effect.tryPromise({
+    catch: () => new Unreadable(),
+    try: async () => readFile(filename, "utf-8"),
+  });
+}
+
+const environmentValues = read(path.join(root, "package.json")).pipe(
+  Effect.flatMap(Schema.decodeUnknownEffect(Manifest)),
+  Effect.flatMap(({ name }) => read(secretsFile(name))),
+  Effect.map(deploymentValues),
+  Effect.orElseSucceed((): readonly string[] => []),
+);
+
+function stagedFailure(
+  file: string,
+  values: readonly string[],
+): Effect.Effect<StagedFailure[], unknown> {
   return git(["show", `:${file}`]).pipe(
     Effect.map((content) => {
-      const rules = secretViolations(file, content);
+      const rules = secretViolations(file, content, values);
       return rules.length > 0 ? [{ file, rules }] : [];
     }),
   );
 }
 
 const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
+  const values = yield* environmentValues;
   const listed = yield* git(["ls-files", "--cached", "-z"]);
   const files = listed.split("\0").filter(Boolean);
-  const failures = yield* Effect.all(files.map((file) => stagedFailure(file)));
+  const failures = yield* Effect.all(files.map((file) => stagedFailure(file, values)));
   return failures.flat();
 });
 

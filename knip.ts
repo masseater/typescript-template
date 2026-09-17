@@ -18,17 +18,12 @@ const config: KnipConfig = {
       entry: ["src/app/server.ts!", "src/app/router.tsx!", "src/app/routes/**/*.tsx!"],
       ignore: ["src/app/routeTree.gen.ts"],
     },
-    "infra/bootstrap": {
-      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
-      project: ["src/**/*.ts!"],
-    },
     "infra/budget-monitor": {
       entry: ["src/worker.ts!", "src/inspect.ts!"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
       entry: [
-        "src/settings.ts!",
         "src/database.ts!",
         "src/tokens.ts!",
         "src/budget-monitor.ts!",
@@ -37,13 +32,15 @@ const config: KnipConfig = {
         "src/user.ts!",
         "src/admin.ts!",
         "src/wiki.ts!",
-        "src/runtime-probe.ts!",
         "src/cli.ts!",
         "src/check-artifacts.ts!",
-        "src/engine-check.ts!",
+        "src/check-stacks.ts!",
+        "src/check-account.ts!",
+        "src/bindings.ts!",
         "src/database-command.ts!",
       ],
-      project: ["src/**/*.ts!"],
+      ignoreExportsUsedInFile: true,
+      project: ["src/**/*.ts!", "!src/verification-fixture.ts!"],
     },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],

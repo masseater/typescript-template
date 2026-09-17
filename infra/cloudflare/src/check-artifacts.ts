@@ -1,9 +1,9 @@
+import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-import { loadArtifacts } from "./artifacts.ts";
+import path from "node:path";
 
 function report(reason: string): Effect.Effect<void> {
   return Effect.sync(() => {
@@ -15,16 +15,15 @@ function report(reason: string): Effect.Effect<void> {
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const root = fileURLToPath(new URL("../../../", import.meta.url));
     for (const target of applications) {
-      const artifacts = yield* loadArtifacts(root, target);
+      const artifacts = yield* loadArtifacts(repositoryRoot, target);
       // oxlint-disable-next-line no-console
       console.log(
         JSON.stringify({
           event: "artifacts.verified",
-          mainModule: artifacts.mainModule,
+          mainModule: path.relative(repositoryRoot, artifacts.mainModule),
           modules: artifacts.modules.length,
-          privateAssetsExcluded: true,
+          release: artifacts.release,
           target,
         }),
       );
