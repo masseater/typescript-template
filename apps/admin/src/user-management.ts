@@ -3,7 +3,7 @@ import {
   UserDeleted,
   UserList as UserListContract,
 } from "@template/runtime/contracts";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { MouseEventHandler } from "react";
 import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
@@ -53,12 +53,12 @@ function mutationBody(user: ManagedUser, method: MutationMethod): Readonly<Recor
 
 function useUserPaging(): Pick<UserListState, "handleNext" | "handlePrevious" | "offset"> {
   const [offset, setOffset] = useState(0);
-  const handlePrevious = useCallback<MouseEventHandler>(() => {
+  function handlePrevious(): void {
     setOffset((current) => Math.max(0, current - usersPageSize));
-  }, []);
-  const handleNext = useCallback<MouseEventHandler>(() => {
+  }
+  function handleNext(): void {
     setOffset((current) => current + usersPageSize);
-  }, []);
+  }
   return { handleNext, handlePrevious, offset };
 }
 
@@ -66,14 +66,14 @@ function useUserList(authorized: boolean, reportFailure: ReportFailure): UserLis
   const paging = useUserPaging();
   const { offset } = paging;
   const [data, setData] = useState<UserList>();
-  const reload = useCallback(async (): Promise<void> => {
+  async function reload(): Promise<void> {
     try {
       setData(await fetchUsers(offset));
     } catch (error) {
       setData(undefined);
       reportFailure(errorMessage(error));
     }
-  }, [offset, reportFailure]);
+  }
   useEffect(() => {
     const controller = { active: true };
     async function load(): Promise<void> {
@@ -105,35 +105,32 @@ function useUserMutation(
 ): UserMutationState {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
-  const handleMutation = useCallback(
-    (user: ManagedUser, method: MutationMethod): void => {
-      // oxlint-disable-next-line no-alert
-      if (!globalThis.confirm(confirmationText(user, method))) {
-        return;
+  function handleMutation(user: ManagedUser, method: MutationMethod): void {
+    // oxlint-disable-next-line no-alert
+    if (!globalThis.confirm(confirmationText(user, method))) {
+      return;
+    }
+    setPending(true);
+    reportFailure("");
+    setMessage("");
+    async function update(): Promise<void> {
+      try {
+        await (method === "DELETE"
+          ? requestJson("/api/users", UserDeleted, { body: mutationBody(user, method), method })
+          : requestJson("/api/users", RoleChanged, { body: mutationBody(user, method), method }));
+        setMessage(
+          method === "DELETE"
+            ? "ユーザーを削除しました。"
+            : "権限を変更しました。既存セッションは失効しました。",
+        );
+        await reload();
+      } catch (error) {
+        reportFailure(errorMessage(error));
       }
-      setPending(true);
-      reportFailure("");
-      setMessage("");
-      async function update(): Promise<void> {
-        try {
-          await (method === "DELETE"
-            ? requestJson("/api/users", UserDeleted, { body: mutationBody(user, method), method })
-            : requestJson("/api/users", RoleChanged, { body: mutationBody(user, method), method }));
-          setMessage(
-            method === "DELETE"
-              ? "ユーザーを削除しました。"
-              : "権限を変更しました。既存セッションは失効しました。",
-          );
-          await reload();
-        } catch (error) {
-          reportFailure(errorMessage(error));
-        }
-        setPending(false);
-      }
-      void update();
-    },
-    [reload, reportFailure],
-  );
+      setPending(false);
+    }
+    void update();
+  }
   return { handleMutation, message, pending };
 }
 

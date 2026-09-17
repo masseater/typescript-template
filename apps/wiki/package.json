@@ -38,7 +38,6 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitejs/plugin-react": "catalog:",
     "remark": "15.0.1",
     "remark-mdx": "3.1.1",
     "tailwindcss": "catalog:",

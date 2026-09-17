@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
 import type { ChangeEventHandler } from "react";
+import { useState } from "react";
 
 interface TextInput {
   readonly value: string;
@@ -9,13 +9,12 @@ interface TextInput {
 
 function useTextInput(): TextInput {
   const [value, setValue] = useState("");
-  const handleChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
-    (event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "value">> }>) => {
-      setValue(event.target.value);
-    },
-    [],
-  );
-  return useMemo(() => ({ handleChange, setValue, value }), [handleChange, value]);
+  function handleChange(
+    event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "value">> }>,
+  ): void {
+    setValue(event.target.value);
+  }
+  return { handleChange, setValue, value };
 }
 
 export { useTextInput };

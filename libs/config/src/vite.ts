@@ -3,6 +3,7 @@ import type { Application } from "./applications.ts";
 import { applicationPorts } from "./applications.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+import react from "@vitejs/plugin-react";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 
@@ -62,6 +63,10 @@ function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] 
   return kept;
 }
 
+function reactCompiler(): PluginOption[] {
+  return react({ compiler: true });
+}
+
 function appServer(app: Application): ServerOptions {
   return {
     allowedHosts: [".local"],
@@ -75,4 +80,4 @@ const appRun = {
   tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
 
-export { appRun, appServer, previewDevVars, withoutEnvFileLoader };
+export { appRun, appServer, previewDevVars, reactCompiler, withoutEnvFileLoader };

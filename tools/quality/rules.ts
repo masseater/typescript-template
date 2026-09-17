@@ -7,6 +7,7 @@ import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
 import { aliasVisitor } from "./alias-visitor.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
+import { memoizationVisitor } from "./memoization.ts";
 import { reportViolation } from "./lint-context.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
 
@@ -261,6 +262,12 @@ export default definePlugin({
       create: mockVisitor,
       meta: metadata(
         "内部処理・関数・DB のモックは禁止です。別名や分割代入も使用できません。実 DB と実サービスで検証してください。外部 HTTP の置換だけ MSW を利用できます。",
+      ),
+    },
+    "no-manual-memoization": {
+      create: memoizationVisitor,
+      meta: metadata(
+        "手作業のメモ化は禁止です。React Compiler が最適化するので useMemo・useCallback・React.memo は別名や分割代入も含めて使わず、素の値と関数宣言のまま書いてください。",
       ),
     },
     "test-import-graph": {

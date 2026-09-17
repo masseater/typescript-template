@@ -1,7 +1,6 @@
 import type { ManagedUser, MutationMethod } from "#user-management.ts";
-import type { MouseEventHandler, ReactElement } from "react";
 import { Button } from "@template/ui/ui";
-import { useCallback } from "react";
+import type { ReactElement } from "react";
 
 function UserActions({
   onMutation,
@@ -12,12 +11,12 @@ function UserActions({
   pending: boolean;
   user: ManagedUser;
 }>): ReactElement {
-  const handleRoleChange = useCallback<MouseEventHandler>(() => {
+  function handleRoleChange(): void {
     onMutation(user, "PATCH");
-  }, [onMutation, user]);
-  const handleDelete = useCallback<MouseEventHandler>(() => {
+  }
+  function handleDelete(): void {
     onMutation(user, "DELETE");
-  }, [onMutation, user]);
+  }
   const promoted = user.role === "admin";
   return (
     <div className="flex flex-wrap gap-1">

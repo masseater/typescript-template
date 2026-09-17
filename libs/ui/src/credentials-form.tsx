@@ -1,12 +1,11 @@
 import { Button, Field } from "./shared/ui";
-import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
+import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import type { ChallengeMode } from "./challenge-form";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-import { useCallback } from "react";
 
 interface CredentialsFormProps {
   readonly action: ActionState;
@@ -16,42 +15,33 @@ interface CredentialsFormProps {
   readonly onChallenge: (mode: ChallengeMode) => void;
 }
 
-function useCredentialsSubmit({
-  action,
+async function signIn({
   email,
   onAuthenticated,
   onChallenge,
   password,
-}: CredentialsFormProps): SubmitEventHandler<HTMLFormElement> {
-  const { run } = action;
-  const { value: emailValue } = email;
-  const { setValue: setPassword, value: passwordValue } = password;
-  return useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
-      event.preventDefault();
-      run(async () => {
-        const data = requireSuccess(
-          await authClient.signIn.email({ email: emailValue, password: passwordValue }),
-        );
-        setPassword("");
-        if ("twoFactorRedirect" in data && data.twoFactorRedirect === true) {
-          onChallenge("totp");
-          return;
-        }
-        if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
-          globalThis.location.assign("/security?recovery=setup");
-          return;
-        }
-        await onAuthenticated();
-      });
-    },
-    [emailValue, onAuthenticated, onChallenge, passwordValue, run, setPassword],
+}: CredentialsFormProps): Promise<void> {
+  const data = requireSuccess(
+    await authClient.signIn.email({ email: email.value, password: password.value }),
   );
+  password.setValue("");
+  if ("twoFactorRedirect" in data && data.twoFactorRedirect === true) {
+    onChallenge("totp");
+    return;
+  }
+  if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
+    globalThis.location.assign("/security?recovery=setup");
+    return;
+  }
+  await onAuthenticated();
 }
 
 function CredentialsForm(props: CredentialsFormProps): ReactElement {
   const { action, email, password } = props;
-  const submit = useCredentialsSubmit(props);
+  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+    event.preventDefault();
+    action.run(async () => signIn(props));
+  }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <div className="flex w-full max-w-md flex-col gap-4">

@@ -19,6 +19,21 @@ const forbiddenCode = [
   ],
   ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
   [
+    "libs/ui/src/probe.ts",
+    'import { useCallback } from "react"; export const fn = () => useCallback(() => 0, []);',
+    "no-manual-memoization",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import * as React from "react"; export const Panel = React.memo(() => null);',
+    "no-manual-memoization",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'import { useMemo as cache } from "react"; export const fn = () => cache(() => 0, []);',
+    "no-manual-memoization",
+  ],
+  [
     "libs/observability/src/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
     "worker-fetch",

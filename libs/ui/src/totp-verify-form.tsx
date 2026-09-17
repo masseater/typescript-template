@@ -1,10 +1,9 @@
-import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
+import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import { Button } from "./shared/ui";
 import { TotpField } from "./totp-field";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-import { useCallback } from "react";
 import { useTextInput } from "./use-text-input";
 
 interface TotpVerifyFormProps {
@@ -14,26 +13,21 @@ interface TotpVerifyFormProps {
 }
 
 function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): ReactElement {
-  const { run } = action;
   const code = useTextInput();
-  const { setValue: setCode, value: codeValue } = code;
-  const submit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
-      event.preventDefault();
-      run(async () => {
-        if (!saved) {
-          throw new Error("バックアップコードを保管してください。");
-        }
-        requireSuccess(
-          await authClient.twoFactor.verifyTotp({ code: codeValue, trustDevice: false }),
-        );
-        onVerified();
-        setCode("");
-        globalThis.location.assign("/");
-      });
-    },
-    [codeValue, onVerified, run, saved, setCode],
-  );
+  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+    event.preventDefault();
+    action.run(async () => {
+      if (!saved) {
+        throw new Error("バックアップコードを保管してください。");
+      }
+      requireSuccess(
+        await authClient.twoFactor.verifyTotp({ code: code.value, trustDevice: false }),
+      );
+      onVerified();
+      code.setValue("");
+      globalThis.location.assign("/");
+    });
+  }
   return (
     <form onSubmit={submit}>
       <div className="flex w-full max-w-md flex-col gap-4">

@@ -1,10 +1,10 @@
 import { CheckboxField, Heading, TextareaField } from "./shared/ui";
-import { useCallback, useState } from "react";
 import type { ActionState } from "./action";
 import { BackupCodeList } from "./backup-code-list";
 import type { Enrollment } from "./mfa-types";
 import type { ReactElement } from "react";
 import { TotpVerifyForm } from "./totp-verify-form";
+import { useState } from "react";
 
 interface TotpEnrollmentProps {
   readonly action: ActionState;
@@ -14,9 +14,9 @@ interface TotpEnrollmentProps {
 
 function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement {
   const [saved, setSaved] = useState(false);
-  const toggleSaved = useCallback((checked: boolean) => {
+  function toggleSaved(checked: boolean): void {
     setSaved(checked);
-  }, []);
+  }
   return (
     <div className="flex w-full max-w-md flex-col gap-4">
       <TextareaField label="認証アプリ登録用 URI" readOnly value={enrollment.totpURI} />

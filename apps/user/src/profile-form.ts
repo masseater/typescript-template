@@ -1,5 +1,5 @@
 import type { ChangeEventHandler, SubmitEventHandler } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ProfileView } from "@template/runtime/contracts";
 import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
@@ -35,19 +35,16 @@ type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
 function useProfileDraft(): ProfileDraft {
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
-  const handleNameChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
-    (event: FieldEvent) => {
-      setName(event.target.value);
-    },
-    [],
-  );
-  const handleProfileChange = useCallback((next: string): void => {
+  function handleNameChange(event: FieldEvent): void {
+    setName(event.target.value);
+  }
+  function handleProfileChange(next: string): void {
     setProfile(next);
-  }, []);
-  const show = useCallback((data: Readonly<ProfileData>): void => {
+  }
+  function show(data: Readonly<ProfileData>): void {
     setName(data.name);
     setProfile(data.profile);
-  }, []);
+  }
   return { handleNameChange, handleProfileChange, name, profile, show };
 }
 
@@ -82,25 +79,22 @@ function useProfileForm(userId: string | undefined): ProfileForm {
       controller.active = false;
     };
   }, [show, userId]);
-  const handleSubmit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: FormSubmission) => {
-      event.preventDefault();
-      setPending(true);
-      setFailure("");
-      setMessage("");
-      async function save(): Promise<void> {
-        try {
-          show(await saveProfile(name, profile));
-          setMessage("プロフィールを保存しました。");
-        } catch (error) {
-          setFailure(errorMessage(error));
-        }
-        setPending(false);
+  function handleSubmit(event: FormSubmission): void {
+    event.preventDefault();
+    setPending(true);
+    setFailure("");
+    setMessage("");
+    async function save(): Promise<void> {
+      try {
+        show(await saveProfile(name, profile));
+        setMessage("プロフィールを保存しました。");
+      } catch (error) {
+        setFailure(errorMessage(error));
       }
-      void save();
-    },
-    [name, profile, show],
-  );
+      setPending(false);
+    }
+    void save();
+  }
   return { ...draft, error: failure, handleSubmit, message, pending, ready };
 }
 
