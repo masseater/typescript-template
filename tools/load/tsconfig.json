@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "types": ["node", "k6"] },
+  "include": ["src/**/*.ts", "scenarios/**/*.ts"]
+}

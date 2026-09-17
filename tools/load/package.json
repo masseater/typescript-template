@@ -1,0 +1,18 @@
+{
+  "name": "@template/load",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "load": "node src/cli.ts"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@template/config": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@types/k6": "1.7.0",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

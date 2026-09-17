@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { applicationPorts, applications, loopbackHosts } from "@template/config";
+import { applicationPorts, applications, loopbackHosts, mailpitPort } from "@template/config";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
@@ -22,7 +22,6 @@ type RouteName = App | "mailpit";
 
 const ROOT_HASH_LENGTH = 12;
 const AUTH_SECRET_MINIMUM_LENGTH = 32;
-const MAILPIT_PORT = 8025;
 
 // oxlint-disable-next-line typescript/strict-void-return
 const execFileAsync = promisify(execFile);
@@ -37,7 +36,7 @@ const AppName = Schema.Literals(applications);
 const CredentialsFile = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(AUTH_SECRET_MINIMUM_LENGTH)),
 });
-const routes = { ...applicationPorts, mailpit: MAILPIT_PORT };
+const routes = { ...applicationPorts, mailpit: mailpitPort };
 const routeNames = [...applications, "mailpit"] as const;
 const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 

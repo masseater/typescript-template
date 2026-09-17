@@ -77,6 +77,11 @@ const config: KnipConfig = {
       ignoreDependencies: ["playwright"],
       project: ["src/**/*.ts!"],
     },
+    "tools/load": {
+      entry: ["src/cli.ts!", "scenarios/*.ts!"],
+      ignoreDependencies: ["k6"],
+      project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
+    },
     "tools/observe": {
       entry: ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
       project: ["src/**/*.ts!"],
