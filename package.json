@@ -4,10 +4,6 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
-    "check": "vp check && vp run knip && vp run check:staged",
-    "check:staged": "node tools/quality/check-staged.ts",
-    "knip": "knip && knip --strict",
-    "build": "vp run -F '!typescript-template' build && vp run --filter @template/dev private-maps",
     "precommit": "vp run check",
     "prepush": "vp run check && vp test run --changed origin/main && vp run --filter @template/infra-cloudflare verify:runtime && vp run build && vp run --filter @template/infra-cloudflare verify:artifacts"
   },
@@ -19,8 +15,15 @@
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.9.0",
+      "onFail": "error"
+    }
+  },
   "engines": {
-    "node": ">=24.11.0"
+    "node": ">=26.9.0"
   },
   "packageManager": "pnpm@12.4.1"
 }
