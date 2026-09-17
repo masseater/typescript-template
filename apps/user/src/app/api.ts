@@ -1,7 +1,13 @@
-import { ProfileUpdate, ProfileView } from "@template/runtime/contracts";
-import { UserNotFound, getProfile, updateProfile } from "@template/db";
+import { MemberQuery, MemberView, ProfileUpdate, ProfileView } from "@template/runtime/contracts";
+import { UserNotFound, getMember, getProfile, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
-import { apiBridge, compileApi, createApi, readJsonBody } from "@template/runtime/http";
+import {
+  apiBridge,
+  compileApi,
+  createApi,
+  readJsonBody,
+  readSearchParams,
+} from "@template/runtime/http";
 import type { AppServices } from "@template/runtime";
 import { Effect } from "effect";
 import { verifySession } from "@template/auth";
@@ -27,6 +33,20 @@ const api = createApi()
             return yield* new UserNotFound();
           }
           return profile;
+        }),
+      failures,
+    ),
+  )
+  .get(
+    "/api/member",
+    bridge.route(
+      MemberView,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySession(request.headers);
+          const { id } = yield* readSearchParams(MemberQuery, request);
+          return yield* getMember(user.id, id);
         }),
       failures,
     ),
