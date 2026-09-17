@@ -41,7 +41,7 @@ function runtimeBindings(release: Release): WorkerVersionBinding[] {
     EMAIL_FROM: release.settings.mailFrom,
   };
   return [
-    ...(release.target === "wiki" ? [{ name: "AI", type: "ai" }] : []),
+    ...(release.target === "admin" ? [] : [{ name: "AI", type: "ai" }]),
     { id: release.outputs.databaseId, name: "DB", type: "d1" },
     { name: "AUTH_SECRET", text: release.outputs.authSecret, type: "secret_text" },
     { allowedSenderAddresses: [release.settings.mailFrom], name: "EMAIL", type: "send_email" },

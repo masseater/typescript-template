@@ -52,7 +52,7 @@ const Bindings = Schema.Struct({
   EMAIL: Schema.optionalKey(EmailBinding),
 });
 
-const WikiBindings = Schema.Struct({
+const AiBindings = Schema.Struct({
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
 });
 
@@ -110,10 +110,14 @@ const readConfig = Effect.fn("readConfig")(function* readConfig(input: unknown) 
 
 type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
+const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
+  const { AI } = yield* decode(AiBindings, input);
+  return AI;
+});
+
 const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(input: unknown) {
   const config = yield* readConfig(input);
-  const { AI } = yield* decode(WikiBindings, input);
-  return { ...config, AI };
+  return { ...config, AI: yield* readAi(input) };
 });
 
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
@@ -130,5 +134,5 @@ export type { Application, Role, StrongAuthenticationMethod } from "./applicatio
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 export { sendVerificationEmail } from "./email.ts";
-export { isLocalDevelopmentOrigin, readConfig, readEnvironment, readWikiConfig };
+export { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };
 export type { AppConfig, AssetFetcher, WikiConfig };
