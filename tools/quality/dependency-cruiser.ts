@@ -8,7 +8,8 @@ const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap)[^/]*\.ts
 const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrate|testing)[^/]*\.ts$|.*${testModule})`;
 const databaseTesting = String.raw`^libs/db/src/testing\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
-const serverOnlyPackage = String.raw`^libs/(?:db|auth)/`;
+const serverOnlyModule = String.raw`^libs/(?:auth|db|runtime)/src/`;
+const clientReachableModule = String.raw`^libs/runtime/src/(?:client|contracts)\.ts$`;
 
 const configuration: IConfiguration = {
   forbidden: [
@@ -124,7 +125,7 @@ const configuration: IConfiguration = {
       from: { path: "^libs/ui/src/", pathNot: testModule },
       name: "no-browser-to-server",
       severity: "error",
-      to: { path: serverOnlyPackage, reachable: true },
+      to: { path: serverOnlyModule, pathNot: clientReachableModule, reachable: true },
     },
   ],
   options: {
