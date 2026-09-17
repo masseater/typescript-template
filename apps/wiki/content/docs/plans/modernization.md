@@ -37,21 +37,21 @@ Prisma 8 では SQLite が experimental で、Prisma 7 はバンドルが約 1.6
 
 ## Cloudflare
 
-| 優先度 | 採用するもの                      | 役割                                                                                                     |
-| ------ | --------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| ★5     | `@cloudflare/vite-plugin`         | TanStack Start を開発中から workerd 上で動かします                                                       |
-| ★5     | `@cloudflare/vitest-pool-workers` | 本物の D1、KV、Durable Objects を相手にテストします                                                      |
-| ★5     | D1                                | 共有データを保存します。トランザクションがないので、まとめて書き込むときは Drizzle の `batch` を使います |
-| ★5     | Durable Objects（SQLite）         | ユーザー単位の状態を持ち、通知や新着投稿を WebSocket で届けます                                          |
-| ★5     | Cloudflare Flagship               | OpenFeature のプロバイダです。サーバー側で評価した値をローダーで画面に渡します                           |
-| ★5     | Alchemy v2                        | IaC です                                                                                                 |
-| ★4     | Cloudflare Workflows V2           | 途中で落ちても再開できる多段処理を担います                                                               |
-| ★4     | Queues                            | 非同期処理のキューです                                                                                   |
-| ★4     | R2                                | 投稿画像などのファイルを保存します                                                                       |
-| ★4     | Workers の OTLP エクスポート      | Workers のトレースとログを外部に送ります                                                                 |
-| ★4     | effect-cf                         | Cloudflare の binding を Effect の Layer として扱います                                                  |
-| ★3     | KV                                | セッションなど、読み込みの多いデータをキャッシュします                                                   |
-| ★2     | Containers                        | Workers で動かないネイティブ依存の処理を逃がします                                                       |
+| 優先度 | 採用するもの                 | 役割                                                                                                     |
+| ------ | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ★5     | `@cloudflare/vite-plugin`    | TanStack Start を開発中から workerd 上で動かします                                                       |
+| ★5     | `@cloudflare/vitest-plugin`  | 本物の D1、KV、Durable Objects を相手にテストします（`@cloudflare/vitest-pool-workers` の後継です）      |
+| ★5     | D1                           | 共有データを保存します。トランザクションがないので、まとめて書き込むときは Drizzle の `batch` を使います |
+| ★5     | Durable Objects（SQLite）    | ユーザー単位の状態を持ち、通知や新着投稿を WebSocket で届けます                                          |
+| ★5     | Cloudflare Flagship          | OpenFeature のプロバイダです。サーバー側で評価した値をローダーで画面に渡します                           |
+| ★5     | Alchemy v2                   | IaC です                                                                                                 |
+| ★4     | Cloudflare Workflows V2      | 途中で落ちても再開できる多段処理を担います                                                               |
+| ★4     | Queues                       | 非同期処理のキューです                                                                                   |
+| ★4     | R2                           | 投稿画像などのファイルを保存します                                                                       |
+| ★4     | Workers の OTLP エクスポート | Workers のトレースとログを外部に送ります                                                                 |
+| ★4     | effect-cf                    | Cloudflare の binding を Effect の Layer として扱います                                                  |
+| ★3     | KV                           | セッションなど、読み込みの多いデータをキャッシュします                                                   |
+| ★2     | Containers                   | Workers で動かないネイティブ依存の処理を逃がします                                                       |
 
 ## TanStack 系
 
