@@ -2,7 +2,7 @@ import { PageGap } from "#components/page-gap.tsx";
 import { PageLink } from "#components/page-link.tsx";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#users-search.ts";
-import { pageItems } from "#page-items.ts";
+import { pageItems } from "@template/ui";
 
 function PageNavigation({
   current,
