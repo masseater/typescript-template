@@ -1,6 +1,6 @@
-import { AppShell, appHead } from "@template/ui/shell";
+import { AppNavigation, AppShell, appHead } from "@template/ui/shell";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { createRootRoute } from "@tanstack/react-router";
 import { routes } from "#app/telemetry-routes.ts";
 import styles from "#app/styles.css?url";
 
@@ -11,7 +11,12 @@ const navigation = [
 ] as const;
 
 const Route = createRootRoute({
-  component: (): ReactElement => <AppShell navigation={navigation} routes={routes} />,
+  component: (): ReactElement => (
+    <AppShell routes={routes}>
+      <AppNavigation links={navigation} />
+      <Outlet />
+    </AppShell>
+  ),
   head: () => appHead("ユーザーアプリ", styles),
 });
 

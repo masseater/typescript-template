@@ -39,7 +39,9 @@ function sessionApi<Requirements = never>(
     );
 }
 
-function accountApi(bridge: ApiBridge<AppServices>): AnyElysia {
+function accountApi<Requirements = never>(
+  bridge: ApiBridge<AppServices | Requirements>,
+): AnyElysia {
   return createApi()
     .use(sessionApi(bridge))
     .post(

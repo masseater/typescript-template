@@ -139,6 +139,15 @@ export default defineConfig({
       "project/test-import-graph": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
+      "react/forbid-component-props": [
+        "error",
+        {
+          forbid: [
+            { allowedFor: ["Link"], allowedForPatterns: ["*Icon"], propName: "className" },
+            "style",
+          ],
+        },
+      ],
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/jsx-no-literals": "off",
       "react/jsx-props-no-spreading": "error",

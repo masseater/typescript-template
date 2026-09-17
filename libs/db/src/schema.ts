@@ -11,6 +11,7 @@ import {
 } from "./oauth-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { applications } from "@template/config";
+import { interview } from "./interview-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -112,6 +113,7 @@ const auditEvent = sqliteTable(
 const schema = {
   account,
   auditEvent,
+  interview,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -131,3 +133,4 @@ const schema = {
 export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
 export { oauthAccessToken, oauthClient, oauthConsent, oauthRefreshToken } from "./oauth-schema.ts";
 export { session, user } from "./identity-schema.ts";
+export { interview } from "./interview-schema.ts";
