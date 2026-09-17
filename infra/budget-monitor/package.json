@@ -6,9 +6,8 @@
     "./artifact": "./src/artifact.ts"
   },
   "scripts": {
-    "test": "vp test run --config vitest.config.ts",
-    "build": "esbuild src/worker.ts --bundle --format=esm --platform=browser --target=es2023 --external:cloudflare:* --outfile=dist/index.js",
-    "inspect": "tsx src/inspect.ts"
+    "build": "vp pack",
+    "inspect": "node src/inspect.ts"
   },
   "dependencies": {
     "valibot": "^1.1.0"
@@ -16,9 +15,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260916.1",
     "@types/node": "24.12.0",
-    "esbuild": "0.28.2",
     "msw": "^2.11.0",
-    "tsx": "^4.20.0",
     "typescript": "7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"

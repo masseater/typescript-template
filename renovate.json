@@ -68,10 +68,6 @@
     {
       "groupName": "local observability services",
       "matchManagers": ["docker-compose"]
-    },
-    {
-      "groupName": "script runners",
-      "matchPackageNames": ["tsx", "esbuild"]
     }
   ]
 }

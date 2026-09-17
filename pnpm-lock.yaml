@@ -175,10 +175,6 @@ catalogs:
       version: 4.1.11
 
 overrides:
-  '@vitest/runner': 4.1.11
-  '@vitest/expect': 4.1.11
-  '@vitest/spy': 4.1.11
-  '@vitest/utils': 4.1.11
   vite@*: npm:@voidzero-dev/vite-plus-core@0.3.2
   vitest@*: 4.1.11
 
@@ -436,9 +432,6 @@ importers:
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      tsx:
-        specifier: ^4.20.0
-        version: 4.23.13
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -461,15 +454,9 @@ importers:
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      esbuild:
-        specifier: 0.28.2
-        version: 0.28.2
       msw:
         specifier: ^2.11.0
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
-      tsx:
-        specifier: ^4.20.0
-        version: 4.23.13
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -507,9 +494,6 @@ importers:
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
-      tsx:
-        specifier: ^4.20.0
-        version: 4.23.13
       typescript:
         specifier: 7.0.2
         version: 7.0.2
