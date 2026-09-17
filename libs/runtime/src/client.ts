@@ -1,5 +1,6 @@
 import { Result, Schema } from "effect";
 import { ErrorBody } from "./contracts.ts";
+import { httpStatus } from "@template/observability";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 
@@ -46,5 +47,13 @@ function apiData<Contract extends Decodable>(
   return decodeJson(contract, reply.data);
 }
 
-export { apiData, decodeJson };
+function apiDataOrNone<Contract extends Decodable>(
+  contract: Contract,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  reply: ApiReply,
+): Contract["Type"] | undefined {
+  return reply.error?.status === httpStatus.unauthorized ? undefined : apiData(contract, reply);
+}
+
+export { apiData, apiDataOrNone, decodeJson };
 export type { ApiReply };
