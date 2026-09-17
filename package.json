@@ -7,7 +7,7 @@
     "check": "vp check && vp run knip && vp run check:staged",
     "check:staged": "node tools/quality/check-staged.ts",
     "knip": "knip && knip --strict",
-    "build": "vp run -r build && vp run --filter @template/dev private-maps user && vp run --filter @template/dev private-maps admin && vp run --filter @template/dev private-maps wiki",
+    "build": "vp run -F '!typescript-template' build && vp run --filter @template/dev private-maps user && vp run --filter @template/dev private-maps admin && vp run --filter @template/dev private-maps wiki",
     "build:user": "vp run --filter @template/user build && vp run --filter @template/dev private-maps user",
     "build:admin": "vp run --filter @template/admin build && vp run --filter @template/dev private-maps admin",
     "build:wiki": "vp run --filter @template/wiki build && vp run --filter @template/dev private-maps wiki",
