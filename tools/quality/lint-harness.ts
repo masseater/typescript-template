@@ -6,6 +6,7 @@ type RuleName =
   | "effect-failures"
   | "effect-stack"
   | "environment-boundary"
+  | "layers"
   | "no-internal-mocks"
   | "test-import-graph"
   | "worker-fetch";
@@ -15,6 +16,7 @@ const ruleNames: readonly RuleName[] = [
   "effect-failures",
   "effect-stack",
   "environment-boundary",
+  "layers",
   "no-internal-mocks",
   "test-import-graph",
   "worker-fetch",

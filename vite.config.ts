@@ -134,6 +134,7 @@ export default defineConfig({
       "project/effect-failures": "error",
       "project/effect-stack": "error",
       "project/environment-boundary": "error",
+      "project/layers": "error",
       "project/no-internal-mocks": "error",
       "project/test-import-graph": "error",
       "project/worker-fetch": "error",
@@ -185,10 +186,17 @@ export default defineConfig({
         "vp run --filter @template/dev private-maps",
       ],
       check: {
-        command: ["vp check", "vp run knip", "vp run check:staged", "vp run check:effect"],
+        command: [
+          "vp check",
+          "vp run knip",
+          "vp run check:layers",
+          "vp run check:staged",
+          "vp run check:effect",
+        ],
         input: [{ auto: true }, "!node_modules/.modules.yaml"],
       },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
+      "check:layers": "steiger apps/user/src --fail-on-warnings",
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],

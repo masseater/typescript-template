@@ -1,9 +1,7 @@
 import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { useCallback, useState } from "react";
-import { ProfileView } from "@template/runtime/contracts";
-import { apiData } from "@template/runtime/client";
+import type { ProfileView } from "@template/runtime/contracts";
 import { errorMessage } from "@template/ui";
-import { userClient } from "#api-client.ts";
 
 type ProfileData = typeof ProfileView.Type;
 
@@ -21,10 +19,6 @@ interface ProfileForm extends ProfileDraft {
   readonly pending: boolean;
   readonly ready: boolean;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-}
-
-async function saveProfile(name: string, profile: string): Promise<ProfileData> {
-  return apiData(ProfileView, await userClient().profile.patch({ name, profile }));
 }
 
 type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
@@ -50,7 +44,10 @@ function useProfileDraft(loaded: Readonly<ProfileData> | undefined): ProfileDraf
 
 type FormSubmission = Readonly<{ preventDefault: () => void }>;
 
-function useProfileForm(loaded: Readonly<ProfileData> | undefined): ProfileForm {
+function useProfileForm(
+  loaded: Readonly<ProfileData> | undefined,
+  save: (name: string, profile: string) => Promise<ProfileData>,
+): ProfileForm {
   const draft = useProfileDraft(loaded);
   const { name, profile, show } = draft;
   const [pending, setPending] = useState(false);
@@ -62,18 +59,18 @@ function useProfileForm(loaded: Readonly<ProfileData> | undefined): ProfileForm 
       setPending(true);
       setFailure("");
       setMessage("");
-      async function save(): Promise<void> {
+      async function submit(): Promise<void> {
         try {
-          show(await saveProfile(name, profile));
+          show(await save(name, profile));
           setMessage("プロフィールを保存しました。");
         } catch (error) {
           setFailure(errorMessage(error));
         }
         setPending(false);
       }
-      void save();
+      void submit();
     },
-    [name, profile, show],
+    [name, profile, save, show],
   );
   return { ...draft, error: failure, handleSubmit, message, pending, ready: loaded !== undefined };
 }

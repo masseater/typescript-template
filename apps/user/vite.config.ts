@@ -28,7 +28,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
         compatibility_date: workerCompatibility.date,
         compatibility_flags: [...workerCompatibility.flags],
         d1_databases: [localDatabase],
-        main: "./src/server.ts",
+        main: "./src/app/server.ts",
         name: "template-user",
       },
       inspectorPort: false,
@@ -36,7 +36,15 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
       viteEnvironment: { name: "ssr" },
     }),
     tailwindcss(),
-    ...withoutEnvFileLoader(tanstackStart()),
+    ...withoutEnvFileLoader(
+      tanstackStart({
+        router: {
+          entry: "app/router.tsx",
+          generatedRouteTree: "app/routeTree.gen.ts",
+          routesDirectory: "app/routes",
+        },
+      }),
+    ),
     react(),
   ],
   preview: appServer("user"),

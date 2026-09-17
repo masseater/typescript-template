@@ -1,16 +1,21 @@
 import { Page, Status } from "@template/ui/ui";
-import { ProfileEditor } from "#components/profile-editor.tsx";
+import { ProfileEditor } from "./profile-editor.tsx";
+import type { ProfileView } from "@template/runtime/contracts";
 import type { ReactElement } from "react";
 import { SignOutButton } from "@template/ui/auth";
-import { getRouteApi } from "@tanstack/react-router";
-import { useProfileForm } from "#profile-form.ts";
+import { useProfileForm } from "#pages/profile/model/profile-form.ts";
 import { useSession } from "@template/ui";
 
-const route = getRouteApi("/");
+type ProfileData = typeof ProfileView.Type;
 
-function ProfilePage(): ReactElement {
+interface ProfilePageProps {
+  readonly profile: Readonly<ProfileData> | undefined;
+  readonly save: (name: string, profile: string) => Promise<ProfileData>;
+}
+
+function ProfilePage({ profile, save }: ProfilePageProps): ReactElement {
   const { session, loading, error: sessionError } = useSession();
-  const form = useProfileForm(route.useLoaderData());
+  const form = useProfileForm(profile, save);
   const shownError = form.error === "" ? sessionError : form.error;
   return (
     <Page title="プロフィール">

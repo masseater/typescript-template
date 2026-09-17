@@ -49,12 +49,17 @@ const forbiddenCode = [
     "effect-stack",
   ],
   [
-    "apps/user/src/routes/api.probe.ts",
+    "apps/user/src/app/routes/api.probe.ts",
+    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    "effect-stack",
+  ],
+  [
+    "apps/user/src/app/routes/api.probe.ts",
     'import { ownServer } from "../own.ts"; export const Route = { server: ownServer() };',
     "effect-stack",
   ],
   [
-    "apps/user/src/routes/api.probe.ts",
+    "apps/user/src/app/routes/api.probe.ts",
     'import { userApi } from "../api.ts"; export const Route = { server: { handlers: userApi } };',
     "effect-stack",
   ],
@@ -192,11 +197,11 @@ const validBoundaries = [
   ["tools/dev/src/probe.ts", 'export * from "@template/db/remote";'],
   ["infra/cloudflare/src/probe.ts", 'export * from "@template/db/remote";'],
   ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
-  ["apps/user/src/probe.ts", 'export * from "@template/db";'],
-  ["apps/user/src/probe.ts", 'export * from "@template/ui/signup";'],
+  ["apps/user/src/app/probe.ts", 'export * from "@template/db";'],
+  ["apps/user/src/app/probe.ts", 'export * from "@template/ui/signup";'],
   ["apps/wiki/vite.config.ts", 'export { localDatabase } from "@template/db/local";'],
   ["apps/wiki/src/probe.ts", 'export * from "@template/auth";'],
-  ["apps/user/src/probe.ts", 'export const load = () => import("./feature");'],
+  ["apps/user/src/app/probe.ts", 'export const load = () => import("./feature");'],
   ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
   ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],
   ["libs/shared/src/probe.ts", "export const location = import.meta.url;"],
@@ -209,7 +214,7 @@ const validBoundaries = [
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
   [
-    "apps/user/src/routes/api.probe.ts",
+    "apps/user/src/app/routes/api.probe.ts",
     'import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = { server: elysiaServer(userApi) };',
   ],
 ] as const;

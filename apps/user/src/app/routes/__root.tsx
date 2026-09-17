@@ -1,8 +1,8 @@
 import { AppShell, appHead } from "@template/ui/shell";
 import type { ReactElement } from "react";
 import { createRootRoute } from "@tanstack/react-router";
-import { routes } from "#telemetry-routes.ts";
-import styles from "#styles.css?url";
+import { routes } from "#app/telemetry-routes.ts";
+import styles from "#app/styles.css?url";
 
 const navigation = [
   { href: "/", label: "プロフィール" },

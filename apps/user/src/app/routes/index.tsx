@@ -1,12 +1,13 @@
+import { apiData, apiDataOrNone } from "@template/runtime/client";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { createIsomorphicFn, createServerFn } from "@tanstack/react-start";
-import { ProfilePage } from "#components/profile-page.tsx";
+import { ProfilePage } from "#pages/profile/index.ts";
 import { ProfileView } from "@template/runtime/contracts";
-import { apiDataOrNone } from "@template/runtime/client";
-import { createFileRoute } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 import { getRequest } from "@tanstack/react-start/server";
 import { treaty } from "@elysiajs/eden";
-import { userApi } from "#api.ts";
-import { userClient } from "#api-client.ts";
+import { userApi } from "#app/api.ts";
+import { userClient } from "#app/api-client.ts";
 
 type Profile = typeof ProfileView.Type;
 
@@ -24,6 +25,15 @@ const loadProfile = createIsomorphicFn()
     apiDataOrNone(ProfileView, await userClient().profile.get()),
   );
 
-const Route = createFileRoute("/")({ component: ProfilePage, loader: loadProfile });
+async function saveProfile(name: string, profile: string): Promise<Profile> {
+  return apiData(ProfileView, await userClient().profile.patch({ name, profile }));
+}
+
+const route = getRouteApi("/");
+
+const Route = createFileRoute("/")({
+  component: (): ReactElement => <ProfilePage profile={route.useLoaderData()} save={saveProfile} />,
+  loader: loadProfile,
+});
 
 export { Route };
