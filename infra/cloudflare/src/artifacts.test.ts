@@ -77,10 +77,22 @@ describe("worker artifact staging", () => {
     await withUserBuild(async ({ client, root, server }) => {
       await writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" });
       const artifacts = await loadArtifacts(root, "user");
-      expect(artifacts.modules.map((module) => [module.name, module.contentType])).toStrictEqual([
-        ["chunks/handler.js", "application/javascript+module"],
-        ["index.js", "application/javascript+module"],
-        ["index.js.map", "application/source-map"],
+      expect(artifacts.modules).toStrictEqual([
+        {
+          contentFile: path.join(server, "chunks/handler.js"),
+          contentType: "application/javascript+module",
+          name: "chunks/handler.js",
+        },
+        {
+          contentFile: path.join(server, "index.js"),
+          contentType: "application/javascript+module",
+          name: "index.js",
+        },
+        {
+          contentFile: path.join(server, "index.js.map"),
+          contentType: "application/source-map",
+          name: "index.js.map",
+        },
       ]);
       expect(artifacts.release).toMatch(/^[0-9a-f]{16}$/u);
       await expect(readdir(artifacts.clientDirectory)).resolves.toStrictEqual([

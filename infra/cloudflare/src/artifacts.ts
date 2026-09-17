@@ -24,7 +24,6 @@ const MODULE_CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
 
 interface WorkerModule {
   readonly contentFile: string;
-  readonly contentSha256: string;
   readonly contentType: string;
   readonly name: string;
 }
@@ -125,42 +124,33 @@ async function assertServerCssPublished(
   );
 }
 
-async function workerModules(
-  server: string,
-  moduleFiles: readonly string[],
-): Promise<WorkerModule[]> {
-  return Promise.all(
-    moduleFiles.map(async (file) => {
-      const contentType = MODULE_CONTENT_TYPES.get(path.extname(file));
-      if (contentType === undefined) {
-        throw new Error("worker_module_type_unsupported");
-      }
-      return {
-        contentFile: file,
-        contentSha256: await fileSha256(file),
-        contentType,
-        name: path.relative(server, file).replaceAll(path.sep, "/"),
-      };
-    }),
-  );
+function workerModules(server: string, moduleFiles: readonly string[]): WorkerModule[] {
+  return moduleFiles.map((file) => {
+    const contentType = MODULE_CONTENT_TYPES.get(path.extname(file));
+    if (contentType === undefined) {
+      throw new Error("worker_module_type_unsupported");
+    }
+    return {
+      contentFile: file,
+      contentType,
+      name: path.relative(server, file).replaceAll(path.sep, "/"),
+    };
+  });
 }
 
-async function sourceMapModules(
+function sourceMapModules(
   server: string,
   serverFiles: readonly string[],
   codeModules: readonly WorkerModule[],
-): Promise<WorkerModule[]> {
+): WorkerModule[] {
   const codeFiles = new Set(codeModules.map((module) => module.contentFile));
-  return Promise.all(
-    serverFiles
-      .filter((file) => file.endsWith(".map") && codeFiles.has(file.slice(0, -".map".length)))
-      .map(async (file) => ({
-        contentFile: file,
-        contentSha256: await fileSha256(file),
-        contentType: "application/source-map",
-        name: path.relative(server, file).replaceAll(path.sep, "/"),
-      })),
-  );
+  return serverFiles
+    .filter((file) => file.endsWith(".map") && codeFiles.has(file.slice(0, -".map".length)))
+    .map((file) => ({
+      contentFile: file,
+      contentType: "application/source-map",
+      name: path.relative(server, file).replaceAll(path.sep, "/"),
+    }));
 }
 
 async function assertWorkerEntryNotEmpty(server: string): Promise<void> {
@@ -180,15 +170,13 @@ async function loadWorkerModules(
     throw new Error("worker_entry_missing_index_js");
   }
   const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
-  const [code] = await Promise.all([
-    workerModules(
-      output.server,
-      serverFiles.filter((file) => path.extname(file) !== ".css"),
-    ),
-    assertServerCssPublished(output, cssFiles, clientFiles),
-  ]);
+  const code = workerModules(
+    output.server,
+    serverFiles.filter((file) => path.extname(file) !== ".css"),
+  );
+  await assertServerCssPublished(output, cssFiles, clientFiles);
   await assertWorkerEntryNotEmpty(output.server);
-  return { code, sourceMaps: await sourceMapModules(output.server, allServerFiles, code) };
+  return { code, sourceMaps: sourceMapModules(output.server, allServerFiles, code) };
 }
 
 async function sha256Hex(value: unknown): Promise<string> {
@@ -204,10 +192,10 @@ async function clientDigest(client: string, clientFiles: readonly string[]): Pro
 }
 
 async function releaseId(codeModules: readonly WorkerModule[], digest: string): Promise<string> {
-  const hash = await sha256Hex([
-    codeModules.map((module) => [module.name, module.contentSha256]),
-    digest,
-  ]);
+  const moduleManifest = await Promise.all(
+    codeModules.map(async (module) => [module.name, await fileSha256(module.contentFile)]),
+  );
+  const hash = await sha256Hex([moduleManifest, digest]);
   return hash.slice(0, RELEASE_LENGTH);
 }
 
