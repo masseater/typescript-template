@@ -48,6 +48,12 @@ export function staticText(
   return undefined;
 }
 
+export function keyName(context: Context, node: { computed: boolean; key: Node }) {
+  return !node.computed && node.key.type === "Identifier"
+    ? node.key.name
+    : staticText(context, node.key);
+}
+
 function propertyKey(context: Context, node: ESTree.MemberExpression): string | undefined {
   if (!node.computed && node.property.type === "Identifier") return node.property.name;
   return staticText(context, node.property);
@@ -65,10 +71,7 @@ function bindingPath(context: Context, pattern: Node, name: string): string[] | 
       if (property.type !== "Property") continue;
       const suffix = bindingPath(context, property.value, name);
       if (!suffix) continue;
-      const key =
-        !property.computed && property.key.type === "Identifier"
-          ? property.key.name
-          : staticText(context, property.key);
+      const key = keyName(context, property);
       if (key !== undefined) return [key, ...suffix];
     }
   }
@@ -81,10 +84,7 @@ export function destructuredOrigins(context: Context, pattern: Node, inputs: Ori
   if (pattern.type !== "ObjectPattern") return inputs;
   return pattern.properties.flatMap((property) => {
     if (property.type === "RestElement") return inputs;
-    const key =
-      !property.computed && property.key.type === "Identifier"
-        ? property.key.name
-        : staticText(context, property.key);
+    const key = keyName(context, property);
     return key === undefined
       ? []
       : destructuredOrigins(
@@ -274,10 +274,7 @@ function d1Type(context: Context, node: Node, seen: Set<Node>): D1Reference[] {
     const members = node.type === "TSTypeLiteral" ? node.members : node.body;
     return members.flatMap((member): D1Reference[] => {
       if (member.type !== "TSPropertySignature" || !member.typeAnnotation) return [];
-      const key =
-        !member.computed && member.key.type === "Identifier"
-          ? member.key.name
-          : staticText(context, member.key);
+      const key = keyName(context, member);
       return key === undefined
         ? []
         : d1Type(context, member.typeAnnotation, next).map((reference) => ({
@@ -339,10 +336,7 @@ function d1References(context: Context, node: Node, seen = new Set<Node>()): D1R
   if (node.type === "ObjectExpression")
     return node.properties.flatMap((property): D1Reference[] => {
       if (property.type === "SpreadElement") return d1References(context, property.argument, next);
-      const key =
-        !property.computed && property.key.type === "Identifier"
-          ? property.key.name
-          : staticText(context, property.key);
+      const key = keyName(context, property);
       return key === undefined
         ? []
         : d1References(context, property.value, next).map((reference) => ({
@@ -421,10 +415,7 @@ export function destructuresD1Operation(context: Context, pattern: Node, input: 
       );
     return node.properties.some((property) => {
       if (property.type === "RestElement") return false;
-      const key =
-        !property.computed && property.key.type === "Identifier"
-          ? property.key.name
-          : staticText(context, property.key);
+      const key = keyName(context, property);
       return key !== undefined && visit(property.value, d1Property(references, key));
     });
   };
