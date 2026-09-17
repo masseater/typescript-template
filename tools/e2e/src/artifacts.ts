@@ -11,9 +11,11 @@ type Build = {
   client: Map<string, Buffer>;
   server: Map<string, Buffer>;
 };
-export type ArtifactPair = { user: Build; admin: Build; secrets: readonly string[] };
+export type ArtifactPair = { user: Build; admin: Build; wiki: Build; secrets: readonly string[] };
 const adminMarkers = ["ADMIN_STRONG_SESSION_REQUIRED", "LOCAL_ADMIN_PASSWORD"];
 const adminRoute = /["'`]\/api\/users(?:["'`?])/;
+const wikiMarker = "WIKI_SEMANTIC_ASSET_UNAVAILABLE";
+const privateWikiSource = /(?:^|\/)(?:apps\/(?:user|admin)|libs\/(?:db|auth|ui))\//;
 
 async function readFiles(directory: string): Promise<Map<string, Buffer>> {
   const entries = new Map<string, Buffer>();
@@ -42,7 +44,7 @@ function parseJson(buffer: Buffer): Record<string, unknown> {
   }
 }
 
-async function readBuild(audience: "user" | "admin"): Promise<Build> {
+async function readBuild(audience: "user" | "admin" | "wiki"): Promise<Build> {
   const expected = path.join(root, "apps", audience, "dist");
   const directory = await realpath(expected);
   ensure(directory === expected, "E2E_ARTIFACT_BUILD_PATH_ALIAS");
@@ -113,7 +115,7 @@ async function localSecrets(): Promise<string[]> {
     }
   }
   await inspect(root, false);
-  for (const audience of ["user", "admin"]) {
+  for (const audience of ["user", "admin", "wiki"]) {
     await inspect(path.join(root, "apps", audience), false);
     await inspect(path.join(root, "apps", audience, "dist/server"), false);
   }
@@ -123,23 +125,26 @@ async function localSecrets(): Promise<string[]> {
 
 export async function loadArtifacts(): Promise<ArtifactPair> {
   try {
-    const [user, admin, secrets] = await Promise.all([
+    const [user, admin, wiki, secrets] = await Promise.all([
       readBuild("user"),
       readBuild("admin"),
+      readBuild("wiki"),
       localSecrets(),
     ]);
-    return { user, admin, secrets };
+    return { user, admin, wiki, secrets };
   } catch (error) {
     throw safeFailure(error, "artifact-loading");
   }
 }
 
 export function assertEntries(pair: ArtifactPair): void {
+  const builds = [pair.user, pair.admin, pair.wiki];
   ensure(
-    pair.user.name !== pair.admin.name && pair.user.directory !== pair.admin.directory,
+    new Set(builds.map((build) => build.name)).size === builds.length &&
+      new Set(builds.map((build) => build.directory)).size === builds.length,
     "E2E_ARTIFACT_WORKERS_NOT_SEPARATE",
   );
-  for (const build of [pair.user, pair.admin]) {
+  for (const build of builds) {
     ensure(build.workerFirst, "E2E_ARTIFACT_WORKER_GATE_BYPASSED");
     ensure((build.server.get(build.entry)?.length ?? 0) > 0, "E2E_ARTIFACT_WORKER_ENTRY_MISSING");
     ensure(
@@ -200,6 +205,31 @@ export function assertSeparation(pair: ArtifactPair): void {
       "E2E_ADMIN_SOURCE_IN_USER_SERVER_MAP",
     );
   }
+  const wikiServer = code(pair.wiki.server);
+  const wikiCode = `${wikiServer}\n${code(pair.wiki.client)}`;
+  ensure(wikiServer.includes(wikiMarker), "E2E_WIKI_SERVER_MARKER_MISSING");
+  ensure(
+    !adminServer.includes(wikiMarker) && !userServer.includes(wikiMarker),
+    "E2E_WIKI_CODE_IN_APPLICATION_BUNDLE",
+  );
+  ensure(
+    !adminRoute.test(wikiCode) &&
+      !wikiCode.includes("ユーザー管理") &&
+      !adminMarkers.some((marker) => wikiCode.includes(marker)) &&
+      !/["'`]\/api\/auth\//.test(wikiCode),
+    "E2E_APPLICATION_CODE_IN_WIKI_BUNDLE",
+  );
+  for (const [file, bytes] of pair.wiki.server) {
+    if (!file.endsWith(".map")) continue;
+    const sources = parseJson(bytes)["sources"];
+    ensure(Array.isArray(sources), "E2E_ARTIFACT_INVALID_SERVER_MAP");
+    ensure(
+      !sources.some(
+        (source: unknown) => typeof source === "string" && privateWikiSource.test(source),
+      ),
+      "E2E_APPLICATION_SOURCE_IN_WIKI_SERVER_MAP",
+    );
+  }
 }
 
 export function assertPublicFile(
@@ -240,7 +270,7 @@ export function assertPublicFile(
 }
 
 export function assertPublicSafety(pair: ArtifactPair): void {
-  for (const build of [pair.user, pair.admin])
+  for (const build of [pair.user, pair.admin, pair.wiki])
     for (const [filename, bytes] of build.client) assertPublicFile(filename, bytes, pair.secrets);
 }
 

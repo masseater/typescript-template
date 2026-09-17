@@ -32,6 +32,7 @@ const sharedSchema = v.object({
   prefix: v.pipe(v.string(), v.regex(/^[a-z][a-z0-9-]{2,35}$/)),
   userOrigin: origin,
   adminOrigin: origin,
+  wikiOrigin: origin,
   accessIssuer: v.pipe(
     origin,
     v.check((value) => new URL(value).hostname.endsWith(".cloudflareaccess.com")),
@@ -57,14 +58,14 @@ const sharedSchema = v.object({
 });
 
 export type SharedConfig = v.InferOutput<typeof sharedSchema>;
-export type AppTarget = "user" | "admin";
+export type AppTarget = "user" | "admin" | "wiki";
 
 export function parseDeploymentCommand(args: readonly string[]) {
   const [operation, target] = args;
   if (
     args.length !== 2 ||
     (operation !== "preview" && operation !== "up") ||
-    (target !== "shared" && target !== "user" && target !== "admin")
+    (target !== "shared" && target !== "user" && target !== "admin" && target !== "wiki")
   )
     throw new Error("deployment_command_invalid");
   return { operation, target };
@@ -76,7 +77,8 @@ export function parseSharedConfig(input: unknown): SharedConfig {
   const config = parsed.output;
   if (config.sentryDsn && (!config.sentryEnvironment || !config.sentryRelease))
     throw new Error("sentry_environment_and_release_required");
-  if (config.userOrigin === config.adminOrigin) throw new Error("app_origins_must_differ");
+  if (new Set([config.userOrigin, config.adminOrigin, config.wikiOrigin]).size !== 3)
+    throw new Error("app_origins_must_differ");
   if (
     config.budget.budgetJpy / config.budget.jpyPerUsd <=
     config.budget.fixedCostUsd + config.budget.reserveUsd
@@ -125,7 +127,7 @@ export function validateOtelHeaders(value: string): string {
 export function appPolicy(config: SharedConfig, target: AppTarget) {
   return {
     name: `${config.prefix}-${target}`,
-    origin: target === "user" ? config.userOrigin : config.adminOrigin,
+    origin: { user: config.userOrigin, admin: config.adminOrigin, wiki: config.wikiOrigin }[target],
     subdomain: { enabled: false, previewsEnabled: false },
     assets: { runWorkerFirst: true },
   };

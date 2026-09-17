@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import * as v from "valibot";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const audience = v.parse(v.picklist(["user", "admin"]), process.argv[2]);
+const audience = v.parse(v.picklist(["user", "admin", "wiki"]), process.argv[2]);
 const source = path.join(root, "apps", audience, "dist/client");
 const destination = path.join(root, ".local", "source-maps", audience, "client");
 let moved = 0;

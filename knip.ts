@@ -11,6 +11,11 @@ const config: KnipConfig = {
       entry: ["vite.config.ts", "src/router.tsx!", "src/server.ts!", "src/**/*.test.ts"],
       project: ["vite.config.ts", "src/**/*.{ts,tsx}!"],
     },
+    "apps/wiki": {
+      entry: ["vite.config.ts", "src/router.tsx!", "src/server.ts!", "src/**/*.test.ts"],
+      project: ["vite.config.ts", "semantic-build.ts", "src/**/*.{ts,tsx}!"],
+      ignoreDependencies: ["tailwindcss"],
+    },
     "libs/db": {
       entry: [
         "src/bootstrap-local.ts!",
@@ -25,6 +30,7 @@ const config: KnipConfig = {
         "src/shared.ts!",
         "src/user.ts!",
         "src/admin.ts!",
+        "src/wiki.ts!",
         "src/runtime-probe.ts!",
         "src/cli.ts!",
         "src/check-artifacts.ts!",

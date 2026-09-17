@@ -1,0 +1,42 @@
+{
+  "name": "@template/wiki",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "X_LOCAL_EXPLORER=false vp dev",
+    "build": "vp build",
+    "preview": "X_LOCAL_EXPLORER=false vp preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@huggingface/tokenizers": "0.2.0",
+    "@modelcontextprotocol/server": "2.0.0",
+    "@tanstack/react-router": "1.170.36",
+    "@tanstack/react-start": "1.168.54",
+    "@template/observability": "workspace:*",
+    "@template/runtime": "workspace:*",
+    "fumadocs-core": "16.15.11",
+    "fumadocs-mdx": "15.4.1",
+    "fumadocs-ui": "16.15.11",
+    "lucide-react": "1.46.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.54.10",
+    "@cloudflare/workers-types": "5.20260916.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/mdx": "2.0.14",
+    "@types/node": "24.12.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "valibot": "1.5.0",
+    "vite-plus": "0.3.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.132.0"
+  }
+}

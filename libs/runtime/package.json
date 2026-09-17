@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./http": "./src/http.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./wiki": "./src/wiki.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

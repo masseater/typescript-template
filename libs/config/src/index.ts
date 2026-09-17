@@ -115,3 +115,40 @@ export async function sendVerificationEmail(
   if (!config.EMAIL) throw new Error("Email delivery binding is missing");
   await config.EMAIL.send(email);
 }
+
+const wikiSchema = v.object({
+  APP_ORIGIN: origin,
+  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
+  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
+  SENTRY_DSN: v.optional(sentrySchemas.dsn),
+  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
+  SENTRY_RELEASE: v.optional(sentrySchemas.release),
+  ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
+});
+
+export function readWikiConfig(input: unknown) {
+  const config = v.parse(wikiSchema, input);
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(new URL(config.APP_ORIGIN).hostname);
+  if (!local && new URL(config.APP_ORIGIN).protocol !== "https:")
+    throw new Error("HTTPS is required outside localhost");
+  return {
+    APP_ORIGIN: config.APP_ORIGIN,
+    ASSETS: config.ASSETS,
+    OTEL_EXPORTER_OTLP_ENDPOINT: config.OTEL_EXPORTER_OTLP_ENDPOINT,
+    otelHeaders:
+      config.OTEL_EXPORTER_OTLP_HEADERS === undefined
+        ? {}
+        : v.parse(
+            v.record(v.string(), v.string()),
+            JSON.parse(config.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
+          ),
+    sentry:
+      config.SENTRY_DSN === undefined
+        ? null
+        : {
+            dsn: config.SENTRY_DSN,
+            environment: v.parse(sentrySchemas.environment, config.SENTRY_ENVIRONMENT),
+            release: v.parse(sentrySchemas.release, config.SENTRY_RELEASE),
+          },
+  };
+}

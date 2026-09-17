@@ -49,19 +49,23 @@ export async function deployApplication(target: AppTarget) {
   const plaintext = {
     APP_ORIGIN: policy.origin,
     OTEL_EXPORTER_OTLP_ENDPOINT: settings.otelEndpoint,
-    EMAIL_FROM: settings.mailFrom,
+    ...(target === "wiki" ? {} : { EMAIL_FROM: settings.mailFrom }),
   };
   const bindings: cloudflare.types.input.WorkerVersionBinding[] = [
-    { type: "d1", name: "DB", id: shared.requireOutput("databaseId") },
-    {
-      type: "secret_text",
-      name: "AUTH_SECRET",
-      text: shared.requireOutput("authSecret").apply((value: unknown) => {
-        if (typeof value !== "string") throw new Error("auth_secret_invalid");
-        return validateAuthSecret(value);
-      }),
-    },
-    { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
+    ...(target === "wiki"
+      ? []
+      : [
+          { type: "d1", name: "DB", id: shared.requireOutput("databaseId") },
+          {
+            type: "secret_text",
+            name: "AUTH_SECRET",
+            text: shared.requireOutput("authSecret").apply((value: unknown) => {
+              if (typeof value !== "string") throw new Error("auth_secret_invalid");
+              return validateAuthSecret(value);
+            }),
+          },
+          { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
+        ]),
     {
       type: "secret_text",
       name: "OTEL_EXPORTER_OTLP_HEADERS",

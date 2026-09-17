@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { readEnvironment } from "@template/config";
+import { readEnvironment, readWikiConfig } from "@template/config";
 import {
   appPolicy,
   parseSharedConfig,
@@ -16,6 +16,7 @@ const settings = {
   prefix: "template-test",
   userOrigin: "https://user.example.com",
   adminOrigin: "https://admin.example.com",
+  wikiOrigin: "https://wiki.example.com",
   accessIssuer: "https://team.cloudflareaccess.com",
   adminEmails: ["admin@example.com"],
   otelEndpoint: "https://telemetry.example.com/otlp",
@@ -37,6 +38,7 @@ test("deployment commands reject ignored arguments instead of selecting an unint
   expect(() => parseDeploymentCommand(["up", "user", "--stack", "other"])).toThrow(
     "deployment_command_invalid",
   );
+  expect(parseDeploymentCommand(["up", "wiki"])).toEqual({ operation: "up", target: "wiki" });
   expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
 });
 
@@ -167,6 +169,24 @@ test("user and admin are distinct deployments with all alternative public URLs d
   expect(appPolicy(config, "admin").name).toBe("template-test-admin");
   expect(appPolicy(config, "admin").subdomain).toEqual({ enabled: false, previewsEnabled: false });
   expect(appPolicy(config, "admin").assets.runWorkerFirst).toBe(true);
+  expect(appPolicy(config, "wiki")).toEqual({
+    name: "template-test-wiki",
+    origin: settings.wikiOrigin,
+    subdomain: { enabled: false, previewsEnabled: false },
+    assets: { runWorkerFirst: true },
+  });
+});
+
+test("the wiki reads its runtime settings without authentication or database bindings", () => {
+  const config = parseSharedConfig(settings);
+  const runtime = readWikiConfig({
+    APP_ORIGIN: appPolicy(config, "wiki").origin,
+    OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
+    OTEL_EXPORTER_OTLP_HEADERS: "{}",
+    ASSETS: { fetch: () => Promise.resolve(new Response()) },
+  });
+  expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
+  expect(runtime.sentry).toBeNull();
 });
 
 test.each([

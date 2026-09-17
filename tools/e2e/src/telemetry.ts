@@ -11,7 +11,7 @@ async function query(route: string, parameters: Record<string, string>) {
 
 export async function verifyCorrelation(
   response: { requestId: unknown; traceparent: unknown },
-  service: "user" | "admin",
+  service: "user" | "admin" | "wiki",
   forbidden: readonly string[],
   observed?: ObservedRequest,
 ) {
@@ -89,7 +89,7 @@ export async function verifyCorrelation(
 }
 
 export async function verifyJourneyTelemetry(
-  participants: readonly { browser: Browser; service: "user" | "admin" }[],
+  participants: readonly { browser: Browser; service: "user" | "admin" | "wiki" }[],
   forbidden: readonly string[],
   started: number,
 ) {
@@ -100,7 +100,10 @@ export async function verifyJourneyTelemetry(
     })),
   );
   const secrets = [...new Set([...forbidden, ...observations.flatMap((entry) => entry.secrets)])];
-  const requests = new Map<string, { request: ObservedRequest; service: "user" | "admin" }>();
+  const requests = new Map<
+    string,
+    { request: ObservedRequest; service: "user" | "admin" | "wiki" }
+  >();
   for (const observation of observations) {
     for (const request of observation.requests)
       requests.set(request.requestId, { request, service: observation.service });
@@ -145,7 +148,7 @@ export async function verifyJourneyTelemetry(
   }
 }
 
-export async function verifyBrowserSignals(service: "user" | "admin", start: number) {
+export async function verifyBrowserSignals(service: "user" | "admin" | "wiki", start: number) {
   await poll(
     async () => {
       const logs = await query("loki/loki/api/v1/query_range", {

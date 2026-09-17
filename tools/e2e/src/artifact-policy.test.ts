@@ -28,6 +28,16 @@ function data(): ArtifactPair {
       ]),
       client: new Map([["assets/index-admin.js", Buffer.from('document.title = "ユーザー管理";')]]),
     },
+    wiki: {
+      name: "wiki",
+      directory: "/test/wiki/dist",
+      entry: "index.js",
+      workerFirst: true,
+      server: new Map([
+        ["index.js", Buffer.from('throw new Error("WIKI_SEMANTIC_ASSET_UNAVAILABLE")')],
+      ]),
+      client: new Map([["assets/index-wiki.js", Buffer.from('document.title = "Wiki";')]]),
+    },
   };
 }
 
@@ -113,6 +123,29 @@ test("admin absence checks require a positive admin control and inspect source-m
   );
   expect(() => assertSeparation({ ...pair, user: { ...pair.user, server } })).toThrow(
     "E2E_ADMIN_SOURCE_IN_USER_SERVER_MAP",
+  );
+});
+
+test("the public wiki bundle is a separate Worker without application routes or sources", () => {
+  const pair = data();
+  expect(() => assertEntries({ ...pair, wiki: { ...pair.wiki, name: pair.user.name } })).toThrow(
+    "E2E_ARTIFACT_WORKERS_NOT_SEPARATE",
+  );
+  expect(() =>
+    assertSeparation({ ...pair, wiki: { ...pair.wiki, server: pair.user.server } }),
+  ).toThrow("E2E_WIKI_SERVER_MARKER_MISSING");
+  const leaked = new Map(pair.wiki.server);
+  leaked.set("auth.js", Buffer.from('fetch("/api/auth/get-session")'));
+  expect(() => assertSeparation({ ...pair, wiki: { ...pair.wiki, server: leaked } })).toThrow(
+    "E2E_APPLICATION_CODE_IN_WIKI_BUNDLE",
+  );
+  const mapped = new Map(pair.wiki.server);
+  mapped.set(
+    "index.js.map",
+    Buffer.from(JSON.stringify({ sources: ["../../../../libs/db/src/schema.ts"] })),
+  );
+  expect(() => assertSeparation({ ...pair, wiki: { ...pair.wiki, server: mapped } })).toThrow(
+    "E2E_APPLICATION_SOURCE_IN_WIKI_SERVER_MAP",
   );
 });
 

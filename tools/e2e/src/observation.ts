@@ -108,7 +108,7 @@ export function traceSpans(input: unknown): ObservedSpan[] {
 export function relatedSpans(
   spans: ObservedSpan[],
   request: ObservedRequest,
-  service: "user" | "admin",
+  service: "user" | "admin" | "wiki",
 ) {
   const [, traceId, spanId] = request.traceparent.split("-");
   const server = spans.find(

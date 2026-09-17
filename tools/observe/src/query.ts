@@ -1,6 +1,12 @@
 export type QueryInput = {
   command: "doctor" | "logs" | "metrics" | "exemplars" | "traces" | "trace";
-  service: "user-server" | "user-browser" | "admin-server" | "admin-browser";
+  service:
+    | "user-server"
+    | "user-browser"
+    | "admin-server"
+    | "admin-browser"
+    | "wiki-server"
+    | "wiki-browser";
   minutes: number;
   limit: number;
   severity?: "INFO" | "ERROR";
@@ -22,7 +28,16 @@ export function queryPath(input: QueryInput, now: number): string {
   if (input.traceId && !/^[0-9a-f]{32}$/.test(input.traceId)) throw new Error("Invalid trace ID");
   if (input.requestId && !/^[0-9a-f-]{36}$/.test(input.requestId))
     throw new Error("Invalid request ID");
-  if (!["user-server", "user-browser", "admin-server", "admin-browser"].includes(input.service))
+  if (
+    ![
+      "user-server",
+      "user-browser",
+      "admin-server",
+      "admin-browser",
+      "wiki-server",
+      "wiki-browser",
+    ].includes(input.service)
+  )
     throw new Error("Invalid service");
   if (input.severity && !["INFO", "ERROR"].includes(input.severity))
     throw new Error("Invalid severity");

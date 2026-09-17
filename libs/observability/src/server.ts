@@ -54,7 +54,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
     endpoint.hash
   )
     throw new Error("Invalid OTLP endpoint");
-  if (!["user", "admin"].includes(options.serviceName))
+  if (!["user", "admin", "wiki"].includes(options.serviceName))
     throw new Error("Invalid telemetry service");
   validateRoutes(options.routes);
   const queue: Batch[] = [];

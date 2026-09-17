@@ -38,7 +38,14 @@ if (values.help) {
   try {
     const schema = v.object({
       command: v.picklist(["doctor", "logs", "metrics", "exemplars", "traces", "trace"]),
-      service: v.picklist(["user-server", "user-browser", "admin-server", "admin-browser"]),
+      service: v.picklist([
+        "user-server",
+        "user-browser",
+        "admin-server",
+        "admin-browser",
+        "wiki-server",
+        "wiki-browser",
+      ]),
       minutes: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1440)),
       limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
     });

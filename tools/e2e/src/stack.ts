@@ -80,6 +80,7 @@ export async function createStack() {
   const ports: Awaited<ReturnType<typeof reservePort>>[] = [];
   let userOrigin = "";
   let adminOrigin = "";
+  let wikiOrigin = "";
   const basicUser = `gate-${id}`;
   const basicPassword = randomBytes(32).toString("base64url");
   const authSecret = randomBytes(48).toString("base64url");
@@ -125,7 +126,7 @@ export async function createStack() {
       }
     }
     await mkdir(path.join(local, "logs"), { recursive: true, mode: 0o700 });
-    for (const audience of ["user", "admin"]) {
+    for (const audience of ["user", "admin", "wiki"]) {
       const target = path.join(local, "logs", `e2e-last-${audience}.log`);
       await rm(target, { force: true });
       await copyFile(path.join(directory, `${audience}.log`), target).then(
@@ -188,11 +189,14 @@ export async function createStack() {
     await writeFile(browserConfig, "{}", { mode: 0o600 });
     ports.push(await reservePort());
     ports.push(await reservePort());
+    ports.push(await reservePort());
     const userPort = ports[0];
     const adminPort = ports[1];
-    ensure(userPort && adminPort, "E2E_PORT_ALLOCATION_FAILED");
+    const wikiPort = ports[2];
+    ensure(userPort && adminPort && wikiPort, "E2E_PORT_ALLOCATION_FAILED");
     userOrigin = `http://localhost:${userPort.port}`;
     adminOrigin = `http://localhost:${adminPort.port}`;
+    wikiOrigin = `http://localhost:${wikiPort.port}`;
     const require = createRequire(import.meta.url);
     const wrangler = path.join(
       path.dirname(require.resolve("wrangler/package.json")),
@@ -201,6 +205,7 @@ export async function createStack() {
     for (const [audience, origin, reservation] of [
       ["user", userOrigin, userPort],
       ["admin", adminOrigin, adminPort],
+      ["wiki", wikiOrigin, wikiPort],
     ] as const) {
       const builtDirectory = path.join(root, "apps", audience, "dist");
       const built = object(
@@ -229,14 +234,17 @@ export async function createStack() {
             binding: "ASSETS",
             run_worker_first: true,
           },
-          d1_databases: [
-            {
-              binding: "DB",
-              database_name: `${id}-shared`,
-              database_id: databaseId,
-              migrations_dir: path.join(root, "libs/db/migrations"),
-            },
-          ],
+          d1_databases:
+            audience === "wiki"
+              ? []
+              : [
+                  {
+                    binding: "DB",
+                    database_name: `${id}-shared`,
+                    database_id: databaseId,
+                    migrations_dir: path.join(root, "libs/db/migrations"),
+                  },
+                ],
           vars: {},
           workers_dev: false,
           preview_urls: false,
@@ -247,10 +255,14 @@ export async function createStack() {
         envFile,
         [
           `APP_ORIGIN=${origin}`,
-          `AUTH_SECRET=${authSecret}`,
           "OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318",
-          "EMAIL_FROM=e2e@example.test",
-          `MAILPIT_URL=${mailpit}`,
+          ...(audience === "wiki"
+            ? []
+            : [
+                `AUTH_SECRET=${authSecret}`,
+                "EMAIL_FROM=e2e@example.test",
+                `MAILPIT_URL=${mailpit}`,
+              ]),
           ...(audience === "admin"
             ? [`LOCAL_ADMIN_USER=${basicUser}`, `LOCAL_ADMIN_PASSWORD=${basicPassword}`]
             : []),
@@ -284,9 +296,10 @@ export async function createStack() {
       "",
       120_000,
     );
-    for (const [audience, reservation, origin, ready] of [
-      ["user", userPort, userOrigin, 200],
-      ["admin", adminPort, adminOrigin, 401],
+    for (const [audience, reservation, origin, readyPath, ready] of [
+      ["user", userPort, userOrigin, "/login", 200],
+      ["admin", adminPort, adminOrigin, "/login", 401],
+      ["wiki", wikiPort, wikiOrigin, "/", 200],
     ] as const) {
       await reservation.close();
       const session = `${id}-${audience}`;
@@ -303,7 +316,8 @@ export async function createStack() {
       await poll(
         async () => {
           try {
-            return (await fetch(`${origin}/login`, { signal: AbortSignal.timeout(2000) })).status;
+            return (await fetch(`${origin}${readyPath}`, { signal: AbortSignal.timeout(2000) }))
+              .status;
           } catch {
             return 0;
           }
@@ -333,6 +347,7 @@ export async function createStack() {
     return {
       userOrigin,
       adminOrigin,
+      wikiOrigin,
       basicUser,
       basicPassword,
       account,

@@ -12,13 +12,20 @@ const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const browserSocket = new URL("ab/", local);
 const socket = `template-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`;
-const appSchema = v.picklist(["user", "admin"]);
+const apps = ["user", "admin", "wiki"] as const;
+type App = (typeof apps)[number];
+const appSchema = v.picklist(apps);
 const credentialSchema = v.strictObject({
   authSecret: v.pipe(v.string(), v.minLength(32)),
   adminUser: v.literal("operator"),
   adminPassword: v.pipe(v.string(), v.minLength(24)),
 });
-const origins = { user: "http://localhost:3001", admin: "http://localhost:3002" };
+const origins = {
+  user: "http://localhost:3001",
+  admin: "http://localhost:3002",
+  wiki: "http://localhost:3003",
+};
+const readyPaths = { user: "/login", admin: "/login", wiki: "/" };
 
 async function writePrivateFile(path: URL, content: string) {
   try {
@@ -66,13 +73,17 @@ async function setup() {
         adminPassword: randomBytes(32).toString("base64url"),
       };
   await writePrivateFile(credentialsFile, `${JSON.stringify(credentials, null, 2)}\n`);
-  for (const app of ["user", "admin"] as const) {
+  for (const app of apps) {
     const values = {
       APP_ORIGIN: origins[app],
-      AUTH_SECRET: credentials.authSecret,
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318",
-      EMAIL_FROM: "no-reply@example.test",
-      MAILPIT_URL: "http://127.0.0.1:8025",
+      ...(app === "wiki"
+        ? { OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318" }
+        : {
+            AUTH_SECRET: credentials.authSecret,
+            OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:4318",
+            EMAIL_FROM: "no-reply@example.test",
+            MAILPIT_URL: "http://127.0.0.1:8025",
+          }),
       ...(app === "admin"
         ? {
             LOCAL_ADMIN_USER: credentials.adminUser,
@@ -102,10 +113,10 @@ async function running(app: string) {
 }
 
 async function status() {
-  const apps = await Promise.all(
-    (["user", "admin"] as const).map(async (app) => {
+  const results = await Promise.all(
+    apps.map(async (app) => {
       const live = await running(app);
-      const response = await fetch(`${origins[app]}/login`, {
+      const response = await fetch(`${origins[app]}${readyPaths[app]}`, {
         redirect: "manual",
         signal: AbortSignal.timeout(3000),
       }).then(
@@ -124,7 +135,7 @@ async function status() {
   return {
     event: "local.application_status",
     functionalVerification: "not-proven-by-status",
-    apps,
+    apps: results,
   };
 }
 
@@ -135,9 +146,10 @@ function connection(destination: string | undefined) {
   );
   return {
     event: "local.connection_instructions",
-    mainComputerCommand: `ssh -N -o ExitOnForwardFailure=yes -L 3001:localhost:3001 -L 3002:localhost:3002 -L 3100:localhost:3100 -L 8025:localhost:8025 ${target}`,
+    mainComputerCommand: `ssh -N -o ExitOnForwardFailure=yes -L 3001:localhost:3001 -L 3002:localhost:3002 -L 3003:localhost:3003 -L 3100:localhost:3100 -L 8025:localhost:8025 ${target}`,
     user: origins.user,
     admin: origins.admin,
+    wiki: origins.wiki,
     grafana: "http://localhost:3100",
     mailpit: "http://localhost:8025",
     adminCredentialsFile: fileURLToPath(credentialsFile),
@@ -146,7 +158,7 @@ function connection(destination: string | undefined) {
   };
 }
 
-async function start(app: "user" | "admin") {
+async function start(app: App) {
   await readCredentials();
   if (!(await running(app))) {
     const log = fileURLToPath(new URL(`logs/${app}.log`, local));
@@ -163,13 +175,13 @@ async function start(app: "user" | "admin") {
   return status();
 }
 
-async function stop(app: "user" | "admin") {
+async function stop(app: App) {
   if (await running(app))
     await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
   return status();
 }
 
-async function browser(app: "user" | "admin") {
+async function browser(app: App) {
   await mkdir(browserSocket, { recursive: true, mode: 0o700 });
   await writePrivateFile(
     browserConfig,
@@ -198,7 +210,7 @@ async function browser(app: "user" | "admin") {
       });
     });
   }
-  await run("agent-browser", [...args, "open", `${origins[app]}/login`], {
+  await run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
     cwd: root,
     env,
   });
@@ -211,7 +223,7 @@ async function browser(app: "user" | "admin") {
   };
 }
 
-async function browserCommand(app: "user" | "admin", args: string[]) {
+async function browserCommand(app: App, args: string[]) {
   if (args.length === 0) throw new Error("A browser command is required");
   const child = spawn(
     "agent-browser",

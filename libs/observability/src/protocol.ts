@@ -1,4 +1,4 @@
-export type ServiceName = "user" | "admin";
+export type ServiceName = "user" | "admin" | "wiki";
 export type Signal = "logs" | "metrics" | "traces";
 export type Attributes = Record<string, string | number | boolean>;
 export type Correlation = { traceId: string; spanId: string; requestId: string };

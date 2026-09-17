@@ -56,7 +56,7 @@ export default definePlugin({
   rules: {
     boundaries: {
       meta: metadata(
-        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/instrumentation.ts と testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。",
+        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/instrumentation.ts と testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。公開 wiki は認証・DB・UI パッケージを参照できません。",
       ),
       create(context) {
         const current = filename(context);
@@ -83,7 +83,7 @@ export default definePlugin({
             ? path.resolve(path.dirname(current), clean).replaceAll("\\", "/")
             : clean;
           const target = resolved.match(/\/(apps|libs|tools|infra)\/([^/]+)(?:\/|$)/);
-          const namedApp = clean.match(/^@template\/(user|admin)(?:\/|$)/)?.[1];
+          const namedApp = clean.match(/^@template\/(user|admin|wiki)(?:\/|$)/)?.[1];
           const targetApp = target?.[1] === "apps" ? target[2] : namedApp;
           const dbAdmin =
             /^@template\/db\/(?:src\/)?admin(?:[/.]|$)/.test(clean) ||
@@ -119,7 +119,11 @@ export default definePlugin({
             (!isTest &&
               /(?:\.(?:test|spec)(?:\.[cm]?[jt]sx?)?$|^@template\/db\/testing$)/.test(clean)) ||
             /^@template\/[^/]+\/src(?:\/|$)/.test(clean) ||
-            (area === "apps" && owner === "admin" && clean === "@template/ui/signup");
+            (area === "apps" && owner === "admin" && clean === "@template/ui/signup") ||
+            (area === "apps" &&
+              owner === "wiki" &&
+              (/^@template\/(?:db|auth|ui)(?:\/|$)/.test(clean) ||
+                /\/libs\/(?:db|auth|ui)(?:\/|$)/.test(resolved)));
           if (forbidden) context.report({ node, messageId: "violation" });
         }
         return {
