@@ -15,6 +15,7 @@ const configuration = {
     "tools/quality/*.ts",
     "!tools/quality/*.test.ts",
     "!tools/quality/check-staged.ts",
+    "!tools/quality/client-bundle.ts",
     "!tools/quality/dependencies.ts",
     "!tools/quality/design-system.ts",
     "!tools/quality/effect-diagnostics.ts",
