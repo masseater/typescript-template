@@ -1,6 +1,7 @@
 import type { IConfiguration } from "dependency-cruiser";
 
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
+const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const specModule = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
 const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap)[^/]*\.ts$`;
@@ -17,7 +18,7 @@ const configuration: IConfiguration = {
       from: {},
       name: "no-unresolvable",
       severity: "error",
-      to: { couldNotResolve: true, pathNot: "^cloudflare:" },
+      to: { couldNotResolve: true, pathNot: "^cloudflare:workers$" },
     },
     {
       comment:
@@ -73,7 +74,7 @@ const configuration: IConfiguration = {
     {
       comment:
         "テスト用の DB 構築です。テストとフィクスチャからだけ使い、アプリの実装へ持ち込まないでください。",
-      from: { path: `^apps/|^libs/(?!db/)`, pathNot: `^libs/.*${testModule}` },
+      from: { path: "^(?:apps|libs|infra|tools)/", pathNot: testModule },
       name: "no-database-testing-outside-tests",
       severity: "error",
       to: { path: databaseTesting },
@@ -85,6 +86,14 @@ const configuration: IConfiguration = {
       name: "no-raw-database-driver",
       severity: "error",
       to: { path: rawDatabaseDriver },
+    },
+    {
+      comment:
+        "配布物に入るコードが devDependencies を取り込んでいます。その依存を dependencies に移すか、import type で型だけを取り込む形にしてください。型の再エクスポートは、その依存をパッケージの公開する面に載せるので同じ扱いです。",
+      from: { path: "^(?:apps|libs|infra)/[^/]+/src/", pathNot: developmentModule },
+      name: "no-development-dependency-in-shipped-code",
+      severity: "error",
+      to: { dependencyTypes: ["npm-dev"], dependencyTypesNot: ["type-only"] },
     },
     {
       comment:
@@ -111,7 +120,7 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。経路の途中のモジュールも含めて、契約の型だけを参照する形にしてください。",
+        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@template/runtime/contracts など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
       from: { path: "^libs/ui/src/", pathNot: testModule },
       name: "no-browser-to-server",
       severity: "error",
@@ -126,7 +135,8 @@ const configuration: IConfiguration = {
       extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".d.ts"],
       mainFields: ["module", "main", "types", "typings"],
     },
-    exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.|dist/)`] },
+    exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.(?!storybook)|dist/)`] },
+    parser: "swc",
   },
 };
 

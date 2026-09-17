@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import type { Fixture } from "./dependency-cruiser-fixture.ts";
 import configuration from "./dependency-cruiser.ts";
+import { createFixture } from "./dependency-cruiser-fixture.ts";
 import { cruise } from "dependency-cruiser";
 // oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
+import { rm } from "node:fs/promises";
 
-type Fixture = Readonly<Record<string, string>>;
 type Case = readonly [string, Fixture];
-type Workspace = readonly [string, Readonly<Record<string, string>>];
 
 const forbidden = configuration.forbidden ?? [];
 const configuredRules = new Set<string>();
@@ -18,56 +14,14 @@ for (const rule of forbidden) {
   configuredRules.add(rule.name ?? "");
 }
 
-const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-  "apps/admin": { ".": "./src/index.ts" },
-  "apps/user": { ".": "./src/index.ts" },
-  "apps/wiki": { ".": "./src/index.ts" },
-  "libs/auth": { ".": "./src/index.ts" },
-  "libs/db": {
-    ".": "./src/index.ts",
-    "./admin": "./src/admin.ts",
-    "./local": "./src/local.ts",
-    "./remote": "./src/remote-command.ts",
-    "./testing": "./src/testing.ts",
-  },
-  "libs/ui": { ".": "./src/index.ts", "./signup": "./src/signup.tsx" },
-  "tools/dev": { ".": "./src/index.ts" },
-};
-
-async function write(root: string, file: string, code: string): Promise<void> {
-  const target = path.join(root, file);
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, code);
-}
-
-async function createWorkspace(root: string, [directory, exported]: Workspace): Promise<void> {
-  const name = `@template/${directory.split("/")[1] ?? ""}`;
-  await write(root, `${directory}/package.json`, JSON.stringify({ exports: exported, name }));
-  await symlink(path.join(root, directory), path.join(root, "node_modules", name));
-  await Promise.all(
-    Object.values(exported).map(async (target) =>
-      write(root, path.join(directory, target), "export const value = 1;\n"),
-    ),
-  );
-}
-
-async function createFixture(files: Fixture): Promise<string> {
-  const prefix = path.join(tmpdir(), "template-depcruise-");
-  const root = await realpath(await mkdtemp(prefix));
-  await mkdir(path.join(root, "node_modules/@template"), { recursive: true });
-  await Promise.all(
-    Object.entries(workspaces).map(async (workspace: Workspace) =>
-      createWorkspace(root, workspace),
-    ),
-  );
-  await write(root, "node_modules/drizzle-orm/package.json", '{"name":"drizzle-orm"}');
-  await write(root, "node_modules/drizzle-orm/index.js", "export const drizzle = 1;\n");
-  await Promise.all(
-    Object.entries(files).map(async ([file, code]: readonly [string, string]) =>
-      write(root, file, code),
-    ),
-  );
-  return root;
+function reportedRules(
+  violations: readonly { readonly rule: { readonly name: string } }[],
+): string[] {
+  const reported = new Set<string>();
+  for (const violation of violations) {
+    reported.add(violation.rule.name);
+  }
+  return [...reported].toSorted();
 }
 
 async function violatedRules(files: Fixture): Promise<readonly string[]> {
@@ -78,11 +32,7 @@ async function violatedRules(files: Fixture): Promise<readonly string[]> {
       { ...configuration.options, baseDir: root, ruleSet: { forbidden }, validate: true },
       configuration.options?.enhancedResolveOptions,
     );
-    const reported = new Set<string>();
-    for (const violation of typeof output === "string" ? [] : output.summary.violations) {
-      reported.add(violation.rule.name);
-    }
-    return [...reported].toSorted();
+    return typeof output === "string" ? [] : reportedRules(output.summary.violations);
   } finally {
     await rm(root, { force: true, recursive: true });
   }
@@ -90,10 +40,23 @@ async function violatedRules(files: Fixture): Promise<readonly string[]> {
 
 const detected: readonly Case[] = [
   ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@template/db/src/schema";\n' }],
+  [
+    "no-unresolvable",
+    { "apps/user/src/index.ts": 'export type { Row } from "@template/db/src/schema";\n' },
+  ],
+  [
+    "no-unresolvable",
+    { "apps/user/src/index.ts": 'export type * from "@template/db/src/schema";\n' },
+  ],
+  ["no-unresolvable", { "apps/user/src/index.ts": 'import "cloudflare:workerz";\n' }],
   ["no-app-to-app", { "apps/user/src/index.ts": 'export * from "@template/admin";\n' }],
   ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@template/user";\n' }],
   ["no-runtime-to-tools", { "libs/auth/src/index.ts": 'export * from "@template/dev";\n' }],
   ["no-package-escape", { "libs/auth/src/index.ts": 'export * from "../../db/src/index.ts";\n' }],
+  [
+    "no-package-escape",
+    { "libs/auth/src/index.ts": 'export type { Row } from "../../db/src/index.ts";\n' },
+  ],
   [
     "no-database-admin-outside-admin",
     { "apps/user/src/index.ts": 'export * from "@template/db/admin";\n' },
@@ -107,6 +70,22 @@ const detected: readonly Case[] = [
     "no-database-testing-outside-tests",
     { "libs/auth/src/index.ts": 'export * from "@template/db/testing";\n' },
   ],
+  [
+    "no-database-testing-outside-tests",
+    { "libs/db/src/index.ts": 'export * from "./testing.ts";\n' },
+  ],
+  [
+    "no-database-testing-outside-tests",
+    { "tools/dev/src/index.ts": 'export * from "@template/db/testing";\n' },
+  ],
+  [
+    "no-development-dependency-in-shipped-code",
+    { "libs/ui/src/index.ts": 'export * from "msw";\n' },
+  ],
+  [
+    "no-development-dependency-in-shipped-code",
+    { "libs/ui/src/index.ts": 'export type { Handler } from "msw";\n' },
+  ],
   ["no-raw-database-driver", { "libs/auth/src/index.ts": 'export * from "drizzle-orm";\n' }],
   [
     "no-production-to-test",
@@ -119,63 +98,140 @@ const detected: readonly Case[] = [
     "no-signup-outside-user",
     { "apps/admin/src/index.ts": 'export * from "@template/ui/signup";\n' },
   ],
+  [
+    "no-signup-outside-user",
+    { "apps/admin/src/index.ts": 'export type { Props } from "@template/ui/signup";\n' },
+  ],
   ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@template/db";\n' }],
+  [
+    "no-wiki-to-database",
+    { "apps/wiki/src/index.ts": 'export type { Db } from "@template/db";\n' },
+  ],
   [
     "no-browser-to-server",
     {
-      "libs/ui/src/bridge.ts": 'export * from "@template/db";\n',
-      "libs/ui/src/index.ts": 'export * from "./bridge.ts";\n',
+      "libs/runtime/src/index.ts": 'export * from "@template/db";\n',
+      "libs/ui/src/index.ts": 'export * from "@template/runtime";\n',
     },
   ],
 ];
 
 const accepted: readonly Case[] = [
-  ["the boundaries the repository already keeps", {}],
+  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@template/db";\n' }],
   [
-    "the admin app reads the administrative operations",
+    "no-app-to-app",
+    {
+      "apps/user/src/helper.ts": "export const helper = 1;\n",
+      "apps/user/src/index.ts": 'export * from "./helper.ts";\n',
+    },
+  ],
+  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@template/db";\n' }],
+  ["no-runtime-to-tools", { "tools/dev/src/index.ts": 'export * from "@template/db/remote";\n' }],
+  [
+    "no-package-escape",
+    {
+      "libs/auth/src/helper.ts": "export const helper = 1;\n",
+      "libs/auth/src/index.ts": 'export * from "./helper.ts";\n',
+    },
+  ],
+  [
+    "no-database-admin-outside-admin",
     { "apps/admin/src/index.ts": 'export * from "@template/db/admin";\n' },
   ],
   [
-    "operational tooling runs the remote database commands",
+    "no-database-operations-outside-tooling",
     { "tools/dev/src/index.ts": 'export * from "@template/db/remote";\n' },
   ],
   [
-    "a test builds its own database",
+    "no-database-testing-outside-tests",
     { "libs/auth/src/session.test.ts": 'export * from "@template/db/testing";\n' },
   ],
   [
-    "the database package owns the driver",
-    { "libs/db/src/index.ts": 'export * from "drizzle-orm";\n' },
+    "no-database-testing-outside-tests",
+    { "libs/db/src/records-fixture.ts": 'export * from "./testing.ts";\n' },
   ],
   [
-    "wiki keeps the local database definition",
-    { "apps/wiki/src/index.ts": 'export * from "@template/db/local";\n' },
+    "no-development-dependency-in-shipped-code",
+    {
+      "libs/ui/src/index.ts":
+        'import type { Handler } from "msw";\n\nexport type Mocked = Handler;\n',
+    },
+  ],
+  ["no-raw-database-driver", { "libs/db/src/index.ts": 'export * from "drizzle-orm";\n' }],
+  [
+    "no-production-to-test",
+    {
+      "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
+      "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
+    },
   ],
   [
-    "the user app owns the signup screen",
+    "no-signup-outside-user",
     { "apps/user/src/index.ts": 'export * from "@template/ui/signup";\n' },
   ],
+  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@template/db/local";\n' }],
   [
-    "the browser package reads the shared parts",
-    { "apps/user/src/index.ts": 'export * from "@template/ui";\n' },
+    "no-browser-to-server",
+    {
+      "libs/runtime/src/index.ts": 'export * from "@template/db";\n',
+      "libs/ui/src/index.ts": 'export * from "@template/runtime/contracts";\n',
+    },
   ],
 ];
 
+const scannedModules = ["libs/db/src/index.ts", "libs/ui/src/index.ts", "tools/quality/rules.ts"];
+
+interface RepositoryCruise {
+  readonly scanned: readonly string[];
+  readonly violations: readonly string[];
+}
+
+async function cruiseRepository(): Promise<RepositoryCruise> {
+  const { output } = await cruise(
+    ["apps", "libs", "infra", "tools"],
+    { ...configuration.options, ruleSet: { forbidden }, validate: true },
+    configuration.options?.enhancedResolveOptions,
+  );
+  if (typeof output === "string") {
+    return { scanned: [], violations: [] };
+  }
+  const sources = new Set<string>();
+  for (const module of output.modules) {
+    sources.add(module.source);
+  }
+  return {
+    scanned: scannedModules.filter((module) => sources.has(module)),
+    violations: reportedRules(output.summary.violations),
+  };
+}
+
 describe("dependency-cruiser rules on package boundaries", () => {
-  it("every rule has a case that reports it", () => {
+  it("every rule has a case that reports it and a case that must stay silent", () => {
     expect.hasAssertions();
-    expect([...new Set(detected.map(([rule]) => rule))].toSorted()).toStrictEqual(
-      [...configuredRules].toSorted(),
-    );
+    expect({
+      accepted: [...new Set(accepted.map(([rule]) => rule))].toSorted(),
+      detected: [...new Set(detected.map(([rule]) => rule))].toSorted(),
+    }).toStrictEqual({
+      accepted: [...configuredRules].toSorted(),
+      detected: [...configuredRules].toSorted(),
+    });
   });
 
   it.for(detected)("reports %s", async ([rule, files]) => {
     expect.hasAssertions();
-    await expect(violatedRules(files)).resolves.toContain(rule);
+    await expect(violatedRules(files)).resolves.toStrictEqual([rule]);
   });
 
-  it.for(accepted)("accepts %s", async ([, files]) => {
+  it.for(accepted)("stays silent about %s", async ([, files]) => {
     expect.hasAssertions();
     await expect(violatedRules(files)).resolves.toStrictEqual([]);
+  });
+
+  it("reaches this repository and finds nothing forbidden in it", async () => {
+    expect.hasAssertions();
+    await expect(cruiseRepository()).resolves.toStrictEqual({
+      scanned: scannedModules,
+      violations: [],
+    });
   });
 });

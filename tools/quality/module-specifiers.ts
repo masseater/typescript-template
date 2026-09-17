@@ -3,13 +3,7 @@ import type { Origin } from "./references.ts";
 import { origins } from "./references.ts";
 import { reportViolation } from "./lint-context.ts";
 
-interface SpecifierChecks {
-  readonly commonJs: (node: Node) => void;
-  readonly loaderCall: (callee: Node) => boolean;
-  readonly source: (node: Node) => void;
-}
-
-function isShipped(context: LintContext): boolean {
+function isApplicationOrLibrary(context: LintContext): boolean {
   return /\/(?:apps|libs)\/[^/]+\//u.test(context.filename.replaceAll("\\", "/"));
 }
 
@@ -21,8 +15,12 @@ function isCommonJsLoader(origin: Origin): boolean {
   );
 }
 
-function specifierChecks(context: LintContext): SpecifierChecks {
-  const shipped = isShipped(context);
+function specifierChecks(context: LintContext): {
+  readonly commonJs: (node: Node) => void;
+  readonly loaderCall: (callee: Node) => boolean;
+  readonly source: (node: Node) => void;
+} {
+  const shipped = isApplicationOrLibrary(context);
   return {
     commonJs: (node) => {
       if (shipped) {
@@ -39,4 +37,3 @@ function specifierChecks(context: LintContext): SpecifierChecks {
 }
 
 export { specifierChecks };
-export type { SpecifierChecks };

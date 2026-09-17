@@ -5,7 +5,7 @@ import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-import type { SpecifierChecks } from "./module-specifiers.ts";
+
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
 import { reportViolation } from "./lint-context.ts";
@@ -86,7 +86,7 @@ function rawD1Checks(context: LintContext): RawD1Checks {
   };
 }
 
-function importVisitor(specifiers: SpecifierChecks): Visitor {
+function importVisitor(specifiers: ReturnType<typeof specifierChecks>): Visitor {
   return {
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
