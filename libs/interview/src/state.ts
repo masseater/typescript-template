@@ -1,26 +1,31 @@
-import { FieldKey, Reply, Sheet } from "./sheet.ts";
+import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";
 import { Schema } from "effect";
 
 const maximumUtterance = 500;
-const maximumChoices = 8;
 
+const roles = ["interviewer", "member"] as const;
+const settledPhases = ["summary", "saved"] as const;
+
+const Progress = Schema.Struct({ sheet: Sheet, skipped: Schema.Array(FieldKey) });
 const Message = Schema.Struct({
-  role: Schema.Literals(["interviewer", "member"]),
-  sheet: Schema.optionalKey(Sheet),
+  card: Schema.optionalKey(Progress),
+  role: Schema.Literals(roles),
   text: Schema.String,
 });
+const conversation = { ...Progress.fields, messages: Schema.Array(Message) };
 
-const State = Schema.Struct({
-  current: Schema.optionalKey(FieldKey),
-  messages: Schema.Array(Message),
-  phase: Schema.Literals(["asking", "summary", "saved"]),
-  reply: Schema.optionalKey(Reply),
-  sheet: Sheet,
-  skipped: Schema.Array(FieldKey),
-});
+const State = Schema.Union([
+  Schema.Struct({
+    ...conversation,
+    current: FieldKey,
+    phase: Schema.Literal("asking"),
+    reply: Schema.optionalKey(Reply),
+  }),
+  Schema.Struct({ ...conversation, phase: Schema.Literals(settledPhases) }),
+]);
 
 const utteranceLength = Schema.isLengthBetween(1, maximumUtterance);
-const choiceCount = Schema.isLengthBetween(1, maximumChoices);
+const choiceCount = Schema.isLengthBetween(1, maximumOptions);
 const Utterance = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("text"), text: Schema.Trim.check(utteranceLength) }),
   Schema.Struct({
@@ -34,5 +39,5 @@ const Utterance = Schema.Union([
 type InterviewState = typeof State.Type;
 type MemberUtterance = typeof Utterance.Type;
 
-export { State, Utterance };
+export { State, Utterance, roles, settledPhases };
 export type { InterviewState, MemberUtterance };

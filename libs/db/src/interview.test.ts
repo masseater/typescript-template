@@ -1,23 +1,19 @@
 import { assert, it } from "@effect/vitest";
 import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
 import { Effect } from "effect";
+import { TestClock } from "effect/testing";
 import { TestDatabase } from "./testing.ts";
 import { addUser } from "./records-fixture.ts";
 
 const LIMIT = 2;
-const now = new Date(0);
+const TWICE_STORED = 2;
 
 it.effect("of two writers holding the same version only the first one is stored", () =>
   Effect.gen(function* program() {
     yield* addUser("member");
-    yield* startInterview("member", { step: 0 }, { day: "2026-09-18", now });
-    yield* storeInterview("member", { now, savedSheet: undefined, state: { step: 1 }, version: 0 });
-    const late = yield* storeInterview("member", {
-      now,
-      savedSheet: undefined,
-      state: { step: 2 },
-      version: 0,
-    }).pipe(Effect.flip);
+    yield* startInterview("member", { step: 0 });
+    yield* storeInterview("member", 0, { state: { step: 1 } });
+    const late = yield* storeInterview("member", 0, { state: { step: 2 } }).pipe(Effect.flip);
     assert.strictEqual(late._tag, "InterviewConflict");
     assert.deepStrictEqual(yield* findInterview("member"), {
       // oxlint-disable-next-line unicorn/no-null
@@ -28,11 +24,28 @@ it.effect("of two writers holding the same version only the first one is stored"
   }).pipe(Effect.provide(TestDatabase)),
 );
 
+it.effect("the saved sheet stays until a write names it", () =>
+  Effect.gen(function* program() {
+    yield* addUser("member");
+    yield* startInterview("member", { step: 0 });
+    yield* storeInterview("member", 0, { savedSheet: { nickname: "たろう" }, state: { step: 1 } });
+    yield* storeInterview("member", 1, { state: { step: 2 } });
+    assert.deepStrictEqual(yield* findInterview("member"), {
+      savedSheet: { nickname: "たろう" },
+      state: { step: 2 },
+      version: TWICE_STORED,
+    });
+    // oxlint-disable-next-line unicorn/no-null
+    yield* storeInterview("member", TWICE_STORED, { savedSheet: null, state: { step: 3 } });
+    assert.isNull((yield* findInterview("member"))?.savedSheet);
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
 it.effect("starting again keeps the conversation that already exists", () =>
   Effect.gen(function* program() {
     yield* addUser("member");
-    yield* startInterview("member", { step: 0 }, { day: "2026-09-18", now });
-    yield* startInterview("member", { step: 9 }, { day: "2026-09-18", now });
+    yield* startInterview("member", { step: 0 });
+    yield* startInterview("member", { step: 9 });
     assert.deepStrictEqual((yield* findInterview("member"))?.state, { step: 0 });
   }).pipe(Effect.provide(TestDatabase)),
 );
@@ -40,13 +53,14 @@ it.effect("starting again keeps the conversation that already exists", () =>
 it.effect("turns are counted per day and refused beyond the limit", () =>
   Effect.gen(function* program() {
     yield* addUser("member");
-    yield* startInterview("member", {}, { day: "2026-09-18", now });
-    yield* countInterviewTurn("member", "2026-09-18", LIMIT);
-    yield* countInterviewTurn("member", "2026-09-18", LIMIT);
-    const refused = yield* countInterviewTurn("member", "2026-09-18", LIMIT).pipe(Effect.flip);
+    yield* startInterview("member", {});
+    yield* countInterviewTurn("member", LIMIT);
+    yield* countInterviewTurn("member", LIMIT);
+    const refused = yield* countInterviewTurn("member", LIMIT).pipe(Effect.flip);
     assert.strictEqual(refused._tag, "InterviewLimitReached");
-    yield* countInterviewTurn("member", "2026-09-19", LIMIT);
-    const missing = yield* countInterviewTurn("stranger", "2026-09-19", LIMIT).pipe(Effect.flip);
+    yield* TestClock.adjust("1 day");
+    yield* countInterviewTurn("member", LIMIT);
+    const missing = yield* countInterviewTurn("stranger", LIMIT).pipe(Effect.flip);
     assert.strictEqual(missing._tag, "InterviewLimitReached");
   }).pipe(Effect.provide(TestDatabase)),
 );

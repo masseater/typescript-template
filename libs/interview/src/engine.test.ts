@@ -1,5 +1,5 @@
 import { accepts, advance, begin, save } from "./engine.ts";
-import { describe, expect, it } from "vite-plus/test";
+import { assert, describe, expect, it } from "vite-plus/test";
 import { viewOf } from "./contracts.ts";
 
 const NICKNAME_LIMIT = 30;
@@ -270,7 +270,9 @@ describe("corrections that change nothing or follow a save", () => {
 
   it("a correction after saving returns to the summary so that it can be saved again", () => {
     expect.hasAssertions();
-    const saved = save(advance(begin(), { kind: "finish" }));
+    const finished = advance(begin(), { kind: "finish" });
+    assert(finished.phase === "summary");
+    const saved = save(finished);
     expect(viewOf(saved).phase).toBe("saved");
     expect(viewOf(saved).messages.at(-1)).toStrictEqual({
       role: "interviewer",

@@ -1,5 +1,6 @@
 import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
 import type { FieldName, SheetData } from "./sheet.ts";
+import { roles, settledPhases } from "./state.ts";
 import type { InterviewState } from "./state.ts";
 import { Schema } from "effect";
 
@@ -11,13 +12,13 @@ const FieldView = Schema.Struct({
 });
 const MessageView = Schema.Struct({
   card: Schema.optionalKey(Schema.Array(FieldView)),
-  role: Schema.Literals(["interviewer", "member"]),
+  role: Schema.Literals(roles),
   text: Schema.String,
 });
 const InterviewView = Schema.Struct({
   fields: Schema.Array(FieldView),
   messages: Schema.Array(MessageView),
-  phase: Schema.Literals(["asking", "summary", "saved"]),
+  phase: Schema.Literals(["asking", ...settledPhases]),
   reply: Schema.optionalKey(Reply),
 });
 
@@ -38,13 +39,13 @@ function fieldViews(sheet: SheetData, skipped: readonly FieldName[]): readonly F
 function viewOf(state: InterviewState): InterviewViewData {
   return {
     fields: fieldViews(state.sheet, state.skipped),
-    messages: state.messages.map(({ role, sheet, text }) => ({
+    messages: state.messages.map(({ card, role, text }) => ({
       role,
       text,
-      ...(sheet === undefined ? {} : { card: fieldViews(sheet, state.skipped) }),
+      ...(card === undefined ? {} : { card: fieldViews(card.sheet, card.skipped) }),
     })),
     phase: state.phase,
-    ...(state.reply === undefined ? {} : { reply: state.reply }),
+    ...(state.phase === "asking" && state.reply !== undefined ? { reply: state.reply } : {}),
   };
 }
 

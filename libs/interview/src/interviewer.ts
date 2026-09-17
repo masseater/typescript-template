@@ -2,17 +2,18 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { fieldDefinitions, fieldKeys } from "./sheet.ts";
 import type { ConfigurationInvalid } from "@template/config";
 import type { InterviewState } from "./state.ts";
-import type { Understanding } from "./understanding.ts";
+import { Understanding } from "./understanding.ts";
+import type { UnderstandingData } from "./understanding.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
 import { chat } from "@tanstack/ai";
 import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
 import { readAi } from "@template/config";
-import { readUnderstanding } from "./understanding.ts";
 
 type ModelAccess = Parameters<typeof createWorkersAiChat>[1];
 
 const model = "@cf/google/gemma-4-26b-a4b-it";
 const recentMessages = 8;
+const patience = "20 seconds";
 const modelOptions = {
   chat_template_kwargs: { enable_thinking: false },
   max_tokens: 400,
@@ -23,32 +24,10 @@ interface InterviewerShape {
   readonly understand: (
     state: InterviewState,
     utterance: string,
-  ) => Effect.Effect<Understanding, UnderstandingFailed>;
+  ) => Effect.Effect<UnderstandingData, UnderstandingFailed>;
 }
 
-class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
-  "@template/interview/Interviewer",
-) {}
-
-const word = Schema.optionalKey(Schema.String);
-const words = Schema.optionalKey(Schema.Array(Schema.String));
-const LooseReply = Schema.Struct({ kind: Schema.String, options: words });
-const LooseValues = Schema.Struct({
-  area: word,
-  interests: words,
-  message: word,
-  nickname: word,
-  occupation: word,
-});
-const LooseOutput = Schema.Struct({
-  ask: word,
-  finish: Schema.Boolean,
-  message: word,
-  reply: Schema.optionalKey(LooseReply),
-  skip: Schema.Boolean,
-  values: LooseValues,
-});
-const ModelOutput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(LooseOutput));
+const ModelOutput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Understanding));
 
 const fieldList = fieldKeys.map((key) => `${key}（${fieldDefinitions[key].label}）`).join("、");
 const instructions = [
@@ -66,7 +45,7 @@ const instructions = [
 
 function request(state: InterviewState, utterance: string): string {
   return JSON.stringify({
-    current: state.current,
+    current: state.phase === "asking" ? state.current : undefined,
     messages: state.messages.slice(-recentMessages).map(({ role, text }) => ({ role, text })),
     phase: state.phase,
     sheet: state.sheet,
@@ -75,14 +54,14 @@ function request(state: InterviewState, utterance: string): string {
   });
 }
 
-const complete = Effect.fn("interview.complete")(function* complete(
+function complete(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   access: ModelAccess,
   state: InterviewState,
   utterance: string,
-) {
-  const output = yield* Effect.tryPromise({
-    catch: () => new UnderstandingFailed({ reason: "model_failed" }),
+): Effect.Effect<UnderstandingData, UnderstandingFailed> {
+  return Effect.tryPromise({
+    catch: (cause) => new UnderstandingFailed({ cause, reason: "model_failed" }),
     try: async () =>
       chat({
         adapter: createWorkersAiChat(model, access),
@@ -91,30 +70,39 @@ const complete = Effect.fn("interview.complete")(function* complete(
         outputSchema: ModelOutput,
         systemPrompts: [instructions],
       }),
-  });
-  return readUnderstanding(output);
-});
-
-function understandWith(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  access?: ModelAccess,
-): InterviewerShape["understand"] {
-  return (state, utterance) =>
-    access === undefined
-      ? Effect.fail(new UnderstandingFailed({ reason: "unavailable" }))
-      : complete(access, state, utterance);
-}
-
-function interviewerLayer(env: unknown): Layer.Layer<Interviewer, ConfigurationInvalid> {
-  return Layer.effect(
-    Interviewer,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    Effect.map(readAi(env), (ai) =>
-      Interviewer.of({
-        understand: understandWith(ai === undefined ? undefined : { binding: ai }),
-      }),
-    ),
+  }).pipe(
+    Effect.timeoutOrElse({
+      duration: patience,
+      orElse: () => Effect.fail(new UnderstandingFailed({ reason: "timed_out" })),
+    }),
+    Effect.withSpan("interview.complete"),
   );
 }
 
-export { Interviewer, interviewerLayer, understandWith };
+class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
+  "@template/interview/Interviewer",
+) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {
+    return Layer.succeed(
+      Interviewer,
+      Interviewer.of({
+        understand: (state, utterance) =>
+          access === undefined
+            ? Effect.fail(new UnderstandingFailed({ reason: "unavailable" }))
+            : complete(access, state, utterance),
+      }),
+    );
+  }
+
+  public static fromEnvironment(env: unknown): Layer.Layer<Interviewer, ConfigurationInvalid> {
+    return Layer.unwrap(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      Effect.map(readAi(env), (ai) =>
+        Interviewer.layer(ai === undefined ? undefined : { binding: ai }),
+      ),
+    );
+  }
+}
+
+export { Interviewer };

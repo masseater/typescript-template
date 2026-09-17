@@ -1,8 +1,8 @@
 import { dispatchUserApi, userApi } from "./api.ts";
+import { Interviewer } from "@template/interview";
 import { createAppWorker } from "@template/runtime/app";
 import { env } from "cloudflare:workers";
 import handler from "@tanstack/react-start/server-entry";
-import { interviewerLayer } from "@template/interview";
 import { routes } from "./telemetry-routes.ts";
 
 // oxlint-disable-next-line import/no-default-export
@@ -13,5 +13,5 @@ export default createAppWorker({
   env,
   handler,
   routes,
-  services: interviewerLayer(env),
+  services: Interviewer.fromEnvironment(env),
 });

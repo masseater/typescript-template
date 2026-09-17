@@ -1,8 +1,8 @@
 import { Effect, Layer } from "effect";
-import { Interviewer, understandWith } from "./interviewer.ts";
 import { TestDatabase, runStatement } from "@template/db/testing";
 import { assert, it } from "@effect/vitest";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
+import { Interviewer } from "./interviewer.ts";
 import type { TestBinding } from "@template/db/testing";
 import { TestClock } from "effect/testing";
 import { UnderstandingFailed } from "./understanding-failed.ts";
@@ -11,6 +11,7 @@ import { findInterview } from "@template/db/interview";
 type Understand = Parameters<typeof Interviewer.of>[0]["understand"];
 
 const DAILY_TURNS = 60;
+const NICKNAME_LIMIT = 30;
 const greeting = { role: "interviewer", text: "はじめまして。なんて呼べばいいですか？" } as const;
 
 function addMember(id: string): Effect.Effect<unknown, unknown, TestBinding> {
@@ -28,7 +29,7 @@ function services(
   return Layer.merge(TestDatabase, Layer.succeed(Interviewer, Interviewer.of({ understand })));
 }
 
-const withoutModel = services(understandWith());
+const withoutModel = Layer.merge(TestDatabase, Interviewer.layer());
 
 it.effect("an interview that was left midway resumes with the same conversation", () =>
   Effect.gen(function* program() {
@@ -115,28 +116,46 @@ it.effect("restarting discards the conversation and the saved sheet", () =>
   }).pipe(Effect.provide(withoutModel)),
 );
 
+it.effect("a correction after saving keeps the saved sheet until it is saved again", () =>
+  Effect.gen(function* program() {
+    yield* addMember("member");
+    yield* takeTurn("member", { kind: "text", text: "たろう" });
+    yield* takeTurn("member", { kind: "finish" });
+    yield* saveInterview("member");
+    const corrected = yield* takeTurn("member", { kind: "text", text: "呼び名はジロウ" });
+    assert.strictEqual(corrected.phase, "summary");
+    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "たろう" });
+    yield* saveInterview("member");
+    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "ジロウ" });
+  }).pipe(Effect.provide(withoutModel)),
+);
+
 it.effect("a stored conversation that no longer matches the schema starts over", () =>
   Effect.gen(function* program() {
     yield* addMember("member");
     yield* takeTurn("member", { kind: "text", text: "たろう" });
+    yield* takeTurn("member", { kind: "finish" });
+    yield* saveInterview("member");
     const outdated = '{"phase":"old"}';
     yield* runStatement("UPDATE interview SET state = ? WHERE user_id = ?", outdated, "member");
     const opened = yield* openInterview("member");
     assert.deepStrictEqual(opened.messages, [greeting]);
+    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "たろう" });
   }).pipe(Effect.provide(withoutModel)),
 );
 
-it.effect("turns beyond the daily limit are refused until the next day", () =>
+it.effect("only utterances that need the model count toward the daily limit", () =>
   Effect.gen(function* program() {
     yield* addMember("member");
-    yield* takeTurn("member", { kind: "finish" });
     yield* Effect.forEach(
-      Array.from({ length: DAILY_TURNS - 1 }),
-      () => takeTurn("member", { kind: "text", text: "うーん" }),
+      Array.from({ length: DAILY_TURNS }),
+      () => takeTurn("member", { kind: "text", text: "あ".repeat(NICKNAME_LIMIT + 1) }),
       { discard: true },
     );
-    const refused = yield* takeTurn("member", { kind: "text", text: "うーん" }).pipe(Effect.flip);
+    const refused = yield* takeTurn("member", { kind: "text", text: "たろう" }).pipe(Effect.flip);
     assert.strictEqual(refused._tag, "InterviewLimitReached");
+    const finished = yield* takeTurn("member", { kind: "finish" });
+    assert.strictEqual(finished.phase, "summary");
     yield* TestClock.adjust("1 day");
     const view = yield* takeTurn("member", { kind: "text", text: "呼び名はたろう" });
     assert.strictEqual(view.fields[0]?.status, "answered");

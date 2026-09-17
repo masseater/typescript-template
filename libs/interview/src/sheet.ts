@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 const maximumNickname = 30;
 const maximumOccupation = 50;
@@ -14,6 +14,16 @@ function text(maximum: number): Schema.Trim {
   return Schema.Trim.check(Schema.isLengthBetween(1, maximum));
 }
 
+function dropped(): Effect.Effect<Option.Option<never>> {
+  return Effect.succeedNone;
+}
+
+function readable<Value extends Schema.Constraint>(
+  schema: Value,
+): Schema.optionalKey<Schema.middlewareDecoding<Value, Value["DecodingServices"]>> {
+  return Schema.optionalKey(Schema.catchDecoding<Value>(dropped)(schema));
+}
+
 const interestCount = Schema.isLengthBetween(1, maximumInterests);
 const valueSchemas = {
   area: text(maximumArea),
@@ -23,16 +33,25 @@ const valueSchemas = {
   occupation: text(maximumOccupation),
 };
 
+const fieldKeys = ["nickname", "occupation", "interests", "area", "message"] as const;
+const FieldKey = Schema.Literals(fieldKeys);
+type FieldName = typeof FieldKey.Type;
+
 const Sheet = Schema.Struct({
   area: Schema.optionalKey(valueSchemas.area),
   interests: Schema.optionalKey(valueSchemas.interests),
   message: Schema.optionalKey(valueSchemas.message),
   nickname: Schema.optionalKey(valueSchemas.nickname),
   occupation: Schema.optionalKey(valueSchemas.occupation),
-});
+} satisfies Record<FieldName, unknown>);
 
-const fieldKeys = ["nickname", "occupation", "interests", "area", "message"] as const;
-const FieldKey = Schema.Literals(fieldKeys);
+const ReadableSheet = Schema.Struct({
+  area: readable(valueSchemas.area),
+  interests: readable(valueSchemas.interests),
+  message: readable(valueSchemas.message),
+  nickname: readable(valueSchemas.nickname),
+  occupation: readable(valueSchemas.occupation),
+} satisfies Record<FieldName, unknown>);
 
 const optionCount = Schema.isLengthBetween(minimumOptions, maximumOptions);
 const Options = Schema.Array(text(maximumOption)).check(optionCount);
@@ -43,7 +62,6 @@ const Reply = Schema.Union([
 ]);
 
 type SheetData = typeof Sheet.Type;
-type FieldName = typeof FieldKey.Type;
 type ReplyForm = typeof Reply.Type;
 
 interface FieldDefinition {
@@ -73,35 +91,13 @@ const fieldDefinitions: Readonly<Record<FieldName, FieldDefinition>> = {
 };
 
 const separators = /[、,，]/u;
-const Loose = Schema.Record(Schema.String, Schema.Unknown);
-const decodeLoose = Schema.decodeUnknownOption(Loose);
-const decodeSheet = Schema.decodeUnknownOption(Sheet);
-
-type Decodable = Schema.Top & { readonly DecodingServices: never };
-type LooseRecord = Readonly<Record<string, unknown>>;
-
-function validEntries(
-  input: unknown,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  schemas: Readonly<Record<string, Decodable>>,
-): LooseRecord {
-  const record = Option.getOrElse(decodeLoose(input), (): LooseRecord => ({}));
-  const valid = Object.keys(schemas).filter((key) => {
-    const schema = schemas[key];
-    return schema !== undefined && Option.isSome(Schema.decodeUnknownOption(schema)(record[key]));
-  });
-  return Object.fromEntries(valid.map((key) => [key, record[key]]));
-}
-
-function readValues(input: unknown): SheetData {
-  return Option.getOrElse(decodeSheet(validEntries(input, valueSchemas)), () => ({}));
-}
+const decodeReadable = Schema.decodeUnknownOption(ReadableSheet);
 
 function readValue(key: FieldName, spoken: readonly string[]): SheetData {
   const parts = spoken.flatMap((part) => part.split(separators));
   const candidate =
     key === "interests" ? parts.filter((part) => part.trim() !== "") : spoken.join("、");
-  return readValues({ [key]: candidate });
+  return Option.getOrElse(decodeReadable({ [key]: candidate }), () => ({}));
 }
 
 function displayValue(sheet: SheetData, key: FieldName): string | undefined {
@@ -111,13 +107,15 @@ function displayValue(sheet: SheetData, key: FieldName): string | undefined {
 
 export {
   FieldKey,
+  ReadableSheet,
   Reply,
   Sheet,
   displayValue,
   fieldDefinitions,
   fieldKeys,
+  maximumInterests,
+  maximumOptions,
   readValue,
-  readValues,
-  validEntries,
+  readable,
 };
 export type { FieldName, ReplyForm, SheetData };

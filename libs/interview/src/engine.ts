@@ -1,7 +1,7 @@
 import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
 import type { InterviewState, MemberUtterance } from "./state.ts";
-import { fieldDefinitions, fieldKeys, readValue } from "./sheet.ts";
-import type { Understanding } from "./understanding.ts";
+import { fieldDefinitions, fieldKeys, maximumInterests, readValue } from "./sheet.ts";
+import type { UnderstandingData } from "./understanding.ts";
 import { understandByRules } from "./understanding.ts";
 
 const maximumMessages = 100;
@@ -14,6 +14,8 @@ interface Asked {
   readonly text: string;
 }
 
+type Asking = Extract<InterviewState, { readonly phase: "asking" }>;
+type Settled = Exclude<InterviewState, Asking>;
 type Progress = Pick<InterviewState, "messages" | "sheet" | "skipped">;
 type Message = InterviewState["messages"][number];
 
@@ -30,7 +32,7 @@ function says(progress: Progress, message: Message): InterviewState["messages"] 
   return [...progress.messages, message].slice(-maximumMessages);
 }
 
-function asking(progress: Progress, key: FieldName, asked: Asked): InterviewState {
+function asking(progress: Progress, key: FieldName, asked: Asked): Asking {
   return {
     current: key,
     messages: says(progress, { role: "interviewer", text: asked.text }),
@@ -41,17 +43,18 @@ function asking(progress: Progress, key: FieldName, asked: Asked): InterviewStat
   };
 }
 
-function summarizing(progress: Progress, opening: string): InterviewState {
+function summarizing(progress: Progress, opening: string): Settled {
+  const { sheet, skipped } = progress;
   const text = `${opening}${summaryText}`;
   return {
-    messages: says(progress, { role: "interviewer", sheet: progress.sheet, text }),
+    messages: says(progress, { card: { sheet, skipped }, role: "interviewer", text }),
     phase: "summary",
-    sheet: progress.sheet,
-    skipped: progress.skipped,
+    sheet,
+    skipped,
   };
 }
 
-function begin(): InterviewState {
+function begin(): Asking {
   const progress = { messages: [], sheet: {}, skipped: [] };
   return asking(progress, "nickname", cannedQuestion("nickname", "はじめまして。"));
 }
@@ -66,12 +69,14 @@ function spoken(utterance: MemberUtterance): string {
   return utterance.kind === "skip" ? "スキップ" : "ここで終える";
 }
 
-function offered(state: InterviewState, values: readonly string[]): boolean {
-  const { reply } = state;
+function offered(reply: ReplyForm | undefined, values: readonly string[]): boolean {
+  if (reply === undefined || reply.kind === "confirm") {
+    return false;
+  }
+  const limit = reply.kind === "multiple" ? maximumInterests : 1;
   return (
-    reply !== undefined &&
-    reply.kind !== "confirm" &&
-    (reply.kind === "multiple" || values.length === 1) &&
+    values.length <= limit &&
+    new Set(values).size === values.length &&
     values.every((value) => reply.options.includes(value))
   );
 }
@@ -80,8 +85,10 @@ function accepts(state: InterviewState, utterance: MemberUtterance): boolean {
   if (utterance.kind === "text") {
     return true;
   }
-  const chosen = utterance.kind !== "choice" || offered(state, utterance.values);
-  return state.phase === "asking" && chosen;
+  return (
+    state.phase === "asking" &&
+    (utterance.kind !== "choice" || offered(state.reply, utterance.values))
+  );
 }
 
 function needsModel(utterance: MemberUtterance): boolean {
@@ -91,12 +98,12 @@ function needsModel(utterance: MemberUtterance): boolean {
 function interpret(
   state: InterviewState,
   utterance: MemberUtterance,
-  understood?: Understanding,
-): Understanding {
+  understood?: UnderstandingData,
+): UnderstandingData {
   if (utterance.kind === "text") {
     return understood ?? understandByRules(state, utterance.text);
   }
-  if (utterance.kind === "choice" && state.current !== undefined) {
+  if (utterance.kind === "choice" && state.phase === "asking") {
     const values = readValue(state.current, utterance.values);
     return { ...understood, finish: false, skip: false, values };
   }
@@ -105,11 +112,11 @@ function interpret(
 
 function merged(
   state: InterviewState,
-  understanding: Understanding,
+  understanding: UnderstandingData,
 ): Pick<InterviewState, "sheet" | "skipped"> {
   const sheet = { ...state.sheet, ...understanding.values };
   const skippedNow =
-    understanding.skip && state.current !== undefined && sheet[state.current] === undefined
+    understanding.skip && state.phase === "asking" && sheet[state.current] === undefined
       ? [state.current]
       : [];
   const skipped = [...state.skipped.filter((key) => sheet[key] === undefined), ...skippedNow];
@@ -117,8 +124,8 @@ function merged(
 }
 
 function openingFor(
-  state: InterviewState,
-  understanding: Understanding,
+  state: Asking,
+  understanding: UnderstandingData,
   skipped: readonly FieldName[],
 ): string {
   if (skipped.length > state.skipped.length) {
@@ -129,7 +136,16 @@ function openingFor(
     : "すみません、うまく受け取れませんでした。";
 }
 
-function afterAnswer(state: InterviewState, understanding: Understanding): InterviewState {
+function modelQuestion(next: FieldName, understanding: UnderstandingData): Asked | undefined {
+  const { ask, message, reply } = understanding;
+  if (ask !== next || message === undefined) {
+    return undefined;
+  }
+  const fits = reply !== undefined && (reply.kind !== "multiple" || next === "interests");
+  return { text: message, ...(fits ? { reply } : {}) };
+}
+
+function afterAnswer(state: Asking, understanding: UnderstandingData): InterviewState {
   const progress = { messages: state.messages, ...merged(state, understanding) };
   if (understanding.finish) {
     return summarizing(progress, "わかりました、ここまでにしますね。");
@@ -138,15 +154,11 @@ function afterAnswer(state: InterviewState, understanding: Understanding): Inter
   if (next === undefined) {
     return summarizing(progress, thanks);
   }
-  const { ask, message, reply } = understanding;
-  const asked =
-    ask === next && message !== undefined
-      ? { text: message, ...(reply === undefined ? {} : { reply }) }
-      : cannedQuestion(next, openingFor(state, understanding, progress.skipped));
-  return asking(progress, next, asked);
+  const scripted = cannedQuestion(next, openingFor(state, understanding, progress.skipped));
+  return asking(progress, next, modelQuestion(next, understanding) ?? scripted);
 }
 
-function afterCorrection(state: InterviewState, understanding: Understanding): InterviewState {
+function afterCorrection(state: Settled, understanding: UnderstandingData): Settled {
   if (Object.keys(understanding.values).length === 0) {
     const text = "どの項目をどう直すかを、「職種は〇〇」のように教えてください。";
     return { ...state, messages: says(state, { role: "interviewer", text }) };
@@ -157,16 +169,16 @@ function afterCorrection(state: InterviewState, understanding: Understanding): I
 function advance(
   state: InterviewState,
   utterance: MemberUtterance,
-  understood?: Understanding,
+  understood?: UnderstandingData,
 ): InterviewState {
   const understanding = interpret(state, utterance, understood);
-  const heard = { ...state, messages: says(state, { role: "member", text: spoken(utterance) }) };
+  const messages = says(state, { role: "member", text: spoken(utterance) });
   return state.phase === "asking"
-    ? afterAnswer(heard, understanding)
-    : afterCorrection(heard, understanding);
+    ? afterAnswer({ ...state, messages }, understanding)
+    : afterCorrection({ ...state, messages }, understanding);
 }
 
-function save(state: InterviewState): InterviewState {
+function save(state: Settled): Settled {
   const text = "保存しました。";
   return { ...state, messages: says(state, { role: "interviewer", text }), phase: "saved" };
 }

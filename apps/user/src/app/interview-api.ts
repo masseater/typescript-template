@@ -18,7 +18,7 @@ const failures = {
     status: conflict,
   },
   InterviewLimitReached: {
-    message: "今日はこれ以上続けられません。明日また話しかけてください。",
+    message: "今日はこれ以上話せません。スキップと終了は使えます。明日また話しかけてください。",
     status: tooManyRequests,
   },
   TurnRejected: { message: "いまはその操作を受け付けられません。", status: conflict },
