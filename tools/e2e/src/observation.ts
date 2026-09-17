@@ -44,7 +44,10 @@ export function assertPrivate(data: unknown, secrets: readonly string[]): void {
   for (const secret of secrets) {
     if (!secret) continue;
     const variants = [secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)];
-    ensure(!variants.some((variant) => text.includes(variant)), "E2E_TELEMETRY_PII_LEAK");
+    const leaked = /^\d+$/.test(secret)
+      ? new RegExp(`(?<!\\d)${secret}(?!\\d)`).test(text)
+      : variants.some((variant) => text.includes(variant));
+    ensure(!leaked, "E2E_TELEMETRY_PII_LEAK");
   }
 }
 

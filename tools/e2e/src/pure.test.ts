@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { totp } from "./totp.ts";
 import { verificationLink } from "./mail.ts";
+import { assertPrivate } from "./observation.ts";
 import { decodeBrowserBatch, object, shellQuote, safeFailure } from "./support.ts";
 
 test("TOTP computes the RFC 6238 SHA-1 vectors using real HMAC", () => {
@@ -64,5 +65,19 @@ test("failure reporting drops provider messages, secrets and nested causes", () 
   expect(error.cause).toBeUndefined();
   expect(safeFailure(new Error("E2E_VERIFIED_LOGIN_FAILED"), "registration").message).toBe(
     "E2E_VERIFIED_LOGIN_FAILED; stage=registration",
+  );
+});
+
+test("telemetry privacy check ignores numeric codes embedded in longer numbers only", () => {
+  const telemetry = { timeUnixNano: "1789640123456000000", attributes: { status: 200 } };
+  expect(() => assertPrivate(telemetry, ["123456"])).not.toThrow();
+  expect(() => assertPrivate({ ...telemetry, code: "123456" }, ["123456"])).toThrow(
+    "E2E_TELEMETRY_PII_LEAK",
+  );
+  expect(() => assertPrivate({ note: "otp=123456;" }, ["123456"])).toThrow(
+    "E2E_TELEMETRY_PII_LEAK",
+  );
+  expect(() => assertPrivate({ email: "a+b@example.test" }, ["a+b@example.test"])).toThrow(
+    "E2E_TELEMETRY_PII_LEAK",
   );
 });
