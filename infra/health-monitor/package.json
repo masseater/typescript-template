@@ -5,9 +5,6 @@
   "exports": {
     "./artifact": "./src/artifact.ts"
   },
-  "scripts": {
-    "build": "vp pack"
-  },
   "dependencies": {
     "@template/monitor": "workspace:*",
     "effect": "catalog:"

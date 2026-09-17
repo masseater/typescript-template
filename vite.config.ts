@@ -143,6 +143,25 @@ export default defineConfig({
     },
   },
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
+  run: {
+    tasks: {
+      build: [
+        "vp run -F '!typescript-template' build",
+        "vp run --filter @template/dev private-maps",
+      ],
+      check: {
+        command: ["vp check", "vp run knip", "vp run check:staged", "vp run check:effect"],
+        input: [{ auto: true }, "!node_modules/.modules.yaml"],
+      },
+      "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
+      "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
+      knip: {
+        command: ["knip", "knip --strict"],
+        input: [{ auto: true }, "!node_modules/.cache/**"],
+        output: [{ auto: true }, "!node_modules/.cache/**"],
+      },
+    },
+  },
   test: {
     clearMocks: false,
     include: [

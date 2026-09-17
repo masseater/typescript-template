@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { field, workspaceManifests } from "./dependencies.ts";
+import { scriptViolations, taskViolations } from "./scripts.ts";
+import type { UserConfig } from "vite-plus";
 import type { WorkspaceManifest } from "./dependencies.ts";
-import { scriptViolations } from "./scripts.ts";
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   return manifests.flatMap(({ manifest }) => {
@@ -21,6 +22,27 @@ function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly s
     )
     .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
 }
+
+const configs: Readonly<Record<string, Readonly<UserConfig>>> = import.meta.glob(
+  ["../../vite.config.ts", "../../infra/*/vite.config.ts"],
+  { eager: true, import: "default" },
+);
+const appRuns: Readonly<Record<string, UserConfig["run"]>> = import.meta.glob(
+  "../../libs/config/src/vite.ts",
+  { eager: true, import: "appRun" },
+);
+
+const runs: Readonly<Record<string, UserConfig["run"]>> = {
+  ...Object.fromEntries(
+    Object.keys(configs).map((file: string) => [file, configs[file]?.run] as const),
+  ),
+  ...appRuns,
+};
+const taskFiles = Object.keys(runs);
+const taskNames = taskFiles.flatMap((file: string) => Object.keys(runs[file]?.tasks ?? {}));
+const repositoryTaskViolations = taskFiles.flatMap((file: string) =>
+  taskViolations(runs[file]?.tasks ?? {}),
+);
 
 const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,
@@ -102,5 +124,18 @@ describe("workspace script conventions", () => {
     const tools = packageNames(workspaceManifests.filter(({ area }) => area === "tools"));
     const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
     expect(consumers.flatMap((consumer) => toolReferences(consumer, tools))).toStrictEqual([]);
+  });
+});
+
+describe("vite task conventions", () => {
+  it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
+    expect.assertions(1);
+    expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
+  });
+
+  it("all repository tasks run through Vite+", () => {
+    expect.hasAssertions();
+    expect(taskNames).toStrictEqual(expect.arrayContaining(["build", "check", "knip"]));
+    expect(repositoryTaskViolations).toStrictEqual([]);
   });
 });

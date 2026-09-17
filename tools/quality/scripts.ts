@@ -82,7 +82,15 @@ function callsPackageManager(tokens: readonly string[]): boolean {
   return packageManagers.has(command.replace(/^.*\//u, "").replace(/\.cmd$/u, ""));
 }
 
-export function scriptViolations(manifest: unknown): string[] {
+function commandViolations(name: string, command: string): string[] {
+  return words(command).some((tokens) => callsPackageManager(tokens))
+    ? [
+        `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
+      ]
+    : [];
+}
+
+function scriptViolations(manifest: unknown): string[] {
   if (typeof manifest !== "object" || manifest === null || !("scripts" in manifest)) {
     return [];
   }
@@ -94,10 +102,18 @@ export function scriptViolations(manifest: unknown): string[] {
     if (typeof command !== "string") {
       throw new TypeError(`Script ${name} must be a string`);
     }
-    return words(command).some((tokens) => callsPackageManager(tokens))
-      ? [
-          `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
-        ]
-      : [];
+    return commandViolations(name, command);
   });
 }
+
+type Command = string | readonly string[];
+type Task = Command | { readonly command: Command };
+
+function taskViolations(tasks: Readonly<Record<string, Task>>): string[] {
+  return Object.entries(tasks).flatMap(([name, task]: readonly [string, Task]) => {
+    const command = typeof task === "object" && "command" in task ? task.command : task;
+    return [command].flat().flatMap((entry: string) => commandViolations(name, entry));
+  });
+}
+
+export { scriptViolations, taskViolations };

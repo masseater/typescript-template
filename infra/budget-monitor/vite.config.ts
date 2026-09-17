@@ -13,4 +13,5 @@ export default defineConfig({
     platform: "browser",
     target: "es2023",
   },
+  run: { tasks: { build: "vp pack" } },
 });

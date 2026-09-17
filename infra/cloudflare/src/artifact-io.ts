@@ -72,7 +72,7 @@ function files(directory: string): Effect.Effect<string[], ArtifactFailure> {
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function sha256Hex(content: Readonly<Uint8Array>): Effect.Effect<string, ArtifactFailure> {
+function sha256Hex(content: Uint8Array<ArrayBuffer>): Effect.Effect<string, ArtifactFailure> {
   return io(async () =>
     Buffer.from(await crypto.subtle.digest("SHA-256", content)).toString("hex"),
   );
