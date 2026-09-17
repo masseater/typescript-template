@@ -9,7 +9,7 @@ function SignUpForm(): ReactElement {
   const [sent, setSent] = useState(false);
   const action = useAction();
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full max-w-md flex-col gap-4">
       {sent ? (
         <Status variant="success">
           確認メールを送信しました。メールのリンクで確認後、ログインしてください。

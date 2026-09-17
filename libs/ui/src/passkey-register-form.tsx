@@ -38,7 +38,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4">
         <Field
           label="パスキーの名前"
           name="passkey-name"

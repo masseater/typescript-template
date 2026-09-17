@@ -36,7 +36,7 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
   );
   return (
     <form onSubmit={submit}>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4">
         <TotpField code={code} />
         <Button type="submit" disabled={action.blocked || !saved}>
           確認して認証アプリを有効化

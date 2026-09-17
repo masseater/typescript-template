@@ -54,7 +54,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
   const submit = useCredentialsSubmit(props);
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4">
         <Field
           label="メールアドレス"
           name="email"

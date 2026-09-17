@@ -113,9 +113,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
     "shadcn/no-arbitrary-values": "error",
     "shadcn/no-unknown-classes": "error"
   },
-  "overrides": [
-    { "files": ["libs/ui/src/shared/ui/**"], "rules": { "shadcn/no-restyle": "off" } }
-  ]
+  "overrides": [{ "files": ["libs/ui/src/shared/ui/**"], "rules": { "shadcn/no-restyle": "off" } }]
 }
 ```
 

@@ -56,7 +56,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
   const submit = useSignUpSubmit({ action, email, name, onSent, password });
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4">
         <Field
           label="ユーザー名"
           name="name"

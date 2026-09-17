@@ -20,6 +20,18 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 
 const lint = field(configs["../../vite.config.ts"], "lint");
 
+function restrictedImportNames(): string[] {
+  const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
+  const options: unknown = Array.isArray(rule) ? rule.at(1) : undefined;
+  const paths: unknown = field(options, "paths");
+  return Array.isArray(paths)
+    ? paths.flatMap((entry: unknown) => {
+        const name = field(entry, "name");
+        return typeof name === "string" ? [name] : [];
+      })
+    : [];
+}
+
 const restyled = [
   ["no-restyle", "bg-destructive"],
   ["no-raw-colors", "text-red-500"],
@@ -120,6 +132,14 @@ describe("design system lint", () => {
       expect.arrayContaining(["Button", "Field", "Status", "Table"]),
     );
   });
+
+  it.for(["smarthr-ui", "styled-components", "react-intl"])(
+    "keeps %s out of the import graph",
+    (name) => {
+      expect.hasAssertions();
+      expect(restrictedImportNames()).toContain(name);
+    },
+  );
 
   it("enables every design system rule", () => {
     expect.hasAssertions();

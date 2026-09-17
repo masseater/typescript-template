@@ -96,6 +96,22 @@ export default defineConfig({
           ignoreTypeIndexes: true,
         },
       ],
+      "eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              message: "@template/ui/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              name: "smarthr-ui",
+            },
+            {
+              message: "Tailwind CSS v4 のユーティリティを使ってください。",
+              name: "styled-components",
+            },
+            { message: "Paraglide JS を使ってください。", name: "react-intl" },
+          ],
+        },
+      ],
       "eslint/no-ternary": "off",
       "eslint/no-undef": "off",
       "eslint/no-undefined": "off",

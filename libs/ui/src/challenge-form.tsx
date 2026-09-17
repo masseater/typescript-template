@@ -51,7 +51,7 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
   );
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4">
         <ChallengeCodeField backup={mode === "backup"} code={code} />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           {mode === "backup" ? "バックアップコードでログイン" : "確認コードでログイン"}

@@ -69,7 +69,7 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
   const submit = useTotpPasswordSubmit({ context, onEnroll, password });
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4">
         <input
           type="email"
           name="username"

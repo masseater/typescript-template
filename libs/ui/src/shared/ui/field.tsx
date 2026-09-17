@@ -35,7 +35,7 @@ function Field({
   value,
 }: FieldProps): ReactElement {
   return (
-    <FieldPrimitive.Root data-slot="field" name={name} className={fieldClassName}>
+    <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
         type={type}
