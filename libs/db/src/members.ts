@@ -1,14 +1,11 @@
-import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
 import { UserNotFound } from "./user-not-found.ts";
+import { containsKeyword } from "./contains-keyword.ts";
 import { query } from "./database.ts";
 import { user } from "./schema.ts";
 
-interface MemberPage {
-  readonly limit: number;
-  readonly offset: number;
-  readonly keyword?: string | undefined;
-}
+type Member = Readonly<{ id: string; joined: string; name: string; profile: string }>;
 
 const monthLength = "YYYY-MM".length;
 const memberColumns = {
@@ -17,8 +14,6 @@ const memberColumns = {
   name: user.name,
   profile: user.profile,
 };
-
-type Member = Readonly<{ id: string; joined: string; name: string; profile: string }>;
 
 function shown({
   createdAt,
@@ -43,11 +38,12 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   return shown(member);
 });
 
-const listMembers = Effect.fn("listMembers")(function* listMembers(page: MemberPage) {
-  const named =
-    page.keyword === undefined
-      ? undefined
-      : sql`instr(lower(${user.name}), lower(${page.keyword})) > 0`;
+const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
+  readonly keyword?: string | undefined;
+  readonly limit: number;
+  readonly offset: number;
+}) {
+  const named = page.keyword === undefined ? undefined : containsKeyword(user.name, page.keyword);
   const listed = and(eq(user.emailVerified, true), named);
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const members = yield* query((database) =>

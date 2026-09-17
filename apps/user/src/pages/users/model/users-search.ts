@@ -1,5 +1,5 @@
 import { Option, Schema } from "effect";
-import { UserKeyword } from "@template/runtime/contracts";
+import { UserKeyword, maximumMemberPage } from "@template/runtime/contracts";
 
 interface UsersSearch {
   readonly keyword?: string;
@@ -7,7 +7,9 @@ interface UsersSearch {
 }
 
 const secondPage = 2;
-const LaterPage = Schema.Int.check(Schema.isGreaterThanOrEqualTo(secondPage));
+const LaterPage = Schema.Int.check(
+  Schema.isBetween({ maximum: maximumMemberPage, minimum: secondPage }),
+);
 const Scalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean]);
 
 function normalizeUsersSearch(raw: Readonly<Record<string, unknown>>): UsersSearch {

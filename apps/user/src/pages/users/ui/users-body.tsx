@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 import { Heading } from "@template/ui/ui";
+import { SearchForm } from "./search-form.tsx";
 
 function UsersBody({
   children,
@@ -9,6 +10,7 @@ function UsersBody({
       <Heading as="h1" size="page">
         ユーザーを探す
       </Heading>
+      <SearchForm />
       {children}
     </main>
   );

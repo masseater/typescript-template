@@ -62,12 +62,14 @@ it.effect("searches by a part of the name and treats wildcards as plain text", (
       { createdAt: "2026-09-02T00:00:00.000Z", id: "b", name: "山本 太郎", profile: "花子の友人" },
       { createdAt: "2026-09-01T00:00:00.000Z", id: "c", name: "100%_user" },
     ]);
-    assert.deepStrictEqual(
-      (yield* listMembers({ keyword: "花子", limit: 24, offset: 0 })).members.map(
-        (member) => member.id,
-      ),
-      ["a"],
-    );
+    assert.deepStrictEqual(yield* listMembers({ keyword: "花子", limit: 24, offset: 0 }), {
+      members: [{ id: "a", joined: "2026-09", name: "山田 花子", profile: "" }],
+      total: 1,
+    });
+    assert.deepStrictEqual(yield* listMembers({ keyword: "USER", limit: 24, offset: 0 }), {
+      members: [{ id: "c", joined: "2026-09", name: "100%_user", profile: "" }],
+      total: 1,
+    });
     assert.deepStrictEqual(yield* listMembers({ keyword: "%", limit: 24, offset: 0 }), {
       members: [{ id: "c", joined: "2026-09", name: "100%_user", profile: "" }],
       total: 1,
@@ -86,11 +88,26 @@ it.effect("pages through the matches and reports the total beyond the last page"
       { createdAt: "2026-09-02T00:00:00.000Z", id: "second", name: "member 2" },
       { createdAt: "2026-09-01T00:00:00.000Z", id: "first", name: "member 1" },
     ]);
-    const second = yield* listMembers({ limit: 2, offset: 2 });
-    assert.deepStrictEqual(
-      { ids: second.members.map((member) => member.id), total: second.total },
-      { ids: ["first"], total: 3 },
-    );
+    assert.deepStrictEqual(yield* listMembers({ limit: 2, offset: 2 }), {
+      members: [{ id: "first", joined: "2026-09", name: "member 1", profile: "" }],
+      total: 3,
+    });
     assert.deepStrictEqual(yield* listMembers({ limit: 2, offset: 4 }), { members: [], total: 3 });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("orders members who registered at the same moment by id", () =>
+  Effect.gen(function* program() {
+    yield* addMembers([
+      { createdAt: "2026-09-01T00:00:00.000Z", id: "b", name: "second by id" },
+      { createdAt: "2026-09-01T00:00:00.000Z", id: "a", name: "first by id" },
+    ]);
+    assert.deepStrictEqual(yield* listMembers({ limit: 24, offset: 0 }), {
+      members: [
+        { id: "a", joined: "2026-09", name: "first by id", profile: "" },
+        { id: "b", joined: "2026-09", name: "second by id", profile: "" },
+      ],
+      total: 2,
+    });
   }).pipe(Effect.provide(TestDatabase)),
 );

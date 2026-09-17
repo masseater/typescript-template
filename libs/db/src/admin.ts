@@ -8,6 +8,7 @@ import { LastAdminRequired } from "./last-admin-required.ts";
 import type { Role } from "@template/config";
 import type { SQL } from "drizzle-orm";
 import { TargetUnavailable } from "./target-unavailable.ts";
+import { containsKeyword } from "./contains-keyword.ts";
 import { query } from "./database.ts";
 import { roles } from "@template/config";
 
@@ -20,12 +21,6 @@ const UserPage = Schema.Struct({
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   role: Schema.optionalKey(Schema.Literals(roles)),
 });
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function containsKeyword(column: typeof user.name, keyword: string): SQL {
-  const pattern = `%${keyword.replaceAll(/[\\%_]/gu, String.raw`\$&`)}%`;
-  return sql`${column} LIKE ${pattern} ESCAPE '\\'`;
-}
 
 function matchesPage(page: typeof UserPage.Type): SQL | undefined {
   const { emailVerified, keyword, role } = page;

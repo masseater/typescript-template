@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { maximumKeywordLength } from "@template/runtime/contracts";
+import { maximumKeywordLength, maximumMemberPage } from "@template/runtime/contracts";
 import { normalizeUsersSearch } from "./users-search.ts";
 
 describe("member list search in the URL", () => {
@@ -8,6 +8,13 @@ describe("member list search in the URL", () => {
     expect(normalizeUsersSearch({ keyword: " 花子 ", page: 3 })).toStrictEqual({
       keyword: "花子",
       page: 3,
+    });
+  });
+
+  it("keeps the last page the API accepts", () => {
+    expect.hasAssertions();
+    expect(normalizeUsersSearch({ page: maximumMemberPage })).toStrictEqual({
+      page: maximumMemberPage,
     });
   });
 
@@ -21,6 +28,7 @@ describe("member list search in the URL", () => {
     { page: 0 },
     { page: 1.5 },
     { page: "abc" },
+    { page: maximumMemberPage + 1 },
     { keyword: "" },
     { keyword: "   " },
     { keyword: "あ".repeat(maximumKeywordLength + 1) },

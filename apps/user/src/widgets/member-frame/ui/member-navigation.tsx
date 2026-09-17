@@ -9,7 +9,7 @@ function MemberNavigation({ userId }: Readonly<{ userId: string }>): ReactElemen
         <NavigationLink to="/users/$id" params={{ id: userId }}>
           ホーム
         </NavigationLink>
-        <NavigationLink to="/users" activeOptions={{ exact: true }}>
+        <NavigationLink to="/users" activeOptions={{ exact: true, includeSearch: false }}>
           ユーザーを探す
         </NavigationLink>
       </nav>

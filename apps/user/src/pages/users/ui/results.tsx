@@ -1,12 +1,17 @@
 import { Link } from "@tanstack/react-router";
 import { MemberCard } from "./member-card.tsx";
+import { MemberPageLink } from "./member-page-link.tsx";
 import type { Members } from "#pages/users/api/load-members.ts";
-import { PageNavigation } from "./page-navigation.tsx";
+import { PageNavigation } from "@template/ui/ui";
+import type { PageTarget } from "@template/ui/ui";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 
 function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch }>): ReactElement {
   const current = search.page ?? 1;
+  function pageLink(target: PageTarget): ReactElement {
+    return <MemberPageLink search={search} target={target} />;
+  }
   const first = (current - 1) * list.pageSize + 1;
   if (list.total === 0) {
     return (
@@ -38,7 +43,7 @@ function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch
       <PageNavigation
         current={current}
         last={Math.ceil(list.total / list.pageSize)}
-        search={search}
+        renderLink={pageLink}
       />
     </>
   );

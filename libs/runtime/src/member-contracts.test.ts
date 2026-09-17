@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { MemberList, MemberListQuery, MemberView } from "./contracts.ts";
+import { MemberList, MemberListQuery, MemberView, maximumMemberPage } from "./contracts.ts";
 import { assert, describe, it } from "@effect/vitest";
 
 const encode = Schema.encodeUnknownEffect(MemberView);
@@ -45,6 +45,16 @@ describe("member list query", () => {
   it.effect("reads the first page when the query carries nothing", () =>
     Effect.gen(function* program() {
       assert.deepStrictEqual(yield* decodeQuery({}), { page: 1 });
+    }),
+  );
+
+  it.effect("reads the last page it serves and nothing beyond it", () =>
+    Effect.gen(function* program() {
+      assert.deepStrictEqual(yield* decodeQuery({ page: String(maximumMemberPage) }), {
+        page: maximumMemberPage,
+      });
+      const failure = yield* decodeQuery({ page: String(maximumMemberPage + 1) }).pipe(Effect.flip);
+      assert.strictEqual(failure._tag, "SchemaError");
     }),
   );
 
