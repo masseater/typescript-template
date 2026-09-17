@@ -1,9 +1,9 @@
 import { RoleChanged, UserDeleted } from "@template/runtime/contracts";
-import { useCallback, useState } from "react";
 import type { ListedUser } from "#user-list.ts";
 import { errorMessage } from "@template/ui";
 import { nextRoles } from "#user-labels.ts";
 import { requestJson } from "@template/runtime/client";
+import { useState } from "react";
 import { useToast } from "@template/ui/ui";
 
 type RowOperation = "delete" | "role";
@@ -31,18 +31,18 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
   const notify = useToast();
   const [confirming, setConfirming] = useState<RowOperation>();
   const [pending, setPending] = useState(false);
-  const handleRoleChange = useCallback(() => {
+  function handleRoleChange(): void {
     setConfirming("role");
-  }, []);
-  const handleDelete = useCallback(() => {
+  }
+  function handleDelete(): void {
     setConfirming("delete");
-  }, []);
-  const handleOpenChange = useCallback((open: boolean) => {
+  }
+  function handleOpenChange(open: boolean): void {
     if (!open) {
       setConfirming(undefined);
     }
-  }, []);
-  const handleConfirm = useCallback(() => {
+  }
+  function handleConfirm(): void {
     if (confirming === undefined) {
       return;
     }
@@ -58,7 +58,7 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
       setPending(false);
     }
     void run(confirming);
-  }, [confirming, notify, onChanged, user]);
+  }
   return {
     confirming,
     handleConfirm,

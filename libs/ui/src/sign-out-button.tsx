@@ -3,8 +3,10 @@ import { Button } from "./shared/ui";
 import type { ReactElement } from "react";
 import { useSignOut } from "./use-sign-out";
 
-function SignOutButton(): ReactElement {
-  const { action, signOut } = useSignOut();
+function SignOutButton({
+  destination,
+}: Readonly<{ destination?: string | undefined }>): ReactElement {
+  const { action, signOut } = useSignOut(destination);
   return (
     <>
       <Button type="button" disabled={action.blocked} onClick={signOut}>

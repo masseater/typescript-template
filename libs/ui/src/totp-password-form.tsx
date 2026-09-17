@@ -1,23 +1,15 @@
 import { Button, Field, FormColumn } from "./shared/ui";
 import type { Enrollment, SettingsContext } from "./mfa-types";
-import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
+import type { ReactElement, SyntheticEvent } from "react";
 import type { SessionView } from "./protocol";
-import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-import { useCallback } from "react";
 import { useTextInput } from "./use-text-input";
 
 interface TotpPasswordFormProps {
   readonly context: SettingsContext;
   readonly enrolling: boolean;
   readonly onEnroll: (enrollment: Enrollment) => void;
-}
-
-interface TotpPasswordSubmit {
-  readonly context: SettingsContext;
-  readonly onEnroll: (enrollment: Enrollment) => void;
-  readonly password: TextInput;
 }
 
 function adminLocked(session: SessionView, recovery: string | undefined): boolean {
@@ -35,38 +27,23 @@ async function enrollTotp(password: string): Promise<Enrollment> {
   return { backupCodes: data.backupCodes, totpURI: data.totpURI };
 }
 
-function useTotpPasswordSubmit({
-  context,
-  onEnroll,
-  password,
-}: TotpPasswordSubmit): SubmitEventHandler<HTMLFormElement> {
-  const { action, onNoticeClear, recovery, session } = context;
-  const { run } = action;
-  const { handleChange: setPassword, value: passwordValue } = password;
-  const { twoFactorEnabled } = session.user;
-  return useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
-      event.preventDefault();
-      run(async () => {
-        onNoticeClear();
-        if (twoFactorEnabled) {
-          requireSuccess(await authClient.twoFactor.disable({ password: passwordValue }));
-          setPassword("");
-          globalThis.location.assign(recovery === "1" ? "/login?recovery=setup" : "/login");
-          return;
-        }
-        onEnroll(await enrollTotp(passwordValue));
-        setPassword("");
-      });
-    },
-    [onEnroll, onNoticeClear, passwordValue, recovery, run, setPassword, twoFactorEnabled],
-  );
-}
-
 function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProps): ReactElement {
-  const { action, recovery, session } = context;
+  const { action, onNoticeClear, recovery, session } = context;
   const password = useTextInput();
-  const submit = useTotpPasswordSubmit({ context, onEnroll, password });
+  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+    event.preventDefault();
+    action.run(async () => {
+      onNoticeClear();
+      if (session.user.twoFactorEnabled) {
+        requireSuccess(await authClient.twoFactor.disable({ password: password.value }));
+        password.handleChange("");
+        globalThis.location.assign(recovery === "1" ? "/login?recovery=setup" : "/login");
+        return;
+      }
+      onEnroll(await enrollTotp(password.value));
+      password.handleChange("");
+    });
+  }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <FormColumn>

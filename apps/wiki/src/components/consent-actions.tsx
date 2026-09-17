@@ -1,8 +1,8 @@
 import { Button, FormColumn } from "@template/ui/ui";
-import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
 import { decodeJson } from "@template/runtime/client";
+import { useState } from "react";
 
 const Redirect = Schema.Struct({ url: Schema.String });
 
@@ -24,25 +24,22 @@ function ConsentActions({
   onError,
 }: Readonly<{ client: string; onError: (message: string) => void }>): ReactElement {
   const [pending, setPending] = useState(false);
-  const decide = useCallback(
-    async (accept: boolean) => {
-      setPending(true);
-      onError("");
-      try {
-        await submitDecision(accept);
-      } catch (error) {
-        onError(error instanceof Error ? error.message : String(error));
-        setPending(false);
-      }
-    },
-    [onError],
-  );
-  const allow = useCallback(() => {
+  async function decide(accept: boolean): Promise<void> {
+    setPending(true);
+    onError("");
+    try {
+      await submitDecision(accept);
+    } catch (error) {
+      onError(error instanceof Error ? error.message : String(error));
+      setPending(false);
+    }
+  }
+  function allow(): void {
     void decide(true);
-  }, [decide]);
-  const deny = useCallback(() => {
+  }
+  function deny(): void {
     void decide(false);
-  }, [decide]);
+  }
   return (
     <FormColumn>
       <p>{client} に Wiki の閲覧を許可しますか？</p>

@@ -1,7 +1,6 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
 import { Button } from "./button";
 import type { ReactElement } from "react";
-import { useCallback } from "react";
 
 interface ConfirmDialogProps {
   readonly confirmLabel: string;
@@ -21,9 +20,9 @@ function ConfirmDialogPopup({
   title,
   variant = "primary",
 }: ConfirmDialogProps): ReactElement {
-  const cancel = useCallback(() => {
+  function cancel(): void {
     onOpenChange(false);
-  }, [onOpenChange]);
+  }
   return (
     <AlertDialogPrimitive.Popup
       data-slot="confirm-dialog"
