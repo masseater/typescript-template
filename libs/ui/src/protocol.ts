@@ -1,51 +1,79 @@
+import {
+  boolean,
+  email,
+  is,
+  object,
+  picklist,
+  pipe,
+  readonly,
+  record,
+  string,
+  unknown,
+} from "valibot";
+import type { InferOutput } from "valibot";
 import { roles } from "@template/config";
-import * as v from "valibot";
 
-export const sessionSchema = v.object({
-  user: v.object({
-    id: v.string(),
-    name: v.string(),
-    email: v.pipe(v.string(), v.email()),
-    role: v.picklist(roles),
-    twoFactorEnabled: v.boolean(),
+const unknownRecordSchema = record(string(), unknown());
+const emailSchema = pipe(string(), email());
+const sessionUserSchema = pipe(
+  object({
+    email: emailSchema,
+    id: string(),
+    name: string(),
+    role: picklist(roles),
+    twoFactorEnabled: boolean(),
   }),
-  strong: v.boolean(),
-});
-export type SessionView = v.InferOutput<typeof sessionSchema>;
+  readonly(),
+);
+const sessionSchema = pipe(object({ strong: boolean(), user: sessionUserSchema }), readonly());
 
-export function errorMessage(error: unknown): string {
+type SessionView = InferOutput<typeof sessionSchema>;
+
+interface AuthResult<TData> {
+  readonly data: TData;
+  readonly error: Readonly<{ message?: string | undefined }> | null;
+}
+
+function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
 }
 
-export function requireSecureContext(): void {
-  if (!window.isSecureContext) throw new Error("パスキーには HTTPS または localhost が必要です。");
-}
-
-export function requireSuccess<T>(result: {
-  data: T;
-  error: { message?: string | undefined } | null;
-}): NonNullable<T> {
-  if (result.error) throw new Error(result.error.message ?? "認証サーバーが操作を拒否しました。");
-  if (result.data === null || result.data === undefined)
+function requireSuccess<TData>(result: AuthResult<TData>): NonNullable<TData> {
+  if (result.error) {
+    throw new Error(result.error.message ?? "認証サーバーが操作を拒否しました。");
+  }
+  if (result.data === null || result.data === undefined) {
     throw new Error("認証サーバーから結果が返りませんでした。");
+  }
   return result.data;
 }
 
-export function requirePasskeyUV(data: unknown, pathname: string): void {
+function requireSecureContext(): void {
+  if (!globalThis.isSecureContext) {
+    throw new Error("パスキーには HTTPS または localhost が必要です。");
+  }
+}
+
+function requirePasskeyUV(data: unknown, pathname: string): void {
   if (
     !pathname.endsWith("/passkey/generate-authenticate-options") &&
     !pathname.endsWith("/passkey/generate-register-options")
-  )
+  ) {
     return;
-  if (!v.is(v.record(v.string(), v.unknown()), data))
+  }
+  if (!is(unknownRecordSchema, data)) {
     throw new Error("パスキー設定の応答形式が不正です。");
+  }
   if (pathname.endsWith("/passkey/generate-authenticate-options")) {
     data["userVerification"] = "required";
   } else {
     const selection = data["authenticatorSelection"];
-    if (selection !== undefined && !v.is(v.record(v.string(), v.unknown()), selection)) {
+    if (selection !== undefined && !is(unknownRecordSchema, selection)) {
       throw new Error("パスキー登録設定の応答形式が不正です。");
     }
     data["authenticatorSelection"] = { ...selection, userVerification: "required" };
   }
 }
+
+export { errorMessage, requirePasskeyUV, requireSecureContext, requireSuccess, sessionSchema };
+export type { SessionView };

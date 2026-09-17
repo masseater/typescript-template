@@ -1,31 +1,36 @@
-import { expect, test } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
-  USER_ORIGIN: "https://app.example.com",
   ADMIN_ORIGIN: "https://admin.example.com",
+  USER_ORIGIN: "https://app.example.com",
   WIKI_ORIGIN: "https://wiki.example.com",
 };
 
-test("accepts distinct https origins", () => {
-  expect(healthTargets(parseHealthMonitorConfig(valid))).toEqual([
-    { service: "user", origin: "https://app.example.com" },
-    { service: "admin", origin: "https://admin.example.com" },
-    { service: "wiki", origin: "https://wiki.example.com" },
-  ]);
-});
+describe("health monitor configuration", () => {
+  it("accepts distinct https origins", () => {
+    expect.hasAssertions();
+    expect(healthTargets(parseHealthMonitorConfig(valid))).toStrictEqual([
+      { origin: "https://app.example.com", service: "user" },
+      { origin: "https://admin.example.com", service: "admin" },
+      { origin: "https://wiki.example.com", service: "wiki" },
+    ]);
+  });
 
-test.each([
-  { USER_ORIGIN: "http://app.example.com" },
-  { WIKI_ORIGIN: "https://app.example.com/docs" },
-])("refuses invalid settings without echoing them: %j", (override) => {
-  expect(() => parseHealthMonitorConfig({ ...valid, ...override })).toThrow(
-    /^health_monitor_config_invalid$/,
-  );
-});
+  it.each([
+    { USER_ORIGIN: "http://app.example.com" },
+    { WIKI_ORIGIN: "https://app.example.com/docs" },
+  ] as const)("refuses invalid settings without echoing them: %j", (override) => {
+    expect.hasAssertions();
+    expect(() => parseHealthMonitorConfig({ ...valid, ...override })).toThrow(
+      /^health_monitor_config_invalid$/u,
+    );
+  });
 
-test("refuses a configuration that points two applications at the same origin", () => {
-  expect(() =>
-    parseHealthMonitorConfig({ ...valid, WIKI_ORIGIN: "https://app.example.com" }),
-  ).toThrow(/^health_monitor_origins_must_differ$/);
+  it("refuses a configuration that points two applications at the same origin", () => {
+    expect.hasAssertions();
+    expect(() =>
+      parseHealthMonitorConfig({ ...valid, WIKI_ORIGIN: "https://app.example.com" }),
+    ).toThrow(/^health_monitor_origins_must_differ$/u);
+  });
 });

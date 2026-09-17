@@ -1,10 +1,12 @@
 # AGENTS.md
 
+`apps/wiki/content/docs` に各種ドキュメントがある。適宜参照すること。
+
 作業を指示された後は、実装・検証が完了して main に merge され、ローカルのリポジトリが更新されるとこまで行い、それがデプロイを伴う場合はデプロイ後にインフラログを見ることまで行うこと。
 
 ファイルを編集する時は必ず git worktree を使用すること。main ブランチが開いている場所のブランチを変更してはいけない。
 
-main への merge には Mergify の merge queue が使える。
+main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の merge queue に入れる。
 
 コードの簡潔さや様式より、機械検査による問題検出、実アプリの直接操作による実測データの直接照会を優先する。
 

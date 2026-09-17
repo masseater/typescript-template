@@ -1,35 +1,56 @@
-import * as v from "valibot";
+import { check, object, pipe, safeParse, string, url } from "valibot";
+import type { Application as HealthService } from "@template/config";
+import type { InferOutput } from "valibot";
 
-const origin = v.pipe(
-  v.string(),
-  v.url(),
-  v.check((value) => {
-    const url = URL.parse(value);
-    return url?.protocol === "https:" && url.origin === value && !url.username && !url.password;
+interface HealthTarget {
+  readonly service: HealthService;
+  readonly origin: string;
+}
+
+const origin = pipe(
+  string(),
+  url(),
+  check((value) => {
+    const parsed = URL.parse(value);
+    return (
+      parsed?.protocol === "https:" &&
+      parsed.origin === value &&
+      parsed.username === "" &&
+      parsed.password === ""
+    );
   }),
 );
-
-const schema = v.object({
-  USER_ORIGIN: origin,
+const schema = object({
   ADMIN_ORIGIN: origin,
+  USER_ORIGIN: origin,
   WIKI_ORIGIN: origin,
 });
 
-export type HealthMonitorConfig = v.InferOutput<typeof schema>;
+type HealthMonitorConfig = InferOutput<typeof schema>;
+type TargetOrigins = Readonly<
+  Pick<HealthMonitorConfig, "ADMIN_ORIGIN" | "USER_ORIGIN" | "WIKI_ORIGIN">
+>;
 
-export function parseHealthMonitorConfig(input: unknown): HealthMonitorConfig {
-  const result = v.safeParse(schema, input);
-  if (!result.success) throw new Error("health_monitor_config_invalid");
+function parseHealthMonitorConfig(input: unknown): HealthMonitorConfig {
+  const result = safeParse(schema, input);
+  if (!result.success) {
+    throw new Error("health_monitor_config_invalid");
+  }
   const config = result.output;
-  if (new Set([config.USER_ORIGIN, config.ADMIN_ORIGIN, config.WIKI_ORIGIN]).size !== 3)
+  const origins = [config.USER_ORIGIN, config.ADMIN_ORIGIN, config.WIKI_ORIGIN];
+  if (new Set(origins).size !== origins.length) {
     throw new Error("health_monitor_origins_must_differ");
+  }
   return config;
 }
 
-export function healthTargets(config: HealthMonitorConfig) {
+function healthTargets(config: TargetOrigins): HealthTarget[] {
   return [
-    { service: "user", origin: config.USER_ORIGIN },
-    { service: "admin", origin: config.ADMIN_ORIGIN },
-    { service: "wiki", origin: config.WIKI_ORIGIN },
-  ] as const;
+    { origin: config.USER_ORIGIN, service: "user" },
+    { origin: config.ADMIN_ORIGIN, service: "admin" },
+    { origin: config.WIKI_ORIGIN, service: "wiki" },
+  ];
 }
+
+export { healthTargets, parseHealthMonitorConfig };
+export type { HealthTarget };

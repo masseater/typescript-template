@@ -1,8 +1,10 @@
+import { WikiSecurity } from "#/components/wiki-security.tsx";
 import { createFileRoute } from "@tanstack/react-router";
-import { SecurityPage } from "@template/ui/auth";
-import uiStyles from "@template/ui/styles.css?url";
+import uiStyles from "#/styles/auth.css?url";
 
-export const Route = createFileRoute("/security")({
-  head: () => ({ links: [{ rel: "stylesheet", href: uiStyles }] }),
-  component: () => <SecurityPage title="Wiki の認証設定" />,
+const Route = createFileRoute("/security")({
+  component: WikiSecurity,
+  head: () => ({ links: [{ href: uiStyles, rel: "stylesheet" }] }),
 });
+
+export { Route };

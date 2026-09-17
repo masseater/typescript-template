@@ -1,94 +1,125 @@
-import { parseArgs } from "node:util";
+import {
+  integer,
+  maxValue,
+  minValue,
+  number,
+  object,
+  optional,
+  parse,
+  picklist,
+  pipe,
+  regex,
+  string,
+} from "valibot";
+import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
+import type { InferOutput } from "valibot";
 import { applicationPorts } from "@template/config";
-import * as v from "valibot";
-import { queryExplorer, requestTelemetry, structuredMessage } from "./explorer.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
 
 const commands = ["logs", "traces", "trace", "request"] as const;
+const minutesPerDay = 1440;
+const maxQueryLimit = 500;
+const millisecondsPerMinute = 60_000;
+
+const traceIdSchema = pipe(string(), regex(/^[0-9a-f]{32}$/u));
+const inputSchema = object({
+  command: picklist(commands),
+  level: optional(picklist(["debug", "info", "log", "warn", "error"])),
+  limit: pipe(number(), integer(), minValue(1), maxValue(maxQueryLimit)),
+  minutes: pipe(number(), integer(), minValue(1), maxValue(minutesPerDay)),
+  requestId: optional(string()),
+  traceId: optional(traceIdSchema),
+});
+
+type QueryInput = InferOutput<typeof inputSchema>;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    app: { type: "string", default: `http://127.0.0.1:${applicationPorts.user}/` },
-    minutes: { type: "string", default: "15" },
-    limit: { type: "string", default: "100" },
+    app: { default: `http://127.0.0.1:${applicationPorts.user}/`, type: "string" },
+    help: { default: false, type: "boolean" },
     level: { type: "string" },
+    limit: { default: "100", type: "string" },
+    minutes: { default: "15", type: "string" },
     "request-id": { type: "string" },
     "trace-id": { type: "string" },
-    help: { type: "boolean", default: false },
   },
 });
 
+async function queryLogs(app: string, input: QueryInput, since: number): Promise<unknown> {
+  const levelFilter = input.level === undefined ? "" : " AND level = ?";
+  const params =
+    input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
+  const rows = await queryExplorer(
+    app,
+    `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${levelFilter} ORDER BY ts_ms DESC LIMIT ?`,
+    params,
+  );
+  return rows.map((row: Readonly<Record<string, unknown>>) => withEvent(row));
+}
+
+async function runQuery(app: string, input: QueryInput): Promise<unknown> {
+  const since = Date.now() - input.minutes * millisecondsPerMinute;
+  if (input.command === "request") {
+    return requestTelemetry(app, parse(string(), input.requestId));
+  }
+  if (input.command === "trace") {
+    return queryExplorer(
+      app,
+      "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+      [parse(string(), input.traceId)],
+    );
+  }
+  if (input.command === "traces") {
+    return queryExplorer(
+      app,
+      "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
+      [since, input.limit],
+    );
+  }
+  return queryLogs(app, input, since);
+}
+
 if (values.help) {
-  console.info(
-    JSON.stringify({
+  process.stdout.write(
+    `${JSON.stringify({
       commands,
       flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
-      source: "Cloudflare Local Explorer of the running app",
       readOnly: true,
-    }),
+      source: "Cloudflare Local Explorer of the running app",
+    })}\n`,
   );
 } else {
   try {
-    const input = v.parse(
-      v.object({
-        command: v.picklist(commands),
-        minutes: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1440)),
-        limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
-        level: v.optional(v.picklist(["debug", "info", "log", "warn", "error"])),
-        requestId: v.optional(v.string()),
-        traceId: v.optional(v.pipe(v.string(), v.regex(/^[0-9a-f]{32}$/))),
-      }),
-      {
-        command: positionals[0],
-        minutes: Number(values.minutes),
-        limit: Number(values.limit),
-        level: values.level,
-        requestId: values["request-id"],
-        traceId: values["trace-id"],
-      },
-    );
-    if (positionals.length !== 1) throw new Error("Specify one query command");
-    const since = Date.now() - input.minutes * 60_000;
-    const queries = {
-      request: () => requestTelemetry(values.app, v.parse(v.string(), input.requestId)),
-      trace: () =>
-        queryExplorer(
-          values.app,
-          "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
-          [v.parse(v.string(), input.traceId)],
-        ),
-      traces: () =>
-        queryExplorer(
-          values.app,
-          "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
-          [since, input.limit],
-        ),
-      logs: async () =>
-        (
-          await queryExplorer(
-            values.app,
-            `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${input.level ? " AND level = ?" : ""} ORDER BY ts_ms DESC LIMIT ?`,
-            input.level ? [since, input.level, input.limit] : [since, input.limit],
-          )
-        ).map(({ message, ...row }) => ({ ...row, event: structuredMessage(message) ?? null })),
-    };
-    const data = await queries[input.command]();
-    console.info(
-      JSON.stringify({
-        ok: true,
+    const input = parse(inputSchema, {
+      command: positionals[0],
+      level: values.level,
+      limit: Number(values.limit),
+      minutes: Number(values.minutes),
+      requestId: values["request-id"],
+      traceId: values["trace-id"],
+    });
+    if (positionals.length !== 1) {
+      throw new Error("Specify one query command");
+    }
+    const data = await runQuery(values.app, input);
+    process.stdout.write(
+      `${JSON.stringify({
         command: input.command,
-        observedAt: new Date().toISOString(),
         data,
-      }),
+        observedAt: new Date().toISOString(),
+        ok: true,
+      })}\n`,
     );
   } catch {
-    console.error(
-      JSON.stringify({
-        ok: false,
+    process.stderr.write(
+      `${JSON.stringify({
         event: "observability.query_failed",
+        ok: false,
         remediation:
           "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
-      }),
+      })}\n`,
     );
     process.exitCode = 1;
   }

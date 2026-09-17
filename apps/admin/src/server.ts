@@ -1,5 +1,8 @@
-import handler from "@tanstack/react-start/server-entry";
 import { createAppWorker } from "@template/runtime/worker";
-import { routes } from "./telemetry-routes.ts";
+import handler from "@tanstack/react-start/server-entry";
+import { routes } from "#telemetry-routes.ts";
 
-export default createAppWorker({ audience: "admin", routes, handler });
+const worker = createAppWorker({ audience: "admin", handler, routes });
+
+// oxlint-disable-next-line import/no-default-export
+export default worker;

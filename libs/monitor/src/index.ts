@@ -1,82 +1,127 @@
-import * as v from "valibot";
+import {
+  array,
+  email,
+  maxLength,
+  minLength,
+  object,
+  parse,
+  pipe,
+  string,
+  transform,
+} from "valibot";
 
-export const alertEnvironment = {
-  ALERT_FROM: v.pipe(v.string(), v.email()),
-  ALERT_TO: v.pipe(
-    v.string(),
-    v.transform((value) => value.split(",")),
-    v.array(v.pipe(v.string(), v.email())),
-    v.minLength(1),
-    v.maxLength(10),
-  ),
-};
-
-export interface MonitorBindings {
-  MONITOR: DurableObjectNamespace;
-  EMAIL: SendEmail;
-  ALERT_FROM: string;
-  ALERT_TO: string;
+interface Alert {
+  readonly subject: string;
+  readonly text: string;
 }
 
-type Alert = { subject: string; text: string };
+type Notify = (alert: Alert) => Promise<void>;
 
-export abstract class Monitor<Bindings extends MonitorBindings> {
+interface MonitorBindings {
+  readonly ALERT_FROM: string;
+  readonly ALERT_TO: string;
+  readonly EMAIL: SendEmail;
+  readonly MONITOR: DurableObjectNamespace;
+}
+
+const MAX_ALERT_RECIPIENTS = 10;
+const ISO_DATE_LENGTH = 10;
+const NOT_FOUND_STATUS = 404;
+
+const emailAddress = pipe(string(), email());
+const alertEnvironment = {
+  ALERT_FROM: emailAddress,
+  ALERT_TO: pipe(
+    string(),
+    transform((value) => value.split(",")),
+    array(emailAddress),
+    minLength(1),
+    maxLength(MAX_ALERT_RECIPIENTS),
+  ),
+};
+const alertSchema = object(alertEnvironment);
+
+abstract class Monitor<Bindings extends MonitorBindings> {
+  protected abstract readonly event: string;
+  protected abstract readonly failure: Alert;
   protected readonly ctx: DurableObjectState;
   protected readonly env: Bindings;
 
-  constructor(ctx: DurableObjectState, env: Bindings) {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  public constructor(ctx: DurableObjectState, env: Bindings) {
     this.ctx = ctx;
     this.env = env;
   }
 
-  protected abstract readonly event: string;
-  protected abstract readonly failure: Alert;
-  protected abstract check(notify: (alert: Alert) => Promise<void>): Promise<object>;
-
-  async fetch(): Promise<Response> {
-    return this.ctx.blockConcurrencyWhile(async () => {
-      const recipients = v.parse(v.object(alertEnvironment), this.env);
-      const notify = async (alert: Alert) => {
-        await this.env.EMAIL.send({
-          from: recipients.ALERT_FROM,
-          to: recipients.ALERT_TO,
-          ...alert,
-        });
-      };
-      const started = Date.now();
-      try {
-        const result = await this.check(notify);
-        await this.ctx.storage.delete("failureNotifiedDay");
-        console.log(
-          JSON.stringify({
-            event: `${this.event}.checked`,
-            ...result,
-            durationMs: Date.now() - started,
-          }),
-        );
-        return Response.json({ ok: true, ...result });
-      } catch {
-        console.error(
-          JSON.stringify({ event: `${this.event}.check_failed`, durationMs: Date.now() - started }),
-        );
-        const day = new Date(started).toISOString().slice(0, 10);
-        if ((await this.ctx.storage.get<string>("failureNotifiedDay")) !== day) {
-          await notify(this.failure);
-          await this.ctx.storage.put("failureNotifiedDay", day);
-        }
-        throw new Error(`${this.event}_check_failed`);
-      }
-    });
+  public async fetch(): Promise<Response> {
+    return this.ctx.blockConcurrencyWhile(async () => this.run());
   }
+
+  private async run(): Promise<Response> {
+    const notify = this.notifier();
+    const started = Date.now();
+    try {
+      const result = await this.check(notify);
+      await this.ctx.storage.delete("failureNotifiedDay");
+      // oxlint-disable-next-line no-console
+      console.log(
+        JSON.stringify({
+          event: `${this.event}.checked`,
+          ...result,
+          durationMs: Date.now() - started,
+        }),
+      );
+      return Response.json({ ok: true, ...result });
+    } catch {
+      await this.reportFailure(notify, started);
+      throw new Error(`${this.event}_check_failed`);
+    }
+  }
+
+  private notifier(): Notify {
+    const recipients = parse(alertSchema, this.env);
+    return async (alert) => {
+      await this.env.EMAIL.send({ from: recipients.ALERT_FROM, to: recipients.ALERT_TO, ...alert });
+    };
+  }
+
+  private async reportFailure(notify: Notify, started: number): Promise<void> {
+    // oxlint-disable-next-line no-console
+    console.error(
+      JSON.stringify({ durationMs: Date.now() - started, event: `${this.event}.check_failed` }),
+    );
+    const day = new Date(started).toISOString().slice(0, ISO_DATE_LENGTH);
+    if ((await this.ctx.storage.get<string>("failureNotifiedDay")) === day) {
+      return;
+    }
+    await notify(this.failure);
+    await this.ctx.storage.put("failureNotifiedDay", day);
+  }
+
+  protected abstract check(notify: Notify): Promise<object>;
 }
 
-export function monitorHandler(event: string) {
+interface MonitorHandler {
+  readonly fetch: () => Response;
+  readonly scheduled: (controller: unknown, env: MonitorSchedule) => Promise<void>;
+}
+
+type MonitorSchedule = Readonly<{
+  MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">>;
+}>;
+
+function monitorHandler(event: string): MonitorHandler {
   return {
-    fetch: () => new Response("Not found", { status: 404 }),
-    async scheduled(_controller: ScheduledController, env: MonitorBindings) {
+    fetch: () => new Response("Not found", { status: NOT_FOUND_STATUS }),
+    scheduled: async (_controller, env) => {
       const stub = env.MONITOR.get(env.MONITOR.idFromName(event));
       const result = await stub.fetch("https://monitor.internal/check", { method: "POST" });
-      if (!result.ok) throw new Error(`${event}_schedule_failed`);
+      if (!result.ok) {
+        throw new Error(`${event}_schedule_failed`);
+      }
     },
-  } satisfies ExportedHandler<MonitorBindings>;
+  };
 }
+
+export { Monitor, alertEnvironment, monitorHandler };
+export type { Alert, MonitorBindings, Notify };

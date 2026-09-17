@@ -2,6 +2,9 @@
   "name": "@template/wiki",
   "private": true,
   "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
@@ -11,7 +14,6 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "@template/auth": "workspace:*",
     "@template/observability": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",

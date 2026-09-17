@@ -1,8 +1,8 @@
-import * as cloudflare from "@pulumi/cloudflare";
+import { D1Database } from "@pulumi/cloudflare";
 import { consumeSettings } from "./reference.ts";
 
 const { settings } = await consumeSettings("database", "settings");
-const database = new cloudflare.D1Database(
+const database = new D1Database(
   "database",
   {
     accountId: settings.accountId,
@@ -11,4 +11,6 @@ const database = new cloudflare.D1Database(
   { protect: true },
 );
 
-export const databaseId = database.id;
+const databaseId = database.id;
+
+export { databaseId };

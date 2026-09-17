@@ -2,6 +2,10 @@
   "name": "@template/admin",
   "private": true,
   "type": "module",
+  "imports": {
+    "#dev-*": "./dev-*.ts",
+    "#*": "./src/*"
+  },
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",

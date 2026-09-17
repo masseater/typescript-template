@@ -1,6 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { LoginPage } from "@template/ui/auth";
+import type { ReactElement } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/login")({
-  component: () => <LoginPage title="ログイン" signUp />,
+const Route = createFileRoute("/login")({
+  component: (): ReactElement => <LoginPage title="ログイン" signUp />,
 });
+
+export { Route };

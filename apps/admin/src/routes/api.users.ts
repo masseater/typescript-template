@@ -1,42 +1,48 @@
+import { apiResponse, readJson } from "@template/runtime/http";
+import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
+import { minLength, parse, picklist, pipe, strictObject, string } from "valibot";
 import { createFileRoute } from "@tanstack/react-router";
 import { roles } from "@template/config";
-import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
-import { apiResponse, readJson } from "@template/runtime/http";
-import * as v from "valibot";
+import { usersPageSize } from "#users-pagination.ts";
+
+const userIdSchema = pipe(string(), minLength(1));
+const deleteUserSchema = strictObject({ id: userIdSchema });
+const setUserRoleSchema = strictObject({ id: userIdSchema, role: picklist(roles) });
 
 export const Route = createFileRoute("/api/users")({
   server: {
     handlers: {
-      GET: ({ request, context }) =>
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      DELETE: async ({ request, context }) =>
+        apiResponse(async () => {
+          const { session } = await context.runtime.session(request);
+          const body = await readJson(request, context.runtime.config.APP_ORIGIN);
+          const input = parse(deleteUserSchema, body);
+          return deleteUser(context.runtime.database, session.id, input.id);
+        }, context.runtime.reportError),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      GET: async ({ request, context }) =>
         apiResponse(async () => {
           const { session } = await context.runtime.session(request);
           const search = new URL(request.url).searchParams;
           const input = {
-            limit: Number(search.get("limit") ?? 50),
+            limit: Number(search.get("limit") ?? usersPageSize),
             offset: Number(search.get("offset") ?? 0),
           };
           return listUsers(context.runtime.database, session.id, input);
         }, context.runtime.reportError),
-      PATCH: ({ request, context }) =>
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      PATCH: async ({ request, context }) =>
         apiResponse(async () => {
           const { session } = await context.runtime.session(request);
-          const input = v.parse(
-            v.strictObject({
-              id: v.pipe(v.string(), v.minLength(1)),
-              role: v.picklist(roles),
-            }),
-            await readJson(request, context.runtime.config.APP_ORIGIN),
-          );
-          return setUserRole(context.runtime.database, session.id, input.id, input.role);
-        }, context.runtime.reportError),
-      DELETE: ({ request, context }) =>
-        apiResponse(async () => {
-          const { session } = await context.runtime.session(request);
-          const input = v.parse(
-            v.strictObject({ id: v.pipe(v.string(), v.minLength(1)) }),
-            await readJson(request, context.runtime.config.APP_ORIGIN),
-          );
-          return deleteUser(context.runtime.database, session.id, input.id);
+          const body = await readJson(request, context.runtime.config.APP_ORIGIN);
+          const input = parse(setUserRoleSchema, body);
+          return setUserRole({
+            database: context.runtime.database,
+            role: input.role,
+            sessionId: session.id,
+            targetId: input.id,
+          });
         }, context.runtime.reportError),
     },
   },

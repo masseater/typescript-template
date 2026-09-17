@@ -1,38 +1,59 @@
-import type { ComponentProps } from "react";
-import { useId } from "react";
-import { cn } from "cn";
-import { Input } from "./input";
-import { Label } from "./label";
+import type { ComponentProps, ReactElement } from "react";
+import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
+import { Field as FieldPrimitive } from "@base-ui/react/field";
 
+type FieldProps = Readonly<
+  Pick<
+    ComponentProps<"input">,
+    | "autoComplete"
+    | "inputMode"
+    | "maxLength"
+    | "minLength"
+    | "name"
+    | "onChange"
+    | "pattern"
+    | "readOnly"
+    | "required"
+    | "type"
+    | "value"
+  > & { label: string }
+>;
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function Field({
+  autoComplete,
+  inputMode,
   label,
-  className,
-  ...props
-}: Omit<ComponentProps<typeof Input>, "id"> & { label: string }) {
-  const id = useId();
+  maxLength,
+  minLength,
+  name,
+  onChange,
+  pattern,
+  readOnly,
+  required,
+  type,
+  value,
+}: FieldProps): ReactElement {
   return (
-    <div data-slot="field" className={cn("flex w-full flex-col gap-1", className)}>
-      <Label htmlFor={id}>{label}</Label>
-      <Input {...props} id={id} />
-    </div>
+    <FieldPrimitive.Root data-slot="field" name={name} className={fieldClassName}>
+      <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
+      <FieldPrimitive.Control
+        type={type}
+        name={name}
+        value={value}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        minLength={minLength}
+        pattern={pattern}
+        readOnly={readOnly}
+        required={required}
+        onChange={onChange}
+        className={`inline-block leading-none ${controlClassName}`}
+      />
+      <FieldPrimitive.Error className={errorClassName} />
+    </FieldPrimitive.Root>
   );
 }
 
-function TotpField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <Field
-      label="認証アプリの確認コード"
-      name="totp"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      pattern="[0-9]{6}"
-      minLength={6}
-      maxLength={6}
-      required
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    />
-  );
-}
-
-export { Field, TotpField };
+export { Field };

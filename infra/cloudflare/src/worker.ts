@@ -1,98 +1,146 @@
+import type { Input, Output } from "@pulumi/pulumi";
+import { Worker, WorkerVersion, WorkersCronTrigger, WorkersDeployment } from "@pulumi/cloudflare";
+import type { WorkerVersionArgs, types } from "@pulumi/cloudflare";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-import * as cloudflare from "@pulumi/cloudflare";
 import { secret } from "@pulumi/pulumi";
-import type { Input } from "@pulumi/pulumi";
 import { workerCompatibility } from "@template/config/worker";
-import { workerSubdomain } from "./config.ts";
 import { workerObservability } from "./observability.ts";
+import { workerSubdomain } from "./config.ts";
 
 type VersionArgs = Omit<
-  cloudflare.WorkerVersionArgs,
-  "accountId" | "workerId" | "compatibilityDate" | "compatibilityFlags"
+  WorkerVersionArgs,
+  "accountId" | "compatibilityDate" | "compatibilityFlags" | "workerId"
 >;
+type WorkerVersionBinding = types.input.WorkerVersionBinding;
 
-export function deployWorker(
-  resource: string,
-  options: { accountId: string; name: string; version: VersionArgs },
-) {
-  const worker = new cloudflare.Worker(`${resource}-worker`, {
+interface WorkerDeployment {
+  readonly deployment: WorkersDeployment;
+  readonly worker: Worker;
+}
+
+interface WorkerOptions {
+  readonly accountId: string;
+  readonly name: string;
+  readonly version: VersionArgs;
+}
+
+interface MonitorToken {
+  readonly binding: string;
+  readonly text: Input<string>;
+}
+
+interface MonitorOptions {
+  readonly accountId: string;
+  readonly alert: Readonly<{ from: string; to: readonly string[] }>;
+  readonly artifact: string;
+  readonly className: string;
+  readonly cron: string;
+  readonly name: string;
+  readonly token?: MonitorToken;
+  readonly variables: Readonly<Record<string, string>>;
+}
+
+interface MonitorDeployment {
+  readonly scheduleId: Output<string>;
+  readonly workerName: Output<string>;
+}
+
+const FULL_ROLLOUT_PERCENTAGE = 100;
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function deployWorker(resource: string, options: WorkerOptions): WorkerDeployment {
+  const worker = new Worker(`${resource}-worker`, {
     accountId: options.accountId,
     name: options.name,
-    subdomain: workerSubdomain,
     observability: workerObservability,
+    subdomain: workerSubdomain,
   });
-  const version = new cloudflare.WorkerVersion(`${resource}-version`, {
+  const version = new WorkerVersion(`${resource}-version`, {
     ...options.version,
     accountId: options.accountId,
-    workerId: worker.id,
     compatibilityDate: workerCompatibility.date,
     compatibilityFlags: [...workerCompatibility.flags],
+    workerId: worker.id,
   });
-  const deployment = new cloudflare.WorkersDeployment(`${resource}-deployment`, {
+  const deployment = new WorkersDeployment(`${resource}-deployment`, {
     accountId: options.accountId,
     scriptName: worker.name,
     strategy: "percentage",
-    versions: [{ versionId: version.id, percentage: 100 }],
+    versions: [{ percentage: FULL_ROLLOUT_PERCENTAGE, versionId: version.id }],
   });
-  return { worker, deployment };
+  return { deployment, worker };
 }
 
-export async function deployMonitor(
-  resource: string,
-  options: {
-    accountId: string;
-    name: string;
-    artifact: string;
-    className: string;
-    token?: { binding: string; text: Input<string> };
-    alert: { from: string; to: string[] };
-    variables: Record<string, string>;
-    cron: string;
-  },
-) {
-  if ((await readFile(options.artifact)).length === 0)
+async function assertArtifact(resource: string, artifact: string): Promise<void> {
+  const content = await readFile(artifact);
+  if (content.length === 0) {
     throw new Error(`${resource}_worker_artifact_empty`);
-  const tokenBindings = options.token
-    ? [{ type: "secret_text", name: options.token.binding, text: secret(options.token.text) }]
-    : [];
-  const { worker, deployment } = deployWorker(resource, {
+  }
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function tokenBindings(token: MonitorToken | undefined): WorkerVersionBinding[] {
+  if (token === undefined) {
+    return [];
+  }
+  return [{ name: token.binding, text: secret(token.text), type: "secret_text" }];
+}
+
+function monitorBindings(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  options: MonitorOptions,
+): WorkerVersionBinding[] {
+  const variables = {
+    ...options.variables,
+    ALERT_FROM: options.alert.from,
+    ALERT_TO: options.alert.to.join(","),
+  };
+  return [
+    { className: options.className, name: "MONITOR", type: "durable_object_namespace" },
+    {
+      allowedDestinationAddresses: [...options.alert.to],
+      allowedSenderAddresses: [options.alert.from],
+      name: "EMAIL",
+      type: "send_email",
+    },
+    ...tokenBindings(options.token),
+    ...Object.entries(variables).map(([name, text]: readonly [string, string]) => ({
+      name,
+      text,
+      type: "plain_text",
+    })),
+  ];
+}
+
+async function deployMonitor(
+  resource: string,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  options: MonitorOptions,
+): Promise<MonitorDeployment> {
+  await assertArtifact(resource, options.artifact);
+  const { deployment, worker } = deployWorker(resource, {
     accountId: options.accountId,
     name: options.name,
     version: {
+      bindings: monitorBindings(options),
       mainModule: "index.js",
+      migrations: { newSqliteClasses: [options.className], newTag: "v1" },
       modules: [
         {
-          name: "index.js",
-          contentType: "application/javascript+module",
           contentFile: options.artifact,
+          contentType: "application/javascript+module",
+          name: "index.js",
         },
-      ],
-      migrations: { newTag: "v1", newSqliteClasses: [options.className] },
-      bindings: [
-        { type: "durable_object_namespace", name: "MONITOR", className: options.className },
-        {
-          type: "send_email",
-          name: "EMAIL",
-          allowedSenderAddresses: [options.alert.from],
-          allowedDestinationAddresses: options.alert.to,
-        },
-        ...tokenBindings,
-        ...Object.entries({
-          ...options.variables,
-          ALERT_FROM: options.alert.from,
-          ALERT_TO: options.alert.to.join(","),
-        }).map(([name, text]) => ({ type: "plain_text", name, text })),
       ],
     },
   });
-  const schedule = new cloudflare.WorkersCronTrigger(
+  const schedule = new WorkersCronTrigger(
     `${resource}-schedule`,
-    {
-      accountId: options.accountId,
-      scriptName: worker.name,
-      schedules: [{ cron: options.cron }],
-    },
+    { accountId: options.accountId, schedules: [{ cron: options.cron }], scriptName: worker.name },
     { dependsOn: [deployment] },
   );
-  return { workerName: worker.name, scheduleId: schedule.id };
+  return { scheduleId: schedule.id, workerName: worker.name };
 }
+
+export { deployMonitor, deployWorker };

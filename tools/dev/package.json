@@ -17,7 +17,8 @@
     "@template/config": "workspace:*",
     "agent-browser": "0.37.1",
     "portless": "0.15.6",
-    "valibot": "catalog:"
+    "valibot": "catalog:",
+    "vite-plus": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

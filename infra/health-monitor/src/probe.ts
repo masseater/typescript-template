@@ -1,48 +1,70 @@
+import { literal, object, pipe, regex, safeParse, string } from "valibot";
 import type { Application as HealthService } from "@template/config";
-import * as v from "valibot";
+import type { HealthTarget } from "./config.ts";
 
-export interface HealthTarget {
-  readonly service: HealthService;
-  readonly origin: string;
-}
-
-export interface ProbeResult {
+interface ProbeResult {
   readonly service: HealthService;
   readonly healthy: boolean;
   readonly detail: string;
 }
 
-const payload = v.object({
-  ok: v.literal(true),
-  service: v.string(),
-  release: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,64}$/)),
+type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
+
+const REQUEST_TIMEOUT_MS = 10_000;
+
+const payload = object({
+  ok: literal(true),
+  release: pipe(string(), regex(/^[a-zA-Z0-9._-]{1,64}$/u)),
+  service: string(),
 });
 
-export async function probeService(target: HealthTarget): Promise<ProbeResult> {
-  const result = (healthy: boolean, detail: string) => ({
-    service: target.service,
-    healthy,
-    detail,
-  });
-  let response: Response;
+function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
+  return { detail, healthy, service: target.service };
+}
+
+async function requestHealth(target: HealthTarget): Promise<ProbeResponse | undefined> {
   try {
-    response = await fetch(`${target.origin}/api/health`, {
+    return await fetch(`${target.origin}/api/health`, {
       headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(10_000),
       redirect: "manual",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch {
-    return result(false, "unreachable");
+    return undefined;
   }
-  if (!response.ok) return result(false, `status_${response.status}`);
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    return result(false, "body_unreadable");
-  }
-  const parsed = v.safeParse(payload, body);
-  if (!parsed.success || parsed.output.service !== target.service)
-    return result(false, "payload_invalid");
-  return result(true, `release_${parsed.output.release}`);
 }
+
+async function readBody(response: ProbeResponse): Promise<unknown> {
+  try {
+    const body: unknown = await response.json();
+    return body;
+  } catch {
+    return undefined;
+  }
+}
+
+async function payloadResult(target: HealthTarget, response: ProbeResponse): Promise<ProbeResult> {
+  const body = await readBody(response);
+  if (body === undefined) {
+    return probeResult(target, false, "body_unreadable");
+  }
+  const parsed = safeParse(payload, body);
+  if (!parsed.success || parsed.output.service !== target.service) {
+    return probeResult(target, false, "payload_invalid");
+  }
+  return probeResult(target, true, `release_${parsed.output.release}`);
+}
+
+async function probeService(target: HealthTarget): Promise<ProbeResult> {
+  const response = await requestHealth(target);
+  if (response === undefined) {
+    return probeResult(target, false, "unreachable");
+  }
+  if (!response.ok) {
+    return probeResult(target, false, `status_${response.status}`);
+  }
+  return payloadResult(target, response);
+}
+
+export { probeService };
+export type { ProbeResult };

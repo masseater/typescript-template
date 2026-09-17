@@ -102,19 +102,20 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 
 ### 見た目のルールを lint で守らせる
 
-[@shadcn/lint](https://github.com/shadcn-ui/lint) を Oxlint の `jsPlugins` で読み込みます。余白の上書きは許可し、色、角丸、影、文字を部品の外から変えることを禁止します。
+[@shadcn/lint](https://github.com/shadcn-ui/lint) を Oxlint の `jsPlugins` で読み込み、部品の場所は `components.json` の `aliases.ui` で示します。余白の上書きは許可し、色、角丸、影、文字を部品の外から変えることを禁止します。
 
 ```json
 {
   "jsPlugins": ["@shadcn/lint"],
-  "settings": { "shadcn": { "ui": "@template/ui/ui" } },
   "rules": {
     "shadcn/no-restyle": ["error", { "allow": ["layout", "spacing"] }],
     "shadcn/no-raw-colors": "error",
     "shadcn/no-arbitrary-values": "error",
     "shadcn/no-unknown-classes": "error"
   },
-  "overrides": [{ "files": ["libs/ui/src/shared/ui/**"], "rules": { "shadcn/no-restyle": "off" } }]
+  "overrides": [
+    { "files": ["libs/ui/src/shared/ui/**"], "rules": { "shadcn/no-restyle": "off" } }
+  ]
 }
 ```
 

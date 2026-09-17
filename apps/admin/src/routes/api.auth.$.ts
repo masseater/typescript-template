@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { authHandler } from "@template/runtime/handlers";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/api/auth/$")({
   server: { handlers: { GET: authHandler, POST: authHandler } },

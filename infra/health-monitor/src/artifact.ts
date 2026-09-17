@@ -1,3 +1,6 @@
-import { join } from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 
-export const healthWorkerArtifact = join(import.meta.dirname, "../dist/index.js");
+const healthWorkerArtifact = path.join(import.meta.dirname, "../dist/index.js");
+
+export { healthWorkerArtifact };

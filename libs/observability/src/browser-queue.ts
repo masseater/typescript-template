@@ -1,0 +1,95 @@
+import type { BrowserEvent } from "./events.ts";
+import { logError } from "./log.ts";
+import { maximumBatchSize } from "./events.ts";
+
+type Deliver = (events: readonly BrowserEvent[]) => Promise<void>;
+interface EventQueue {
+  readonly disposed: boolean;
+  readonly enqueue: (event: BrowserEvent) => void;
+  readonly flushInBackground: () => void;
+  readonly flushBeforeUnload: () => void;
+}
+
+const maximumPendingEvents = 128;
+
+function reportFailure(): void {
+  logError({ event: "browser.telemetry_export_failed" });
+}
+
+async function settle(delivery: Readonly<Promise<void>>): Promise<void> {
+  try {
+    await delivery;
+  } catch {
+    reportFailure();
+  }
+}
+
+class BrowserEventQueue implements EventQueue {
+  private readonly deliver: Deliver;
+  private readonly pending: BrowserEvent[] = [];
+  private active: Promise<void> | undefined;
+  private closed = false;
+
+  public constructor(deliver: Deliver) {
+    this.deliver = deliver;
+  }
+
+  public get disposed(): boolean {
+    return this.closed;
+  }
+
+  public enqueue(event: BrowserEvent): void {
+    if (this.closed) {
+      return;
+    }
+    if (this.pending.length >= maximumPendingEvents) {
+      logError({ event: "browser.telemetry_queue_full" });
+      return;
+    }
+    this.pending.push(event);
+  }
+
+  public async flush(): Promise<void> {
+    this.active ??= this.drainOnce();
+    await this.active;
+  }
+
+  public flushInBackground(): void {
+    void settle(this.flush());
+  }
+
+  public flushBeforeUnload(): void {
+    while (this.pending.length > 0) {
+      void settle(this.deliver(this.pending.splice(0, maximumBatchSize)));
+    }
+  }
+
+  public close(): void {
+    this.closed = true;
+  }
+
+  private async drainOnce(): Promise<void> {
+    try {
+      await this.drain();
+    } finally {
+      this.active = undefined;
+    }
+  }
+
+  private async drain(): Promise<void> {
+    const events = this.pending.splice(0, maximumBatchSize);
+    if (events.length === 0) {
+      return;
+    }
+    try {
+      await this.deliver(events);
+    } catch (error) {
+      this.pending.unshift(...events);
+      throw error;
+    }
+    await this.drain();
+  }
+}
+
+export { BrowserEventQueue };
+export type { EventQueue };

@@ -1,26 +1,27 @@
 import { Monitor, monitorHandler } from "@template/monitor";
-import type { MonitorBindings } from "@template/monitor";
-import { parseBudgetConfig } from "./config.ts";
-import { fetchUsage } from "./billing.ts";
+import type { MonitorBindings, Notify } from "@template/monitor";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
+import type { BudgetDecision } from "./decision.ts";
+import { fetchUsage } from "./billing.ts";
+import { parseBudgetConfig } from "./config.ts";
 
 interface Bindings extends MonitorBindings {
-  CLOUDFLARE_ACCOUNT_ID: string;
-  BILLING_READ_TOKEN: string;
-  BUDGET_JPY: string;
-  JPY_PER_USD: string;
-  FIXED_COST_USD: string;
-  RESERVE_USD: string;
+  readonly CLOUDFLARE_ACCOUNT_ID: string;
+  readonly BILLING_READ_TOKEN: string;
+  readonly BUDGET_JPY: string;
+  readonly JPY_PER_USD: string;
+  readonly FIXED_COST_USD: string;
+  readonly RESERVE_USD: string;
 }
 
-export class BudgetMonitor extends Monitor<Bindings> {
+class BudgetMonitor extends Monitor<Bindings> {
   protected readonly event = "budget";
   protected readonly failure = {
     subject: "Cloudflare budget monitoring failed",
     text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
   };
 
-  protected async check(notify: (alert: { subject: string; text: string }) => Promise<void>) {
+  protected async check(notify: Notify): Promise<BudgetDecision> {
     const config = parseBudgetConfig(this.env);
     const snapshot = await fetchUsage(
       config.CLOUDFLARE_ACCOUNT_ID,
@@ -38,12 +39,15 @@ export class BudgetMonitor extends Monitor<Bindings> {
         text: JSON.stringify(decision),
       });
       await this.ctx.storage.put("notifications", {
-        period: decision.periodStart,
         keys: [...keys, decision.notificationKey],
+        period: decision.periodStart,
       });
     }
     return decision;
   }
 }
 
+export { BudgetMonitor };
+
+// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("budget");

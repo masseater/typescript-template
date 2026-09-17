@@ -1,41 +1,70 @@
-import * as v from "valibot";
+import { integer, maxValue, minValue, number, object, pipe } from "valibot";
+import { httpStatus } from "./http-status.ts";
 
-export const clientErrorSchema = v.object({
-  statusCode: v.pipe(v.number(), v.integer(), v.minValue(400), v.maxValue(499)),
+interface JsonRequest {
+  readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
+  readonly headers: Readonly<Pick<Headers, "get">>;
+}
+
+const defaultBodyLimit = 16_384;
+const lastClientError = 499;
+
+const clientErrorSchema = object({
+  statusCode: pipe(number(), integer(), minValue(httpStatus.badRequest), maxValue(lastClientError)),
 });
 
-const failure = (message: string, statusCode: number) =>
-  Object.assign(new Error(message), { statusCode });
+function failure(message: string, statusCode: number): Error {
+  return Object.assign(new Error(message), { statusCode });
+}
 
-export async function readJson(
-  request: Request,
-  expectedOrigin: string,
-  limit = 16_384,
-): Promise<unknown> {
+function assertJsonRequest(request: JsonRequest, expectedOrigin: string, limit: number): void {
   if (
     request.headers.get("origin") !== expectedOrigin ||
     request.headers.get("sec-fetch-site") === "cross-site"
-  )
-    throw failure("ORIGIN_DENIED", 403);
-  if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-    throw failure("JSON_REQUIRED", 415);
-  if (Number(request.headers.get("content-length")) > limit) throw failure("BODY_TOO_LARGE", 413);
-  const reader = request.body?.getReader();
-  if (!reader) throw failure("BODY_REQUIRED", 400);
-  const decoder = new TextDecoder();
-  let text = "";
-  let length = 0;
-  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
-    length += chunk.value.byteLength;
-    if (length > limit) {
-      await reader.cancel();
-      throw failure("BODY_TOO_LARGE", 413);
-    }
-    text += decoder.decode(chunk.value, { stream: true });
+  ) {
+    throw failure("ORIGIN_DENIED", httpStatus.forbidden);
   }
-  try {
-    return JSON.parse(text + decoder.decode()) as unknown;
-  } catch {
-    throw failure("INVALID_JSON", 400);
+  if (request.headers.get("content-type")?.split(";")[0] !== "application/json") {
+    throw failure("JSON_REQUIRED", httpStatus.unsupportedMediaType);
+  }
+  if (Number(request.headers.get("content-length")) > limit) {
+    throw failure("BODY_TOO_LARGE", httpStatus.payloadTooLarge);
   }
 }
+
+async function readBoundedText(
+  body: Readonly<AsyncIterable<Uint8Array>>,
+  limit: number,
+): Promise<string> {
+  const decoder = new TextDecoder();
+  let length = 0;
+  let text = "";
+  for await (const chunk of body) {
+    length += chunk.byteLength;
+    if (length > limit) {
+      throw failure("BODY_TOO_LARGE", httpStatus.payloadTooLarge);
+    }
+    text += decoder.decode(chunk, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
+async function readJson(
+  request: JsonRequest,
+  expectedOrigin: string,
+  limit = defaultBodyLimit,
+): Promise<unknown> {
+  assertJsonRequest(request, expectedOrigin, limit);
+  if (!request.body) {
+    throw failure("BODY_REQUIRED", httpStatus.badRequest);
+  }
+  const text = await readBoundedText(request.body, limit);
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw failure("INVALID_JSON", httpStatus.badRequest);
+  }
+}
+
+export { clientErrorSchema, readJson };
+export type { JsonRequest };

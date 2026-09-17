@@ -1,10 +1,11 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
 import type { SearchServer } from "fumadocs-core/search/server";
-import { wikiLlms } from "./search.ts";
 import { source } from "./source.ts";
+import { wikiLlms } from "./search.ts";
 
-export function handleMcp(request: Request, search: SearchServer) {
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function handleMcp(request: Request, search: SearchServer): Promise<Response> {
   const handler = createMcpHandler(() => {
     const server = new McpServer({ name: "wiki", version: "1.0.0" });
     registerSearchTool(server, search);
@@ -13,3 +14,5 @@ export function handleMcp(request: Request, search: SearchServer) {
   });
   return handler.fetch(request);
 }
+
+export { handleMcp };

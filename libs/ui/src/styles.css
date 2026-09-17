@@ -2,11 +2,6 @@
 @import "shadcn/tailwind.css";
 
 @source ".";
-@source "../../../apps/admin/src";
-@source "../../../apps/user/src";
-@source "../../../apps/wiki/src";
-
-@custom-variant dark (&:is(.dark *));
 
 :root {
   --white: #fff;
@@ -147,7 +142,7 @@
 
 @utility focus-indicator {
   isolation: isolate;
-  box-shadow: inset 0 0 0 4px var(--white);
+  box-shadow: inset 0 0 0 3px var(--white);
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }

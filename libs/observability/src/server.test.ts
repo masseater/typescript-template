@@ -1,193 +1,253 @@
-import { expect, test } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
+import type { Instrumentation } from "./server.ts";
 import { createInstrumentation } from "./server.ts";
+import { httpStatus } from "./http-status.ts";
 
-const setup = () =>
-  createInstrumentation({
-    serviceName: "user",
+const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const spanId = "bbbbbbbbbbbbbbbb";
+const telemetryUrl = "http://localhost/api/telemetry";
+const created = 201;
+const noContent = 204;
+const oversizedBody = 32_769;
+const jsonHeaders = { "content-type": "application/json", origin: "http://localhost" };
+
+function setup(): Instrumentation {
+  return createInstrumentation({
     release: "test",
     routes: { "/": "home", "/api/telemetry": "telemetry" },
-  });
-const browserEvent = () => ({
-  kind: "http",
-  route: "home",
-  start: Date.now(),
-  duration: 25,
-  status: 201,
-  method: "POST",
-  name: "http.client.request",
-  value: 0,
-  traceId: "a".repeat(32),
-  spanId: "b".repeat(16),
-  requestId: crypto.randomUUID(),
-});
-
-test("the real HTTP response keeps its body and headers and gains correlation headers", async () => {
-  const response = await setup().wrapRequest(
-    new Request("http://localhost/?token=private"),
-    () =>
-      new Response("actual response", {
-        status: 201,
-        headers: { "set-cookie": "session=private; HttpOnly" },
-      }),
-  );
-  expect(response.status).toBe(201);
-  expect(await response.text()).toBe("actual response");
-  expect(response.headers.get("set-cookie")).toBe("session=private; HttpOnly");
-  expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
-  expect(response.headers.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
-});
-
-test("handler exceptions are rethrown unchanged", async () => {
-  const failure = new Error("sensitive application error");
-  await expect(
-    setup().wrapRequest(new Request("http://localhost/"), () => {
-      throw failure;
-    }),
-  ).rejects.toBe(failure);
-});
-
-test("browser trace parent is propagated but caller-controlled request IDs are replaced", async () => {
-  const response = await setup().wrapRequest(
-    new Request("http://localhost/", {
-      headers: {
-        traceparent: `00-${"a".repeat(32)}-${"b".repeat(16)}-01`,
-        "x-request-id": "private@example.com",
-      },
-    }),
-    (_request, context) => {
-      expect(context.traceId).toBe("a".repeat(32));
-      expect(context.requestId).not.toBe("private@example.com");
-      return new Response(null, { status: 204 });
-    },
-  );
-  expect(response.headers.get("traceparent")).toMatch(/^00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-/);
-});
-
-test("ingress rejects cross-origin, arbitrary bodies, excessive payloads and non-POST requests", async () => {
-  const instrumentation = setup();
-  const url = "http://localhost/api/telemetry";
-  expect((await instrumentation.ingestBrowser(new Request(url))).status).toBe(405);
-  expect(
-    (
-      await instrumentation.ingestBrowser(
-        new Request(url, { method: "POST", headers: { origin: "https://evil.example" } }),
-      )
-    ).status,
-  ).toBe(403);
-  expect(
-    (
-      await instrumentation.ingestBrowser(
-        new Request(url, {
-          method: "POST",
-          headers: { origin: "http://localhost", "content-type": "text/plain" },
-          body: "x",
-        }),
-      )
-    ).status,
-  ).toBe(415);
-  expect(
-    (
-      await instrumentation.ingestBrowser(
-        new Request(url, {
-          method: "POST",
-          headers: { origin: "http://localhost", "content-type": "application/json" },
-          body: "x".repeat(32769),
-        }),
-      )
-    ).status,
-  ).toBe(413);
-  expect(
-    (
-      await instrumentation.ingestBrowser(
-        new Request(url, {
-          method: "POST",
-          headers: { origin: "http://localhost", "content-type": "application/json" },
-          body: JSON.stringify([{ ...browserEvent(), token: "private" }]),
-        }),
-      )
-    ).status,
-  ).toBe(400);
-});
-
-test("browser events and server errors become structured log lines", async () => {
-  const stdout: unknown[] = [];
-  const stderr: unknown[] = [];
-  const instrumentation = createInstrumentation({
     serviceName: "user",
+  });
+}
+
+function browserEvent(): Record<string, unknown> {
+  return {
+    duration: 25,
+    kind: "http",
+    method: "POST",
+    name: "http.client.request",
+    requestId: crypto.randomUUID(),
+    route: "home",
+    spanId,
+    start: Date.now(),
+    status: created,
+    traceId,
+    value: 0,
+  };
+}
+
+async function ingestStatus(
+  instrumentation: Instrumentation,
+  init?: Readonly<{
+    body?: string;
+    headers?: Readonly<Record<string, string>>;
+    method?: string;
+  }>,
+): Promise<number> {
+  const response = await instrumentation.ingestBrowser(new Request(telemetryUrl, init));
+  return response.status;
+}
+
+interface RecordedLogs {
+  readonly stderr: unknown[];
+  readonly stdout: unknown[];
+}
+
+function recordedInstrumentation(): Readonly<{
+  instrumentation: Instrumentation;
+  logs: RecordedLogs;
+}> {
+  const logs: RecordedLogs = { stderr: [], stdout: [] };
+  const instrumentation = createInstrumentation({
+    log: {
+      error: (line) => {
+        logs.stderr.push(JSON.parse(line));
+      },
+      info: (line) => {
+        logs.stdout.push(JSON.parse(line));
+      },
+    },
     release: "abc123",
     routes: { "/": "home" },
-    log: {
-      info: (line) => stdout.push(JSON.parse(line)),
-      error: (line) => stderr.push(JSON.parse(line)),
-    },
+    serviceName: "user",
   });
+  return { instrumentation, logs };
+}
+
+function probeEvents(): string {
   const base = {
-    route: "home",
-    start: Date.now(),
     duration: 25,
-    traceId: "a".repeat(32),
-    spanId: "b".repeat(16),
     requestId: "11111111-1111-4111-8111-111111111111",
+    route: "home",
+    spanId,
+    start: Date.now(),
+    traceId,
   };
-  const response = await instrumentation.ingestBrowser(
-    new Request("http://localhost/api/telemetry", {
+  return JSON.stringify([
+    {
+      ...base,
+      kind: "http",
       method: "POST",
-      headers: { origin: "http://localhost", "content-type": "application/json" },
-      body: JSON.stringify([
-        {
-          ...base,
-          kind: "http",
-          status: 201,
-          method: "POST",
-          name: "http.client.request",
-          value: 0,
-        },
-        {
-          ...base,
-          kind: "exception",
-          status: 0,
-          method: "GET",
-          name: "browser.error",
-          value: 1,
-          errorType: "TypeError",
-          locations: "/assets/index-abc.js:1:234",
-        },
-      ]),
-    }),
+      name: "http.client.request",
+      status: created,
+      value: 0,
+    },
+    {
+      ...base,
+      errorType: "TypeError",
+      kind: "exception",
+      locations: "/assets/index-abc.js:1:234",
+      method: "GET",
+      name: "browser.error",
+      status: 0,
+      value: 1,
+    },
+  ]);
+}
+
+function throwPrivateError(): never {
+  throw new RangeError("private@example.test");
+}
+
+async function runProbe(instrumentation: Instrumentation): Promise<number> {
+  const response = await instrumentation.ingestBrowser(
+    new Request(telemetryUrl, { body: probeEvents(), headers: jsonHeaders, method: "POST" }),
   );
   await instrumentation
-    .wrapRequest(new Request("http://localhost/"), () => {
-      throw new RangeError("private@example.test");
-    })
-    .catch(() => undefined);
-  expect(response.status).toBe(202);
-  expect(stdout).toEqual([
-    expect.objectContaining({
-      event: "http.client.request",
-      service: "user-browser",
-      release: "abc123",
-      trace_id: "a".repeat(32),
-      "http.response.status_code": 201,
-    }),
-  ]);
-  expect(stderr).toEqual([
-    expect.objectContaining({
-      event: "browser.error",
-      service: "user-browser",
-      request_id: "11111111-1111-4111-8111-111111111111",
-      "error.type": "TypeError",
-      "error.locations": "/assets/index-abc.js:1:234",
-    }),
-    expect.objectContaining({
-      event: "application.error",
-      service: "user-server",
-      release: "abc123",
-      "error.type": "RangeError",
-    }),
-    expect.objectContaining({ event: "http.server.request", status: 500, release: "abc123" }),
-  ]);
-  expect(JSON.stringify(stderr)).toMatch(
-    /"error\.fingerprint":"[0-9a-f]{8}".*"error\.fingerprint":"[0-9a-f]{8}"/,
-  );
-  expect(JSON.stringify(stderr)).not.toContain("private@example.test");
+    .wrapRequest(new Request("http://localhost/"), throwPrivateError)
+    .catch((error: unknown) => error);
+  return response.status;
+}
+
+describe("request wrapping", () => {
+  it("the real HTTP response keeps its body and headers and gains correlation headers", async () => {
+    expect.hasAssertions();
+    const response = await setup().wrapRequest(
+      new Request("http://localhost/?token=private"),
+      () =>
+        new Response("actual response", {
+          headers: { "set-cookie": "session=private; HttpOnly" },
+          status: created,
+        }),
+    );
+    expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(response.headers.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/u);
+    expect({
+      cookie: response.headers.get("set-cookie"),
+      status: response.status,
+      text: await response.text(),
+    }).toStrictEqual({
+      cookie: "session=private; HttpOnly",
+      status: created,
+      text: "actual response",
+    });
+  });
+
+  it("handler exceptions are rethrown unchanged", async () => {
+    expect.hasAssertions();
+    const failure = new Error("sensitive application error");
+    function handler(): Response {
+      throw failure;
+    }
+    await expect(setup().wrapRequest(new Request("http://localhost/"), handler)).rejects.toBe(
+      failure,
+    );
+  });
+});
+
+describe("trace propagation", () => {
+  it("browser trace parent is propagated but caller-controlled request IDs are replaced", async () => {
+    expect.hasAssertions();
+    const incoming = new Request("http://localhost/", {
+      headers: { traceparent: `00-${traceId}-${spanId}-01`, "x-request-id": "private@example.com" },
+    });
+    const observed: { traceId?: string; requestId?: string } = {};
+    const response = await setup().wrapRequest(
+      incoming,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (_request, context) => {
+        Object.assign(observed, { requestId: context.requestId, traceId: context.traceId });
+        return new Response(undefined, { status: noContent });
+      },
+    );
+    expect(observed.traceId).toBe(traceId);
+    expect(observed.requestId).not.toBe("private@example.com");
+    expect(response.headers.get("traceparent")).toMatch(new RegExp(`^00-${traceId}-`, "u"));
+  });
+});
+
+describe("browser ingress", () => {
+  it("rejects non-POST and cross-origin requests", async () => {
+    expect.hasAssertions();
+    const instrumentation = setup();
+    await expect(ingestStatus(instrumentation)).resolves.toBe(httpStatus.methodNotAllowed);
+    await expect(
+      ingestStatus(instrumentation, {
+        headers: { origin: "https://evil.example" },
+        method: "POST",
+      }),
+    ).resolves.toBe(httpStatus.forbidden);
+  });
+
+  it("rejects arbitrary bodies and excessive payloads", async () => {
+    expect.hasAssertions();
+    const instrumentation = setup();
+    const plain = {
+      body: "x",
+      headers: { ...jsonHeaders, "content-type": "text/plain" },
+      method: "POST",
+    };
+    await expect(ingestStatus(instrumentation, plain)).resolves.toBe(
+      httpStatus.unsupportedMediaType,
+    );
+    const oversized = { body: "x".repeat(oversizedBody), headers: jsonHeaders, method: "POST" };
+    await expect(ingestStatus(instrumentation, oversized)).resolves.toBe(
+      httpStatus.payloadTooLarge,
+    );
+    const body = JSON.stringify([{ ...browserEvent(), token: "private" }]);
+    await expect(
+      ingestStatus(instrumentation, { body, headers: jsonHeaders, method: "POST" }),
+    ).resolves.toBe(httpStatus.badRequest);
+  });
+});
+
+describe("structured log lines", () => {
+  it("browser events and server errors become structured log lines", async () => {
+    expect.hasAssertions();
+    const { instrumentation, logs } = recordedInstrumentation();
+    await expect(runProbe(instrumentation)).resolves.toBe(httpStatus.accepted);
+    expect(logs.stdout).toStrictEqual([
+      expect.objectContaining({
+        event: "http.client.request",
+        "http.response.status_code": created,
+        release: "abc123",
+        service: "user-browser",
+        trace_id: traceId,
+      }),
+    ]);
+    const { stderr } = logs;
+    expect(stderr).toStrictEqual([
+      expect.objectContaining({
+        "error.locations": "/assets/index-abc.js:1:234",
+        "error.type": "TypeError",
+        event: "browser.error",
+        request_id: "11111111-1111-4111-8111-111111111111",
+        service: "user-browser",
+      }),
+      expect.objectContaining({
+        "error.type": "RangeError",
+        event: "application.error",
+        release: "abc123",
+        service: "user-server",
+      }),
+      expect.objectContaining({
+        event: "http.server.request",
+        release: "abc123",
+        status: httpStatus.internalServerError,
+      }),
+    ]);
+    expect(JSON.stringify(stderr)).toMatch(
+      /"error\.fingerprint":"[0-9a-f]{8}".*"error\.fingerprint":"[0-9a-f]{8}"/u,
+    );
+    expect(JSON.stringify(stderr)).not.toContain("private@example.test");
+  });
 });

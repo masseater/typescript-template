@@ -1,42 +1,42 @@
-import * as v from "valibot";
-import { getPlatformProxy } from "wrangler";
-import { bootstrapAdmin } from "./admin.ts";
-import { createDb } from "./index.ts";
+import { email, parse, pipe, string } from "valibot";
 import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
 import type { DatabaseBinding } from "./index.ts";
+import { bootstrapAdmin } from "./admin.ts";
+import { createDb } from "./index.ts";
+import { getPlatformProxy } from "wrangler";
 
-async function bootstrapLocal() {
-  const email = v.parse(v.pipe(v.string(), v.email()), process.argv[2]);
+const EMAIL_ARGUMENT_INDEX = 2;
+
+async function bootstrapLocal(): Promise<void> {
+  const address = parse(pipe(string(), email()), process.argv[EMAIL_ARGUMENT_INDEX]);
   const platform = await getPlatformProxy<{ DB: DatabaseBinding }>({
-    remoteBindings: false,
-    envFiles: [],
     configPath: await writeLocalDatabaseConfig(),
+    envFiles: [],
     persist: { path: `${localDatabasePersistence}/v3` },
+    remoteBindings: false,
   });
   try {
-    const administrator = await bootstrapAdmin(createDb(platform.env.DB), email);
-    console.log(
-      JSON.stringify({
-        action: "admin_bootstrap",
-        userId: administrator.id,
-        role: administrator.role,
-      }),
-    );
+    const administrator = await bootstrapAdmin(createDb(platform.env.DB), address);
+    const report = {
+      action: "admin_bootstrap",
+      role: administrator.role,
+      userId: administrator.id,
+    };
+    process.stdout.write(`${JSON.stringify(report)}\n`);
   } finally {
     await platform.dispose();
   }
 }
 
 await bootstrapLocal().catch((error: unknown) => {
-  console.error(
-    JSON.stringify({
-      action: "admin_bootstrap",
-      success: false,
-      error:
-        error instanceof Error && error.message === "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"
-          ? error.message
-          : "LOCAL_BOOTSTRAP_FAILED",
-    }),
-  );
+  const failure = {
+    action: "admin_bootstrap",
+    error:
+      error instanceof Error && error.message === "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"
+        ? error.message
+        : "LOCAL_BOOTSTRAP_FAILED",
+    success: false,
+  };
+  process.stderr.write(`${JSON.stringify(failure)}\n`);
   process.exitCode = 1;
 });

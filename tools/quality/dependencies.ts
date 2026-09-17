@@ -1,64 +1,84 @@
-type WorkspaceManifest = { area: string; file: string; manifest: unknown };
+interface WorkspaceManifest {
+  readonly area: string;
+  readonly file: string;
+  readonly manifest: unknown;
+}
 
-export const workspaceManifests: WorkspaceManifest[] = Object.entries(
-  import.meta.glob<unknown>("../../{apps,libs,infra,tools}/*/package.json", {
-    eager: true,
-    import: "default",
-  }),
-).map(([key, manifest]) => {
-  const file = key.replace(/^(?:\.\.\/)+/, "");
-  return { area: file.split("/")[0] ?? "", file, manifest };
-});
+const dependencyFields = [
+  "dependencies",
+  "devDependencies",
+  "peerDependencies",
+  "optionalDependencies",
+] as const;
 
-export function field(manifest: unknown, key: string): unknown {
+function field(manifest: unknown, key: string): unknown {
   return typeof manifest === "object" && manifest !== null
     ? Object.getOwnPropertyDescriptor(manifest, key)?.value
     : undefined;
 }
 
-export function applicationDependencyViolations(
-  workspaces: readonly WorkspaceManifest[],
-): string[] {
-  const applications = workspaces.flatMap(({ area, manifest }) => {
+const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../{apps,libs,infra,tools}/*/package.json",
+  { eager: true, import: "default" },
+);
+
+const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifestModules).map(
+  ([key, manifest]: readonly [string, unknown]) => {
+    const file = key.replace(/^(?:\.\.\/)+/u, "");
+    const [area = ""] = file.split("/");
+    return { area, file, manifest };
+  },
+);
+
+function applicationNames(workspaces: readonly WorkspaceManifest[]): string[] {
+  return workspaces.flatMap(({ area, manifest }) => {
     const name = field(manifest, "name");
     return area === "apps" && typeof name === "string" ? [name] : [];
   });
+}
+
+function declaredDependencies(manifest: unknown): string[] {
+  return dependencyFields.flatMap((key) => {
+    const value = field(manifest, key);
+    return typeof value === "object" && value !== null ? Object.keys(value) : [];
+  });
+}
+
+function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+  const applications = applicationNames(workspaces);
   return workspaces.flatMap(({ file, manifest }) =>
-    ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"].flatMap(
-      (key) => {
-        const value = field(manifest, key);
-        if (typeof value !== "object" || value === null) return [];
-        return Object.keys(value)
-          .filter((dependency) => applications.includes(dependency))
-          .map(
-            (dependency) =>
-              `${file}: ${dependency} はデプロイ単位のアプリです。バッチやコンソールなど他の実行単位と共有する処理は libs/ のパッケージに移し、そちらに依存してください。`,
-          );
-      },
-    ),
+    declaredDependencies(manifest)
+      .filter((dependency) => applications.includes(dependency))
+      .map(
+        (dependency) =>
+          `${file}: ${dependency} はデプロイ単位のアプリです。バッチやコンソールなど他の実行単位と共有する処理は libs/ のパッケージに移し、そちらに依存してください。`,
+      ),
   );
 }
 
-export const retiredUiPackages = {
-  "smarthr-ui": "@template/ui/ui の shadcn/ui (Base UI) 部品",
-  "styled-components": "Tailwind CSS v4 のユーティリティ",
+const retiredUiPackages: Readonly<Record<string, string>> = {
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
   "react-intl": "Paraglide JS",
-} as const;
+  "smarthr-ui": "@template/ui/ui の shadcn/ui (Base UI) 部品",
+  "styled-components": "Tailwind CSS v4 のユーティリティ",
+};
 
-export function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
   return workspaces.flatMap(({ file, manifest }) =>
-    ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"].flatMap(
-      (key) => {
-        const value = field(manifest, key);
-        if (typeof value !== "object" || value === null) return [];
-        return Object.entries(retiredUiPackages)
-          .filter(([dependency]) => Object.hasOwn(value, dependency))
-          .map(
-            ([dependency, replacement]) =>
-              `${file}: ${dependency} は置き換え済みです。${replacement} を使ってください。`,
-          );
-      },
-    ),
+    declaredDependencies(manifest)
+      .filter((dependency) => Object.hasOwn(retiredUiPackages, dependency))
+      .map(
+        (dependency) =>
+          `${file}: ${dependency} は置き換え済みです。${retiredUiPackages[dependency] ?? ""} を使ってください。`,
+      ),
   );
 }
+
+export {
+  applicationDependencyViolations,
+  field,
+  retiredDependencyViolations,
+  retiredUiPackages,
+  workspaceManifests,
+};
+export type { WorkspaceManifest };

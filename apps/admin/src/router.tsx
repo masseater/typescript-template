@@ -1,15 +1,6 @@
-import { createRouter } from "@tanstack/react-router";
 import type { AppRequestContext } from "@template/runtime";
+import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-
-export function getRouter() {
-  return createRouter({
-    routeTree,
-    scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
-    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
-  });
-}
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -17,3 +8,14 @@ declare module "@tanstack/react-router" {
     server: { requestContext: AppRequestContext };
   }
 }
+
+function getRouter(): ReturnType<typeof createRouter<typeof routeTree>> {
+  return createRouter({
+    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
+    defaultPreloadStaleTime: 0,
+    routeTree,
+    scrollRestoration: true,
+  });
+}
+
+export { getRouter };
