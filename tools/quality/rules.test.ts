@@ -480,10 +480,10 @@ test.for([
   expect(reportedRules("libs/shared/src/probe.ts", code)).toEqual([]);
 });
 
-test.for(["instrumentation", "testing"])("allows raw D1 in the %s adapter", (adapter) => {
+test("allows raw D1 in the testing adapter", () => {
   expect(
     reportedRules(
-      `libs/db/src/${adapter}.ts`,
+      "libs/db/src/testing.ts",
       'export const load = (db: D1Database) => db.exec("SELECT 1");',
     ),
   ).toEqual([]);

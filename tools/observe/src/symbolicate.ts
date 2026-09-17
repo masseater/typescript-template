@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { applications } from "@template/config";
 import * as v from "valibot";
 import { symbolicate } from "./source-maps.ts";
 
@@ -15,7 +16,8 @@ const { values, positionals } = parseArgs({
 if (values.help) {
   console.info(
     JSON.stringify({
-      usage: "observe:symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
+      usage:
+        "vp run --filter @template/observe symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
       locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
       readOnly: true,
     }),
@@ -24,7 +26,7 @@ if (values.help) {
   try {
     const input = v.parse(
       v.object({
-        app: v.picklist(["user", "admin", "wiki"]),
+        app: v.picklist(applications),
         release: v.pipe(v.string(), v.regex(/^[0-9a-f]{16}$/)),
         locations: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(20)),
       }),

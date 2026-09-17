@@ -13,14 +13,6 @@ const schema = v.object({
   USER_ORIGIN: origin,
   ADMIN_ORIGIN: origin,
   WIKI_ORIGIN: origin,
-  ALERT_FROM: v.pipe(v.string(), v.email()),
-  ALERT_TO: v.pipe(
-    v.string(),
-    v.transform((value) => value.split(",")),
-    v.array(v.pipe(v.string(), v.email())),
-    v.minLength(1),
-    v.maxLength(10),
-  ),
 });
 
 export type HealthMonitorConfig = v.InferOutput<typeof schema>;

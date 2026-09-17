@@ -1,25 +1,14 @@
 import * as pulumi from "@pulumi/pulumi";
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import * as cloudflare from "@pulumi/cloudflare";
-import { workerCompatibility } from "@template/config/worker";
 import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
 import { errorWorkerArtifact } from "@template/error-monitor/artifact";
 import { healthWorkerArtifact } from "@template/health-monitor/artifact";
-import { workerObservability } from "./observability.ts";
-import {
-  parseSharedConfig,
-  selectObservabilityQueryPermission,
-  selectReadPermission,
-  validateAuthSecret,
-} from "./config.ts";
+import { parseSharedConfig, selectAccountPermission, validateAuthSecret } from "./config.ts";
+import { deployMonitor } from "./worker.ts";
 
 const config = new pulumi.Config();
 const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
 export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-const budgetContent = await readFile(budgetWorkerArtifact);
-if (budgetContent.length === 0) throw new Error("budget_worker_artifact_empty");
-const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");
 const database = new cloudflare.D1Database(
   "shared-db",
   {
@@ -31,213 +20,67 @@ const database = new cloudflare.D1Database(
 const permissions = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
   accountId: settings.accountId,
 });
-const billingToken = new cloudflare.AccountToken(
-  "budget-read-token",
-  {
-    accountId: settings.accountId,
-    name: `${settings.prefix}-billing-read`,
-    policies: [
-      {
-        effect: "allow",
-        permissionGroups: [{ id: permissions.results.apply(selectReadPermission) }],
-        resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
-      },
-    ],
-  },
-  { additionalSecretOutputs: ["value"] },
-);
-const budgetWorker = new cloudflare.Worker("budget-worker", {
+const alert = { from: settings.mailFrom, to: settings.budget.recipients };
+
+const budget = await deployMonitor("budget", {
   accountId: settings.accountId,
   name: `${settings.prefix}-budget`,
-  subdomain: { enabled: false, previewsEnabled: false },
-  observability: workerObservability,
-});
-const budgetVersion = new cloudflare.WorkerVersion("budget-version", {
-  accountId: settings.accountId,
-  workerId: budgetWorker.id,
-  compatibilityDate: workerCompatibility.date,
-  compatibilityFlags: [...workerCompatibility.flags],
-  mainModule: "index.js",
-  modules: [
-    {
-      name: "index.js",
-      contentType: "application/javascript+module",
-      contentFile: budgetWorkerArtifact,
-      contentSha256: budgetContentSha256,
-    },
-  ],
-  migrations: { newTag: "v1", newSqliteClasses: ["BudgetMonitor"] },
-  bindings: [
-    { type: "durable_object_namespace", name: "MONITOR", className: "BudgetMonitor" },
-    {
-      type: "send_email",
-      name: "EMAIL",
-      allowedSenderAddresses: [settings.mailFrom],
-      allowedDestinationAddresses: settings.budget.recipients,
-    },
-    { type: "secret_text", name: "BILLING_READ_TOKEN", text: pulumi.secret(billingToken.value) },
-    ...Object.entries({
-      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
-      BUDGET_JPY: String(settings.budget.budgetJpy),
-      JPY_PER_USD: String(settings.budget.jpyPerUsd),
-      FIXED_COST_USD: String(settings.budget.fixedCostUsd),
-      RESERVE_USD: String(settings.budget.reserveUsd),
-      ALERT_FROM: settings.mailFrom,
-      ALERT_TO: settings.budget.recipients.join(","),
-    }).map(([name, text]) => ({ type: "plain_text", name, text })),
-  ],
-});
-const budgetDeployment = new cloudflare.WorkersDeployment("budget-deployment", {
-  accountId: settings.accountId,
-  scriptName: budgetWorker.name,
-  strategy: "percentage",
-  versions: [{ versionId: budgetVersion.id, percentage: 100 }],
-});
-const schedule = new cloudflare.WorkersCronTrigger(
-  "budget-schedule",
-  {
-    accountId: settings.accountId,
-    scriptName: budgetWorker.name,
-    schedules: [{ cron: "17 */6 * * *" }],
+  artifact: budgetWorkerArtifact,
+  className: "BudgetMonitor",
+  token: {
+    name: `${settings.prefix}-billing-read`,
+    binding: "BILLING_READ_TOKEN",
+    permission: permissions.results.apply((groups) =>
+      selectAccountPermission(groups, "Billing Read"),
+    ),
   },
-  { dependsOn: [budgetDeployment] },
-);
+  alert,
+  variables: {
+    CLOUDFLARE_ACCOUNT_ID: settings.accountId,
+    BUDGET_JPY: String(settings.budget.budgetJpy),
+    JPY_PER_USD: String(settings.budget.jpyPerUsd),
+    FIXED_COST_USD: String(settings.budget.fixedCostUsd),
+    RESERVE_USD: String(settings.budget.reserveUsd),
+  },
+  cron: "17 */6 * * *",
+});
 
-const errorContent = await readFile(errorWorkerArtifact);
-if (errorContent.length === 0) throw new Error("error_worker_artifact_empty");
-const observabilityToken = new cloudflare.AccountToken(
-  "error-query-token",
-  {
-    accountId: settings.accountId,
-    name: `${settings.prefix}-observability-query`,
-    policies: [
-      {
-        effect: "allow",
-        permissionGroups: [{ id: permissions.results.apply(selectObservabilityQueryPermission) }],
-        resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
-      },
-    ],
-  },
-  { additionalSecretOutputs: ["value"] },
-);
-const errorWorker = new cloudflare.Worker("error-worker", {
+const errors = await deployMonitor("error", {
   accountId: settings.accountId,
   name: `${settings.prefix}-errors`,
-  subdomain: { enabled: false, previewsEnabled: false },
-  observability: workerObservability,
-});
-const errorVersion = new cloudflare.WorkerVersion("error-version", {
-  accountId: settings.accountId,
-  workerId: errorWorker.id,
-  compatibilityDate: "2026-09-16",
-  compatibilityFlags: ["nodejs_compat"],
-  mainModule: "index.js",
-  modules: [
-    {
-      name: "index.js",
-      contentType: "application/javascript+module",
-      contentFile: errorWorkerArtifact,
-      contentSha256: createHash("sha256").update(errorContent).digest("hex"),
-    },
-  ],
-  migrations: { newTag: "v1", newSqliteClasses: ["ErrorMonitor"] },
-  bindings: [
-    { type: "durable_object_namespace", name: "MONITOR", className: "ErrorMonitor" },
-    {
-      type: "send_email",
-      name: "EMAIL",
-      allowedSenderAddresses: [settings.mailFrom],
-      allowedDestinationAddresses: settings.budget.recipients,
-    },
-    {
-      type: "secret_text",
-      name: "OBSERVABILITY_TOKEN",
-      text: pulumi.secret(observabilityToken.value),
-    },
-    ...Object.entries({
-      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
-      ALERT_FROM: settings.mailFrom,
-      ALERT_TO: settings.budget.recipients.join(","),
-    }).map(([name, text]) => ({ type: "plain_text", name, text })),
-  ],
-});
-const errorDeployment = new cloudflare.WorkersDeployment("error-deployment", {
-  accountId: settings.accountId,
-  scriptName: errorWorker.name,
-  strategy: "percentage",
-  versions: [{ versionId: errorVersion.id, percentage: 100 }],
-});
-const errorSchedule = new cloudflare.WorkersCronTrigger(
-  "error-schedule",
-  {
-    accountId: settings.accountId,
-    scriptName: errorWorker.name,
-    schedules: [{ cron: "*/5 * * * *" }],
+  artifact: errorWorkerArtifact,
+  className: "ErrorMonitor",
+  token: {
+    name: `${settings.prefix}-observability-query`,
+    binding: "OBSERVABILITY_TOKEN",
+    permission: permissions.results.apply((groups) =>
+      selectAccountPermission(groups, "Workers Observability Write"),
+    ),
   },
-  { dependsOn: [errorDeployment] },
-);
+  alert,
+  variables: { CLOUDFLARE_ACCOUNT_ID: settings.accountId },
+  cron: "*/5 * * * *",
+});
 
-const healthContent = await readFile(healthWorkerArtifact);
-if (healthContent.length === 0) throw new Error("health_worker_artifact_empty");
-const healthWorker = new cloudflare.Worker("health-worker", {
+const health = await deployMonitor("health", {
   accountId: settings.accountId,
   name: `${settings.prefix}-health`,
-  subdomain: { enabled: false, previewsEnabled: false },
-  observability: workerObservability,
-});
-const healthVersion = new cloudflare.WorkerVersion("health-version", {
-  accountId: settings.accountId,
-  workerId: healthWorker.id,
-  compatibilityDate: "2026-09-16",
-  compatibilityFlags: ["nodejs_compat"],
-  mainModule: "index.js",
-  modules: [
-    {
-      name: "index.js",
-      contentType: "application/javascript+module",
-      contentFile: healthWorkerArtifact,
-      contentSha256: createHash("sha256").update(healthContent).digest("hex"),
-    },
-  ],
-  migrations: { newTag: "v1", newSqliteClasses: ["HealthMonitor"] },
-  bindings: [
-    { type: "durable_object_namespace", name: "MONITOR", className: "HealthMonitor" },
-    {
-      type: "send_email",
-      name: "EMAIL",
-      allowedSenderAddresses: [settings.mailFrom],
-      allowedDestinationAddresses: settings.budget.recipients,
-    },
-    ...Object.entries({
-      USER_ORIGIN: settings.userOrigin,
-      ADMIN_ORIGIN: settings.adminOrigin,
-      WIKI_ORIGIN: settings.wikiOrigin,
-      ALERT_FROM: settings.mailFrom,
-      ALERT_TO: settings.budget.recipients.join(","),
-    }).map(([name, text]) => ({ type: "plain_text", name, text })),
-  ],
-});
-const healthDeployment = new cloudflare.WorkersDeployment("health-deployment", {
-  accountId: settings.accountId,
-  scriptName: healthWorker.name,
-  strategy: "percentage",
-  versions: [{ versionId: healthVersion.id, percentage: 100 }],
-});
-const healthSchedule = new cloudflare.WorkersCronTrigger(
-  "health-schedule",
-  {
-    accountId: settings.accountId,
-    scriptName: healthWorker.name,
-    schedules: [{ cron: "37 * * * *" }],
+  artifact: healthWorkerArtifact,
+  className: "HealthMonitor",
+  alert,
+  variables: {
+    USER_ORIGIN: settings.origins.user,
+    ADMIN_ORIGIN: settings.origins.admin,
+    WIKI_ORIGIN: settings.origins.wiki,
   },
-  { dependsOn: [healthDeployment] },
-);
+  cron: "37 * * * *",
+});
 
 export const databaseId = database.id;
 export const applicationSettings = settings;
-export const budgetWorkerName = budgetWorker.name;
-export const budgetScheduleId = schedule.id;
-export const errorWorkerName = errorWorker.name;
-export const errorScheduleId = errorSchedule.id;
-export const healthWorkerName = healthWorker.name;
-export const healthScheduleId = healthSchedule.id;
+export const budgetWorkerName = budget.workerName;
+export const budgetScheduleId = budget.scheduleId;
+export const errorWorkerName = errors.workerName;
+export const errorScheduleId = errors.scheduleId;
+export const healthWorkerName = health.workerName;
+export const healthScheduleId = health.scheduleId;

@@ -10,14 +10,6 @@ const schema = v.object({
   JPY_PER_USD: v.pipe(decimal, positive),
   FIXED_COST_USD: v.pipe(decimal, nonnegative),
   RESERVE_USD: v.pipe(decimal, nonnegative),
-  ALERT_FROM: v.pipe(v.string(), v.email()),
-  ALERT_TO: v.pipe(
-    v.string(),
-    v.transform((value) => value.split(",")),
-    v.array(v.pipe(v.string(), v.email())),
-    v.minLength(1),
-    v.maxLength(10),
-  ),
 });
 
 export type BudgetConfig = v.InferOutput<typeof schema>;

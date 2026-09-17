@@ -1,6 +1,5 @@
+import type { Application as HealthService } from "@template/config";
 import * as v from "valibot";
-
-type HealthService = "user" | "admin" | "wiki";
 
 export interface HealthTarget {
   readonly service: HealthService;

@@ -1,23 +1,24 @@
 import { httpMethod, parentContext, randomHex, routeLabel, validateRoutes } from "./protocol.ts";
-import type { Correlation, ServiceName } from "./protocol.ts";
+import type { Application } from "@template/config";
+import type { Correlation } from "./protocol.ts";
 import { parseBrowserEvents } from "./events.ts";
 import { errorAttributes, errorFingerprint } from "./errors.ts";
+import * as v from "valibot";
+import { clientErrorSchema, readJson } from "./request.ts";
 
-export type { Correlation, ServiceName } from "./protocol.ts";
+export type { Correlation } from "./protocol.ts";
+export { clientErrorSchema, readJson } from "./request.ts";
 export type RequestContext = Correlation & { traceparent: string };
 export type InstrumentationOptions = {
-  serviceName: ServiceName;
+  serviceName: Application;
   release: string;
   routes: Readonly<Record<string, string>>;
   log?: { info(line: string): void; error(line: string): void };
 };
 
-const ingressWindows = new Map<ServiceName, { start: number; count: number }>();
+const ingressWindows = new Map<Application, { start: number; count: number }>();
 
 export function createInstrumentation(options: InstrumentationOptions) {
-  if (!/^[a-zA-Z0-9._-]{1,64}$/.test(options.release)) throw new Error("Invalid release");
-  if (!["user", "admin", "wiki"].includes(options.serviceName))
-    throw new Error("Invalid telemetry service");
   validateRoutes(options.routes);
   const labels = new Set([...Object.values(options.routes), "unmatched"]);
   const log = options.log ?? console;
@@ -86,44 +87,16 @@ export function createInstrumentation(options: InstrumentationOptions) {
     const headers = { "cache-control": "no-store" };
     if (request.method !== "POST")
       return new Response(null, { status: 405, headers: { ...headers, allow: "POST" } });
-    if (
-      request.headers.get("origin") !== new URL(request.url).origin ||
-      request.headers.get("sec-fetch-site") === "cross-site"
-    )
-      return new Response(null, { status: 403, headers });
-    if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-      return new Response(null, { status: 415, headers });
-    if (Number(request.headers.get("content-length")) > 32768)
-      return new Response(null, { status: 413, headers });
-    const reader = request.body?.getReader();
-    if (!reader) return new Response(null, { status: 400, headers });
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    for (;;) {
-      const chunk = await reader.read();
-      if (chunk.done) break;
-      size += chunk.value.byteLength;
-      if (size > 32768) {
-        await reader.cancel();
-        return new Response(null, { status: 413, headers });
-      }
-      chunks.push(chunk.value);
-    }
-    const bytes = new Uint8Array(size);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
     let events;
     try {
       events = parseBrowserEvents(
-        JSON.parse(new TextDecoder().decode(bytes)) as unknown,
+        await readJson(request, new URL(request.url).origin, 32_768),
         labels,
         Date.now(),
       );
-    } catch {
-      return new Response(null, { status: 400, headers });
+    } catch (error) {
+      const status = v.is(clientErrorSchema, error) ? error.statusCode : 400;
+      return new Response(null, { status, headers });
     }
     const now = Date.now();
     const window = ingressWindows.get(options.serviceName) ?? { start: now, count: 0 };

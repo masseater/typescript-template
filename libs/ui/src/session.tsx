@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ReactElement } from "react";
 import * as v from "valibot";
 import { sessionSchema, errorMessage } from "./protocol";
 import type { SessionView } from "./protocol";
-import { Status } from "./primitives";
 
 export function useSession() {
   const [session, setSession] = useState<SessionView | null>(null);
@@ -36,12 +34,4 @@ export function useSession() {
     void refresh();
   }, [refresh]);
   return { session, loading, error, refresh };
-}
-
-export function SessionStatus({ session }: { session: SessionView }): ReactElement {
-  return (
-    <Status>
-      {session.user.email}：{session.strong ? "強認証済み" : "追加認証が未完了です"}
-    </Status>
-  );
 }

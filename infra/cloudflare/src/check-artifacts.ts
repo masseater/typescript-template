@@ -1,9 +1,10 @@
 import { fileURLToPath } from "node:url";
+import { applications } from "@template/config";
 import { loadArtifacts } from "./artifacts.ts";
 
 try {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
-  for (const target of ["user", "admin", "wiki"] as const) {
+  for (const target of applications) {
     const artifacts = await loadArtifacts(root, target);
     console.log(
       JSON.stringify({

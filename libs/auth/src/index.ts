@@ -2,7 +2,14 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
 import { schema } from "@template/db";
-import type { Audience, Database } from "@template/db";
+import {
+  applications,
+  authenticationMethods,
+  roles,
+  strongAuthenticationMethods,
+} from "@template/config";
+import type { Application } from "@template/config";
+import type { Database } from "@template/db";
 import {
   findPasskeyUser,
   findUser,
@@ -21,12 +28,12 @@ export interface AuthOptions {
   database: Database;
   baseURL: string;
   secret: string;
-  audience: Audience;
+  audience: Application;
   sendVerificationEmail: (message: { email: string; url: string }) => Promise<void>;
   onError?: (error: unknown) => void;
 }
 
-const strongMethods = new Set(["password_totp", "passkey_uv"]);
+const strongMethods = new Set<string>(strongAuthenticationMethods);
 const enrollmentPaths = new Set([
   "/get-session",
   "/sign-out",
@@ -106,7 +113,7 @@ export function createAuth(options: AuthOptions) {
     },
     user: {
       additionalFields: {
-        role: { type: ["user", "admin"], required: true, defaultValue: "user", input: false },
+        role: { type: [...roles], required: true, defaultValue: "user", input: false },
         securityVersion: { type: "number", required: true, defaultValue: 0, input: false },
       },
       deleteUser: { enabled: false },
@@ -117,14 +124,14 @@ export function createAuth(options: AuthOptions) {
       freshAge: 60 * 5,
       additionalFields: {
         audience: {
-          type: ["user", "admin", "wiki"],
+          type: [...applications],
           required: true,
           input: false,
           defaultValue: audience,
         },
         securityVersion: { type: "number", required: true, input: false, defaultValue: -1 },
         authenticationMethod: {
-          type: ["password", "password_totp", "passkey_uv", "recovery"],
+          type: [...authenticationMethods],
           required: true,
           input: false,
           defaultValue: "password",
@@ -310,7 +317,7 @@ export async function verifySession(options: {
   auth: Auth;
   database: Database;
   headers: Headers;
-  audience: Audience;
+  audience: Application;
   allowEnrollment?: boolean;
 }) {
   const session = await options.auth.api.getSession({

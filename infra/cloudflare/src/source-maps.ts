@@ -1,6 +1,6 @@
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
-import type { AppTarget } from "./config.ts";
+import type { Application } from "@template/config";
 
 async function copyMaps(source: string, destination: string): Promise<number> {
   const information = await lstat(source).catch((error: unknown) => {
@@ -28,7 +28,7 @@ async function copyMaps(source: string, destination: string): Promise<number> {
 
 export async function archiveSourceMaps(
   repositoryRoot: string,
-  target: AppTarget,
+  target: Application,
   release: string,
 ) {
   const privateMaps = path.join(repositoryRoot, ".local", "source-maps", target);

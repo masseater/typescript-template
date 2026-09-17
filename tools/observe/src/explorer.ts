@@ -1,3 +1,4 @@
+import { loopbackHosts } from "@template/config";
 import * as v from "valibot";
 
 const response = v.object({
@@ -12,7 +13,7 @@ export function explorerOrigin(app: string): URL {
   const url = new URL(app);
   if (
     url.protocol !== "http:" ||
-    !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) ||
+    !loopbackHosts.includes(url.hostname) ||
     url.username ||
     url.password ||
     url.search ||

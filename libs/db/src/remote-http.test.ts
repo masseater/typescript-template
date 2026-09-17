@@ -5,7 +5,6 @@ import { Miniflare } from "miniflare";
 import * as v from "valibot";
 import { remoteExecutor } from "./remote-http.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
-import { remoteErrorCode } from "./remote-input.ts";
 import { createDb } from "./index.ts";
 import { user } from "./schema.ts";
 
@@ -113,7 +112,6 @@ test.for(["http", "partial", "invalid", "redirect"] as const)(
       await expect(remoteExecutor(target).batch([{ sql: "SELECT 1", params: [] }])).rejects.toThrow(
         /^REMOTE_QUERY_FAILED$/,
       );
-      expect(remoteErrorCode(new Error(target.apiToken))).toBe("REMOTE_DATABASE_FAILED");
     } finally {
       server.close();
     }

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { Button, Stack, Heading } from "smarthr-ui";
 import { authClient } from "./client";
-import { Field, Status } from "./primitives";
-import { requireSuccess, errorMessage } from "./protocol";
+import { Field, Status, TotpField } from "./primitives";
+import { requireSecureContext, requireSuccess, errorMessage } from "./protocol";
 import type { SessionView } from "./protocol";
 import { useAction } from "./action";
 
@@ -154,18 +154,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
             }}
           >
             <Stack>
-              <Field
-                label="認証アプリの確認コード"
-                name="totp"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                minLength={6}
-                maxLength={6}
-                required
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-              />
+              <TotpField value={code} onChange={setCode} />
               <Button type="submit" disabled={action.blocked || !saved}>
                 確認して認証アプリを有効化
               </Button>
@@ -179,8 +168,7 @@ export function MFASettings({ session }: { session: SessionView }): ReactElement
           event.preventDefault();
           action.run(async () => {
             setMessage(null);
-            if (!window.isSecureContext)
-              throw new Error("パスキーには HTTPS または localhost が必要です。");
+            requireSecureContext();
             requireSuccess(await authClient.passkey.addPasskey({ name, createSession: false }));
             setName("");
             setMessage(

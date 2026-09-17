@@ -9,12 +9,12 @@
   },
   "scripts": {},
   "dependencies": {
-    "valibot": "1.5.0"
+    "valibot": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260916.1",
-    "@types/node": "24.12.0",
-    "typescript": "7.0.2",
-    "vite-plus": "0.3.2"
+    "@cloudflare/workers-types": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

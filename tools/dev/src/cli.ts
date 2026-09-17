@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { applicationPorts, applications, loopbackHosts } from "@template/config";
+import type { Application } from "@template/config";
 import * as v from "valibot";
 
 const run = promisify(execFile);
@@ -14,22 +16,13 @@ const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const rootHash = createHash("sha256").update(root).digest("hex").slice(0, 12);
 const socket = `template-${rootHash}`;
-const apps = ["user", "admin", "wiki"] as const;
-type App = (typeof apps)[number];
-const appSchema = v.picklist(apps);
 const credentialSchema = v.object({
   authSecret: v.pipe(v.string(), v.minLength(32)),
 });
-const ports = { user: 3001, admin: 3002, wiki: 3003 };
-const servicePorts = { mailpit: 8025 };
-const routes = { ...ports, ...servicePorts };
-const routeNames = ["user", "admin", "wiki", "mailpit"] as const;
+const routes = { ...applicationPorts, mailpit: 8025 };
+const routeNames = [...applications, "mailpit"] as const;
 const hostname = (name: (typeof routeNames)[number]) => `template-${name}.local`;
-const origins = {
-  user: `https://${hostname("user")}`,
-  admin: `https://${hostname("admin")}`,
-  wiki: `https://${hostname("wiki")}`,
-};
+const origin = (name: (typeof routeNames)[number]) => `https://${hostname(name)}`;
 const proxyPort = 1355;
 const portlessHome = new URL("portless/", local);
 const portless = fileURLToPath(new URL("../node_modules/.bin/portless", import.meta.url));
@@ -39,7 +32,7 @@ const portlessEnvironment = {
   PORTLESS_SYNC_HOSTS: "0",
 };
 const browserSettings = `${JSON.stringify({
-  allowedDomains: ["localhost", "127.0.0.1", ...routeNames.map((name) => hostname(name))],
+  allowedDomains: [...loopbackHosts, ...routeNames.map((name) => hostname(name))],
   restoreSave: "never",
 })}\n`;
 
@@ -141,12 +134,12 @@ async function setup() {
       `${JSON.stringify({ authSecret: randomBytes(48).toString("base64url") }, null, 2)}\n`,
     );
   const credentials = await readCredentials();
-  for (const app of apps) {
+  for (const app of applications) {
     const values = {
-      APP_ORIGIN: origins[app],
+      APP_ORIGIN: origin(app),
       AUTH_SECRET: credentials.authSecret,
       EMAIL_FROM: "no-reply@example.test",
-      MAILPIT_URL: "http://127.0.0.1:8025",
+      MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
     };
     const content =
       Object.entries(values)
@@ -171,9 +164,9 @@ async function running(app: string) {
 
 async function status() {
   const results = await Promise.all(
-    apps.map(async (app) => {
+    applications.map(async (app) => {
       const live = await running(app);
-      const response = await fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
+      const response = await fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
         redirect: "manual",
         signal: AbortSignal.timeout(3000),
       }).then(
@@ -184,7 +177,7 @@ async function status() {
         app,
         processRunning: live,
         httpStatus: response,
-        origin: origins[app],
+        origin: origin(app),
         logFile: fileURLToPath(new URL(`logs/${app}.log`, local)),
       };
     }),
@@ -202,15 +195,12 @@ async function connection() {
   return {
     event: "local.lan_access",
     reachableFrom: "devices on the same LAN that trust the local certificate authority",
-    user: origins.user,
-    admin: origins.admin,
-    wiki: origins.wiki,
-    mailpit: `https://${hostname("mailpit")}`,
+    ...Object.fromEntries(routeNames.map((name) => [name, origin(name)])),
     windowsTrustCommand: `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate.toString("base64")}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`,
   };
 }
 
-async function start(app: App) {
+async function start(app: Application) {
   await readCredentials();
   await ensureGateway();
   if (!(await running(app))) {
@@ -229,13 +219,13 @@ async function start(app: App) {
   return status();
 }
 
-async function stop(app: App) {
+async function stop(app: Application) {
   if (await running(app))
     await run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
   return status();
 }
 
-async function browser(app: App) {
+async function browser(app: Application) {
   const socketDirectory = await browserSocketDirectory();
   await replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
@@ -247,7 +237,7 @@ async function browser(app: App) {
     session,
   ];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  await run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
+  await run("agent-browser", [...args, "open", `${origin(app)}${readyPaths[app]}`], {
     cwd: root,
     env,
   });
@@ -255,12 +245,12 @@ async function browser(app: App) {
     ok: true,
     event: "local.browser_opened",
     session,
-    origin: origins[app],
+    origin: origin(app),
     secretsPrinted: false,
   };
 }
 
-async function browserCommand(app: App, args: string[]) {
+async function browserCommand(app: Application, args: string[]) {
   if (args.length === 0) throw new Error("A browser command is required");
   const socketDirectory = await browserSocketDirectory();
   const child = spawn(
@@ -288,30 +278,34 @@ async function browserCommand(app: App, args: string[]) {
   });
 }
 
+const application = (value: string | undefined) => v.parse(v.picklist(applications), value);
+const commands: Record<string, (app: string | undefined, args: string[]) => Promise<unknown>> = {
+  setup,
+  status,
+  connect: connection,
+  start: (app) => start(application(app)),
+  stop: (app) => stop(application(app)),
+  browser: (app) => browser(application(app)),
+  "browser-command": (app, args) => browserCommand(application(app), args),
+  logs: async (app) => ({
+    app,
+    log: await readFile(new URL(`logs/${application(app)}.log`, local), "utf8"),
+  }),
+};
+
 try {
-  const action = process.argv[2];
-  if (action === "setup") console.log(JSON.stringify(await setup()));
-  else if (action === "status") console.log(JSON.stringify(await status()));
-  else if (action === "connect") console.log(JSON.stringify(await connection()));
-  else {
-    const app = v.parse(appSchema, process.argv[3]);
-    if (action === "start") console.log(JSON.stringify(await start(app)));
-    else if (action === "stop") console.log(JSON.stringify(await stop(app)));
-    else if (action === "browser") console.log(JSON.stringify(await browser(app)));
-    else if (action === "browser-command") await browserCommand(app, process.argv.slice(4));
-    else if (action === "logs")
-      console.log(
-        JSON.stringify({ app, log: await readFile(new URL(`logs/${app}.log`, local), "utf8") }),
-      );
-    else throw new Error("Unsupported local application command");
-  }
+  const [action = "", app, ...args] = process.argv.slice(2);
+  const command = commands[action];
+  if (!command) throw new Error("Unsupported local application command");
+  const result = await command(app, args);
+  if (result !== undefined) console.log(JSON.stringify(result));
 } catch {
   console.error(
     JSON.stringify({
       ok: false,
       event: "local.application_command_failed",
       remediation:
-        "Check vp run dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+        "Check vp run --filter @template/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
     }),
   );
   process.exitCode = 1;

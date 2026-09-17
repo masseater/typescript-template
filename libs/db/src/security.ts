@@ -1,5 +1,6 @@
 import { and, count, eq, gt } from "drizzle-orm";
-import type { Audience, Database } from "./index.ts";
+import type { Application, StrongAuthenticationMethod } from "@template/config";
+import type { Database } from "./index.ts";
 import {
   oauthAccessToken,
   oauthRefreshToken,
@@ -13,7 +14,7 @@ import {
 export async function hasVerificationAudience(
   database: Database,
   identifier: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [record] = await database
     .select({ id: verification.id })
@@ -37,7 +38,7 @@ export async function findUser(database: Database, userId: string) {
 export async function findPasskeyUser(
   database: Database,
   credentialId: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [record] = await database
     .select({ user })
@@ -48,7 +49,7 @@ export async function findPasskeyUser(
   return record?.user ?? null;
 }
 
-export async function hasEnrolledFactor(database: Database, userId: string, audience: Audience) {
+export async function hasEnrolledFactor(database: Database, userId: string, audience: Application) {
   const [keys] = await database
     .select({ count: count() })
     .from(passkey)
@@ -64,7 +65,7 @@ export async function hasEnrolledFactor(database: Database, userId: string, audi
 export async function getSessionSecurity(
   database: Database,
   sessionId: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [record] = await database
     .select({ session, user })
@@ -85,8 +86,8 @@ export async function getSessionSecurity(
 export async function markSessionStrong(
   database: Database,
   sessionId: string,
-  audience: Audience,
-  method: "password_totp" | "passkey_uv",
+  audience: Application,
+  method: StrongAuthenticationMethod,
 ) {
   const [updated] = await database
     .update(session)
