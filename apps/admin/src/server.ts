@@ -1,17 +1,6 @@
-import { adminApi, dispatchAdminApi } from "./api.ts";
-import { Layer } from "effect";
-import { createAppWorker } from "@template/runtime/app";
-import { env } from "cloudflare:workers";
+import { serveApp, startRoute } from "@template/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
-import { routes } from "./telemetry-routes.ts";
+import { runtime } from "./server-api/index.ts";
 
 // oxlint-disable-next-line import/no-default-export
-export default createAppWorker({
-  api: adminApi,
-  audience: "admin",
-  dispatch: dispatchAdminApi,
-  env,
-  handler,
-  routes,
-  services: Layer.empty,
-});
+export default serveApp(runtime, startRoute(handler));

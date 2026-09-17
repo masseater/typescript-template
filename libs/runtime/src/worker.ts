@@ -1,9 +1,15 @@
 import type { CurrentRequest, Telemetry } from "@template/observability";
 import { Effect, Result } from "effect";
 import { httpStatus, observeRequest } from "@template/observability";
+import { jsonResponse, secureResponse } from "./responses.ts";
 import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
+import { runtimeUnavailable } from "./failures.ts";
 
+interface StartHandler {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  readonly fetch: (request: Request) => Promise<Response> | Response;
+}
 interface FetchWorker {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
@@ -19,12 +25,8 @@ type AppRoute<Requirements> = (
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
 function unavailableResponse(): Response {
-  // oxlint-disable-next-line no-console
-  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
-  return new Response(undefined, {
-    headers: { "cache-control": "no-store" },
-    status: httpStatus.serviceUnavailable,
-  });
+  const failure = runtimeUnavailable();
+  return jsonResponse({ error: failure.message }, failure.status);
 }
 
 function serveWorker<Requirements>(
@@ -77,5 +79,13 @@ function serveApp<Requirements>(
   });
 }
 
-export { serveApp, serveWorker };
-export type { FetchWorker };
+function startRoute(
+  handler: StartHandler,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+): (request: Request) => Effect.Effect<Response> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
+}
+
+export { serveApp, serveWorker, startRoute };
+export type { AppRoute, FetchWorker };

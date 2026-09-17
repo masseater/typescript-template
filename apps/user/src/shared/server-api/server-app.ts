@@ -10,30 +10,31 @@ import {
 import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
 import {
-  apiBridge,
+  apiRoot,
+  apiRoutes,
   compileApi,
   createApi,
   readJsonBody,
   readSearchParams,
 } from "@template/runtime/http";
-import type { AppServices } from "@template/runtime";
 import { Effect } from "effect";
-import type { Interviewer } from "@template/interview";
+import { httpStatus } from "@template/observability";
 import { interviewApi } from "./interview-api.ts";
+import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
-const bridge = apiBridge<AppServices | Interviewer>();
+const api = apiRoutes(runtime);
 const failures = {
   ...unavailable,
-  UserNotFound: { message: "対象が見つかりません。", status: 404 },
+  UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-const api = createApi()
-  .use(accountApi(bridge))
-  .use(interviewApi(bridge))
+const app = createApi(apiRoot)
+  .use(accountApi(api))
+  .use(interviewApi(api))
   .get(
-    "/api/profile",
-    bridge.route(
+    "/profile",
+    api.route(
       ProfileView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -49,8 +50,8 @@ const api = createApi()
     ),
   )
   .get(
-    "/api/member",
-    bridge.route(
+    "/member",
+    api.route(
       MemberView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -63,8 +64,8 @@ const api = createApi()
     ),
   )
   .get(
-    "/api/members",
-    bridge.route(
+    "/members",
+    api.route(
       MemberList,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -79,8 +80,8 @@ const api = createApi()
     ),
   )
   .patch(
-    "/api/profile",
-    bridge.route(
+    "/profile",
+    api.route(
       ProfileView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
@@ -93,7 +94,6 @@ const api = createApi()
     ),
   );
 
-const userApi = compileApi(api);
-const dispatchUserApi = bridge.dispatch;
+const userApi = compileApi(app);
 
-export { dispatchUserApi, userApi };
+export { userApi };

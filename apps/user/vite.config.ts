@@ -2,6 +2,7 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 import {
   appRun,
   appServer,
+  importProtection,
   previewDevVars,
   reactCompiler,
   withoutEnvFileLoader,
@@ -36,6 +37,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     tailwindcss(),
     ...withoutEnvFileLoader(
       tanstackStart({
+        importProtection,
         router: {
           entry: "app/router.tsx",
           generatedRouteTree: "app/routeTree.gen.ts",

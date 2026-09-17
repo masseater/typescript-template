@@ -7,8 +7,24 @@ import { jsonResponse } from "./responses.ts";
 interface Tagged {
   readonly _tag: string;
 }
+type SettledStatus =
+  | typeof httpStatus.accepted
+  | typeof httpStatus.found
+  | typeof httpStatus.noContent
+  | typeof httpStatus.ok;
+type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus];
+type FailureStatus = Exclude<HttpStatus, SettledStatus>;
+const settledStatuses: ReadonlySet<HttpStatus> = new Set([
+  httpStatus.accepted,
+  httpStatus.found,
+  httpStatus.noContent,
+  httpStatus.ok,
+]);
+const failureStatuses = Object.values(httpStatus).filter(
+  (code): code is FailureStatus => !settledStatuses.has(code),
+);
 interface Failure {
-  readonly status: number;
+  readonly status: FailureStatus;
   readonly message: string;
 }
 type FailureTable<Failures extends Tagged> = {
@@ -28,7 +44,10 @@ type CommonFailure =
 const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
 const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
-const FailureShape = Schema.Struct({ message: Schema.String, status: Schema.Int });
+const FailureShape = Schema.Struct({
+  message: Schema.String,
+  status: Schema.Literals(failureStatuses),
+});
 const TaggedShape = Schema.Struct({ _tag: Schema.String });
 const isFailure = Schema.is(FailureShape);
 const isTagged = Schema.is(TaggedShape);
@@ -56,21 +75,37 @@ function toFailure(table: object, error: unknown): Failure | undefined {
   return isFailure(failure) ? failure : undefined;
 }
 
-function failureResponse(
+function reportedFailure(
   table: object,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   cause: Readonly<Cause.Cause<unknown>>,
-): Effect.Effect<Response> {
+): Effect.Effect<Failure> {
   const error = Cause.findErrorOption(cause);
   const failure = Option.isSome(error)
     ? toFailure({ ...commonFailures, ...table }, error.value)
     : undefined;
   if (failure !== undefined) {
-    return Effect.succeed(jsonResponse({ error: failure.message }, failure.status));
+    return Effect.succeed(failure);
   }
-  const unexpected = jsonResponse({ error: unexpectedMessage }, httpStatus.internalServerError);
+  const unexpected = { message: unexpectedMessage, status: httpStatus.internalServerError };
   return reportFailure(cause).pipe(Effect.as(unexpected));
 }
 
-export { failureResponse };
-export type { CommonFailure, Failure, FailureTable, Tagged };
+function failureResponse(
+  table: object,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  cause: Readonly<Cause.Cause<unknown>>,
+): Effect.Effect<Response> {
+  return reportedFailure(table, cause).pipe(
+    Effect.map((failure) => jsonResponse({ error: failure.message }, failure.status)),
+  );
+}
+
+function runtimeUnavailable(): Failure {
+  // oxlint-disable-next-line no-console
+  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
+  return { message: unexpectedMessage, status: httpStatus.serviceUnavailable };
+}
+
+export { failureResponse, reportedFailure, runtimeUnavailable };
+export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };

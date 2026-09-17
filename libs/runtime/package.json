@@ -9,12 +9,12 @@
     "./client": "./src/client.ts",
     "./wiki": "./src/wiki.ts",
     "./account": "./src/account.ts",
-    "./app": "./src/app.ts",
     "./contracts": "./src/contracts.ts"
   },
   "scripts": {},
   "dependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@elysiajs/eden": "1.4.9",
     "@template/auth": "workspace:*",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
