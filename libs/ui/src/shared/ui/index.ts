@@ -1,6 +1,7 @@
 export { Button } from "./button";
 export { CheckboxField } from "./checkbox-field";
 export { Field } from "./field";
+export { FormColumn } from "./form-column";
 export { Heading } from "./heading";
 export { Page } from "./page";
 export { Status } from "./status";
@@ -10,4 +11,3 @@ export { TableCell } from "./table-cell";
 export { TableHead } from "./table-head";
 export { TableHeader } from "./table-header";
 export { TableRow } from "./table-row";
-export { TextareaField } from "./textarea-field";

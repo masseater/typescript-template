@@ -16,7 +16,7 @@ function TotpField({ code }: Readonly<{ code: TextInput }>): ReactElement {
       maxLength={TOTP_LENGTH}
       required
       value={code.value}
-      onChange={code.handleChange}
+      onValueChange={code.handleChange}
     />
   );
 }

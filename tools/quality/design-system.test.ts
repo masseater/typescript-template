@@ -2,7 +2,9 @@ import {
   appStylesheetViolations,
   designSystemComponents,
   designSystemProbe,
+  linkViolations,
   smarthrTokens,
+  sourceViolations,
   stylesheetPath,
   stylesheetSource,
   tokenViolations,
@@ -10,6 +12,8 @@ import {
 } from "./design-system.ts";
 import { describe, expect, it } from "vite-plus/test";
 import { field, workspaceManifests } from "./dependencies.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { AssertionError } from "node:assert";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { plugin } from "@shadcn/lint";
 
@@ -62,8 +66,11 @@ function reports(rule: RuleName, className: string): boolean {
         },
       ],
     });
-  } catch {
-    return true;
+  } catch (error) {
+    if (error instanceof AssertionError) {
+      return true;
+    }
+    throw error;
   }
   return false;
 }
@@ -122,6 +129,32 @@ describe("app stylesheet ownership", () => {
   it("reports an app without a stylesheet of its own", () => {
     expect.hasAssertions();
     expect(appStylesheetViolations(["apps/missing"])).toHaveLength(1);
+  });
+
+  it("reports a @source that scans a directory which does not exist", () => {
+    expect.hasAssertions();
+    expect(
+      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@source "./nonexistent";'),
+    ).toHaveLength(1);
+  });
+
+  it("reports a @source that scans outside the app", () => {
+    expect.hasAssertions();
+    expect(
+      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@source "../../../libs/ui";'),
+    ).toHaveLength(1);
+  });
+
+  it("reports a stylesheet with no @source at all", () => {
+    expect.hasAssertions();
+    expect(
+      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@import "tailwindcss";'),
+    ).toHaveLength(1);
+  });
+
+  it("reports a stylesheet the app never links", () => {
+    expect.hasAssertions();
+    expect(linkViolations("apps/wiki", "apps/wiki/src/styles/unlinked.css")).toHaveLength(1);
   });
 });
 

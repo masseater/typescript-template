@@ -50,7 +50,10 @@ export default defineConfig({
     overrides: [
       {
         files: ["libs/ui/src/shared/ui/**"],
-        rules: { "shadcn/no-restyle": "off" },
+        rules: {
+          "react/forbid-component-props": ["error", { forbid: ["style"] }],
+          "shadcn/no-restyle": "off",
+        },
       },
       {
         files: ["**/*.test.ts", "**/*-fixture.ts"],
@@ -135,7 +138,6 @@ export default defineConfig({
       "project/test-import-graph": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
-      "react/forbid-component-props": ["error", { forbid: ["style"] }],
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/jsx-no-literals": "off",
       "react/jsx-props-no-spreading": "error",
