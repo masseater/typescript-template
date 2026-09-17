@@ -3,12 +3,13 @@ import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
+import { importVisitor, reportViolation } from "./lint-context.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import { origins, propertyName, staticText } from "./references.ts";
+import { testRuntimeVisitor, workerTestSuffix } from "./test-runtime.ts";
 import type { Origin } from "./references.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
-import { reportViolation } from "./lint-context.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
 
 interface RawD1Checks {
@@ -92,41 +93,6 @@ function rawD1Checks(context: LintContext): RawD1Checks {
     operation: (node) => {
       if (!allowed && isD1Operation(context, node)) {
         reportViolation(context, node);
-      }
-    },
-  };
-}
-
-function importVisitor(checkSource: (node: Node) => void): Visitor {
-  return {
-    ExportAllDeclaration(node: Node): void {
-      if (node.type === "ExportAllDeclaration") {
-        checkSource(node.source);
-      }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type === "ExportNamedDeclaration" && node.source) {
-        checkSource(node.source);
-      }
-    },
-    ImportDeclaration(node: Node): void {
-      if (node.type === "ImportDeclaration") {
-        checkSource(node.source);
-      }
-    },
-    ImportExpression(node: Node): void {
-      if (node.type === "ImportExpression") {
-        checkSource(node.source);
-      }
-    },
-    TSExternalModuleReference(node: Node): void {
-      if (node.type === "TSExternalModuleReference") {
-        checkSource(node.expression);
-      }
-    },
-    TSImportType(node: Node): void {
-      if (node.type === "TSImportType") {
-        checkSource(node.source);
       }
     },
   };
@@ -284,6 +250,12 @@ export default definePlugin({
       create: testImportGraphVisitor,
       meta: metadata(
         "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
+      ),
+    },
+    "test-runtime": {
+      create: testRuntimeVisitor,
+      meta: metadata(
+        `Worker のランタイムで動くテストは ${workerTestSuffix} という名前にして cloudflare:test / cloudflare:workers を使い、Node でしか動かないテストは ${workerTestSuffix} 以外の名前にして node: や msw/node を使ってください。名前がテストの実行先を決めるので、両方を 1 つのファイルに混ぜられません。`,
       ),
     },
     "worker-fetch": {

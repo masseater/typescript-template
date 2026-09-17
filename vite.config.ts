@@ -4,9 +4,9 @@ import { defineConfig } from "vite-plus";
 import { localDatabase } from "@template/db/local";
 import { readMigrations } from "@template/db/migrations";
 import { workerCompatibility } from "@template/config/worker";
+import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
-const workerTests = "**/*.worker.test.ts";
 const migrations = await readMigrations();
 
 function textModule(code: string, id: string): string | undefined {
@@ -186,6 +186,7 @@ export default defineConfig({
       "project/no-internal-mocks": "error",
       "project/no-manual-memoization": "error",
       "project/test-import-graph": "error",
+      "project/test-runtime": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
       "react/forbid-component-props": "error",
