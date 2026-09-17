@@ -197,11 +197,11 @@ describe("project lint rules on raw D1 access", () => {
     expect(reportedRules("libs/shared/src/probe.ts", code)).toStrictEqual([]);
   });
 
-  it.for(["instrumentation", "testing"])("allows raw D1 in the %s adapter", (adapter) => {
+  it("allows raw D1 in the testing adapter", () => {
     expect.hasAssertions();
     expect(
       reportedRules(
-        `libs/db/src/${adapter}.ts`,
+        "libs/db/src/testing.ts",
         'export const load = (db: D1Database) => db.exec("SELECT 1");',
       ),
     ).toStrictEqual([]);

@@ -1,16 +1,16 @@
-import type { Audience, Database } from "@template/db";
+import type { AppConfig, Application } from "@template/config";
 import type { Instrumentation, RequestContext } from "@template/observability";
 import { createAuth, verifySession } from "@template/auth";
 import { readConfig, sendVerificationEmail } from "@template/config";
-import type { AppConfig } from "@template/config";
 import type { Auth } from "@template/auth";
+import type { Database } from "@template/db";
 import { createDb } from "@template/db";
 import { createInstrumentation } from "@template/observability";
 
 type Session = Awaited<ReturnType<typeof verifySession>>;
 
 interface RequestRuntime {
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly auth: Auth;
   readonly config: { readonly APP_ORIGIN: string; readonly APP_RELEASE: string };
   readonly database: Database;
@@ -34,7 +34,7 @@ interface AppRequestContext {
 }
 
 interface RequestRuntimeInput {
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly config: Readonly<
     Pick<
       AppConfig,
@@ -74,7 +74,7 @@ function createRequestRuntime(input: RequestRuntimeInput): RequestRuntime {
 function buildRuntime(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   config: AppConfig,
-  audience: Audience,
+  audience: Application,
   routes: Readonly<Record<string, string>>,
 ): Runtime {
   const telemetry = createInstrumentation({
@@ -91,7 +91,7 @@ function buildRuntime(
 
 function createRuntime(
   bindings: unknown,
-  audience: Exclude<Audience, "wiki">,
+  audience: Exclude<Application, "wiki">,
   routes: Readonly<Record<string, string>>,
 ): Runtime {
   return buildRuntime(readConfig(bindings), audience, routes);

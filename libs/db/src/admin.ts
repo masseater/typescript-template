@@ -1,8 +1,8 @@
-import type { Database, Role } from "./index.ts";
 import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
 import { auditEvent, session, user } from "./schema.ts";
 import {
   integer,
+  is,
   maxValue,
   minValue,
   number,
@@ -12,6 +12,9 @@ import {
   pipe,
   strictObject,
 } from "valibot";
+import { roles, strongAuthenticationMethods } from "@template/config";
+import type { Database } from "./index.ts";
+import type { Role } from "@template/config";
 import type { SQL } from "drizzle-orm";
 import type { SessionSecurity } from "./security.ts";
 import { alias } from "drizzle-orm/sqlite-core";
@@ -30,7 +33,6 @@ type AuditAction = typeof auditEvent.$inferInsert.action;
 
 const PAGE_LIMIT_MAX = 100;
 const PAGE_LIMIT_DEFAULT = 50;
-const strongMethods = ["password_totp", "passkey_uv"] as const;
 
 const pageLimitSchema = pipe(number(), integer(), minValue(1), maxValue(PAGE_LIMIT_MAX));
 const pageOffsetSchema = pipe(number(), integer(), minValue(0));
@@ -38,7 +40,8 @@ const pageInput = strictObject({
   limit: optional(pageLimitSchema, PAGE_LIMIT_DEFAULT),
   offset: optional(pageOffsetSchema, 0),
 });
-const roleSchema = picklist(["user", "admin"]);
+const roleSchema = picklist(roles);
+const strongMethodSchema = picklist(strongAuthenticationMethods);
 
 function reportMutationFailure(error: unknown): never {
   for (let current: unknown = error; current instanceof Error; current = current.cause) {
@@ -57,7 +60,7 @@ async function requireAdmin(
   if (
     actor?.user.role !== "admin" ||
     !actor.user.emailVerified ||
-    !strongMethods.some((method) => method === actor.session.authenticationMethod)
+    !is(strongMethodSchema, actor.session.authenticationMethod)
   ) {
     throw new Error("ADMIN_STRONG_SESSION_REQUIRED");
   }
@@ -67,7 +70,7 @@ async function requireAdmin(
 function liveAdmin(database: Readonly<Pick<Database, "select">>, sessionId: string): SQL {
   const actor = alias(user, "actor");
   const unexpired = gt(session.expiresAt, new Date());
-  const strongSession = inArray(session.authenticationMethod, [...strongMethods]);
+  const strongSession = inArray(session.authenticationMethod, [...strongAuthenticationMethods]);
   const liveAdminSession = and(
     eq(session.id, sessionId),
     eq(session.audience, "admin"),

@@ -1,8 +1,11 @@
+import { clientErrorSchema, readJson } from "./request.ts";
+import type { Application } from "@template/config";
 import type { BrowserEvent } from "./events.ts";
+import type { JsonRequest } from "./request.ts";
 import type { LogSink } from "./log.ts";
-import type { ServiceName } from "./protocol.ts";
 import { errorFingerprint } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
+import { is } from "valibot";
 import { parseBrowserEvents } from "./events.ts";
 import { writeLog } from "./log.ts";
 
@@ -10,12 +13,9 @@ interface Ingress {
   readonly log: LogSink;
   readonly labels: Readonly<ReadonlySet<string>>;
   readonly release: string;
-  readonly serviceName: ServiceName;
+  readonly serviceName: Application;
 }
-type IngressRequest = Readonly<Pick<Request, "method" | "url">> & {
-  readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
-  readonly headers: Readonly<Pick<Headers, "get">>;
-};
+type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
 type LogFields = Readonly<Record<string, string | number | boolean>>;
 interface IngressWindow {
   start: number;
@@ -26,7 +26,7 @@ const maximumBodyBytes = 32_768;
 const rateWindowMilliseconds = 60_000;
 const maximumEventsPerWindow = 1200;
 const retryAfterSeconds = "60";
-const ingressWindows = new Map<ServiceName, IngressWindow>();
+const ingressWindows = new Map<Application, IngressWindow>();
 const noStore = { "cache-control": "no-store" };
 
 function emptyResponse(
@@ -36,53 +36,7 @@ function emptyResponse(
   return new Response(undefined, { headers, status });
 }
 
-function rejectRequest(request: IngressRequest): Response | undefined {
-  if (request.method !== "POST") {
-    return emptyResponse(httpStatus.methodNotAllowed, { ...noStore, allow: "POST" });
-  }
-  if (
-    request.headers.get("origin") !== new URL(request.url).origin ||
-    request.headers.get("sec-fetch-site") === "cross-site"
-  ) {
-    return emptyResponse(httpStatus.forbidden);
-  }
-  if (request.headers.get("content-type")?.split(";")[0] !== "application/json") {
-    return emptyResponse(httpStatus.unsupportedMediaType);
-  }
-  if (Number(request.headers.get("content-length")) > maximumBodyBytes) {
-    return emptyResponse(httpStatus.payloadTooLarge);
-  }
-  return undefined;
-}
-
-async function readBoundedText(
-  body: Readonly<AsyncIterable<Uint8Array>>,
-): Promise<string | undefined> {
-  const decoder = new TextDecoder();
-  let size = 0;
-  let text = "";
-  for await (const chunk of body) {
-    size += chunk.byteLength;
-    if (size > maximumBodyBytes) {
-      return undefined;
-    }
-    text += decoder.decode(chunk, { stream: true });
-  }
-  return text + decoder.decode();
-}
-
-function parseEvents(
-  text: string,
-  labels: Readonly<ReadonlySet<string>>,
-): BrowserEvent[] | undefined {
-  try {
-    return parseBrowserEvents(JSON.parse(text) as unknown, labels, Date.now());
-  } catch {
-    return undefined;
-  }
-}
-
-function admit(serviceName: ServiceName, count: number): boolean {
+function admit(serviceName: Application, count: number): boolean {
   const now = Date.now();
   const window = ingressWindows.get(serviceName) ?? { count: 0, start: now };
   if (now - window.start > rateWindowMilliseconds) {
@@ -138,18 +92,15 @@ async function readEvents(
   ingress: Ingress,
   request: IngressRequest,
 ): Promise<BrowserEvent[] | Response> {
-  const rejected = rejectRequest(request);
-  if (rejected) {
-    return rejected;
+  if (request.method !== "POST") {
+    return emptyResponse(httpStatus.methodNotAllowed, { ...noStore, allow: "POST" });
   }
-  if (!request.body) {
-    return emptyResponse(httpStatus.badRequest);
+  try {
+    const body = await readJson(request, new URL(request.url).origin, maximumBodyBytes);
+    return parseBrowserEvents(body, ingress.labels, Date.now());
+  } catch (error) {
+    return emptyResponse(is(clientErrorSchema, error) ? error.statusCode : httpStatus.badRequest);
   }
-  const text = await readBoundedText(request.body);
-  if (text === undefined) {
-    return emptyResponse(httpStatus.payloadTooLarge);
-  }
-  return parseEvents(text, ingress.labels) ?? emptyResponse(httpStatus.badRequest);
 }
 
 async function acceptEvents(

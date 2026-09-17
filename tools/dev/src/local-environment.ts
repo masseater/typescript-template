@@ -1,7 +1,9 @@
+import { applicationPorts, applications, loopbackHosts } from "@template/config";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
 import { minLength, object, parse, picklist, pipe, record, string } from "valibot";
+import type { Application } from "@template/config";
 import type { InferOutput } from "valibot";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
@@ -30,18 +32,19 @@ const rootHash = Array.from(new Uint8Array(rootDigest), (byte) =>
 // oxlint-disable-next-line node/no-process-env
 const inheritedEnvironment = parse(record(string(), string()), process.env);
 const socket = `template-${rootHash}`;
-const apps = ["user", "admin", "wiki"] as const;
+const apps = applications;
 const appSchema = picklist(apps);
 const authSecretMinimumLength = 32;
 const credentialSchema = object({
   authSecret: pipe(string(), minLength(authSecretMinimumLength)),
 });
-const ports = { admin: 3002, user: 3001, wiki: 3003 };
-const routes = { ...ports, mailpit: 8025 };
-const routeNames = ["user", "admin", "wiki", "mailpit"] as const;
+const MAILPIT_PORT = 8025;
+const ports = applicationPorts;
+const routes = { ...ports, mailpit: MAILPIT_PORT };
+const routeNames = [...applications, "mailpit"] as const;
 const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 
-type App = (typeof apps)[number];
+type App = Application;
 type RouteName = (typeof routeNames)[number];
 type Credentials = InferOutput<typeof credentialSchema>;
 
@@ -59,7 +62,7 @@ const origins = {
   wiki: lanOrigin("wiki"),
 };
 const browserSettings = `${JSON.stringify({
-  allowedDomains: ["localhost", "127.0.0.1", ...routeNames.map((name) => lanHostname(name))],
+  allowedDomains: [...loopbackHosts, ...routeNames.map((name) => lanHostname(name))],
   restoreSave: "never",
 })}\n`;
 

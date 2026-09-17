@@ -13,6 +13,7 @@ import {
 } from "valibot";
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import type { InferOutput } from "valibot";
+import { applicationPorts } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
@@ -36,7 +37,7 @@ type QueryInput = InferOutput<typeof inputSchema>;
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    app: { default: "http://127.0.0.1:3001/", type: "string" },
+    app: { default: `http://127.0.0.1:${applicationPorts.user}/`, type: "string" },
     help: { default: false, type: "boolean" },
     level: { type: "string" },
     limit: { default: "100", type: "string" },

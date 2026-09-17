@@ -1,12 +1,12 @@
 import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
+import type { Application as App } from "@template/config";
+import { applications as apps } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { realpath } from "node:fs/promises";
-
-type App = "user" | "admin" | "wiki";
 
 interface BoundaryRoots {
   readonly app: App;
@@ -15,7 +15,6 @@ interface BoundaryRoots {
   readonly repository: string;
 }
 
-const apps: readonly App[] = ["user", "admin", "wiki"];
 const maxDecodeDepth = 3;
 const forbiddenStatus = 403;
 const badRequestStatus = 400;

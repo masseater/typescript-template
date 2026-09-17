@@ -1,8 +1,10 @@
-import type { Audience, Database } from "@template/db";
+import { applications, authenticationMethods, roles } from "@template/config";
 import { assertEligibleUser, authenticationMethodFor, deny, isStrongMethod } from "./policy.ts";
 import { findUser, getSessionSecurity } from "@template/db/security";
 import { APIError } from "better-auth/api";
+import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
+import type { Database } from "@template/db";
 import type { SessionSecurity } from "@template/db/security";
 import { authPlugins } from "./auth-plugins.ts";
 import { betterAuth } from "better-auth";
@@ -14,7 +16,7 @@ interface AuthOptions {
   readonly database: Database;
   readonly baseURL: string;
   readonly secret: string;
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly sendVerificationEmail: (
     message: Readonly<{ email: string; url: string }>,
   ) => Promise<void>;
@@ -25,7 +27,7 @@ interface VerifySessionOptions {
   readonly auth: Auth;
   readonly database: Database;
   readonly headers: Headers;
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly allowEnrollment?: boolean;
 }
 
@@ -55,7 +57,7 @@ const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOU
 const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createDatabaseHooks(database: Database, audience: Audience): DatabaseHooks {
+function createDatabaseHooks(database: Database, audience: Application): DatabaseHooks {
   return {
     session: {
       create: {
@@ -89,7 +91,7 @@ function createDatabaseHooks(database: Database, audience: Audience): DatabaseHo
 
 function createEmailVerification(
   sendVerificationEmail: AuthOptions["sendVerificationEmail"],
-  { audience, origin }: Readonly<{ audience: Audience; origin: string }>,
+  { audience, origin }: Readonly<{ audience: Application; origin: string }>,
 ): EmailVerificationOptions {
   return {
     autoSignInAfterVerification: false,
@@ -123,7 +125,7 @@ function createLogger(onError: AuthOptions["onError"]): LoggerOptions {
   };
 }
 
-function createAdvancedOptions(audience: Audience, origin: string): AdvancedOptions {
+function createAdvancedOptions(audience: Application, origin: string): AdvancedOptions {
   return {
     cookiePrefix: `template-${audience}`,
     crossSubDomainCookies: { enabled: false },
@@ -131,21 +133,21 @@ function createAdvancedOptions(audience: Audience, origin: string): AdvancedOpti
   };
 }
 
-function createSessionOptions(audience: Audience): SessionOptions {
+function createSessionOptions(audience: Application): SessionOptions {
   return {
     additionalFields: {
       audience: {
         defaultValue: audience,
         input: false,
         required: true,
-        type: ["user", "admin", "wiki"],
+        type: [...applications],
       },
       authenticatedAt: { input: false, required: false, type: "date" },
       authenticationMethod: {
         defaultValue: "password",
         input: false,
         required: true,
-        type: ["password", "password_totp", "passkey_uv", "recovery"],
+        type: [...authenticationMethods],
       },
       securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
     },
@@ -155,7 +157,7 @@ function createSessionOptions(audience: Audience): SessionOptions {
   };
 }
 
-function createEmailAndPassword(audience: Audience): EmailAndPasswordOptions {
+function createEmailAndPassword(audience: Application): EmailAndPasswordOptions {
   return {
     disableSignUp: audience !== "user",
     enabled: true,
@@ -191,7 +193,7 @@ function createAuth(options: AuthOptions) {
     trustedOrigins: [origin],
     user: {
       additionalFields: {
-        role: { defaultValue: "user", input: false, required: true, type: ["user", "admin"] },
+        role: { defaultValue: "user", input: false, required: true, type: [...roles] },
         securityVersion: { defaultValue: 0, input: false, required: true, type: "number" },
       },
       deleteUser: { enabled: false },

@@ -5,8 +5,6 @@ import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 
-type Audience = "user" | "admin" | "wiki";
-type Role = "user" | "admin";
 type DatabaseBinding = D1Database;
 type Database = DrizzleD1Database<typeof schema> & { $client: DatabaseBinding };
 type Profile = Pick<typeof user.$inferSelect, "email" | "id" | "name" | "profile">;
@@ -66,4 +64,4 @@ async function updateProfile(
 
 export { checkDatabase, createDb, getProfile, updateProfile };
 export { schema } from "./schema.ts";
-export type { Audience, Database, DatabaseBinding, Role };
+export type { Database, DatabaseBinding };

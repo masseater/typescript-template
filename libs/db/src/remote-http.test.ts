@@ -4,7 +4,6 @@ import { describe, expect, it } from "vite-plus/test";
 import type { D1Database } from "@cloudflare/workers-types";
 import type { HttpResponseResolver } from "msw";
 import { createDb } from "./index.ts";
-import { remoteErrorCode } from "./remote-input.ts";
 import { remoteExecutor } from "./remote-http.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { setupServer } from "msw/node";
@@ -108,7 +107,6 @@ describe("remote database plan", () => {
         await expect(
           remoteExecutor(target).batch([{ params: [], sql: "SELECT 1" }]),
         ).rejects.toThrow(/^REMOTE_QUERY_FAILED$/u);
-        expect(remoteErrorCode(new Error(target.apiToken))).toBe("REMOTE_DATABASE_FAILED");
       });
     },
   );

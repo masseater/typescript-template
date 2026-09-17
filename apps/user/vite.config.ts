@@ -1,9 +1,9 @@
 import type { ConfigEnv, UserConfig } from "vite-plus";
+import { appServer, previewDevVars } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import { devBoundary } from "@template/dev-boundary";
-import { previewDevVars } from "@template/config/vite";
 import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { workerCompatibility } from "@template/config/worker";
@@ -30,6 +30,6 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     tanstackStart(),
     react(),
   ],
-  preview: { allowedHosts: [".local"], host: "127.0.0.1", port: 3001, strictPort: true },
-  server: { allowedHosts: [".local"], host: "127.0.0.1", port: 3001, strictPort: true },
+  preview: appServer("user"),
+  server: appServer("user"),
 }));

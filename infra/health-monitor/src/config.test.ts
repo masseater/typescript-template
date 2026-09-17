@@ -3,18 +3,14 @@ import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
   ADMIN_ORIGIN: "https://admin.example.com",
-  ALERT_FROM: "alerts@example.com",
-  ALERT_TO: "operator@example.com,oncall@example.com",
   USER_ORIGIN: "https://app.example.com",
   WIKI_ORIGIN: "https://wiki.example.com",
 };
 
 describe("health monitor configuration", () => {
-  it("accepts distinct https origins and verified operator addresses", () => {
+  it("accepts distinct https origins", () => {
     expect.hasAssertions();
-    const config = parseHealthMonitorConfig(valid);
-    expect(config.ALERT_TO).toStrictEqual(["operator@example.com", "oncall@example.com"]);
-    expect(healthTargets(config)).toStrictEqual([
+    expect(healthTargets(parseHealthMonitorConfig(valid))).toStrictEqual([
       { origin: "https://app.example.com", service: "user" },
       { origin: "https://admin.example.com", service: "admin" },
       { origin: "https://wiki.example.com", service: "wiki" },
@@ -24,7 +20,6 @@ describe("health monitor configuration", () => {
   it.each([
     { USER_ORIGIN: "http://app.example.com" },
     { WIKI_ORIGIN: "https://app.example.com/docs" },
-    { ALERT_TO: "private-not-an-address" },
   ] as const)("refuses invalid settings without echoing them: %j", (override) => {
     expect.hasAssertions();
     expect(() => parseHealthMonitorConfig({ ...valid, ...override })).toThrow(

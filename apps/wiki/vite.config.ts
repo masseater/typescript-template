@@ -1,10 +1,10 @@
 import type { ConfigEnv, UserConfig } from "vite-plus";
+import { appServer, previewDevVars } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import { devBoundary } from "@template/dev-boundary";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
-import { previewDevVars } from "@template/config/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -34,6 +34,6 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     tanstackStart(),
     react(),
   ],
-  preview: { allowedHosts: [".local"], host: "127.0.0.1", port: 3003, strictPort: true },
-  server: { allowedHosts: [".local"], host: "127.0.0.1", port: 3003, strictPort: true },
+  preview: appServer("wiki"),
+  server: appServer("wiki"),
 }));

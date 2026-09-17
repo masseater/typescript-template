@@ -9,18 +9,20 @@ import {
   number,
   object,
   parse,
+  picklist,
   pipe,
   readonly,
   regex,
   safeParse,
+  strictTuple,
   string,
   url,
 } from "valibot";
 import type { InferOutput } from "valibot";
+import { applications } from "@template/config";
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
-const DEPLOYMENT_COMMAND_LENGTH = 2;
 
 const id = pipe(string(), regex(/^[a-f0-9]{32}$/u));
 const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
@@ -49,32 +51,23 @@ const budgetSchema = object({
 });
 const sharedSchema = object({
   accountId: id,
-  adminOrigin: origin,
   budget: budgetSchema,
   mailFrom: emailAddress,
+  origins: object({ admin: origin, user: origin, wiki: origin }),
   prefix: pipe(string(), regex(/^[a-z][a-z0-9-]{2,35}$/u)),
-  userOrigin: origin,
-  wikiOrigin: origin,
   zoneId: id,
 });
+const deploymentCommandSchema = strictTuple([
+  picklist(["preview", "up"]),
+  picklist(["shared", ...applications]),
+]);
 
 type SharedConfig = InferOutput<typeof sharedSchema>;
-type AppTarget = "user" | "admin" | "wiki";
-type AppOrigins = Readonly<
-  Pick<SharedConfig, "adminOrigin" | "prefix" | "userOrigin" | "wikiOrigin">
->;
-
-interface DeploymentCommand {
-  operation: "preview" | "up";
-  target: "shared" | AppTarget;
-}
-
-interface AppPolicy {
-  readonly assets: { readonly runWorkerFirst: boolean };
-  readonly name: string;
-  readonly origin: string;
-  readonly subdomain: { readonly enabled: boolean; readonly previewsEnabled: boolean };
-}
+type DeploymentCommand = Readonly<{
+  operation: InferOutput<typeof deploymentCommandSchema>[0];
+  target: InferOutput<typeof deploymentCommandSchema>[1];
+}>;
+type AccountPermission = "Billing Read" | "Workers Observability Write";
 
 interface PermissionGroup {
   readonly id: string;
@@ -82,20 +75,19 @@ interface PermissionGroup {
   readonly scopes: readonly string[];
 }
 
+const workerSubdomain = { enabled: false, previewsEnabled: false } as const;
+
 function parseDeploymentCommand(args: readonly string[]): DeploymentCommand {
-  const [operation, target] = args;
-  if (
-    args.length !== DEPLOYMENT_COMMAND_LENGTH ||
-    (operation !== "preview" && operation !== "up") ||
-    (target !== "shared" && target !== "user" && target !== "admin" && target !== "wiki")
-  ) {
+  const parsed = safeParse(deploymentCommandSchema, args);
+  if (!parsed.success) {
     throw new Error("deployment_command_invalid");
   }
+  const [operation, target] = parsed.output;
   return { operation, target };
 }
 
-function assertDistinctOrigins(config: AppOrigins): void {
-  const origins = [config.userOrigin, config.adminOrigin, config.wikiOrigin];
+function assertDistinctOrigins(config: Readonly<Pick<SharedConfig, "origins">>): void {
+  const origins = Object.values(config.origins);
   if (new Set(origins).size !== origins.length) {
     throw new Error("app_origins_must_differ");
   }
@@ -125,50 +117,25 @@ function validateAuthSecret(secret: string): string {
   return secret;
 }
 
-function appPolicy(config: AppOrigins, target: AppTarget): AppPolicy {
-  return {
-    assets: { runWorkerFirst: true },
-    name: `${config.prefix}-${target}`,
-    origin: { admin: config.adminOrigin, user: config.userOrigin, wiki: config.wikiOrigin }[target],
-    subdomain: { enabled: false, previewsEnabled: false },
-  };
-}
-
-function selectPermission(
+function selectAccountPermission(
   groups: readonly PermissionGroup[],
-  permission: Readonly<{ error: string; name: string }>,
+  name: AccountPermission,
 ): string {
   const matches = groups.filter(
-    (group) =>
-      group.name === permission.name && group.scopes.includes("com.cloudflare.api.account"),
+    (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
   );
   const [match] = matches;
   if (matches.length !== 1 || match === undefined) {
-    throw new Error(permission.error);
+    throw new Error("account_permission_unavailable");
   }
   return parse(id, match.id);
 }
 
-function selectReadPermission(groups: readonly PermissionGroup[]): string {
-  return selectPermission(groups, {
-    error: "billing_read_permission_unavailable",
-    name: "Billing Read",
-  });
-}
-
-function selectObservabilityQueryPermission(groups: readonly PermissionGroup[]): string {
-  return selectPermission(groups, {
-    error: "observability_query_permission_unavailable",
-    name: "Workers Observability Write",
-  });
-}
-
 export {
-  appPolicy,
   parseDeploymentCommand,
   parseSharedConfig,
-  selectObservabilityQueryPermission,
-  selectReadPermission,
+  selectAccountPermission,
   validateAuthSecret,
+  workerSubdomain,
 };
-export type { AppTarget, SharedConfig };
+export type { AccountPermission, SharedConfig };

@@ -1,26 +1,11 @@
-import {
-  array,
-  check,
-  email,
-  maxLength,
-  minLength,
-  object,
-  pipe,
-  safeParse,
-  string,
-  transform,
-  url,
-} from "valibot";
+import { check, object, pipe, safeParse, string, url } from "valibot";
+import type { Application as HealthService } from "@template/config";
 import type { InferOutput } from "valibot";
-
-type HealthService = "user" | "admin" | "wiki";
 
 interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
 }
-
-const MAX_ALERT_RECIPIENTS = 10;
 
 const origin = pipe(
   string(),
@@ -35,17 +20,8 @@ const origin = pipe(
     );
   }),
 );
-const emailAddress = pipe(string(), email());
 const schema = object({
   ADMIN_ORIGIN: origin,
-  ALERT_FROM: emailAddress,
-  ALERT_TO: pipe(
-    string(),
-    transform((value) => value.split(",")),
-    array(emailAddress),
-    minLength(1),
-    maxLength(MAX_ALERT_RECIPIENTS),
-  ),
   USER_ORIGIN: origin,
   WIKI_ORIGIN: origin,
 });
@@ -77,4 +53,4 @@ function healthTargets(config: TargetOrigins): HealthTarget[] {
 }
 
 export { healthTargets, parseHealthMonitorConfig };
-export type { HealthMonitorConfig, HealthService, HealthTarget };
+export type { HealthTarget };

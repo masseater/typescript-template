@@ -5,6 +5,7 @@ import {
   literal,
   minLength,
   minValue,
+  null_,
   number,
   object,
   parse,
@@ -14,9 +15,11 @@ import {
   safeParse,
   string,
   trim,
+  union,
 } from "valibot";
 import type { InferOutput } from "valibot";
-import { compileBootstrapStatement } from "./bootstrap-statement.ts";
+import { SQLiteAsyncDialect } from "drizzle-orm/sqlite-core";
+import { bootstrapStatement } from "./bootstrap-statement.ts";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 
 type RemoteQuery = Readonly<{ params: readonly (string | number | null)[]; sql: string }>;
@@ -26,6 +29,7 @@ type DatabaseExecutor = Readonly<{
 }>;
 
 const statementSchema = pipe(string(), trim(), minLength(1));
+const paramsSchema = array(union([string(), number(), null_()]));
 const migrationSchema = object({
   folderMillis: pipe(number(), integer(), minValue(1)),
   hash: pipe(string(), regex(/^[a-f0-9]{64}$/u)),
@@ -123,7 +127,10 @@ async function bootstrapDatabase(executor: DatabaseExecutor, address: string): P
   if (recorded !== migrations.length) {
     throw new Error("REMOTE_MIGRATIONS_REQUIRED");
   }
-  const [rows] = await executor.batch([compileBootstrapStatement(address)]);
+  const query = new SQLiteAsyncDialect().sqlToQuery(bootstrapStatement(address));
+  const [rows] = await executor.batch([
+    { params: parse(paramsSchema, query.params), sql: query.sql },
+  ]);
   if (rows?.length !== 1) {
     throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
   }

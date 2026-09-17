@@ -14,13 +14,14 @@
     "browser": "node src/cli.ts browser"
   },
   "dependencies": {
+    "@template/config": "workspace:*",
     "agent-browser": "0.37.1",
     "portless": "0.15.6",
-    "valibot": "1.5.0",
+    "valibot": "catalog:",
     "vite-plus": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "24.12.0",
-    "typescript": "7.0.2"
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }

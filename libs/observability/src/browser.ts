@@ -1,19 +1,20 @@
+import type { Correlation, HttpMethod } from "./protocol.ts";
 import {
   httpMethod,
   randomHex,
+  requestIdSchema,
   routeLabel,
   spanIdBytes,
   traceIdBytes,
-  validRequestId,
   validateRoutes,
 } from "./protocol.ts";
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 import type { BrowserEvent } from "./events.ts";
 import { BrowserEventQueue } from "./browser-queue.ts";
-import type { Correlation } from "./protocol.ts";
 import type { EventQueue } from "./browser-queue.ts";
 import type { Metric } from "web-vitals";
 import { errorAttributes } from "./errors.ts";
+import { is } from "valibot";
 import { maximumMeasurement } from "./events.ts";
 
 interface BrowserTelemetryOptions {
@@ -37,7 +38,7 @@ interface FetchInstrumentation {
 }
 interface HttpObservation {
   readonly duration: number;
-  readonly method: string;
+  readonly method: HttpMethod;
   readonly requestId: string;
   readonly route: string;
   readonly spanId: string;
@@ -85,7 +86,7 @@ function responseOutcome(
 ): Pick<BrowserEvent, "requestId" | "status"> {
   const serverRequestId = response.headers.get("x-request-id");
   return {
-    requestId: validRequestId(serverRequestId) ? serverRequestId : fallbackRequestId,
+    requestId: is(requestIdSchema, serverRequestId) ? serverRequestId : fallbackRequestId,
     status: response.status,
   };
 }
@@ -145,7 +146,7 @@ function patchFetch(setup: FetchInstrumentation): () => void {
 
 function documentFields(
   recorder: Recorder,
-): Omit<BrowserEvent, "errorType" | "kind" | "locations" | "name" | "value"> {
+): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> {
   return {
     ...recorder.documentContext,
     duration: 0,

@@ -1,9 +1,9 @@
+import { requireSecureContext, requireSuccess } from "./protocol";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import { Button } from "smarthr-ui";
 import type { ReactElement } from "react";
 import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 import { useCallback } from "react";
 
 function PasskeyLoginButton({
@@ -13,9 +13,7 @@ function PasskeyLoginButton({
   const { run } = action;
   const signIn = useCallback(() => {
     run(async () => {
-      if (!globalThis.isSecureContext) {
-        throw new Error("パスキーには HTTPS または localhost が必要です。");
-      }
+      requireSecureContext();
       requireSuccess(await authClient.signIn.passkey());
       await onAuthenticated();
     });

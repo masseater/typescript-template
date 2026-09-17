@@ -1,68 +1,26 @@
-import { errorType, validErrorLocations } from "./errors.ts";
-import { validRequestId, validSpanId, validTraceId } from "./protocol.ts";
-import type { Correlation } from "./protocol.ts";
-import type { ErrorType } from "./errors.ts";
+import {
+  array,
+  finite,
+  integer,
+  literal,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  number,
+  object,
+  parse,
+  picklist,
+  pipe,
+  strictObject,
+  string,
+  union,
+  variant,
+} from "valibot";
+import { errorLocationsSchema, errorTypes } from "./errors.ts";
+import { httpMethods, requestIdSchema, spanIdSchema, traceIdSchema } from "./protocol.ts";
+import type { InferOutput } from "valibot";
 
-interface EventFields extends Correlation {
-  readonly route: string;
-  readonly start: number;
-  readonly duration: number;
-  readonly status: number;
-  readonly method: string;
-  readonly name:
-    | "http.client.request"
-    | "browser.error"
-    | "browser.unhandledrejection"
-    | "CLS"
-    | "INP"
-    | "LCP"
-    | "FCP"
-    | "TTFB";
-  readonly value: number;
-}
-interface HttpEvent extends EventFields {
-  readonly kind: "http";
-}
-interface VitalEvent extends EventFields {
-  readonly kind: "vital";
-}
-interface ExceptionEvent extends EventFields {
-  readonly kind: "exception";
-  readonly errorType: ErrorType;
-  readonly locations: string;
-}
-type BrowserEvent = HttpEvent | ExceptionEvent | VitalEvent;
-type UntrustedFields = Readonly<Record<string, unknown>>;
-
-const keys: readonly string[] = [
-  "kind",
-  "route",
-  "start",
-  "duration",
-  "status",
-  "method",
-  "name",
-  "value",
-  "traceId",
-  "spanId",
-  "requestId",
-];
-const exceptionKeys: readonly string[] = [...keys, "errorType", "locations"];
-const methods: ReadonlySet<unknown> = new Set([
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "OPTIONS",
-  "HEAD",
-  "_OTHER",
-]);
-const exceptionNames: ReadonlySet<unknown> = new Set([
-  "browser.error",
-  "browser.unhandledrejection",
-]);
-const vitalNames: ReadonlySet<unknown> = new Set(["CLS", "INP", "LCP", "FCP", "TTFB"]);
 const maximumBatchSize = 32;
 const maximumMeasurement = 600_000;
 const maximumClockSkew = 60_000;
@@ -70,110 +28,63 @@ const maximumEventAge = 3_600_000;
 const maximumStatus = 599;
 const minimumHttpStatus = 100;
 
-function isRecord(value: unknown): value is UntrustedFields {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
+const measurement = pipe(number(), finite(), minValue(0), maxValue(maximumMeasurement));
+const fields = {
+  duration: measurement,
+  method: picklist(httpMethods),
+  requestId: requestIdSchema,
+  route: string(),
+  spanId: spanIdSchema,
+  start: pipe(number(), finite(), minValue(0)),
+  traceId: traceIdSchema,
+  value: measurement,
+};
+const httpStatusSchema = pipe(
+  number(),
+  integer(),
+  minValue(minimumHttpStatus),
+  maxValue(maximumStatus),
+);
+const unsentStatus = literal(0);
+const requestStatus = union([unsentStatus, httpStatusSchema]);
+const eventSchema = variant("kind", [
+  strictObject({
+    ...fields,
+    kind: literal("http"),
+    name: literal("http.client.request"),
+    status: requestStatus,
+  }),
+  strictObject({
+    ...fields,
+    errorType: picklist(errorTypes),
+    kind: literal("exception"),
+    locations: errorLocationsSchema,
+    name: picklist(["browser.error", "browser.unhandledrejection"]),
+    status: literal(0),
+  }),
+  strictObject({
+    ...fields,
+    kind: literal("vital"),
+    name: picklist(["CLS", "INP", "LCP", "FCP", "TTFB"]),
+    status: literal(0),
+  }),
+]);
+const eventsSchema = pipe(array(eventSchema), minLength(1), maxLength(maximumBatchSize));
 
-function finite(value: unknown, max: number): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= max;
-}
-
-function hasExactKeys(item: UntrustedFields): boolean {
-  const expected = item["kind"] === "exception" ? exceptionKeys : keys;
-  return (
-    Object.keys(item).length === expected.length &&
-    expected.every((key) => Object.hasOwn(item, key))
-  );
-}
-
-function validMeasurements(
-  item: UntrustedFields,
-  labels: Readonly<ReadonlySet<string>>,
-  now: number,
-): boolean {
-  const { duration, route, start, status, value } = item;
-  return (
-    typeof route === "string" &&
-    labels.has(route) &&
-    finite(start, now + maximumClockSkew) &&
-    start >= now - maximumEventAge &&
-    finite(duration, maximumMeasurement) &&
-    finite(value, maximumMeasurement) &&
-    finite(status, maximumStatus) &&
-    Number.isInteger(status)
-  );
-}
-
-function validIdentifiers(item: UntrustedFields): boolean {
-  const { requestId, spanId, traceId } = item;
-  return validTraceId(traceId) && validSpanId(spanId) && validRequestId(requestId);
-}
-
-function validKind(item: UntrustedFields): boolean {
-  const { kind, name, status } = item;
-  if (kind === "http") {
-    return (
-      name === "http.client.request" &&
-      typeof status === "number" &&
-      (status === 0 || status >= minimumHttpStatus)
-    );
-  }
-  if (status !== 0) {
-    return false;
-  }
-  if (kind === "exception") {
-    return (
-      exceptionNames.has(name) &&
-      errorType(item["errorType"]) !== undefined &&
-      validErrorLocations(item["locations"])
-    );
-  }
-  return kind === "vital" && vitalNames.has(name);
-}
-
-function isBrowserEvent(
-  item: UntrustedFields,
-  labels: Readonly<ReadonlySet<string>>,
-  now: number,
-): item is UntrustedFields & BrowserEvent {
-  return (
-    hasExactKeys(item) &&
-    validMeasurements(item, labels, now) &&
-    validIdentifiers(item) &&
-    methods.has(item["method"]) &&
-    validKind(item)
-  );
-}
-
-function parseBrowserEvent(
-  item: unknown,
-  labels: Readonly<ReadonlySet<string>>,
-  now: number,
-): BrowserEvent {
-  if (!isRecord(item) || !hasExactKeys(item)) {
-    throw new Error("Invalid telemetry fields");
-  }
-  if (!validMeasurements(item, labels, now) || !validIdentifiers(item)) {
-    throw new Error("Invalid telemetry value");
-  }
-  if (!methods.has(item["method"])) {
-    throw new Error("Invalid telemetry method");
-  }
-  if (!isBrowserEvent(item, labels, now)) {
-    throw new Error("Invalid telemetry event");
-  }
-  return { ...item };
-}
+type BrowserEvent = InferOutput<typeof eventSchema>;
 
 function parseBrowserEvents(
   input: unknown,
   labels: Readonly<ReadonlySet<string>>,
   now: number,
 ): BrowserEvent[] {
-  if (!Array.isArray(input) || input.length === 0 || input.length > maximumBatchSize) {
-    throw new Error("Invalid telemetry batch");
-  }
-  return input.map((item: unknown) => parseBrowserEvent(item, labels, now));
+  const events = parse(eventsSchema, input);
+  const placement = object({
+    route: picklist([...labels]),
+    start: pipe(number(), minValue(now - maximumEventAge), maxValue(now + maximumClockSkew)),
+  });
+  parse(array(placement), events);
+  return events;
 }
 
 export { maximumBatchSize, maximumMeasurement, parseBrowserEvents };

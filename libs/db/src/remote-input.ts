@@ -82,24 +82,5 @@ function parseRemoteInput(args: readonly string[], input: unknown): RemoteInput 
   return { execute, operation, target };
 }
 
-const safeErrors = new Set([
-  "REMOTE_COMMAND_INVALID",
-  "REMOTE_INPUT_INVALID",
-  "REMOTE_TARGET_MISMATCH",
-  "REMOTE_QUERY_FAILED",
-  "REMOTE_RESPONSE_INVALID",
-  "REMOTE_MIGRATIONS_INVALID",
-  "REMOTE_MIGRATION_HISTORY_MISMATCH",
-  "REMOTE_MIGRATIONS_REQUIRED",
-  "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
-  "BOOTSTRAP_EMAIL_INVALID",
-]);
-
-function remoteErrorCode(error: unknown): string {
-  return error instanceof Error && safeErrors.has(error.message)
-    ? error.message
-    : "REMOTE_DATABASE_FAILED";
-}
-
-export { accountIdSchema, apiTokenSchema, databaseIdSchema, parseRemoteInput, remoteErrorCode };
+export { parseRemoteInput };
 export type { RemoteTarget };

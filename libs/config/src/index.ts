@@ -13,6 +13,7 @@ import {
 } from "valibot";
 import type { D1Database } from "@cloudflare/workers-types";
 import type { InferOutput } from "valibot";
+import { loopbackHosts } from "./applications.ts";
 
 interface EmailMessage {
   readonly to: string;
@@ -48,7 +49,7 @@ const scalarSchema = object({
   MAILPIT_URL: optional(origin),
 });
 
-const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
 
 function hasFunction(value: unknown, key: string): boolean {
   return (
@@ -76,13 +77,14 @@ type WikiConfig = AppConfig & { AI: AiBinding | undefined };
 function isLocalDevelopmentOrigin(value: string): boolean {
   const { hostname, protocol } = new URL(value);
   return (
-    loopbackHosts.has(hostname) || (protocol === "https:" && /^[a-z0-9-]+\.local$/u.test(hostname))
+    loopbackHostSet.has(hostname) ||
+    (protocol === "https:" && /^[a-z0-9-]+\.local$/u.test(hostname))
   );
 }
 
 function requireSecureOrigin(value: string): void {
   const { hostname, protocol } = new URL(value);
-  if (!loopbackHosts.has(hostname) && protocol !== "https:") {
+  if (!loopbackHostSet.has(hostname) && protocol !== "https:") {
     throw new Error("HTTPS is required outside localhost");
   }
 }
@@ -93,7 +95,7 @@ function readEnvironment(input: unknown): Environment {
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   if (
     scalars.MAILPIT_URL !== undefined &&
-    (!local || !loopbackHosts.has(new URL(scalars.MAILPIT_URL).hostname))
+    (!local || !loopbackHostSet.has(new URL(scalars.MAILPIT_URL).hostname))
   ) {
     throw new Error("Mailpit is restricted to local development");
   }
@@ -162,4 +164,13 @@ export {
   readWikiConfig,
   sendVerificationEmail,
 };
+export {
+  applicationPorts,
+  applications,
+  authenticationMethods,
+  loopbackHosts,
+  roles,
+  strongAuthenticationMethods,
+} from "./applications.ts";
 export type { AppConfig, EmailBinding, EmailMessage };
+export type { Application, Role, StrongAuthenticationMethod } from "./applications.ts";

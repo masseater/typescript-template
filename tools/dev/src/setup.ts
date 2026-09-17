@@ -6,6 +6,7 @@ import {
   origins,
   readCredentials,
   refreshBrowserConfig,
+  routes,
 } from "./local-environment.ts";
 import {
   isErrorCode,
@@ -58,7 +59,7 @@ function appVariables(app: App, credentials: Credentials): Record<string, string
     APP_ORIGIN: origins[app],
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
-    MAILPIT_URL: "http://127.0.0.1:8025",
+    MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
   };
 }
 

@@ -1,7 +1,8 @@
-import type { Audience, Database } from "@template/db";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { jwt, twoFactor } from "better-auth/plugins";
+import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
+import type { Database } from "@template/db";
 import { findPasskeyUser } from "@template/db/security";
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
@@ -9,7 +10,7 @@ import { wikiScopes } from "./mcp.ts";
 
 type AuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
 
-function verificationAudiencePlugin(audience: Audience): AuthPlugin {
+function verificationAudiencePlugin(audience: Application): AuthPlugin {
   const audienceField = {
     defaultValue: audience,
     input: false,
@@ -29,7 +30,7 @@ function passkeyPlugin(
   origin: string,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: Database,
-  audience: Audience,
+  audience: Application,
 ): ReturnType<typeof passkey> {
   return passkey({
     authentication: {
@@ -73,7 +74,7 @@ function authPlugins({
   audience,
   database,
   origin,
-}: Readonly<{ audience: Audience; database: Database; origin: string }>): AuthPlugin[] {
+}: Readonly<{ audience: Application; database: Database; origin: string }>): AuthPlugin[] {
   return [
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),

@@ -2,11 +2,12 @@ import { apiResponse, readJson } from "@template/runtime/http";
 import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
 import { minLength, parse, picklist, pipe, strictObject, string } from "valibot";
 import { createFileRoute } from "@tanstack/react-router";
+import { roles } from "@template/config";
 import { usersPageSize } from "#users-pagination.ts";
 
 const userIdSchema = pipe(string(), minLength(1));
 const deleteUserSchema = strictObject({ id: userIdSchema });
-const setUserRoleSchema = strictObject({ id: userIdSchema, role: picklist(["user", "admin"]) });
+const setUserRoleSchema = strictObject({ id: userIdSchema, role: picklist(roles) });
 
 export const Route = createFileRoute("/api/users")({
   server: {

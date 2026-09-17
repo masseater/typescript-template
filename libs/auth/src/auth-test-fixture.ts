@@ -1,9 +1,10 @@
-import type { Audience, Database, Role } from "@template/db";
+import type { Application, Role } from "@template/config";
 import { BrowserClient, PASSWORD } from "./browser-client.ts";
 import { HttpResponse, http } from "msw";
 import { test as baseTest, expect } from "vite-plus/test";
 import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
+import type { Database } from "@template/db";
 import type { StrictRequest } from "msw";
 import type { TestAPI } from "vite-plus/test";
 import { authorizeMcpRequest } from "./mcp.ts";
@@ -35,7 +36,7 @@ interface MailpitMessage {
 
 interface VerifyRequest {
   readonly allowEnrollment?: boolean;
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly headers: Readonly<Headers>;
 }
 
@@ -43,14 +44,14 @@ interface AuthFixture {
   readonly setUserRole: (
     input: Readonly<{ role: Role; sessionId: string; targetId: string }>,
   ) => Promise<unknown>;
-  readonly auth: (audience: Audience) => Auth;
-  readonly authOptions: (audience: Audience) => Auth["options"];
+  readonly auth: (audience: Application) => Auth;
+  readonly authOptions: (audience: Application) => Auth["options"];
   readonly authorizeMcp: (token?: string) => ReturnType<typeof authorizeMcpRequest>;
   readonly changeRole: (email: string, role: Role) => Promise<void>;
-  readonly client: (audience: Audience) => BrowserClient;
+  readonly client: (audience: Application) => BrowserClient;
   readonly forgetMail: (email: string) => void;
   readonly hasMail: (email: string) => boolean;
-  readonly origin: (audience: Audience) => string;
+  readonly origin: (audience: Application) => string;
   readonly register: (email: string) => Promise<BrowserClient>;
   readonly registerAdmin: (email: string) => Promise<BrowserClient>;
   readonly registerVerified: (email: string) => Promise<BrowserClient>;
@@ -65,7 +66,7 @@ interface MailScope {
 }
 
 interface FixtureScope {
-  readonly auths: Readonly<Record<Audience, Auth>>;
+  readonly auths: Readonly<Record<Application, Auth>>;
   readonly database: Database;
   readonly dependencies: AuthTestDependencies;
   readonly mailbox: Map<string, string>;
@@ -116,7 +117,7 @@ function startMailServer(
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createAudienceAuth(database: Database, audience: Audience): Auth {
+function createAudienceAuth(database: Database, audience: Application): Auth {
   return createAuth({
     audience,
     baseURL: ORIGINS[audience],

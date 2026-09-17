@@ -1,5 +1,4 @@
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-import type { Audience, Database } from "@template/db";
 import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
 import {
   getSessionSecurity,
@@ -8,19 +7,21 @@ import {
   markSessionStrong,
   revokeUserSessions,
 } from "@template/db/security";
+import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
+import type { Database } from "@template/db";
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 
 interface HookScope {
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly ctx: HookContext;
   readonly database: Database;
 }
 
 interface SessionPolicyInput {
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly path: string;
   readonly role: string;
   readonly strong: boolean;
@@ -197,7 +198,7 @@ async function enforceSessionPolicy(
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function createRequestHooks(database: Database, audience: Audience): RequestHooks {
+function createRequestHooks(database: Database, audience: Application): RequestHooks {
   return {
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     after: createAuthMiddleware(async (ctx) => {

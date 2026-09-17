@@ -1,16 +1,16 @@
 import { test as baseTest, describe, expect } from "vite-plus/test";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import type { Application as App } from "@template/config";
 import type { HttpServer } from "vite-plus";
 import type { TestAPI } from "vite-plus/test";
+import { applications as apps } from "@template/config";
 import { createServer } from "vite-plus";
 import { devBoundary } from "./index.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-
-type App = "user" | "admin" | "wiki";
 
 interface DevServer {
   readonly origin: string;
@@ -19,7 +19,6 @@ interface DevServer {
 
 type ServerContext = Readonly<{ server: DevServer }>;
 
-const apps: readonly App[] = ["user", "admin", "wiki"];
 const okStatus = 200;
 const forbiddenStatus = 403;
 const hexRadix = 16;

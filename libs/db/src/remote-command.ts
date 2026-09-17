@@ -18,11 +18,10 @@ type RemoteCommandResult =
   | { databaseId: string; event: "database.remote_admin_bootstrapped"; ok: true };
 
 function targetExecutor(target: Readonly<RemoteTarget>): DatabaseExecutor {
-  return remoteExecutor({
-    accountId: target.accountId,
-    apiToken: target.apiToken,
-    databaseId: target.databaseId,
-  });
+  if (target.apiToken === undefined) {
+    throw new Error("REMOTE_INPUT_INVALID");
+  }
+  return remoteExecutor({ ...target, apiToken: target.apiToken });
 }
 
 async function executeBootstrap(target: Readonly<RemoteTarget>): Promise<RemoteCommandResult> {

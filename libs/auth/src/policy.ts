@@ -1,5 +1,6 @@
 import { APIError } from "better-auth/api";
-import type { Audience } from "@template/db";
+import type { Application } from "@template/config";
+import { strongAuthenticationMethods } from "@template/config";
 
 type AuthenticationMethod = "passkey_uv" | "password" | "password_totp" | "recovery";
 
@@ -8,7 +9,7 @@ interface EligibleUser {
   readonly role: string;
 }
 
-const strongMethods = new Set(["password_totp", "passkey_uv"]);
+const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const enrollmentPaths = new Set([
   "/get-session",
@@ -42,7 +43,7 @@ function authenticationMethodFor(path: string | undefined): AuthenticationMethod
 
 function assertEligibleUser<TUser extends EligibleUser>(
   user: TUser | undefined,
-  audience: Audience,
+  audience: Application,
 ): asserts user is TUser {
   if (user?.emailVerified !== true) {
     deny("VERIFIED_EMAIL_REQUIRED");

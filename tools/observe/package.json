@@ -8,7 +8,8 @@
     "symbolicate": "node src/symbolicate.ts"
   },
   "dependencies": {
+    "@template/config": "workspace:*",
     "es-toolkit": "1.52.0",
-    "valibot": "1.5.0"
+    "valibot": "catalog:"
   }
 }

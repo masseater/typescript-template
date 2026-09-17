@@ -57,7 +57,7 @@ try {
       event: "local.application_command_failed",
       ok: false,
       remediation:
-        "Check vp run dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+        "Check vp run --filter @template/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
     })}\n`,
   );
   process.exitCode = 1;

@@ -11,6 +11,7 @@ import {
   unknown,
 } from "valibot";
 import type { InferOutput } from "valibot";
+import { roles } from "@template/config";
 
 const unknownRecordSchema = record(string(), unknown());
 const emailSchema = pipe(string(), email());
@@ -19,7 +20,7 @@ const sessionUserSchema = pipe(
     email: emailSchema,
     id: string(),
     name: string(),
-    role: picklist(["user", "admin"]),
+    role: picklist(roles),
     twoFactorEnabled: boolean(),
   }),
   readonly(),
@@ -47,6 +48,12 @@ function requireSuccess<TData>(result: AuthResult<TData>): NonNullable<TData> {
   return result.data;
 }
 
+function requireSecureContext(): void {
+  if (!globalThis.isSecureContext) {
+    throw new Error("パスキーには HTTPS または localhost が必要です。");
+  }
+}
+
 function requirePasskeyUV(data: unknown, pathname: string): void {
   if (
     !pathname.endsWith("/passkey/generate-authenticate-options") &&
@@ -68,5 +75,5 @@ function requirePasskeyUV(data: unknown, pathname: string): void {
   }
 }
 
-export { errorMessage, requirePasskeyUV, requireSuccess, sessionSchema };
+export { errorMessage, requirePasskeyUV, requireSecureContext, requireSuccess, sessionSchema };
 export type { SessionView };

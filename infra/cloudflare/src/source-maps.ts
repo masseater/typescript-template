@@ -1,6 +1,6 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
-import type { AppTarget } from "./config.ts";
+import type { Application } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -19,7 +19,7 @@ interface ArchivedMaps {
 interface ReleaseArchive {
   readonly release: string;
   readonly repositoryRoot: string;
-  readonly target: AppTarget;
+  readonly target: Application;
 }
 
 async function directoryExists(source: string): Promise<boolean> {

@@ -1,4 +1,3 @@
-import type { Correlation, ServiceName } from "./protocol.ts";
 import {
   httpMethod,
   parentContext,
@@ -7,6 +6,8 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
+import type { Application } from "@template/config";
+import type { Correlation } from "./protocol.ts";
 import type { LogSink } from "./log.ts";
 import { errorAttributes } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
@@ -19,7 +20,7 @@ interface Telemetry {
   readonly log: LogSink;
   readonly release: string;
   readonly routes: Readonly<Record<string, string>>;
-  readonly serviceName: ServiceName;
+  readonly serviceName: Application;
 }
 type RequestHandler = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

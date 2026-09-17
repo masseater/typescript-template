@@ -1,5 +1,7 @@
-type ServiceName = "user" | "admin" | "wiki";
+import { is, parse, picklist, pipe, record, regex, string } from "valibot";
+
 type RouteEntry = readonly [string, string];
+type HttpMethod = (typeof httpMethods)[number];
 interface Correlation {
   readonly traceId: string;
   readonly spanId: string;
@@ -14,26 +16,24 @@ const traceIdBytes = 16;
 const spanIdBytes = 8;
 const hexRadix = 16;
 const hexByteWidth = 2;
+const routeMessage = "Telemetry routes require fixed paths and bounded labels";
+
+const httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "_OTHER"] as const;
+const httpMethodSchema = picklist(httpMethods);
+const traceIdSchema = pipe(string(), regex(/^(?!0+$)[0-9a-f]{32}$/u));
+const spanIdSchema = pipe(string(), regex(/^(?!0+$)[0-9a-f]{16}$/u));
+const requestIdSchema = pipe(
+  string(),
+  regex(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
+);
+const routePathSchema = pipe(string(), regex(/^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u, routeMessage));
+const routeLabelSchema = pipe(string(), regex(/^[a-z][a-z0-9_.-]{0,63}$/u, routeMessage));
+const routesSchema = record(routePathSchema, routeLabelSchema);
 
 function randomHex(bytes: number): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
     byte.toString(hexRadix).padStart(hexByteWidth, "0"),
   ).join("");
-}
-
-function validTraceId(value: unknown): value is string {
-  return typeof value === "string" && /^[0-9a-f]{32}$/u.test(value) && !/^0+$/u.test(value);
-}
-
-function validSpanId(value: unknown): value is string {
-  return typeof value === "string" && /^[0-9a-f]{16}$/u.test(value) && !/^0+$/u.test(value);
-}
-
-function validRequestId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(value)
-  );
 }
 
 function parentContext(value: string | null): ParentContext | undefined {
@@ -42,13 +42,13 @@ function parentContext(value: string | null): ParentContext | undefined {
   )?.groups;
   const traceId = groups?.["traceId"];
   const parentSpanId = groups?.["parentSpanId"];
-  return validTraceId(traceId) && validSpanId(parentSpanId) ? { parentSpanId, traceId } : undefined;
+  return is(traceIdSchema, traceId) && is(spanIdSchema, parentSpanId)
+    ? { parentSpanId, traceId }
+    : undefined;
 }
 
-function httpMethod(method: string): string {
-  return ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"].includes(method)
-    ? method
-    : "_OTHER";
+function httpMethod(method: string): HttpMethod {
+  return is(httpMethodSchema, method) ? method : "_OTHER";
 }
 
 function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
@@ -64,33 +64,21 @@ function routeLabel(pathname: string, routes: Readonly<Record<string, string>>):
   );
 }
 
-function validRoute(path: string, label: string): boolean {
-  const wildcard = path.includes("*");
-  return (
-    path.startsWith("/") &&
-    !path.includes("?") &&
-    !path.includes("#") &&
-    (!wildcard || (path.endsWith("/*") && !path.slice(0, -1).includes("*"))) &&
-    /^[a-z][a-z0-9_.-]{0,63}$/u.test(label)
-  );
-}
-
 function validateRoutes(routes: Readonly<Record<string, string>>): void {
-  if (Object.entries(routes).some(([path, label]: RouteEntry) => !validRoute(path, label))) {
-    throw new Error("Telemetry routes require fixed paths and bounded labels");
-  }
+  parse(routesSchema, routes);
 }
 
 export {
   httpMethod,
+  httpMethods,
   parentContext,
   randomHex,
+  requestIdSchema,
   routeLabel,
   spanIdBytes,
+  spanIdSchema,
   traceIdBytes,
-  validRequestId,
-  validSpanId,
-  validTraceId,
+  traceIdSchema,
   validateRoutes,
 };
-export type { Correlation, ServiceName };
+export type { Correlation, HttpMethod };

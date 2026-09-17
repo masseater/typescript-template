@@ -1,3 +1,4 @@
+import { applications, authenticationMethods, roles } from "@template/config";
 import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
@@ -11,9 +12,7 @@ const user = sqliteTable(
     image: text("image"),
     name: text("name").notNull(),
     profile: text("profile").notNull().default(""),
-    role: text("role", { enum: ["user", "admin"] })
-      .notNull()
-      .default("user"),
+    role: text("role", { enum: roles }).notNull().default("user"),
     securityVersion: integer("security_version").notNull().default(0),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
@@ -25,11 +24,9 @@ const user = sqliteTable(
 const session = sqliteTable(
   "session",
   {
-    audience: text("audience", { enum: ["user", "admin", "wiki"] }).notNull(),
+    audience: text("audience", { enum: applications }).notNull(),
     authenticatedAt: integer("authenticated_at", { mode: "timestamp_ms" }),
-    authenticationMethod: text("authentication_method", {
-      enum: ["password", "password_totp", "passkey_uv", "recovery"],
-    })
+    authenticationMethod: text("authentication_method", { enum: authenticationMethods })
       .notNull()
       .default("password"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),

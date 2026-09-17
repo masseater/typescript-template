@@ -1,5 +1,6 @@
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 import { parse, picklist, string } from "valibot";
+import { applications } from "@template/config";
 import { delay } from "es-toolkit";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
@@ -61,7 +62,10 @@ async function waitForCorrelation(
 }
 
 try {
-  const service = parse(picklist(["user-server", "admin-server", "wiki-server"]), values.service);
+  const service = parse(
+    picklist(applications.map((application) => `${application}-server` as const)),
+    values.service,
+  );
   const app = explorerOrigin(parse(string(), values.app));
   const response = await fetch(app, {
     method: "GET",

@@ -1,5 +1,6 @@
-import type { HealthService, HealthTarget } from "./config.ts";
 import { literal, object, pipe, regex, safeParse, string } from "valibot";
+import type { Application as HealthService } from "@template/config";
+import type { HealthTarget } from "./config.ts";
 
 interface ProbeResult {
   readonly service: HealthService;

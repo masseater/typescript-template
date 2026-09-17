@@ -9,7 +9,7 @@ import {
 } from "./browser-client.ts";
 import { bootstrapAdmin, setUserRole } from "@template/db/admin";
 import { describe, expect } from "vite-plus/test";
-import type { Audience } from "@template/db";
+import type { Application } from "@template/config";
 import type { AuthFixture } from "./auth-test-fixture.ts";
 import { createAuthTest } from "./auth-test-fixture.ts";
 import { createTestDatabase } from "@template/db/testing";
@@ -52,7 +52,7 @@ async function adminWithStaleSession(fixture: AuthFixture): Promise<BrowserClien
 
 async function adminWithWeakSession(
   fixture: AuthFixture,
-  audience: Audience,
+  audience: Application,
 ): Promise<WeakAdminSession> {
   await fixture.registerAdmin(ADMIN_EMAIL);
   const old = fixture.client(audience);
@@ -65,7 +65,7 @@ async function adminWithWeakSession(
 
 async function adminRecoverySession(
   fixture: AuthFixture,
-  audience: Audience,
+  audience: Application,
 ): Promise<BrowserClient> {
   await fixture.registerAdmin(ADMIN_EMAIL);
   const enrollment = fixture.client("admin");

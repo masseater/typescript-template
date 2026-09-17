@@ -1,4 +1,4 @@
-import type { Audience, Database } from "./index.ts";
+import type { Application, StrongAuthenticationMethod } from "@template/config";
 import { and, count, eq, gt } from "drizzle-orm";
 import {
   oauthAccessToken,
@@ -9,18 +9,18 @@ import {
   user,
   verification,
 } from "./schema.ts";
+import type { Database } from "./index.ts";
 
 type User = typeof user.$inferSelect;
 interface SessionSecurity {
   session: typeof session.$inferSelect;
   user: User;
 }
-type StrongAuthenticationMethod = "password_totp" | "passkey_uv";
 
 async function hasVerificationAudience(
   database: Readonly<Pick<Database, "select">>,
   identifier: string,
-  audience: Audience,
+  audience: Application,
 ): Promise<boolean> {
   const unexpired = gt(verification.expiresAt, new Date());
   const [record] = await database
@@ -44,7 +44,7 @@ async function findUser(
 async function findPasskeyUser(
   database: Readonly<Pick<Database, "select">>,
   credentialId: string,
-  audience: Audience,
+  audience: Application,
 ): Promise<User | undefined> {
   const [record] = await database
     .select({ user })
@@ -58,7 +58,7 @@ async function findPasskeyUser(
 async function hasEnrolledFactor(
   database: Readonly<Pick<Database, "select">>,
   userId: string,
-  audience: Audience,
+  audience: Application,
 ): Promise<boolean> {
   const [keys] = await database
     .select({ count: count() })
@@ -75,7 +75,7 @@ async function hasEnrolledFactor(
 async function getSessionSecurity(
   database: Readonly<Pick<Database, "select">>,
   sessionId: string,
-  audience: Audience,
+  audience: Application,
 ): Promise<SessionSecurity | undefined> {
   const unexpired = gt(session.expiresAt, new Date());
   const [record] = await database
@@ -100,7 +100,7 @@ async function markSessionStrong({
   method,
   sessionId,
 }: Readonly<{
-  audience: Audience;
+  audience: Application;
   database: Readonly<Pick<Database, "update">>;
   method: StrongAuthenticationMethod;
   sessionId: string;

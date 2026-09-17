@@ -9,7 +9,7 @@ import {
   realpath,
   stat,
 } from "node:fs/promises";
-import type { AppTarget } from "./config.ts";
+import type { Application } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
@@ -261,7 +261,7 @@ async function stageClientFiles(
   }
 }
 
-async function loadArtifacts(repositoryRoot: string, target: AppTarget): Promise<Artifacts> {
+async function loadArtifacts(repositoryRoot: string, target: Application): Promise<Artifacts> {
   const root = path.join(repositoryRoot, "apps", target, "dist");
   const output = { client: path.join(root, "client"), server: path.join(root, "server") };
   await Promise.all(

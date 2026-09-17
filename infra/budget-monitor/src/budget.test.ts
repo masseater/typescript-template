@@ -20,8 +20,6 @@ const EXHAUSTED_LEVEL = 100;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const rawConfig = {
-  ALERT_FROM: "mail@example.com",
-  ALERT_TO: "owner@example.com",
   BILLING_READ_TOKEN: "test-read-only-token-not-a-secret",
   BUDGET_JPY: "5000",
   CLOUDFLARE_ACCOUNT_ID: account,

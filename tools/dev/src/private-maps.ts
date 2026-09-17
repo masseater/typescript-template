@@ -1,16 +1,18 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
-import { parse, picklist } from "valibot";
 import { privateDirectoryMode, privateFileMode } from "./private-files.ts";
+import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const audience = parse(picklist(["user", "admin", "wiki"]), process.argv[2]);
-const source = path.join(root, "apps", audience, "dist/client");
-const destination = path.join(root, ".local", "source-maps", audience, "client");
+
+interface MapTarget {
+  readonly destination: string;
+  readonly source: string;
+}
 
 async function sourceMaps(directory: string): Promise<string[]> {
   if ((await realpath(directory)) !== directory) {
@@ -32,7 +34,7 @@ async function sourceMaps(directory: string): Promise<string[]> {
   return [...files, ...nested.flat()];
 }
 
-async function movePrivately(file: string): Promise<void> {
+async function movePrivately({ destination, source }: MapTarget, file: string): Promise<void> {
   const target = path.join(destination, path.relative(source, file));
   const targetDirectory = path.dirname(target);
   await mkdir(targetDirectory, { mode: privateDirectoryMode, recursive: true });
@@ -43,12 +45,19 @@ async function movePrivately(file: string): Promise<void> {
   await chmod(target, privateFileMode);
 }
 
-const maps = await sourceMaps(source);
-await Promise.all(
-  maps.map(async (file) => {
-    await movePrivately(file);
-  }),
-);
-process.stdout.write(
-  `${JSON.stringify({ audience, event: "build.source_maps_private", moved: maps.length })}\n`,
-);
+async function movePrivateMaps(audience: string): Promise<string> {
+  const target = {
+    destination: path.join(root, ".local", "source-maps", audience, "client"),
+    source: path.join(root, "apps", audience, "dist/client"),
+  };
+  const maps = await sourceMaps(target.source);
+  await Promise.all(
+    maps.map(async (file) => {
+      await movePrivately(target, file);
+    }),
+  );
+  return `${JSON.stringify({ audience, event: "build.source_maps_private", moved: maps.length })}\n`;
+}
+
+const reports = await Promise.all(applications.map(async (audience) => movePrivateMaps(audience)));
+process.stdout.write(reports.join(""));

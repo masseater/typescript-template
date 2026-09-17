@@ -1,12 +1,11 @@
+import { describe, expect, it } from "vite-plus/test";
 import {
-  appPolicy,
   parseDeploymentCommand,
   parseSharedConfig,
-  selectObservabilityQueryPermission,
-  selectReadPermission,
+  selectAccountPermission,
   validateAuthSecret,
+  workerSubdomain,
 } from "./config.ts";
-import { describe, expect, it } from "vite-plus/test";
 import { readWikiConfig } from "@template/config";
 
 const HEX_32_LENGTH = 32;
@@ -17,7 +16,6 @@ const release = "0123456789abcdef";
 const assetsBinding = { fetch: async (): Promise<Response> => new Response() };
 const settings = {
   accountId: "a".repeat(HEX_32_LENGTH),
-  adminOrigin: "https://admin.example.com",
   budget: {
     budgetJpy: 5000,
     fixedCostUsd: 5,
@@ -26,9 +24,12 @@ const settings = {
     reserveUsd: 2,
   },
   mailFrom: "mail@example.com",
+  origins: {
+    admin: "https://admin.example.com",
+    user: "https://user.example.com",
+    wiki: "https://wiki.example.com",
+  },
   prefix: "template-test",
-  userOrigin: "https://user.example.com",
-  wikiOrigin: "https://wiki.example.com",
   zoneId: "b".repeat(HEX_32_LENGTH),
 };
 
@@ -50,35 +51,17 @@ describe("deployment commands", () => {
   });
 });
 
-describe("application policy", () => {
-  it("user and admin are distinct deployments with all alternative public URLs disabled", () => {
+describe("worker exposure", () => {
+  it("workers disable every alternative public URL", () => {
     expect.hasAssertions();
-    const config = parseSharedConfig(settings);
-    expect(appPolicy(config, "user")).toStrictEqual({
-      assets: { runWorkerFirst: true },
-      name: "template-test-user",
-      origin: settings.userOrigin,
-      subdomain: { enabled: false, previewsEnabled: false },
-    });
-    expect(appPolicy(config, "admin")).toStrictEqual({
-      assets: { runWorkerFirst: true },
-      name: "template-test-admin",
-      origin: settings.adminOrigin,
-      subdomain: { enabled: false, previewsEnabled: false },
-    });
-    expect(appPolicy(config, "wiki")).toStrictEqual({
-      assets: { runWorkerFirst: true },
-      name: "template-test-wiki",
-      origin: settings.wikiOrigin,
-      subdomain: { enabled: false, previewsEnabled: false },
-    });
+    expect(workerSubdomain).toStrictEqual({ enabled: false, previewsEnabled: false });
   });
 });
 
 function wikiBindings(): Record<string, unknown> {
   const config = parseSharedConfig(settings);
   return {
-    APP_ORIGIN: appPolicy(config, "wiki").origin,
+    APP_ORIGIN: config.origins.wiki,
     APP_RELEASE: release,
     ASSETS: assetsBinding,
     AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
@@ -92,7 +75,7 @@ describe("wiki runtime settings", () => {
   it("the wiki reads authentication, database and release settings", () => {
     expect.hasAssertions();
     const runtime = readWikiConfig(wikiBindings());
-    expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
+    expect(runtime.APP_ORIGIN).toBe(settings.origins.wiki);
     expect(runtime.APP_RELEASE).toBe(release);
     expect(runtime.AI).toBeUndefined();
     expect(() => readWikiConfig({ ...wikiBindings(), DB: undefined })).toThrow("Invalid type");
@@ -113,18 +96,21 @@ describe("shared settings validation", () => {
     "https://admin.example.com?x=1",
     "https://app.team.workers.dev",
     "not-a-url",
-  ])("rejects unsafe admin origin %s", (adminOrigin) => {
+  ])("rejects unsafe admin origin %s", (admin) => {
     expect.hasAssertions();
-    expect(() => parseSharedConfig({ ...settings, adminOrigin })).toThrow(
-      "cloudflare_settings_invalid",
-    );
+    expect(() =>
+      parseSharedConfig({ ...settings, origins: { ...settings.origins, admin } }),
+    ).toThrow("cloudflare_settings_invalid");
   });
 
   it("rejects same origins", () => {
     expect.hasAssertions();
-    expect(() => parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })).toThrow(
-      "app_origins_must_differ",
-    );
+    expect(() =>
+      parseSharedConfig({
+        ...settings,
+        origins: { ...settings.origins, admin: settings.origins.user },
+      }),
+    ).toThrow("app_origins_must_differ");
   });
 
   it("refuses a budget exhausted by fixed fees", () => {
@@ -143,11 +129,15 @@ describe("credential validation", () => {
       name: "Billing Read",
       scopes: ["com.cloudflare.api.account"],
     };
-    expect(selectReadPermission([read, { ...read, name: "Billing Edit" }])).toBe(read.id);
-    expect(() => selectReadPermission([{ ...read, name: "Billing Edit" }])).toThrow(
-      "billing_read_permission_unavailable",
+    expect(selectAccountPermission([read, { ...read, name: "Billing Edit" }], "Billing Read")).toBe(
+      read.id,
     );
-    expect(() => selectReadPermission([read, read])).toThrow("billing_read_permission_unavailable");
+    expect(() =>
+      selectAccountPermission([{ ...read, name: "Billing Edit" }], "Billing Read"),
+    ).toThrow("account_permission_unavailable");
+    expect(() => selectAccountPermission([read, read], "Billing Read")).toThrow(
+      "account_permission_unavailable",
+    );
   });
 
   it("secret validation errors do not include their inputs", () => {
@@ -164,10 +154,16 @@ describe("credential validation", () => {
       scopes: ["com.cloudflare.api.account"],
     };
     expect(
-      selectObservabilityQueryPermission([write, { ...write, name: "Workers Scripts Write" }]),
+      selectAccountPermission(
+        [write, { ...write, name: "Workers Scripts Write" }],
+        "Workers Observability Write",
+      ),
     ).toBe(write.id);
     expect(() =>
-      selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
-    ).toThrow("observability_query_permission_unavailable");
+      selectAccountPermission(
+        [{ ...write, name: "Workers Scripts Write" }],
+        "Workers Observability Write",
+      ),
+    ).toThrow("account_permission_unavailable");
   });
 });

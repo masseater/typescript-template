@@ -2,6 +2,7 @@ import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { object, parse, string } from "valibot";
 import { useCallback, useEffect, useState } from "react";
 import type { InferOutput } from "valibot";
+import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
 
 const profileSchema = object({
@@ -27,10 +28,6 @@ interface ProfileForm extends ProfileDraft {
   readonly pending: boolean;
   readonly ready: boolean;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-}
-
-function failureMessage(cause: unknown, fallback: string): string {
-  return cause instanceof Error ? cause.message : fallback;
 }
 
 async function loadProfile(): Promise<ProfileData> {
@@ -86,7 +83,7 @@ function useProfileForm(userId: string | undefined): ProfileForm {
         }
       } catch (error) {
         if (controller.active) {
-          setFailure(failureMessage(error, "取得に失敗しました。"));
+          setFailure(errorMessage(error));
         }
       }
     }
@@ -108,7 +105,7 @@ function useProfileForm(userId: string | undefined): ProfileForm {
           show(await saveProfile(name, profile));
           setMessage("プロフィールを保存しました。");
         } catch (error) {
-          setFailure(failureMessage(error, "保存に失敗しました。"));
+          setFailure(errorMessage(error));
         }
         setPending(false);
       }

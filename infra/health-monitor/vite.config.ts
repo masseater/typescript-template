@@ -3,7 +3,10 @@ import { defineConfig } from "vite-plus";
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   pack: {
-    deps: { alwaysBundle: ["valibot"], neverBundle: [/^cloudflare:/u], onlyBundle: ["valibot"] },
+    deps: {
+      alwaysBundle: ["valibot", "@template/monitor"],
+      onlyBundle: ["valibot", "@template/monitor"],
+    },
     entry: { index: "src/worker.ts" },
     format: "esm",
     outExtensions: () => ({ js: ".js" }),

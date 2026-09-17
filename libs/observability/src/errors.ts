@@ -1,3 +1,5 @@
+import { check, maxLength, pipe, string } from "valibot";
+
 const errorTypes = [
   "Error",
   "TypeError",
@@ -42,16 +44,17 @@ function errorLocations(stack: string | undefined): string {
     .join("\n");
 }
 
-function validErrorLocations(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length <= maximumLocationsLength &&
-    (value === "" ||
+const errorLocationsSchema = pipe(
+  string(),
+  maxLength(maximumLocationsLength),
+  check(
+    (value) =>
+      value === "" ||
       value
         .split("\n")
-        .every((line) => locationLine.test(line) && line.length <= maximumLocationLength))
-  );
-}
+        .every((line) => line.length <= maximumLocationLength && locationLine.test(line)),
+  ),
+);
 
 function errorFingerprint(type: ErrorType, locations: string): string {
   const frames = locations.split("\n").slice(0, fingerprintFrames).join("\n");
@@ -75,5 +78,4 @@ function errorAttributes(error: unknown): ErrorAttributes {
   };
 }
 
-export { errorAttributes, errorFingerprint, errorType, validErrorLocations };
-export type { ErrorType };
+export { errorAttributes, errorFingerprint, errorLocationsSchema, errorTypes };

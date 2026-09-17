@@ -10,6 +10,7 @@ import {
   oauthResource,
 } from "./oauth-schema.ts";
 import { session, user } from "./identity-schema.ts";
+import { applications } from "@template/config";
 
 const account = sqliteTable(
   "account",
@@ -37,7 +38,7 @@ const account = sqliteTable(
 const verification = sqliteTable(
   "verification",
   {
-    audience: text("audience", { enum: ["user", "admin", "wiki"] }).notNull(),
+    audience: text("audience", { enum: applications }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
@@ -70,7 +71,7 @@ const passkey = sqliteTable(
   "passkey",
   {
     aaguid: text("aaguid"),
-    audience: text("audience", { enum: ["user", "admin", "wiki"] }).notNull(),
+    audience: text("audience", { enum: applications }).notNull(),
     backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
     counter: integer("counter").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }),

@@ -1,6 +1,7 @@
 import { Field } from "./field";
 import type { ReactElement } from "react";
 import type { TextInput } from "./use-text-input";
+import { TotpField } from "./totp-field";
 
 function ChallengeCodeField({
   backup,
@@ -17,18 +18,7 @@ function ChallengeCodeField({
       onChange={code.handleChange}
     />
   ) : (
-    <Field
-      label="認証アプリの確認コード"
-      name="totp"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      pattern="[0-9]{6}"
-      minLength={6}
-      maxLength={6}
-      required
-      value={code.value}
-      onChange={code.handleChange}
-    />
+    <TotpField code={code} />
   );
 }
 

@@ -2,7 +2,9 @@ import { array, boolean, number, object, parse, picklist, string } from "valibot
 import { useCallback, useEffect, useState } from "react";
 import type { InferOutput } from "valibot";
 import type { MouseEventHandler } from "react";
+import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
+import { roles } from "@template/config";
 import { usersPageSize } from "#users-pagination.ts";
 
 const userSchema = object({
@@ -10,7 +12,7 @@ const userSchema = object({
   emailVerified: boolean(),
   id: string(),
   name: string(),
-  role: picklist(["user", "admin"]),
+  role: picklist(roles),
 });
 const usersSchema = object({ total: number(), users: array(userSchema) });
 
@@ -38,10 +40,6 @@ interface UserMutationState {
 
 interface UserManagement extends UserListState, UserMutationState {
   readonly error: string;
-}
-
-function failureMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
 }
 
 async function fetchUsers(offset: number): Promise<UserList> {
@@ -81,7 +79,7 @@ function useUserList(authorized: boolean, reportFailure: ReportFailure): UserLis
       setData(await fetchUsers(offset));
     } catch (error) {
       setData(undefined);
-      reportFailure(failureMessage(error, "一覧の取得に失敗しました。"));
+      reportFailure(errorMessage(error));
     }
   }, [offset, reportFailure]);
   useEffect(() => {
@@ -95,7 +93,7 @@ function useUserList(authorized: boolean, reportFailure: ReportFailure): UserLis
       } catch (error) {
         if (controller.active) {
           setData(undefined);
-          reportFailure(failureMessage(error, "一覧の取得に失敗しました。"));
+          reportFailure(errorMessage(error));
         }
       }
     }
@@ -134,7 +132,7 @@ function useUserMutation(
           );
           await reload();
         } catch (error) {
-          reportFailure(failureMessage(error, "変更に失敗しました。"));
+          reportFailure(errorMessage(error));
         }
         setPending(false);
       }

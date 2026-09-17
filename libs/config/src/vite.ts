@@ -1,4 +1,6 @@
-import type { Plugin } from "vite-plus";
+import type { Plugin, ServerOptions } from "vite-plus";
+import type { Application } from "./applications.ts";
+import { applicationPorts } from "./applications.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -29,4 +31,13 @@ function previewDevVars(appRoot: string): Plugin {
   };
 }
 
-export { previewDevVars };
+function appServer(app: Application): ServerOptions {
+  return {
+    allowedHosts: [".local"],
+    host: "127.0.0.1",
+    port: applicationPorts[app],
+    strictPort: true,
+  };
+}
+
+export { appServer, previewDevVars };

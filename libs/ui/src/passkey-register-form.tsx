@@ -1,9 +1,9 @@
 import { Button, Stack } from "smarthr-ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
+import { requireSecureContext, requireSuccess } from "./protocol";
 import { Field } from "./field";
 import type { SettingsContext } from "./mfa-types";
 import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 import { useCallback } from "react";
 import { useTextInput } from "./use-text-input";
 
@@ -25,9 +25,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
       event.preventDefault();
       run(async () => {
         onNoticeClear();
-        if (!globalThis.isSecureContext) {
-          throw new Error("パスキーには HTTPS または localhost が必要です。");
-        }
+        requireSecureContext();
         requireSuccess(
           await authClient.passkey.addPasskey({ createSession: false, name: nameValue }),
         );

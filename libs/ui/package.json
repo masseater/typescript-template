@@ -14,21 +14,22 @@
   },
   "scripts": {},
   "dependencies": {
-    "@better-auth/passkey": "1.7.5",
-    "@tanstack/react-router": "1.170.36",
+    "@better-auth/passkey": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@template/config": "workspace:*",
     "@template/observability": "workspace:*",
-    "better-auth": "1.7.5",
+    "better-auth": "catalog:",
     "es-toolkit": "1.52.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "react-intl": "10.2.2",
-    "smarthr-ui": "99.6.1",
+    "smarthr-ui": "catalog:",
     "styled-components": "5.3.11",
-    "valibot": "1.5.0"
+    "valibot": "catalog:"
   },
   "devDependencies": {
-    "@types/react": "19.3.0",
+    "@types/react": "catalog:",
     "@types/styled-components": "5.1.36",
-    "typescript": "7.0.2"
+    "typescript": "catalog:"
   }
 }

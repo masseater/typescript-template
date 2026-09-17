@@ -1,4 +1,5 @@
 import { array, literal, object, parse, string, unknown } from "valibot";
+import { loopbackHosts } from "@template/config";
 
 type Row = Record<string, unknown>;
 type LogRow = Row & { readonly event: Row | undefined };
@@ -9,7 +10,7 @@ interface RequestTelemetry {
 }
 
 const explorerTimeoutMilliseconds = 15_000;
-const loopbackHosts: ReadonlySet<string> = new Set(["127.0.0.1", "localhost", "[::1]"]);
+const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
 const columnsSchema = array(string());
 const rowSchema = array(unknown());
 const queryResponse = object({
@@ -21,7 +22,7 @@ function explorerOrigin(app: string): URL {
   const url = new URL(app);
   if (
     url.protocol !== "http:" ||
-    !loopbackHosts.has(url.hostname) ||
+    !loopbackHostSet.has(url.hostname) ||
     url.username !== "" ||
     url.password !== "" ||
     url.search !== "" ||

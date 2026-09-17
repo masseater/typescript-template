@@ -1,38 +1,49 @@
-import { isValiError } from "valibot";
+import type { Instrumentation, RequestContext } from "@template/observability";
+import { is, isValiError } from "valibot";
+import { clientErrorSchema } from "@template/observability";
+
+interface WorkerRuntime {
+  readonly config: Readonly<{
+    ASSETS: Readonly<{
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      fetch: (request: Request) => Promise<Response>;
+    }>;
+  }>;
+  readonly telemetry: Instrumentation;
+}
+
+interface WorkerRoute<Runtime> {
+  readonly correlation: RequestContext;
+  readonly path: string;
+  readonly runtime: Runtime;
+}
+
+interface WorkerOptions<Runtime> {
+  readonly runtime: (bindings: unknown) => Runtime;
+  readonly handle: (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    request: Request,
+    route: WorkerRoute<Runtime>,
+  ) => Promise<Response> | Response;
+}
+
+interface WorkerEntry {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  readonly fetch: (request: Request, bindings: unknown) => Promise<Response>;
+}
 
 const ok = 200;
 const badRequest = 400;
 const unauthorized = 401;
-const forbidden = 403;
-const payloadTooLarge = 413;
-const unsupportedMediaType = 415;
+const notFound = 404;
 const conflict = 409;
-const clientErrorEnd = 500;
 const internalServerError = 500;
-const maximumBodyBytes = 16_384;
 
 function jsonResponse(value: unknown, status = ok): Response {
   return Response.json(value, {
     headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" },
     status,
   });
-}
-
-function statusError(message: string, statusCode: number): Error {
-  return Object.assign(new Error(message), { statusCode });
-}
-
-function clientErrorStatus(error: unknown): number | undefined {
-  if (
-    error instanceof Error &&
-    "statusCode" in error &&
-    typeof error.statusCode === "number" &&
-    error.statusCode >= badRequest &&
-    error.statusCode < clientErrorEnd
-  ) {
-    return error.statusCode;
-  }
-  return undefined;
 }
 
 function conflictMessage(error: unknown): string | undefined {
@@ -52,11 +63,12 @@ function knownErrorResponse(error: unknown): Response | undefined {
   if (isValiError(error)) {
     return jsonResponse({ error: "入力内容を確認してください。" }, badRequest);
   }
-  const status = clientErrorStatus(error);
-  if (status !== undefined) {
+  if (is(clientErrorSchema, error)) {
     const message =
-      status === unauthorized ? "ログインしてください。" : "この操作は許可されていません。";
-    return jsonResponse({ error: message }, status);
+      error.statusCode === unauthorized
+        ? "ログインしてください。"
+        : "この操作は許可されていません。";
+    return jsonResponse({ error: message }, error.statusCode);
   }
   const conflictText = conflictMessage(error);
   return conflictText === undefined ? undefined : jsonResponse({ error: conflictText }, conflict);
@@ -86,53 +98,6 @@ async function apiResponse(
   }
 }
 
-interface JsonMutationRequest {
-  readonly body: Readonly<ReadableStream<Uint8Array>> | null;
-  readonly headers: Readonly<Headers>;
-}
-
-function assertJsonMutation(
-  request: Readonly<Pick<JsonMutationRequest, "headers">>,
-  expectedOrigin: string,
-): void {
-  if (
-    request.headers.get("origin") !== expectedOrigin ||
-    request.headers.get("sec-fetch-site") === "cross-site"
-  ) {
-    throw statusError("ORIGIN_DENIED", forbidden);
-  }
-  if (request.headers.get("content-type")?.split(";")[0] !== "application/json") {
-    throw statusError("JSON_REQUIRED", unsupportedMediaType);
-  }
-}
-
-async function readBoundedText(body: Readonly<ReadableStream<Uint8Array>>): Promise<string> {
-  const decoder = new TextDecoder();
-  let length = 0;
-  let text = "";
-  for await (const chunk of body) {
-    length += chunk.byteLength;
-    if (length > maximumBodyBytes) {
-      throw statusError("BODY_TOO_LARGE", payloadTooLarge);
-    }
-    text += decoder.decode(chunk, { stream: true });
-  }
-  return text + decoder.decode();
-}
-
-async function readJson(request: JsonMutationRequest, expectedOrigin: string): Promise<unknown> {
-  assertJsonMutation(request, expectedOrigin);
-  if (!request.body) {
-    throw statusError("BODY_REQUIRED", badRequest);
-  }
-  const text = await readBoundedText(request.body);
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    throw statusError("INVALID_JSON", badRequest);
-  }
-}
-
 function secureResponse(
   response: Readonly<{
     body: Readonly<ReadableStream<Uint8Array>> | null;
@@ -154,4 +119,61 @@ function secureResponse(
   });
 }
 
-export { apiResponse, jsonResponse, readJson, secureResponse };
+function requestPath(url: string): string | undefined {
+  try {
+    return decodeURIComponent(new URL(url).pathname);
+  } catch {
+    return undefined;
+  }
+}
+
+function infrastructureResponse(
+  runtime: WorkerRuntime,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  request: Request,
+  path: string,
+): Promise<Response> | Response | undefined {
+  if (path.endsWith(".map")) {
+    return new Response(undefined, { status: notFound });
+  }
+  if (path.startsWith("/assets/")) {
+    return runtime.config.ASSETS.fetch(request);
+  }
+  if (path === "/api/telemetry") {
+    return runtime.telemetry.ingestBrowser(request);
+  }
+  return undefined;
+}
+
+async function routeRequest<Runtime extends WorkerRuntime>(
+  options: WorkerOptions<Runtime>,
+  runtime: Runtime,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  { correlation, incoming }: Readonly<{ correlation: RequestContext; incoming: Request }>,
+): Promise<Response> {
+  const path = requestPath(incoming.url);
+  if (path === undefined) {
+    return new Response(undefined, { status: badRequest });
+  }
+  const infrastructure = infrastructureResponse(runtime, incoming, path);
+  if (infrastructure !== undefined) {
+    return infrastructure;
+  }
+  return secureResponse(await options.handle(incoming, { correlation, path, runtime }));
+}
+
+function createWorker<Runtime extends WorkerRuntime>(options: WorkerOptions<Runtime>): WorkerEntry {
+  return {
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    fetch: async (request, bindings) => {
+      const runtime = options.runtime(bindings);
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      return runtime.telemetry.wrapRequest(request, async (incoming, correlation) =>
+        routeRequest(options, runtime, { correlation, incoming }),
+      );
+    },
+  };
+}
+
+export { apiResponse, createWorker, jsonResponse, secureResponse };
+export { readJson } from "@template/observability";

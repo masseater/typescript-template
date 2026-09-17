@@ -1,66 +1,28 @@
-import { apiResponse, jsonResponse, secureResponse } from "@template/runtime/http";
+import { createWorker, jsonResponse } from "@template/runtime/http";
+import { clientErrorSchema } from "@template/observability";
 import { createWikiRuntime } from "@template/runtime/wiki";
 import { createWikiSearch } from "./lib/search.ts";
 import { handleMcp } from "./lib/mcp.ts";
 import handler from "@tanstack/react-start/server-entry";
+import { is } from "valibot";
 import { routes } from "./telemetry-routes.ts";
+import { sessionHandler } from "@template/runtime/handlers";
 
 type WikiRuntime = ReturnType<typeof createWikiRuntime>;
 type WikiRequestRuntime = ReturnType<WikiRuntime["forRequest"]>;
 
-interface IncomingScope {
-  readonly correlation: Parameters<WikiRuntime["forRequest"]>[0];
-  readonly request: Request;
-  readonly runtime: WikiRuntime;
-}
-
-interface RequestScope extends IncomingScope {
+interface RequestScope {
   readonly context: WikiRequestRuntime;
+  readonly correlation: Parameters<WikiRuntime["forRequest"]>[0];
+  readonly path: string;
+  readonly request: Request;
 }
 
-const HTTP_BAD_REQUEST = 400;
 const HTTP_UNAUTHORIZED = 401;
-const HTTP_NOT_FOUND = 404;
 const HTTP_FOUND = 302;
-const HTTP_CLIENT_ERROR_END = 500;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const MAX_QUERY_LENGTH = 200;
 const publicPages: ReadonlySet<string> = new Set(["/login", "/consent"]);
-
-function requestPath(request: Readonly<Pick<Request, "url">>): string | undefined {
-  try {
-    return decodeURIComponent(new URL(request.url).pathname);
-  } catch {
-    return undefined;
-  }
-}
-
-function isAuthenticationFailure(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    "statusCode" in error &&
-    typeof error.statusCode === "number" &&
-    error.statusCode >= HTTP_BAD_REQUEST &&
-    error.statusCode < HTTP_CLIENT_ERROR_END
-  );
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function sessionResponse({ context, request }: RequestScope): Promise<Response> {
-  return apiResponse(async () => {
-    const { user, strong } = await context.session(request, true);
-    return {
-      strong,
-      user: {
-        email: user.email,
-        id: user.id,
-        name: user.name,
-        role: user.role,
-        twoFactorEnabled: user.twoFactorEnabled,
-      },
-    };
-  }, context.reportError);
-}
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function readerStrength({ context, request }: RequestScope): Promise<boolean | undefined> {
@@ -68,7 +30,7 @@ async function readerStrength({ context, request }: RequestScope): Promise<boole
     const reader = await context.session(request, true);
     return reader.strong;
   } catch (error) {
-    if (isAuthenticationFailure(error)) {
+    if (is(clientErrorSchema, error)) {
       return undefined;
     }
     throw error;
@@ -76,7 +38,8 @@ async function readerStrength({ context, request }: RequestScope): Promise<boole
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function deniedReader(scope: RequestScope, path: string): Promise<Response | undefined> {
+async function deniedReader(scope: RequestScope): Promise<Response | undefined> {
+  const { path } = scope;
   if (publicPages.has(path)) {
     return undefined;
   }
@@ -88,35 +51,31 @@ async function deniedReader(scope: RequestScope, path: string): Promise<Response
     return jsonResponse({ error: "ログインしてください。" }, HTTP_UNAUTHORIZED);
   }
   return new Response(undefined, {
-    headers: {
-      "cache-control": "no-store",
-      location: strong === undefined ? "/login" : "/security",
-    },
+    headers: { location: strong === undefined ? "/login" : "/security" },
     status: HTTP_FOUND,
   });
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function mcpResponse(scope: RequestScope): Promise<Response> {
-  const { context, request } = scope;
+async function mcpResponse({ context, request }: RequestScope): Promise<Response> {
   const authorized = await context.authorizeMcp(request);
   if (authorized instanceof Response) {
     return authorized;
   }
-  const search = createWikiSearch(context.embedder(), context.reportError);
-  return secureResponse(await handleMcp(request, search));
+  return handleMcp(request, createWikiSearch(context.embedder(), context.reportError));
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function protocolResponse(scope: RequestScope, path: string): Promise<Response | undefined> {
+async function protocolResponse(scope: RequestScope): Promise<Response | undefined> {
+  const { context, correlation, path, request } = scope;
   if (path.startsWith("/api/auth/") || path.startsWith("/.well-known/oauth-")) {
-    return secureResponse(await scope.context.auth.handler(scope.request));
+    return context.auth.handler(request);
   }
   if (path === "/mcp") {
     return mcpResponse(scope);
   }
   if (path === "/api/session") {
-    return sessionResponse(scope);
+    return sessionHandler({ context: { correlation, runtime: context }, request });
   }
   return undefined;
 }
@@ -129,74 +88,38 @@ async function searchResponse({ context, request }: RequestScope): Promise<Respo
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function readerResponse(scope: RequestScope, path: string): Promise<Response> {
-  const denied = await deniedReader(scope, path);
+async function readerResponse(scope: RequestScope): Promise<Response> {
+  const denied = await deniedReader(scope);
   if (denied !== undefined) {
     return denied;
   }
-  if (path === "/api/search") {
+  if (scope.path === "/api/search") {
     return searchResponse(scope);
   }
-  return secureResponse(await handler.fetch(scope.request));
+  return handler.fetch(scope.request);
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function handleApplication(scope: RequestScope, path: string): Promise<Response> {
-  return (await protocolResponse(scope, path)) ?? (await readerResponse(scope, path));
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function handleWithReporting(scope: IncomingScope, path: string): Promise<Response> {
-  const context = scope.runtime.forRequest(scope.correlation);
+async function handleApplication(scope: RequestScope): Promise<Response> {
   try {
-    return await handleApplication({ ...scope, context }, path);
+    return (await protocolResponse(scope)) ?? (await readerResponse(scope));
   } catch (error) {
-    context.reportError(error);
+    scope.context.reportError(error);
     return jsonResponse({ error: "処理に失敗しました。" }, HTTP_INTERNAL_SERVER_ERROR);
   }
 }
 
-async function forwardedResponse(
+const worker = createWorker({
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  scope: IncomingScope,
-  path: string,
-): Promise<Response | undefined> {
-  const { request, runtime } = scope;
-  if (path.endsWith(".map")) {
-    return new Response(undefined, { status: HTTP_NOT_FOUND });
-  }
-  if (path.startsWith("/assets/")) {
-    return runtime.config.ASSETS.fetch(request);
-  }
-  if (path === "/api/telemetry") {
-    return runtime.telemetry.ingestBrowser(request);
-  }
-  if (path === "/api/health") {
-    return jsonResponse({ ok: true, release: runtime.config.APP_RELEASE, service: "wiki" });
-  }
-  return undefined;
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function handleRequest(scope: IncomingScope): Promise<Response> {
-  const path = requestPath(scope.request);
-  if (path === undefined) {
-    return new Response(undefined, { status: HTTP_BAD_REQUEST });
-  }
-  return (await forwardedResponse(scope, path)) ?? (await handleWithReporting(scope, path));
-}
-
-const worker = {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  async fetch(request: Request, bindings: unknown): Promise<Response> {
-    const runtime = createWikiRuntime(bindings, routes);
-    return runtime.telemetry.wrapRequest(
-      request,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      async (incoming, correlation) => handleRequest({ correlation, request: incoming, runtime }),
-    );
+  handle: async (request, { correlation, path, runtime }) => {
+    if (path === "/api/health") {
+      return jsonResponse({ ok: true, release: runtime.config.APP_RELEASE, service: "wiki" });
+    }
+    const context = runtime.forRequest(correlation);
+    return handleApplication({ context, correlation, path, request });
   },
-};
+  runtime: (bindings: unknown) => createWikiRuntime(bindings, routes),
+});
 
 // oxlint-disable-next-line import/no-default-export
 export default worker;

@@ -18,7 +18,6 @@ const config: KnipConfig = {
     },
     "infra/budget-monitor": {
       entry: ["src/worker.ts!", "src/inspect.ts!"],
-      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
@@ -37,12 +36,10 @@ const config: KnipConfig = {
     },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],
-      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.ts!"],
     },
     "infra/health-monitor": {
       entry: ["src/worker.ts!"],
-      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.ts!"],
     },
     "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
@@ -55,7 +52,7 @@ const config: KnipConfig = {
       ],
     },
     "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/remote-cli.ts!"],
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
       project: ["src/**/*.ts!"],
     },
     "tools/dev": {

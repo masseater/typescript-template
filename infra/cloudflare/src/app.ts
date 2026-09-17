@@ -1,15 +1,13 @@
-import type { AppTarget, SharedConfig } from "./config.ts";
 import { Config, StackReference, interpolate } from "@pulumi/pulumi";
 import type { Output, OutputInstance } from "@pulumi/pulumi";
-import { Worker, WorkerVersion, WorkersCustomDomain, WorkersDeployment } from "@pulumi/cloudflare";
-import type { WorkerVersionArgs, types } from "@pulumi/cloudflare";
-import { appPolicy, parseSharedConfig, validateAuthSecret } from "./config.ts";
+import { parseSharedConfig, validateAuthSecret } from "./config.ts";
+import type { Application } from "@template/config";
+import type { SharedConfig } from "./config.ts";
+import { WorkersCustomDomain } from "@pulumi/cloudflare";
 import { archiveSourceMaps } from "./source-maps.ts";
+import { deployWorker } from "./worker.ts";
 import { loadArtifacts } from "./artifacts.ts";
-import { workerCompatibility } from "@template/config/worker";
-import { workerObservability } from "./observability.ts";
-
-const FULL_ROLLOUT_PERCENTAGE = 100;
+import type { types } from "@pulumi/cloudflare";
 
 type WorkerVersionBinding = types.input.WorkerVersionBinding;
 type StringOutput = Readonly<OutputInstance<string>>;
@@ -31,11 +29,10 @@ interface SharedStack {
 
 interface Release {
   readonly artifacts: Awaited<ReturnType<typeof loadArtifacts>>;
-  readonly policy: ReturnType<typeof appPolicy>;
+  readonly origin: string;
   readonly outputs: SharedOutputs;
   readonly settings: SharedConfig;
-  readonly target: AppTarget;
-  readonly workerId: StringOutput;
+  readonly target: Application;
 }
 
 interface BindingSources {
@@ -43,7 +40,7 @@ interface BindingSources {
   readonly release: string;
   readonly settings: SharedConfig;
   readonly shared: SharedOutputs;
-  readonly target: AppTarget;
+  readonly target: Application;
 }
 
 function authSecret(value: unknown): string {
@@ -91,58 +88,43 @@ async function readSharedStack(): Promise<SharedStack> {
   };
 }
 
-function versionArgs(release: Release): WorkerVersionArgs {
+function versionArgs(release: Release): Parameters<typeof deployWorker>[1]["version"] {
   const bindings = runtimeBindings({
-    origin: release.policy.origin,
+    origin: release.origin,
     release: release.artifacts.release,
     settings: release.settings,
     shared: release.outputs,
     target: release.target,
   });
   return {
-    accountId: release.settings.accountId,
-    assets: { config: release.policy.assets, directory: release.artifacts.clientDirectory },
+    assets: { config: { runWorkerFirst: true }, directory: release.artifacts.clientDirectory },
     bindings: [...bindings, { name: "ASSETS", type: "assets" }],
-    compatibilityDate: workerCompatibility.date,
-    compatibilityFlags: [...workerCompatibility.flags],
     mainModule: release.artifacts.mainModule,
     modules: [...release.artifacts.modules],
-    workerId: release.workerId,
   };
 }
 
-async function loadReleaseArtifacts(target: AppTarget): Promise<Release["artifacts"]> {
+async function loadReleaseArtifacts(target: Application): Promise<Release["artifacts"]> {
   const repositoryRoot = `${import.meta.dirname}/../../..`;
   const artifacts = await loadArtifacts(repositoryRoot, target);
   await archiveSourceMaps({ release: artifacts.release, repositoryRoot, target });
   return artifacts;
 }
 
-async function deployApplication(target: AppTarget): Promise<Deployment> {
+async function deployApplication(target: Application): Promise<Deployment> {
   const { outputs, settings } = await readSharedStack();
-  const policy = appPolicy(settings, target);
+  const origin = settings.origins[target];
   const artifacts = await loadReleaseArtifacts(target);
-  const worker = new Worker(`${target}-worker`, {
+  const { deployment, worker } = deployWorker(target, {
     accountId: settings.accountId,
-    name: policy.name,
-    observability: workerObservability,
-    subdomain: policy.subdomain,
-  });
-  const version = new WorkerVersion(
-    `${target}-version`,
-    versionArgs({ artifacts, outputs, policy, settings, target, workerId: worker.id }),
-  );
-  const deployment = new WorkersDeployment(`${target}-deployment`, {
-    accountId: settings.accountId,
-    scriptName: worker.name,
-    strategy: "percentage",
-    versions: [{ percentage: FULL_ROLLOUT_PERCENTAGE, versionId: version.id }],
+    name: `${settings.prefix}-${target}`,
+    version: versionArgs({ artifacts, origin, outputs, settings, target }),
   });
   const domain = new WorkersCustomDomain(
     `${target}-domain`,
     {
       accountId: settings.accountId,
-      hostname: new URL(policy.origin).hostname,
+      hostname: new URL(origin).hostname,
       service: worker.name,
       zoneId: settings.zoneId,
     },

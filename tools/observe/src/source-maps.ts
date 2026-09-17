@@ -1,6 +1,7 @@
 import { array, literal, looseObject, parse, string } from "valibot";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
+import type { Application } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -8,7 +9,7 @@ import { SourceMap } from "node:module";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-type App = "user" | "admin" | "wiki";
+type App = Application;
 type Runtime = "client" | "server";
 type DirectoryEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "name">>;
 type Frame =

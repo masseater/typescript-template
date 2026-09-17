@@ -8,9 +8,9 @@ description: D1 のスキーマ定義とマイグレーションの扱い方で�
 テーブル定義は `libs/db/src/schema.ts` の Drizzle 定義で管理します。定義を書き換えたら、差分から SQL を生成します。
 
 ```bash
-vp run db:generate
-vp run db:check
-vp run db:migrate:local
+vp run --filter @template/db db:generate
+vp run --filter @template/db db:check
+vp run --filter @template/db db:migrate:local
 ```
 
 ## 注意すること

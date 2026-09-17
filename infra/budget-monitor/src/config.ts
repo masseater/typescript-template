@@ -1,8 +1,5 @@
 import {
-  array,
-  email,
   finite,
-  maxLength,
   minLength,
   minValue,
   number,
@@ -15,22 +12,12 @@ import {
 } from "valibot";
 import type { InferOutput } from "valibot";
 
-const MAX_ALERT_RECIPIENTS = 10;
 const MIN_BILLING_TOKEN_LENGTH = 20;
 
 const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const nonnegative = pipe(number(), finite(), minValue(0));
 const decimal = pipe(string(), regex(/^\d+(?:\.\d+)?$/u), transform(Number));
-const emailAddress = pipe(string(), email());
 const schema = object({
-  ALERT_FROM: emailAddress,
-  ALERT_TO: pipe(
-    string(),
-    transform((value) => value.split(",")),
-    array(emailAddress),
-    minLength(1),
-    maxLength(MAX_ALERT_RECIPIENTS),
-  ),
   BILLING_READ_TOKEN: pipe(string(), minLength(MIN_BILLING_TOKEN_LENGTH)),
   BUDGET_JPY: pipe(decimal, positive),
   CLOUDFLARE_ACCOUNT_ID: pipe(string(), regex(/^[a-f0-9]{32}$/u)),

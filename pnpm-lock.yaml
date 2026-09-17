@@ -164,6 +164,60 @@ settings:
 
 catalogs:
   default:
+    '@better-auth/passkey':
+      specifier: 1.7.5
+      version: 1.7.5
+    '@cloudflare/vite-plugin':
+      specifier: 1.54.10
+      version: 1.54.10
+    '@cloudflare/workers-types':
+      specifier: 5.20260916.1
+      version: 5.20260916.1
+    '@pulumi/cloudflare':
+      specifier: 6.20.0
+      version: 6.20.0
+    '@pulumi/pulumi':
+      specifier: 3.262.0
+      version: 3.262.0
+    '@tanstack/react-router':
+      specifier: 1.170.36
+      version: 1.170.36
+    '@tanstack/react-start':
+      specifier: 1.168.54
+      version: 1.168.54
+    '@types/node':
+      specifier: 24.12.0
+      version: 24.12.0
+    '@types/react':
+      specifier: 19.3.0
+      version: 19.3.0
+    '@types/react-dom':
+      specifier: 19.3.0
+      version: 19.3.0
+    '@vitejs/plugin-react':
+      specifier: 6.1.1
+      version: 6.1.1
+    better-auth:
+      specifier: 1.7.5
+      version: 1.7.5
+    msw:
+      specifier: 2.15.0
+      version: 2.15.0
+    react:
+      specifier: 19.3.0
+      version: 19.3.0
+    react-dom:
+      specifier: 19.3.0
+      version: 19.3.0
+    smarthr-ui:
+      specifier: 99.6.1
+      version: 99.6.1
+    typescript:
+      specifier: 7.0.2
+      version: 7.0.2
+    valibot:
+      specifier: 1.5.0
+      version: 1.5.0
     vite:
       specifier: npm:@voidzero-dev/vite-plus-core@0.3.2
       version: 0.3.2
@@ -173,6 +227,9 @@ catalogs:
     vitest:
       specifier: 4.1.11
       version: 4.1.11
+    wrangler:
+      specifier: 4.132.0
+      version: 4.132.0
 
 overrides:
   vite@*: npm:@voidzero-dev/vite-plus-core@0.3.2
@@ -186,13 +243,13 @@ importers:
   .:
     devDependencies:
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       knip:
         specifier: 6.35.1
         version: 6.35.1
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -204,11 +261,14 @@ importers:
   apps/admin:
     dependencies:
       '@tanstack/react-router':
-        specifier: 1.170.36
+        specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-start':
-        specifier: 1.168.54
+        specifier: 'catalog:'
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@template/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -219,47 +279,44 @@ importers:
         specifier: workspace:*
         version: link:../../libs/ui
       react:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       react-dom:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
       smarthr-ui:
-        specifier: 99.6.1
+        specifier: 'catalog:'
         version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@10.2.2))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@cloudflare/vite-plugin':
-        specifier: 1.54.10
+        specifier: 'catalog:'
         version: 1.54.10(@types/node@24.12.0)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0))
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
-      '@template/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@template/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       '@types/react':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: 6.1.1
+        specifier: 'catalog:'
         version: 6.1.1(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
       jiti:
         specifier: 2.7.0
         version: 2.7.0
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -268,16 +325,16 @@ importers:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       wrangler:
-        specifier: 4.132.0
+        specifier: 'catalog:'
         version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
 
   apps/user:
     dependencies:
       '@tanstack/react-router':
-        specifier: 1.170.36
+        specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-start':
-        specifier: 1.168.54
+        specifier: 'catalog:'
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)
       '@template/db':
         specifier: workspace:*
@@ -289,23 +346,23 @@ importers:
         specifier: workspace:*
         version: link:../../libs/ui
       react:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       react-dom:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
       smarthr-ui:
-        specifier: 99.6.1
+        specifier: 'catalog:'
         version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@10.2.2))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@cloudflare/vite-plugin':
-        specifier: 1.54.10
+        specifier: 'catalog:'
         version: 1.54.10(@types/node@24.12.0)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0))
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
       '@template/config':
         specifier: workspace:*
@@ -314,19 +371,19 @@ importers:
         specifier: workspace:*
         version: link:../../libs/dev-boundary
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       '@types/react':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: 6.1.1
+        specifier: 'catalog:'
         version: 6.1.1(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -335,7 +392,7 @@ importers:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       wrangler:
-        specifier: 4.132.0
+        specifier: 'catalog:'
         version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
 
   apps/wiki:
@@ -344,10 +401,10 @@ importers:
         specifier: 2.0.0
         version: 2.0.0
       '@tanstack/react-router':
-        specifier: 1.170.36
+        specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-start':
-        specifier: 1.168.54
+        specifier: 'catalog:'
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)
       '@template/observability':
         specifier: workspace:*
@@ -371,26 +428,26 @@ importers:
         specifier: 1.46.0
         version: 1.46.0(react@19.3.0)
       react:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       react-dom:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
       smarthr-ui:
-        specifier: 99.6.1
+        specifier: 'catalog:'
         version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@10.2.2))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
       zod:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
       '@cloudflare/vite-plugin':
-        specifier: 1.54.10
+        specifier: 'catalog:'
         version: 1.54.10(@types/node@24.12.0)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0))
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
       '@tailwindcss/vite':
         specifier: 4.3.3
@@ -408,22 +465,22 @@ importers:
         specifier: 2.0.14
         version: 2.0.14
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       '@types/react':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: 6.1.1
+        specifier: 'catalog:'
         version: 6.1.1(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -435,26 +492,26 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
       wrangler:
-        specifier: 4.132.0
+        specifier: 'catalog:'
         version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
 
   infra/bootstrap:
     dependencies:
       '@pulumi/cloudflare':
-        specifier: 6.20.0
+        specifier: 'catalog:'
         version: 6.20.0(supports-color@10.2.2)(typescript@7.0.2)
       '@pulumi/pulumi':
-        specifier: 3.262.0
+        specifier: 'catalog:'
         version: 3.262.0(supports-color@10.2.2)(typescript@7.0.2)
       valibot:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -465,21 +522,24 @@ importers:
 
   infra/budget-monitor:
     dependencies:
+      '@template/monitor':
+        specifier: workspace:*
+        version: link:../../libs/monitor
       valibot:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       msw:
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -491,10 +551,10 @@ importers:
   infra/cloudflare:
     dependencies:
       '@pulumi/cloudflare':
-        specifier: 6.20.0
+        specifier: 'catalog:'
         version: 6.20.0(supports-color@10.2.2)(typescript@7.0.2)
       '@pulumi/pulumi':
-        specifier: 3.262.0
+        specifier: 'catalog:'
         version: 3.262.0(supports-color@10.2.2)(typescript@7.0.2)
       '@template/budget-monitor':
         specifier: workspace:*
@@ -518,14 +578,14 @@ importers:
         specifier: 1.52.0
         version: 1.52.0
       valibot:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -539,21 +599,24 @@ importers:
 
   infra/error-monitor:
     dependencies:
+      '@template/monitor':
+        specifier: workspace:*
+        version: link:../../libs/monitor
       valibot:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       msw:
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -564,21 +627,27 @@ importers:
 
   infra/health-monitor:
     dependencies:
+      '@template/monitor':
+        specifier: workspace:*
+        version: link:../../libs/monitor
       valibot:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       msw:
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
@@ -601,54 +670,54 @@ importers:
         specifier: 1.7.5
         version: 1.7.5(patch_hash=1ab2e21676aee36496443c4993fc64405f3fcc50b7683ec7d4b0d17a6816a417)(@better-auth/core@1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11))(better-call@1.4.0(zod@4.6.5))
       '@better-auth/passkey':
-        specifier: 1.7.5
+        specifier: 'catalog:'
         version: 1.7.5(@better-auth/core@1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.3)
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
       '@template/db':
         specifier: workspace:*
         version: link:../db
       better-auth:
-        specifier: 1.7.5
+        specifier: 'catalog:'
         version: 1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11)
       better-call:
         specifier: 1.4.0
         version: 1.4.0(zod@4.6.5)
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
-      '@template/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       msw:
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
       otpauth:
         specifier: 9.5.2
         version: 9.5.2
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
 
   libs/config:
     dependencies:
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   libs/db:
@@ -663,45 +732,69 @@ importers:
         specifier: 4.20260730.0
         version: 4.20260730.0
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
       wrangler:
-        specifier: 4.132.0
+        specifier: 'catalog:'
         version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: 5.20260916.1
+        specifier: 'catalog:'
         version: 5.20260916.1
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       drizzle-kit:
         specifier: 0.31.10
         version: 0.31.10
       msw:
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.15.0(@types/node@24.12.0)(typescript@7.0.2)
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
 
   libs/dev-boundary:
+    dependencies:
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
     devDependencies:
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
+
+  libs/monitor:
+    dependencies:
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 'catalog:'
+        version: 5.20260916.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
 
   libs/observability:
     dependencies:
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
       web-vitals:
         specifier: 6.2.2
         version: 6.2.2
+    devDependencies:
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
 
   libs/runtime:
     dependencies:
@@ -718,61 +811,67 @@ importers:
         specifier: workspace:*
         version: link:../observability
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
 
   libs/ui:
     dependencies:
       '@better-auth/passkey':
-        specifier: 1.7.5
+        specifier: 'catalog:'
         version: 1.7.5(@better-auth/core@1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@5.5.0))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.3)
       '@tanstack/react-router':
-        specifier: 1.170.36
+        specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
       '@template/observability':
         specifier: workspace:*
         version: link:../observability
       better-auth:
-        specifier: 1.7.5
+        specifier: 'catalog:'
         version: 1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@5.5.0))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(kysely@0.29.5))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11)
       es-toolkit:
         specifier: 1.52.0
         version: 1.52.0
       react:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       react-dom:
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
       react-intl:
         specifier: 10.2.2
         version: 10.2.2(@types/react@19.3.0)(react@19.3.0)
       smarthr-ui:
-        specifier: 99.6.1
+        specifier: 'catalog:'
         version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@5.5.0))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
       styled-components:
         specifier: 5.3.11
         version: 5.3.11(@babel/core@7.29.7(supports-color@5.5.0))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0)
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@types/react':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/styled-components':
         specifier: 5.1.36
         version: 5.1.36
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
 
   tools/dev:
     dependencies:
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       agent-browser:
         specifier: 0.37.1
         version: 0.37.1
@@ -780,26 +879,29 @@ importers:
         specifier: 0.15.6
         version: 0.15.6
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
       vite-plus:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
     devDependencies:
       '@types/node':
-        specifier: 24.12.0
+        specifier: 'catalog:'
         version: 24.12.0
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
 
   tools/observe:
     dependencies:
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       es-toolkit:
         specifier: 1.52.0
         version: 1.52.0
       valibot:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
 
 packages:

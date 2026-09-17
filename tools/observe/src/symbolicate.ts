@@ -1,4 +1,5 @@
 import { array, maxLength, minLength, object, parse, picklist, pipe, regex, string } from "valibot";
+import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 import { symbolicate } from "./source-maps.ts";
@@ -6,7 +7,7 @@ import { symbolicate } from "./source-maps.ts";
 const maximumLocations = 20;
 const locationList = array(string());
 const inputSchema = object({
-  app: picklist(["user", "admin", "wiki"]),
+  app: picklist(applications),
   locations: pipe(locationList, minLength(1), maxLength(maximumLocations)),
   release: pipe(string(), regex(/^[0-9a-f]{16}$/u)),
 });
@@ -25,7 +26,8 @@ if (values.help) {
     `${JSON.stringify({
       locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
       readOnly: true,
-      usage: "observe:symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
+      usage:
+        "vp run --filter @template/observe symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
     })}\n`,
   );
 } else {

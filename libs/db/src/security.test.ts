@@ -1,4 +1,4 @@
-import type { Audience, Database, Role } from "./index.ts";
+import type { Application, Role } from "@template/config";
 import {
   account,
   oauthAccessToken,
@@ -12,12 +12,13 @@ import { test as baseTest, expect } from "vite-plus/test";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
 import { getProfile, updateProfile } from "./index.ts";
+import type { Database } from "./index.ts";
 import { createTestDatabase } from "./testing.ts";
 import { eq } from "drizzle-orm";
 
 const SESSION_LIFETIME_MS = 60_000;
 
-type SessionRequest = Readonly<{ audience: Audience; strong?: boolean; userId: string }>;
+type SessionRequest = Readonly<{ audience: Application; strong?: boolean; userId: string }>;
 type TestDatabase = Readonly<Pick<Database, "all" | "delete" | "insert" | "select" | "update">>;
 type Context = Readonly<{ db: TestDatabase }>;
 
