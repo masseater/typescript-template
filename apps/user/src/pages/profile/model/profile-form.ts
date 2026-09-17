@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
 import type { ProfileView } from "@template/runtime/contracts";
 import type { SubmitEventHandler } from "react";
 import { errorMessage } from "@template/ui";
+import { useState } from "react";
 
 type ProfileData = typeof ProfileView.Type;
 
@@ -24,10 +24,10 @@ interface ProfileForm extends ProfileDraft {
 function useProfileDraft(loaded: Readonly<ProfileData> | undefined): ProfileDraft {
   const [name, setName] = useState(loaded?.name ?? "");
   const [profile, setProfile] = useState(loaded?.profile ?? "");
-  const show = useCallback((data: Readonly<ProfileData>): void => {
+  function show(data: Readonly<ProfileData>): void {
     setName(data.name);
     setProfile(data.profile);
-  }, []);
+  }
   return {
     handleNameChange: setName,
     handleProfileChange: setProfile,
@@ -48,25 +48,22 @@ function useProfileForm(
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [failure, setFailure] = useState("");
-  const handleSubmit = useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: FormSubmission) => {
-      event.preventDefault();
-      setPending(true);
-      setFailure("");
-      setMessage("");
-      async function submit(): Promise<void> {
-        try {
-          show(await save(name, profile));
-          setMessage("プロフィールを保存しました。");
-        } catch (error) {
-          setFailure(errorMessage(error));
-        }
-        setPending(false);
+  function handleSubmit(event: FormSubmission): void {
+    event.preventDefault();
+    setPending(true);
+    setFailure("");
+    setMessage("");
+    async function submit(): Promise<void> {
+      try {
+        show(await save(name, profile));
+        setMessage("プロフィールを保存しました。");
+      } catch (error) {
+        setFailure(errorMessage(error));
       }
-      void submit();
-    },
-    [name, profile, save, show],
-  );
+      setPending(false);
+    }
+    void submit();
+  }
   return { ...draft, error: failure, handleSubmit, message, pending, ready: loaded !== undefined };
 }
 

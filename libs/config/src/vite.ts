@@ -3,6 +3,7 @@ import type { Application } from "./applications.ts";
 import { applicationPorts } from "./applications.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+import react from "@vitejs/plugin-react";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 
@@ -35,8 +36,17 @@ const serverOnlyFiles: (string | RegExp)[] = [
   "**/src/**/{api,runtime,server}.ts",
   "**/src/**/*-api.ts",
   "**/libs/auth/src/**",
+  "**/libs/db/src/**",
 ];
-const serverOnlySpecifiers: (string | RegExp)[] = ["elysia", /^elysia\//u];
+const serverOnlySpecifiers: (string | RegExp)[] = [
+  "elysia",
+  /^elysia\//u,
+  "drizzle-orm",
+  /^drizzle-orm\//u,
+  "better-auth",
+  /^better-auth\/(?!react$|client(?:\/|$))/u,
+  /^@better-auth\/(?!passkey\/client$)/u,
+];
 const importProtection = { client: { files: serverOnlyFiles, specifiers: serverOnlySpecifiers } };
 
 const envFileLoader = "tanstack-start-core:load-env";
@@ -70,6 +80,10 @@ function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] 
   return kept;
 }
 
+function reactCompiler(): PluginOption[] {
+  return react({ compiler: { logDiagnostics: true } });
+}
+
 function appServer(app: Application): ServerOptions {
   return {
     allowedHosts: [".local"],
@@ -83,4 +97,4 @@ const appRun = {
   tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
 
-export { appRun, appServer, importProtection, previewDevVars, withoutEnvFileLoader };
+export { appRun, appServer, importProtection, previewDevVars, reactCompiler, withoutEnvFileLoader };

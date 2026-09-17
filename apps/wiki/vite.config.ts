@@ -4,6 +4,7 @@ import {
   appServer,
   importProtection,
   previewDevVars,
+  reactCompiler,
   withoutEnvFileLoader,
 } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
@@ -11,7 +12,6 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import { devBoundary } from "@template/dev-boundary";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
-import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { workerCompatibility } from "@template/config/worker";
@@ -38,7 +38,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     fumadocsMdx(),
     tailwindcss(),
     ...withoutEnvFileLoader(tanstackStart({ importProtection })),
-    react(),
+    reactCompiler(),
   ],
   preview: appServer("wiki"),
   run: appRun,

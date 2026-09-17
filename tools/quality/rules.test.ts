@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { reported, reportedRules, ruleNames } from "./lint-harness.ts";
+import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
 import { field } from "./dependencies.ts";
 import plugin from "./rules.ts";
 
@@ -18,6 +18,26 @@ const forbiddenCode = [
     "no-internal-mocks",
   ],
   ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
+  [
+    "libs/ui/src/probe.ts",
+    'import { useCallback } from "react"; export const fn = () => useCallback(() => 0, []);',
+    "no-manual-memoization",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import React from "react"; export const Panel = React.memo(() => null);',
+    "no-manual-memoization",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import * as React from "react"; export const Panel = React.memo(() => null);',
+    "no-manual-memoization",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'import { useMemo as cache } from "react"; export const fn = () => cache(() => 0, []);',
+    "no-manual-memoization",
+  ],
   [
     "libs/observability/src/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
@@ -225,6 +245,14 @@ const validBoundaries = [
   ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;
 
+const singleReports = [
+  [
+    "no-manual-memoization",
+    'import React from "react"; export const Panel = React.memo(() => null);',
+  ],
+  ["no-internal-mocks", 'import vitest from "vitest"; vitest.mock("owned-module");'],
+] as const;
+
 describe("project lint rules on dependency boundaries", () => {
   it("every project rule is tested and enabled", () => {
     expect.hasAssertions();
@@ -237,6 +265,11 @@ describe("project lint rules on dependency boundaries", () => {
   it.for(forbiddenCode)("rejects forbidden code in %s", ([name, code, rule]) => {
     expect.hasAssertions();
     expect(reported(rule, name, code)).toBe(true);
+  });
+
+  it.for(singleReports)("reports a default import member call once: %s", ([rule, code]) => {
+    expect.hasAssertions();
+    expect(reportCount(rule, "libs/ui/src/probe.ts", code)).toBe(1);
   });
 
   it.for(dependencyBypasses)("rejects dependency bypass: %s", ([_label, name, code]) => {

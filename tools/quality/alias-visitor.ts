@@ -52,4 +52,19 @@ function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean
   };
 }
 
-export { aliasChecker, aliasVisitor };
+function originVisitor(context: LintContext, matches: (origin: Origin) => boolean): Visitor {
+  return {
+    ...aliasVisitor(context, matches),
+    CallExpression(node: Node): void {
+      if (
+        node.type === "CallExpression" &&
+        node.callee.type !== "MemberExpression" &&
+        origins(context, node.callee).some((origin) => matches(origin))
+      ) {
+        reportViolation(context, node.callee);
+      }
+    },
+  };
+}
+
+export { aliasChecker, aliasVisitor, originVisitor };
