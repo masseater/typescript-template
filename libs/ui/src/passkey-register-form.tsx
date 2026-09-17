@@ -1,7 +1,6 @@
-import { Button, Stack } from "smarthr-ui";
+import { Button, Field } from "./shared/ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import { requireSecureContext, requireSuccess } from "./protocol";
-import { Field } from "./field";
 import type { SettingsContext } from "./mfa-types";
 import { authClient } from "./client";
 import { useCallback } from "react";
@@ -39,7 +38,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
-      <Stack>
+      <div className="flex w-full max-w-md flex-col gap-4">
         <Field
           label="パスキーの名前"
           name="passkey-name"
@@ -51,7 +50,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
         <Button type="submit" disabled={action.blocked || recoveringAdmin}>
           パスキーを登録
         </Button>
-      </Stack>
+      </div>
     </form>
   );
 }

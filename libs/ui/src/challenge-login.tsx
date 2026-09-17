@@ -1,6 +1,6 @@
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "smarthr-ui";
+import { Button } from "./shared/ui";
 import { ChallengeForm } from "./challenge-form";
 import type { ChallengeMode } from "./challenge-form";
 import type { ReactElement } from "react";

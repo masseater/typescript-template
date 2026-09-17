@@ -1,4 +1,4 @@
-import { Page, Status, UIProvider } from "@template/ui";
+import { Page, Status } from "@template/ui/ui";
 import { useCallback, useEffect, useState } from "react";
 import { ConsentActions } from "./consent-actions.tsx";
 import type { ReactElement } from "react";
@@ -66,18 +66,16 @@ function ConsentPage(): ReactElement {
   }, []);
   const client = useClientName(clientId, reportError);
   return (
-    <UIProvider>
-      <Page title="Wiki との連携">
-        {clientId === undefined && (
-          <Status error>連携を求めているクライアントが分かりません。</Status>
-        )}
-        {client !== undefined && <ConsentActions client={client} onError={reportError} />}
-        {clientId !== undefined && client === undefined && error === "" && (
-          <Status>読み込み中です。</Status>
-        )}
-        {error !== "" && <Status error>{error}</Status>}
-      </Page>
-    </UIProvider>
+    <Page title="Wiki との連携">
+      {clientId === undefined && (
+        <Status variant="error">連携を求めているクライアントが分かりません。</Status>
+      )}
+      {client !== undefined && <ConsentActions client={client} onError={reportError} />}
+      {clientId !== undefined && client === undefined && error === "" && (
+        <Status variant="pending">読み込み中です。</Status>
+      )}
+      {error !== "" && <Status variant="error">{error}</Status>}
+    </Page>
   );
 }
 

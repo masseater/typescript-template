@@ -8,7 +8,7 @@ type ProfileData = typeof ProfileView.Type;
 
 interface ProfileDraft {
   readonly handleNameChange: ChangeEventHandler<HTMLInputElement>;
-  readonly handleProfileChange: ChangeEventHandler<HTMLTextAreaElement>;
+  readonly handleProfileChange: (value: string) => void;
   readonly name: string;
   readonly profile: string;
   readonly show: (data: Readonly<ProfileData>) => void;
@@ -41,12 +41,9 @@ function useProfileDraft(): ProfileDraft {
     },
     [],
   );
-  const handleProfileChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>(
-    (event: FieldEvent) => {
-      setProfile(event.target.value);
-    },
-    [],
-  );
+  const handleProfileChange = useCallback((next: string): void => {
+    setProfile(next);
+  }, []);
   const show = useCallback((data: Readonly<ProfileData>): void => {
     setName(data.name);
     setProfile(data.profile);

@@ -1,17 +1,17 @@
+import { TableHead, TableHeader, TableRow } from "@template/ui/ui";
 import type { ReactElement } from "react";
-import { Th } from "smarthr-ui";
 
 function UsersTableHeader(): ReactElement {
   return (
-    <thead>
-      <tr>
-        <Th>ユーザー名</Th>
-        <Th>メールアドレス</Th>
-        <Th>メール確認</Th>
-        <Th>権限</Th>
-        <Th>操作</Th>
-      </tr>
-    </thead>
+    <TableHeader>
+      <TableRow>
+        <TableHead>ユーザー名</TableHead>
+        <TableHead>メールアドレス</TableHead>
+        <TableHead>メール確認</TableHead>
+        <TableHead>権限</TableHead>
+        <TableHead>操作</TableHead>
+      </TableRow>
+    </TableHeader>
   );
 }
 

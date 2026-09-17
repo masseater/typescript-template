@@ -1,9 +1,8 @@
-import { Button, Stack } from "smarthr-ui";
+import { Button, Field } from "./shared/ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import type { ChallengeMode } from "./challenge-form";
-import { Field } from "./field";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -55,7 +54,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
   const submit = useCredentialsSubmit(props);
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <Stack>
+      <div className="flex w-full max-w-md flex-col gap-4">
         <Field
           label="メールアドレス"
           name="email"
@@ -77,7 +76,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
         <Button type="submit" variant="primary" disabled={action.blocked}>
           ログイン
         </Button>
-      </Stack>
+      </div>
     </form>
   );
 }

@@ -1,7 +1,6 @@
 import { LoginPage } from "@template/ui/auth";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
-import { UIProvider } from "@template/ui";
 import { decodeJson } from "@template/runtime/client";
 
 const HTTP_FORBIDDEN = 403;
@@ -38,9 +37,7 @@ async function continueAuthorization(): Promise<void> {
 
 function WikiLogin(): ReactElement {
   return (
-    <UIProvider>
-      <LoginPage title="Wiki にログイン" signUp={false} onAuthenticated={continueAuthorization} />
-    </UIProvider>
+    <LoginPage title="Wiki にログイン" signUp={false} onAuthenticated={continueAuthorization} />
   );
 }
 

@@ -56,5 +56,29 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
   );
 }
 
-export { applicationDependencyViolations, field, workspaceManifests };
+const retiredUiPackages: Readonly<Record<string, string>> = {
+  "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  "react-intl": "Paraglide JS",
+  "smarthr-ui": "@template/ui/ui の shadcn/ui (Base UI) 部品",
+  "styled-components": "Tailwind CSS v4 のユーティリティ",
+};
+
+function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+  return workspaces.flatMap(({ file, manifest }) =>
+    declaredDependencies(manifest)
+      .filter((dependency) => Object.hasOwn(retiredUiPackages, dependency))
+      .map(
+        (dependency) =>
+          `${file}: ${dependency} は置き換え済みです。${retiredUiPackages[dependency] ?? ""} を使ってください。`,
+      ),
+  );
+}
+
+export {
+  applicationDependencyViolations,
+  field,
+  retiredDependencyViolations,
+  retiredUiPackages,
+  workspaceManifests,
+};
 export type { WorkspaceManifest };

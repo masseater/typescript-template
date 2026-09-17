@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol";
-import { Status } from "./status";
+import { Status } from "./shared/ui";
 
 interface RecoveryNoticeProps {
   readonly recovery: string | undefined;

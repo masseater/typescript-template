@@ -1,4 +1,9 @@
-import { applicationDependencyViolations, workspaceManifests } from "./dependencies.ts";
+import {
+  applicationDependencyViolations,
+  retiredDependencyViolations,
+  retiredUiPackages,
+  workspaceManifests,
+} from "./dependencies.ts";
 import { describe, expect, it } from "vite-plus/test";
 
 describe("application package boundaries", () => {
@@ -32,5 +37,25 @@ describe("application package boundaries", () => {
       workspaceManifests.filter(({ area }) => area === "apps").map(({ file }) => file),
     ).toStrictEqual(expect.arrayContaining(["apps/user/package.json", "apps/admin/package.json"]));
     expect(applicationDependencyViolations(workspaceManifests)).toStrictEqual([]);
+  });
+});
+
+describe("replaced UI packages", () => {
+  it.for(Object.keys(retiredUiPackages))("rejects a workspace that declares %s", (dependency) => {
+    expect.hasAssertions();
+    const violations = retiredDependencyViolations([
+      {
+        area: "libs",
+        file: "libs/ui/package.json",
+        manifest: { dependencies: { [dependency]: "1.0.0" }, name: "@template/ui" },
+      },
+    ]);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain(dependency);
+  });
+
+  it("repository workspaces no longer declare them", () => {
+    expect.hasAssertions();
+    expect(retiredDependencyViolations(workspaceManifests)).toStrictEqual([]);
   });
 });

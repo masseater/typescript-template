@@ -1,6 +1,6 @@
 import { WikiLogin } from "#/components/wiki-login.tsx";
 import { createFileRoute } from "@tanstack/react-router";
-import uiStyles from "@template/ui/styles.css?url";
+import uiStyles from "#/styles/auth.css?url";
 
 const Route = createFileRoute("/login")({
   component: WikiLogin,

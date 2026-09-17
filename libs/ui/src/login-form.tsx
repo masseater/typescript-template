@@ -6,7 +6,6 @@ import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
 import { PasskeyLoginButton } from "./passkey-login-button";
 import type { ReactElement } from "react";
-import { Stack } from "smarthr-ui";
 import { useAction } from "./action";
 import { useTextInput } from "./use-text-input";
 
@@ -25,7 +24,7 @@ function LoginForm({
     setChallenge(undefined);
   }, []);
   return (
-    <Stack>
+    <div className="flex w-full max-w-md flex-col gap-4">
       {challenge === undefined ? (
         <>
           <CredentialsForm
@@ -47,7 +46,7 @@ function LoginForm({
         />
       )}
       <ActionStatus action={action} pendingMessage="認証を処理しています。" />
-    </Stack>
+    </div>
   );
 }
 

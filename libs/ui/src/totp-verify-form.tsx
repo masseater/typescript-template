@@ -1,6 +1,6 @@
-import { Button, Stack } from "smarthr-ui";
 import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
+import { Button } from "./shared/ui";
 import { TotpField } from "./totp-field";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -36,12 +36,12 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
   );
   return (
     <form onSubmit={submit}>
-      <Stack>
+      <div className="flex w-full max-w-md flex-col gap-4">
         <TotpField code={code} />
         <Button type="submit" disabled={action.blocked || !saved}>
           確認して認証アプリを有効化
         </Button>
-      </Stack>
+      </div>
     </form>
   );
 }
