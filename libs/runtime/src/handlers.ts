@@ -1,8 +1,20 @@
+import { checkDatabase } from "@template/db";
 import * as v from "valibot";
 import type { AppRequestContext } from "./index.ts";
 import { apiResponse, readJson } from "./http.ts";
 
 type RouteInput = { request: Request; context: AppRequestContext };
+
+export function healthHandler({ context }: RouteInput): Promise<Response> {
+  return apiResponse(async () => {
+    await checkDatabase(context.runtime.database);
+    return {
+      ok: true,
+      service: context.runtime.audience,
+      release: context.runtime.config.APP_RELEASE,
+    };
+  }, context.runtime.reportError);
+}
 
 export function authHandler({ request, context }: RouteInput): Promise<Response> {
   return context.runtime.auth.handler(request);

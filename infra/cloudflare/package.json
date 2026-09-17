@@ -26,6 +26,7 @@
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
     "@template/error-monitor": "workspace:*",
+    "@template/health-monitor": "workspace:*",
     "@template/infra-bootstrap": "workspace:*",
     "valibot": "^1.1.0"
   },

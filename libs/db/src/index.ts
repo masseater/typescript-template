@@ -15,6 +15,10 @@ export function createDb(binding: DatabaseBinding) {
 
 export type Database = ReturnType<typeof createDb>;
 
+export async function checkDatabase(database: Database): Promise<void> {
+  await database.select({ id: user.id }).from(user).limit(1);
+}
+
 const profileInput = v.strictObject({
   name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
   profile: v.pipe(v.string(), v.maxLength(2000)),
