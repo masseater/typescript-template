@@ -12,11 +12,15 @@ description: ログ・トレース・メトリクスで実際の動作を確か�
 レスポンスヘッダーの `x-request-id` と `traceparent` を使い、同じリクエストのログとトレースを突き合わせます。
 
 ```bash
-pnpm observe
-pnpm observe:verify
+vp run observe
+vp run observe:verify
 ```
 
-Grafana の MCP には `pnpm observe:mcp` で読み取り専用の権限で接続します。
+Grafana の MCP には読み取り専用の権限で接続します。MCP クライアントには次のコマンドを stdio サーバーとして登録します。
+
+```bash
+vp exec node infra/local/src/compose.ts mcp
+```
 
 ## 障害を調べる
 

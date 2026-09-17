@@ -1,7 +1,8 @@
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
-  ignoreBinaries: ["fish", "tailscale"],
+  ignoreBinaries: ["tailscale"],
+  ignoreDependencies: ["vite", "vitest"],
   workspaces: {
     ".": {
       project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],

@@ -1,48 +1,46 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { scriptViolations } from "./scripts.ts";
 
 test.for([
-  "pnpm --filter @template/dev setup",
-  "pnpm --filter @template/local config",
-  "pnpm --filter @template/user build",
-  "pnpm --filter=@template/dev setup",
-  "pnpm --filter-prod=@template/dev setup",
-  "pnpm -F @template/dev setup",
-  "pnpm -F@template/dev setup",
-  'pnpm --filter "@template/dev" setup',
-  "pnpm --filter '@template/*' setup",
-  "pnpm --filter @template/dev --if-present setup",
-  "pnpm --dir . --filter @template/dev setup",
-  "corepack pnpm --filter @template/dev setup",
-  "env CI=true pnpm --filter @template/dev setup",
-  "pnpm --filter @template/dev run start && pnpm --filter @template/local config",
-  "pnpm --filter @template/dev setup -- run",
-  "pnpm --filter @template/dev setup; pnpm run test",
-  "pnpm --filter @template/dev setup\npnpm run test",
-  "pnpm --filter @template/dev setup || pnpm --filter @template/dev run start",
-])("rejects pnpm builtin ambiguity: %s", (command) => {
+  "pnpm --filter @template/dev run setup",
+  "pnpm -r --if-present build",
+  "pnpm run test",
+  "pnpm check",
+  "pnpm exec knip",
+  "pnpm dlx wrangler deploy",
+  "pnpx wrangler deploy",
+  "npm run build",
+  "npx knip",
+  "yarn build",
+  "bunx vp build",
+  "./node_modules/.bin/pnpm run build",
+  "pnpm.cmd run build",
+  "corepack pnpm --filter @template/dev run setup",
+  "env CI=true pnpm run test",
+  "exec pnpm run preview",
+  "vp run build && pnpm run test",
+  "vp run build; npm test",
+  "vp run build\nyarn test",
+  "vp run build || npx knip",
+])("rejects direct package manager calls: %s", (command) => {
   expect(scriptViolations({ scripts: { probe: command } })).toEqual([
-    `probe: pnpm --filter に続く workspace script は必ず run を明示してください: ${command}`,
+    `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
   ]);
 });
 
 test.for([
-  "pnpm --filter @template/dev run setup",
-  "pnpm --filter @template/local run config",
-  "pnpm --filter=@template/user run build",
-  "pnpm -F @template/dev run setup",
-  "pnpm --filter @template/dev --resume-from @template/dev run setup",
-  "pnpm --filter '@template/*' --if-present run build",
-  "pnpm --filter @template/dev run setup && pnpm --filter @template/local run config",
-  "pnpm --filter @template/dev run setup -- --filter anything",
-  "pnpm run test",
-  "pnpm -r --if-present build",
+  "vp run --filter @template/dev setup",
+  "vp run -r build",
+  "vp exec knip",
+  "vp dlx wrangler deploy",
+  "CI=true vp run test",
   "node tools/dev/src/cli.ts",
-  "echo 'pnpm --filter @template/dev setup'",
-])("allows explicit workspace script execution: %s", (command) => {
+  "echo 'pnpm run test'",
+  "vp run build -- --reporter pnpm",
+])("allows Vite+ entry points: %s", (command) => {
   expect(scriptViolations({ scripts: { probe: command } })).toEqual([]);
 });
 
@@ -51,12 +49,12 @@ test("rejects malformed script definitions", () => {
     "Script setup must be a string",
   );
   expect(() => scriptViolations({ scripts: [] })).toThrow("scripts must be an object");
-  expect(() => scriptViolations({ scripts: { setup: "pnpm --filter 'broken" } })).toThrow(
+  expect(() => scriptViolations({ scripts: { setup: "vp run 'broken" } })).toThrow(
     "unfinished shell quote",
   );
 });
 
-test("all repository workspace manifests use explicit run after pnpm filters", async () => {
+test("all repository workspace manifests run scripts through Vite+", async () => {
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const directories = await Promise.all(
     ["apps", "libs", "infra", "tools"].map(async (area) => {

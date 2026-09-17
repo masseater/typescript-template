@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test as baseTest } from "vitest";
+import { expect, test as baseTest } from "vite-plus/test";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const execution = {
@@ -226,6 +226,16 @@ test.for([
   ["reassignment", 'import { vi } from "vitest"; let tools; tools = vi; tools.fn();'],
   ["jest-alias", 'import { jest as tools } from "@jest/globals"; tools.spyOn({}, "method");'],
   ["direct-spy-import", 'import { fn as replace } from "@vitest/spy"; replace();'],
+  ["vite-plus-import", 'import { vi as tools } from "vite-plus/test"; tools.mock("owned");'],
+  [
+    "vite-plus-namespace",
+    'import * as tools from "vite-plus/test"; const { vi: kit } = tools; kit.fn();',
+  ],
+  ["vite-plus-dynamic", 'const { vi: tools } = await import("vite-plus/test"); tools.fn();'],
+  [
+    "vite-plus-spy-import",
+    'import { fn as replace } from "vite-plus/test/plugins/spy"; replace();',
+  ],
   ["node-test-mock", 'import { mock as tools } from "node:test"; tools.fn();'],
 ] as const)("rejects mock bypass: %s", async ([_label, code], { directory }) => {
   await writeFile(path.join(directory, "probe.ts"), code);
@@ -523,7 +533,7 @@ test.for(["instrumentation", "testing"])(
 
 test("pre-commit hook rejects an actual lint violation", async ({ directory }) => {
   await writeFile(path.join(directory, "invalid.ts"), "debugger;\n");
-  const result = spawnSync("fish", [path.join(root, ".githooks/pre-commit")], {
+  const result = spawnSync(path.join(root, ".vite-hooks/_/pre-commit"), [], {
     ...execution,
     cwd: directory,
   });
@@ -532,12 +542,12 @@ test("pre-commit hook rejects an actual lint violation", async ({ directory }) =
 });
 
 test("pre-push hook rejects an actual failing test", async ({ directory }) => {
-  const vitestEntry = import.meta.resolve("vitest");
+  const vitestEntry = import.meta.resolve("vite-plus/test");
   await writeFile(
     path.join(directory, "failure.test.ts"),
     `import { test, expect } from ${JSON.stringify(vitestEntry)}; test("intentional failure", () => expect(1).toBe(2));`,
   );
-  const result = spawnSync("fish", [path.join(root, ".githooks/pre-push")], {
+  const result = spawnSync(path.join(root, ".vite-hooks/_/pre-push"), [], {
     ...execution,
     cwd: directory,
   });

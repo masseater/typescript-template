@@ -4,12 +4,12 @@ packages:
   - infra/*
   - tools/*
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
-  vitest: 4.1.11
   "@vitest/runner": 4.1.11
   "@vitest/expect": 4.1.11
   "@vitest/spy": 4.1.11
   "@vitest/utils": 4.1.11
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
 allowBuilds:
   esbuild: true
   workerd: true
@@ -24,3 +24,14 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workers-types@5.20260916.1"
   - miniflare@5.20260915.0-alpha
   - wrangler@4.132.0
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
+  vitest: 4.1.11
+  vite-plus: 0.3.2
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"

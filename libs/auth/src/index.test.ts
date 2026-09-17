@@ -7,7 +7,7 @@ import { getSchema } from "better-auth/db";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { URI } from "otpauth";
-import { expect, expectTypeOf, test as baseTest } from "vitest";
+import { expect, expectTypeOf, test as baseTest } from "vite-plus/test";
 import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
 

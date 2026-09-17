@@ -1,5 +1,5 @@
 import { Miniflare } from "miniflare";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { createDb } from "./index.ts";
 import { bootstrapAdmin } from "./admin.ts";
 import { user, session } from "./schema.ts";

@@ -218,7 +218,8 @@ async function start(app: App) {
     const logFile = await open(log, "a", 0o600);
     await logFile.close();
     await chmod(log, 0o600);
-    const command = `exec pnpm --filter @template/${app} run preview >> ${JSON.stringify(log)} 2>&1`;
+    const vp = JSON.stringify(join(root, "node_modules/.bin/vp"));
+    const command = `exec ${vp} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
     await run(
       "tmux",
       ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],
@@ -318,7 +319,7 @@ try {
       ok: false,
       event: "local.application_command_failed",
       remediation:
-        "Check pnpm dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+        "Check vp run dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
     }),
   );
   process.exitCode = 1;
