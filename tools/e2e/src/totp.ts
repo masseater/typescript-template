@@ -1,34 +1,81 @@
 import { createHmac } from "node:crypto";
 import { ensure } from "./support.ts";
 
-export function totp(uri: string, now = Date.now()): string {
+const base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const base32BitsPerCharacter = 5;
+const bitsPerByte = 8;
+const binaryRadix = 2;
+const counterBytes = 8;
+const millisecondsPerSecond = 1000;
+const defaultDigits = 6;
+const extendedDigits = 8;
+const defaultPeriodSeconds = 30;
+const supportedDigits = new Set([defaultDigits, extendedDigits]);
+const supportedAlgorithms = new Set(["SHA1", "SHA256", "SHA512"]);
+const dynamicOffsetModulus = 16;
+const truncatedBinaryModulus = 2_147_483_648;
+const decimalBase = 10;
+
+interface TotpParameters {
+  readonly algorithm: string;
+  readonly digits: number;
+  readonly encodedSecret: string;
+  readonly periodSeconds: number;
+}
+
+function parseTotpUri(uri: string): TotpParameters {
   const parsed = new URL(uri);
   ensure(parsed.protocol === "otpauth:" && parsed.hostname === "totp", "E2E_INVALID_TOTP_URI");
-  const encoded = parsed.searchParams.get("secret")?.toUpperCase().replace(/=+$/, "");
-  ensure(encoded && /^[A-Z2-7]+$/.test(encoded), "E2E_INVALID_TOTP_SECRET");
-  const digits = Number(parsed.searchParams.get("digits") ?? 6);
-  const period = Number(parsed.searchParams.get("period") ?? 30);
-  const algorithm = parsed.searchParams.get("algorithm") ?? "SHA1";
+  const encodedSecret = parsed.searchParams.get("secret")?.toUpperCase().replace(/=+$/u, "");
   ensure(
-    [6, 8].includes(digits) &&
-      Number.isInteger(period) &&
-      period > 0 &&
-      ["SHA1", "SHA256", "SHA512"].includes(algorithm),
+    encodedSecret !== undefined && /^[A-Z2-7]+$/u.test(encodedSecret),
+    "E2E_INVALID_TOTP_SECRET",
+  );
+  const parameters = {
+    algorithm: parsed.searchParams.get("algorithm") ?? "SHA1",
+    digits: Number(parsed.searchParams.get("digits") ?? defaultDigits),
+    encodedSecret,
+    periodSeconds: Number(parsed.searchParams.get("period") ?? defaultPeriodSeconds),
+  };
+  ensure(
+    supportedDigits.has(parameters.digits) &&
+      Number.isInteger(parameters.periodSeconds) &&
+      parameters.periodSeconds > 0 &&
+      supportedAlgorithms.has(parameters.algorithm),
     "E2E_INVALID_TOTP_PARAMETERS",
   );
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  const bits = encoded
-    .split("")
-    .map((char) => alphabet.indexOf(char).toString(2).padStart(5, "0"))
-    .join("");
-  const secret = Buffer.from(
-    Array.from({ length: Math.floor(bits.length / 8) }, (_, index) =>
-      Number.parseInt(bits.slice(index * 8, index * 8 + 8), 2),
+  return parameters;
+}
+
+function decodeBase32(encoded: string): Buffer {
+  const bits = Array.from(encoded, (character) =>
+    base32Alphabet.indexOf(character).toString(binaryRadix).padStart(base32BitsPerCharacter, "0"),
+  ).join("");
+  return Buffer.from(
+    Array.from({ length: Math.floor(bits.length / bitsPerByte) }, (_byte, index) =>
+      Number.parseInt(bits.slice(index * bitsPerByte, (index + 1) * bitsPerByte), binaryRadix),
     ),
   );
-  const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(BigInt(Math.floor(now / 1000 / period)));
-  const digest = createHmac(algorithm.toLowerCase(), secret).update(counter).digest();
-  const offset = (digest.at(-1) ?? 0) & 15;
-  return String((digest.readUInt32BE(offset) & 0x7fffffff) % 10 ** digits).padStart(digits, "0");
+}
+
+function hotp(parameters: TotpParameters, counter: bigint): string {
+  const counterBuffer = Buffer.alloc(counterBytes);
+  counterBuffer.writeBigUInt64BE(counter);
+  const digest = createHmac(
+    parameters.algorithm.toLowerCase(),
+    decodeBase32(parameters.encodedSecret),
+  )
+    .update(counterBuffer)
+    .digest();
+  const offset = (digest.at(-1) ?? 0) % dynamicOffsetModulus;
+  const truncated = digest.readUInt32BE(offset) % truncatedBinaryModulus;
+  return String(truncated % decimalBase ** parameters.digits).padStart(parameters.digits, "0");
+}
+
+export function totp(uri: string, now = Date.now()): string {
+  const parameters = parseTotpUri(uri);
+  return hotp(
+    parameters,
+    BigInt(Math.floor(now / millisecondsPerSecond / parameters.periodSeconds)),
+  );
 }

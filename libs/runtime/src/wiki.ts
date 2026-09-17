@@ -1,44 +1,75 @@
-import { readWikiConfig } from "@template/config";
+import type { Instrumentation, RequestContext } from "@template/observability";
+import { array, number, object, parse } from "valibot";
 import { createInstrumentation } from "@template/observability";
-import type { RequestContext } from "@template/observability";
+import { readWikiConfig } from "@template/config";
 import { reportSentryError } from "@template/observability/sentry-server";
-import * as v from "valibot";
+
+type Embedder = (texts: readonly string[]) => Promise<number[][]>;
+type AiBinding = NonNullable<ReturnType<typeof readWikiConfig>["AI"]>;
+
+interface WikiRuntime {
+  readonly config: Pick<ReturnType<typeof readWikiConfig>, "APP_ORIGIN" | "ASSETS" | "sentry">;
+  readonly embedder: (correlation: RequestContext) => Embedder | undefined;
+  readonly reportError: (correlation: RequestContext, error: unknown) => void;
+  readonly telemetry: Instrumentation;
+}
 
 const embeddingModel = "@cf/baai/bge-m3";
 const embeddingBatch = 32;
-const embeddingOutput = v.object({ data: v.array(v.array(v.number())) });
+const embeddingVector = array(number());
+const embeddingOutput = object({ data: array(embeddingVector) });
 
-export function createWikiRuntime(bindings: unknown, routes: Readonly<Record<string, string>>) {
+interface EmbeddingSource {
+  readonly ai: AiBinding;
+  readonly correlation: RequestContext;
+  readonly telemetry: Instrumentation;
+}
+
+async function embedBatches(
+  source: EmbeddingSource,
+  texts: readonly string[],
+): Promise<number[][]> {
+  const text = texts.slice(0, embeddingBatch);
+  if (text.length === 0) {
+    return [];
+  }
+  const output = await source.telemetry.withExternalSpan(source.correlation, "ai", async () =>
+    source.ai.run(embeddingModel, { text }),
+  );
+  const { data } = parse(embeddingOutput, output);
+  if (data.length !== text.length) {
+    throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
+  }
+  const rest = await embedBatches(source, texts.slice(embeddingBatch));
+  return [...data, ...rest];
+}
+
+function createWikiRuntime(
+  bindings: unknown,
+  routes: Readonly<Record<string, string>>,
+): WikiRuntime {
   const config = readWikiConfig(bindings);
   const telemetry = createInstrumentation({
-    serviceName: "wiki",
     endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
     headers: config.otelHeaders,
     routes,
+    serviceName: "wiki",
   });
   const ai = config.AI;
   return {
-    config: { ASSETS: config.ASSETS, APP_ORIGIN: config.APP_ORIGIN, sentry: config.sentry },
-    telemetry,
-    reportError(correlation: RequestContext, error: unknown) {
+    config: { APP_ORIGIN: config.APP_ORIGIN, ASSETS: config.ASSETS, sentry: config.sentry },
+    embedder: (correlation) =>
+      ai === undefined
+        ? undefined
+        : async (texts) => embedBatches({ ai, correlation, telemetry }, texts),
+    reportError(correlation, error) {
       telemetry.reportError(correlation, error);
-      if (config.sentry) reportSentryError(error);
+      if (config.sentry) {
+        reportSentryError(error);
+      }
     },
-    embedder(correlation: RequestContext) {
-      if (!ai) return null;
-      return async (texts: readonly string[]) => {
-        const vectors: number[][] = [];
-        for (let start = 0; start < texts.length; start += embeddingBatch) {
-          const text = texts.slice(start, start + embeddingBatch);
-          const output = await telemetry.withExternalSpan(correlation, "ai", () =>
-            ai.run(embeddingModel, { text }),
-          );
-          const { data } = v.parse(embeddingOutput, output);
-          if (data.length !== text.length) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
-          vectors.push(...data);
-        }
-        return vectors;
-      };
-    },
+    telemetry,
   };
 }
+
+export { createWikiRuntime };

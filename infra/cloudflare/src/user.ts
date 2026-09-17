@@ -1,5 +1,5 @@
 import { deployApplication } from "./app.ts";
 
-const result = await deployApplication("user");
-export const workerName = result.workerName;
-export const origin = result.origin;
+const { origin, workerName } = await deployApplication("user");
+
+export { origin, workerName };

@@ -1,260 +1,170 @@
-import { createHash } from "node:crypto";
 import { chmod, lstat, mkdir } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
-import { decodeBrowserBatch, ensure, object, poll, run, string, root } from "./support.ts";
-import { collectSecrets, header } from "./observation.ts";
+import {
+  decodeBrowserBatch,
+  ensure,
+  object,
+  poll,
+  privateDirectoryMode,
+  root,
+  run,
+  string,
+} from "./support.ts";
+import { Cdp } from "./cdp.ts";
+import type { CdpSession } from "./cdp.ts";
+import { NetworkObserver } from "./network-observer.ts";
 import type { ObservedRequest } from "./observation.ts";
+import { createHash } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
+import { httpStatus } from "./http.ts";
+import path from "node:path";
+import { tmpdir } from "node:os";
 
-export const enabledButton = (name: string) => [
-  "wait",
-  "--fn",
-  `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\\s+/g, "") === ${JSON.stringify(name.replace(/\s+/g, ""))})`,
-];
+type BrowserCommand = readonly string[];
+
+interface ExpandedCommand {
+  readonly command: BrowserCommand;
+  readonly wait: boolean;
+}
+
+interface ApiRequest {
+  readonly body?: unknown;
+  readonly headers?: Readonly<Record<string, string>>;
+  readonly method?: string;
+}
+
+interface ApiResponse {
+  readonly data: unknown;
+  readonly requestId: unknown;
+  readonly status: number;
+  readonly traceparent: unknown;
+}
+
+interface Observation {
+  readonly requests: ObservedRequest[];
+  readonly secrets: string[];
+}
 
 const rateLimitWindow = 11_000;
 const rateLimitRetries = 3;
+const browserCommandTimeout = 60_000;
+const socketDirectoryHashLength = 12;
+const socketDirectory = path.join(
+  tmpdir(),
+  `ab-${createHash("sha256").update(root).digest("hex").slice(0, socketDirectoryHashLength)}`,
+);
 
-export class Browser {
-  readonly observedRequests: ObservedRequest[] = [];
-  readonly secrets = new Set<string>();
-  private observer: Cdp | undefined;
-  private observationFailure = false;
-  private readonly bodyReads = new Set<Promise<void>>();
-  readonly session: string;
-  private readonly config: string;
+function enabledButton(name: string): string[] {
+  return [
+    "wait",
+    "--fn",
+    `Array.from(document.querySelectorAll("button")).some((button) => !button.disabled && (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\\s+/g, "") === ${JSON.stringify(name.replaceAll(/\s+/gu, ""))})`,
+  ];
+}
 
-  constructor(session: string, config: string) {
-    this.session = session;
-    this.config = config;
+function clickedButtonName(command: BrowserCommand): string | undefined {
+  const [find, locator, role, action, flag, name] = command;
+  return find === "find" &&
+    locator === "role" &&
+    role === "button" &&
+    action === "click" &&
+    flag === "--name"
+    ? name
+    : undefined;
+}
+
+function expandCommand(command: BrowserCommand): ExpandedCommand[] {
+  const name = clickedButtonName(command);
+  if (name === undefined) {
+    return [{ command, wait: false }];
   }
+  return [
+    { command: enabledButton(name), wait: true },
+    { command, wait: false },
+  ];
+}
 
-  private async execute(...commands: string[][]) {
-    const socketDirectory = join(
-      tmpdir(),
-      `ab-${createHash("sha256").update(root).digest("hex").slice(0, 12)}`,
-    );
-    await mkdir(socketDirectory, { recursive: true, mode: 0o700 });
-    const entry = await lstat(socketDirectory);
-    ensure(
-      entry.isDirectory() && entry.uid === process.getuid?.(),
-      "E2E_BROWSER_SOCKET_DIRECTORY_NOT_OWNED",
-    );
-    await chmod(socketDirectory, 0o700);
-    const output = await run(
-      "agent-browser",
-      [
-        "--config",
-        this.config,
-        "--allowed-domains",
-        "localhost,127.0.0.1",
-        "--session",
-        this.session,
-        "--json",
-        "batch",
-        "--bail",
-      ],
-      JSON.stringify(commands),
-      60_000,
-      { AGENT_BROWSER_SOCKET_DIR: socketDirectory },
-    );
-    return decodeBrowserBatch(output);
-  }
-
-  async commands(...commands: string[][]) {
-    if (!this.observer) await this.observe();
-    const expanded = commands.flatMap((command): { command: string[]; wait: boolean }[] => {
-      const [find, locator, role, action, flag, name] = command;
-      if (
-        find !== "find" ||
-        locator !== "role" ||
-        role !== "button" ||
-        action !== "click" ||
-        flag !== "--name" ||
-        name === undefined
-      )
-        return [{ command, wait: false }];
-      return [
-        { command: enabledButton(name), wait: true },
-        { command, wait: false },
-      ];
-    });
-    const results = await this.execute(...expanded.map((entry) => entry.command));
-    return results.filter((_, index) => !expanded[index]?.wait);
-  }
-
-  async finishObservation() {
-    await Promise.all([...this.bodyReads]);
-    ensure(!this.observationFailure, "E2E_NETWORK_OBSERVATION_FAILED");
-    return { requests: [...this.observedRequests], secrets: [...this.secrets] };
-  }
-
-  private async observe() {
-    const cdp = await this.connectCdp();
-    this.observer = cdp;
-    const pending = new Map<
-      string,
-      { path: string; method: string; kind: string; clientTraceparent?: string }
-    >();
-    const capture = (networkId: string, raw: unknown) => {
-      const request = pending.get(networkId);
-      if (!request) return;
-      const response = object(raw);
-      const headers = object(response["headers"]);
-      const requestId = header(headers, "x-request-id");
-      const traceparent = header(headers, "traceparent");
-      ensure(requestId && traceparent, "E2E_RESPONSE_CORRELATION_MISSING");
-      const status = response["status"];
-      ensure(typeof status === "number", "E2E_RESPONSE_STATUS_MISSING");
-      this.observedRequests.push({ ...request, requestId, traceparent, status });
-      const cookie = header(headers, "set-cookie");
-      if (cookie)
-        for (const line of cookie.split("\n")) {
-          const value = line.split(";", 1)[0]?.split("=").slice(1).join("=");
-          if (value) this.secrets.add(value);
-        }
-    };
-    cdp.onEvent((method, data) => {
-      if (method === "Fetch.requestPaused") {
-        const read = (async () => {
-          const pausedId = string(data["requestId"]);
-          try {
-            const status = data["responseStatusCode"];
-            if (typeof status === "number" && (status < 300 || status >= 400)) {
-              const result = await cdp.send("Fetch.getResponseBody", { requestId: pausedId });
-              const raw = string(result["body"]);
-              const body =
-                result["base64Encoded"] === true
-                  ? Buffer.from(raw, "base64").toString("utf8")
-                  : raw;
-              if (body) collectSecrets(JSON.parse(body) as unknown, this.secrets);
-            }
-          } catch {
-            this.observationFailure = true;
-          } finally {
-            await cdp.send("Fetch.continueResponse", { requestId: pausedId }).catch(() => {
-              this.observationFailure = true;
-              return {};
-            });
-          }
-        })();
-        this.bodyReads.add(read);
-        void read.finally(() => this.bodyReads.delete(read));
-        return;
-      }
-      try {
-        const networkId = data["requestId"];
-        if (typeof networkId !== "string") return;
-        if (method === "Network.requestWillBeSent") {
-          if (data["redirectResponse"]) capture(networkId, data["redirectResponse"]);
-          pending.delete(networkId);
-          const request = object(data["request"]);
-          const url = new URL(string(request["url"]));
-          if (
-            !["localhost", "127.0.0.1"].includes(url.hostname) ||
-            !url.pathname.startsWith("/api/") ||
-            ["/api/telemetry", "/api/client-config"].includes(url.pathname)
-          )
-            return;
-          for (const key of ["token", "code"]) {
-            const secret = url.searchParams.get(key);
-            if (secret) this.secrets.add(secret);
-          }
-          const headers = object(request["headers"]);
-          const clientTraceparent = header(headers, "traceparent");
-          pending.set(networkId, {
-            path: url.pathname,
-            method: string(request["method"]),
-            kind: string(data["type"]),
-            ...(clientTraceparent ? { clientTraceparent } : {}),
-          });
-          if (typeof request["postData"] === "string") {
-            collectSecrets(JSON.parse(request["postData"]) as unknown, this.secrets);
-          }
-        } else if (method === "Network.responseReceived") {
-          capture(networkId, data["response"]);
-        } else if (method === "Network.loadingFinished") {
-          pending.delete(networkId);
-        } else if (method === "Network.loadingFailed") {
-          if (pending.has(networkId)) this.observationFailure = true;
-          pending.delete(networkId);
-        }
-      } catch {
-        this.observationFailure = true;
-      }
-    });
-    await cdp.send("Network.enable", {
-      maxTotalBufferSize: 8_000_000,
-      maxResourceBufferSize: 1_000_000,
-      maxPostDataSize: 64_000,
-    });
-    await cdp.send("Fetch.enable", {
-      patterns: [{ urlPattern: "*/api/auth/*", requestStage: "Response" }],
-    });
-  }
-
-  async evaluate(script: string): Promise<unknown> {
-    const results = await this.commands(["eval", script]);
-    ensure(results[0], "E2E_BROWSER_MISSING_EVAL");
-    return results[0]["result"];
-  }
-
-  async api(
-    path: string,
-    method = "GET",
-    body?: unknown,
-    extraHeaders: Record<string, string> = {},
-  ) {
-    ensure(path.startsWith("/") && !path.startsWith("//"), "E2E_SAME_ORIGIN_API_REQUIRED");
-    for (let attempt = 0; ; attempt += 1) {
-      const result = object(
-        await this.evaluate(`(async () => {
-      const response = await fetch(${JSON.stringify(path)}, {
-        method: ${JSON.stringify(method)},
-        headers: ${JSON.stringify({ ...extraHeaders, "content-type": "application/json" })},
+function fetchScript(pathname: string, request: ApiRequest): string {
+  const body =
+    request.body === undefined ? "" : `body: ${JSON.stringify(JSON.stringify(request.body))},`;
+  return `(async () => {
+      const response = await fetch(${JSON.stringify(pathname)}, {
+        method: ${JSON.stringify(request.method ?? "GET")},
+        headers: ${JSON.stringify({ ...request.headers, "content-type": "application/json" })},
         credentials: "same-origin",
-        ${body === undefined ? "" : `body: ${JSON.stringify(JSON.stringify(body))},`}
+        ${body}
       });
       const text = await response.text();
       let data = null;
       try { data = JSON.parse(text); } catch { data = null; }
       return { status: response.status, requestId: response.headers.get("x-request-id"), traceparent: response.headers.get("traceparent"), data };
-    })()`),
-      );
-      ensure(typeof result["status"] === "number", "E2E_MISSING_RESPONSE_STATUS");
-      if (result["status"] === 429 && path.startsWith("/api/auth/") && attempt < rateLimitRetries) {
-        await delay(rateLimitWindow);
-        continue;
-      }
-      return {
-        status: result["status"],
-        data: result["data"],
-        requestId: result["requestId"],
-        traceparent: result["traceparent"],
-      };
+    })()`;
+}
+
+async function ensureSocketDirectory(): Promise<string> {
+  await mkdir(socketDirectory, { mode: privateDirectoryMode, recursive: true });
+  const entry = await lstat(socketDirectory);
+  ensure(
+    entry.isDirectory() && entry.uid === process.getuid?.(),
+    "E2E_BROWSER_SOCKET_DIRECTORY_NOT_OWNED",
+  );
+  await chmod(socketDirectory, privateDirectoryMode);
+  return socketDirectory;
+}
+
+class Browser {
+  #cdp: Cdp | undefined;
+  readonly #connections = new Set<CdpSession>();
+  readonly #config: string;
+  readonly #network = new NetworkObserver();
+  readonly #session: string;
+
+  public constructor(session: string, config: string) {
+    this.#session = session;
+    this.#config = config;
+  }
+
+  public addSecret(secret: string): void {
+    this.#network.addSecret(secret);
+  }
+
+  public async commands(
+    ...commands: readonly BrowserCommand[]
+  ): Promise<Record<string, unknown>[]> {
+    if (this.#cdp === undefined) {
+      await this.#observe();
     }
+    const expanded = commands.flatMap((command) => expandCommand(command));
+    const results = await this.#execute(...expanded.map((entry) => entry.command));
+    return results.filter((_result, index) => expanded[index]?.wait !== true);
   }
 
-  async open(origin: string, path: string) {
-    await this.commands(["open", new URL(path, origin).href]);
+  public async finishObservation(): Promise<Observation> {
+    return this.#network.finish();
   }
 
-  async submitAuthentication(path: string, commands: string[][]) {
-    for (let attempt = 0; ; attempt += 1) {
-      const observed = this.observedRequests.length;
-      await this.commands(...commands);
-      const response = await poll(
-        async () => this.observedRequests.slice(observed).find((request) => request.path === path),
-        (request) => request !== undefined,
-        "E2E_AUTHENTICATION_RESPONSE_MISSING",
-      );
-      if (response?.status !== 429 || attempt >= rateLimitRetries) return;
-      await delay(rateLimitWindow);
-    }
+  public async evaluate(script: string): Promise<unknown> {
+    const [result] = await this.commands(["eval", script]);
+    ensure(result !== undefined, "E2E_BROWSER_MISSING_EVAL");
+    return result["result"];
   }
 
-  async login(origin: string, email: string, password: string) {
+  public async api(pathname: string, request: ApiRequest = {}): Promise<ApiResponse> {
+    ensure(pathname.startsWith("/") && !pathname.startsWith("//"), "E2E_SAME_ORIGIN_API_REQUIRED");
+    return this.#apiAttempt(pathname, request, 0);
+  }
+
+  public async open(origin: string, pathname: string): Promise<void> {
+    await this.commands(["open", new URL(pathname, origin).href]);
+  }
+
+  public async submitAuthentication(
+    pathname: string,
+    commands: readonly BrowserCommand[],
+  ): Promise<void> {
+    await this.#submitAttempt(pathname, commands, 0);
+  }
+
+  public async login(origin: string, email: string, password: string): Promise<void> {
     await this.open(origin, "/login");
     await this.commands(
       ["wait", 'input[name="email"]'],
@@ -267,136 +177,100 @@ export class Browser {
     ]);
   }
 
-  async waitText(text: string) {
+  public async waitText(text: string): Promise<void> {
     await this.commands(["wait", "--text", text]);
   }
-  async close() {
-    this.observer?.close();
-    await this.execute(["close"]);
+
+  public async close(): Promise<void> {
+    for (const connection of this.#connections) {
+      connection.close();
+    }
+    await this.#execute(["close"]);
   }
 
-  async connectCdp() {
-    const result = await this.execute(["get", "cdp-url"], ["tab", "list"]);
-    ensure(result[0] && result[1], "E2E_CDP_METADATA_MISSING");
-    const url = string(result[0]["cdpUrl"]);
-    const tabs = result[1]["tabs"];
+  public async connectCdp(): Promise<Cdp> {
+    const [metadata, tabList] = await this.#execute(["get", "cdp-url"], ["tab", "list"]);
+    ensure(metadata !== undefined && tabList !== undefined, "E2E_CDP_METADATA_MISSING");
+    const url = string(metadata["cdpUrl"]);
+    const { tabs } = tabList;
     ensure(Array.isArray(tabs), "E2E_CDP_TABS_MISSING");
     const tab: unknown = tabs.find((entry: unknown) => object(entry)["active"] === true);
-    const targetId = string(object(tab)["targetId"]);
-    const cdp = await Cdp.connect(url);
-    const attached = await cdp.send("Target.attachToTarget", { targetId, flatten: true });
-    cdp.sessionId = string(attached["sessionId"]);
+    const cdp = await Cdp.attach(url, string(object(tab)["targetId"]));
+    this.#connections.add(cdp);
     return cdp;
   }
-}
 
-export class Cdp {
-  private readonly listeners: ((method: string, params: Record<string, unknown>) => void)[] = [];
-  private nextId = 0;
-  private readonly pending = new Map<
-    number,
-    {
-      resolve: (value: Record<string, unknown>) => void;
-      reject: (error: Error) => void;
-      timer: ReturnType<typeof setTimeout>;
-    }
-  >();
-  sessionId: string | undefined;
-  private readonly socket: WebSocket;
-
-  private constructor(socket: WebSocket) {
-    this.socket = socket;
-    socket.addEventListener("message", (event: MessageEvent) => {
-      if (typeof event.data !== "string") return;
-      const data = object(JSON.parse(event.data) as unknown);
-      const id = data["id"];
-      if (typeof id !== "number") {
-        if (typeof data["method"] === "string" && data["sessionId"] === this.sessionId)
-          for (const listener of this.listeners) listener(data["method"], object(data["params"]));
-        return;
-      }
-      const pending = this.pending.get(id);
-      if (!pending) return;
-      this.pending.delete(id);
-      clearTimeout(pending.timer);
-      if (data["error"]) pending.reject(new Error("E2E_CDP_COMMAND_FAILED"));
-      else pending.resolve(object(data["result"]));
-    });
-  }
-
-  onEvent(listener: (method: string, params: Record<string, unknown>) => void) {
-    this.listeners.push(listener);
-  }
-
-  static async connect(url: string) {
-    const parsed = new URL(url);
-    ensure(parsed.protocol === "ws:" && parsed.hostname === "127.0.0.1", "E2E_CDP_MUST_BE_LOCAL");
-    const socket = new WebSocket(url);
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        socket.close();
-        reject(new Error("E2E_CDP_CONNECT_TIMEOUT"));
-      }, 10_000);
-      socket.addEventListener(
-        "open",
-        () => {
-          clearTimeout(timer);
-          resolve();
-        },
-        { once: true },
-      );
-      socket.addEventListener(
-        "error",
-        () => {
-          clearTimeout(timer);
-          reject(new Error("E2E_CDP_CONNECT_FAILED"));
-        },
-        { once: true },
-      );
-    });
-    return new Cdp(socket);
-  }
-
-  send(method: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
-    const id = ++this.nextId;
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        reject(new Error("E2E_CDP_COMMAND_TIMEOUT"));
-      }, 10_000);
-      this.pending.set(id, { resolve, reject, timer });
-      this.socket.send(
-        JSON.stringify({
-          id,
-          method,
-          params,
-          ...(this.sessionId ? { sessionId: this.sessionId } : {}),
-        }),
-      );
-    });
-  }
-
-  async authenticator() {
-    await this.send("WebAuthn.enable", { enableUI: false });
-    const result = await this.send("WebAuthn.addVirtualAuthenticator", {
-      options: {
-        protocol: "ctap2",
-        transport: "internal",
-        hasResidentKey: true,
-        hasUserVerification: true,
-        isUserVerified: true,
-        automaticPresenceSimulation: true,
+  async #execute(...commands: readonly BrowserCommand[]): Promise<Record<string, unknown>[]> {
+    const output = await run(
+      "agent-browser",
+      [
+        "--config",
+        this.#config,
+        "--allowed-domains",
+        "localhost,127.0.0.1",
+        "--session",
+        this.#session,
+        "--json",
+        "batch",
+        "--bail",
+      ],
+      {
+        environment: { AGENT_BROWSER_SOCKET_DIR: await ensureSocketDirectory() },
+        input: JSON.stringify(commands),
+        timeout: browserCommandTimeout,
       },
-    });
-    return string(result["authenticatorId"]);
+    );
+    return decodeBrowserBatch(output);
   }
 
-  close() {
-    for (const request of this.pending.values()) {
-      clearTimeout(request.timer);
-      request.reject(new Error("E2E_CDP_CLOSED"));
+  async #observe(): Promise<void> {
+    const cdp = await this.connectCdp();
+    this.#cdp = cdp;
+    await this.#network.attach(cdp);
+  }
+
+  async #apiAttempt(pathname: string, request: ApiRequest, attempt: number): Promise<ApiResponse> {
+    const result = object(await this.evaluate(fetchScript(pathname, request)));
+    const { status } = result;
+    ensure(typeof status === "number", "E2E_MISSING_RESPONSE_STATUS");
+    if (
+      status === httpStatus.tooManyRequests &&
+      pathname.startsWith("/api/auth/") &&
+      attempt < rateLimitRetries
+    ) {
+      await delay(rateLimitWindow);
+      return this.#apiAttempt(pathname, request, attempt + 1);
     }
-    this.pending.clear();
-    this.socket.close();
+    return {
+      data: result["data"],
+      requestId: result["requestId"],
+      status,
+      traceparent: result["traceparent"],
+    };
+  }
+
+  async #submitAttempt(
+    pathname: string,
+    commands: readonly BrowserCommand[],
+    attempt: number,
+  ): Promise<void> {
+    const observed = this.#network.requestCount();
+    await this.commands(...commands);
+    const response = await poll({
+      accept: (request) => request !== undefined,
+      code: "E2E_AUTHENTICATION_RESPONSE_MISSING",
+      read: () =>
+        this.#network.requestsSince(observed).find((request) => request.path === pathname),
+    });
+    if (response?.status !== httpStatus.tooManyRequests || attempt >= rateLimitRetries) {
+      return;
+    }
+    await delay(rateLimitWindow);
+    await this.#submitAttempt(pathname, commands, attempt + 1);
   }
 }
+
+type BrowserSession = Readonly<Pick<Browser, keyof Browser>>;
+
+export { Browser, enabledButton };
+export type { BrowserCommand, BrowserSession };

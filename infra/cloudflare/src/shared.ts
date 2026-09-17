@@ -1,26 +1,34 @@
-import * as pulumi from "@pulumi/pulumi";
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import * as cloudflare from "@pulumi/cloudflare";
-import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
-import { workerObservability } from "./observability.ts";
+import {
+  AccountToken,
+  D1Database,
+  Worker,
+  WorkerVersion,
+  WorkersCronTrigger,
+  WorkersDeployment,
+  getAccountApiTokenPermissionGroupsListOutput,
+} from "@pulumi/cloudflare";
+import { Config, secret } from "@pulumi/pulumi";
 import {
   parseSharedConfig,
   selectReadPermission,
   validateAuthSecret,
   validateOtelHeaders,
 } from "./config.ts";
+import { budgetWorkerArtifact } from "@template/budget-monitor/artifact";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { workerObservability } from "./observability.ts";
 
-const config = new pulumi.Config();
+const config = new Config();
 const settings = parseSharedConfig(config.requireObject<unknown>("settings"));
-export const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
-export const otelHeaders = (config.getSecret("otelHeaders") ?? pulumi.secret("{}")).apply(
-  validateOtelHeaders,
-);
+const authSecret = config.requireSecret("authSecret").apply(validateAuthSecret);
+const otelHeaders = (config.getSecret("otelHeaders") ?? secret("{}")).apply(validateOtelHeaders);
 const budgetContent = await readFile(budgetWorkerArtifact);
-if (budgetContent.length === 0) throw new Error("budget_worker_artifact_empty");
+if (budgetContent.length === 0) {
+  throw new Error("budget_worker_artifact_empty");
+}
 const budgetContentSha256 = createHash("sha256").update(budgetContent).digest("hex");
-const database = new cloudflare.D1Database(
+const database = new D1Database(
   "shared-db",
   {
     accountId: settings.accountId,
@@ -28,10 +36,10 @@ const database = new cloudflare.D1Database(
   },
   { protect: true },
 );
-const permissions = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
+const permissions = getAccountApiTokenPermissionGroupsListOutput({
   accountId: settings.accountId,
 });
-const billingToken = new cloudflare.AccountToken(
+const billingToken = new AccountToken(
   "budget-read-token",
   {
     accountId: settings.accountId,
@@ -46,64 +54,73 @@ const billingToken = new cloudflare.AccountToken(
   },
   { additionalSecretOutputs: ["value"] },
 );
-const budgetWorker = new cloudflare.Worker("budget-worker", {
+const budgetWorker = new Worker("budget-worker", {
   accountId: settings.accountId,
   name: `${settings.prefix}-budget`,
-  subdomain: { enabled: false, previewsEnabled: false },
   observability: workerObservability,
+  subdomain: { enabled: false, previewsEnabled: false },
 });
-const budgetVersion = new cloudflare.WorkerVersion("budget-version", {
+const budgetVersion = new WorkerVersion("budget-version", {
   accountId: settings.accountId,
-  workerId: budgetWorker.id,
+  bindings: [
+    { className: "BudgetMonitor", name: "MONITOR", type: "durable_object_namespace" },
+    {
+      allowedDestinationAddresses: [...settings.budget.recipients],
+      allowedSenderAddresses: [settings.mailFrom],
+      name: "EMAIL",
+      type: "send_email",
+    },
+    { name: "BILLING_READ_TOKEN", text: secret(billingToken.value), type: "secret_text" },
+    ...Object.entries({
+      ALERT_FROM: settings.mailFrom,
+      ALERT_TO: settings.budget.recipients.join(","),
+      BUDGET_JPY: String(settings.budget.budgetJpy),
+      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
+      FIXED_COST_USD: String(settings.budget.fixedCostUsd),
+      JPY_PER_USD: String(settings.budget.jpyPerUsd),
+      RESERVE_USD: String(settings.budget.reserveUsd),
+    }).map(([name, text]) => ({ name, text, type: "plain_text" })),
+  ],
   compatibilityDate: "2026-09-16",
   compatibilityFlags: ["nodejs_compat"],
   mainModule: "index.js",
+  migrations: { newSqliteClasses: ["BudgetMonitor"], newTag: "v1" },
   modules: [
     {
-      name: "index.js",
-      contentType: "application/javascript+module",
       contentFile: budgetWorkerArtifact,
       contentSha256: budgetContentSha256,
+      contentType: "application/javascript+module",
+      name: "index.js",
     },
   ],
-  migrations: { newTag: "v1", newSqliteClasses: ["BudgetMonitor"] },
-  bindings: [
-    { type: "durable_object_namespace", name: "MONITOR", className: "BudgetMonitor" },
-    {
-      type: "send_email",
-      name: "EMAIL",
-      allowedSenderAddresses: [settings.mailFrom],
-      allowedDestinationAddresses: settings.budget.recipients,
-    },
-    { type: "secret_text", name: "BILLING_READ_TOKEN", text: pulumi.secret(billingToken.value) },
-    ...Object.entries({
-      CLOUDFLARE_ACCOUNT_ID: settings.accountId,
-      BUDGET_JPY: String(settings.budget.budgetJpy),
-      JPY_PER_USD: String(settings.budget.jpyPerUsd),
-      FIXED_COST_USD: String(settings.budget.fixedCostUsd),
-      RESERVE_USD: String(settings.budget.reserveUsd),
-      ALERT_FROM: settings.mailFrom,
-      ALERT_TO: settings.budget.recipients.join(","),
-    }).map(([name, text]) => ({ type: "plain_text", name, text })),
-  ],
+  workerId: budgetWorker.id,
 });
-const budgetDeployment = new cloudflare.WorkersDeployment("budget-deployment", {
+const budgetDeployment = new WorkersDeployment("budget-deployment", {
   accountId: settings.accountId,
   scriptName: budgetWorker.name,
   strategy: "percentage",
-  versions: [{ versionId: budgetVersion.id, percentage: 100 }],
+  versions: [{ percentage: 100, versionId: budgetVersion.id }],
 });
-const schedule = new cloudflare.WorkersCronTrigger(
+const schedule = new WorkersCronTrigger(
   "budget-schedule",
   {
     accountId: settings.accountId,
-    scriptName: budgetWorker.name,
     schedules: [{ cron: "17 */6 * * *" }],
+    scriptName: budgetWorker.name,
   },
   { dependsOn: [budgetDeployment] },
 );
 
-export const databaseId = database.id;
-export const applicationSettings = settings;
-export const budgetWorkerName = budgetWorker.name;
-export const budgetScheduleId = schedule.id;
+const databaseId = database.id;
+const applicationSettings = settings;
+const budgetWorkerName = budgetWorker.name;
+const budgetScheduleId = schedule.id;
+
+export {
+  applicationSettings,
+  authSecret,
+  budgetScheduleId,
+  budgetWorkerName,
+  databaseId,
+  otelHeaders,
+};

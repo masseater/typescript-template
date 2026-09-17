@@ -1,0 +1,81 @@
+import { describe, expect, it } from "vitest";
+import { lintProbe } from "./lint-harness.ts";
+
+const mockBypasses = [
+  ["import-alias", 'import { vi as tools } from "vitest"; tools.mock("owned");'],
+  ["rest-alias", 'import { vi } from "vitest"; const { ...tools } = vi; tools.mock("owned");'],
+  [
+    "destructure-assignment",
+    'import { vi } from "vitest"; let replace; ({ mock: replace } = vi); replace("owned");',
+  ],
+  ["namespace", 'import * as tools from "vitest"; tools.vi.fn();'],
+  [
+    "namespace-destructure",
+    'import * as tools from "vitest"; const { vi: kit } = tools; kit.spyOn({}, "method");',
+  ],
+  [
+    "nested-destructure",
+    'import * as tools from "vitest"; const { vi: { mock: replace } } = tools; replace("owned");',
+  ],
+  [
+    "method-destructure",
+    'import { vi } from "vitest"; const { mock: replace } = vi; replace("owned");',
+  ],
+  [
+    "alias-chain",
+    'import { vi as first } from "vitest"; const second = first; const third = second; third.doMock("owned");',
+  ],
+  [
+    "computed-method",
+    'import { vi as tools } from "vitest"; const key = "stub" + "Global"; tools[key]("fetch", () => null);',
+  ],
+  ["optional-method", 'import { vi as tools } from "vitest"; tools?.fn();'],
+  ["require-destructure", 'const { vi: tools } = require("vitest"); tools.fn();'],
+  ["dynamic-destructure", 'const { vi: tools } = await import("vitest"); tools.fn();'],
+  ["reassignment", 'import { vi } from "vitest"; let tools; tools = vi; tools.fn();'],
+  ["jest-alias", 'import { jest as tools } from "@jest/globals"; tools.spyOn({}, "method");'],
+  ["direct-spy-import", 'import { fn as replace } from "@vitest/spy"; replace();'],
+  ["node-test-mock", 'import { mock as tools } from "node:test"; tools.fn();'],
+] as const;
+
+const environmentBypasses = [
+  ["process-computed", 'export const value = process["env"]["SECRET"];'],
+  ["process-alias", "const runtime = process; export const value = runtime.env;"],
+  ["rest-process", "const { ...runtime } = process; export const value = runtime.env;"],
+  ["destructure-assignment", "let values; ({ env: values } = process); export { values };"],
+  ["meta-assignment", "let values; ({ env: values } = import.meta); export { values };"],
+  ["process-destructure", "export const { env: values } = process;"],
+  ["nested-destructure", "export const { env: { SECRET: value } } = process;"],
+  ["process-import", 'import runtime from "node:process"; export const value = runtime.env;'],
+  ["named-import", 'import { env as values } from "node:process"; export { values };'],
+  ["process-reexport", 'export { env as values } from "node:process";'],
+  ["process-require", 'const { env: values } = require("process"); export { values };'],
+  ["global-process", "export const value = globalThis.process.env;"],
+  [
+    "global-destructure",
+    "const { process: runtime } = globalThis; export const value = runtime.env;",
+  ],
+  ["meta-env", "export const value = import.meta.env;"],
+  ["meta-computed", 'export const value = import.meta["env"]["PUBLIC_SECRET"];'],
+  ["meta-alias", "const meta = import.meta; export const value = meta.env;"],
+  ["meta-destructure", "export const { env: values } = import.meta;"],
+  ["meta-nested", "export const { env: { SECRET: value } } = import.meta;"],
+] as const;
+
+describe("project lint rules on mock and environment bypasses", () => {
+  it.for(mockBypasses)("rejects mock bypass: %s", async ([_label, code]) => {
+    expect.hasAssertions();
+    const result = await lintProbe("probe.ts", code);
+    expect(result.error).toBeUndefined();
+    expect(result.status, result.output).toBe(1);
+    expect(result.output).toContain("project(no-internal-mocks)");
+  });
+
+  it.for(environmentBypasses)("rejects environment bypass: %s", async ([_label, code]) => {
+    expect.hasAssertions();
+    const result = await lintProbe("libs/shared/src/probe.ts", code);
+    expect(result.error).toBeUndefined();
+    expect(result.status, result.output).toBe(1);
+    expect(result.output).toContain("project(environment-boundary)");
+  });
+});

@@ -1,47 +1,17 @@
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
-import { initBrowserTelemetry } from "@template/observability/browser";
-import { connectBrowserSentry } from "@template/observability/sentry-browser";
-import { UIProvider } from "@template/ui";
+import { RootDocument } from "#components/root-document.tsx";
+import { createRootRoute } from "@tanstack/react-router";
 import styles from "@template/ui/styles.css?url";
-import { useEffect } from "react";
-import { routes } from "../telemetry-routes.ts";
 
-export const Route = createRootRoute({
+const Route = createRootRoute({
+  component: RootDocument,
   head: () => ({
+    links: [{ href: styles, rel: "stylesheet" }],
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { content: "width=device-width, initial-scale=1", name: "viewport" },
       { title: "管理者アプリ" },
     ],
-    links: [{ rel: "stylesheet", href: styles }],
   }),
-  component: Root,
 });
 
-function Root() {
-  useEffect(() => {
-    const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
-    const disconnectSentry = connectBrowserSentry();
-    return () => {
-      disconnectSentry();
-      telemetry.dispose();
-    };
-  }, []);
-  return (
-    <html lang="ja">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <UIProvider>
-          <nav aria-label="メイン">
-            <a href="/">ユーザー管理</a> <a href="/security">認証設定</a>{" "}
-            <a href="/login">ログイン</a>
-          </nav>
-          <Outlet />
-        </UIProvider>
-        <Scripts />
-      </body>
-    </html>
-  );
-}
+export { Route };

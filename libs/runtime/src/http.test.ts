@@ -1,47 +1,65 @@
-import * as v from "valibot";
-import { expect, test } from "vitest";
 import { apiResponse, readJson, secureResponse } from "./http.ts";
+import { describe, expect, it } from "vitest";
+import { number, parse } from "valibot";
 
-test("reads a bounded same-origin JSON mutation", async () => {
-  const body = { name: "利用者", profile: "自己紹介です。" };
-  const request = new Request("http://localhost:3001/api/profile", {
-    method: "PATCH",
-    headers: { origin: "http://localhost:3001", "content-type": "application/json" },
-    body: JSON.stringify(body),
+const origin = "http://localhost:3001";
+const maximumBodyBytes = 16_384;
+const status = { badRequest: 400, created: 201 };
+
+describe("json mutation requests", () => {
+  it("reads a bounded same-origin JSON mutation", async () => {
+    expect.hasAssertions();
+    const body = { name: "利用者", profile: "自己紹介です。" };
+    const request = new Request(`${origin}/api/profile`, {
+      body: JSON.stringify(body),
+      headers: { "content-type": "application/json", origin },
+      method: "PATCH",
+    });
+    await expect(readJson(request, origin)).resolves.toStrictEqual(body);
   });
-  expect(await readJson(request, "http://localhost:3001")).toEqual(body);
-});
 
-test.for([
-  { origin: "https://other.example.test", type: "application/json", body: "{}", statusCode: 403 },
-  { origin: "http://localhost:3001", type: "text/plain", body: "{}", statusCode: 415 },
-  { origin: "http://localhost:3001", type: "application/json", body: "{", statusCode: 400 },
-  {
-    origin: "http://localhost:3001",
-    type: "application/json",
-    body: "x".repeat(16385),
-    statusCode: 413,
-  },
-])("rejects mutation with status $statusCode", async ({ origin, type, body, statusCode }) => {
-  const request = new Request("http://localhost:3001/api/profile", {
-    method: "PATCH",
-    headers: { origin, "content-type": type },
-    body,
+  it.for([
+    { body: "{}", origin: "https://other.example.test", statusCode: 403, type: "application/json" },
+    { body: "{}", origin, statusCode: 415, type: "text/plain" },
+    { body: "{", origin, statusCode: 400, type: "application/json" },
+    {
+      body: "x".repeat(maximumBodyBytes + 1),
+      origin,
+      statusCode: 413,
+      type: "application/json",
+    },
+  ])("rejects mutation with status $statusCode", async (mutation) => {
+    expect.hasAssertions();
+    const request = new Request(`${origin}/api/profile`, {
+      body: mutation.body,
+      headers: { "content-type": mutation.type, origin: mutation.origin },
+      method: "PATCH",
+    });
+    await expect(readJson(request, origin)).rejects.toMatchObject({
+      statusCode: mutation.statusCode,
+    });
   });
-  await expect(readJson(request, "http://localhost:3001")).rejects.toMatchObject({ statusCode });
 });
 
-test("returns validation errors without echoing submitted values", async () => {
-  const response = await apiResponse(async () => v.parse(v.number(), "private-profile-text"));
-  expect(response.status).toBe(400);
-  expect(await response.json()).toEqual({ error: "入力内容を確認してください。" });
-});
+describe("api responses", () => {
+  it("returns validation errors without echoing submitted values", async () => {
+    expect.hasAssertions();
+    const response = await apiResponse(async () =>
+      parse(number(), await Promise.resolve("private-profile-text")),
+    );
+    expect(response.status).toBe(status.badRequest);
+    await expect(response.json()).resolves.toStrictEqual({ error: "入力内容を確認してください。" });
+  });
 
-test("keeps status and body while preventing cached private responses", async () => {
-  const response = secureResponse(Response.json({ ready: true }, { status: 201 }));
-  expect(response.status).toBe(201);
-  expect(await response.json()).toEqual({ ready: true });
-  expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(response.headers.get("referrer-policy")).toBe("no-referrer");
-  expect(response.headers.get("x-frame-options")).toBe("DENY");
+  it("keeps status and body while preventing cached private responses", async () => {
+    expect.hasAssertions();
+    const response = secureResponse(Response.json({ ready: true }, { status: status.created }));
+    expect(response.status).toBe(status.created);
+    await expect(response.json()).resolves.toStrictEqual({ ready: true });
+    expect(Object.fromEntries(response.headers)).toMatchObject({
+      "cache-control": "no-store",
+      "referrer-policy": "no-referrer",
+      "x-frame-options": "DENY",
+    });
+  });
 });

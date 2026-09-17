@@ -1,13 +1,6 @@
+import { LoginPage } from "#components/login-page.tsx";
 import { createFileRoute } from "@tanstack/react-router";
-import { Page } from "@template/ui";
-import { LoginForm } from "@template/ui/auth";
 
-export const Route = createFileRoute("/login")({ component: Login });
-function Login() {
-  return (
-    <Page title="ログイン">
-      <LoginForm />
-      <a href="/signup">新規登録</a>
-    </Page>
-  );
-}
+const Route = createFileRoute("/login")({ component: LoginPage });
+
+export { Route };

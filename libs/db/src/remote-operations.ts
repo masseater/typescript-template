@@ -1,92 +1,136 @@
+import {
+  array,
+  email,
+  integer,
+  literal,
+  minLength,
+  minValue,
+  number,
+  object,
+  parse,
+  pipe,
+  readonly,
+  regex,
+  safeParse,
+  string,
+  trim,
+} from "valibot";
+import type { InferOutput } from "valibot";
+import { compileBootstrapStatement } from "./bootstrap-statement.ts";
 import { fileURLToPath } from "node:url";
 import { readMigrationFiles } from "drizzle-orm/migrator";
-import * as v from "valibot";
-import { compileBootstrapStatement } from "./bootstrap-statement.ts";
 
-export interface DatabaseExecutor {
-  batch(
-    queries: readonly { sql: string; params: (string | number | null)[] }[],
-  ): Promise<unknown[][]>;
+type RemoteQuery = Readonly<{ params: readonly (string | number | null)[]; sql: string }>;
+
+type DatabaseExecutor = Readonly<{
+  batch: (queries: readonly RemoteQuery[]) => Promise<unknown[][]>;
+}>;
+
+const statementSchema = pipe(string(), trim(), minLength(1));
+const migrationSchema = object({
+  folderMillis: pipe(number(), integer(), minValue(1)),
+  hash: pipe(string(), regex(/^[a-f0-9]{64}$/u)),
+  sql: pipe(array(statementSchema), minLength(1), readonly()),
+});
+const migrationsSchema = pipe(array(migrationSchema), minLength(1));
+const historySchema = array(object({ created_at: number(), hash: string() }));
+const bootstrappedAdminSchema = object({
+  email: pipe(string(), email()),
+  id: string(),
+  role: literal("admin"),
+});
+
+type Migration = Readonly<InferOutput<typeof migrationSchema>>;
+
+function isChronological(migrations: readonly Migration[]): boolean {
+  return migrations.every((item, index) => {
+    const previous = migrations[index - 1];
+    return previous === undefined || previous.folderMillis < item.folderMillis;
+  });
 }
 
-const migrationSchema = v.object({
-  sql: v.pipe(v.array(v.pipe(v.string(), v.trim(), v.minLength(1))), v.minLength(1)),
-  folderMillis: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  hash: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
-});
-type Migration = v.InferOutput<typeof migrationSchema>;
-
-export function loadRemoteMigrations(): Migration[] {
+function loadRemoteMigrations(): Migration[] {
   try {
-    const migrations = v.parse(
-      v.pipe(v.array(migrationSchema), v.minLength(1)),
-      readMigrationFiles({
-        migrationsFolder: fileURLToPath(new URL("../migrations/", import.meta.url)),
-      }),
-    );
-    if (
-      migrations.some(
-        (item, index) => index > 0 && item.folderMillis <= migrations[index - 1]!.folderMillis,
-      )
-    )
+    const migrationsFolder = fileURLToPath(new URL("../migrations/", import.meta.url));
+    const migrations = parse(migrationsSchema, readMigrationFiles({ migrationsFolder }));
+    if (!isChronological(migrations)) {
       throw new Error("invalid");
+    }
     return migrations;
   } catch {
     throw new Error("REMOTE_MIGRATIONS_INVALID");
   }
 }
 
-async function readHistory(executor: DatabaseExecutor, migrations: readonly Migration[]) {
+async function readHistory(
+  executor: DatabaseExecutor,
+  migrations: readonly Migration[],
+): Promise<number> {
   const [rows] = await executor.batch([
-    { sql: "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at", params: [] },
+    { params: [], sql: "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at" },
   ]);
-  const parsed = v.safeParse(v.array(v.object({ hash: v.string(), created_at: v.number() })), rows);
+  const parsed = safeParse(historySchema, rows);
   if (
     !parsed.success ||
-    parsed.output.some(
-      (item, index) =>
-        item.hash !== migrations[index]?.hash ||
-        item.created_at !== migrations[index]?.folderMillis,
-    )
-  )
+    parsed.output.some((item, index) => {
+      const expected = migrations[index];
+      return (
+        expected === undefined ||
+        item.hash !== expected.hash ||
+        item.created_at !== expected.folderMillis
+      );
+    })
+  ) {
     throw new Error("REMOTE_MIGRATION_HISTORY_MISMATCH");
+  }
   return parsed.output.length;
 }
 
-export async function migrateDatabase(
+function migrationQueries(migration: Migration): RemoteQuery[] {
+  return [
+    ...migration.sql.map((statement) => ({ params: [], sql: statement })),
+    {
+      params: [migration.hash, migration.folderMillis],
+      sql: "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
+    },
+  ];
+}
+
+async function migrateDatabase(
   executor: DatabaseExecutor,
   migrations: readonly Migration[],
-) {
+): Promise<number> {
   await executor.batch([
     {
-      sql: "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL UNIQUE, created_at NUMERIC NOT NULL UNIQUE)",
       params: [],
+      sql: "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL UNIQUE, created_at NUMERIC NOT NULL UNIQUE)",
     },
   ]);
   const applied = await readHistory(executor, migrations);
   for (const migration of migrations.slice(applied)) {
-    await executor.batch([
-      ...migration.sql.map((sql) => ({ sql, params: [] })),
-      {
-        sql: "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
-        params: [migration.hash, migration.folderMillis],
-      },
-    ]);
+    await executor.batch(migrationQueries(migration));
   }
-  if ((await readHistory(executor, migrations)) !== migrations.length)
+  const recorded = await readHistory(executor, migrations);
+  if (recorded !== migrations.length) {
     throw new Error("REMOTE_MIGRATION_HISTORY_MISMATCH");
+  }
   return migrations.length - applied;
 }
 
-export async function bootstrapDatabase(executor: DatabaseExecutor, email: string) {
+async function bootstrapDatabase(executor: DatabaseExecutor, address: string): Promise<void> {
   const migrations = loadRemoteMigrations();
-  if ((await readHistory(executor, migrations)) !== migrations.length)
+  const recorded = await readHistory(executor, migrations);
+  if (recorded !== migrations.length) {
     throw new Error("REMOTE_MIGRATIONS_REQUIRED");
-  const [rows] = await executor.batch([compileBootstrapStatement(email)]);
-  if (rows?.length !== 1) throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
-  const result = v.safeParse(
-    v.object({ id: v.string(), email: v.pipe(v.string(), v.email()), role: v.literal("admin") }),
-    rows[0],
-  );
-  if (!result.success) throw new Error("REMOTE_RESPONSE_INVALID");
+  }
+  const [rows] = await executor.batch([compileBootstrapStatement(address)]);
+  if (rows?.length !== 1) {
+    throw new Error("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
+  }
+  if (!safeParse(bootstrappedAdminSchema, rows[0]).success) {
+    throw new Error("REMOTE_RESPONSE_INVALID");
+  }
 }
+
+export { bootstrapDatabase, loadRemoteMigrations, migrateDatabase };
+export type { DatabaseExecutor, RemoteQuery };

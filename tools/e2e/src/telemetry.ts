@@ -1,98 +1,207 @@
-import { ensure, grafana, json, object, poll, string } from "./support.ts";
-import type { Browser } from "./browser.ts";
+import type { ObservedRequest, Service } from "./observation.ts";
 import { assertPrivate, relatedSpans, traceSpans } from "./observation.ts";
-import type { ObservedRequest } from "./observation.ts";
+import { ensure, grafana, json, object, poll, string } from "./support.ts";
+import { httpStatus, requestTimeout } from "./http.ts";
+import type { BrowserSession } from "./browser.ts";
 
-async function query(route: string, parameters: Record<string, string>) {
+const millisecondsPerSecond = 1000;
+const correlationLookbackSeconds = 300;
+const telemetryTimeout = 60_000;
+const privacyLogLimit = 5000;
+const lokiRange = "loki/loki/api/v1/query_range";
+const prometheusQuery = "prometheus/api/v1/query";
+const prometheusExemplars = "prometheus/api/v1/query_exemplars";
+
+interface CorrelationExpectation {
+  readonly forbidden: readonly string[];
+  readonly observed?: ObservedRequest;
+  readonly service: Service;
+}
+
+interface CorrelationContext extends CorrelationExpectation {
+  readonly end: string;
+  readonly requestId: string;
+  readonly start: string;
+  readonly traceId: string;
+}
+
+interface Participant {
+  readonly browser: BrowserSession;
+  readonly service: Service;
+}
+
+function currentSecond(): number {
+  return Math.floor(Date.now() / millisecondsPerSecond);
+}
+
+function nextSecond(): string {
+  return String(Math.ceil(Date.now() / millisecondsPerSecond));
+}
+
+async function query(
+  route: string,
+  parameters: Readonly<Record<string, string>>,
+): Promise<unknown> {
   return json(
     `${grafana}/api/datasources/proxy/uid/${route}?${new URLSearchParams(parameters).toString()}`,
   );
 }
 
-export async function verifyCorrelation(
-  response: { requestId: unknown; traceparent: unknown },
-  service: "user" | "admin" | "wiki",
-  forbidden: readonly string[],
-  observed?: ObservedRequest,
-) {
-  const requestId = string(response.requestId);
-  const traceparent = string(response.traceparent);
-  ensure(/^[0-9a-f-]{36}$/.test(requestId), "E2E_REQUEST_ID_MISSING");
-  ensure(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/.test(traceparent), "E2E_TRACE_CONTEXT_MISSING");
-  const traceId = traceparent.split("-")[1];
-  ensure(traceId, "E2E_TRACE_ID_MISSING");
-  const start = String(Math.floor(Date.now() / 1000) - 300);
-  await poll(
-    async () => {
-      const end = String(Math.ceil(Date.now() / 1000));
-      const logs = await query("loki/loki/api/v1/query_range", {
-        query: `{service_name="${service}-server"} | request_id="${requestId}"`,
-        start,
-        end,
-        limit: "100",
-      });
-      const serialized = JSON.stringify(logs);
-      assertPrivate(logs, forbidden);
-      if (!serialized.includes(traceId)) return false;
-      const traceResponse = await fetch(
-        `${grafana}/api/datasources/proxy/uid/tempo/api/traces/${traceId}`,
-        { signal: AbortSignal.timeout(10_000) },
-      );
-      if (traceResponse.status === 404) return false;
-      ensure(traceResponse.ok, "E2E_TRACE_QUERY_FAILED");
-      const traces: unknown = await traceResponse.json();
-      const traceText = JSON.stringify(traces);
-      assertPrivate(traces, forbidden);
-      if (!traceText.includes(`${service}-server`)) return false;
-      if (observed && !relatedSpans(traceSpans(traces), observed, service)) return false;
-      const metrics = object(
-        await query("prometheus/api/v1/query", {
-          query: `http_server_request_duration_seconds_count{service_name="${service}-server"}`,
-        }),
-      );
-      const data = object(metrics["data"]);
-      assertPrivate(metrics, forbidden);
-      if (!Array.isArray(data["result"]) || data["result"].length === 0) return false;
-      const exemplars = await query("prometheus/api/v1/query_exemplars", {
-        query: `http_server_request_duration_seconds_bucket{service_name="${service}-server"}`,
-        start,
-        end,
-      });
-      assertPrivate(exemplars, forbidden);
-      if (!JSON.stringify(exemplars).includes(traceId)) return false;
-      if (observed?.clientTraceparent) {
-        const browserLogs = await query("loki/loki/api/v1/query_range", {
-          query: `{service_name="${service}-browser"} | request_id="${requestId}"`,
-          start,
-          end,
-          limit: "100",
-        });
-        const browserExemplars = await query("prometheus/api/v1/query_exemplars", {
-          query: `http_client_request_duration_seconds_bucket{service_name="${service}-browser"}`,
-          start,
-          end,
-        });
-        assertPrivate(browserLogs, forbidden);
-        assertPrivate(browserExemplars, forbidden);
-        if (
-          !JSON.stringify(browserLogs).includes(traceId) ||
-          !JSON.stringify(browserExemplars).includes(traceId)
-        )
-          return false;
-      }
-      return true;
-    },
-    (complete) => complete,
-    "E2E_REAL_LOG_TRACE_METRIC_CORRELATION_MISSING",
-    60_000,
+async function privateQuery(
+  context: CorrelationContext,
+  route: string,
+  parameters: Readonly<Record<string, string>>,
+): Promise<string> {
+  const result = await query(route, parameters);
+  assertPrivate(result, context.forbidden);
+  return JSON.stringify(result);
+}
+
+async function serverLogsCorrelated(context: CorrelationContext): Promise<boolean> {
+  const logs = await privateQuery(context, lokiRange, {
+    end: context.end,
+    limit: "100",
+    query: `{service_name="${context.service}-server"} | request_id="${context.requestId}"`,
+    start: context.start,
+  });
+  return logs.includes(context.traceId);
+}
+
+async function traceCorrelated(context: CorrelationContext): Promise<boolean> {
+  const traceResponse = await fetch(
+    `${grafana}/api/datasources/proxy/uid/tempo/api/traces/${context.traceId}`,
+    { signal: AbortSignal.timeout(requestTimeout.service) },
+  );
+  if (traceResponse.status === httpStatus.notFound) {
+    return false;
+  }
+  ensure(traceResponse.ok, "E2E_TRACE_QUERY_FAILED");
+  const traces: unknown = await traceResponse.json();
+  assertPrivate(traces, context.forbidden);
+  if (!JSON.stringify(traces).includes(`${context.service}-server`)) {
+    return false;
+  }
+  return (
+    context.observed === undefined ||
+    relatedSpans(traceSpans(traces), context.observed, context.service)
   );
 }
 
-export async function verifyJourneyTelemetry(
-  participants: readonly { browser: Browser; service: "user" | "admin" | "wiki" }[],
+async function metricsCorrelated(context: CorrelationContext): Promise<boolean> {
+  const metrics = object(
+    await query(prometheusQuery, {
+      query: `http_server_request_duration_seconds_count{service_name="${context.service}-server"}`,
+    }),
+  );
+  const data = object(metrics["data"]);
+  assertPrivate(metrics, context.forbidden);
+  if (!Array.isArray(data["result"]) || data["result"].length === 0) {
+    return false;
+  }
+  const exemplars = await privateQuery(context, prometheusExemplars, {
+    end: context.end,
+    query: `http_server_request_duration_seconds_bucket{service_name="${context.service}-server"}`,
+    start: context.start,
+  });
+  return exemplars.includes(context.traceId);
+}
+
+async function browserCorrelated(context: CorrelationContext): Promise<boolean> {
+  const clientTraceparent = context.observed?.clientTraceparent;
+  if (clientTraceparent === undefined || clientTraceparent.length === 0) {
+    return true;
+  }
+  const browserLogs = await privateQuery(context, lokiRange, {
+    end: context.end,
+    limit: "100",
+    query: `{service_name="${context.service}-browser"} | request_id="${context.requestId}"`,
+    start: context.start,
+  });
+  const browserExemplars = await privateQuery(context, prometheusExemplars, {
+    end: context.end,
+    query: `http_client_request_duration_seconds_bucket{service_name="${context.service}-browser"}`,
+    start: context.start,
+  });
+  return browserLogs.includes(context.traceId) && browserExemplars.includes(context.traceId);
+}
+
+async function correlationComplete(context: CorrelationContext): Promise<boolean> {
+  return (
+    (await serverLogsCorrelated(context)) &&
+    (await traceCorrelated(context)) &&
+    (await metricsCorrelated(context)) &&
+    (await browserCorrelated(context))
+  );
+}
+
+async function verifyCorrelation(
+  response: Readonly<{ requestId: unknown; traceparent: unknown }>,
+  expectation: CorrelationExpectation,
+): Promise<void> {
+  const requestId = string(response.requestId);
+  const traceparent = string(response.traceparent);
+  ensure(/^[0-9a-f-]{36}$/u.test(requestId), "E2E_REQUEST_ID_MISSING");
+  ensure(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/u.test(traceparent), "E2E_TRACE_CONTEXT_MISSING");
+  const [, traceId] = traceparent.split("-");
+  ensure(traceId !== undefined, "E2E_TRACE_ID_MISSING");
+  const start = String(currentSecond() - correlationLookbackSeconds);
+  await poll({
+    accept: (complete) => complete,
+    code: "E2E_REAL_LOG_TRACE_METRIC_CORRELATION_MISSING",
+    read: async () =>
+      correlationComplete({ ...expectation, end: nextSecond(), requestId, start, traceId }),
+    timeout: telemetryTimeout,
+  });
+}
+
+function logEntryCount(logs: Readonly<Record<string, unknown>>): number {
+  const streams = object(logs["data"])["result"];
+  ensure(Array.isArray(streams), "E2E_LOG_RESULT_INVALID");
+  let entries = 0;
+  for (const stream of streams) {
+    const { values } = object(stream);
+    ensure(Array.isArray(values), "E2E_LOG_VALUES_INVALID");
+    entries += values.length;
+  }
+  return entries;
+}
+
+async function verifyServicePrivacy(
+  service: Service,
+  secrets: readonly string[],
+  started: number,
+): Promise<void> {
+  const logs = object(
+    await query(lokiRange, {
+      end: nextSecond(),
+      limit: String(privacyLogLimit),
+      query: `{service_name=~"${service}-(server|browser)"}`,
+      start: String(started),
+    }),
+  );
+  assertPrivate(logs, secrets);
+  const entries = logEntryCount(logs);
+  ensure(entries > 0 && entries < privacyLogLimit, "E2E_PRIVACY_LOG_WINDOW_INCOMPLETE");
+  const metrics = await query(prometheusQuery, {
+    query: `{service_name=~"${service}-(server|browser)"}`,
+  });
+  assertPrivate(metrics, secrets);
+}
+
+function observedRequest(
+  requests: readonly Readonly<{ request: ObservedRequest }>[],
+  path: string,
+): boolean {
+  return requests.some(
+    ({ request }) => request.path === path && request.status < httpStatus.badRequest,
+  );
+}
+
+async function verifyJourneyTelemetry(
+  participants: readonly Participant[],
   forbidden: readonly string[],
   started: number,
-) {
+): Promise<void> {
   const observations = await Promise.all(
     participants.map(async ({ browser, service }) => ({
       ...(await browser.finishObservation()),
@@ -100,72 +209,49 @@ export async function verifyJourneyTelemetry(
     })),
   );
   const secrets = [...new Set([...forbidden, ...observations.flatMap((entry) => entry.secrets)])];
-  const requests = new Map<
-    string,
-    { request: ObservedRequest; service: "user" | "admin" | "wiki" }
-  >();
-  for (const observation of observations) {
-    for (const request of observation.requests)
-      requests.set(request.requestId, { request, service: observation.service });
-  }
-  ensure(requests.size > 0, "E2E_OPERATION_OBSERVATIONS_MISSING");
+  const requests = [
+    ...new Map(
+      observations.flatMap(({ requests: observed, service }) =>
+        observed.map((request) => [request.requestId, { request, service }] as const),
+      ),
+    ).values(),
+  ];
+  ensure(requests.length > 0, "E2E_OPERATION_OBSERVATIONS_MISSING");
+  ensure(observedRequest(requests, "/api/auth/sign-up/email"), "E2E_SIGNUP_OBSERVATION_MISSING");
   ensure(
-    [...requests.values()].some(
-      ({ request }) => request.path === "/api/auth/sign-up/email" && request.status < 400,
-    ),
-    "E2E_SIGNUP_OBSERVATION_MISSING",
-  );
-  ensure(
-    [...requests.values()].some(
-      ({ request }) => request.path === "/api/auth/verify-email" && request.status < 400,
-    ),
+    observedRequest(requests, "/api/auth/verify-email"),
     "E2E_EMAIL_VERIFICATION_OBSERVATION_MISSING",
   );
-  for (const { request, service } of requests.values())
-    await verifyCorrelation(request, service, secrets, request);
-  for (const service of new Set(participants.map((participant) => participant.service))) {
-    const logs = object(
-      await query("loki/loki/api/v1/query_range", {
-        query: `{service_name=~"${service}-(server|browser)"}`,
-        start: String(started),
-        end: String(Math.ceil(Date.now() / 1000)),
-        limit: "5000",
-      }),
-    );
-    assertPrivate(logs, secrets);
-    const streams = object(logs["data"])["result"];
-    ensure(Array.isArray(streams), "E2E_LOG_RESULT_INVALID");
-    const entries = streams.reduce((total: number, stream: unknown) => {
-      const values = object(stream)["values"];
-      ensure(Array.isArray(values), "E2E_LOG_VALUES_INVALID");
-      return total + values.length;
-    }, 0);
-    ensure(entries > 0 && entries < 5000, "E2E_PRIVACY_LOG_WINDOW_INCOMPLETE");
-    const metrics = await query("prometheus/api/v1/query", {
-      query: `{service_name=~"${service}-(server|browser)"}`,
-    });
-    assertPrivate(metrics, secrets);
+  for (const { request, service } of requests) {
+    await verifyCorrelation(request, { forbidden: secrets, observed: request, service });
   }
+  await Promise.all(
+    [...new Set(participants.map((participant) => participant.service))].map(async (service) => {
+      await verifyServicePrivacy(service, secrets, started);
+    }),
+  );
 }
 
-export async function verifyBrowserSignals(service: "user" | "admin" | "wiki", start: number) {
-  await poll(
-    async () => {
-      const logs = await query("loki/loki/api/v1/query_range", {
+async function verifyBrowserSignals(service: Service, start: number): Promise<void> {
+  await poll({
+    accept: (complete) => complete,
+    code: "E2E_BROWSER_HTTP_EXCEPTION_VITALS_MISSING",
+    read: async () => {
+      const logs = await query(lokiRange, {
+        end: nextSecond(),
+        limit: "1000",
         query: `{service_name="${service}-browser"}`,
         start: String(start),
-        end: String(Math.ceil(Date.now() / 1000)),
-        limit: "1000",
       });
       const text = JSON.stringify(logs);
       return (
         text.includes("http.client.request") &&
         text.includes("browser.error") &&
-        /LCP|FCP|TTFB/.test(text)
+        /LCP|FCP|TTFB/u.test(text)
       );
     },
-    (complete) => complete,
-    "E2E_BROWSER_HTTP_EXCEPTION_VITALS_MISSING",
-    60_000,
-  );
+    timeout: telemetryTimeout,
+  });
 }
+
+export { currentSecond, verifyBrowserSignals, verifyCorrelation, verifyJourneyTelemetry };

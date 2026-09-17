@@ -1,14 +1,13 @@
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  root: fileURLToPath(new URL(".", import.meta.url)),
+  root: import.meta.dirname,
   test: {
-    include: ["src/journey.test.ts", "src/wiki.test.ts"],
-    testTimeout: 600_000,
-    hookTimeout: 180_000,
     fileParallelism: false,
+    hookTimeout: 180_000,
+    include: ["src/journey.test.ts", "src/wiki.test.ts"],
     maxWorkers: 1,
     retry: 0,
+    testTimeout: 600_000,
   },
 });

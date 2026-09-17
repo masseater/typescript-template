@@ -1,17 +1,23 @@
+import { NotFound } from "./components/not-found.tsx";
+import type { Router } from "@tanstack/react-router";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
-export function getRouter() {
+type WikiRouter = Router<typeof routeTree>;
+
+function getRouter(): WikiRouter {
   return createRouter({
+    defaultNotFoundComponent: NotFound,
+    defaultPreloadStaleTime: 0,
     routeTree,
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
-    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
   });
 }
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof getRouter>;
+    router: WikiRouter;
   }
 }
+
+export { getRouter };

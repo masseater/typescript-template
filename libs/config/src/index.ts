@@ -1,48 +1,71 @@
+import {
+  check,
+  custom,
+  email,
+  minLength,
+  object,
+  optional,
+  parse,
+  pipe,
+  record,
+  regex,
+  string,
+  url,
+} from "valibot";
 import type { D1Database } from "@cloudflare/workers-types";
-import * as v from "valibot";
+import type { InferOutput } from "valibot";
 
-const absoluteUrl = v.pipe(v.string(), v.url());
-export const sentrySchemas = {
+interface EmailMessage {
+  readonly to: string;
+  readonly from: string;
+  readonly subject: string;
+  readonly text: string;
+}
+interface EmailBinding {
+  readonly send: (message: EmailMessage) => Promise<unknown>;
+}
+interface AssetBinding {
+  readonly fetch: (request: Request) => Promise<Response>;
+}
+interface AiBinding {
+  readonly run: (model: string, inputs: { readonly text: readonly string[] }) => Promise<unknown>;
+}
+interface SentryConfig {
+  readonly dsn: string;
+  readonly environment: string;
+  readonly release: string;
+}
+
+const minimumAuthSecretLength = 32;
+const mailpitTimeoutMilliseconds = 10_000;
+
+const absoluteUrl = pipe(string(), url());
+const sentrySchemas = {
   dsn: absoluteUrl,
-  environment: v.pipe(v.string(), v.regex(/^[a-z0-9.-]{1,64}$/)),
-  release: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9._-]{1,128}$/)),
+  environment: pipe(string(), regex(/^[a-z0-9.-]{1,64}$/u)),
+  release: pipe(string(), regex(/^[a-zA-Z0-9._-]{1,128}$/u)),
 };
-const origin = v.pipe(
+const origin = pipe(
   absoluteUrl,
-  v.check((value) => new URL(value).origin === value, "An origin without a path is required"),
+  check((value) => new URL(value).origin === value, "An origin without a path is required"),
 );
-const scalarSchema = v.object({
+const sentryFields = {
+  SENTRY_DSN: optional(sentrySchemas.dsn),
+  SENTRY_ENVIRONMENT: optional(sentrySchemas.environment),
+  SENTRY_RELEASE: optional(sentrySchemas.release),
+};
+const scalarSchema = object({
   APP_ORIGIN: origin,
-  AUTH_SECRET: v.pipe(v.string(), v.minLength(32)),
+  AUTH_SECRET: pipe(string(), minLength(minimumAuthSecretLength)),
+  EMAIL_FROM: pipe(string(), email()),
+  MAILPIT_URL: optional(origin),
   OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
-  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
-  EMAIL_FROM: v.pipe(v.string(), v.email()),
-  MAILPIT_URL: v.optional(origin),
-  SENTRY_DSN: v.optional(sentrySchemas.dsn),
-  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
-  SENTRY_RELEASE: v.optional(sentrySchemas.release),
+  OTEL_EXPORTER_OTLP_HEADERS: optional(string()),
+  ...sentryFields,
 });
+const otelHeadersSchema = record(string(), string());
 
-const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
-
-export function isLocalDevelopmentOrigin(value: string): boolean {
-  const url = new URL(value);
-  return (
-    loopbackHosts.includes(url.hostname) ||
-    (url.protocol === "https:" && /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/.test(url.hostname))
-  );
-}
-
-function requireSecureOrigin(value: string) {
-  const url = new URL(value);
-  if (!loopbackHosts.includes(url.hostname) && url.protocol !== "https:")
-    throw new Error("HTTPS is required outside localhost");
-}
-
-export type EmailMessage = { to: string; from: string; subject: string; text: string };
-export type EmailBinding = { send(message: EmailMessage): Promise<unknown> };
-type AssetBinding = { fetch(request: Request): Promise<Response> };
-type AiBinding = { run(model: string, inputs: { text: string[] }): Promise<unknown> };
+const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 function hasFunction(value: unknown, key: string): boolean {
   return (
@@ -53,118 +76,164 @@ function hasFunction(value: unknown, key: string): boolean {
   );
 }
 
-export function readEnvironment(input: unknown) {
-  const scalars = v.parse(scalarSchema, input);
-  const sentry =
-    scalars.SENTRY_DSN === undefined
-      ? null
-      : {
-          dsn: scalars.SENTRY_DSN,
-          environment: v.parse(sentrySchemas.environment, scalars.SENTRY_ENVIRONMENT),
-          release: v.parse(sentrySchemas.release, scalars.SENTRY_RELEASE),
-        };
+const assetBindingSchema = custom<AssetBinding>((value) => hasFunction(value, "fetch"));
+const bindingSchema = object({
+  ASSETS: assetBindingSchema,
+  DB: custom<D1Database>((value) => hasFunction(value, "prepare") && hasFunction(value, "batch")),
+  EMAIL: optional(custom<EmailBinding>((value) => hasFunction(value, "send"))),
+});
+const wikiSchema = object({
+  AI: optional(custom<AiBinding>((value) => hasFunction(value, "run"))),
+  APP_ORIGIN: origin,
+  ASSETS: assetBindingSchema,
+  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
+  OTEL_EXPORTER_OTLP_HEADERS: optional(string()),
+  ...sentryFields,
+});
+
+type SentryInput = Readonly<
+  Pick<InferOutput<typeof scalarSchema>, "SENTRY_DSN" | "SENTRY_ENVIRONMENT" | "SENTRY_RELEASE">
+>;
+type Environment = InferOutput<typeof scalarSchema> & {
+  local: boolean;
+  otelHeaders: Record<string, string>;
+  sentry: SentryConfig | undefined;
+};
+type AppConfig = Environment & InferOutput<typeof bindingSchema>;
+interface WikiConfig {
+  AI: AiBinding | undefined;
+  APP_ORIGIN: string;
+  ASSETS: AssetBinding;
+  OTEL_EXPORTER_OTLP_ENDPOINT: string;
+  otelHeaders: Record<string, string>;
+  sentry: SentryConfig | undefined;
+}
+
+function isLocalDevelopmentOrigin(value: string): boolean {
+  const { hostname, protocol } = new URL(value);
+  return (
+    loopbackHosts.has(hostname) ||
+    (protocol === "https:" && /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/u.test(hostname))
+  );
+}
+
+function requireSecureOrigin(value: string): void {
+  const { hostname, protocol } = new URL(value);
+  if (!loopbackHosts.has(hostname) && protocol !== "https:") {
+    throw new Error("HTTPS is required outside localhost");
+  }
+}
+
+function parseSentry(input: SentryInput): SentryConfig | undefined {
+  if (input.SENTRY_DSN === undefined) {
+    return undefined;
+  }
+  return {
+    dsn: input.SENTRY_DSN,
+    environment: parse(sentrySchemas.environment, input.SENTRY_ENVIRONMENT),
+    release: parse(sentrySchemas.release, input.SENTRY_RELEASE),
+  };
+}
+
+function parseOtelHeaders(value: string | undefined): Record<string, string> {
+  if (value === undefined) {
+    return {};
+  }
+  return parse(otelHeadersSchema, JSON.parse(value) as unknown);
+}
+
+function readEnvironment(input: unknown): Environment {
+  const scalars = parse(scalarSchema, input);
+  const sentry = parseSentry(scalars);
   requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   if (
-    scalars.MAILPIT_URL &&
-    (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
-  )
+    scalars.MAILPIT_URL !== undefined &&
+    (!local || !loopbackHosts.has(new URL(scalars.MAILPIT_URL).hostname))
+  ) {
     throw new Error("Mailpit is restricted to local development");
-  const otelHeaders =
-    scalars.OTEL_EXPORTER_OTLP_HEADERS === undefined
-      ? {}
-      : v.parse(
-          v.record(v.string(), v.string()),
-          JSON.parse(scalars.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
-        );
-  return { ...scalars, otelHeaders, local, sentry };
+  }
+  const otelHeaders = parseOtelHeaders(scalars.OTEL_EXPORTER_OTLP_HEADERS);
+  return { ...scalars, local, otelHeaders, sentry };
 }
 
-export function readConfig(input: unknown) {
+function readConfig(input: unknown): AppConfig {
   const scalars = readEnvironment(input);
-  const bindings = v.parse(
-    v.object({
-      DB: v.custom<D1Database>(
-        (value) => hasFunction(value, "prepare") && hasFunction(value, "batch"),
-      ),
-      ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
-      EMAIL: v.optional(v.custom<EmailBinding>((value) => hasFunction(value, "send"))),
-    }),
-    input,
-  );
-  if (!scalars.MAILPIT_URL && !bindings.EMAIL)
+  const bindings = parse(bindingSchema, input);
+  if (scalars.MAILPIT_URL === undefined && !bindings.EMAIL) {
     throw new Error("An email delivery binding is required");
+  }
   return { ...scalars, ...bindings };
 }
 
-export type AppConfig = ReturnType<typeof readConfig>;
+async function sendThroughMailpit(
+  mailpitUrl: string,
+  message: EmailMessage,
+  traceparent: string | undefined,
+): Promise<void> {
+  const response = await fetch(`${mailpitUrl}/api/v1/send`, {
+    body: JSON.stringify({
+      From: { Email: message.from },
+      Subject: message.subject,
+      Text: message.text,
+      To: [{ Email: message.to }],
+    }),
+    headers: {
+      "content-type": "application/json",
+      ...(traceparent === undefined || traceparent === "" ? {} : { traceparent }),
+    },
+    method: "POST",
+    redirect: "manual",
+    signal: AbortSignal.timeout(mailpitTimeoutMilliseconds),
+  });
+  if (!response.ok) {
+    throw new Error(`Email delivery failed (${response.status})`);
+  }
+}
 
-export async function sendVerificationEmail(
-  config: Pick<AppConfig, "APP_ORIGIN" | "EMAIL_FROM" | "MAILPIT_URL" | "EMAIL">,
-  message: { email: string; url: string },
+async function sendVerificationEmail(
+  config: Readonly<Pick<AppConfig, "APP_ORIGIN" | "EMAIL_FROM" | "MAILPIT_URL" | "EMAIL">>,
+  message: Readonly<{ email: string; url: string }>,
   traceparent?: string,
 ): Promise<void> {
-  if (new URL(message.url).origin !== config.APP_ORIGIN)
+  if (new URL(message.url).origin !== config.APP_ORIGIN) {
     throw new Error("Email link origin mismatch");
-  const email: EmailMessage = {
+  }
+  const verification: EmailMessage = {
     from: config.EMAIL_FROM,
-    to: message.email,
     subject: "メールアドレスの確認",
     text: `次のリンクでメールアドレスを確認してください。\n${message.url}`,
+    to: message.email,
   };
-  if (config.MAILPIT_URL) {
-    const response = await fetch(`${config.MAILPIT_URL}/api/v1/send`, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...(traceparent ? { traceparent } : {}) },
-      body: JSON.stringify({
-        From: { Email: email.from },
-        To: [{ Email: email.to }],
-        Subject: email.subject,
-        Text: email.text,
-      }),
-      signal: AbortSignal.timeout(10_000),
-      redirect: "manual",
-    });
-    if (!response.ok) throw new Error(`Email delivery failed (${response.status})`);
+  if (config.MAILPIT_URL !== undefined) {
+    await sendThroughMailpit(config.MAILPIT_URL, verification, traceparent);
     return;
   }
-  if (!config.EMAIL) throw new Error("Email delivery binding is missing");
-  await config.EMAIL.send(email);
+  if (!config.EMAIL) {
+    throw new Error("Email delivery binding is missing");
+  }
+  await config.EMAIL.send(verification);
 }
 
-const wikiSchema = v.object({
-  APP_ORIGIN: origin,
-  OTEL_EXPORTER_OTLP_ENDPOINT: absoluteUrl,
-  OTEL_EXPORTER_OTLP_HEADERS: v.optional(v.string()),
-  SENTRY_DSN: v.optional(sentrySchemas.dsn),
-  SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
-  SENTRY_RELEASE: v.optional(sentrySchemas.release),
-  ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
-  AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
-});
-
-export function readWikiConfig(input: unknown) {
-  const config = v.parse(wikiSchema, input);
+function readWikiConfig(input: unknown): WikiConfig {
+  const config = parse(wikiSchema, input);
   requireSecureOrigin(config.APP_ORIGIN);
   return {
+    AI: config.AI,
     APP_ORIGIN: config.APP_ORIGIN,
     ASSETS: config.ASSETS,
-    AI: config.AI ?? null,
     OTEL_EXPORTER_OTLP_ENDPOINT: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    otelHeaders:
-      config.OTEL_EXPORTER_OTLP_HEADERS === undefined
-        ? {}
-        : v.parse(
-            v.record(v.string(), v.string()),
-            JSON.parse(config.OTEL_EXPORTER_OTLP_HEADERS) as unknown,
-          ),
-    sentry:
-      config.SENTRY_DSN === undefined
-        ? null
-        : {
-            dsn: config.SENTRY_DSN,
-            environment: v.parse(sentrySchemas.environment, config.SENTRY_ENVIRONMENT),
-            release: v.parse(sentrySchemas.release, config.SENTRY_RELEASE),
-          },
+    otelHeaders: parseOtelHeaders(config.OTEL_EXPORTER_OTLP_HEADERS),
+    sentry: parseSentry(config),
   };
 }
+
+export {
+  isLocalDevelopmentOrigin,
+  readConfig,
+  readEnvironment,
+  readWikiConfig,
+  sendVerificationEmail,
+  sentrySchemas,
+};
+export type { AppConfig, EmailBinding, EmailMessage };

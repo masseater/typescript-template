@@ -1,26 +1,40 @@
-export async function requestJson(
-  path: string,
-  options?: { method: "PATCH" | "DELETE"; body: unknown },
-): Promise<unknown> {
-  if (!path.startsWith("/api/") || path.startsWith("//"))
+interface Mutation {
+  readonly method: "PATCH" | "DELETE";
+  readonly body: unknown;
+}
+
+function errorMessage(body: unknown, status: number): string {
+  if (
+    typeof body === "object" &&
+    body !== null &&
+    "error" in body &&
+    typeof body.error === "string"
+  ) {
+    return body.error;
+  }
+  return `リクエストに失敗しました（HTTP ${status}）。`;
+}
+
+async function requestJson(path: string, options?: Mutation): Promise<unknown> {
+  if (!path.startsWith("/api/") || path.startsWith("//")) {
     throw new Error("同じアプリの API を指定してください。");
+  }
   const response = await fetch(path, {
-    method: options?.method ?? "GET",
-    credentials: "same-origin",
     cache: "no-store",
+    credentials: "same-origin",
+    method: options?.method ?? "GET",
     redirect: "error",
     ...(options
-      ? { headers: { "content-type": "application/json" }, body: JSON.stringify(options.body) }
+      ? { body: JSON.stringify(options.body), headers: { "content-type": "application/json" } }
       : {}),
   });
   const body: unknown = await response.json();
   if (!response.ok) {
-    const message =
-      typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
-        ? body.error
-        : `リクエストに失敗しました（HTTP ${response.status}）。`;
     const requestId = response.headers.get("x-request-id");
-    throw new Error(`${message}${requestId ? ` リクエスト ID: ${requestId}` : ""}`);
+    const reference = requestId === null || requestId === "" ? "" : ` リクエスト ID: ${requestId}`;
+    throw new Error(`${errorMessage(body, response.status)}${reference}`);
   }
   return body;
 }
+
+export { requestJson };

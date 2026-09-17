@@ -1,46 +1,50 @@
+import { check, minLength, object, parse, pipe, string, url } from "valibot";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { isLocalDevelopmentOrigin } from "@template/config";
-import * as v from "valibot";
 
-const localSchema = v.object({
-  APP_ORIGIN: v.pipe(v.string(), v.url()),
-  LOCAL_ADMIN_USER: v.pipe(v.string(), v.minLength(1)),
-  LOCAL_ADMIN_PASSWORD: v.pipe(v.string(), v.minLength(24)),
+const localAdminPasswordMinLength = 24;
+const basicScheme = "Basic ";
+const localGateCookie = "local-admin-gate";
+
+const appOriginSchema = pipe(string(), url());
+const originSchema = object({ APP_ORIGIN: appOriginSchema });
+const localAccessSchema = object({
+  APP_ORIGIN: appOriginSchema,
+  LOCAL_ADMIN_PASSWORD: pipe(string(), minLength(localAdminPasswordMinLength)),
+  LOCAL_ADMIN_USER: pipe(string(), minLength(1)),
 });
-const accessSchema = v.object({
-  APP_ORIGIN: v.pipe(v.string(), v.url()),
-  ACCESS_ISSUER: v.pipe(
-    v.string(),
-    v.url(),
-    v.check((value) => /^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(value)),
+const accessSchema = object({
+  ACCESS_AUD: pipe(string(), minLength(1)),
+  ACCESS_ISSUER: pipe(
+    string(),
+    url(),
+    check((value) => /^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/u.test(value)),
   ),
-  ACCESS_AUD: v.pipe(v.string(), v.minLength(1)),
+  APP_ORIGIN: appOriginSchema,
 });
 const keys = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 async function equalCredentials(left: string, right: string): Promise<boolean> {
   const encoder = new TextEncoder();
-  const [a, b] = await Promise.all(
-    [left, right].map((value) => crypto.subtle.digest("SHA-256", encoder.encode(value))),
-  );
-  if (!a || !b) return false;
-  const expected = new Uint8Array(b);
+  const [leftDigest, rightDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(left)),
+    crypto.subtle.digest("SHA-256", encoder.encode(right)),
+  ]);
+  const expected = new Uint8Array(rightDigest);
   return (
-    new Uint8Array(a).reduce(
+    new Uint8Array(leftDigest).reduce(
       (result, value, index) => result | (value ^ (expected[index] ?? 0)),
       0,
     ) === 0
   );
 }
 
-const localGateCookie = "local-admin-gate";
-
 async function localGateToken(user: string, password: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(password),
-    { name: "HMAC", hash: "SHA-256" },
+    { hash: "SHA-256", name: "HMAC" },
     false,
     ["sign"],
   );
@@ -49,71 +53,91 @@ async function localGateToken(user: string, password: string): Promise<string> {
     key,
     encoder.encode(`${localGateCookie}:${user}`),
   );
-  return btoa(String.fromCharCode(...new Uint8Array(signature)))
+  return btoa(String.fromCodePoint(...new Uint8Array(signature)))
     .replaceAll("+", "-")
     .replaceAll("/", "_")
-    .replace(/=+$/, "");
+    .replace(/=+$/u, "");
 }
 
-export async function localAccessCookie(bindings: unknown): Promise<string | null> {
-  const { APP_ORIGIN } = v.parse(v.object({ APP_ORIGIN: v.pipe(v.string(), v.url()) }), bindings);
-  if (!isLocalDevelopmentOrigin(APP_ORIGIN)) return null;
-  const config = v.parse(localSchema, bindings);
+async function localAccessCookie(bindings: unknown): Promise<string | undefined> {
+  const { APP_ORIGIN } = parse(originSchema, bindings);
+  if (!isLocalDevelopmentOrigin(APP_ORIGIN)) {
+    return undefined;
+  }
+  const config = parse(localAccessSchema, bindings);
   const token = await localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD);
   return `${localGateCookie}=${token}; Path=/; HttpOnly; SameSite=Strict`;
 }
 
-export async function enforceAdminAccess(
-  request: Request,
-  bindings: unknown,
-): Promise<Response | null> {
-  const { APP_ORIGIN } = v.parse(v.object({ APP_ORIGIN: v.pipe(v.string(), v.url()) }), bindings);
-  const local = isLocalDevelopmentOrigin(APP_ORIGIN);
-  const unauthorized = () =>
-    new Response("Authentication required", {
-      status: 401,
-      headers: {
-        "cache-control": "no-store",
-        ...(local
-          ? { "www-authenticate": 'Basic realm="Local administrator access", charset="UTF-8"' }
-          : {}),
-      },
-    });
-  if (new URL(request.url).origin !== APP_ORIGIN) return unauthorized();
-  if (local) {
-    const config = v.parse(localSchema, bindings);
-    const gate = request.headers
-      .get("cookie")
-      ?.split(";")
-      .map((entry) => entry.trim())
-      .find((entry) => entry.startsWith(`${localGateCookie}=`))
-      ?.slice(localGateCookie.length + 1);
-    if (
-      gate &&
-      (await equalCredentials(
-        gate,
-        await localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD),
-      ))
-    )
-      return null;
-    const authorization = request.headers.get("authorization");
-    if (!authorization?.startsWith("Basic ")) return unauthorized();
-    let credentials: string;
-    try {
-      credentials = atob(authorization.slice(6));
-    } catch {
-      return unauthorized();
-    }
-    return (await equalCredentials(
-      credentials,
-      `${config.LOCAL_ADMIN_USER}:${config.LOCAL_ADMIN_PASSWORD}`,
-    ))
-      ? null
-      : unauthorized();
+function unauthorized(local: boolean): Response {
+  return new Response("Authentication required", {
+    headers: {
+      "cache-control": "no-store",
+      ...(local
+        ? { "www-authenticate": 'Basic realm="Local administrator access", charset="UTF-8"' }
+        : {}),
+    },
+    status: 401,
+  });
+}
+
+function localGate(headers: Headers): string | undefined {
+  return headers
+    .get("cookie")
+    ?.split(";")
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${localGateCookie}=`))
+    ?.slice(localGateCookie.length + 1);
+}
+
+function basicCredentials(headers: Headers): string | undefined {
+  const authorization = headers.get("authorization");
+  if (authorization?.startsWith(basicScheme) !== true) {
+    return undefined;
   }
-  const config = v.parse(accessSchema, bindings);
-  const token = request.headers.get("cf-access-jwt-assertion");
-  if (!token) return unauthorized();
+  try {
+    return atob(authorization.slice(basicScheme.length));
+  } catch {
+    return undefined;
+  }
+}
+
+async function enforceLocalAccess(
+  headers: Headers,
+  bindings: unknown,
+): Promise<Response | undefined> {
+  const config = parse(localAccessSchema, bindings);
+  const gate = localGate(headers);
+  if (
+    gate !== undefined &&
+    (await equalCredentials(
+      gate,
+      await localGateToken(config.LOCAL_ADMIN_USER, config.LOCAL_ADMIN_PASSWORD),
+    ))
+  ) {
+    return undefined;
+  }
+  const credentials = basicCredentials(headers);
+  if (credentials === undefined) {
+    return unauthorized(true);
+  }
+  return (await equalCredentials(
+    credentials,
+    `${config.LOCAL_ADMIN_USER}:${config.LOCAL_ADMIN_PASSWORD}`,
+  ))
+    ? undefined
+    : unauthorized(true);
+}
+
+async function enforceCloudflareAccess(
+  headers: Headers,
+  bindings: unknown,
+): Promise<Response | undefined> {
+  const config = parse(accessSchema, bindings);
+  const token = headers.get("cf-access-jwt-assertion");
+  if (token === null || token === "") {
+    return unauthorized(false);
+  }
   const keySet =
     keys.get(config.ACCESS_ISSUER) ??
     createRemoteJWKSet(new URL(`${config.ACCESS_ISSUER}/cdn-cgi/access/certs`), {
@@ -122,14 +146,30 @@ export async function enforceAdminAccess(
   keys.set(config.ACCESS_ISSUER, keySet);
   try {
     const { payload } = await jwtVerify(token, keySet, {
-      issuer: config.ACCESS_ISSUER,
-      audience: config.ACCESS_AUD,
       algorithms: ["RS256"],
+      audience: config.ACCESS_AUD,
+      issuer: config.ACCESS_ISSUER,
       requiredClaims: ["exp", "iat", "sub", "aud", "iss"],
     });
-    if (!payload.sub) return unauthorized();
-    return null;
+    return payload.sub === undefined || payload.sub === "" ? unauthorized(false) : undefined;
   } catch {
-    return unauthorized();
+    return unauthorized(false);
   }
 }
+
+async function enforceAdminAccess(
+  request: Pick<Request, "headers" | "url">,
+  bindings: unknown,
+): Promise<Response | undefined> {
+  const { APP_ORIGIN } = parse(originSchema, bindings);
+  const local = isLocalDevelopmentOrigin(APP_ORIGIN);
+  if (new URL(request.url).origin !== APP_ORIGIN) {
+    return unauthorized(local);
+  }
+  if (local) {
+    return enforceLocalAccess(request.headers, bindings);
+  }
+  return enforceCloudflareAccess(request.headers, bindings);
+}
+
+export { enforceAdminAccess, localAccessCookie };

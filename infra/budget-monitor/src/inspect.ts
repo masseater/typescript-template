@@ -1,6 +1,6 @@
-import { parseBudgetConfig } from "./config.ts";
-import { fetchUsage } from "./billing.ts";
 import { evaluateBudget } from "./decision.ts";
+import { fetchUsage } from "./billing.ts";
+import { parseBudgetConfig } from "./config.ts";
 
 try {
   const config = parseBudgetConfig(process.env);
@@ -9,8 +9,10 @@ try {
     config.BILLING_READ_TOKEN,
     new Date(),
   );
-  console.log(JSON.stringify({ event: "budget.inspected", ...evaluateBudget(usage, config) }));
+  process.stdout.write(
+    `${JSON.stringify({ event: "budget.inspected", ...evaluateBudget(usage, config) })}\n`,
+  );
 } catch {
-  console.error(JSON.stringify({ event: "budget.inspect_failed" }));
+  process.stderr.write(`${JSON.stringify({ event: "budget.inspect_failed" })}\n`);
   process.exitCode = 1;
 }

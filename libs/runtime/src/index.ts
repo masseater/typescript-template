@@ -1,57 +1,93 @@
+import type { Audience, Database } from "@template/db";
+import type { Instrumentation, RequestContext } from "@template/observability";
 import { createAuth, verifySession } from "@template/auth";
 import { readConfig, sendVerificationEmail } from "@template/config";
+import type { AppConfig } from "@template/config";
+import type { Auth } from "@template/auth";
 import { createDb } from "@template/db";
-import type { Audience } from "@template/db";
 import { createInstrumentation } from "@template/observability";
-import type { RequestContext } from "@template/observability";
 import { reportSentryError } from "@template/observability/sentry-server";
 
-export function createRuntime(
-  bindings: unknown,
-  audience: Audience,
-  routes: Readonly<Record<string, string>>,
-) {
-  const config = readConfig(bindings);
-  const telemetry = createInstrumentation({
-    serviceName: audience,
-    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers: config.otelHeaders,
-    routes,
+type Session = Awaited<ReturnType<typeof verifySession>>;
+
+interface RequestRuntime {
+  readonly auth: Auth;
+  readonly config: { readonly APP_ORIGIN: string };
+  readonly database: Database;
+  readonly reportError: (error: unknown) => void;
+  readonly session: (request: Request, allowEnrollment?: boolean) => Promise<Session>;
+  readonly telemetry: Instrumentation;
+}
+
+interface Runtime {
+  readonly config: Pick<AppConfig, "ASSETS" | "sentry">;
+  readonly forRequest: (correlation: RequestContext) => RequestRuntime;
+  readonly telemetry: Instrumentation;
+}
+
+interface AppRequestContext {
+  runtime: RequestRuntime;
+  correlation: RequestContext;
+}
+
+interface RequestRuntimeInput {
+  readonly audience: Audience;
+  readonly config: AppConfig;
+  readonly correlation: RequestContext;
+  readonly telemetry: Instrumentation;
+}
+
+function createRequestRuntime(input: RequestRuntimeInput): RequestRuntime {
+  const { audience, config, correlation, telemetry } = input;
+  function reportError(error: unknown): void {
+    telemetry.reportError(correlation, error);
+    if (config.sentry) {
+      reportSentryError(error);
+    }
+  }
+  const database = createDb(config.DB, async (operation, execute) =>
+    telemetry.withDbSpan(correlation, operation, execute),
+  );
+  const auth = createAuth({
+    audience,
+    baseURL: config.APP_ORIGIN,
+    database,
+    onError: reportError,
+    secret: config.AUTH_SECRET,
+    sendVerificationEmail: async (message) =>
+      telemetry.withExternalSpan(correlation, "email", async (child) =>
+        sendVerificationEmail(config, message, child.traceparent),
+      ),
   });
   return {
-    config: { ASSETS: config.ASSETS, sentry: config.sentry },
+    auth,
+    config: { APP_ORIGIN: config.APP_ORIGIN },
+    database,
+    reportError,
+    session: async (request, allowEnrollment = false) =>
+      verifySession({ allowEnrollment, audience, auth, database, headers: request.headers }),
     telemetry,
-    forRequest(correlation: RequestContext) {
-      const reportError = (error: unknown) => {
-        telemetry.reportError(correlation, error);
-        if (config.sentry) reportSentryError(error);
-      };
-      const database = createDb(config.DB, (operation, execute) =>
-        telemetry.withDbSpan(correlation, operation, execute),
-      );
-      const auth = createAuth({
-        database,
-        baseURL: config.APP_ORIGIN,
-        secret: config.AUTH_SECRET,
-        audience,
-        onError: reportError,
-        sendVerificationEmail: (message) =>
-          telemetry.withExternalSpan(correlation, "email", (child) =>
-            sendVerificationEmail(config, message, child.traceparent),
-          ),
-      });
-      return {
-        config: { APP_ORIGIN: config.APP_ORIGIN },
-        database,
-        telemetry,
-        auth,
-        reportError,
-        session: (request: Request, allowEnrollment = false) =>
-          verifySession({ auth, database, headers: request.headers, audience, allowEnrollment }),
-      };
-    },
   };
 }
 
-type Runtime = ReturnType<ReturnType<typeof createRuntime>["forRequest"]>;
-export type AppRequestContext = { runtime: Runtime; correlation: RequestContext };
+function createRuntime(
+  bindings: unknown,
+  audience: Audience,
+  routes: Readonly<Record<string, string>>,
+): Runtime {
+  const config = readConfig(bindings);
+  const telemetry = createInstrumentation({
+    endpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
+    headers: config.otelHeaders,
+    routes,
+    serviceName: audience,
+  });
+  return {
+    config: { ASSETS: config.ASSETS, sentry: config.sentry },
+    forRequest: (correlation) => createRequestRuntime({ audience, config, correlation, telemetry }),
+    telemetry,
+  };
+}
+
+export { createRuntime };
+export type { AppRequestContext };

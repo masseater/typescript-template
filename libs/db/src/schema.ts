@@ -1,150 +1,152 @@
-import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-export const user = sqliteTable(
+const user = sqliteTable(
   "user",
   {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     email: text("email").notNull().unique(),
     emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+    id: text("id").primaryKey(),
     image: text("image"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
-    twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
+    name: text("name").notNull(),
+    profile: text("profile").notNull().default(""),
     role: text("role", { enum: ["user", "admin"] })
       .notNull()
       .default("user"),
     securityVersion: integer("security_version").notNull().default(0),
-    profile: text("profile").notNull().default(""),
+    twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [check("user_role", sql`${table.role} IN ('user', 'admin')`)],
 );
 
-export const session = sqliteTable(
+const session = sqliteTable(
   "session",
   {
-    id: text("id").primaryKey(),
-    token: text("token").notNull().unique(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
     audience: text("audience", { enum: ["user", "admin"] }).notNull(),
-    securityVersion: integer("security_version").notNull(),
+    authenticatedAt: integer("authenticated_at", { mode: "timestamp_ms" }),
     authenticationMethod: text("authentication_method", {
       enum: ["password", "password_totp", "passkey_uv", "recovery"],
     })
       .notNull()
       .default("password"),
-    authenticatedAt: integer("authenticated_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    ipAddress: text("ip_address"),
+    securityVersion: integer("security_version").notNull(),
+    token: text("token").notNull().unique(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
   },
   (table) => [index("session_user_id_idx").on(table.userId)],
 );
 
-export const account = sqliteTable(
+const account = sqliteTable(
   "account",
   {
-    id: text("id").primaryKey(),
+    accessToken: text("access_token"),
+    accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
     accountId: text("account_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    idToken: text("id_token"),
+    password: text("password"),
     providerId: text("provider_id").notNull(),
+    refreshToken: text("refresh_token"),
+    refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
+    scope: text("scope"),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
-    scope: text("scope"),
-    password: text("password"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [index("account_user_id_idx").on(table.userId)],
 );
 
-export const verification = sqliteTable(
+const verification = sqliteTable(
   "verification",
   {
+    audience: text("audience", { enum: ["user", "admin"] }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
-    value: text("value").notNull(),
-    audience: text("audience", { enum: ["user", "admin"] }).notNull(),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+    value: text("value").notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const twoFactor = sqliteTable(
+const twoFactor = sqliteTable(
   "two_factor",
   {
+    backupCodes: text("backup_codes").notNull(),
+    failedVerificationCount: integer("failed_verification_count").notNull().default(0),
     id: text("id").primaryKey(),
+    lockedUntil: integer("locked_until", { mode: "timestamp_ms" }),
+    secret: text("secret").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    secret: text("secret").notNull(),
-    backupCodes: text("backup_codes").notNull(),
     verified: integer("verified", { mode: "boolean" }).notNull().default(false),
-    failedVerificationCount: integer("failed_verification_count").notNull().default(0),
-    lockedUntil: integer("locked_until", { mode: "timestamp_ms" }),
   },
   (table) => [uniqueIndex("two_factor_user_id_idx").on(table.userId)],
 );
 
-export const passkey = sqliteTable(
+const passkey = sqliteTable(
   "passkey",
   {
+    aaguid: text("aaguid"),
+    audience: text("audience", { enum: ["user", "admin"] }).notNull(),
+    backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
+    counter: integer("counter").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }),
+    credentialID: text("credential_id").notNull().unique(),
+    deviceType: text("device_type").notNull(),
     id: text("id").primaryKey(),
     name: text("name"),
     publicKey: text("public_key").notNull(),
+    transports: text("transports"),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    audience: text("audience", { enum: ["user", "admin"] }).notNull(),
-    credentialID: text("credential_id").notNull().unique(),
-    counter: integer("counter").notNull(),
-    deviceType: text("device_type").notNull(),
-    backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
-    transports: text("transports"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }),
-    aaguid: text("aaguid"),
   },
   (table) => [index("passkey_user_id_idx").on(table.userId)],
 );
 
-export const rateLimit = sqliteTable("rate_limit", {
+const rateLimit = sqliteTable("rate_limit", {
+  count: integer("count").notNull(),
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),
-  count: integer("count").notNull(),
   lastRequest: integer("last_request").notNull(),
 });
 
-export const auditEvent = sqliteTable(
+const auditEvent = sqliteTable(
   "audit_event",
   {
-    id: text("id").primaryKey(),
-    actorId: text("actor_id").notNull(),
-    targetId: text("target_id").notNull(),
     action: text("action", { enum: ["role_changed", "user_deleted"] }).notNull(),
+    actorId: text("actor_id").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    targetId: text("target_id").notNull(),
   },
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
 );
 
-export const schema = {
-  user,
-  session,
+const schema = {
   account,
-  verification,
-  twoFactor,
+  auditEvent,
   passkey,
   rateLimit,
-  auditEvent,
+  session,
+  twoFactor,
+  user,
+  verification,
 };
+
+export { account, auditEvent, passkey, rateLimit, schema, session, twoFactor, user, verification };

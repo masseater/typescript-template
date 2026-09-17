@@ -17,6 +17,7 @@
   "dependencies": {
     "@better-auth/passkey": "1.7.5",
     "better-auth": "1.7.5",
+    "es-toolkit": "1.52.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-intl": "10.2.2",

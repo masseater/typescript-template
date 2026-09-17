@@ -1,41 +1,78 @@
-export type Embedder = (texts: readonly string[]) => Promise<number[][]>;
-export type SemanticDocument = { id: string; url: string; title: string; text: string };
+type Embedder = (texts: readonly string[]) => Promise<number[][]>;
 
-function normalize(vector: readonly number[]) {
+interface SemanticDocument {
+  readonly id: string;
+  readonly url: string;
+  readonly title: string;
+  readonly text: string;
+}
+
+interface SemanticMatch {
+  readonly document: SemanticDocument;
+  readonly score: number;
+}
+
+interface PageScore {
+  readonly url: string;
+  readonly score: number;
+}
+
+interface SemanticIndex {
+  readonly documents: readonly SemanticDocument[];
+  readonly vectors: readonly (readonly number[])[];
+}
+
+type SemanticSearch = (embed: Embedder, query: string) => Promise<SemanticMatch[]>;
+
+const KEYWORD_RANK_BONUS = 0.3;
+
+function normalize(vector: readonly number[]): number[] {
   const length = Math.hypot(...vector);
   return length > 0 ? vector.map((value) => value / length) : [...vector];
 }
 
-export function createSemanticIndex(loadDocuments: () => Promise<SemanticDocument[]>) {
-  let ready: Promise<{ documents: SemanticDocument[]; vectors: number[][] }> | undefined;
-  const load = async (embed: Embedder) => {
-    const documents = await loadDocuments();
-    const vectors = await embed(documents.map((document) => `${document.title}\n${document.text}`));
-    return { documents, vectors: vectors.map(normalize) };
-  };
-  return async (embed: Embedder, query: string) => {
-    ready ??= load(embed).catch((error: unknown) => {
+function similarity(vector: readonly number[], target: readonly number[]): number {
+  return vector.reduce((total, value, column) => total + value * (target[column] ?? 0), 0);
+}
+
+async function buildIndex(
+  loadDocuments: () => readonly SemanticDocument[],
+  embed: Embedder,
+): Promise<SemanticIndex> {
+  const documents = loadDocuments();
+  const vectors = await embed(documents.map((document) => `${document.title}\n${document.text}`));
+  return { documents, vectors: vectors.map((vector) => normalize(vector)) };
+}
+
+function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): SemanticSearch {
+  let ready: Promise<SemanticIndex> | undefined = undefined;
+  async function loadOnce(embed: Embedder): Promise<SemanticIndex> {
+    try {
+      return await buildIndex(loadDocuments, embed);
+    } catch (error) {
       ready = undefined;
       throw error;
-    });
+    }
+  }
+  return async (embed, query) => {
+    ready ??= loadOnce(embed);
     const [{ documents, vectors }, [queryVector]] = await Promise.all([ready, embed([query])]);
-    if (!queryVector) throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
+    if (!queryVector) {
+      throw new Error("WIKI_EMBEDDING_COUNT_MISMATCH");
+    }
     const target = normalize(queryVector);
     return documents.map((document, index) => ({
       document,
-      score: (vectors[index] ?? []).reduce(
-        (total, value, column) => total + value * (target[column] ?? 0),
-        0,
-      ),
+      score: similarity(vectors[index] ?? [], target),
     }));
   };
 }
 
-export function rankPages(
-  semantic: readonly { url: string; score: number }[],
+function rankPages(
+  semantic: readonly PageScore[],
   keywordPages: readonly string[],
   limit: number,
-) {
+): string[] {
   const scores = new Map<string, number>();
   const values = semantic.map((match) => match.score);
   const lowest = Math.min(...values);
@@ -44,9 +81,14 @@ export function rankPages(
     const normalized = range > 0 ? (match.score - lowest) / range : 0;
     scores.set(match.url, Math.max(scores.get(match.url) ?? 0, normalized));
   }
-  keywordPages.forEach((url, rank) => scores.set(url, (scores.get(url) ?? 0) + 0.3 / (1 + rank)));
+  for (const [rank, url] of keywordPages.entries()) {
+    scores.set(url, (scores.get(url) ?? 0) + KEYWORD_RANK_BONUS / (1 + rank));
+  }
   return [...scores]
-    .sort((left, right) => right[1] - left[1])
+    .toSorted((left, right) => right[1] - left[1])
     .slice(0, limit)
     .map(([url]) => url);
 }
+
+export { createSemanticIndex, rankPages };
+export type { Embedder, SemanticDocument };

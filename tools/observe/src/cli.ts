@@ -1,26 +1,38 @@
+import {
+  commands,
+  maxQueryLimit,
+  minutesPerDay,
+  queryGrafana,
+  queryPath,
+  services,
+  severities,
+} from "./query.ts";
+import { integer, maxValue, minValue, number, object, parse, picklist, pipe } from "valibot";
 import { parseArgs } from "node:util";
-import * as v from "valibot";
-import { queryGrafana, queryPath } from "./query.ts";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    grafana: { type: "string", default: "http://127.0.0.1:3100" },
-    service: { type: "string", default: "user-server" },
-    minutes: { type: "string", default: "15" },
-    limit: { type: "string", default: "100" },
-    severity: { type: "string" },
-    "request-id": { type: "string" },
-    "trace-id": { type: "string" },
     expression: { type: "string" },
-    help: { type: "boolean", default: false },
+    grafana: { default: "http://127.0.0.1:3100", type: "string" },
+    help: { default: false, type: "boolean" },
+    limit: { default: "100", type: "string" },
+    minutes: { default: "15", type: "string" },
+    "request-id": { type: "string" },
+    service: { default: "user-server", type: "string" },
+    severity: { type: "string" },
+    "trace-id": { type: "string" },
   },
 });
 
+function presentValue(value: string | undefined): string | undefined {
+  return value === "" ? undefined : value;
+}
+
 if (values.help) {
-  console.info(
-    JSON.stringify({
-      commands: ["doctor", "logs", "metrics", "exemplars", "traces", "trace"],
+  process.stdout.write(
+    `${JSON.stringify({
+      commands,
       flags: [
         "--grafana",
         "--service",
@@ -32,59 +44,51 @@ if (values.help) {
         "--expression",
       ],
       readOnly: true,
-    }),
+    })}\n`,
   );
 } else {
   try {
-    const schema = v.object({
-      command: v.picklist(["doctor", "logs", "metrics", "exemplars", "traces", "trace"]),
-      service: v.picklist([
-        "user-server",
-        "user-browser",
-        "admin-server",
-        "admin-browser",
-        "wiki-server",
-        "wiki-browser",
-      ]),
-      minutes: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1440)),
-      limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
+    const schema = object({
+      command: picklist(commands),
+      limit: pipe(number(), integer(), minValue(1), maxValue(maxQueryLimit)),
+      minutes: pipe(number(), integer(), minValue(1), maxValue(minutesPerDay)),
+      service: picklist(services),
     });
-    const parsed = v.parse(schema, {
+    const parsed = parse(schema, {
       command: positionals[0],
-      service: values.service,
-      minutes: Number(values.minutes),
       limit: Number(values.limit),
+      minutes: Number(values.minutes),
+      service: values.service,
     });
-    if (positionals.length !== 1) throw new Error("Specify one query command");
-    const severity =
-      values.severity === undefined
-        ? undefined
-        : v.parse(v.picklist(["INFO", "ERROR"]), values.severity);
+    if (positionals.length !== 1) {
+      throw new Error("Specify one query command");
+    }
     const input = {
       ...parsed,
-      ...(severity ? { severity } : {}),
-      ...(values["request-id"] ? { requestId: values["request-id"] } : {}),
-      ...(values["trace-id"] ? { traceId: values["trace-id"] } : {}),
-      ...(values.expression ? { expression: values.expression } : {}),
+      expression: presentValue(values.expression),
+      requestId: presentValue(values["request-id"]),
+      severity:
+        values.severity === undefined ? undefined : parse(picklist(severities), values.severity),
+      traceId: presentValue(values["trace-id"]),
     };
     const data = await queryGrafana(values.grafana, queryPath(input, Date.now()));
-    console.info(
-      JSON.stringify({
-        ok: true,
+    process.stdout.write(
+      `${JSON.stringify({
         command: parsed.command,
-        service: parsed.service,
-        observedAt: new Date().toISOString(),
         data,
-      }),
+        observedAt: new Date().toISOString(),
+        ok: true,
+        service: parsed.service,
+      })}\n`,
     );
   } catch {
-    console.error(
-      JSON.stringify({
-        ok: false,
+    process.stderr.write(
+      `${JSON.stringify({
         event: "observability.query_failed",
+        ok: false,
         remediation:
           "Check arguments, LGTM health and datasource availability. Use --help for read-only query commands.",
-      }),
+      })}\n`,
     );
     process.exitCode = 1;
   }

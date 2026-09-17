@@ -1,4 +1,8 @@
-export function errorAttributes(error: unknown) {
+type ErrorAttributes = Readonly<Record<"error.locations" | "error.type", string>>;
+
+const maximumLocations = 20;
+
+function errorAttributes(error: unknown): ErrorAttributes {
   const name = error instanceof Error ? error.name : "Error";
   const type = [
     "Error",
@@ -15,10 +19,12 @@ export function errorAttributes(error: unknown) {
     : "Error";
   const locations =
     error instanceof Error
-      ? Array.from(error.stack?.matchAll(/(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+/g) ?? [])
-          .slice(0, 20)
+      ? [...(error.stack?.matchAll(/(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+/gu) ?? [])]
+          .slice(0, maximumLocations)
           .map((match) => match[0])
           .join("\n")
       : "";
-  return { "error.type": type, "error.locations": locations };
+  return { "error.locations": locations, "error.type": type };
 }
+
+export { errorAttributes };

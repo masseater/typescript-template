@@ -1,95 +1,125 @@
-import { llms } from "fumadocs-core/source";
-import { createFromSource } from "fumadocs-core/search/server";
-import type { SortedResult } from "fumadocs-core/search";
-import type { SearchServer } from "fumadocs-core/search/server";
-import { createSemanticIndex, rankPages } from "./semantic.ts";
 import type { Embedder, SemanticDocument } from "./semantic.ts";
+import { createSemanticIndex, rankPages } from "./semantic.ts";
+import type { SearchServer } from "fumadocs-core/search/server";
+import type { SortedResult } from "fumadocs-core/search";
+import { createFromSource } from "fumadocs-core/search/server";
+import { llms } from "fumadocs-core/source";
 import { source } from "./source.ts";
 
+type WikiPage = ReturnType<typeof source.getPages>[number];
+type SemanticResult = Awaited<ReturnType<ReturnType<typeof createSemanticIndex>>>[number];
+type KeywordResult = Awaited<ReturnType<SearchServer["search"]>>[number];
+
+const DEFAULT_PAGE_LIMIT = 5;
+const LEXICAL_HEADING_LIMIT = 2;
+const HEADING_RESULT_LIMIT = 3;
+
 const keyword = createFromSource(source);
-const semantic = createSemanticIndex(async () =>
-  source.getPages().flatMap((page): SemanticDocument[] => {
-    const { structuredData } = page.data;
-    const pageText = structuredData.contents
-      .filter((content) => content.heading === undefined)
-      .map((content) => content.content)
-      .join(" ");
-    return [
-      {
-        id: page.url,
-        url: page.url,
-        title: page.data.title ?? page.url,
-        text: `${page.data.description ?? ""} ${pageText}`,
-      },
-      ...structuredData.headings.map((heading) => ({
-        id: `${page.url}#${heading.id}`,
-        url: `${page.url}#${heading.id}`,
-        title: `${page.data.title ?? ""} ${heading.content}`,
-        text: structuredData.contents
-          .filter((content) => content.heading === heading.id)
-          .map((content) => content.content)
-          .join(" "),
-      })),
-    ];
-  }),
+
+function sectionText(page: WikiPage, heading?: string): string {
+  return page.data.structuredData.contents
+    .filter((content) => content.heading === heading)
+    .map((content) => content.content)
+    .join(" ");
+}
+
+function pageDocuments(page: WikiPage): SemanticDocument[] {
+  const headings = page.data.structuredData.headings.map((heading) => ({
+    id: `${page.url}#${heading.id}`,
+    text: sectionText(page, heading.id),
+    title: `${page.data.title} ${heading.content}`,
+    url: `${page.url}#${heading.id}`,
+  }));
+  return [
+    {
+      id: page.url,
+      text: `${page.data.description ?? ""} ${sectionText(page)}`,
+      title: page.data.title,
+      url: page.url,
+    },
+    ...headings,
+  ];
+}
+
+const semantic = createSemanticIndex(() =>
+  source.getPages().flatMap((page) => pageDocuments(page)),
 );
 
-export const wikiLlms = llms(source, {
+const wikiLlms = llms(source, {
   renderPage: async (page) =>
-    `# ${page.data.title ?? page.url} (${page.url})\n\n${await page.data.getText("processed")}`,
+    `# ${page.data.title} (${page.url})\n\n${await page.data.getText("processed")}`,
 });
 
-const pageOf = (url: string) => url.split("#")[0] ?? url;
+function pageOf(url: string): string {
+  return url.split("#")[0] ?? url;
+}
 
-export function createWikiSearch(
-  embed: Embedder | null,
+function pageResults(
+  url: string,
+  keywordResults: readonly KeywordResult[],
+  semanticResults: readonly SemanticResult[],
+): SortedResult[] {
+  const page = source.getPages().find((candidate) => candidate.url === url);
+  const title = page?.data.title ?? url;
+  const lexical = keywordResults.filter(
+    (result) => pageOf(result.url) === url && result.type !== "page",
+  );
+  const related = semanticResults
+    .filter(
+      (match) =>
+        pageOf(match.document.url) === url &&
+        match.document.url !== url &&
+        !lexical.some((result) => result.url === match.document.url),
+    )
+    .toSorted((left, right) => right.score - left.score)
+    .map((match): SortedResult => ({
+      content: match.document.title.slice(title.length).trim(),
+      id: match.document.id,
+      type: "heading",
+      url: match.document.url,
+    }));
+  const headings = [...lexical.slice(0, LEXICAL_HEADING_LIMIT), ...related];
+  return [
+    { content: title, id: url, type: "page", url },
+    ...headings.slice(0, HEADING_RESULT_LIMIT),
+  ];
+}
+
+async function semanticSearch(
+  embed: Embedder | undefined,
+  query: string,
+  reportError: (error: unknown) => void,
+): Promise<SemanticResult[]> {
+  if (!embed) {
+    return [];
+  }
+  try {
+    return await semantic(embed, query);
+  } catch (error) {
+    reportError(error);
+    return [];
+  }
+}
+
+function createWikiSearch(
+  embed: Embedder | undefined,
   reportError: (error: unknown) => void,
 ): SearchServer {
   return {
-    export: () => keyword.export(),
+    export: async () => keyword.export(),
     async search(query, options) {
       const [keywordResults, semanticResults] = await Promise.all([
         keyword.search(query, options),
-        embed
-          ? semantic(embed, query).catch((error: unknown) => {
-              reportError(error);
-              return [];
-            })
-          : [],
+        semanticSearch(embed, query, reportError),
       ]);
       const pages = rankPages(
-        semanticResults.map((match) => ({
-          url: pageOf(match.document.url),
-          score: match.score,
-        })),
+        semanticResults.map((match) => ({ score: match.score, url: pageOf(match.document.url) })),
         [...new Set(keywordResults.map((result) => pageOf(result.url)))],
-        options?.limit ?? 5,
+        options?.limit ?? DEFAULT_PAGE_LIMIT,
       );
-      return pages.flatMap((url): SortedResult[] => {
-        const page = source.getPages().find((candidate) => candidate.url === url);
-        const title = page?.data.title ?? url;
-        const lexical = keywordResults.filter(
-          (result) => pageOf(result.url) === url && result.type !== "page",
-        );
-        const related = semanticResults
-          .filter(
-            (match) =>
-              pageOf(match.document.url) === url &&
-              match.document.url !== url &&
-              !lexical.some((result) => result.url === match.document.url),
-          )
-          .sort((left, right) => right.score - left.score)
-          .map((match): SortedResult => ({
-            id: match.document.id,
-            url: match.document.url,
-            type: "heading",
-            content: match.document.title.slice(title.length).trim(),
-          }));
-        return [
-          { id: url, url, type: "page", content: title },
-          ...[...lexical.slice(0, 2), ...related].slice(0, 3),
-        ];
-      });
+      return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));
     },
   };
 }
+
+export { createWikiSearch, wikiLlms };

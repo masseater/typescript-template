@@ -1,8 +1,8 @@
 export const routes = {
   "/": "home",
   "/*": "page",
-  "/api/search": "search",
-  "/mcp": "mcp",
-  "/api/telemetry": "telemetry",
   "/api/client-config": "client-config",
+  "/api/search": "search",
+  "/api/telemetry": "telemetry",
+  "/mcp": "mcp",
 } as const;

@@ -1,56 +1,63 @@
-import type { Browser } from "./browser.ts";
 import { ensure, json, mailpit, object, poll, string } from "./support.ts";
+import type { BrowserSession } from "./browser.ts";
 
-export function verificationLink(text: string, origin: string): string {
-  const links = text.match(/https?:\/\/[^\s<>]+/g) ?? [];
-  for (const link of links) {
-    const url = new URL(link);
-    if (
-      url.origin === origin &&
-      url.pathname === "/api/auth/verify-email" &&
-      url.searchParams.get("token")
-    )
-      return url.href;
-  }
-  throw new Error("E2E_VERIFICATION_LINK_MISSING");
+interface VerificationTarget {
+  readonly email: string;
+  readonly origin: string;
+  readonly ownMessage: (messageId: string) => void;
 }
 
-export async function verifyEmail(
-  browser: Browser,
-  email: string,
-  origin: string,
-  owned: Set<string>,
-) {
-  const messageId = await poll(
-    async () => {
-      const result = object(
-        await json(
-          `${mailpit}/api/v1/search?${new URLSearchParams({ query: `to:${email}`, limit: "100" }).toString()}`,
-        ),
-      );
-      const messages = result["messages"];
-      ensure(Array.isArray(messages), "E2E_MAILPIT_INVALID_SEARCH");
-      for (const entry of messages) {
-        const message = object(entry);
-        const recipients = message["To"];
-        if (
-          Array.isArray(recipients) &&
-          recipients.some((recipient: unknown) => object(recipient)["Address"] === email)
-        )
-          return string(message["ID"]);
-      }
-      return undefined;
-    },
-    (id) => id !== undefined,
-    "E2E_VERIFICATION_EMAIL_NOT_DELIVERED",
+function isVerificationUrl(url: Readonly<URL>, origin: string): boolean {
+  return (
+    url.origin === origin &&
+    url.pathname === "/api/auth/verify-email" &&
+    (url.searchParams.get("token") ?? "").length > 0
   );
-  ensure(messageId, "E2E_VERIFICATION_EMAIL_NOT_DELIVERED");
-  owned.add(messageId);
+}
+
+function verificationLink(text: string, origin: string): string {
+  const links = text.match(/https?:\/\/[^\s<>]+/gu) ?? [];
+  const verification = links.find((link) => isVerificationUrl(new URL(link), origin));
+  ensure(verification !== undefined, "E2E_VERIFICATION_LINK_MISSING");
+  return new URL(verification).href;
+}
+
+function isAddressedTo(entry: unknown, email: string): boolean {
+  const recipients = object(entry)["To"];
+  return (
+    Array.isArray(recipients) &&
+    recipients.some((recipient: unknown) => object(recipient)["Address"] === email)
+  );
+}
+
+async function findMessagesTo(email: string): Promise<string[]> {
+  const result = object(
+    await json(
+      `${mailpit}/api/v1/search?${new URLSearchParams({ limit: "100", query: `to:${email}` }).toString()}`,
+    ),
+  );
+  const { messages } = result;
+  ensure(Array.isArray(messages), "E2E_MAILPIT_INVALID_SEARCH");
+  return messages
+    .filter((entry: unknown) => isAddressedTo(entry, email))
+    .map((entry: unknown) => string(object(entry)["ID"]));
+}
+
+async function verifyEmail(browser: BrowserSession, target: VerificationTarget): Promise<void> {
+  const [messageId] = await poll({
+    accept: (ids) => ids.length > 0,
+    code: "E2E_VERIFICATION_EMAIL_NOT_DELIVERED",
+    read: async () => findMessagesTo(target.email),
+  });
+  ensure(messageId !== undefined, "E2E_VERIFICATION_EMAIL_NOT_DELIVERED");
+  target.ownMessage(messageId);
   const message = object(await json(`${mailpit}/api/v1/message/${encodeURIComponent(messageId)}`));
-  const link = verificationLink(string(message["Text"]), origin);
+  const link = verificationLink(string(message["Text"]), target.origin);
   const token = new URL(link).searchParams.get("token");
-  ensure(token, "E2E_VERIFICATION_TOKEN_MISSING");
-  browser.secrets.add(token);
-  browser.secrets.add(email);
+  ensure(token !== null, "E2E_VERIFICATION_TOKEN_MISSING");
+  browser.addSecret(token);
+  browser.addSecret(target.email);
   await browser.commands(["open", link], ["wait", 'input[name="email"]']);
 }
+
+export { findMessagesTo, verificationLink, verifyEmail };

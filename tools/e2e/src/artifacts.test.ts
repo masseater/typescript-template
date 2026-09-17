@@ -1,17 +1,29 @@
-import { expect, test } from "vitest";
-import { loadArtifacts, assertEntries, assertSeparation, assertPublicSafety } from "./artifacts.ts";
+import { assertEntries, assertPublicSafety, assertSeparation } from "./artifact-policy.ts";
+import { describe, expect, it } from "vitest";
+import { loadArtifacts } from "./artifacts.ts";
 
-test("built Workers have separate executable entries and gated, client-only assets roots", async () => {
-  const pair = await loadArtifacts();
-  expect(() => assertEntries(pair)).not.toThrow();
-});
+describe("built artifacts", () => {
+  it("built Workers have separate executable entries and gated, client-only assets roots", async () => {
+    expect.hasAssertions();
+    const pair = await loadArtifacts();
+    expect(() => {
+      assertEntries(pair);
+    }).not.toThrow();
+  });
 
-test("actual user bundles contain no dedicated admin UI, route, gate or database module", async () => {
-  const pair = await loadArtifacts();
-  expect(() => assertSeparation(pair)).not.toThrow();
-});
+  it("actual user bundles contain no dedicated admin UI, route, gate or database module", async () => {
+    expect.hasAssertions();
+    const pair = await loadArtifacts();
+    expect(() => {
+      assertSeparation(pair);
+    }).not.toThrow();
+  });
 
-test("actual public assets contain no source maps, private configuration or local secret values", async () => {
-  const pair = await loadArtifacts();
-  expect(() => assertPublicSafety(pair)).not.toThrow();
+  it("actual public assets contain no source maps, private configuration or local secret values", async () => {
+    expect.hasAssertions();
+    const pair = await loadArtifacts();
+    expect(() => {
+      assertPublicSafety(pair);
+    }).not.toThrow();
+  });
 });

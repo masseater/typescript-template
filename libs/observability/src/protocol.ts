@@ -1,236 +1,285 @@
-export type ServiceName = "user" | "admin" | "wiki";
-export type Signal = "logs" | "metrics" | "traces";
-export type Attributes = Record<string, string | number | boolean>;
-export type Correlation = { traceId: string; spanId: string; requestId: string };
+type ServiceName = "user" | "admin" | "wiki";
+type Signal = "logs" | "metrics" | "traces";
+type TelemetryRuntime = "browser" | "server";
+type Attributes = Readonly<Record<string, string | number | boolean>>;
+interface Correlation {
+  readonly traceId: string;
+  readonly spanId: string;
+  readonly requestId: string;
+}
+type AnyValue =
+  | { readonly stringValue: string }
+  | { readonly boolValue: boolean }
+  | { readonly doubleValue: number };
+interface KeyValue {
+  readonly key: string;
+  readonly value: AnyValue;
+}
+interface ParentContext {
+  readonly parentSpanId: string;
+  readonly traceId: string;
+}
+interface LogRecord {
+  readonly attributes: readonly KeyValue[];
+  readonly body: { readonly stringValue: string };
+  readonly flags: number;
+  readonly observedTimeUnixNano: string;
+  readonly severityNumber: number;
+  readonly severityText: "ERROR" | "INFO";
+  readonly spanId: string;
+  readonly timeUnixNano: string;
+  readonly traceId: string;
+}
+interface SpanRecord {
+  readonly attributes: readonly KeyValue[];
+  readonly endTimeUnixNano: string;
+  readonly flags: number;
+  readonly kind: number;
+  readonly name: string;
+  readonly parentSpanId?: string;
+  readonly spanId: string;
+  readonly startTimeUnixNano: string;
+  readonly status: { readonly code: number };
+  readonly traceId: string;
+}
+interface LogInput {
+  readonly name: string;
+  readonly values: Attributes;
+  readonly context: Correlation;
+  readonly time: number;
+  readonly failed: boolean;
+}
+interface SpanInput {
+  readonly name: string;
+  readonly values: Attributes;
+  readonly context: Correlation;
+  readonly start: number;
+  readonly end: number;
+  readonly kind: SpanKind;
+  readonly failed: boolean;
+  readonly parentSpanId?: string | undefined;
+}
+interface EnvelopeInput {
+  readonly signal: Signal;
+  readonly records: readonly unknown[];
+  readonly service: ServiceName;
+  readonly runtime: TelemetryRuntime;
+}
+interface Scope {
+  readonly name: string;
+  readonly version: string;
+}
+interface Resource {
+  readonly attributes: readonly KeyValue[];
+}
+type Envelope =
+  | {
+      readonly resourceLogs: readonly {
+        readonly resource: Resource;
+        readonly scopeLogs: readonly {
+          readonly logRecords: readonly unknown[];
+          readonly scope: Scope;
+        }[];
+      }[];
+    }
+  | {
+      readonly resourceSpans: readonly {
+        readonly resource: Resource;
+        readonly scopeSpans: readonly {
+          readonly scope: Scope;
+          readonly spans: readonly unknown[];
+        }[];
+      }[];
+    }
+  | {
+      readonly resourceMetrics: readonly {
+        readonly resource: Resource;
+        readonly scopeMetrics: readonly {
+          readonly metrics: readonly unknown[];
+          readonly scope: Scope;
+        }[];
+      }[];
+    };
 
-const scope = { name: "@template/observability", version: "1.0.0" };
-let instanceId: string | undefined;
-const nanoTime = (milliseconds: number): string =>
-  (BigInt(Math.floor(milliseconds * 1_000)) * 1_000n).toString();
-export const randomHex = (bytes: number): string =>
-  Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
-    byte.toString(16).padStart(2, "0"),
+const spanKind = { client: 3, internal: 1, server: 2 } as const;
+type SpanKind = (typeof spanKind)[keyof typeof spanKind];
+const severity = { error: 17, info: 9 } as const;
+const spanStatus = { error: 2, unset: 0 } as const;
+const sampledFlags = 1;
+const traceIdBytes = 16;
+const spanIdBytes = 8;
+const hexRadix = 16;
+const hexByteWidth = 2;
+const millisecondsPerSecond = 1000;
+const microsecondsPerMillisecond = 1000;
+const nanosecondsPerMicrosecond = 1000n;
+const nanosecondsPerMillisecond = 1_000_000n;
+const scope: Scope = { name: "@template/observability", version: "1.0.0" };
+const instance: { id?: string } = {};
+
+function nanoTime(milliseconds: number): string {
+  const microseconds = BigInt(Math.floor(milliseconds * microsecondsPerMillisecond));
+  return (microseconds * nanosecondsPerMicrosecond).toString();
+}
+
+function randomHex(bytes: number): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
+    byte.toString(hexRadix).padStart(hexByteWidth, "0"),
   ).join("");
-export const validTraceId = (value: unknown): value is string =>
-  typeof value === "string" && /^[0-9a-f]{32}$/.test(value) && !/^0+$/.test(value);
-export const validSpanId = (value: unknown): value is string =>
-  typeof value === "string" && /^[0-9a-f]{16}$/.test(value) && !/^0+$/.test(value);
-export const validRequestId = (value: unknown): value is string =>
-  typeof value === "string" &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
-
-export function parentContext(value: string | null) {
-  const match = value?.match(/^00-([0-9a-f]{32})-([0-9a-f]{16})-0[01]$/);
-  if (!match || !validTraceId(match[1]) || !validSpanId(match[2])) return undefined;
-  return { traceId: match[1], parentSpanId: match[2] };
 }
 
-function attributes(values: Attributes) {
-  return Object.entries(values).map(([key, value]) => ({
-    key,
-    value:
-      typeof value === "string"
-        ? { stringValue: value }
-        : typeof value === "boolean"
-          ? { boolValue: value }
-          : { doubleValue: value },
-  }));
+function validTraceId(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{32}$/u.test(value) && !/^0+$/u.test(value);
 }
 
-function resource(service: ServiceName, runtime: "browser" | "server") {
-  instanceId ??= crypto.randomUUID();
+function validSpanId(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{16}$/u.test(value) && !/^0+$/u.test(value);
+}
+
+function validRequestId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(value)
+  );
+}
+
+function parentContext(value: string | null): ParentContext | undefined {
+  const groups = value?.match(
+    /^00-(?<traceId>[0-9a-f]{32})-(?<parentSpanId>[0-9a-f]{16})-0[01]$/u,
+  )?.groups;
+  const traceId = groups?.["traceId"];
+  const parentSpanId = groups?.["parentSpanId"];
+  return validTraceId(traceId) && validSpanId(parentSpanId) ? { parentSpanId, traceId } : undefined;
+}
+
+function anyValue(value: string | number | boolean): AnyValue {
+  if (typeof value === "string") {
+    return { stringValue: value };
+  }
+  if (typeof value === "boolean") {
+    return { boolValue: value };
+  }
+  return { doubleValue: value };
+}
+
+function attributes(values: Attributes): KeyValue[] {
+  return Object.entries(values).map(([key, value]) => ({ key, value: anyValue(value) }));
+}
+
+function resource(service: ServiceName, runtime: TelemetryRuntime): Resource {
+  instance.id ??= crypto.randomUUID();
   return {
     attributes: attributes({
+      "service.instance.id": instance.id,
       "service.name": `${service}-${runtime}`,
       "service.namespace": "typescript-template",
-      "service.instance.id": instanceId,
     }),
   };
 }
 
-export function logRecord(
-  name: string,
-  values: Attributes,
-  context: Correlation,
-  time: number,
-  failed: boolean,
-) {
+function logRecord(input: LogInput): LogRecord {
+  const { context, failed, name, time, values } = input;
   return {
-    timeUnixNano: nanoTime(time),
-    observedTimeUnixNano: nanoTime(time),
-    severityNumber: failed ? 17 : 9,
-    severityText: failed ? "ERROR" : "INFO",
+    attributes: attributes({ ...values, "request.id": context.requestId }),
     body: { stringValue: name },
-    attributes: attributes({ ...values, "request.id": context.requestId }),
-    traceId: context.traceId,
+    flags: sampledFlags,
+    observedTimeUnixNano: nanoTime(time),
+    severityNumber: failed ? severity.error : severity.info,
+    severityText: failed ? "ERROR" : "INFO",
     spanId: context.spanId,
-    flags: 1,
-  };
-}
-
-export function spanRecord(
-  name: string,
-  values: Attributes,
-  context: Correlation,
-  start: number,
-  end: number,
-  kind: number,
-  failed: boolean,
-  parentSpanId?: string,
-) {
-  return {
-    name,
+    timeUnixNano: nanoTime(time),
     traceId: context.traceId,
-    spanId: context.spanId,
-    ...(parentSpanId ? { parentSpanId } : {}),
-    kind,
-    startTimeUnixNano: nanoTime(start),
-    endTimeUnixNano: nanoTime(end),
-    attributes: attributes({ ...values, "request.id": context.requestId }),
-    status: { code: failed ? 2 : 0 },
-    flags: 1,
   };
 }
 
-export function histogram(
-  name: string,
-  unit: string,
-  value: number,
-  values: Attributes,
-  start: number,
-  end: number,
-  context: Correlation,
-) {
-  const bounds =
-    unit === "s"
-      ? [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
-      : [0.1, 1, 10, 100, 500, 1000, 2500, 5000, 10000];
-  const index = bounds.findIndex((bound) => value <= bound);
+function spanRecord(input: SpanInput): SpanRecord {
+  const { context, parentSpanId } = input;
   return {
-    name,
-    unit,
-    histogram: {
-      aggregationTemporality: 1,
-      dataPoints: [
-        {
-          attributes: attributes(values),
-          startTimeUnixNano: nanoTime(start),
-          timeUnixNano: nanoTime(end),
-          count: "1",
-          sum: value,
-          min: value,
-          max: value,
-          explicitBounds: bounds,
-          bucketCounts: Array.from({ length: bounds.length + 1 }, (_, i): string =>
-            i === (index < 0 ? bounds.length : index) ? "1" : "0",
-          ),
-          exemplars: [
-            {
-              timeUnixNano: nanoTime(end),
-              asDouble: value,
-              traceId: context.traceId,
-              spanId: context.spanId,
-            },
-          ],
-        },
-      ],
-    },
+    attributes: attributes({ ...input.values, "request.id": context.requestId }),
+    endTimeUnixNano: nanoTime(input.end),
+    flags: sampledFlags,
+    kind: input.kind,
+    name: input.name,
+    ...(parentSpanId === undefined || parentSpanId === "" ? {} : { parentSpanId }),
+    spanId: context.spanId,
+    startTimeUnixNano: nanoTime(input.start),
+    status: { code: input.failed ? spanStatus.error : spanStatus.unset },
+    traceId: context.traceId,
   };
 }
 
-type Histogram = ReturnType<typeof histogram>;
-type HistogramPoint = Histogram["histogram"]["dataPoints"][number];
-
-export function createMetricAccumulator() {
-  const series = new Map<string, HistogramPoint>();
-  return (records: Histogram[], namespace: string, now: number): Histogram[] => {
-    const batch = new Map<string, Histogram>();
-    for (const record of records) {
-      for (const input of record.histogram.dataPoints) {
-        const ordered = [...input.attributes].sort((left, right) =>
-          left.key.localeCompare(right.key),
-        );
-        const key = JSON.stringify([
-          namespace,
-          record.name,
-          record.unit,
-          ordered,
-          input.explicitBounds,
-        ]);
-        const current = batch.get(key)?.histogram.dataPoints[0];
-        const previous = current ?? series.get(key);
-        const point: HistogramPoint = previous
-          ? {
-              ...previous,
-              count: String(BigInt(previous.count) + BigInt(input.count)),
-              sum: previous.sum + input.sum,
-              min: Math.min(previous.min, input.min),
-              max: Math.max(previous.max, input.max),
-              bucketCounts: previous.bucketCounts.map((count, index) =>
-                String(BigInt(count) + BigInt(input.bucketCounts[index] ?? "0")),
-              ),
-              exemplars: [...(current?.exemplars ?? []), ...input.exemplars],
-            }
-          : structuredClone(input);
-        if (!current) {
-          const timestamp = Math.max(
-            now,
-            previous ? Number(BigInt(previous.timeUnixNano) / 1_000_000n) + 1 : now,
-          );
-          point.timeUnixNano = nanoTime(timestamp);
-          if (!previous) point.startTimeUnixNano = nanoTime(now - 1);
-        }
-        batch.set(key, {
-          ...record,
-          histogram: { aggregationTemporality: 2, dataPoints: [point] },
-        });
-      }
-    }
-    for (const [key, record] of batch) {
-      const point = record.histogram.dataPoints[0];
-      if (!point) continue;
-      if (!series.has(key) && series.size >= 4096) series.delete(series.keys().next().value ?? "");
-      series.set(key, { ...point, exemplars: [] });
-    }
-    return [...batch.values()];
-  };
-}
-
-export function envelope(
-  signal: Signal,
-  records: unknown[],
-  service: ServiceName,
-  runtime: "browser" | "server",
-) {
-  const common = { resource: resource(service, runtime) };
-  if (signal === "logs")
-    return { resourceLogs: [{ ...common, scopeLogs: [{ scope, logRecords: records }] }] };
-  if (signal === "traces")
+function envelope(input: EnvelopeInput): Envelope {
+  const { records, signal } = input;
+  const common = { resource: resource(input.service, input.runtime) };
+  if (signal === "logs") {
+    return { resourceLogs: [{ ...common, scopeLogs: [{ logRecords: records, scope }] }] };
+  }
+  if (signal === "traces") {
     return { resourceSpans: [{ ...common, scopeSpans: [{ scope, spans: records }] }] };
-  return { resourceMetrics: [{ ...common, scopeMetrics: [{ scope, metrics: records }] }] };
+  }
+  return { resourceMetrics: [{ ...common, scopeMetrics: [{ metrics: records, scope }] }] };
 }
 
-export const httpMethod = (method: string): string =>
-  ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"].includes(method) ? method : "_OTHER";
+function httpMethod(method: string): string {
+  return ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"].includes(method)
+    ? method
+    : "_OTHER";
+}
 
-export function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
-  if (Object.hasOwn(routes, pathname)) return routes[pathname] ?? "unmatched";
+function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
+  if (Object.hasOwn(routes, pathname)) {
+    return routes[pathname] ?? "unmatched";
+  }
   const prefixes = Object.entries(routes)
     .filter(([path]) => path.endsWith("/*"))
-    .sort(([left], [right]) => right.length - left.length);
+    .toSorted(([left], [right]) => right.length - left.length);
   return prefixes.find(([path]) => pathname.startsWith(path.slice(0, -1)))?.[1] ?? "unmatched";
 }
 
-export function validateRoutes(routes: Readonly<Record<string, string>>) {
-  for (const [path, label] of Object.entries(routes)) {
-    if (
-      !path.startsWith("/") ||
-      path.includes("?") ||
-      path.includes("#") ||
-      (path.includes("*") && (!path.endsWith("/*") || path.slice(0, -1).includes("*"))) ||
-      !/^[a-z][a-z0-9_.-]{0,63}$/.test(label)
-    ) {
-      throw new Error("Telemetry routes require fixed paths and bounded labels");
-    }
+function validRoute(path: string, label: string): boolean {
+  const wildcard = path.includes("*");
+  return (
+    path.startsWith("/") &&
+    !path.includes("?") &&
+    !path.includes("#") &&
+    (!wildcard || (path.endsWith("/*") && !path.slice(0, -1).includes("*"))) &&
+    /^[a-z][a-z0-9_.-]{0,63}$/u.test(label)
+  );
+}
+
+function validateRoutes(routes: Readonly<Record<string, string>>): void {
+  if (Object.entries(routes).some(([path, label]) => !validRoute(path, label))) {
+    throw new Error("Telemetry routes require fixed paths and bounded labels");
   }
 }
+
+export {
+  attributes,
+  envelope,
+  httpMethod,
+  logRecord,
+  millisecondsPerSecond,
+  nanoTime,
+  nanosecondsPerMillisecond,
+  parentContext,
+  randomHex,
+  routeLabel,
+  spanIdBytes,
+  spanKind,
+  spanRecord,
+  traceIdBytes,
+  validRequestId,
+  validSpanId,
+  validTraceId,
+  validateRoutes,
+};
+export type {
+  Attributes,
+  Correlation,
+  KeyValue,
+  LogRecord,
+  ServiceName,
+  Signal,
+  SpanRecord,
+  TelemetryRuntime,
+};

@@ -1,15 +1,20 @@
-import { createHash } from "node:crypto";
-import * as pulumi from "@pulumi/pulumi";
-import * as cloudflare from "@pulumi/cloudflare";
+import {
+  AccountToken,
+  R2Bucket,
+  R2ManagedDomain,
+  getAccountApiTokenPermissionGroupsListOutput,
+} from "@pulumi/cloudflare";
+import { Config, all, secret } from "@pulumi/pulumi";
 import {
   backendUrl,
   bucketPolicyResources,
   parseBootstrapConfig,
   selectObjectWritePermission,
 } from "./config.ts";
+import { createHash } from "node:crypto";
 
-const config = parseBootstrapConfig(new pulumi.Config().requireObject<unknown>("settings"));
-const bucket = new cloudflare.R2Bucket(
+const config = parseBootstrapConfig(new Config().requireObject<unknown>("settings"));
+const bucket = new R2Bucket(
   "pulumi-state",
   {
     accountId: config.accountId,
@@ -17,15 +22,15 @@ const bucket = new cloudflare.R2Bucket(
   },
   { protect: true },
 );
-const privateDomain = new cloudflare.R2ManagedDomain("state-public-access", {
+const privateDomain = new R2ManagedDomain("state-public-access", {
   accountId: config.accountId,
   bucketName: bucket.name,
   enabled: false,
 });
-const groups = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
+const groups = getAccountApiTokenPermissionGroupsListOutput({
   accountId: config.accountId,
 });
-const token = new cloudflare.AccountToken(
+const token = new AccountToken(
   "pulumi-state-token",
   {
     accountId: config.accountId,
@@ -38,15 +43,17 @@ const token = new cloudflare.AccountToken(
       },
     ],
   },
-  { protect: true, dependsOn: [bucket, privateDomain], additionalSecretOutputs: ["value"] },
+  { additionalSecretOutputs: ["value"], dependsOn: [bucket, privateDomain], protect: true },
 );
 
-export const stateBackend = backendUrl(config);
-export const stateCredentials = pulumi.secret(
-  pulumi.all([token.id, token.value]).apply(([accessKeyId, value]) => ({
+const stateBackend = backendUrl(config);
+const stateCredentials = secret(
+  all([token.id, token.value]).apply(([accessKeyId, value]) => ({
+    accessKeyId,
     accountId: config.accountId,
     bucket: config.bucket,
-    accessKeyId,
     secretAccessKey: createHash("sha256").update(value).digest("hex"),
   })),
 );
+
+export { stateBackend, stateCredentials };

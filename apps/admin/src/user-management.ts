@@ -1,0 +1,155 @@
+import { array, boolean, number, object, parse, picklist, string } from "valibot";
+import { useCallback, useEffect, useState } from "react";
+import type { InferOutput } from "valibot";
+import type { MouseEventHandler } from "react";
+import { requestJson } from "@template/runtime/client";
+import { usersPageSize } from "#users-pagination.ts";
+
+const userSchema = object({
+  email: string(),
+  emailVerified: boolean(),
+  id: string(),
+  name: string(),
+  role: picklist(["user", "admin"]),
+});
+const usersSchema = object({ total: number(), users: array(userSchema) });
+
+type ManagedUser = Readonly<InferOutput<typeof userSchema>>;
+interface UserList {
+  readonly total: number;
+  readonly users: readonly ManagedUser[];
+}
+type MutationMethod = "PATCH" | "DELETE";
+type ReportFailure = (message: string) => void;
+
+interface UserListState {
+  readonly data: UserList | undefined;
+  readonly handleNext: MouseEventHandler;
+  readonly handlePrevious: MouseEventHandler;
+  readonly offset: number;
+  readonly reload: () => Promise<void>;
+}
+
+interface UserMutationState {
+  readonly handleMutation: (user: ManagedUser, method: MutationMethod) => void;
+  readonly message: string;
+  readonly pending: boolean;
+}
+
+interface UserManagement extends UserListState, UserMutationState {
+  readonly error: string;
+}
+
+function failureMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+async function fetchUsers(offset: number): Promise<UserList> {
+  const body = await requestJson(`/api/users?limit=${usersPageSize}&offset=${offset}`);
+  return parse(usersSchema, body);
+}
+
+function confirmationText(user: ManagedUser, method: MutationMethod): string {
+  return method === "DELETE"
+    ? `${user.email} を削除しますか？`
+    : `${user.email} の権限を変更しますか？`;
+}
+
+function mutationBody(user: ManagedUser, method: MutationMethod): Readonly<Record<string, string>> {
+  return method === "DELETE"
+    ? { id: user.id }
+    : { id: user.id, role: user.role === "admin" ? "user" : "admin" };
+}
+
+function useUserPaging(): Pick<UserListState, "handleNext" | "handlePrevious" | "offset"> {
+  const [offset, setOffset] = useState(0);
+  const handlePrevious = useCallback<MouseEventHandler>(() => {
+    setOffset((current) => Math.max(0, current - usersPageSize));
+  }, []);
+  const handleNext = useCallback<MouseEventHandler>(() => {
+    setOffset((current) => current + usersPageSize);
+  }, []);
+  return { handleNext, handlePrevious, offset };
+}
+
+function useUserList(authorized: boolean, reportFailure: ReportFailure): UserListState {
+  const paging = useUserPaging();
+  const { offset } = paging;
+  const [data, setData] = useState<UserList>();
+  const reload = useCallback(async (): Promise<void> => {
+    try {
+      setData(await fetchUsers(offset));
+    } catch (error) {
+      setData(undefined);
+      reportFailure(failureMessage(error, "一覧の取得に失敗しました。"));
+    }
+  }, [offset, reportFailure]);
+  useEffect(() => {
+    const controller = { active: true };
+    async function load(): Promise<void> {
+      try {
+        const users = await fetchUsers(offset);
+        if (controller.active) {
+          setData(users);
+        }
+      } catch (error) {
+        if (controller.active) {
+          setData(undefined);
+          reportFailure(failureMessage(error, "一覧の取得に失敗しました。"));
+        }
+      }
+    }
+    if (authorized) {
+      void load();
+    }
+    return (): void => {
+      controller.active = false;
+    };
+  }, [authorized, offset, reportFailure]);
+  return { ...paging, data, reload };
+}
+
+function useUserMutation(
+  reload: () => Promise<void>,
+  reportFailure: ReportFailure,
+): UserMutationState {
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState("");
+  const handleMutation = useCallback(
+    (user: ManagedUser, method: MutationMethod): void => {
+      if (!globalThis.confirm(confirmationText(user, method))) {
+        return;
+      }
+      setPending(true);
+      reportFailure("");
+      setMessage("");
+      async function update(): Promise<void> {
+        try {
+          await requestJson("/api/users", { body: mutationBody(user, method), method });
+          setMessage(
+            method === "DELETE"
+              ? "ユーザーを削除しました。"
+              : "権限を変更しました。既存セッションは失効しました。",
+          );
+          await reload();
+        } catch (error) {
+          reportFailure(failureMessage(error, "変更に失敗しました。"));
+        }
+        setPending(false);
+      }
+      void update();
+    },
+    [reload, reportFailure],
+  );
+  return { handleMutation, message, pending };
+}
+
+function useUserManagement(authorized: boolean): UserManagement {
+  const [failure, setFailure] = useState("");
+  const list = useUserList(authorized, setFailure);
+  const mutation = useUserMutation(list.reload, setFailure);
+  return { ...list, ...mutation, error: failure };
+}
+
+export { useUserManagement };
+export type { ManagedUser, MutationMethod, UserList, UserManagement };

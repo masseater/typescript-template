@@ -2,6 +2,9 @@
   "name": "@template/wiki",
   "private": true,
   "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
   "scripts": {
     "dev": "X_LOCAL_EXPLORER=false vp dev",
     "build": "vp build",

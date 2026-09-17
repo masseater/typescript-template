@@ -1,30 +1,51 @@
-import * as v from "valibot";
+import {
+  array,
+  email,
+  finite,
+  maxLength,
+  minLength,
+  minValue,
+  number,
+  object,
+  pipe,
+  regex,
+  safeParse,
+  string,
+  transform,
+} from "valibot";
+import type { InferOutput } from "valibot";
 
-const positive = v.pipe(v.number(), v.finite(), v.minValue(Number.MIN_VALUE));
-const nonnegative = v.pipe(v.number(), v.finite(), v.minValue(0));
-const decimal = v.pipe(v.string(), v.regex(/^\d+(?:\.\d+)?$/), v.transform(Number));
-const schema = v.object({
-  CLOUDFLARE_ACCOUNT_ID: v.pipe(v.string(), v.regex(/^[a-f0-9]{32}$/)),
-  BILLING_READ_TOKEN: v.pipe(v.string(), v.minLength(20)),
-  BUDGET_JPY: v.pipe(decimal, positive),
-  JPY_PER_USD: v.pipe(decimal, positive),
-  FIXED_COST_USD: v.pipe(decimal, nonnegative),
-  RESERVE_USD: v.pipe(decimal, nonnegative),
-  ALERT_FROM: v.pipe(v.string(), v.email()),
-  ALERT_TO: v.pipe(
-    v.string(),
-    v.transform((value) => value.split(",")),
-    v.array(v.pipe(v.string(), v.email())),
-    v.minLength(1),
-    v.maxLength(10),
+const MAX_ALERT_RECIPIENTS = 10;
+const MIN_BILLING_TOKEN_LENGTH = 20;
+
+const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
+const nonnegative = pipe(number(), finite(), minValue(0));
+const decimal = pipe(string(), regex(/^\d+(?:\.\d+)?$/u), transform(Number));
+const emailAddress = pipe(string(), email());
+const schema = object({
+  ALERT_FROM: emailAddress,
+  ALERT_TO: pipe(
+    string(),
+    transform((value) => value.split(",")),
+    array(emailAddress),
+    minLength(1),
+    maxLength(MAX_ALERT_RECIPIENTS),
   ),
+  BILLING_READ_TOKEN: pipe(string(), minLength(MIN_BILLING_TOKEN_LENGTH)),
+  BUDGET_JPY: pipe(decimal, positive),
+  CLOUDFLARE_ACCOUNT_ID: pipe(string(), regex(/^[a-f0-9]{32}$/u)),
+  FIXED_COST_USD: pipe(decimal, nonnegative),
+  JPY_PER_USD: pipe(decimal, positive),
+  RESERVE_USD: pipe(decimal, nonnegative),
 });
 
-export type BudgetConfig = v.InferOutput<typeof schema>;
+type BudgetConfig = InferOutput<typeof schema>;
 
-export function parseBudgetConfig(input: unknown): BudgetConfig {
-  const result = v.safeParse(schema, input);
-  if (!result.success) throw new Error("budget_config_invalid");
+function parseBudgetConfig(input: unknown): BudgetConfig {
+  const result = safeParse(schema, input);
+  if (!result.success) {
+    throw new Error("budget_config_invalid");
+  }
   if (
     result.output.BUDGET_JPY / result.output.JPY_PER_USD <=
     result.output.FIXED_COST_USD + result.output.RESERVE_USD
@@ -33,3 +54,6 @@ export function parseBudgetConfig(input: unknown): BudgetConfig {
   }
   return result.output;
 }
+
+export { parseBudgetConfig };
+export type { BudgetConfig };

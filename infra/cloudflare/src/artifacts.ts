@@ -1,17 +1,43 @@
-import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import { copyFile, lstat, mkdir, readdir, readFile, realpath, stat } from "node:fs/promises";
-import path from "node:path";
+import { copyFile, lstat, mkdir, readFile, readdir, realpath, stat } from "node:fs/promises";
 import type { AppTarget } from "./config.ts";
+import { constants } from "node:fs";
+import { createHash } from "node:crypto";
+import path from "node:path";
+
+const MAIN_MODULE = "index.js";
+const MODULE_CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
+  [".js", "application/javascript+module"],
+  [".mjs", "application/javascript+module"],
+  [".txt", "text/plain"],
+  [".wasm", "application/wasm"],
+]);
+
+interface WorkerModule {
+  readonly contentFile: string;
+  readonly contentSha256: string;
+  readonly contentType: string;
+  readonly name: string;
+}
+
+interface Artifacts {
+  readonly clientDirectory: string;
+  readonly mainModule: string;
+  readonly modules: readonly WorkerModule[];
+}
+
+interface BuildOutput {
+  readonly client: string;
+  readonly server: string;
+}
 
 function privateArtifact(relative: string): boolean {
   return relative
     .split(path.sep)
     .some(
       (name) =>
-        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*|Pulumi(?:\..*)?\.ya?ml)$/.test(
+        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*|Pulumi(?:\..*)?\.ya?ml)$/u.test(
           name,
-        ) || /\.(?:pem|key)$/.test(name),
+        ) || /\.(?:pem|key)$/u.test(name),
     );
 }
 
@@ -19,95 +45,161 @@ async function files(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const nested = await Promise.all(
     entries.map(async (entry) => {
-      if (entry.isSymbolicLink()) throw new Error("artifact_symlink_forbidden");
+      if (entry.isSymbolicLink()) {
+        throw new Error("artifact_symlink_forbidden");
+      }
       const filename = path.join(directory, entry.name);
-      if (entry.isDirectory()) return files(filename);
-      if (!entry.isFile()) throw new Error("artifact_file_type_invalid");
+      if (entry.isDirectory()) {
+        return files(filename);
+      }
+      if (!entry.isFile()) {
+        throw new Error("artifact_file_type_invalid");
+      }
       return [filename];
     }),
   );
-  return nested.flat().sort();
+  return nested.flat().toSorted();
 }
 
-export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
-  const root = path.join(repositoryRoot, "apps", target, "dist");
-  const server = path.join(root, "server");
-  const client = path.join(root, "client");
-  for (const directory of [root, server, client]) {
-    if ((await realpath(directory)) !== directory)
-      throw new Error("artifact_directory_symlink_forbidden");
+async function fileSha256(file: string): Promise<string> {
+  const content = await readFile(file);
+  return createHash("sha256").update(content).digest("hex");
+}
+
+async function sameContent(left: string, right: string): Promise<boolean> {
+  const [leftContent, rightContent] = await Promise.all([readFile(left), readFile(right)]);
+  return leftContent.equals(rightContent);
+}
+
+async function assertRealDirectory(directory: string, error: string): Promise<void> {
+  if ((await realpath(directory)) !== directory) {
+    throw new Error(error);
   }
+}
+
+async function clientArtifactFiles(client: string): Promise<string[]> {
   const allClientFiles = await files(client);
-  if (allClientFiles.some((file) => privateArtifact(path.relative(client, file))))
+  if (allClientFiles.some((file) => privateArtifact(path.relative(client, file)))) {
     throw new Error("private_client_artifact");
+  }
   const clientFiles = allClientFiles.filter((file) => !file.endsWith(".map"));
-  if (clientFiles.length === 0) throw new Error("client_artifacts_empty");
-  const serverFiles = (await files(server)).filter(
+  if (clientFiles.length === 0) {
+    throw new Error("client_artifacts_empty");
+  }
+  return clientFiles;
+}
+
+async function serverArtifactFiles(server: string): Promise<string[]> {
+  const serverFiles = await files(server);
+  return serverFiles.filter(
     (file) => !file.endsWith(".map") && !privateArtifact(path.relative(server, file)),
   );
-  const mainModule = "index.js";
-  if (!serverFiles.includes(path.join(server, mainModule)))
-    throw new Error("worker_entry_missing_index_js");
-  const modules = await Promise.all(
-    serverFiles.map(async (file) => {
-      const extension = path.extname(file);
-      if (extension === ".css") {
-        const publicFile = path.join(client, path.relative(server, file));
-        if (
-          !clientFiles.includes(publicFile) ||
-          !(await readFile(file)).equals(await readFile(publicFile))
-        )
-          throw new Error("server_css_without_public_asset");
-        return undefined;
+}
+
+async function assertServerCssPublished(
+  output: BuildOutput,
+  cssFiles: readonly string[],
+  clientFiles: readonly string[],
+): Promise<void> {
+  await Promise.all(
+    cssFiles.map(async (file) => {
+      const publicFile = path.join(output.client, path.relative(output.server, file));
+      if (!clientFiles.includes(publicFile) || !(await sameContent(file, publicFile))) {
+        throw new Error("server_css_without_public_asset");
       }
-      const contentType =
-        extension === ".js" || extension === ".mjs"
-          ? "application/javascript+module"
-          : extension === ".wasm"
-            ? "application/wasm"
-            : extension === ".txt"
-              ? "text/plain"
-              : undefined;
-      if (!contentType) throw new Error("worker_module_type_unsupported");
+    }),
+  );
+}
+
+async function workerModules(
+  server: string,
+  moduleFiles: readonly string[],
+): Promise<WorkerModule[]> {
+  return Promise.all(
+    moduleFiles.map(async (file) => {
+      const contentType = MODULE_CONTENT_TYPES.get(path.extname(file));
+      if (contentType === undefined) {
+        throw new Error("worker_module_type_unsupported");
+      }
       return {
-        name: path.relative(server, file).replaceAll(path.sep, "/"),
         contentFile: file,
-        contentSha256: createHash("sha256")
-          .update(await readFile(file))
-          .digest("hex"),
+        contentSha256: await fileSha256(file),
         contentType,
+        name: path.relative(server, file).replaceAll(path.sep, "/"),
       };
     }),
   );
-  if ((await stat(path.join(server, mainModule))).size === 0) throw new Error("worker_entry_empty");
-  const manifest = await Promise.all(
-    clientFiles.map(async (file) => [
-      path.relative(client, file),
-      createHash("sha256")
-        .update(await readFile(file))
-        .digest("hex"),
-    ]),
-  );
-  const digest = createHash("sha256").update(JSON.stringify(manifest)).digest("hex");
-  const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
-  await mkdir(staging, { recursive: true });
-  if ((await realpath(staging)) !== staging) throw new Error("artifact_staging_symlink_forbidden");
-  for (const source of clientFiles) {
-    const destination = path.join(staging, path.relative(client, source));
-    await mkdir(path.dirname(destination), { recursive: true });
-    if ((await realpath(path.dirname(destination))) !== path.dirname(destination))
-      throw new Error("artifact_staging_symlink_forbidden");
-    try {
-      await copyFile(source, destination, constants.COPYFILE_EXCL);
-    } catch (error: unknown) {
-      if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") throw error;
-      const existing = await lstat(destination);
-      if (!existing.isFile() || existing.nlink !== 1)
-        throw new Error("artifact_staging_link_forbidden", { cause: error });
-      if (!(await readFile(source)).equals(await readFile(destination)))
-        throw new Error("artifact_staging_contaminated", { cause: error });
-    }
+}
+
+async function loadWorkerModules(
+  output: BuildOutput,
+  clientFiles: readonly string[],
+): Promise<WorkerModule[]> {
+  const serverFiles = await serverArtifactFiles(output.server);
+  if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
+    throw new Error("worker_entry_missing_index_js");
   }
+  const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
+  const [modules] = await Promise.all([
+    workerModules(
+      output.server,
+      serverFiles.filter((file) => path.extname(file) !== ".css"),
+    ),
+    assertServerCssPublished(output, cssFiles, clientFiles),
+  ]);
+  const entry = await stat(path.join(output.server, MAIN_MODULE));
+  if (entry.size === 0) {
+    throw new Error("worker_entry_empty");
+  }
+  return modules;
+}
+
+async function clientDigest(client: string, clientFiles: readonly string[]): Promise<string> {
+  const manifest = await Promise.all(
+    clientFiles.map(async (file) => [path.relative(client, file), await fileSha256(file)]),
+  );
+  return createHash("sha256").update(JSON.stringify(manifest)).digest("hex");
+}
+
+async function assertExistingStagedCopy(
+  source: string,
+  destination: string,
+  cause: Readonly<Error>,
+): Promise<void> {
+  const existing = await lstat(destination);
+  if (!existing.isFile() || existing.nlink !== 1) {
+    throw new Error("artifact_staging_link_forbidden", { cause });
+  }
+  if (!(await sameContent(source, destination))) {
+    throw new Error("artifact_staging_contaminated", { cause });
+  }
+}
+
+async function stageFile(source: string, destination: string): Promise<void> {
+  await mkdir(path.dirname(destination), { recursive: true });
+  await assertRealDirectory(path.dirname(destination), "artifact_staging_symlink_forbidden");
+  try {
+    await copyFile(source, destination, constants.COPYFILE_EXCL);
+  } catch (error: unknown) {
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") {
+      throw error;
+    }
+    await assertExistingStagedCopy(source, destination, error);
+  }
+}
+
+async function stageClientFiles(
+  client: string,
+  staging: string,
+  clientFiles: readonly string[],
+): Promise<void> {
+  await mkdir(staging, { recursive: true });
+  await assertRealDirectory(staging, "artifact_staging_symlink_forbidden");
+  await Promise.all(
+    clientFiles.map(async (source) => {
+      await stageFile(source, path.join(staging, path.relative(client, source)));
+    }),
+  );
   const stagedFiles = await files(staging);
   if (
     stagedFiles.length !== clientFiles.length ||
@@ -117,9 +209,22 @@ export async function loadArtifacts(repositoryRoot: string, target: AppTarget) {
   ) {
     throw new Error("artifact_staging_contaminated");
   }
-  return {
-    mainModule,
-    modules: modules.filter((module) => module !== undefined),
-    clientDirectory: staging,
-  };
 }
+
+async function loadArtifacts(repositoryRoot: string, target: AppTarget): Promise<Artifacts> {
+  const root = path.join(repositoryRoot, "apps", target, "dist");
+  const output = { client: path.join(root, "client"), server: path.join(root, "server") };
+  await Promise.all(
+    [root, output.server, output.client].map(async (directory) => {
+      await assertRealDirectory(directory, "artifact_directory_symlink_forbidden");
+    }),
+  );
+  const clientFiles = await clientArtifactFiles(output.client);
+  const modules = await loadWorkerModules(output, clientFiles);
+  const digest = await clientDigest(output.client, clientFiles);
+  const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
+  await stageClientFiles(output.client, staging, clientFiles);
+  return { clientDirectory: staging, mainModule: MAIN_MODULE, modules };
+}
+
+export { loadArtifacts };

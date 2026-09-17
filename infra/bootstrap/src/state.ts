@@ -1,86 +1,112 @@
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { backendUrl } from "./config.ts";
+import { fileURLToPath } from "node:url";
+import { once } from "node:events";
 import { readCredentials } from "./credentials.ts";
+import { spawn } from "node:child_process";
+import { text } from "node:stream/consumers";
 
-export function validateStateCommand(args: readonly string[]): void {
-  if (
-    args.some(
-      (arg) =>
-        arg.startsWith("--show-secrets") ||
-        arg.startsWith("--plaintext") ||
-        arg.startsWith("--logflow") ||
-        arg.startsWith("--verbose") ||
-        arg.startsWith("-v") ||
-        arg.startsWith("--logtostderr") ||
-        arg.startsWith("--tracing") ||
-        arg.startsWith("--debug"),
-    )
-  ) {
+const FORBIDDEN_ARGUMENT_PREFIXES = [
+  "--show-secrets",
+  "--plaintext",
+  "--logflow",
+  "--verbose",
+  "-v",
+  "--logtostderr",
+  "--tracing",
+  "--debug",
+];
+const FAILED_EXIT_CODE = 1;
+
+function validateStateCommand(args: readonly string[]): void {
+  if (args.some((arg) => FORBIDDEN_ARGUMENT_PREFIXES.some((prefix) => arg.startsWith(prefix)))) {
     throw new Error("plaintext_secret_output_forbidden");
   }
-  const command = args[0];
-  if (!["preview", "up", "refresh", "config", "stack"].includes(command ?? ""))
+  const [command, subcommand] = args;
+  if (!["preview", "up", "refresh", "config", "stack"].includes(command ?? "")) {
     throw new Error("state_command_not_allowed");
-  if (command === "config" && args[1] !== "set" && args[1] !== "set-all")
+  }
+  if (command === "config" && subcommand !== "set" && subcommand !== "set-all") {
     throw new Error("state_command_not_allowed");
-  if (command === "stack" && args[1] !== "init" && args[1] !== "select")
+  }
+  if (command === "stack" && subcommand !== "init" && subcommand !== "select") {
     throw new Error("state_command_not_allowed");
+  }
 }
 
-export function validateOutputRead(name: string): void {
-  if (name !== "databaseId" && name !== "applicationSettings")
+function validateOutputRead(name: string): void {
+  if (name !== "databaseId" && name !== "applicationSettings") {
     throw new Error("state_output_not_allowed");
+  }
 }
 
-async function stateEnvironment() {
-  if (!process.env["PULUMI_CONFIG_PASSPHRASE"] || !process.env["CLOUDFLARE_API_TOKEN"])
+async function stateEnvironment(): Promise<NodeJS.ProcessEnv> {
+  const passphrase = process.env["PULUMI_CONFIG_PASSPHRASE"];
+  const apiToken = process.env["CLOUDFLARE_API_TOKEN"];
+  if (passphrase === undefined || passphrase === "" || apiToken === undefined || apiToken === "") {
     throw new Error("state_environment_missing");
+  }
   const credentials = await readCredentials(
     fileURLToPath(new URL("../.state/r2.json", import.meta.url)),
   );
-  if (!credentials) throw new Error("state_credentials_missing");
+  if (!credentials) {
+    throw new Error("state_credentials_missing");
+  }
   return {
-    PATH: process.env["PATH"],
-    HOME: process.env["HOME"],
-    USER: process.env["USER"],
-    PULUMI_CONFIG_PASSPHRASE: process.env["PULUMI_CONFIG_PASSPHRASE"],
-    CLOUDFLARE_API_TOKEN: process.env["CLOUDFLARE_API_TOKEN"],
-    PULUMI_HOME: fileURLToPath(new URL("../.state/pulumi-home", import.meta.url)),
-    PULUMI_BACKEND_URL: backendUrl(credentials),
     AWS_ACCESS_KEY_ID: credentials.accessKeyId,
-    AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey,
     AWS_REGION: "auto",
+    AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey,
+    CLOUDFLARE_API_TOKEN: apiToken,
+    HOME: process.env["HOME"],
+    PATH: process.env["PATH"],
+    PULUMI_BACKEND_URL: backendUrl(credentials),
+    PULUMI_CONFIG_PASSPHRASE: passphrase,
+    PULUMI_HOME: fileURLToPath(new URL("../.state/pulumi-home", import.meta.url)),
+    USER: process.env["USER"],
   };
 }
 
-export async function runWithState(args: readonly string[]): Promise<number> {
+async function runWithState(args: readonly string[]): Promise<number> {
   validateStateCommand(args);
   const env = await stateEnvironment();
-  return new Promise((resolve, reject) => {
-    const child = spawn("pulumi", [...args], { shell: false, stdio: "inherit", env });
-    child.on("error", () => reject(new Error("state_command_failed")));
-    child.on("exit", (code) => resolve(code ?? 1));
-  });
+  const child = spawn("pulumi", [...args], { env, shell: false, stdio: "inherit" });
+  try {
+    const exitArguments: unknown[] = await once(child, "exit");
+    const [code] = exitArguments;
+    return typeof code === "number" ? code : FAILED_EXIT_CODE;
+  } catch (error: unknown) {
+    throw new Error("state_command_failed", { cause: error });
+  }
 }
 
-export async function readStackOutput(cwd: string, name: string): Promise<unknown> {
+async function spawnForOutput(
+  args: readonly string[],
+  env: Readonly<NodeJS.ProcessEnv>,
+): Promise<string> {
+  const child = spawn("pulumi", [...args], {
+    env,
+    shell: false,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  try {
+    const [output, closeArguments]: [string, unknown[]] = await Promise.all([
+      text(child.stdout),
+      once(child, "close"),
+    ]);
+    const [code] = closeArguments;
+    if (code === 0) {
+      return output;
+    }
+  } catch (error: unknown) {
+    throw new Error("state_output_failed", { cause: error });
+  }
+  throw new Error("state_output_failed");
+}
+
+async function readStackOutput(cwd: string, name: string): Promise<unknown> {
   validateOutputRead(name);
   const env = await stateEnvironment();
-  const output = await new Promise<string>((resolve, reject) => {
-    const child = spawn("pulumi", ["stack", "output", "--json", name, "--cwd", cwd], {
-      shell: false,
-      stdio: ["ignore", "pipe", "ignore"],
-      env,
-    });
-    const chunks: Buffer[] = [];
-    child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.on("error", () => reject(new Error("state_output_failed")));
-    child.on("close", (code) =>
-      code === 0
-        ? resolve(Buffer.concat(chunks).toString("utf8"))
-        : reject(new Error("state_output_failed")),
-    );
-  });
-  return JSON.parse(output) as unknown;
+  const output = await spawnForOutput(["stack", "output", "--json", name, "--cwd", cwd], env);
+  return JSON.parse(output);
 }
+
+export { readStackOutput, runWithState, validateOutputRead, validateStateCommand };

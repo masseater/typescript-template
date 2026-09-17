@@ -12,8 +12,13 @@ const config: KnipConfig = {
     "apps/wiki": {
       project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
     },
-    "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/remote-cli.ts!"],
+    "infra/bootstrap": {
+      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
+      project: ["src/**/*.ts!"],
+    },
+    "infra/budget-monitor": {
+      entry: ["src/worker.ts!", "src/inspect.ts!"],
+      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.ts!"],
     },
     "infra/cloudflare": {
@@ -30,26 +35,24 @@ const config: KnipConfig = {
       ],
       project: ["src/**/*.ts!"],
     },
-    "infra/bootstrap": {
-      entry: ["src/index.ts!", "src/setup.ts!", "src/run.ts!"],
+    "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
+    "libs/auth": {
+      project: ["src/**/*.ts!", "!src/auth-test-fixture.ts!", "!src/browser-client.ts!"],
+    },
+    "libs/db": {
+      entry: ["src/bootstrap-local.ts!", "src/remote-cli.ts!"],
       project: ["src/**/*.ts!"],
     },
-    "infra/local": { entry: ["src/compose.ts!"], project: ["src/**/*.ts!"] },
     "tools/dev": {
       entry: ["src/cli.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
       project: ["src/**/*.ts!"],
     },
+    "tools/e2e": {
+      project: ["src/**/*.ts"],
+    },
     "tools/observe": {
       entry: ["src/cli.ts!", "src/verify.ts!"],
       project: ["src/**/*.ts!"],
-    },
-    "infra/budget-monitor": {
-      entry: ["src/worker.ts!", "src/inspect.ts!"],
-      project: ["src/**/*.ts!"],
-      ignoreDependencies: ["cloudflare"],
-    },
-    "tools/e2e": {
-      project: ["src/**/*.ts"],
     },
   },
 };
