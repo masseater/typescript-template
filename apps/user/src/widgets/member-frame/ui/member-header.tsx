@@ -1,6 +1,6 @@
 import { AccountMenu } from "./account-menu.tsx";
 import { MemberNavigation } from "./member-navigation.tsx";
-import { ProfileLink } from "#shared/ui/index.ts";
+import { NavigationLink } from "@template/ui/ui";
 import type { ReactElement } from "react";
 import type { Session } from "#entities/session/index.ts";
 import { serviceName } from "#shared/config/index.ts";
@@ -8,12 +8,9 @@ import { serviceName } from "#shared/config/index.ts";
 function MemberHeader({ user }: Readonly<{ user: Session["user"] }>): ReactElement {
   return (
     <header className="flex w-full items-center gap-4 border-b border-border bg-card px-4 py-3 shadow-sm">
-      <ProfileLink
-        id={user.id}
-        className="text-lg leading-tight font-bold text-foreground no-underline"
-      >
+      <NavigationLink to="/users/$id" params={{ id: user.id }} variant="brand">
         {serviceName}
-      </ProfileLink>
+      </NavigationLink>
       <MemberNavigation userId={user.id} />
       <div className="ml-auto">
         <AccountMenu name={user.name} />

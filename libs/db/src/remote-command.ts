@@ -10,7 +10,7 @@ interface PlanReport {
   readonly accountId: string;
   readonly databaseId: string;
   readonly event: "database.remote_plan";
-  readonly migrations: readonly { readonly createdAt: number; readonly hash: string }[];
+  readonly migrations: readonly { readonly hash: string; readonly name: string }[];
   readonly ok: true;
   readonly operation: RemoteInput["operation"];
   readonly remoteStateVerified: false;
@@ -22,7 +22,7 @@ function planReport({ operation, target }: RemoteInput, migrations: Migrations):
     accountId: target.accountId,
     databaseId: target.databaseId,
     event: "database.remote_plan",
-    migrations: migrations.map((item) => ({ createdAt: item.folderMillis, hash: item.hash })),
+    migrations: migrations.map((item) => ({ hash: item.hash, name: item.name })),
     ok: true,
     operation,
     remoteStateVerified: false,

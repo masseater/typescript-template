@@ -143,6 +143,8 @@ const rawD1OutsideAdapter = [
   ["apps/user/src/probe.test.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
 ] as const;
 
+const rawD1Adapters = [["libs/db/src/migrate-d1.ts"], ["libs/db/src/testing.ts"]] as const;
+
 const nonD1Operations = [
   ["regexp", "export const load = (input: string) => /pattern/.exec(input);"],
   [
@@ -197,13 +199,10 @@ describe("project lint rules on raw D1 access", () => {
     expect(reportedRules("libs/shared/src/probe.ts", code)).toStrictEqual([]);
   });
 
-  it("allows raw D1 in the testing adapter", () => {
+  it.for(rawD1Adapters)("allows raw D1 in the %s adapter", ([name]) => {
     expect.hasAssertions();
     expect(
-      reportedRules(
-        "libs/db/src/testing.ts",
-        'export const load = (db: D1Database) => db.exec("SELECT 1");',
-      ),
+      reportedRules(name, 'export const load = (db: D1Database) => db.exec("SELECT 1");'),
     ).toStrictEqual([]);
   });
 });

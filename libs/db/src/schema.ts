@@ -11,6 +11,7 @@ import {
 } from "./oauth-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { applications } from "@template/config";
+import { interview } from "./interview-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -75,7 +76,7 @@ const passkey = sqliteTable(
     backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
     counter: integer("counter").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }),
-    credentialID: text("credential_id").notNull().unique(),
+    credentialID: text("credential_id").notNull(),
     deviceType: text("device_type").notNull(),
     id: text("id").primaryKey(),
     name: text("name"),
@@ -86,15 +87,23 @@ const passkey = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
   },
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (table) => [index("passkey_user_id_idx").on(table.userId)],
+  (table) => [
+    index("passkey_user_id_idx").on(table.userId),
+    uniqueIndex("passkey_credential_id_unique").on(table.credentialID),
+  ],
 );
 
-const rateLimit = sqliteTable("rate_limit", {
-  count: integer("count").notNull(),
-  id: text("id").primaryKey(),
-  key: text("key").notNull().unique(),
-  lastRequest: integer("last_request").notNull(),
-});
+const rateLimit = sqliteTable(
+  "rate_limit",
+  {
+    count: integer("count").notNull(),
+    id: text("id").primaryKey(),
+    key: text("key").notNull(),
+    lastRequest: integer("last_request").notNull(),
+  },
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
+);
 
 const auditEvent = sqliteTable(
   "audit_event",
@@ -112,6 +121,7 @@ const auditEvent = sqliteTable(
 const schema = {
   account,
   auditEvent,
+  interview,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -129,5 +139,15 @@ const schema = {
 };
 
 export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
-export { oauthAccessToken, oauthClient, oauthConsent, oauthRefreshToken } from "./oauth-schema.ts";
+export {
+  jwks,
+  oauthAccessToken,
+  oauthClient,
+  oauthClientAssertion,
+  oauthClientResource,
+  oauthConsent,
+  oauthRefreshToken,
+  oauthResource,
+} from "./oauth-schema.ts";
 export { session, user } from "./identity-schema.ts";
+export { interview } from "./interview-schema.ts";

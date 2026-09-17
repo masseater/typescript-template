@@ -2,12 +2,11 @@ import { CardPage } from "#shared/ui/index.ts";
 import { Link } from "@tanstack/react-router";
 import { LoginForm } from "@template/ui/auth";
 import type { ReactElement } from "react";
-import { useCallback } from "react";
 
 function LoginPage({ destination }: Readonly<{ destination: string }>): ReactElement {
-  const enter = useCallback((): void => {
+  function enter(): void {
     globalThis.location.assign(destination);
-  }, [destination]);
+  }
   return (
     <CardPage title="ログイン">
       <LoginForm onAuthenticated={enter} />

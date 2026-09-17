@@ -1,14 +1,14 @@
-import { useCallback, useState } from "react";
 import { CardPage } from "#shared/ui/index.ts";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { SignUpForm } from "@template/ui/signup";
+import { useState } from "react";
 
 function SignUpPage(): ReactElement {
   const [sent, setSent] = useState(false);
-  const showSent = useCallback((): void => {
+  function showSent(): void {
     setSent(true);
-  }, []);
+  }
   if (sent) {
     return (
       <CardPage title="確認メールを送りました">

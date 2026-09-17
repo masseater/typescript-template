@@ -1,10 +1,15 @@
 import type { ConfigEnv, UserConfig } from "vite-plus";
-import { appRun, appServer, previewDevVars, withoutEnvFileLoader } from "@template/config/vite";
+import {
+  appRun,
+  appServer,
+  previewDevVars,
+  reactCompiler,
+  withoutEnvFileLoader,
+} from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import { devBoundary } from "@template/dev-boundary";
-import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { workerCompatibility } from "@template/config/worker";
@@ -38,7 +43,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
         },
       }),
     ),
-    react(),
+    reactCompiler(),
   ],
   preview: appServer("user"),
   run: appRun,

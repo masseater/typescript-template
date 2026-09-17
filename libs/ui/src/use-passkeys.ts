@@ -1,5 +1,5 @@
 import { errorMessage, requireSuccess } from "./protocol";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { PasskeySummary } from "./mfa-types";
 import { authClient } from "./client";
 
@@ -26,9 +26,9 @@ function usePasskeys(): PasskeysState {
     listError: undefined,
     passkeys: undefined,
   });
-  const reload = useCallback(async () => {
+  async function reload(): Promise<void> {
     setListing(await fetchPasskeys());
-  }, []);
+  }
   useEffect(() => {
     async function load(): Promise<void> {
       setListing(await fetchPasskeys());

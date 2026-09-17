@@ -1,1 +1,1 @@
-export { readApi } from "./read-api.ts";
+export { absence, readApi } from "./read-api.ts";

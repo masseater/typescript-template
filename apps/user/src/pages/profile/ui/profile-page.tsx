@@ -1,17 +1,18 @@
-import { Avatar, Heading, buttonVariants } from "@template/ui/ui";
+import { Avatar, ButtonLink, Heading } from "@template/ui/ui";
 import { Biography } from "./biography.tsx";
-import { Link } from "@tanstack/react-router";
 import type { Member } from "#pages/profile/model/member.ts";
+import { ProfileBody } from "./profile-body.tsx";
 import type { ReactElement } from "react";
 
-function joinedLabel(joined: string): string {
-  const [year = "", month = ""] = joined.split("-");
-  return `${year}年${Number(month)}月に登録`;
-}
+const joinedMonth = new Intl.DateTimeFormat("ja", {
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
 
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+    <ProfileBody>
       <div className="flex items-center gap-4">
         <Avatar name={member.name} size="large" />
         <Heading as="h1" size="page">
@@ -19,13 +20,11 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
         </Heading>
       </div>
       <Biography own={own} text={member.profile} />
-      <p className="text-sm leading-normal text-muted-foreground">{joinedLabel(member.joined)}</p>
-      {own && (
-        <Link to="/settings/profile" className={buttonVariants({ variant: "secondary" })}>
-          プロフィールを編集
-        </Link>
-      )}
-    </main>
+      <p className="text-sm leading-normal text-muted-foreground">
+        {joinedMonth.format(new Date(`${member.joined}-01T00:00:00Z`))}に登録
+      </p>
+      {own && <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>}
+    </ProfileBody>
   );
 }
 

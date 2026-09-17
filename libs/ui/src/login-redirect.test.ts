@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
-import { loginPath, redirectTarget } from "#login-redirect.ts";
+import { loginPath, redirectTarget } from "./login-redirect";
 
 describe("post-login redirect target", () => {
-  it("accepts paths inside the admin app, keeping their query", () => {
+  it("accepts paths inside the app, keeping their query", () => {
     expect.hasAssertions();
     expect(redirectTarget("/?keyword=alice&page=2")).toBe("/?keyword=alice&page=2");
     expect(redirectTarget("/security")).toBe("/security");
   });
 
-  it("falls back to the user list for anything that could leave the app or loop", () => {
+  it("falls back to the top page for anything that could leave the app or loop", () => {
     expect.hasAssertions();
     for (const value of [
       undefined,
@@ -16,6 +16,9 @@ describe("post-login redirect target", () => {
       "https://evil.example/",
       "//evil.example/",
       String.raw`/\evil.example`,
+      "/\t/evil.example",
+      "/\n/evil.example",
+      "/\t\\evil.example",
       "security",
       "/login",
       "/login?redirect=/",

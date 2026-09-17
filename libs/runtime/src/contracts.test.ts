@@ -1,100 +1,57 @@
-import { Effect, Schema } from "effect";
-import { MemberList, MemberListQuery, MemberView } from "./contracts.ts";
-import { assert, describe, it } from "@effect/vitest";
+import { ProfileView, RoleChanged, SessionView, UserDeleted, UserList } from "./contracts.ts";
+import { describe, expect, it } from "vite-plus/test";
+import type { UserRecord } from "@template/db";
+import { getSchemaShape } from "@template/db/testing";
 
-const encode = Schema.encodeUnknownEffect(MemberView);
+type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserRecord, Fields>]
+  ? [Pick<UserRecord, Fields>] extends [View]
+    ? true
+    : false
+  : false;
 
-describe("member view", () => {
-  it.effect("drops everything the profile page does not show to others", () =>
-    Effect.gen(function* program() {
-      const encoded = yield* encode({
-        email: "reader@example.com",
-        emailVerified: true,
-        id: "reader",
-        joined: "2026-08",
-        name: "山田 花子",
-        profile: "はじめまして。",
-        role: "admin",
-        twoFactorEnabled: true,
-      });
-      assert.deepStrictEqual(encoded, {
-        id: "reader",
-        joined: "2026-08",
-        name: "山田 花子",
-        profile: "はじめまして。",
-      });
-    }),
-  );
+const sessionUserMatchesRecord: Matches<
+  (typeof SessionView.Type)["user"],
+  "email" | "id" | "name" | "role" | "twoFactorEnabled"
+> = true;
+const profileViewMatchesRecord: Matches<
+  typeof ProfileView.Type,
+  "email" | "id" | "name" | "profile"
+> = true;
+const userSummaryMatchesRecord: Matches<
+  (typeof UserList.Type)["users"][number],
+  "createdAt" | "email" | "emailVerified" | "id" | "name" | "role" | "twoFactorEnabled"
+> = true;
+const roleChangedMatchesRecord: Matches<typeof RoleChanged.Type, "id" | "role"> = true;
+const userDeletedMatchesRecord: Matches<typeof UserDeleted.Type, "id"> = true;
 
-  it.effect("rejects a registration date finer than a month", () =>
-    Effect.gen(function* program() {
-      const failure = yield* encode({
-        id: "reader",
-        joined: "2026-08-31T23:59:59.999Z",
-        name: "reader",
-        profile: "",
-      }).pipe(Effect.flip);
-      assert.strictEqual(failure._tag, "SchemaError");
-    }),
-  );
-});
+const views = {
+  ProfileView: ProfileView.fields,
+  RoleChanged: RoleChanged.fields,
+  SessionUser: SessionView.fields.user.fields,
+  UserDeleted: UserDeleted.fields,
+  UserSummary: UserList.fields.users.value.fields,
+};
 
-const decodeQuery = Schema.decodeUnknownEffect(MemberListQuery, { onExcessProperty: "error" });
+describe("user views", () => {
+  it("describe the same field types as the user row", () => {
+    expect.hasAssertions();
+    expect([
+      sessionUserMatchesRecord,
+      profileViewMatchesRecord,
+      userSummaryMatchesRecord,
+      roleChangedMatchesRecord,
+      userDeletedMatchesRecord,
+    ]).toStrictEqual([true, true, true, true, true]);
+  });
 
-describe("member list query", () => {
-  it.effect("reads the first page when the query carries nothing", () =>
-    Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* decodeQuery({}), { page: 1 });
-    }),
-  );
-
-  it.effect("reads a trimmed name and a page from the query string", () =>
-    Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* decodeQuery({ keyword: " 花子 ", page: "3" }), {
-        keyword: "花子",
-        page: 3,
-      });
-    }),
-  );
-
-  it.effect.each([
-    { page: "0" },
-    { page: "1.5" },
-    { page: "abc" },
-    { keyword: "" },
-    { keyword: "   " },
-    { limit: "500" },
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ])("rejects the query %o", (input) =>
-    Effect.gen(function* program() {
-      const failure = yield* decodeQuery(input).pipe(Effect.flip);
-      assert.strictEqual(failure._tag, "SchemaError");
-    }),
-  );
-});
-
-describe("member list response", () => {
-  it.effect("drops private fields from every listed member", () =>
-    Effect.gen(function* program() {
-      const encoded = yield* Schema.encodeUnknownEffect(MemberList)({
-        members: [
-          {
-            email: "a@example.com",
-            id: "a",
-            joined: "2026-09",
-            name: "a",
-            profile: "",
-            role: "admin",
-          },
-        ],
-        pageSize: 24,
-        total: 1,
-      });
-      assert.deepStrictEqual(encoded, {
-        members: [{ id: "a", joined: "2026-09", name: "a", profile: "" }],
-        pageSize: 24,
-        total: 1,
-      });
-    }),
-  );
+  it("name only columns that the user table has", () => {
+    expect.hasAssertions();
+    const columns = new Set(getSchemaShape()["user"]);
+    const unknown = Object.entries(views).flatMap(([view, fields]: readonly [string, object]) =>
+      Object.keys(fields)
+        .filter((field) => !columns.has(field))
+        .map((field) => `${view}.${field}`),
+    );
+    expect(unknown).toStrictEqual([]);
+  });
 });

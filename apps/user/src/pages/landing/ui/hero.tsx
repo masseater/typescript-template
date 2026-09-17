@@ -1,6 +1,6 @@
+import { ButtonLink } from "@template/ui/ui";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { buttonVariants } from "@template/ui/ui";
 
 function Hero(): ReactElement {
   return (
@@ -12,9 +12,9 @@ function Hero(): ReactElement {
         自己紹介を書いて、気になる人を探せます。アカウントはパスキーと 2 段階認証で守れます。
       </p>
       <div className="flex flex-wrap items-center justify-center gap-4">
-        <Link to="/signup" className={buttonVariants({ size: "large", variant: "primary" })}>
+        <ButtonLink to="/signup" size="large" variant="primary">
           新規登録
-        </Link>
+        </ButtonLink>
         <Link to="/login">ログイン</Link>
       </div>
     </section>

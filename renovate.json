@@ -32,7 +32,8 @@
         "react-dom",
         "@types/react",
         "@types/react-dom",
-        "@vitejs/plugin-react"
+        "@vitejs/plugin-react",
+        "oxc-transform-react"
       ]
     },
     {

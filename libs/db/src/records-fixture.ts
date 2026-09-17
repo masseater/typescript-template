@@ -107,34 +107,25 @@ const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId:
   const scopes = '["wiki:read"]';
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query(async (database): Promise<void> => {
-    await database.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" });
-  });
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  yield* query(async (database): Promise<void> => {
-    await database.insert(oauthRefreshToken).values({
-      clientId,
-      id: `refresh-${userId}`,
-      scopes,
-      token: `refresh-token-${userId}`,
-      userId,
-    });
-  });
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  yield* query(async (database): Promise<void> => {
-    await database.insert(oauthAccessToken).values({
-      clientId,
-      id: `access-${userId}`,
-      refreshId: `refresh-${userId}`,
-      scopes,
-      token: `access-token-${userId}`,
-      userId,
-    });
-  });
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  yield* query(async (database): Promise<void> => {
-    await database
-      .insert(oauthConsent)
-      .values({ clientId, id: `consent-${userId}`, scopes, userId });
+    await database.batch([
+      database.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" }),
+      database.insert(oauthRefreshToken).values({
+        clientId,
+        id: `refresh-${userId}`,
+        scopes,
+        token: `refresh-token-${userId}`,
+        userId,
+      }),
+      database.insert(oauthAccessToken).values({
+        clientId,
+        id: `access-${userId}`,
+        refreshId: `refresh-${userId}`,
+        scopes,
+        token: `access-token-${userId}`,
+        userId,
+      }),
+      database.insert(oauthConsent).values({ clientId, id: `consent-${userId}`, scopes, userId }),
+    ]);
   });
 });
 

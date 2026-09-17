@@ -1,10 +1,9 @@
-import { Button, Field } from "./shared/ui";
-import type { ReactElement, SubmitEventHandler, SyntheticEvent } from "react";
+import { Button, Field, FormColumn } from "./shared/ui";
+import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-import { useCallback } from "react";
 import { useTextInput } from "./use-text-input";
 
 interface SignUpFieldsProps {
@@ -12,51 +11,34 @@ interface SignUpFieldsProps {
   readonly onSent: () => void;
 }
 
-interface SignUpInputs extends SignUpFieldsProps {
-  readonly email: TextInput;
-  readonly name: TextInput;
-  readonly password: TextInput;
-}
-
-function useSignUpSubmit({
-  action,
-  email,
-  name,
-  onSent,
-  password,
-}: SignUpInputs): SubmitEventHandler<HTMLFormElement> {
-  const { run } = action;
-  const { value: emailValue } = email;
-  const { value: nameValue } = name;
-  const { setValue: setPassword, value: passwordValue } = password;
-  return useCallback<SubmitEventHandler<HTMLFormElement>>(
-    (event: Readonly<Pick<SyntheticEvent, "preventDefault">>) => {
-      event.preventDefault();
-      run(async () => {
-        requireSuccess(
-          await authClient.signUp.email({
-            callbackURL: "/login",
-            email: emailValue,
-            name: nameValue,
-            password: passwordValue,
-          }),
-        );
-        setPassword("");
-        onSent();
-      });
-    },
-    [emailValue, nameValue, onSent, passwordValue, run, setPassword],
+async function signUp(
+  fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
+  onSent: () => void,
+): Promise<void> {
+  const { email, name, password } = fields;
+  requireSuccess(
+    await authClient.signUp.email({
+      callbackURL: "/login",
+      email: email.value,
+      name: name.value,
+      password: password.value,
+    }),
   );
+  password.handleChange("");
+  onSent();
 }
 
 function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
   const name = useTextInput();
   const email = useTextInput();
   const password = useTextInput();
-  const submit = useSignUpSubmit({ action, email, name, onSent, password });
+  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+    event.preventDefault();
+    action.run(async () => signUp({ email, name, password }, onSent));
+  }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full flex-col gap-4">
+      <FormColumn>
         <Field
           label="ユーザー名"
           name="name"
@@ -64,7 +46,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
           required
           maxLength={100}
           value={name.value}
-          onChange={name.handleChange}
+          onValueChange={name.handleChange}
         />
         <Field
           label="メールアドレス"
@@ -73,7 +55,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
           autoComplete="username"
           required
           value={email.value}
-          onChange={email.handleChange}
+          onValueChange={email.handleChange}
         />
         <Field
           label="パスワード（12文字以上）"
@@ -84,12 +66,12 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
           maxLength={128}
           required
           value={password.value}
-          onChange={password.handleChange}
+          onValueChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           登録する
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

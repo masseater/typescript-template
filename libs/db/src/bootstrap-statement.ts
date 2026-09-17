@@ -1,11 +1,17 @@
-import { Effect, Schema } from "effect";
-import type { Role } from "@template/config";
+import { Effect, Schema, Struct } from "effect";
+import { DatabaseFailure } from "./database-failure.ts";
 import type { SQL } from "drizzle-orm";
+import { UserRow } from "./identity-schema.ts";
 import { query } from "./database.ts";
 import { sql } from "drizzle-orm";
 import { user } from "./schema.ts";
 
 const EmailAddress = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
+
+const BootstrappedAdmin = Schema.Struct({
+  ...Struct.pick(UserRow.fields, ["email", "id"]),
+  role: Schema.Literal("admin"),
+});
 
 function bootstrapStatement(email: typeof EmailAddress.Type): SQL {
   return sql`UPDATE ${user}
@@ -25,13 +31,14 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof EmailAddress.Type,
 ) {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  const [updated] = yield* query((database) =>
-    database.all<{ id: string; email: string; role: Role }>(bootstrapStatement(email)),
-  );
-  if (!updated) {
+  const [updated] = yield* query(async (database) => database.all(bootstrapStatement(email)));
+  if (updated === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return updated;
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.mapError((cause) => new DatabaseFailure({ cause })),
+  );
 });
 
-export { EmailAddress, bootstrapAdmin, bootstrapStatement };
+export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement };

@@ -137,4 +137,6 @@ export {
   UserListQuery,
   maximumKeywordLength,
   memberPageSize,
+  maximumNameLength,
+  maximumProfileLength,
 };

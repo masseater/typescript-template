@@ -3,16 +3,6 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import type { Children } from "./types";
 import { buttonVariants } from "./button-variants";
 
-type ButtonProps = Children &
-  Readonly<{
-    "aria-label"?: string;
-    disabled?: boolean;
-    onClick?: MouseEventHandler;
-    size?: "medium" | "small";
-    type: "button" | "submit";
-    variant?: "danger" | "primary" | "secondary";
-  }>;
-
 function Button({
   "aria-label": ariaLabel,
   children,
@@ -21,7 +11,15 @@ function Button({
   size,
   type,
   variant,
-}: ButtonProps): ReactElement {
+}: Children &
+  Readonly<{
+    "aria-label"?: string;
+    disabled?: boolean;
+    onClick?: MouseEventHandler;
+    size?: "medium" | "small";
+    type: "button" | "submit";
+    variant?: "danger" | "primary" | "secondary";
+  }>): ReactElement {
   return (
     <ButtonPrimitive
       data-slot="button"

@@ -1,21 +1,13 @@
-import { useCallback, useMemo, useState } from "react";
-import type { ChangeEventHandler } from "react";
+import { useState } from "react";
 
 interface TextInput {
   readonly value: string;
-  readonly setValue: (value: string) => void;
-  readonly handleChange: ChangeEventHandler<HTMLInputElement>;
+  readonly handleChange: (value: string) => void;
 }
 
 function useTextInput(): TextInput {
   const [value, setValue] = useState("");
-  const handleChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
-    (event: Readonly<{ target: Readonly<Pick<HTMLInputElement, "value">> }>) => {
-      setValue(event.target.value);
-    },
-    [],
-  );
-  return useMemo(() => ({ handleChange, setValue, value }), [handleChange, value]);
+  return { handleChange: setValue, value };
 }
 
 export { useTextInput };

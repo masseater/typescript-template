@@ -1,4 +1,5 @@
 import { adminApi, dispatchAdminApi } from "./api.ts";
+import { Layer } from "effect";
 import { createAppWorker } from "@template/runtime/app";
 import { env } from "cloudflare:workers";
 import handler from "@tanstack/react-start/server-entry";
@@ -12,4 +13,5 @@ export default createAppWorker({
   env,
   handler,
   routes,
+  services: Layer.empty,
 });

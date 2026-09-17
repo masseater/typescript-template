@@ -4,7 +4,6 @@ import type { PasskeySummary } from "./mfa-types";
 import type { ReactElement } from "react";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-import { useCallback } from "react";
 
 interface PasskeyItemProps {
   readonly action: ActionState;
@@ -16,18 +15,16 @@ function passkeyLabel(name: string | null | undefined): string {
 }
 
 function PasskeyItem({ action, passkey }: PasskeyItemProps): ReactElement {
-  const { run } = action;
-  const { id } = passkey;
-  const remove = useCallback(() => {
-    run(async () => {
+  function remove(): void {
+    action.run(async () => {
       // oxlint-disable-next-line no-alert
       if (!globalThis.confirm("このパスキーを削除しますか？ 削除後は再ログインが必要です。")) {
         return;
       }
-      requireSuccess(await authClient.passkey.deletePasskey({ id }));
+      requireSuccess(await authClient.passkey.deletePasskey({ id: passkey.id }));
       globalThis.location.assign("/login");
     });
-  }, [id, run]);
+  }
   return (
     <li>
       {passkeyLabel(passkey.name)}

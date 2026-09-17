@@ -1,11 +1,11 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-import { aliasVisitor } from "./alias-visitor.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
 import { reportViolation } from "./lint-context.ts";
@@ -27,6 +27,7 @@ const mockSources = new Set([
   "test",
   "bun:test",
 ]);
+const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -76,8 +77,12 @@ function importSourceChecker(context: LintContext): (node: Node) => void {
   };
 }
 
+const rawD1Adapters = ["migrate-d1", "testing"] as const;
+const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
+const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
+
 function rawD1Checks(context: LintContext): RawD1Checks {
-  const allowed = filename(context).endsWith("/libs/db/src/testing.ts");
+  const allowed = rawD1Pattern.test(filename(context));
   return {
     destructuring: (reported, pattern, input) => {
       if (!allowed && destructuresD1Operation(context, pattern, input)) {
@@ -194,17 +199,16 @@ function environmentVisitor(context: LintContext): Visitor {
 }
 
 function mockVisitor(context: LintContext): Visitor {
-  return {
-    ...aliasVisitor(context, isMock),
-    CallExpression(node: Node): void {
-      if (
-        node.type === "CallExpression" &&
-        origins(context, node.callee).some((origin) => isMock(origin))
-      ) {
-        reportViolation(context, node.callee);
-      }
-    },
-  };
+  return originVisitor(context, isMock);
+}
+
+function isManualMemoization(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  return source === "react" && members.some((member) => memoizationApis.has(member));
+}
+
+function memoizationVisitor(context: LintContext): Visitor {
+  return originVisitor(context, isManualMemoization);
 }
 
 function workerFetchVisitor(context: LintContext): Visitor {
@@ -237,7 +241,7 @@ export default definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。",
+        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。`,
       ),
     },
     "effect-failures": {
@@ -268,6 +272,12 @@ export default definePlugin({
       create: mockVisitor,
       meta: metadata(
         "内部処理・関数・DB のモックは禁止です。別名や分割代入も使用できません。実 DB と実サービスで検証してください。外部 HTTP の置換だけ MSW を利用できます。",
+      ),
+    },
+    "no-manual-memoization": {
+      create: memoizationVisitor,
+      meta: metadata(
+        "手作業のメモ化は禁止です。React Compiler が最適化するので useMemo・useCallback・React.memo は別名や分割代入も含めて使わず、素の値と関数宣言のまま書いてください。",
       ),
     },
     "test-import-graph": {
