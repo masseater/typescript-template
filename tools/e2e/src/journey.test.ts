@@ -10,6 +10,7 @@ import { ensure, object, poll, string, safeFailure } from "./support.ts";
 import { totp } from "./totp.ts";
 import { verifyCorrelation, verifyBrowserSignals, verifyJourneyTelemetry } from "./telemetry.ts";
 import { verifyDistribution } from "./distribution.ts";
+import { verifySharedRoutes } from "./shared-routes.ts";
 
 async function signOut(browser: Browser) {
   await browser.commands(button("ログアウト"), ["wait", 'input[name="email"]']);
@@ -80,6 +81,11 @@ test("isolated real Workers: registration, verified email, authorization, MFA, a
   try {
     const started = Date.now();
     await verifyDistribution(stack.userOrigin, stack.adminOrigin);
+
+    stage = "shared-routes";
+    await verifySharedRoutes(stack);
+
+    stage = "anonymous";
     const anonymous = stack.browser("anonymous");
     await anonymous.open(stack.userOrigin, "/login");
     ensure((await anonymous.api("/api/profile")).status === 401, "E2E_ANONYMOUS_PROFILE_ALLOWED");

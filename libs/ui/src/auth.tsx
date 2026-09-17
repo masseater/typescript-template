@@ -2,16 +2,52 @@ import { useEffect, useState } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { Button, Stack } from "smarthr-ui";
 import { authClient } from "./client";
-import { Field, Status } from "./primitives";
+import { MFASettings } from "./mfa";
+import { Field, Page, Status } from "./primitives";
 import { requireSuccess } from "./protocol";
+import { useSession } from "./session";
 import { useAction } from "./action";
 
-export { MFASettings } from "./mfa";
+export function LoginPage({
+  title,
+  signUp,
+  onAuthenticated,
+}: {
+  title: string;
+  signUp: boolean;
+  onAuthenticated?: () => Promise<void> | void;
+}): ReactElement {
+  return (
+    <Page title={title}>
+      <LoginForm onAuthenticated={onAuthenticated} />
+      {signUp && <a href="/signup">新規登録</a>}
+    </Page>
+  );
+}
 
-export function LoginForm({
+export function SecurityPage({ title }: { title: string }): ReactElement {
+  const { session, loading, error } = useSession();
+  return (
+    <Page title={title}>
+      {loading ? (
+        <Status>読み込み中です。</Status>
+      ) : session ? (
+        <>
+          <MFASettings session={session} />
+          <SignOutButton />
+        </>
+      ) : (
+        <a href="/login">ログインしてください。</a>
+      )}
+      {error && <Status error>{error}</Status>}
+    </Page>
+  );
+}
+
+function LoginForm({
   onAuthenticated = () => window.location.assign("/"),
 }: {
-  onAuthenticated?: () => Promise<void> | void;
+  onAuthenticated?: (() => Promise<void> | void) | undefined;
 }): ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -177,7 +213,15 @@ export function SignOutButton() {
   );
 }
 
-export function EmailVerification(): ReactElement {
+export function VerifyEmailPage(): ReactElement {
+  return (
+    <Page title="メールアドレスの確認">
+      <EmailVerification />
+    </Page>
+  );
+}
+
+function EmailVerification(): ReactElement {
   const [error, setError] = useState(false);
   useEffect(() => {
     const token = new URLSearchParams(window.location.hash.slice(1)).get("token");

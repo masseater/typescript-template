@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Page, UIProvider } from "@template/ui";
-import { LoginForm } from "@template/ui/auth";
+import { UIProvider } from "@template/ui";
+import { LoginPage } from "@template/ui/auth";
 import uiStyles from "@template/ui/styles.css?url";
 import * as v from "valibot";
 
@@ -34,9 +34,7 @@ async function continueAuthorization() {
 function Login() {
   return (
     <UIProvider>
-      <Page title="Wiki にログイン">
-        <LoginForm onAuthenticated={continueAuthorization} />
-      </Page>
+      <LoginPage title="Wiki にログイン" signUp={false} onAuthenticated={continueAuthorization} />
     </UIProvider>
   );
 }
