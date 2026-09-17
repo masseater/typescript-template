@@ -1,4 +1,4 @@
-import { CheckboxField, Heading, TextareaField } from "./shared/ui";
+import { CheckboxField, Field, FormColumn, Heading } from "./shared/ui";
 import type { ActionState } from "./action";
 import { BackupCodeList } from "./backup-code-list";
 import type { Enrollment } from "./mfa-types";
@@ -14,12 +14,9 @@ interface TotpEnrollmentProps {
 
 function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement {
   const [saved, setSaved] = useState(false);
-  function toggleSaved(checked: boolean): void {
-    setSaved(checked);
-  }
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
-      <TextareaField label="認証アプリ登録用 URI" readOnly value={enrollment.totpURI} />
+    <FormColumn>
+      <Field multiline label="認証アプリ登録用 URI" readOnly value={enrollment.totpURI} />
       <div className="flex w-full flex-col gap-1">
         <Heading size="block">バックアップコード</Heading>
         <BackupCodeList codes={enrollment.backupCodes} />
@@ -27,10 +24,10 @@ function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps)
       <CheckboxField
         label="バックアップコードを保管しました"
         checked={saved}
-        onCheckedChange={toggleSaved}
+        onCheckedChange={setSaved}
       />
       <TotpVerifyForm action={action} onVerified={onVerified} saved={saved} />
-    </div>
+    </FormColumn>
   );
 }
 

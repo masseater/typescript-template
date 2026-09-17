@@ -1,6 +1,6 @@
+import { Button, FormColumn } from "./shared/ui";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
-import { Button } from "./shared/ui";
 import { TotpField } from "./totp-field";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -24,18 +24,18 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
         await authClient.twoFactor.verifyTotp({ code: code.value, trustDevice: false }),
       );
       onVerified();
-      code.setValue("");
+      code.handleChange("");
       globalThis.location.assign("/");
     });
   }
   return (
     <form onSubmit={submit}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <TotpField code={code} />
         <Button type="submit" disabled={action.blocked || !saved}>
           確認して認証アプリを有効化
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

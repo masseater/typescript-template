@@ -1,7 +1,7 @@
+import { Button, FormColumn } from "./shared/ui";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./shared/ui";
 import { ChallengeCodeField } from "./challenge-code-field";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
@@ -35,7 +35,7 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
     event.preventDefault();
     action.run(async () => {
       await verifyChallenge(mode, code.value);
-      code.setValue("");
+      code.handleChange("");
       if (mode === "backup") {
         globalThis.location.assign("/security?recovery=1");
         return;
@@ -45,12 +45,12 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
   }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <ChallengeCodeField backup={mode === "backup"} code={code} />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           {mode === "backup" ? "バックアップコードでログイン" : "確認コードでログイン"}
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

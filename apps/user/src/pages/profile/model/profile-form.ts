@@ -1,13 +1,13 @@
-import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { useEffect, useState } from "react";
 import { ProfileView } from "@template/runtime/contracts";
+import type { SubmitEventHandler } from "react";
 import { errorMessage } from "@template/ui";
 import { requestJson } from "@template/runtime/client";
 
 type ProfileData = typeof ProfileView.Type;
 
 interface ProfileDraft {
-  readonly handleNameChange: ChangeEventHandler<HTMLInputElement>;
+  readonly handleNameChange: (value: string) => void;
   readonly handleProfileChange: (value: string) => void;
   readonly name: string;
   readonly profile: string;
@@ -30,22 +30,20 @@ async function saveProfile(name: string, profile: string): Promise<ProfileData> 
   return requestJson("/api/profile", ProfileView, { body: { name, profile }, method: "PATCH" });
 }
 
-type FieldEvent = Readonly<{ target: Readonly<{ value: string }> }>;
-
 function useProfileDraft(): ProfileDraft {
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
-  function handleNameChange(event: FieldEvent): void {
-    setName(event.target.value);
-  }
-  function handleProfileChange(next: string): void {
-    setProfile(next);
-  }
   function show(data: Readonly<ProfileData>): void {
     setName(data.name);
     setProfile(data.profile);
   }
-  return { handleNameChange, handleProfileChange, name, profile, show };
+  return {
+    handleNameChange: setName,
+    handleProfileChange: setProfile,
+    name,
+    profile,
+    show,
+  };
 }
 
 type FormSubmission = Readonly<{ preventDefault: () => void }>;

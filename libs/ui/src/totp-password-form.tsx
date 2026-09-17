@@ -1,4 +1,4 @@
-import { Button, Field } from "./shared/ui";
+import { Button, Field, FormColumn } from "./shared/ui";
 import type { Enrollment, SettingsContext } from "./mfa-types";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { SessionView } from "./protocol";
@@ -36,17 +36,17 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
       onNoticeClear();
       if (session.user.twoFactorEnabled) {
         requireSuccess(await authClient.twoFactor.disable({ password: password.value }));
-        password.setValue("");
+        password.handleChange("");
         globalThis.location.assign(recovery === "1" ? "/login?recovery=setup" : "/login");
         return;
       }
       onEnroll(await enrollTotp(password.value));
-      password.setValue("");
+      password.handleChange("");
     });
   }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <input
           type="email"
           name="username"
@@ -62,7 +62,7 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
           autoComplete="current-password"
           required
           value={password.value}
-          onChange={password.handleChange}
+          onValueChange={password.handleChange}
         />
         <Button
           type="submit"
@@ -70,7 +70,7 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
         >
           {session.user.twoFactorEnabled ? "認証アプリを解除" : "認証アプリの登録を開始"}
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

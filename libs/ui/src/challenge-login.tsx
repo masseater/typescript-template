@@ -24,11 +24,11 @@ function ChallengeLogin({
   const code = useTextInput();
   function toggleMode(): void {
     onModeChange(mode === "backup" ? "totp" : "backup");
-    code.setValue("");
+    code.handleChange("");
   }
   function restart(): void {
     onRestart();
-    code.setValue("");
+    code.handleChange("");
   }
   return (
     <>

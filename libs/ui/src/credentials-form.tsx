@@ -1,4 +1,4 @@
-import { Button, Field } from "./shared/ui";
+import { Button, Field, FormColumn } from "./shared/ui";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
@@ -24,7 +24,7 @@ async function signIn({
   const data = requireSuccess(
     await authClient.signIn.email({ email: email.value, password: password.value }),
   );
-  password.setValue("");
+  password.handleChange("");
   if ("twoFactorRedirect" in data && data.twoFactorRedirect === true) {
     onChallenge("totp");
     return;
@@ -44,7 +44,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
   }
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <FormColumn>
         <Field
           label="メールアドレス"
           name="email"
@@ -52,7 +52,7 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
           autoComplete="username"
           required
           value={email.value}
-          onChange={email.handleChange}
+          onValueChange={email.handleChange}
         />
         <Field
           label="パスワード"
@@ -61,12 +61,12 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
           autoComplete="current-password"
           required
           value={password.value}
-          onChange={password.handleChange}
+          onValueChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
           ログイン
         </Button>
-      </div>
+      </FormColumn>
     </form>
   );
 }

@@ -13,10 +13,12 @@ const headingVariants = cva("font-bold text-foreground", {
   },
 });
 
-type HeadingProps = Children &
-  Readonly<{ as?: "h1" | "h2" | "h3"; size?: "block" | "page" | "section" }>;
-
-function Heading({ as: Tag = "h2", children, size }: HeadingProps): ReactElement {
+function Heading({
+  as: Tag = "h2",
+  children,
+  size,
+}: Children &
+  Readonly<{ as?: "h1" | "h2" | "h3"; size?: "block" | "page" | "section" }>): ReactElement {
   return (
     <Tag data-slot="heading" className={headingVariants({ size })}>
       {children}

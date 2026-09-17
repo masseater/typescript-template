@@ -77,8 +77,12 @@ function importSourceChecker(context: LintContext): (node: Node) => void {
   };
 }
 
+const rawD1Adapters = ["migrate-d1", "testing"] as const;
+const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
+const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
+
 function rawD1Checks(context: LintContext): RawD1Checks {
-  const allowed = filename(context).endsWith("/libs/db/src/testing.ts");
+  const allowed = rawD1Pattern.test(filename(context));
   return {
     destructuring: (reported, pattern, input) => {
       if (!allowed && destructuresD1Operation(context, pattern, input)) {
@@ -237,7 +241,7 @@ export default definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。",
+        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。`,
       ),
     },
     "effect-failures": {
