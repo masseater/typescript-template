@@ -36,7 +36,7 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     );
 }
 
-function accountApi(api: ApiRoutes<AppServices>) {
+function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi()
     .use(sessionApi(api))
     .post(

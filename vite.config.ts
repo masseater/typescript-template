@@ -153,11 +153,11 @@ export default defineConfig({
       "typescript/consistent-return": "off",
       "typescript/explicit-function-return-type": [
         "error",
-        { allowedNames: ["accountApi", "createApi", "createAuth", "sessionApi"] },
+        { allowedNames: ["accountApi", "createApi", "createAuth", "interviewApi", "sessionApi"] },
       ],
       "typescript/explicit-module-boundary-types": [
         "error",
-        { allowedNames: ["accountApi", "createApi", "createAuth", "sessionApi"] },
+        { allowedNames: ["accountApi", "createApi", "createAuth", "interviewApi", "sessionApi"] },
       ],
       "typescript/no-explicit-any": "error",
       "typescript/no-floating-promises": "error",

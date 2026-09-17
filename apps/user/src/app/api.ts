@@ -3,6 +3,7 @@ import { UserNotFound, getProfile, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
 import { apiRoutes, createApi, readJsonBody } from "@template/runtime/http";
 import { Effect } from "effect";
+import { interviewApi } from "./interview-api.ts";
 import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
@@ -14,6 +15,7 @@ const failures = {
 
 const userApi = createApi()
   .use(accountApi(api))
+  .use(interviewApi(api))
   .get(
     "/api/profile",
     api.route(

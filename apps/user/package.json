@@ -16,6 +16,7 @@
     "@tanstack/react-start": "catalog:",
     "@template/auth": "workspace:*",
     "@template/db": "workspace:*",
+    "@template/interview": "workspace:*",
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
     "effect": "catalog:",
