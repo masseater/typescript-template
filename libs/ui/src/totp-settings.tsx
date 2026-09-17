@@ -1,15 +1,15 @@
 import type { Enrollment, SettingsContext } from "./mfa-types";
-import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
 import { Status } from "./shared/ui";
 import { TotpEnrollment } from "./totp-enrollment";
 import { TotpPasswordForm } from "./totp-password-form";
+import { useState } from "react";
 
 function TotpSettings({ context }: Readonly<{ context: SettingsContext }>): ReactElement {
   const [enrollment, setEnrollment] = useState<Enrollment>();
-  const clearEnrollment = useCallback(() => {
+  function clearEnrollment(): void {
     setEnrollment(undefined);
-  }, []);
+  }
   return (
     <>
       <Status variant={context.session.user.twoFactorEnabled ? "success" : "info"}>

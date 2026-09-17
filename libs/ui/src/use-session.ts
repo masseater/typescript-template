@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { SessionView as SessionContract } from "@template/runtime/contracts";
 import type { SessionView } from "./protocol";
 import { decodeJson } from "@template/runtime/client";
@@ -42,9 +42,9 @@ function useSession(): SessionState {
     loading: true,
     session: undefined,
   });
-  const refresh = useCallback(async () => {
+  async function refresh(): Promise<void> {
     setSnapshot(await loadSession());
-  }, []);
+  }
   useEffect(() => {
     async function load(): Promise<void> {
       setSnapshot(await loadSession());

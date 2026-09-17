@@ -1,5 +1,4 @@
 import { FormColumn, Separator } from "./shared/ui";
-import { useCallback, useState } from "react";
 import { ActionStatus } from "./action-status";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeLogin } from "./challenge-login";
@@ -8,6 +7,7 @@ import { CredentialsForm } from "./credentials-form";
 import { PasskeyLoginButton } from "./passkey-login-button";
 import type { ReactElement } from "react";
 import { useAction } from "./action";
+import { useState } from "react";
 import { useTextInput } from "./use-text-input";
 
 function goHome(): void {
@@ -21,13 +21,11 @@ function LoginForm({
   const password = useTextInput();
   const [challenge, setChallenge] = useState<ChallengeMode>();
   const action = useAction();
-  const { handleChange: setEmail } = email;
-  const { handleChange: setPassword } = password;
-  const restart = useCallback(() => {
+  function restart(): void {
     setChallenge(undefined);
-    setEmail("");
-    setPassword("");
-  }, [setEmail, setPassword]);
+    email.handleChange("");
+    password.handleChange("");
+  }
   return (
     <FormColumn>
       {challenge === undefined ? (

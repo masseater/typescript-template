@@ -1,19 +1,19 @@
 import type { ReactElement, ReactNode, ReactPortal } from "react";
-import { useCallback, useState } from "react";
 import { AdminHeader } from "#components/admin-header.tsx";
 import { AdminNavigation } from "#components/admin-navigation.tsx";
+import { useState } from "react";
 
 function AdminFrame({
   children,
   email,
 }: Readonly<{ children: Readonly<Exclude<ReactNode, ReactPortal>>; email: string }>): ReactElement {
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const toggleNavigation = useCallback(() => {
+  function toggleNavigation(): void {
     setNavigationOpen((open) => !open);
-  }, []);
-  const closeNavigation = useCallback(() => {
+  }
+  function closeNavigation(): void {
     setNavigationOpen(false);
-  }, []);
+  }
   return (
     <div className="flex min-h-screen flex-col">
       <AdminHeader

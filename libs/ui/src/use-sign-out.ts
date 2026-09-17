@@ -2,19 +2,17 @@ import type { ActionState } from "./action";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { useAction } from "./action";
-import { useCallback } from "react";
 
 function useSignOut(
   destination = "/login",
 ): Readonly<{ action: ActionState; signOut: () => void }> {
   const action = useAction();
-  const { run } = action;
-  const signOut = useCallback(() => {
-    run(async () => {
+  function signOut(): void {
+    action.run(async () => {
       requireSuccess(await authClient.signOut());
       globalThis.location.assign(destination);
     });
-  }, [destination, run]);
+  }
   return { action, signOut };
 }
 

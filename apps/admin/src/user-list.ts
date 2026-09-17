@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { UserList } from "@template/runtime/contracts";
 import type { UsersSearch } from "#users-search.ts";
 import { errorMessage } from "@template/ui";
@@ -76,9 +76,9 @@ function useUserList(search: UsersSearch): Readonly<{ reload: () => void; state:
       controller.active = false;
     };
   }, [attempt, path]);
-  const reload = useCallback(() => {
+  function reload(): void {
     setAttempt((current) => current + 1);
-  }, []);
+  }
   const current = outcome?.path === path && outcome.attempt === attempt;
   return { reload, state: current ? outcome.state : { status: "loading" } };
 }

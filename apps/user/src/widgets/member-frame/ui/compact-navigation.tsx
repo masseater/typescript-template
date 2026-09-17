@@ -8,11 +8,9 @@ import {
 import { Link } from "@tanstack/react-router";
 import { MenuIcon } from "lucide-react";
 import type { ReactElement } from "react";
-import { useMemo } from "react";
 
 function CompactNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
-  const home = useMemo(() => ({ id: userId }), [userId]);
-  const homeLink = useMemo(() => <Link to="/users/$id" params={home} />, [home]);
+  const homeLink = <Link to="/users/$id" params={{ id: userId }} />;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="メニュー">

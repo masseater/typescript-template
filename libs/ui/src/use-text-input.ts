@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 interface TextInput {
   readonly value: string;
@@ -7,7 +7,7 @@ interface TextInput {
 
 function useTextInput(): TextInput {
   const [value, setValue] = useState("");
-  return useMemo(() => ({ handleChange: setValue, value }), [value]);
+  return { handleChange: setValue, value };
 }
 
 export { useTextInput };

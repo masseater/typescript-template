@@ -1,5 +1,5 @@
 import { Page, Status } from "@template/ui/ui";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ConsentActions } from "./consent-actions.tsx";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
@@ -61,16 +61,13 @@ function useClientName(
 function ConsentPage(): ReactElement {
   const { client_id: clientId } = consentRoute.useSearch();
   const [error, setError] = useState("");
-  const reportError = useCallback((message: string) => {
-    setError(message);
-  }, []);
-  const client = useClientName(clientId, reportError);
+  const client = useClientName(clientId, setError);
   return (
     <Page title="Wiki との連携">
       {clientId === undefined && (
         <Status variant="error">連携を求めているクライアントが分かりません。</Status>
       )}
-      {client !== undefined && <ConsentActions client={client} onError={reportError} />}
+      {client !== undefined && <ConsentActions client={client} onError={setError} />}
       {clientId !== undefined && client === undefined && error === "" && (
         <Status variant="pending">読み込み中です。</Status>
       )}

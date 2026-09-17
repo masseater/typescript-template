@@ -1,6 +1,6 @@
 import { controlClassName, fieldClassName, labelClassName } from "./control";
-import { useCallback, useId } from "react";
 import type { ReactElement } from "react";
+import { useId } from "react";
 
 interface SelectFieldProps {
   readonly label: string;
@@ -18,12 +18,11 @@ function SelectField({
   value,
 }: SelectFieldProps): ReactElement {
   const id = useId();
-  const handleChange = useCallback(
-    (event: Readonly<{ currentTarget: Readonly<Pick<HTMLSelectElement, "value">> }>) => {
-      onValueChange(event.currentTarget.value);
-    },
-    [onValueChange],
-  );
+  function handleChange(
+    event: Readonly<{ currentTarget: Readonly<Pick<HTMLSelectElement, "value">> }>,
+  ): void {
+    onValueChange(event.currentTarget.value);
+  }
   return (
     <div data-slot="field" className={fieldClassName}>
       <label htmlFor={id} className={labelClassName}>
