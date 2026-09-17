@@ -5,7 +5,6 @@ type HealthService = "user" | "admin" | "wiki";
 export interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
-  readonly guard: string | null;
 }
 
 export interface ProbeResult {
@@ -34,14 +33,7 @@ export const probeService = Effect.fn("probeService")(function* (target: HealthT
     }),
   ).pipe(Effect.option);
   if (response._tag === "None") return result(false, "unreachable");
-  const { status, headers } = response.value;
-  if (target.guard) {
-    const location = headers.get("location");
-    const destination = location ? URL.parse(location, target.origin) : null;
-    return status >= 300 && status < 400 && destination?.origin === target.guard
-      ? result(true, "access_guarded")
-      : result(false, `unguarded_${status}`);
-  }
+  const { status } = response.value;
   if (!response.value.ok) return result(false, `status_${status}`);
   const body = yield* Effect.tryPromise((): Promise<unknown> => response.value.json()).pipe(
     Effect.option,

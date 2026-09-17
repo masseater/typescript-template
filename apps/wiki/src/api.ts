@@ -1,11 +1,13 @@
+import { handleAuthRequest, verifySession } from "@template/auth";
 import { Telemetry, ingestBrowser } from "@template/observability";
-import { HealthView } from "@template/runtime/contracts";
+import { HealthView, SessionView } from "@template/runtime/contracts";
 import { apiBridge, compileApi, createApi, jsonResponse } from "@template/runtime/http";
 import type { WikiServices } from "@template/runtime/wiki";
 import { Effect } from "effect";
 import { searchWiki } from "./lib/search.ts";
 
 const bridge = apiBridge<WikiServices>();
+const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
 
 const api = createApi()
   .post("/api/telemetry", bridge.raw(ingestBrowser, {}))
@@ -19,6 +21,11 @@ const api = createApi()
         ),
       {},
     ),
+  )
+  .all("/api/auth/*", bridge.raw(handleAuthRequest, unavailable))
+  .get(
+    "/api/session",
+    bridge.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
   )
   .get(
     "/api/search",

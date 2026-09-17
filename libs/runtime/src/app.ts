@@ -11,7 +11,7 @@ type StartHandler = { fetch(request: Request): Promise<Response> | Response };
 
 export function createAppWorker(options: {
   readonly env: unknown;
-  readonly audience: Audience;
+  readonly audience: Exclude<Audience, "wiki">;
   readonly routes: Readonly<Record<string, string>>;
   readonly handler: StartHandler;
   readonly api: AnyElysia;
@@ -19,8 +19,6 @@ export function createAppWorker(options: {
     app: AnyElysia,
     request: Request,
   ) => Effect.Effect<Response, never, AppServices | CurrentRequest>;
-  readonly gate?: (request: Request) => Effect.Effect<Response | null>;
-  readonly finalize?: (response: Response) => Effect.Effect<Response>;
 }) {
   const runtime = ManagedRuntime.make(appLayer(options.env, options.audience, options.routes));
   const route = (request: Request) => {
@@ -32,12 +30,5 @@ export function createAppWorker(options: {
     if (path.startsWith("/api/")) return options.dispatch(options.api, request);
     return Effect.promise(async () => secureResponse(await options.handler.fetch(request)));
   };
-  return serveWorker(runtime, (request) =>
-    Effect.gen(function* () {
-      const denied = options.gate ? yield* options.gate(request) : null;
-      if (denied) return denied;
-      const response = yield* route(request);
-      return options.finalize ? yield* options.finalize(response) : response;
-    }),
-  );
+  return serveWorker(runtime, route);
 }

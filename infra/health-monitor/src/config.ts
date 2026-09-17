@@ -25,11 +25,6 @@ const HealthMonitorEnvironment = Schema.Struct({
   USER_ORIGIN: Origin,
   ADMIN_ORIGIN: Origin,
   WIKI_ORIGIN: Origin,
-  ACCESS_ISSUER: Origin.check(
-    Schema.makeFilter(
-      (value: string) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true,
-    ),
-  ),
   ALERT_FROM: Email,
   ALERT_TO: Recipients,
 });
@@ -49,8 +44,8 @@ export const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(fu
 
 export function healthTargets(config: HealthMonitorConfig) {
   return [
-    { service: "user", origin: config.USER_ORIGIN, guard: null },
-    { service: "admin", origin: config.ADMIN_ORIGIN, guard: config.ACCESS_ISSUER },
-    { service: "wiki", origin: config.WIKI_ORIGIN, guard: null },
+    { service: "user", origin: config.USER_ORIGIN },
+    { service: "admin", origin: config.ADMIN_ORIGIN },
+    { service: "wiki", origin: config.WIKI_ORIGIN },
   ] as const;
 }

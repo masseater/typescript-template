@@ -8,10 +8,18 @@ import { requireSuccess } from "./protocol";
 import { useSession } from "./session";
 import { useAction } from "./action";
 
-export function LoginPage({ title, signUp }: { title: string; signUp: boolean }): ReactElement {
+export function LoginPage({
+  title,
+  signUp,
+  onAuthenticated,
+}: {
+  title: string;
+  signUp: boolean;
+  onAuthenticated?: () => Promise<void> | void;
+}): ReactElement {
   return (
     <Page title={title}>
-      <LoginForm />
+      <LoginForm onAuthenticated={onAuthenticated} />
       {signUp && <a href="/signup">新規登録</a>}
     </Page>
   );
@@ -36,7 +44,11 @@ export function SecurityPage({ title }: { title: string }): ReactElement {
   );
 }
 
-function LoginForm(): ReactElement {
+function LoginForm({
+  onAuthenticated = () => window.location.assign("/"),
+}: {
+  onAuthenticated?: (() => Promise<void> | void) | undefined;
+}): ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -59,7 +71,8 @@ function LoginForm(): ReactElement {
           requireSuccess(await authClient.twoFactor.verifyTotp({ code, trustDevice: false }));
         }
         setCode("");
-        window.location.assign(backupMode ? "/security?recovery=1" : "/");
+        if (backupMode) window.location.assign("/security?recovery=1");
+        else await onAuthenticated();
         return;
       }
       const data = requireSuccess(await authClient.signIn.email({ email, password }));
@@ -68,11 +81,9 @@ function LoginForm(): ReactElement {
         setBackupMode(false);
         setChallenge(true);
       } else {
-        window.location.assign(
-          new URLSearchParams(window.location.search).get("recovery") === "setup"
-            ? "/security?recovery=setup"
-            : "/",
-        );
+        if (new URLSearchParams(window.location.search).get("recovery") === "setup")
+          window.location.assign("/security?recovery=setup");
+        else await onAuthenticated();
       }
     });
   }
@@ -143,7 +154,7 @@ function LoginForm(): ReactElement {
               if (!window.isSecureContext)
                 throw new Error("パスキーには HTTPS または localhost が必要です。");
               requireSuccess(await authClient.signIn.passkey());
-              window.location.assign("/");
+              await onAuthenticated();
             })
           }
         >

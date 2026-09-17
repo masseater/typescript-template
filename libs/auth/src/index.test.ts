@@ -2,13 +2,14 @@ import { assert, it } from "@effect/vitest";
 import { sendVerificationEmail } from "@template/config";
 import type { Audience, Database } from "@template/db";
 import { bootstrapAdmin, setUserRole } from "@template/db/admin";
-import { TestDatabase, getSchemaShape } from "@template/db/testing";
+import { TestBinding, TestDatabase, getSchemaShape } from "@template/db/testing";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Layer, Schema } from "effect";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { URI } from "otpauth";
 import { Auth, verifySession } from "./index.ts";
+import { authorizeMcpRequest } from "./mcp.ts";
 
 const password = "test-password-safe-123";
 const secret = "integration-test-secret-at-least-32-characters-long";
@@ -16,7 +17,11 @@ const mailConfig = {
   EMAIL_FROM: "no-reply@example.test",
   MAILPIT_URL: "http://127.0.0.1:8025",
 };
-const origins = { user: "http://localhost:4101", admin: "http://localhost:4102" } as const;
+const origins = {
+  user: "http://localhost:4101",
+  admin: "http://localhost:4102",
+  wiki: "http://localhost:4103",
+} as const;
 
 const MailpitMessage = Schema.Struct({
   From: Schema.Struct({ Email: Schema.String }),
@@ -52,16 +57,26 @@ class BrowserClient {
   }
 
   request(endpoint: string, body?: Record<string, unknown>) {
+    const headers = this.headers();
+    headers.set("content-type", "application/json");
+    return this.send(
+      new Request(`${this.origin}/api/auth${endpoint}`, {
+        method: body ? "POST" : "GET",
+        headers,
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      }),
+    );
+  }
+
+  navigate(url: string) {
+    const headers = this.headers();
+    headers.set("accept", "text/html");
+    return this.send(new Request(url, { headers, redirect: "manual" }));
+  }
+
+  send(request: Request) {
     return Effect.promise(async () => {
-      const headers = this.headers();
-      headers.set("content-type", "application/json");
-      const response = await this.auth.instance.handler(
-        new Request(`${this.origin}/api/auth${endpoint}`, {
-          method: body ? "POST" : "GET",
-          headers,
-          ...(body ? { body: JSON.stringify(body) } : {}),
-        }),
-      );
+      const response = await this.auth.instance.handler(request);
       for (const cookie of response.headers.getSetCookie()) {
         const pair = cookie.split(";")[0];
         if (!pair) continue;
@@ -78,7 +93,10 @@ class BrowserClient {
   json(endpoint: string, body?: Record<string, unknown>) {
     return this.request(endpoint, body).pipe(
       Effect.flatMap((response) =>
-        Effect.promise(async () => ({ status: response.status, body: await response.json() })),
+        Effect.promise(async () => ({
+          status: response.status,
+          body: (await response.json()) as unknown,
+        })),
       ),
     );
   }
@@ -131,13 +149,15 @@ const authFor = (audience: Audience) =>
 
 class Fixture extends Context.Service<
   Fixture,
-  { readonly user: AuthService; readonly admin: AuthService }
+  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
 >()("Fixture") {}
 
 const fixture = Layer.effect(
   Fixture,
   Effect.gen(function* () {
-    return Fixture.of({ user: yield* authFor("user"), admin: yield* authFor("admin") });
+    const wiki = yield* authFor("wiki");
+    yield* Effect.promise(() => wiki.instance.$context);
+    return Fixture.of({ user: yield* authFor("user"), admin: yield* authFor("admin"), wiki });
   }),
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
 
@@ -193,8 +213,10 @@ const failureTag = <A, E extends { readonly _tag: string }, R>(effect: Effect.Ef
     Effect.map((error) => error._tag),
   );
 
-const authTest = (name: string, body: () => Effect.Effect<void, unknown, Fixture | Database>) =>
-  it.effect(name, () => body().pipe(Effect.provide(fixture)), { timeout: 60_000 });
+const authTest = (
+  name: string,
+  body: () => Effect.Effect<void, unknown, Fixture | Database | TestBinding>,
+) => it.effect(name, () => body().pipe(Effect.provide(fixture)), { timeout: 60_000 });
 
 authTest("requires an actual email verification before password login", () =>
   Effect.gen(function* () {
@@ -412,13 +434,257 @@ authTest("regular user can still retrieve TOTP URI with their password", () =>
   }),
 );
 
-authTest("database exposes every field required by the configured Better Auth plugins", () =>
+for (const name of ["user", "wiki"] as const)
+  authTest(`database exposes every field required by the ${name} plugins`, () =>
+    Effect.gen(function* () {
+      const expected = getSchema((yield* Fixture)[name].instance.options);
+      const actual = getSchemaShape();
+      for (const [model, description] of Object.entries(expected))
+        assert.includeMembers(actual[model] ?? [], Object.keys(description.fields));
+      assert.strictEqual(expected["passkey"]?.fields["audience"]?.input, false);
+      assert.strictEqual(expected["verification"]?.fields["audience"]?.input, false);
+    }),
+  );
+
+const wikiOrigin = origins.wiki;
+const redirectUri = "http://127.0.0.1:43123/callback";
+const Redirect = Schema.Struct({ url: Schema.String });
+
+const base64url = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64url");
+
+const wikiAdministrator = Effect.fn(function* (email: string) {
+  yield* bootstrapVerifiedAdmin(email);
+  const services = yield* Fixture;
+  const admin = new BrowserClient(services.admin);
+  yield* signIn(admin, email);
+  const { authenticator } = yield* enableTotp(admin);
+  const wiki = new BrowserClient(services.wiki);
+  const challenge = yield* wiki.json("/sign-in/email", { email, password });
+  assert.deepInclude(challenge.body, { twoFactorRedirect: true });
+  assert.strictEqual(
+    (yield* wiki.request("/two-factor/verify-totp", { code: authenticator.generate() })).status,
+    200,
+  );
+  return wiki;
+});
+
+const startAuthorization = Effect.fn(function* () {
+  const anonymous = new BrowserClient((yield* Fixture).wiki);
+  const registration = yield* anonymous.json("/oauth2/register", {
+    client_name: "Test MCP client",
+    redirect_uris: [redirectUri],
+    token_endpoint_auth_method: "none",
+    grant_types: ["authorization_code", "refresh_token"],
+    response_types: ["code"],
+  });
+  assert.strictEqual(registration.status, 201);
+  const { client_id: clientId } = Schema.decodeUnknownSync(
+    Schema.Struct({ client_id: Schema.String }),
+  )(registration.body);
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = base64url(
+    new Uint8Array(
+      yield* Effect.promise(() =>
+        crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
+      ),
+    ),
+  );
+  const authorize = new URL(`${wikiOrigin}/api/auth/oauth2/authorize`);
+  for (const [key, value] of Object.entries({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: "wiki:read offline_access",
+    state: "state-value",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    resource: `${wikiOrigin}/mcp`,
+  }))
+    authorize.searchParams.set(key, value);
+  const redirect = yield* anonymous.navigate(authorize.href);
+  assert.strictEqual(redirect.status, 302);
+  const login = new URL(redirect.headers.get("location") ?? "", wikiOrigin);
+  assert.strictEqual(login.pathname, "/login");
+  return { clientId, verifier, oauthQuery: login.search.slice(1) };
+});
+
+const grantAuthorization = Effect.fn(function* (wiki: BrowserClient, oauthQuery: string) {
+  const continued = yield* wiki.json("/oauth2/continue", {
+    postLogin: true,
+    oauth_query: oauthQuery,
+  });
+  assert.strictEqual(continued.status, 200);
+  const next = new URL(Schema.decodeUnknownSync(Redirect)(continued.body).url, wikiOrigin);
+  assert.strictEqual(next.pathname, "/consent");
+  const consented = yield* wiki.json("/oauth2/consent", {
+    accept: true,
+    oauth_query: next.search.slice(1),
+  });
+  assert.strictEqual(consented.status, 200);
+  const callback = new URL(Schema.decodeUnknownSync(Redirect)(consented.body).url);
+  assert.strictEqual(`${callback.origin}${callback.pathname}`, redirectUri);
+  assert.strictEqual(callback.searchParams.get("state"), "state-value");
+  const code = callback.searchParams.get("code");
+  assert.isString(code);
+  return code ?? "";
+});
+
+const exchangeCode = Effect.fn(function* (
+  flow: { readonly clientId: string; readonly verifier: string },
+  code: string,
+) {
+  const { wiki } = yield* Fixture;
+  const response = yield* Effect.promise(() =>
+    wiki.instance.handler(
+      new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          code_verifier: flow.verifier,
+          client_id: flow.clientId,
+          redirect_uri: redirectUri,
+          resource: `${wikiOrigin}/mcp`,
+        }),
+      }),
+    ),
+  );
+  assert.strictEqual(response.status, 200);
+  return Schema.decodeUnknownSync(Schema.Struct({ access_token: Schema.String }))(
+    yield* Effect.promise(() => response.json()),
+  );
+});
+
+const mcpRequest = Effect.fn(function* (token?: string) {
+  const { wiki } = yield* Fixture;
+  return yield* authorizeMcpRequest(
+    new Request(`${wikiOrigin}/mcp`, {
+      method: "POST",
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    }),
+    wikiOrigin,
+  ).pipe(Effect.provideService(Auth, wiki));
+});
+
+authTest("wiki publishes OAuth discovery for its MCP resource", () =>
   Effect.gen(function* () {
-    const expected = getSchema((yield* Fixture).user.instance.options);
-    const actual = getSchemaShape();
-    for (const [model, description] of Object.entries(expected))
-      assert.includeMembers(actual[model] ?? [], Object.keys(description.fields));
-    assert.strictEqual(expected["passkey"]?.fields["audience"]?.input, false);
-    assert.strictEqual(expected["verification"]?.fields["audience"]?.input, false);
+    const { wiki } = yield* Fixture;
+    const discovery = (path: string) =>
+      Effect.promise(async () => {
+        const response = await wiki.instance.handler(new Request(`${wikiOrigin}${path}`));
+        return { status: response.status, body: (await response.json()) as unknown };
+      });
+    const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
+    assert.strictEqual(resource.status, 200);
+    assert.deepInclude(resource.body, {
+      resource: `${wikiOrigin}/mcp`,
+      authorization_servers: [`${wikiOrigin}/api/auth`],
+    });
+    const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
+    assert.strictEqual(server.status, 200);
+    assert.deepInclude(server.body, {
+      issuer: `${wikiOrigin}/api/auth`,
+      registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
+      code_challenge_methods_supported: ["S256"],
+    });
+    const challenge = yield* mcpRequest();
+    assert.instanceOf(challenge, Response);
+    if (challenge instanceof Response) {
+      assert.strictEqual(challenge.status, 401);
+      assert.include(
+        challenge.headers.get("www-authenticate") ?? "",
+        `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`,
+      );
+    }
+  }),
+);
+
+authTest("strong wiki administrator authorizes an MCP client that can then read the wiki", () =>
+  Effect.gen(function* () {
+    const flow = yield* startAuthorization();
+    const wiki = yield* wikiAdministrator("owner@example.com");
+    const code = yield* grantAuthorization(wiki, flow.oauthQuery);
+    const tokens = yield* exchangeCode(flow, code);
+    const granted = yield* mcpRequest(tokens.access_token);
+    assert.notInstanceOf(granted, Response);
+    if (!(granted instanceof Response)) assert.match(granted.userId, /^.+$/);
+    const tampered = yield* mcpRequest(`${tokens.access_token.slice(0, -2)}xx`);
+    assert.instanceOf(tampered, Response);
+    if (tampered instanceof Response) assert.strictEqual(tampered.status, 401);
+  }),
+);
+
+authTest("demoted administrator loses MCP access even with an unexpired token", () =>
+  Effect.gen(function* () {
+    const flow = yield* startAuthorization();
+    const wiki = yield* wikiAdministrator("owner@example.com");
+    const tokens = yield* exchangeCode(flow, yield* grantAuthorization(wiki, flow.oauthQuery));
+    const owner = yield* wiki.verify();
+    yield* registerVerified("second@example.com");
+    const binding = yield* TestBinding;
+    yield* Effect.promise(() =>
+      binding
+        .prepare("UPDATE user SET role = 'admin' WHERE email = ?")
+        .bind("second@example.com")
+        .run(),
+    );
+    yield* Effect.promise(() =>
+      binding.prepare("UPDATE user SET role = 'user' WHERE id = ?").bind(owner.user.id).run(),
+    );
+    assert.strictEqual(yield* failureTag(wiki.verify()), "SessionRequired");
+    const denied = yield* mcpRequest(tokens.access_token);
+    assert.instanceOf(denied, Response);
+    if (denied instanceof Response) assert.strictEqual(denied.status, 403);
+  }),
+);
+
+authTest("wiki sign-in never sends a verification email it has no page for", () =>
+  Effect.gen(function* () {
+    yield* register("pending@example.com");
+    mailbox.delete("pending@example.com");
+    const services = yield* Fixture;
+    const wiki = new BrowserClient(services.wiki);
+    assert.strictEqual((yield* signIn(wiki, "pending@example.com")).status, 403);
+    assert.isFalse(mailbox.has("pending@example.com"));
+    const user = new BrowserClient(services.user);
+    assert.strictEqual((yield* signIn(user, "pending@example.com")).status, 403);
+    assert.isTrue(mailbox.has("pending@example.com"));
+  }),
+);
+
+authTest("weak or non-administrator wiki sessions cannot grant MCP access", () =>
+  Effect.gen(function* () {
+    const flow = yield* startAuthorization();
+    yield* bootstrapVerifiedAdmin("owner@example.com");
+    const services = yield* Fixture;
+    const weak = new BrowserClient(services.wiki);
+    assert.strictEqual((yield* signIn(weak, "owner@example.com")).status, 200);
+    const continued = yield* weak.json("/oauth2/continue", {
+      postLogin: true,
+      oauth_query: flow.oauthQuery,
+    });
+    assert.strictEqual(continued.status, 403);
+    assert.deepInclude(continued.body, { message: "ADMIN_MFA_REQUIRED" });
+
+    const smuggled = new BrowserClient(services.wiki);
+    const signInWithQuery = yield* smuggled.json("/sign-in/email", {
+      email: "owner@example.com",
+      password,
+      oauth_query: flow.oauthQuery,
+    });
+    assert.strictEqual(signInWithQuery.status, 403);
+    assert.deepInclude(signInWithQuery.body, { message: "OAUTH_QUERY_NOT_ACCEPTED" });
+
+    yield* registerVerified("member@example.com");
+    const member = new BrowserClient(services.wiki);
+    assert.isFalse((yield* signIn(member, "member@example.com")).ok);
+    assert.isFalse(
+      (yield* member.request("/sign-up/email", {
+        name: "new",
+        email: "new@example.com",
+        password,
+      })).ok,
+    );
   }),
 );

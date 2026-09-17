@@ -27,66 +27,34 @@ export async function deployApplication(target: AppTarget) {
     subdomain: policy.subdomain,
     observability: workerObservability,
   });
-  const access =
-    target === "admin"
-      ? new cloudflare.ZeroTrustAccessApplication("admin-access", {
-          accountId: settings.accountId,
-          name: `${settings.prefix}-admin-access`,
-          type: "self_hosted",
-          destinations: [{ type: "worker", workerId: worker.id }],
-          sessionDuration: "8h",
-          httpOnlyCookieAttribute: true,
-          policies: [
-            {
-              name: "named-admins",
-              decision: "allow",
-              precedence: 1,
-              includes: settings.adminEmails.map((email) => ({ email: { email } })),
-            },
-          ],
-        })
-      : undefined;
   const plaintext = {
     APP_ORIGIN: policy.origin,
     APP_RELEASE: artifacts.release,
-    ...(target === "wiki" ? {} : { EMAIL_FROM: settings.mailFrom }),
+    EMAIL_FROM: settings.mailFrom,
   };
   const bindings: cloudflare.types.input.WorkerVersionBinding[] = [
-    ...(target === "wiki"
-      ? [{ type: "ai", name: "AI" }]
-      : [
-          { type: "d1", name: "DB", id: shared.requireOutput("databaseId") },
-          {
-            type: "secret_text",
-            name: "AUTH_SECRET",
-            text: shared
-              .requireOutput("authSecret")
-              .apply((value: unknown) => Effect.runSync(validateAuthSecret(value))),
-          },
-          { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
-        ]),
-    ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
-    ...(access
-      ? [
-          { type: "plain_text", name: "ACCESS_AUD", text: access.aud },
-          { type: "plain_text", name: "ACCESS_ISSUER", text: settings.accessIssuer },
-        ]
-      : []),
-  ];
-  const version = new cloudflare.WorkerVersion(
-    `${target}-version`,
+    ...(target === "wiki" ? [{ type: "ai", name: "AI" }] : []),
+    { type: "d1", name: "DB", id: shared.requireOutput("databaseId") },
     {
-      accountId: settings.accountId,
-      workerId: worker.id,
-      compatibilityDate: workerCompatibility.date,
-      compatibilityFlags: [...workerCompatibility.flags],
-      mainModule: artifacts.mainModule,
-      modules: artifacts.modules,
-      assets: { directory: artifacts.clientDirectory, config: policy.assets },
-      bindings: [...bindings, { type: "assets", name: "ASSETS" }],
+      type: "secret_text",
+      name: "AUTH_SECRET",
+      text: shared
+        .requireOutput("authSecret")
+        .apply((value: unknown) => Effect.runSync(validateAuthSecret(value))),
     },
-    { dependsOn: access ? [access] : [] },
-  );
+    { type: "send_email", name: "EMAIL", allowedSenderAddresses: [settings.mailFrom] },
+    ...Object.entries(plaintext).map(([name, text]) => ({ type: "plain_text", name, text })),
+  ];
+  const version = new cloudflare.WorkerVersion(`${target}-version`, {
+    accountId: settings.accountId,
+    workerId: worker.id,
+    compatibilityDate: workerCompatibility.date,
+    compatibilityFlags: [...workerCompatibility.flags],
+    mainModule: artifacts.mainModule,
+    modules: artifacts.modules,
+    assets: { directory: artifacts.clientDirectory, config: policy.assets },
+    bindings: [...bindings, { type: "assets", name: "ASSETS" }],
+  });
   const deployment = new cloudflare.WorkersDeployment(`${target}-deployment`, {
     accountId: settings.accountId,
     scriptName: worker.name,
@@ -101,11 +69,10 @@ export async function deployApplication(target: AppTarget) {
       service: worker.name,
       hostname: new URL(policy.origin).hostname,
     },
-    { dependsOn: [deployment, ...(access ? [access] : [])] },
+    { dependsOn: [deployment] },
   );
   return {
     workerName: worker.name,
     origin: pulumi.interpolate`https://${domain.hostname}`,
-    accessAudience: access?.aud,
   };
 }

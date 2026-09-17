@@ -242,7 +242,6 @@ const healthVersion = new cloudflare.WorkerVersion("health-version", {
       USER_ORIGIN: settings.userOrigin,
       ADMIN_ORIGIN: settings.adminOrigin,
       WIKI_ORIGIN: settings.wikiOrigin,
-      ACCESS_ISSUER: settings.accessIssuer,
       ALERT_FROM: settings.mailFrom,
       ALERT_TO: settings.budget.recipients.join(","),
     }).map(([name, text]) => ({ type: "plain_text", name, text })),

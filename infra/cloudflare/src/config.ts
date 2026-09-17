@@ -43,12 +43,6 @@ const SharedSettings = Schema.Struct({
   userOrigin: Origin,
   adminOrigin: Origin,
   wikiOrigin: Origin,
-  accessIssuer: Origin.check(
-    Schema.makeFilter(
-      (value: string) => URL.parse(value)?.hostname.endsWith(".cloudflareaccess.com") === true,
-    ),
-  ),
-  adminEmails: Schema.Array(Email).check(Schema.isLengthBetween(1, 50)),
   mailFrom: Email,
   budget: Schema.Struct({
     budgetJpy: Positive,

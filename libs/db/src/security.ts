@@ -2,7 +2,15 @@ import { and, count, eq, gt } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 import { query } from "./index.ts";
 import type { Audience } from "./index.ts";
-import { passkey, session, twoFactor, user, verification } from "./schema.ts";
+import {
+  oauthAccessToken,
+  oauthRefreshToken,
+  passkey,
+  session,
+  twoFactor,
+  user,
+  verification,
+} from "./schema.ts";
 
 export class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 
@@ -106,5 +114,22 @@ export const markSessionStrong = Effect.fn("markSessionStrong")(function* (
 });
 
 export const revokeUserSessions = Effect.fn("revokeUserSessions")(function* (userId: string) {
+  yield* query((database) =>
+    database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+  );
+  yield* query((database) =>
+    database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+  );
   yield* query((database) => database.delete(session).where(eq(session.userId, userId)));
+});
+
+export const findWikiReader = Effect.fn("findWikiReader")(function* (userId: string) {
+  const [record] = yield* query((database) =>
+    database
+      .select({ id: user.id })
+      .from(user)
+      .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
+      .limit(1),
+  );
+  return record ?? null;
 });

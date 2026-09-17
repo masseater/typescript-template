@@ -210,7 +210,11 @@ test.for([
   ["production-test-entry", "apps/user/src/probe.ts", 'import "@template/db/testing";'],
   ["admin-signup", "apps/admin/src/probe.ts", 'import "@template/ui/signup";'],
   ["wiki-database", "apps/wiki/src/probe.ts", 'import "@template/db";'],
-  ["wiki-auth", "apps/wiki/src/probe.ts", 'export const load = () => import("@template/auth");'],
+  [
+    "wiki-signup",
+    "apps/wiki/src/probe.ts",
+    'export const load = () => import("@template/ui/signup");',
+  ],
   ["wiki-app", "apps/user/src/probe.ts", 'import "@template/wiki";'],
 ] as const)("rejects dependency bypass: %s", async ([_label, name, code], { directory }) => {
   const target = path.join(directory, name);
@@ -315,6 +319,8 @@ test.for([
   ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
   ["apps/user/src/probe.ts", 'export * from "@template/db";'],
   ["apps/user/src/probe.ts", 'export * from "@template/ui/signup";'],
+  ["apps/wiki/vite.config.ts", 'export { localDatabase } from "@template/db/local";'],
+  ["apps/wiki/src/probe.ts", 'export * from "@template/auth";'],
   ["apps/user/src/probe.ts", 'export const load = () => import("./feature");'],
   ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
   ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],

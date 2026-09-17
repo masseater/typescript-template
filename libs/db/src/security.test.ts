@@ -4,8 +4,16 @@ import { Effect, Exit } from "effect";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { getProfile, query, updateProfile } from "./index.ts";
 import type { Audience, Role } from "./index.ts";
-import { account, session, user } from "./schema.ts";
-import { getSessionSecurity } from "./security.ts";
+import {
+  account,
+  oauthAccessToken,
+  oauthClient,
+  oauthConsent,
+  oauthRefreshToken,
+  session,
+  user,
+} from "./schema.ts";
+import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
 import { TestDatabase } from "./testing.ts";
 
 const page = { limit: 50, offset: 0 };
@@ -155,5 +163,119 @@ it.effect("first administrator bootstrap is atomic and one-time", () =>
       { concurrency: "unbounded" },
     );
     assert.lengthOf(outcomes.filter(Exit.isSuccess), 1);
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+const addOAuthGrant = Effect.fn(function* (userId: string) {
+  const clientId = `client-${userId}`;
+  yield* query((database) =>
+    database.insert(oauthClient).values({ id: clientId, clientId, redirectUris: "[]" }),
+  );
+  yield* query((database) =>
+    database.insert(oauthRefreshToken).values({
+      id: `refresh-${userId}`,
+      token: `refresh-token-${userId}`,
+      clientId,
+      userId,
+      scopes: '["wiki:read"]',
+    }),
+  );
+  yield* query((database) =>
+    database.insert(oauthAccessToken).values({
+      id: `access-${userId}`,
+      token: `access-token-${userId}`,
+      clientId,
+      userId,
+      refreshId: `refresh-${userId}`,
+      scopes: '["wiki:read"]',
+    }),
+  );
+  yield* query((database) =>
+    database.insert(oauthConsent).values({
+      id: `consent-${userId}`,
+      clientId,
+      userId,
+      scopes: '["wiki:read"]',
+    }),
+  );
+});
+
+const oauthGrantCounts = Effect.fn(function* (userId: string) {
+  const access = yield* query((database) =>
+    database.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+  );
+  const refresh = yield* query((database) =>
+    database.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+  );
+  const consent = yield* query((database) =>
+    database.select().from(oauthConsent).where(eq(oauthConsent.userId, userId)),
+  );
+  return { access: access.length, refresh: refresh.length, consent: consent.length };
+});
+
+it.effect("role change revokes wiki reading and every OAuth grant of the user", () =>
+  Effect.gen(function* () {
+    yield* addUser("actor", "admin");
+    yield* addUser("reader", "admin");
+    const actor = yield* addSession("actor", "admin");
+    yield* addOAuthGrant("reader");
+    assert.deepStrictEqual(yield* findWikiReader("reader"), { id: "reader" });
+    yield* setUserRole(actor, "reader", "user");
+    assert.isNull(yield* findWikiReader("reader"));
+    assert.deepStrictEqual(yield* oauthGrantCounts("reader"), {
+      access: 0,
+      refresh: 0,
+      consent: 0,
+    });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("revoking sessions also revokes OAuth tokens but keeps consent", () =>
+  Effect.gen(function* () {
+    yield* addUser("reader", "admin");
+    const wiki = yield* addSession("reader", "wiki");
+    yield* addOAuthGrant("reader");
+    yield* revokeUserSessions("reader");
+    assert.isNull(yield* getSessionSecurity(wiki, "wiki"));
+    assert.deepStrictEqual(yield* oauthGrantCounts("reader"), {
+      access: 0,
+      refresh: 0,
+      consent: 1,
+    });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("deleting a user removes OAuth grants", () =>
+  Effect.gen(function* () {
+    yield* addUser("actor", "admin");
+    yield* addUser("reader");
+    const actor = yield* addSession("actor", "admin");
+    yield* addOAuthGrant("reader");
+    yield* deleteUser(actor, "reader");
+    assert.deepStrictEqual(yield* oauthGrantCounts("reader"), {
+      access: 0,
+      refresh: 0,
+      consent: 0,
+    });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("wiki reading requires a verified administrator", () =>
+  Effect.gen(function* () {
+    yield* addUser("member");
+    yield* query((database) =>
+      database.insert(user).values({
+        id: "unverified",
+        name: "unverified",
+        email: "unverified@example.com",
+        role: "admin",
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+    assert.isNull(yield* findWikiReader("member"));
+    assert.isNull(yield* findWikiReader("unverified"));
+    assert.isNull(yield* findWikiReader("missing"));
   }).pipe(Effect.provide(TestDatabase)),
 );

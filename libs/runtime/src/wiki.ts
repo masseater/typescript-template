@@ -1,7 +1,6 @@
 import { readWikiConfig } from "@template/config";
-import { Telemetry } from "@template/observability";
 import { Context, Effect, Layer, Schema } from "effect";
-import { AppOrigin, Assets } from "./http.ts";
+import { configuredAppLayer } from "./index.ts";
 
 const embeddingModel = "@cf/baai/bge-m3";
 const embeddingBatch = 32;
@@ -46,14 +45,9 @@ export const wikiLayer = (env: unknown, routes: Readonly<Record<string, string>>
           }
           return vectors;
         });
-        return Layer.mergeAll(
+        return Layer.merge(
           Layer.succeed(Embedder, Embedder.of({ available: ai !== undefined, embed })),
-          Layer.succeed(AppOrigin, config.APP_ORIGIN),
-          Layer.succeed(Assets, config.ASSETS),
-        ).pipe(
-          Layer.provideMerge(
-            Telemetry.layer({ serviceName: "wiki", release: config.APP_RELEASE, routes }),
-          ),
+          configuredAppLayer(config, "wiki", routes),
         );
       }),
     ),

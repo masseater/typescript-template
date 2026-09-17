@@ -5,7 +5,7 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { schema, user } from "./schema.ts";
 
 export { schema } from "./schema.ts";
-export const Audience = Schema.Literals(["user", "admin"]);
+export const Audience = Schema.Literals(["user", "admin", "wiki"]);
 export type Audience = typeof Audience.Type;
 export const Role = Schema.Literals(["user", "admin"]);
 export type Role = typeof Role.Type;

@@ -54,8 +54,6 @@ type App = (typeof apps)[number];
 const AppName = Schema.Literals(apps);
 const Credentials = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(32)),
-  adminUser: Schema.Literal("operator"),
-  adminPassword: Schema.String.check(Schema.isMinLength(24)),
 });
 const ports = { user: 3001, admin: 3002, wiki: 3003 };
 const servicePorts = { mailpit: 8025 };
@@ -170,7 +168,7 @@ const readCredentials = Effect.fn("readCredentials")(function* () {
     try: (): unknown => JSON.parse(text),
     catch: () => failure("credentials_invalid"),
   });
-  return yield* Schema.decodeUnknownEffect(Credentials)(json, { onExcessProperty: "error" }).pipe(
+  return yield* Schema.decodeUnknownEffect(Credentials)(json).pipe(
     Effect.mapError(() => failure("credentials_invalid")),
   );
 });
@@ -196,30 +194,18 @@ const setup = Effect.fn("setup")(function* () {
       (error: unknown) => (errorCode(error) === "ENOENT" ? false : Promise.reject(error)),
     ),
   );
-  const credentials = exists
-    ? yield* readCredentials()
-    : {
-        authSecret: randomBytes(48).toString("base64url"),
-        adminUser: "operator",
-        adminPassword: randomBytes(32).toString("base64url"),
-      };
-  yield* writePrivateFile(credentialsFile, `${JSON.stringify(credentials, null, 2)}\n`);
+  if (!exists)
+    yield* writePrivateFile(
+      credentialsFile,
+      `${JSON.stringify({ authSecret: randomBytes(48).toString("base64url") }, null, 2)}\n`,
+    );
+  const credentials = yield* readCredentials();
   for (const app of apps) {
     const values = {
       APP_ORIGIN: origins[app],
-      ...(app === "wiki"
-        ? {}
-        : {
-            AUTH_SECRET: credentials.authSecret,
-            EMAIL_FROM: "no-reply@example.test",
-            MAILPIT_URL: "http://127.0.0.1:8025",
-          }),
-      ...(app === "admin"
-        ? {
-            LOCAL_ADMIN_USER: credentials.adminUser,
-            LOCAL_ADMIN_PASSWORD: credentials.adminPassword,
-          }
-        : {}),
+      AUTH_SECRET: credentials.authSecret,
+      EMAIL_FROM: "no-reply@example.test",
+      MAILPIT_URL: "http://127.0.0.1:8025",
     };
     const content =
       Object.entries(values)
@@ -274,7 +260,6 @@ const connection = Effect.fn("connection")(function* () {
     admin: origins.admin,
     wiki: origins.wiki,
     mailpit: `https://${hostname("mailpit")}`,
-    adminCredentialsFile: fileURLToPath(credentialsFile),
     windowsTrustCommand: `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate.toString("base64")}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`,
   };
 });
@@ -342,30 +327,6 @@ const browser = Effect.fn("browser")(function* (app: App) {
     session,
   ];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  if (app === "admin") {
-    const credentials = yield* readCredentials();
-    yield* Effect.scoped(
-      Effect.gen(function* () {
-        const { child, exited } = yield* spawnChild(() =>
-          spawn("agent-browser", [...args, "batch", "--bail", "--json"], {
-            cwd: root,
-            env,
-            stdio: ["pipe", "pipe", "pipe"],
-          }),
-        );
-        child.stdout?.resume();
-        child.stderr?.resume();
-        child.stdin?.end(
-          JSON.stringify([
-            ["set", "credentials", credentials.adminUser, credentials.adminPassword],
-          ]),
-        );
-        const exit = yield* Effect.promise(() => exited);
-        if (!exit.started) return yield* failure("browser_start_failed");
-        if (exit.code !== 0) return yield* failure("browser_authentication_failed");
-      }),
-    );
-  }
   yield* run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
     cwd: root,
     env,

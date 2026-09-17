@@ -6,7 +6,6 @@ const valid = {
   USER_ORIGIN: "https://app.example.com",
   ADMIN_ORIGIN: "https://admin.example.com",
   WIKI_ORIGIN: "https://wiki.example.com",
-  ACCESS_ISSUER: "https://team.cloudflareaccess.com",
   ALERT_FROM: "alerts@example.com",
   ALERT_TO: "operator@example.com,oncall@example.com",
 };
@@ -22,13 +21,9 @@ it.effect("accepts distinct https origins and verified operator addresses", () =
     const config = yield* parseHealthMonitorConfig(valid);
     assert.deepStrictEqual(config.ALERT_TO, ["operator@example.com", "oncall@example.com"]);
     assert.deepStrictEqual(healthTargets(config), [
-      { service: "user", origin: "https://app.example.com", guard: null },
-      {
-        service: "admin",
-        origin: "https://admin.example.com",
-        guard: "https://team.cloudflareaccess.com",
-      },
-      { service: "wiki", origin: "https://wiki.example.com", guard: null },
+      { service: "user", origin: "https://app.example.com" },
+      { service: "admin", origin: "https://admin.example.com" },
+      { service: "wiki", origin: "https://wiki.example.com" },
     ]);
   }),
 );
@@ -36,7 +31,6 @@ it.effect("accepts distinct https origins and verified operator addresses", () =
 for (const override of [
   { USER_ORIGIN: "http://app.example.com" },
   { WIKI_ORIGIN: "https://app.example.com/docs" },
-  { ACCESS_ISSUER: "https://team.example.com" },
   { ALERT_TO: "private-not-an-address" },
 ])
   it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>

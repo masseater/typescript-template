@@ -18,8 +18,6 @@ const settings = {
   userOrigin: "https://user.example.com",
   adminOrigin: "https://admin.example.com",
   wikiOrigin: "https://wiki.example.com",
-  accessIssuer: "https://team.cloudflareaccess.com",
-  adminEmails: ["admin@example.com"],
   mailFrom: "mail@example.com",
   budget: {
     budgetJpy: 5000,
@@ -83,27 +81,27 @@ it.effect("user and admin are distinct deployments with all alternative public U
   }),
 );
 
-it.effect(
-  "the wiki reads its production settings without authentication or database bindings",
-  () =>
-    Effect.gen(function* () {
-      const config = yield* parseSharedConfig(settings);
-      const runtime = yield* readWikiConfig({
-        APP_ORIGIN: appPolicy(config, "wiki").origin,
-        APP_RELEASE: "0123456789abcdef",
-        ASSETS: { fetch: () => Promise.resolve(new Response()) },
-      });
-      assert.strictEqual(runtime.APP_ORIGIN, settings.wikiOrigin);
-      assert.strictEqual(runtime.APP_RELEASE, "0123456789abcdef");
-      assert.isUndefined(runtime.AI);
-      const ai = { run: () => Promise.resolve({ data: [] }) };
-      const withAi = yield* readWikiConfig({
-        APP_ORIGIN: appPolicy(config, "wiki").origin,
-        ASSETS: { fetch: () => Promise.resolve(new Response()) },
-        AI: ai,
-      });
-      assert.strictEqual<unknown>(withAi.AI, ai);
-    }),
+it.effect("the wiki reads authentication, database and optional AI bindings", () =>
+  Effect.gen(function* () {
+    const config = yield* parseSharedConfig(settings);
+    const bindings = {
+      APP_ORIGIN: appPolicy(config, "wiki").origin,
+      AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
+      APP_RELEASE: "0123456789abcdef",
+      EMAIL_FROM: config.mailFrom,
+      ASSETS: { fetch: () => Promise.resolve(new Response()) },
+      DB: { prepare: () => undefined, batch: () => Promise.resolve([]) },
+      EMAIL: { send: () => Promise.resolve() },
+    };
+    const runtime = yield* readWikiConfig(bindings);
+    assert.strictEqual(runtime.APP_ORIGIN, settings.wikiOrigin);
+    assert.strictEqual(runtime.APP_RELEASE, "0123456789abcdef");
+    assert.isUndefined(runtime.AI);
+    const ai = { run: () => Promise.resolve({ data: [] }) };
+    assert.strictEqual<unknown>((yield* readWikiConfig({ ...bindings, AI: ai })).AI, ai);
+    const missing = yield* readWikiConfig({ ...bindings, DB: undefined }).pipe(Effect.flip);
+    assert.strictEqual(missing._tag, "ConfigurationInvalid");
+  }),
 );
 
 for (const adminOrigin of [
@@ -123,15 +121,11 @@ for (const adminOrigin of [
     }),
   );
 
-it.effect("rejects same origins and empty management allowlists", () =>
+it.effect("rejects same origins", () =>
   Effect.gen(function* () {
     assert.strictEqual(
       yield* code(parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })),
       "app_origins_must_differ",
-    );
-    assert.strictEqual(
-      yield* code(parseSharedConfig({ ...settings, adminEmails: [] })),
-      "cloudflare_settings_invalid",
     );
   }),
 );

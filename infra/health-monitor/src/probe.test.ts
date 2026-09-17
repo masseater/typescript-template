@@ -9,12 +9,6 @@ import type { HealthTarget } from "./probe.ts";
 const userTarget: HealthTarget = {
   service: "user",
   origin: "https://app.example.com",
-  guard: null,
-};
-const adminTarget: HealthTarget = {
-  service: "admin",
-  origin: "https://admin.example.com",
-  guard: "https://team.cloudflareaccess.com",
 };
 
 const probe = (target: HealthTarget, resolver: HttpResponseResolver) =>
@@ -61,49 +55,6 @@ for (const { name, resolver, detail } of [
     Effect.gen(function* () {
       assert.deepStrictEqual(yield* probe(userTarget, resolver), {
         service: "user",
-        healthy: false,
-        detail,
-      });
-    }),
-  );
-
-it.effect(
-  "a guarded application is healthy while Cloudflare Access redirects anonymous probes",
-  () =>
-    Effect.gen(function* () {
-      assert.deepStrictEqual(
-        yield* probe(
-          adminTarget,
-          () =>
-            new HttpResponse(null, {
-              status: 302,
-              headers: {
-                location: "https://team.cloudflareaccess.com/cdn-cgi/access/login/admin",
-              },
-            }),
-        ),
-        { service: "admin", healthy: true, detail: "access_guarded" },
-      );
-    }),
-);
-
-for (const { name, resolver, detail } of [
-  {
-    name: "answering anonymous requests itself",
-    resolver: () => HttpResponse.json({ ok: true, service: "admin", release: "0123456789abcdef" }),
-    detail: "unguarded_200",
-  },
-  {
-    name: "redirecting somewhere other than the Access issuer",
-    resolver: () =>
-      new HttpResponse(null, { status: 302, headers: { location: "https://phish.example/" } }),
-    detail: "unguarded_302",
-  },
-])
-  it.effect(`a guarded application ${name} is unhealthy`, () =>
-    Effect.gen(function* () {
-      assert.deepStrictEqual(yield* probe(adminTarget, resolver), {
-        service: "admin",
         healthy: false,
         detail,
       });

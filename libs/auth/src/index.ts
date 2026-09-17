@@ -1,4 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
 import { Database, schema } from "@template/db";
 import type { Audience, DrizzleDatabase } from "@template/db";
@@ -13,8 +14,9 @@ import {
 } from "@template/db/security";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-import { twoFactor } from "better-auth/plugins";
+import { jwt, twoFactor } from "better-auth/plugins";
 import { Context, Effect, Layer, Schema } from "effect";
+import { wikiScopes } from "./scopes.ts";
 
 export interface AuthOptions {
   readonly baseURL: string;
@@ -38,9 +40,32 @@ const enrollmentPaths = new Set([
   "/passkey/generate-authenticate-options",
   "/passkey/verify-authentication",
 ]);
+const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
 
 function deny(message: string): never {
   throw new APIError("FORBIDDEN", { message });
+}
+
+function isLoopbackHttpRedirect(value: unknown) {
+  if (typeof value !== "string" || !URL.canParse(value)) return false;
+  const url = new URL(value);
+  return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+}
+
+function wikiAuthorizationServer(origin: string) {
+  return [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      resource: `${origin}/mcp`,
+      loginPage: "/login",
+      consentPage: "/consent",
+      scopes: [...wikiScopes],
+      clientRegistrationDefaultScopes: [...wikiScopes],
+      clientRegistrationAllowedScopes: [...wikiScopes],
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+    }),
+  ];
 }
 
 function createAuth(
@@ -49,6 +74,7 @@ function createAuth(
   run: <A, E>(effect: Effect.Effect<A, E, Database>) => Promise<A>,
 ) {
   const { audience } = options;
+  const privileged = audience !== "user";
   const origin = new URL(options.baseURL).origin;
   return betterAuth({
     appName: "TypeScript Template",
@@ -71,12 +97,12 @@ function createAuth(
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
-      disableSignUp: audience === "admin",
+      disableSignUp: privileged,
       minPasswordLength: 12,
     },
     emailVerification: {
       sendOnSignUp: true,
-      sendOnSignIn: true,
+      sendOnSignIn: audience !== "wiki",
       autoSignInAfterVerification: false,
       sendVerificationEmail: async ({ user, token }) => {
         const link = new URL("/verify-email", origin);
@@ -93,10 +119,15 @@ function createAuth(
     },
     session: {
       cookieCache: { enabled: false },
-      expiresIn: audience === "admin" ? 60 * 60 * 8 : 60 * 60 * 24 * 7,
+      expiresIn: privileged ? 60 * 60 * 8 : 60 * 60 * 24 * 7,
       freshAge: 60 * 5,
       additionalFields: {
-        audience: { type: ["user", "admin"], required: true, input: false, defaultValue: audience },
+        audience: {
+          type: ["user", "admin", "wiki"],
+          required: true,
+          input: false,
+          defaultValue: audience,
+        },
         securityVersion: { type: "number", required: true, input: false, defaultValue: -1 },
         authenticationMethod: {
           type: ["password", "password_totp", "passkey_uv", "recovery"],
@@ -139,10 +170,11 @@ function createAuth(
             if (!verification.authenticationInfo.userVerified) deny("PASSKEY_UV_REQUIRED");
             const user = await run(findPasskeyUser(clientData.id, audience));
             if (!user?.emailVerified) deny("VERIFIED_EMAIL_REQUIRED");
-            if (audience === "admin" && user.role !== "admin") deny("ADMIN_REQUIRED");
+            if (privileged && user.role !== "admin") deny("ADMIN_REQUIRED");
           },
         },
       }),
+      ...(audience === "wiki" ? wikiAuthorizationServer(origin) : []),
     ],
     databaseHooks: {
       user: {
@@ -156,7 +188,7 @@ function createAuth(
           before: async (candidate, ctx) => {
             const user = await run(findUser(candidate.userId));
             if (!user?.emailVerified) deny("VERIFIED_EMAIL_REQUIRED");
-            if (audience === "admin" && user.role !== "admin") deny("ADMIN_REQUIRED");
+            if (privileged && user.role !== "admin") deny("ADMIN_REQUIRED");
             const authenticationMethod =
               ctx?.path === "/passkey/verify-authentication"
                 ? "passkey_uv"
@@ -183,6 +215,17 @@ function createAuth(
         const body: unknown = ctx.body;
         const fields = typeof body === "object" && body !== null ? body : {};
         if ("trustDevice" in fields && fields.trustDevice === true) deny("TRUSTED_DEVICE_DISABLED");
+        if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path))
+          deny("OAUTH_QUERY_NOT_ACCEPTED");
+        if (
+          ctx.path === "/oauth2/register" &&
+          !("application_type" in fields) &&
+          "redirect_uris" in fields &&
+          Array.isArray(fields.redirect_uris) &&
+          fields.redirect_uris.length > 0 &&
+          fields.redirect_uris.every(isLoopbackHttpRedirect)
+        )
+          Object.assign(fields, { application_type: "native" });
         if (
           ctx.path === "/passkey/verify-registration" &&
           "createSession" in fields &&
@@ -213,7 +256,7 @@ function createAuth(
         ) {
           deny("ADMIN_MFA_REQUIRED");
         }
-        if (audience === "admin") {
+        if (privileged) {
           if (current.user.role !== "admin") deny("ADMIN_REQUIRED");
           if (
             !strongMethods.has(current.session.authenticationMethod) &&
@@ -357,7 +400,7 @@ export const verifySession = Effect.fn("verifySession")(function* (
   const current = yield* getSessionSecurity(session.session.id, audience);
   if (!current || !current.user.emailVerified) return yield* new SessionInvalid();
   const strong = strongMethods.has(current.session.authenticationMethod);
-  if (audience === "admin") {
+  if (audience !== "user") {
     if (current.user.role !== "admin") return yield* new AdminRequired();
     if (!allowEnrollment && !strong) return yield* new AdminMfaRequired();
   }

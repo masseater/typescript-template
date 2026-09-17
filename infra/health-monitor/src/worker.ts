@@ -12,7 +12,6 @@ interface Bindings {
   USER_ORIGIN: string;
   ADMIN_ORIGIN: string;
   WIKI_ORIGIN: string;
-  ACCESS_ISSUER: string;
   ALERT_FROM: string;
   ALERT_TO: string;
 }

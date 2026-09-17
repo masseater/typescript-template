@@ -50,10 +50,7 @@ const Bindings = Schema.Struct({
   EMAIL: Schema.optionalKey(bindingWith<SendEmail>("SendEmail", ["send"])),
 });
 
-const WikiEnvironment = Schema.Struct({
-  APP_ORIGIN: Origin,
-  APP_RELEASE: withRelease,
-  ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
+const WikiBindings = Schema.Struct({
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
 });
 
@@ -104,9 +101,9 @@ export const readConfig = Effect.fn("readConfig")(function* (input: unknown) {
 export type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
 export const readWikiConfig = Effect.fn("readWikiConfig")(function* (input: unknown) {
-  const config = yield* decode(WikiEnvironment, input);
-  yield* requireSecureOrigin(config.APP_ORIGIN);
-  return config;
+  const config = yield* readConfig(input);
+  const { AI } = yield* decode(WikiBindings, input);
+  return { ...config, AI };
 });
 
 export type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
