@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "vite-plus";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { devBoundary } from "./index.ts";
 
 const apps = ["user", "admin", "wiki"] as const;

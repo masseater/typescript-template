@@ -1,6 +1,6 @@
 import path from "node:path";
-import { definePlugin } from "@oxlint/plugins";
-import type { Context, RuleMeta, ESTree } from "@oxlint/plugins";
+import { definePlugin } from "vite-plus/lint/plugins";
+import type { Context, RuleMeta, ESTree } from "vite-plus/lint/plugins";
 import {
   destructuredOrigins,
   origins,
@@ -32,6 +32,8 @@ const isMock = (origin: Origin) => {
     ![
       "vitest",
       "@vitest/spy",
+      "vite-plus/test",
+      "vite-plus/test/plugins/spy",
       "@jest/globals",
       "jest-mock",
       "node:test",

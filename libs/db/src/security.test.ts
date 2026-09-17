@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { expect, test as baseTest } from "vitest";
+import { expect, test as baseTest } from "vite-plus/test";
 import { bootstrapAdmin, deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { getProfile, updateProfile } from "./index.ts";
 import type { Audience, Database, Role } from "./index.ts";

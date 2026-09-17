@@ -162,13 +162,25 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    vite:
+      specifier: npm:@voidzero-dev/vite-plus-core@0.3.2
+      version: 0.3.2
+    vite-plus:
+      specifier: 0.3.2
+      version: 0.3.2
+    vitest:
+      specifier: 4.1.11
+      version: 4.1.11
+
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
-  vitest: 4.1.11
   '@vitest/runner': 4.1.11
   '@vitest/expect': 4.1.11
   '@vitest/spy': 4.1.11
   '@vitest/utils': 4.1.11
+  vite@*: npm:@voidzero-dev/vite-plus-core@0.3.2
+  vitest@*: 4.1.11
 
 patchedDependencies:
   '@better-auth/oauth-provider@1.7.5': 1ab2e21676aee36496443c4993fc64405f3fcc50b7683ec7d4b0d17a6816a417
@@ -177,9 +189,6 @@ importers:
 
   .:
     devDependencies:
-      '@oxlint/plugins':
-        specifier: 1.79.0
-        version: 1.79.0
       '@types/node':
         specifier: 24.12.0
         version: 24.12.0
@@ -189,12 +198,12 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   apps/admin:
     dependencies:
@@ -253,8 +262,11 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@1.21.7)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       wrangler:
         specifier: 4.132.0
@@ -317,8 +329,11 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       wrangler:
         specifier: 4.132.0
@@ -367,7 +382,7 @@ importers:
         version: 19.3.0(react@19.3.0)
       smarthr-ui:
         specifier: 99.6.1
-        version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@10.2.2))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
+        version: 99.6.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-intl@10.2.2(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(styled-components@5.3.11(@babel/core@7.29.7(supports-color@5.5.0))(react-dom@19.3.0(react@19.3.0))(react-is@17.0.2)(react@19.3.0))(tsx@4.23.13)(yaml@2.9.1)
       valibot:
         specifier: 1.5.0
         version: 1.5.0(typescript@7.0.2)
@@ -408,11 +423,14 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       vitest:
-        specifier: 4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
       wrangler:
         specifier: 4.132.0
@@ -439,12 +457,12 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   infra/budget-monitor:
     dependencies:
@@ -470,12 +488,12 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   infra/cloudflare:
     dependencies:
@@ -510,11 +528,14 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       vitest:
-        specifier: 4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   infra/local: {}
@@ -561,9 +582,6 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   libs/config:
     dependencies:
@@ -577,9 +595,6 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   libs/db:
     dependencies:
@@ -611,9 +626,6 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   libs/dev-boundary:
     devDependencies:
@@ -624,11 +636,8 @@ importers:
         specifier: 7.0.2
         version: 7.0.2
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   libs/observability:
     dependencies:
@@ -672,9 +681,6 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   libs/ui:
     dependencies:
@@ -712,15 +718,15 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
 
   tools/dev:
     dependencies:
       agent-browser:
         specifier: 0.37.1
         version: 0.37.1
+      portless:
+        specifier: 0.15.6
+        version: 0.15.6
       valibot:
         specifier: 1.5.0
         version: 1.5.0(typescript@7.0.2)
@@ -749,12 +755,12 @@ importers:
       valibot:
         specifier: 1.5.0
         version: 1.5.0(typescript@7.0.2)
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
-        specifier: 0.3.2
+        specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(@vitest/browser-preview@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))
       wrangler:
         specifier: 4.132.0
         version: 4.132.0(@cloudflare/workers-types@5.20260916.1)(@types/node@24.12.0)
@@ -6072,6 +6078,12 @@ packages:
   polished@4.3.1:
     resolution: {integrity: sha512-OBatVyC/N7SCW/FaDHrSd+vn0o5cS855TOmYi4OkdWUMSJCET/xip//ch8xGUvtr3i44X9LVyWwQlRMTN3pwSA==}
     engines: {node: '>=10'}
+
+  portless@0.15.6:
+    resolution: {integrity: sha512-uOAwWLF32rmyEGFASzSO0VOaqb/AQxFCCzyZbPGd82UNNOfIEvc09zy92nroNibE5HNfzV4oVB0ObKbPXgkM9A==}
+    engines: {node: '>=24'}
+    os: [darwin, linux, win32]
+    hasBin: true
 
   postcss-import@15.1.0:
     resolution: {integrity: sha512-hpr+J05B2FVYUAXHeK1YyI267J/dDDhMU6B6civm8hSY1jYJnBXxzKDKDswzJmtLHryrjhnDjqqp/49t8FALew==}
@@ -12578,6 +12590,8 @@ snapshots:
   polished@4.3.1:
     dependencies:
       '@babel/runtime': 7.29.7
+
+  portless@0.15.6: {}
 
   postcss-import@15.1.0(postcss@8.5.28):
     dependencies:

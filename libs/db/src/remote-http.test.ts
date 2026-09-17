@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { Miniflare } from "miniflare";
 import * as v from "valibot";
 import { remoteExecutor } from "./remote-http.ts";

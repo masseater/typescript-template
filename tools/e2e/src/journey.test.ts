@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { randomUUID } from "node:crypto";
 import { enabledButton } from "./browser.ts";
 import type { Browser, Cdp } from "./browser.ts";

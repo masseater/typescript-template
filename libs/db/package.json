@@ -10,7 +10,6 @@
     "./remote": "./src/remote-command.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config ../../apps/user/wrangler.jsonc --persist-to ../../.local/d1",
@@ -29,7 +28,6 @@
     "@types/node": "24.12.0",
     "drizzle-kit": "0.31.10",
     "msw": "^2.11.0",
-    "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "typescript": "7.0.2"
   }
 }

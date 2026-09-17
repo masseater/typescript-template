@@ -8,7 +8,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { URI } from "otpauth";
 import * as v from "valibot";
-import { expect, expectTypeOf, test as baseTest } from "vitest";
+import { expect, expectTypeOf, test as baseTest } from "vite-plus/test";
 import { createAuth, verifySession } from "./index.ts";
 import type { Auth } from "./index.ts";
 import { authorizeMcpRequest } from "./mcp.ts";

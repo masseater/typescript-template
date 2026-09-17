@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { errorAttributes } from "./errors.ts";
 
 test("keeps useful error locations without messages, arguments or local directory names", () => {

@@ -10,7 +10,6 @@
     "./sentry-browser": "./src/sentry-browser.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "test": "vp test run"
   },
   "dependencies": {

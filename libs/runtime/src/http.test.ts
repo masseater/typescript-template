@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { apiResponse, readJson, secureResponse } from "./http.ts";
 
 test("reads a bounded same-origin JSON mutation", async () => {

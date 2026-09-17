@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { loadArtifacts, assertEntries, assertSeparation, assertPublicSafety } from "./artifacts.ts";
 
 test("built Workers have separate executable entries and gated, client-only assets roots", async () => {

@@ -61,8 +61,8 @@ export default defineConfig({
       "tools/observe/**/*.test.ts",
       "infra/**/*.test.ts",
     ],
-    testTimeout: 30_000,
     restoreMocks: false,
     clearMocks: false,
+    testTimeout: 30_000,
   },
 });

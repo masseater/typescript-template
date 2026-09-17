@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createServer } from "node:http";
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { button, enrollTotp, register } from "./accounts.ts";
 import { enabledButton } from "./browser.ts";
 import { createStack } from "./stack.ts";
@@ -237,7 +237,7 @@ test("wiki Worker: administrator login, MCP OAuth authorization, keyword search 
       { name: "get_page", arguments: { url: "/deploy" } },
       token,
     );
-    expect(toolText(loaded.result)).toContain("pnpm infra:deploy:wiki");
+    expect(toolText(loaded.result)).toContain("vp run infra:deploy:wiki");
 
     stage = "browser-telemetry";
     await browser.evaluate(
