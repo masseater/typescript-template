@@ -11,7 +11,7 @@ description: 外から入る値・型の主張・定義の所有者・失敗の�
 
 ## 外部 I/O とその境界
 
-この文書で外部 I/O と呼ぶのは、値がこのリポジトリのロジックの外側で決まる経路である。他の文書がこの語を使うときは、この定義を指す。このリポジトリにあるのは、Nitro が受ける HTTP の要求と応答、Neon への接続とクエリ、Stripe と Resend と microCMS と Google Cloud Storage と Sentry への通信、`libs/config` が読む環境変数、Pulumi の provider が呼ぶ管理 API、CLI に渡された引数と標準出力である。これに当たらない依存は、プロセス内の決定的な振る舞いとして扱う。
+この文書で外部 I/O と呼ぶのは、値がこのリポジトリのロジックの外側で決まる経路である。他の文書がこの語を使うときは、この定義を指す。このリポジトリにあるのは、Nitro が受ける HTTP の要求と応答、Neon への接続とクエリ、Stripe と Resend と microCMS と Google Cloud Storage と Sentry への通信、`libs/config` が読む環境変数、Alchemy の provider が呼ぶ管理 API、CLI に渡された引数と標準出力である。これに当たらない依存は、プロセス内の決定的な振る舞いとして扱う。
 
 - IF: ロジックが外部 I/O に触れる; THEN
   - MUST: このリポジトリが所有する注入境界を経由する
