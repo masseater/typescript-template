@@ -1,45 +1,51 @@
-import { AccountToken, getAccountApiTokenPermissionGroupsListOutput } from "@pulumi/cloudflare";
+import { stackName, stackOptions } from "./stacks.ts";
+import { ApiToken } from "alchemy/Cloudflare";
 import { Effect } from "effect";
-import type { Output } from "@pulumi/pulumi";
-import { consumeSettings } from "./reference.ts";
-import { secret } from "@pulumi/pulumi";
-import { selectAccountPermission } from "./config.ts";
+import { Stack } from "alchemy";
+import { settings } from "./settings.ts";
 
-const { settings } = await Effect.runPromise(consumeSettings("tokens", "settings"));
-const permissions = getAccountApiTokenPermissionGroupsListOutput({
-  accountId: settings.accountId,
-});
+const accountTokens = {
+  BillingRead: { permission: "Billing Read", slug: "billing-read" },
+  ObservabilityQuery: { permission: "Workers Observability Write", slug: "observability-query" },
+} as const satisfies Readonly<
+  Record<string, { permission: ApiToken.PermissionGroupName; slug: string }>
+>;
 
-function accountToken(
-  name: string,
-  permission: Parameters<typeof selectAccountPermission>[1],
-): Output<string> {
-  const token = new AccountToken(
-    name,
-    {
-      accountId: settings.accountId,
-      name: `${settings.prefix}-${name}`,
-      policies: [
-        {
-          effect: "allow",
-          permissionGroups: [
-            {
-              // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-              id: permissions.results.apply(async (groups) =>
-                Effect.runPromise(selectAccountPermission(groups, permission)),
-              ),
-            },
-          ],
-          resources: JSON.stringify({ [`com.cloudflare.api.account.${settings.accountId}`]: "*" }),
-        },
-      ],
-    },
-    { additionalSecretOutputs: ["value"] },
-  );
-  return secret(token.value);
+type TokenResource = keyof typeof accountTokens;
+
+const stack = Stack(
+  stackName("tokens"),
+  stackOptions,
+  Effect.gen(function* tokens() {
+    const config = yield* Effect.orDie(settings);
+    const names = yield* Effect.all(
+      Object.entries(accountTokens).map(
+        ([resource, { permission, slug }]: readonly [
+          string,
+          (typeof accountTokens)[TokenResource],
+        ]) =>
+          ApiToken.AccountApiToken(resource, {
+            accountId: config.accountId,
+            name: `${config.prefix}-${slug}`,
+            policies: [
+              {
+                effect: "allow",
+                permissionGroups: [permission],
+                resources: { [`com.cloudflare.api.account.${config.accountId}`]: "*" },
+              },
+            ],
+            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+          }).pipe(Effect.map((token) => token.name)),
+      ),
+    );
+    return { tokenNames: names };
+  }),
+);
+
+function accountTokenRef(resource: TokenResource): Effect.Effect<ApiToken.AccountApiToken> {
+  return ApiToken.AccountApiToken.ref(resource, { stack: stackName("tokens") });
 }
 
-const billingReadToken = accountToken("billing-read", "Billing Read");
-const observabilityQueryToken = accountToken("observability-query", "Workers Observability Write");
-
-export { billingReadToken, observabilityQueryToken };
+// oxlint-disable-next-line import/no-default-export
+export default stack;
+export { accountTokenRef, accountTokens };

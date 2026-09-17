@@ -28,14 +28,13 @@ minimumReleaseAgeExclude:
   - miniflare@5.20260915.0-alpha
   - wrangler@4.132.0
 catalog:
+  alchemy: 2.0.0-beta.77
   "@base-ui/react": 1.8.0
   "@better-auth/passkey": 1.7.5
   "@cloudflare/vite-plugin": 1.54.10
   "@cloudflare/workers-types": 5.20260916.1
   "@effect/platform-node": 4.0.0-rc.112
   "@effect/vitest": 4.0.0-rc.112
-  "@pulumi/cloudflare": 6.20.0
-  "@pulumi/pulumi": 3.262.0
   "@shadcn/lint": 0.1.0
   "@tailwindcss/vite": 4.3.3
   "@tanstack/react-router": 1.170.36

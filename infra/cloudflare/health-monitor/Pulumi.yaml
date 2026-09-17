@@ -1,6 +1,0 @@
-name: template-health-monitor
-runtime:
-  name: nodejs
-  options:
-    typescript: false
-main: ../src/health-monitor.ts
