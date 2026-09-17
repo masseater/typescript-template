@@ -2,12 +2,11 @@ import { assert, it } from "@effect/vitest";
 import { readWikiConfig } from "@template/config";
 import { Effect } from "effect";
 import {
-  appPolicy,
   parseSharedConfig,
   parseDeploymentCommand,
-  selectObservabilityQueryPermission,
-  selectReadPermission,
+  selectAccountPermission,
   validateAuthSecret,
+  workerSubdomain,
 } from "./config.ts";
 import type { CloudflareFailure } from "./config.ts";
 
@@ -15,9 +14,11 @@ const settings = {
   accountId: "a".repeat(32),
   zoneId: "b".repeat(32),
   prefix: "template-test",
-  userOrigin: "https://user.example.com",
-  adminOrigin: "https://admin.example.com",
-  wikiOrigin: "https://wiki.example.com",
+  origins: {
+    user: "https://user.example.com",
+    admin: "https://admin.example.com",
+    wiki: "https://wiki.example.com",
+  },
   mailFrom: "mail@example.com",
   budget: {
     budgetJpy: 5000,
@@ -57,35 +58,15 @@ it.effect(
     }),
 );
 
-it.effect("user and admin are distinct deployments with all alternative public URLs disabled", () =>
-  Effect.gen(function* () {
-    const config = yield* parseSharedConfig(settings);
-    assert.deepStrictEqual(appPolicy(config, "user"), {
-      name: "template-test-user",
-      origin: settings.userOrigin,
-      subdomain: { enabled: false, previewsEnabled: false },
-      assets: { runWorkerFirst: true },
-    });
-    assert.strictEqual(appPolicy(config, "admin").name, "template-test-admin");
-    assert.deepStrictEqual(appPolicy(config, "admin").subdomain, {
-      enabled: false,
-      previewsEnabled: false,
-    });
-    assert.isTrue(appPolicy(config, "admin").assets.runWorkerFirst);
-    assert.deepStrictEqual(appPolicy(config, "wiki"), {
-      name: "template-test-wiki",
-      origin: settings.wikiOrigin,
-      subdomain: { enabled: false, previewsEnabled: false },
-      assets: { runWorkerFirst: true },
-    });
-  }),
-);
+it("Workers disable every alternative public URL", () => {
+  assert.deepStrictEqual(workerSubdomain, { enabled: false, previewsEnabled: false });
+});
 
 it.effect("the wiki reads authentication, database and optional AI bindings", () =>
   Effect.gen(function* () {
     const config = yield* parseSharedConfig(settings);
     const bindings = {
-      APP_ORIGIN: appPolicy(config, "wiki").origin,
+      APP_ORIGIN: config.origins.wiki,
       AUTH_SECRET: "wiki-runtime-secret-at-least-32-characters",
       APP_RELEASE: "0123456789abcdef",
       EMAIL_FROM: config.mailFrom,
@@ -94,7 +75,7 @@ it.effect("the wiki reads authentication, database and optional AI bindings", ()
       EMAIL: { send: () => Promise.resolve() },
     };
     const runtime = yield* readWikiConfig(bindings);
-    assert.strictEqual(runtime.APP_ORIGIN, settings.wikiOrigin);
+    assert.strictEqual(runtime.APP_ORIGIN, settings.origins.wiki);
     assert.strictEqual(runtime.APP_RELEASE, "0123456789abcdef");
     assert.isUndefined(runtime.AI);
     const ai = { run: () => Promise.resolve({ data: [] }) };
@@ -104,7 +85,7 @@ it.effect("the wiki reads authentication, database and optional AI bindings", ()
   }),
 );
 
-for (const adminOrigin of [
+for (const admin of [
   "http://admin.example.com",
   "https://admin.example.com/path",
   "https://admin.example.com/",
@@ -112,10 +93,10 @@ for (const adminOrigin of [
   "https://app.team.workers.dev",
   "not-a-url",
 ])
-  it.effect(`rejects unsafe admin origin ${adminOrigin}`, () =>
+  it.effect(`rejects unsafe admin origin ${admin}`, () =>
     Effect.gen(function* () {
       assert.strictEqual(
-        yield* code(parseSharedConfig({ ...settings, adminOrigin })),
+        yield* code(parseSharedConfig({ ...settings, origins: { ...settings.origins, admin } })),
         "cloudflare_settings_invalid",
       );
     }),
@@ -124,7 +105,12 @@ for (const adminOrigin of [
 it.effect("rejects same origins", () =>
   Effect.gen(function* () {
     assert.strictEqual(
-      yield* code(parseSharedConfig({ ...settings, adminOrigin: settings.userOrigin })),
+      yield* code(
+        parseSharedConfig({
+          ...settings,
+          origins: { ...settings.origins, admin: settings.origins.user },
+        }),
+      ),
       "app_origins_must_differ",
     );
   }),
@@ -149,16 +135,16 @@ it.effect("selects Billing Read only and refuses substituted write scopes", () =
       scopes: ["com.cloudflare.api.account"],
     };
     assert.strictEqual(
-      yield* selectReadPermission([read, { ...read, name: "Billing Edit" }]),
+      yield* selectAccountPermission([read, { ...read, name: "Billing Edit" }], "Billing Read"),
       read.id,
     );
     assert.strictEqual(
-      yield* code(selectReadPermission([{ ...read, name: "Billing Edit" }])),
-      "billing_read_permission_unavailable",
+      yield* code(selectAccountPermission([{ ...read, name: "Billing Edit" }], "Billing Read")),
+      "account_permission_unavailable",
     );
     assert.strictEqual(
-      yield* code(selectReadPermission([read, read])),
-      "billing_read_permission_unavailable",
+      yield* code(selectAccountPermission([read, read], "Billing Read")),
+      "account_permission_unavailable",
     );
   }),
 );
@@ -181,17 +167,20 @@ it.effect("the error monitor token may only run Workers Observability queries", 
       scopes: ["com.cloudflare.api.account"],
     };
     assert.strictEqual(
-      yield* selectObservabilityQueryPermission([
-        write,
-        { ...write, name: "Workers Scripts Write" },
-      ]),
+      yield* selectAccountPermission(
+        [write, { ...write, name: "Workers Scripts Write" }],
+        "Workers Observability Write",
+      ),
       write.id,
     );
     assert.strictEqual(
       yield* code(
-        selectObservabilityQueryPermission([{ ...write, name: "Workers Scripts Write" }]),
+        selectAccountPermission(
+          [{ ...write, name: "Workers Scripts Write" }],
+          "Workers Observability Write",
+        ),
       ),
-      "observability_query_permission_unavailable",
+      "account_permission_unavailable",
     );
   }),
 );

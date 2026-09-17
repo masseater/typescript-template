@@ -27,12 +27,6 @@ const DatabaseId = Schema.String.check(
 );
 const ApiToken = Schema.String.check(Schema.isMinLength(20), Schema.isPattern(/^[A-Za-z0-9_-]+$/));
 
-export const RemoteCredentials = Schema.Struct({
-  accountId: AccountId,
-  databaseId: DatabaseId,
-  apiToken: ApiToken,
-});
-
 const RemoteTarget = Schema.Struct({
   accountId: AccountId,
   databaseId: DatabaseId,

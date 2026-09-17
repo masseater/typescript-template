@@ -1,20 +1,16 @@
 import type { AssetFetcher } from "@template/config";
 import { developmentServer } from "@template/config/mode";
-import { CurrentRequest, readBoundedText, reportFailure } from "@template/observability";
+import {
+  CurrentRequest,
+  RequestRejected,
+  readJson,
+  rejectionStatus,
+  reportFailure,
+} from "@template/observability";
 import { Cause, Context, Effect, Exit, Schema } from "effect";
 import { Elysia } from "elysia";
 import type { AnyElysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
-
-export class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestRejected", {
-  reason: Schema.Literals([
-    "origin_denied",
-    "json_required",
-    "body_required",
-    "body_too_large",
-    "invalid_json",
-  ]),
-}) {}
 
 export class InputInvalid extends Schema.TaggedError<InputInvalid>()("InputInvalid", {}) {}
 
@@ -29,14 +25,6 @@ export type FailureTable<E extends { readonly _tag: string }> = {
 const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
 
-const rejection: Record<RequestRejected["reason"], number> = {
-  origin_denied: 403,
-  json_required: 415,
-  body_required: 400,
-  body_too_large: 413,
-  invalid_json: 400,
-};
-
 type CommonFailure =
   | RequestRejected
   | InputInvalid
@@ -47,7 +35,7 @@ type CommonFailure =
 
 const commonFailures: FailureTable<CommonFailure> = {
   RequestRejected: (error) => ({
-    status: rejection[error.reason],
+    status: rejectionStatus[error.reason],
     message: error.reason === "invalid_json" ? invalidInput : forbidden,
   }),
   InputInvalid: { status: 400, message: invalidInput },
@@ -86,24 +74,9 @@ export class AppOrigin extends Context.Service<AppOrigin, string>()(
 ) {}
 
 export const readJsonBody = <S extends Decodable>(schema: S, request: Request) =>
-  Effect.gen(function* () {
-    const origin = yield* AppOrigin;
-    if (
-      request.headers.get("origin") !== origin ||
-      request.headers.get("sec-fetch-site") === "cross-site"
-    )
-      return yield* new RequestRejected({ reason: "origin_denied" });
-    if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-      return yield* new RequestRejected({ reason: "json_required" });
-    const body = yield* readBoundedText(request, 16384);
-    if (body.kind === "missing") return yield* new RequestRejected({ reason: "body_required" });
-    if (body.kind === "too_large") return yield* new RequestRejected({ reason: "body_too_large" });
-    const input = yield* Effect.try({
-      try: (): unknown => JSON.parse(body.text),
-      catch: () => new RequestRejected({ reason: "invalid_json" }),
-    });
-    return yield* decodeInput(schema, input);
-  });
+  AppOrigin.use((origin) => readJson(request, origin)).pipe(
+    Effect.flatMap((input) => decodeInput(schema, input)),
+  );
 
 export const readSearchParams = <S extends Decodable>(schema: S, request: Request) =>
   decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));

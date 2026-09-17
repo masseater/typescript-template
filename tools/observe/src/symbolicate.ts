@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
+import { applications } from "@template/config";
 import { Effect, Schema } from "effect";
 import { symbolicate } from "./source-maps.ts";
 
@@ -9,7 +10,7 @@ class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("Symbo
 }) {}
 
 const SymbolicateInput = Schema.Struct({
-  app: Schema.Literals(["user", "admin", "wiki"]),
+  app: Schema.Literals(applications),
   release: Schema.String.check(Schema.isPattern(/^[0-9a-f]{16}$/)),
   locations: Schema.Array(Schema.String).check(Schema.isLengthBetween(1, 20)),
 });
@@ -26,7 +27,7 @@ const { values, positionals } = parseArgs({
 const help = Effect.sync(() =>
   console.info(
     JSON.stringify({
-      usage: "observe:symbolicate --app <user|admin|wiki> --release <APP_RELEASE> <location>...",
+      usage: `vp run --filter @template/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
       locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
       readOnly: true,
     }),

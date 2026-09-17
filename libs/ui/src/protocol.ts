@@ -9,6 +9,10 @@ export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
 }
 
+export function requireSecureContext(): void {
+  if (!window.isSecureContext) throw new Error("パスキーには HTTPS または localhost が必要です。");
+}
+
 export function requireSuccess<T>(result: {
   data: T;
   error: { message?: string | undefined } | null;

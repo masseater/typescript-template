@@ -8,7 +8,7 @@ import type { AppServices } from "./index.ts";
 
 export const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
 
-export const accountApi = (bridge: ReturnType<typeof apiBridge<AppServices>>) =>
+export const sessionApi = <R = never>(bridge: ReturnType<typeof apiBridge<AppServices | R>>) =>
   createApi()
     .all("/api/auth/*", bridge.raw(handleAuthRequest, unavailable))
     .post("/api/telemetry", bridge.raw(ingestBrowser, {}))
@@ -32,7 +32,11 @@ export const accountApi = (bridge: ReturnType<typeof apiBridge<AppServices>>) =>
     .get(
       "/api/session",
       bridge.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
-    )
+    );
+
+export const accountApi = (bridge: ReturnType<typeof apiBridge<AppServices>>) =>
+  createApi()
+    .use(sessionApi(bridge))
     .post(
       "/api/verify-email",
       bridge.route(

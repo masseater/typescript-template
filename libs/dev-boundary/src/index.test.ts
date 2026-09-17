@@ -3,9 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "vite-plus";
 import { expect, test } from "vite-plus/test";
+import { applications as apps } from "@template/config";
 import { devBoundary } from "./index.ts";
-
-const apps = ["user", "admin", "wiki"] as const;
 
 test.for(apps)(
   "%s Vite serves its app but rejects secret files and other applications",

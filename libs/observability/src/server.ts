@@ -1,10 +1,12 @@
+import type { Application } from "@template/config";
 import { Cause, Context, Effect, Layer, Logger, References, Result, Schema } from "effect";
 import { errorAttributes, errorFingerprint } from "./errors.ts";
 import { browserEvents } from "./events.ts";
 import { httpMethod, parentContext, randomHex, routeLabel, validateRoutes } from "./protocol.ts";
-import type { Correlation, ServiceName } from "./protocol.ts";
+import type { Correlation } from "./protocol.ts";
+import { readJson, rejectionStatus } from "./request.ts";
 
-export type { ServiceName } from "./protocol.ts";
+export { RequestRejected, readJson, rejectionStatus } from "./request.ts";
 
 export type RequestContext = Correlation & { readonly traceparent: string };
 
@@ -14,20 +16,20 @@ export type LogSink = {
 };
 
 export class TelemetryInvalid extends Schema.TaggedError<TelemetryInvalid>()("TelemetryInvalid", {
-  reason: Schema.Literals(["release", "service", "routes"]),
+  reason: Schema.Literals(["routes"]),
 }) {}
 
 export class Telemetry extends Context.Service<
   Telemetry,
   {
-    readonly serviceName: ServiceName;
+    readonly serviceName: Application;
     readonly release: string;
     readonly routes: Readonly<Record<string, string>>;
     readonly labels: ReadonlySet<string>;
   }
 >()("@template/observability/Telemetry") {
   static layer(options: {
-    readonly serviceName: ServiceName;
+    readonly serviceName: Application;
     readonly release: string;
     readonly routes: Readonly<Record<string, string>>;
     readonly log?: LogSink;
@@ -35,10 +37,6 @@ export class Telemetry extends Context.Service<
     return Layer.effect(
       Telemetry,
       Effect.gen(function* () {
-        if (!/^[a-zA-Z0-9._-]{1,64}$/.test(options.release))
-          return yield* new TelemetryInvalid({ reason: "release" });
-        if (!["user", "admin", "wiki"].includes(options.serviceName))
-          return yield* new TelemetryInvalid({ reason: "service" });
         yield* Effect.try({
           try: () => validateRoutes(options.routes),
           catch: () => new TelemetryInvalid({ reason: "routes" }),
@@ -62,7 +60,7 @@ const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const structuredLogs = (options: {
-  readonly serviceName: ServiceName;
+  readonly serviceName: Application;
   readonly release: string;
   readonly log?: LogSink;
 }) =>
@@ -178,17 +176,8 @@ export const ingestBrowser = (request: Request) =>
   Effect.gen(function* () {
     const telemetry = yield* Telemetry;
     if (request.method !== "POST") return telemetryResponse(405, { allow: "POST" });
-    if (
-      request.headers.get("origin") !== new URL(request.url).origin ||
-      request.headers.get("sec-fetch-site") === "cross-site"
-    )
-      return telemetryResponse(403);
-    if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-      return telemetryResponse(415);
-    const body = yield* readBoundedText(request, 32768);
-    if (body.kind === "too_large") return telemetryResponse(413);
-    const input = Result.try((): unknown => JSON.parse(body.kind === "text" ? body.text : ""));
-    if (Result.isFailure(input)) return telemetryResponse(400);
+    const input = yield* Effect.result(readJson(request, new URL(request.url).origin, 32_768));
+    if (Result.isFailure(input)) return telemetryResponse(rejectionStatus[input.failure.reason]);
     const events = yield* Schema.decodeUnknownEffect(browserEvents(telemetry.labels, Date.now()), {
       onExcessProperty: "error",
     })(input.success).pipe(Effect.option);
@@ -227,9 +216,9 @@ export const ingestBrowser = (request: Request) =>
     return telemetryResponse(202);
   });
 
-const ingressWindows = new Map<ServiceName, { start: number; count: number }>();
+const ingressWindows = new Map<Application, { start: number; count: number }>();
 
-const admitBrowserEvents = (service: ServiceName, count: number) => {
+const admitBrowserEvents = (service: Application, count: number) => {
   const now = Date.now();
   const window = ingressWindows.get(service) ?? { start: now, count: 0 };
   if (now - window.start > 60_000) {
@@ -241,34 +230,3 @@ const admitBrowserEvents = (service: ServiceName, count: number) => {
   window.count += count;
   return true;
 };
-
-type BoundedText =
-  | { readonly kind: "text"; readonly text: string }
-  | { readonly kind: "too_large" }
-  | { readonly kind: "missing" };
-
-export const readBoundedText = (request: Request, limit: number) =>
-  Effect.promise(async (): Promise<BoundedText> => {
-    if (Number(request.headers.get("content-length")) > limit) return { kind: "too_large" };
-    const reader = request.body?.getReader();
-    if (!reader) return { kind: "missing" };
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    for (;;) {
-      const chunk = await reader.read();
-      if (chunk.done) break;
-      size += chunk.value.byteLength;
-      if (size > limit) {
-        await reader.cancel();
-        return { kind: "too_large" };
-      }
-      chunks.push(chunk.value);
-    }
-    const bytes = new Uint8Array(size);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-    return { kind: "text", text: new TextDecoder().decode(bytes) };
-  });

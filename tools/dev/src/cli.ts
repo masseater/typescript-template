@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
+import { applicationPorts, applications, loopbackHosts } from "@template/config";
+import type { Application } from "@template/config";
 import { Cause, Effect, Schema } from "effect";
 
 class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("LocalCommandFailure", {
@@ -49,22 +51,14 @@ const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const rootHash = createHash("sha256").update(root).digest("hex").slice(0, 12);
 const socket = `template-${rootHash}`;
-const apps = ["user", "admin", "wiki"] as const;
-type App = (typeof apps)[number];
-const AppName = Schema.Literals(apps);
+const AppName = Schema.Literals(applications);
 const Credentials = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(32)),
 });
-const ports = { user: 3001, admin: 3002, wiki: 3003 };
-const servicePorts = { mailpit: 8025 };
-const routes = { ...ports, ...servicePorts };
-const routeNames = ["user", "admin", "wiki", "mailpit"] as const;
+const routes = { ...applicationPorts, mailpit: 8025 };
+const routeNames = [...applications, "mailpit"] as const;
 const hostname = (name: (typeof routeNames)[number]) => `template-${name}.local`;
-const origins = {
-  user: `https://${hostname("user")}`,
-  admin: `https://${hostname("admin")}`,
-  wiki: `https://${hostname("wiki")}`,
-};
+const origin = (name: (typeof routeNames)[number]) => `https://${hostname(name)}`;
 const proxyPort = 1355;
 const portlessHome = new URL("portless/", local);
 const portless = fileURLToPath(new URL("../node_modules/.bin/portless", import.meta.url));
@@ -74,7 +68,7 @@ const portlessEnvironment = {
   PORTLESS_SYNC_HOSTS: "0",
 };
 const browserSettings = `${JSON.stringify({
-  allowedDomains: ["localhost", "127.0.0.1", ...routeNames.map((name) => hostname(name))],
+  allowedDomains: [...loopbackHosts, ...routeNames.map((name) => hostname(name))],
   restoreSave: "never",
 })}\n`;
 
@@ -200,12 +194,12 @@ const setup = Effect.fn("setup")(function* () {
       `${JSON.stringify({ authSecret: randomBytes(48).toString("base64url") }, null, 2)}\n`,
     );
   const credentials = yield* readCredentials();
-  for (const app of apps) {
+  for (const app of applications) {
     const values = {
-      APP_ORIGIN: origins[app],
+      APP_ORIGIN: origin(app),
       AUTH_SECRET: credentials.authSecret,
       EMAIL_FROM: "no-reply@example.test",
-      MAILPIT_URL: "http://127.0.0.1:8025",
+      MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
     };
     const content =
       Object.entries(values)
@@ -223,12 +217,12 @@ const setup = Effect.fn("setup")(function* () {
 
 const status = Effect.fn("status")(function* () {
   const results = yield* Effect.forEach(
-    apps,
+    applications,
     (app) =>
       Effect.gen(function* () {
         const live = yield* running(app);
         const response = yield* Effect.tryPromise((signal) =>
-          fetch(`http://127.0.0.1:${ports[app]}${readyPaths[app]}`, {
+          fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
             redirect: "manual",
             signal: AbortSignal.any([signal, AbortSignal.timeout(3000)]),
           }),
@@ -237,7 +231,7 @@ const status = Effect.fn("status")(function* () {
           app,
           processRunning: live,
           httpStatus: response,
-          origin: origins[app],
+          origin: origin(app),
           logFile: fileURLToPath(new URL(`logs/${app}.log`, local)),
         };
       }),
@@ -256,15 +250,12 @@ const connection = Effect.fn("connection")(function* () {
   return {
     event: "local.lan_access",
     reachableFrom: "devices on the same LAN that trust the local certificate authority",
-    user: origins.user,
-    admin: origins.admin,
-    wiki: origins.wiki,
-    mailpit: `https://${hostname("mailpit")}`,
+    ...Object.fromEntries(routeNames.map((name) => [name, origin(name)])),
     windowsTrustCommand: `$p = Join-Path $env:TEMP 'template-local-ca.cer'; [IO.File]::WriteAllBytes($p, [Convert]::FromBase64String('${certificate.toString("base64")}')); Import-Certificate -FilePath $p -CertStoreLocation Cert:\\CurrentUser\\Root`,
   };
 });
 
-const start = Effect.fn("start")(function* (app: App) {
+const start = Effect.fn("start")(function* (app: Application) {
   yield* readCredentials();
   yield* ensureGateway();
   if (!(yield* running(app))) {
@@ -286,7 +277,7 @@ const start = Effect.fn("start")(function* (app: App) {
   return yield* status();
 });
 
-const stop = Effect.fn("stop")(function* (app: App) {
+const stop = Effect.fn("stop")(function* (app: Application) {
   if (yield* running(app))
     yield* run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
   return yield* status();
@@ -315,7 +306,7 @@ const spawnChild = (launch: () => ChildProcess) =>
       }),
   );
 
-const browser = Effect.fn("browser")(function* (app: App) {
+const browser = Effect.fn("browser")(function* (app: Application) {
   const socketDirectory = yield* browserSocketDirectory();
   yield* replacePrivateFile(browserConfig, browserSettings);
   const session = `template-local-${app}`;
@@ -327,7 +318,7 @@ const browser = Effect.fn("browser")(function* (app: App) {
     session,
   ];
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  yield* run("agent-browser", [...args, "open", `${origins[app]}${readyPaths[app]}`], {
+  yield* run("agent-browser", [...args, "open", `${origin(app)}${readyPaths[app]}`], {
     cwd: root,
     env,
   });
@@ -335,12 +326,12 @@ const browser = Effect.fn("browser")(function* (app: App) {
     ok: true,
     event: "local.browser_opened",
     session,
-    origin: origins[app],
+    origin: origin(app),
     secretsPrinted: false,
   };
 });
 
-const browserCommand = Effect.fn("browserCommand")(function* (app: App, args: string[]) {
+const browserCommand = Effect.fn("browserCommand")(function* (app: Application, args: string[]) {
   if (args.length === 0) return yield* failure("browser_command_required");
   const socketDirectory = yield* browserSocketDirectory();
   const launchArguments = yield* browserLaunchArguments();
@@ -373,23 +364,39 @@ const browserCommand = Effect.fn("browserCommand")(function* (app: App, args: st
 
 const print = (value: unknown) => Effect.sync(() => console.log(JSON.stringify(value)));
 
+const application = (value: string | undefined) =>
+  Schema.decodeUnknownEffect(AppName)(value).pipe(Effect.mapError(() => failure("app_invalid")));
+
+const commands: Partial<
+  Record<
+    string,
+    (app: string | undefined, args: string[]) => Effect.Effect<unknown, LocalCommandFailure>
+  >
+> = {
+  setup: () => setup(),
+  status: () => status(),
+  connect: () => connection(),
+  start: (app) => application(app).pipe(Effect.flatMap(start)),
+  stop: (app) => application(app).pipe(Effect.flatMap(stop)),
+  browser: (app) => application(app).pipe(Effect.flatMap(browser)),
+  "browser-command": (app, args) =>
+    application(app).pipe(Effect.flatMap((name) => browserCommand(name, args))),
+  logs: (app) =>
+    application(app).pipe(
+      Effect.flatMap((name) =>
+        fileIo(() => readFile(new URL(`logs/${name}.log`, local), "utf8")).pipe(
+          Effect.map((log) => ({ app: name, log })),
+        ),
+      ),
+    ),
+};
+
 const main = Effect.gen(function* () {
-  const action = process.argv[2];
-  if (action === "setup") return yield* print(yield* setup());
-  if (action === "status") return yield* print(yield* status());
-  if (action === "connect") return yield* print(yield* connection());
-  const app = yield* Schema.decodeUnknownEffect(AppName)(process.argv[3]).pipe(
-    Effect.mapError(() => failure("app_invalid")),
-  );
-  if (action === "start") return yield* print(yield* start(app));
-  if (action === "stop") return yield* print(yield* stop(app));
-  if (action === "browser") return yield* print(yield* browser(app));
-  if (action === "browser-command") return yield* browserCommand(app, process.argv.slice(4));
-  if (action === "logs") {
-    const log = yield* fileIo(() => readFile(new URL(`logs/${app}.log`, local), "utf8"));
-    return yield* print({ app, log });
-  }
-  return yield* failure("command_unsupported");
+  const [action = "", app, ...args] = process.argv.slice(2);
+  const command = Object.hasOwn(commands, action) ? commands[action] : undefined;
+  if (!command) return yield* failure("command_unsupported");
+  const result = yield* command(app, args);
+  if (result !== undefined) yield* print(result);
 });
 
 NodeRuntime.runMain(
@@ -403,7 +410,7 @@ NodeRuntime.runMain(
                 ok: false,
                 event: "local.application_command_failed",
                 remediation:
-                  "Check vp run dev:setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+                  "Check vp run --filter @template/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
               }),
             );
             process.exitCode = 1;

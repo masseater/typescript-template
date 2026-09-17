@@ -1,8 +1,10 @@
 import { and, count, desc, eq, exists, gt, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
+import { strongAuthenticationMethods } from "@template/config";
+import type { Role } from "@template/config";
 import { Effect, Schema } from "effect";
 import { DatabaseFailure, query } from "./index.ts";
-import type { DrizzleDatabase, Role } from "./index.ts";
+import type { DrizzleDatabase } from "./index.ts";
 import { auditEvent, session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 
@@ -43,7 +45,7 @@ const requireAdmin = Effect.fn("requireAdmin")(function* (sessionId: string) {
     !actor ||
     actor.user.role !== "admin" ||
     !actor.user.emailVerified ||
-    !["password_totp", "passkey_uv"].includes(actor.session.authenticationMethod)
+    !strongAuthenticationMethods.some((method) => method === actor.session.authenticationMethod)
   )
     return yield* new AdminStrongSessionRequired();
   return actor;
@@ -64,7 +66,7 @@ function liveAdmin(database: DrizzleDatabase, sessionId: string) {
           eq(actor.emailVerified, true),
           eq(session.securityVersion, actor.securityVersion),
           gt(session.expiresAt, new Date()),
-          inArray(session.authenticationMethod, ["password_totp", "passkey_uv"]),
+          inArray(session.authenticationMethod, strongAuthenticationMethods),
         ),
       ),
   );

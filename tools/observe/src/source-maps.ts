@@ -2,6 +2,7 @@ import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { SourceMap } from "node:module";
 import path from "node:path";
+import type { Application } from "@template/config";
 import { Effect, Schema } from "effect";
 
 export class SourceMapFailure extends Schema.TaggedError<SourceMapFailure>()("SourceMapFailure", {
@@ -48,7 +49,7 @@ const findMap: (
 
 export const symbolicate = Effect.fn("symbolicate")(function* (
   repositoryRoot: string,
-  app: "user" | "admin" | "wiki",
+  app: Application,
   release: string,
   locations: readonly string[],
 ) {

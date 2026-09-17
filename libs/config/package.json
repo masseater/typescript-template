@@ -4,19 +4,19 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mode": "./src/mode.ts",
     "./worker": "./src/worker.ts",
-    "./vite": "./src/vite.ts"
+    "./vite": "./src/vite.ts",
+    "./mode": "./src/mode.ts"
   },
   "scripts": {},
   "dependencies": {
-    "effect": "4.0.0-rc.112"
+    "effect": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260916.1",
-    "@effect/vitest": "4.0.0-rc.112",
-    "@types/node": "24.12.0",
-    "typescript": "7.0.2",
-    "vite-plus": "0.3.2"
+    "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

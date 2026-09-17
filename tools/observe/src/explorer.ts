@@ -1,3 +1,4 @@
+import { loopbackHosts } from "@template/config";
 import { Effect, Result, Schema } from "effect";
 
 class ExplorerFailure extends Schema.TaggedError<ExplorerFailure>()("ExplorerFailure", {
@@ -28,7 +29,7 @@ export const explorerOrigin = Effect.fn("explorerOrigin")(function* (app: string
   });
   if (
     url.protocol !== "http:" ||
-    !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) ||
+    !loopbackHosts.includes(url.hostname) ||
     url.username ||
     url.password ||
     url.search ||

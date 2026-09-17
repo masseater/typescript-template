@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requestJson } from "@template/runtime/client";
-import { Page, Status, useSession } from "@template/ui";
+import { Page, Status, errorMessage, useSession } from "@template/ui";
 import { SignOutButton } from "@template/ui/auth";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Table, Th, Td } from "smarthr-ui";
 import {
   RoleChanged,
@@ -11,6 +11,8 @@ import {
 } from "@template/runtime/contracts";
 
 type UserList = typeof UserListContract.Type;
+const fetchUsers = (offset: number) =>
+  requestJson(`/api/users?limit=50&offset=${offset}`, UserListContract);
 export const Route = createFileRoute("/")({ component: Users });
 
 function Users() {
@@ -20,27 +22,19 @@ function Users() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const load = useCallback(async () => {
-    try {
-      setData(await requestJson(`/api/users?limit=50&offset=${offset}`, UserListContract));
-    } catch (cause) {
-      setData(null);
-      setError(cause instanceof Error ? cause.message : "一覧の取得に失敗しました。");
-    }
-  }, [offset]);
   const authorized = session?.strong === true && session.user.role === "admin";
   useEffect(() => {
     if (!authorized) return undefined;
     let active = true;
-    void requestJson(`/api/users?limit=50&offset=${offset}`, UserListContract)
-      .then((body) => {
-        if (active) setData(body);
+    void fetchUsers(offset)
+      .then((users) => {
+        if (active) setData(users);
         return undefined;
       })
       .catch((cause: unknown) => {
         if (active) {
           setData(null);
-          setError(cause instanceof Error ? cause.message : "一覧の取得に失敗しました。");
+          setError(errorMessage(cause));
         }
       });
     return () => {
@@ -73,9 +67,9 @@ function Users() {
             ? "ユーザーを削除しました。"
             : "権限を変更しました。既存セッションは失効しました。",
         );
-        await load();
+        setData(await fetchUsers(offset));
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "変更に失敗しました。");
+        setError(errorMessage(cause));
       } finally {
         setPending(false);
       }

@@ -1,22 +1,19 @@
 import { Schema } from "effect";
-import { errorTypes, validErrorLocations } from "./errors.ts";
-import { validRequestId, validSpanId, validTraceId } from "./protocol.ts";
+import { ErrorLocations, errorTypes } from "./errors.ts";
+import { RequestId, SpanId, TraceId, httpMethods } from "./protocol.ts";
 
 const bounded = (max: number) =>
   Schema.Number.check(Schema.isFinite(), Schema.isBetween({ minimum: 0, maximum: max }));
-
-const guarded = (guard: (value: unknown) => boolean) =>
-  Schema.String.check(Schema.makeFilter((value: string) => guard(value)));
 
 const fields = (labels: ReadonlySet<string>, now: number) => ({
   route: Schema.String.check(Schema.makeFilter((value: string) => labels.has(value))),
   start: bounded(now + 60_000).check(Schema.isGreaterThanOrEqualTo(now - 3_600_000)),
   duration: bounded(600_000),
   value: bounded(600_000),
-  method: Schema.Literals(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "_OTHER"]),
-  traceId: guarded(validTraceId),
-  spanId: guarded(validSpanId),
-  requestId: guarded(validRequestId),
+  method: Schema.Literals(httpMethods),
+  traceId: TraceId,
+  spanId: SpanId,
+  requestId: RequestId,
 });
 
 export const browserEvents = (labels: ReadonlySet<string>, now: number) => {
@@ -38,7 +35,7 @@ export const browserEvents = (labels: ReadonlySet<string>, now: number) => {
         name: Schema.Literals(["browser.error", "browser.unhandledrejection"]),
         status: Schema.Literal(0),
         errorType: Schema.Literals(errorTypes),
-        locations: guarded(validErrorLocations),
+        locations: ErrorLocations,
       }),
       Schema.Struct({
         ...common,

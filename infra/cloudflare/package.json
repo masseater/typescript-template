@@ -9,33 +9,27 @@
     "verify:artifacts": "node src/check-artifacts.ts",
     "verify:engine": "node src/engine-check.ts",
     "verify:runtime": "node src/runtime-probe.ts",
-    "preview:shared": "node src/cli.ts preview shared",
-    "preview:user": "node src/cli.ts preview user",
-    "preview:admin": "node src/cli.ts preview admin",
-    "preview:wiki": "node src/cli.ts preview wiki",
-    "deploy:shared": "node src/cli.ts up shared",
-    "deploy:user": "node src/cli.ts up user",
-    "deploy:admin": "node src/cli.ts up admin",
-    "deploy:wiki": "node src/cli.ts up wiki",
+    "preview": "node src/cli.ts preview",
+    "deploy": "node src/cli.ts up",
     "db:migrate:remote": "node src/database.ts migrate",
     "db:bootstrap:remote": "node src/database.ts bootstrap"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-rc.112",
-    "@pulumi/cloudflare": "6.20.0",
-    "@pulumi/pulumi": "3.262.0",
+    "@effect/platform-node": "catalog:",
+    "@pulumi/cloudflare": "catalog:",
+    "@pulumi/pulumi": "catalog:",
     "@template/budget-monitor": "workspace:*",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
     "@template/error-monitor": "workspace:*",
     "@template/health-monitor": "workspace:*",
     "@template/infra-bootstrap": "workspace:*",
-    "effect": "4.0.0-rc.112"
+    "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "4.0.0-rc.112",
-    "@types/node": "24.12.0",
-    "typescript": "7.0.2",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

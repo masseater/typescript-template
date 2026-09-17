@@ -8,10 +8,11 @@
   },
   "scripts": {},
   "dependencies": {
-    "effect": "4.0.0-rc.112",
+    "effect": "catalog:",
     "web-vitals": "6.2.2"
   },
   "devDependencies": {
-    "@effect/vitest": "4.0.0-rc.112"
+    "@effect/vitest": "catalog:",
+    "@template/config": "workspace:*"
   }
 }

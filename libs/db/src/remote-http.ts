@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { RemoteCredentials, RemoteFailure } from "./remote-input.ts";
+import { RemoteFailure } from "./remote-input.ts";
 import type { DatabaseExecutor } from "./remote-operations.ts";
 
 const QueryResponse = Schema.Struct({
@@ -11,12 +11,17 @@ const QueryResponse = Schema.Struct({
 
 const queryFailed = () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
 
-export const remoteExecutor = Effect.fn("remoteExecutor")(function* (input: unknown) {
-  const { accountId, databaseId, apiToken } = yield* Schema.decodeUnknownEffect(RemoteCredentials)(
-    input,
-  ).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
+export function remoteExecutor({
+  accountId,
+  databaseId,
+  apiToken,
+}: {
+  readonly accountId: string;
+  readonly databaseId: string;
+  readonly apiToken: string;
+}): DatabaseExecutor {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
-  const executor: DatabaseExecutor = {
+  return {
     batch: (queries) =>
       Effect.gen(function* () {
         const response = yield* Effect.tryPromise({
@@ -39,5 +44,4 @@ export const remoteExecutor = Effect.fn("remoteExecutor")(function* (input: unkn
         return decoded.result.map((item) => item.results);
       }),
   };
-  return executor;
-});
+}

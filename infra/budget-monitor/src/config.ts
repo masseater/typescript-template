@@ -1,4 +1,4 @@
-import { Effect, Schema, SchemaGetter, SchemaTransformation } from "effect";
+import { Effect, Schema, SchemaTransformation } from "effect";
 
 export class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
   code: Schema.Literals([
@@ -19,15 +19,8 @@ export class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFa
 
 export const fail = (code: BudgetFailure["code"]) => Effect.fail(new BudgetFailure({ code }));
 
-const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
 const Decimal = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/)).pipe(
   Schema.decodeTo(Schema.Number.check(Schema.isFinite()), SchemaTransformation.numberFromString),
-);
-const Recipients = Schema.String.pipe(
-  Schema.decodeTo(Schema.Array(Email).check(Schema.isLengthBetween(1, 10)), {
-    decode: SchemaGetter.transform((value: string) => value.split(",")),
-    encode: SchemaGetter.transform((value: readonly string[]) => value.join(",")),
-  }),
 );
 
 const BudgetEnvironment = Schema.Struct({
@@ -37,8 +30,6 @@ const BudgetEnvironment = Schema.Struct({
   JPY_PER_USD: Decimal.check(Schema.isGreaterThan(0)),
   FIXED_COST_USD: Decimal,
   RESERVE_USD: Decimal,
-  ALERT_FROM: Email,
-  ALERT_TO: Recipients,
 });
 
 export type BudgetConfig = typeof BudgetEnvironment.Type;

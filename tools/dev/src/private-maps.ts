@@ -2,11 +2,11 @@ import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { NodeRuntime } from "@effect/platform-node";
+import { applications } from "@template/config";
 import { Effect, Schema } from "effect";
 
 class PrivateMapsFailure extends Schema.TaggedError<PrivateMapsFailure>()("PrivateMapsFailure", {
   reason: Schema.Literals([
-    "audience_invalid",
     "file_io_failed",
     "directory_alias_forbidden",
     "symlink_forbidden",
@@ -54,13 +54,14 @@ const moveMaps: (
 
 NodeRuntime.runMain(
   Effect.gen(function* () {
-    const audience = yield* Schema.decodeUnknownEffect(Schema.Literals(["user", "admin", "wiki"]))(
-      process.argv[2],
-    ).pipe(Effect.mapError(() => new PrivateMapsFailure({ reason: "audience_invalid" })));
-    const source = path.join(root, "apps", audience, "dist/client");
-    const destination = path.join(root, ".local", "source-maps", audience, "client");
-    const moved = yield* moveMaps(source, source, destination);
-    console.log(JSON.stringify({ event: "build.source_maps_private", audience, moved }));
+    for (const application of applications) {
+      const source = path.join(root, "apps", application, "dist/client");
+      const destination = path.join(root, ".local", "source-maps", application, "client");
+      const moved = yield* moveMaps(source, source, destination);
+      console.log(
+        JSON.stringify({ event: "build.source_maps_private", audience: application, moved }),
+      );
+    }
   }).pipe(
     Effect.catchCause(() =>
       Effect.sync(() => {

@@ -8,10 +8,11 @@
     "symbolicate": "node src/symbolicate.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-rc.112",
-    "effect": "4.0.0-rc.112"
+    "@effect/platform-node": "catalog:",
+    "@template/config": "workspace:*",
+    "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "4.0.0-rc.112"
+    "@effect/vitest": "catalog:"
   }
 }

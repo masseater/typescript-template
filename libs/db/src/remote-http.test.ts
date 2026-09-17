@@ -108,7 +108,7 @@ for (const mode of ["http", "partial", "invalid", "redirect"] as const)
           return HttpResponse.text(target.apiToken);
         }),
       );
-      const executor = yield* remoteExecutor(target);
+      const executor = remoteExecutor(target);
       const failure = yield* executor.batch([{ sql: "SELECT 1", params: [] }]).pipe(Effect.flip);
       assert.deepStrictEqual(failure.code, "REMOTE_QUERY_FAILED");
       assert.notInclude(JSON.stringify(failure), target.apiToken);

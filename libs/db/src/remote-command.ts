@@ -21,11 +21,8 @@ export const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(fu
       migrations: migrations.map((item) => ({ hash: item.hash, createdAt: item.folderMillis })),
       remoteStateVerified: false,
     } as const;
-  const executor = yield* remoteExecutor({
-    accountId: target.accountId,
-    databaseId: target.databaseId,
-    apiToken: target.apiToken,
-  });
+  if (target.apiToken === undefined) return yield* fail("REMOTE_INPUT_INVALID");
+  const executor = remoteExecutor({ ...target, apiToken: target.apiToken });
   if (operation === "migrate") {
     const applied = yield* migrateDatabase(executor, migrations);
     return {

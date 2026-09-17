@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { sendVerificationEmail } from "@template/config";
-import type { Audience, Database } from "@template/db";
+import type { Application } from "@template/config";
+import type { Database } from "@template/db";
 import { setUserRole } from "@template/db/admin";
 import {
   EmptyTestDatabase,
@@ -142,7 +143,7 @@ const mailServer = Layer.effectDiscard(
   ),
 );
 
-const authFor = (audience: Audience) =>
+const authFor = (audience: Application) =>
   Layer.build(
     Auth.layer({
       secret,

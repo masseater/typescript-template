@@ -1,3 +1,5 @@
+import { Schema } from "effect";
+
 export const errorTypes = [
   "Error",
   "TypeError",
@@ -20,18 +22,18 @@ function errorLocations(stack: string | undefined): string {
     .join("\n");
 }
 
-export function validErrorLocations(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length <= 2048 &&
-    (value === "" ||
+export const ErrorLocations = Schema.String.check(
+  Schema.isMaxLength(2048),
+  Schema.makeFilter(
+    (value: string) =>
+      value === "" ||
       value
         .split("\n")
         .every(
-          (line) => new RegExp(`^${locationPattern.source}$`).test(line) && line.length <= 256,
-        ))
-  );
-}
+          (line) => line.length <= 256 && new RegExp(`^${locationPattern.source}$`).test(line),
+        ),
+  ),
+);
 
 export function errorFingerprint(type: ErrorType, locations: string): string {
   let hash = 0x811c9dc5;

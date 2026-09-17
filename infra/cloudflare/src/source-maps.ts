@@ -1,9 +1,9 @@
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
+import type { Application } from "@template/config";
 import { Effect } from "effect";
 import { fail, io } from "./artifacts.ts";
 import type { ArtifactFailure } from "./artifacts.ts";
-import type { AppTarget } from "./config.ts";
 
 const copyMaps: (source: string, destination: string) => Effect.Effect<number, ArtifactFailure> =
   Effect.fn("copyMaps")(function* (source: string, destination: string) {
@@ -39,7 +39,7 @@ const copyMaps: (source: string, destination: string) => Effect.Effect<number, A
 
 export const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* (
   repositoryRoot: string,
-  target: AppTarget,
+  target: Application,
   release: string,
 ) {
   const privateMaps = path.join(repositoryRoot, ".local", "source-maps", target);

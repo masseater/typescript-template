@@ -1,8 +1,7 @@
 import { Auth } from "@template/auth";
 import { readConfig, sendVerificationEmail } from "@template/config";
-import type { AppConfig } from "@template/config";
+import type { AppConfig, Application } from "@template/config";
 import { Database } from "@template/db";
-import type { Audience } from "@template/db";
 import { Telemetry } from "@template/observability";
 import { Effect, Layer } from "effect";
 import { AppOrigin, Assets } from "./http.ts";
@@ -11,7 +10,7 @@ export type AppServices = Layer.Success<ReturnType<typeof configuredAppLayer>>;
 
 export const configuredAppLayer = (
   config: AppConfig,
-  audience: Audience,
+  audience: Application,
   routes: Readonly<Record<string, string>>,
 ) =>
   Layer.mergeAll(
@@ -31,7 +30,7 @@ export const configuredAppLayer = (
 
 export const appLayer = (
   env: unknown,
-  audience: Exclude<Audience, "wiki">,
+  audience: Exclude<Application, "wiki">,
   routes: Readonly<Record<string, string>>,
 ) =>
   Layer.unwrap(

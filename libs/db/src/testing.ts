@@ -1,6 +1,7 @@
-import { readFile, readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import type { D1Database } from "@cloudflare/workers-types";
 import { getTableColumns } from "drizzle-orm";
+import { readMigrationFiles } from "drizzle-orm/migrator";
 import { Context, Effect, Layer } from "effect";
 import { Miniflare } from "miniflare";
 import { Database } from "./index.ts";
@@ -17,14 +18,11 @@ export class TestBinding extends Context.Service<TestBinding, D1Database>()(
 ) {}
 
 const migrate = async (binding: D1Database) => {
-  const migrations = new URL("../migrations/", import.meta.url);
-  const files = (await readdir(migrations)).filter((name) => name.endsWith(".sql")).sort();
-  for (const file of files) {
-    const content = await readFile(new URL(file, migrations), "utf8");
-    const statements = content
-      .split("--> statement-breakpoint")
-      .map((statement) => statement.trim())
-      .filter(Boolean);
+  const migrations = readMigrationFiles({
+    migrationsFolder: fileURLToPath(new URL("../migrations/", import.meta.url)),
+  });
+  for (const migration of migrations) {
+    const statements = migration.sql.map((statement) => statement.trim()).filter(Boolean);
     await binding.batch(statements.map((statement) => binding.prepare(statement)));
   }
 };

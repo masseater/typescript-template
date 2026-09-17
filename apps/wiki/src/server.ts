@@ -2,9 +2,9 @@ import handler from "@tanstack/react-start/server-entry";
 import { handleAuthRequest, verifySession } from "@template/auth";
 import { authorizeMcpRequest } from "@template/auth/mcp";
 import { reportFailure } from "@template/observability";
-import { AppOrigin, Assets, jsonResponse, secureResponse } from "@template/runtime/http";
+import { AppOrigin, jsonResponse, secureResponse } from "@template/runtime/http";
 import { wikiLayer } from "@template/runtime/wiki";
-import { requestPath, serveWorker } from "@template/runtime/worker";
+import { serveApp } from "@template/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Cause, Effect, ManagedRuntime } from "effect";
 import { dispatchWikiApi, wikiApi } from "./api.ts";
@@ -30,12 +30,7 @@ const reader = (request: Request) =>
     }),
   );
 
-const route = Effect.fn("wikiRoute")(function* (request: Request) {
-  const path = requestPath(request);
-  if (path === undefined) return new Response(null, { status: 400 });
-  if (path.endsWith(".map")) return new Response(null, { status: 404 });
-  if (path.startsWith("/assets/"))
-    return yield* Assets.use((assets) => Effect.promise(() => assets.fetch(request)));
+const route = Effect.fn("wikiRoute")(function* (request: Request, path: string) {
   if (path.startsWith("/.well-known/oauth-"))
     return secureResponse(yield* handleAuthRequest(request));
   if (path === "/mcp") {
@@ -58,8 +53,8 @@ const route = Effect.fn("wikiRoute")(function* (request: Request) {
   return secureResponse(yield* Effect.promise(async () => handler.fetch(request)));
 });
 
-export default serveWorker(runtime, (request) =>
-  route(request).pipe(
+export default serveApp(runtime, (request, path) =>
+  route(request, path).pipe(
     Effect.catch((error) =>
       reportFailure(Cause.fail(error)).pipe(
         Effect.as(jsonResponse({ error: "処理に失敗しました。" }, 500)),

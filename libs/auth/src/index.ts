@@ -1,8 +1,15 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
+import {
+  applications,
+  authenticationMethods,
+  roles,
+  strongAuthenticationMethods,
+} from "@template/config";
+import type { Application } from "@template/config";
 import { Database, schema } from "@template/db";
-import type { Audience, DrizzleDatabase } from "@template/db";
+import type { DrizzleDatabase } from "@template/db";
 import {
   findPasskeyUser,
   findUser,
@@ -21,14 +28,14 @@ import { wikiScopes } from "./scopes.ts";
 export interface AuthOptions {
   readonly baseURL: string;
   readonly secret: string;
-  readonly audience: Audience;
+  readonly audience: Application;
   readonly sendVerificationEmail: (message: {
     readonly email: string;
     readonly url: string;
   }) => Effect.Effect<void, unknown>;
 }
 
-const strongMethods = new Set(["password_totp", "passkey_uv"]);
+const strongMethods = new Set<string>(strongAuthenticationMethods);
 const enrollmentPaths = new Set([
   "/get-session",
   "/sign-out",
@@ -112,7 +119,7 @@ function createAuth(
     },
     user: {
       additionalFields: {
-        role: { type: ["user", "admin"], required: true, defaultValue: "user", input: false },
+        role: { type: [...roles], required: true, defaultValue: "user", input: false },
         securityVersion: { type: "number", required: true, defaultValue: 0, input: false },
       },
       deleteUser: { enabled: false },
@@ -123,14 +130,14 @@ function createAuth(
       freshAge: 60 * 5,
       additionalFields: {
         audience: {
-          type: ["user", "admin", "wiki"],
+          type: [...applications],
           required: true,
           input: false,
           defaultValue: audience,
         },
         securityVersion: { type: "number", required: true, input: false, defaultValue: -1 },
         authenticationMethod: {
-          type: ["password", "password_totp", "passkey_uv", "recovery"],
+          type: [...authenticationMethods],
           required: true,
           input: false,
           defaultValue: "password",
@@ -329,7 +336,7 @@ export class AdminMfaRequired extends Schema.TaggedError<AdminMfaRequired>()(
 
 export class Auth extends Context.Service<
   Auth,
-  { readonly audience: Audience; readonly instance: BetterAuthInstance }
+  { readonly audience: Application; readonly instance: BetterAuthInstance }
 >()("@template/auth/Auth") {
   static layer(options: AuthOptions) {
     return Layer.effect(

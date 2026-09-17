@@ -1,7 +1,7 @@
 import { and, count, eq, gt } from "drizzle-orm";
+import type { Application, StrongAuthenticationMethod } from "@template/config";
 import { Effect, Schema } from "effect";
 import { query } from "./index.ts";
-import type { Audience } from "./index.ts";
 import {
   oauthAccessToken,
   oauthRefreshToken,
@@ -16,7 +16,7 @@ export class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("Sessio
 
 export const hasVerificationAudience = Effect.fn("hasVerificationAudience")(function* (
   identifier: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [record] = yield* query((database) =>
     database
@@ -43,7 +43,7 @@ export const findUser = Effect.fn("findUser")(function* (userId: string) {
 
 export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* (
   credentialId: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [record] = yield* query((database) =>
     database
@@ -58,7 +58,7 @@ export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* (
 
 export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* (
   userId: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [keys] = yield* query((database) =>
     database
@@ -78,7 +78,7 @@ export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* (
 
 export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* (
   sessionId: string,
-  audience: Audience,
+  audience: Application,
 ) {
   const [record] = yield* query((database) =>
     database
@@ -100,8 +100,8 @@ export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* (
 
 export const markSessionStrong = Effect.fn("markSessionStrong")(function* (
   sessionId: string,
-  audience: Audience,
-  method: "password_totp" | "passkey_uv",
+  audience: Application,
+  method: StrongAuthenticationMethod,
 ) {
   const [updated] = yield* query((database) =>
     database

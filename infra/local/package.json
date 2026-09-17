@@ -9,7 +9,7 @@
     "logs": "node src/compose.ts logs"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-rc.112",
-    "effect": "4.0.0-rc.112"
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:"
   }
 }

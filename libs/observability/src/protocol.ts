@@ -1,27 +1,47 @@
-export type ServiceName = "user" | "admin" | "wiki";
+import { Schema } from "effect";
+
 export type Correlation = { traceId: string; spanId: string; requestId: string };
+
+export const httpMethods = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+  "HEAD",
+  "_OTHER",
+] as const;
+export const TraceId = Schema.String.check(Schema.isPattern(/^(?!0+$)[0-9a-f]{32}$/));
+export const SpanId = Schema.String.check(Schema.isPattern(/^(?!0+$)[0-9a-f]{16}$/));
+export const RequestId = Schema.String.check(
+  Schema.isPattern(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
+);
+const boundedRoutes = "Telemetry routes require fixed paths and bounded labels";
+const routePath = /^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/;
+const Routes = Schema.Record(
+  Schema.String,
+  Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9_.-]{0,63}$/, { message: boundedRoutes })),
+).check(
+  Schema.makeFilter(
+    (routes: Readonly<Record<string, string>>) =>
+      Object.keys(routes).every((path) => routePath.test(path)) || boundedRoutes,
+  ),
+);
 
 export const randomHex = (bytes: number): string =>
   Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
     byte.toString(16).padStart(2, "0"),
   ).join("");
-export const validTraceId = (value: unknown): value is string =>
-  typeof value === "string" && /^[0-9a-f]{32}$/.test(value) && !/^0+$/.test(value);
-export const validSpanId = (value: unknown): value is string =>
-  typeof value === "string" && /^[0-9a-f]{16}$/.test(value) && !/^0+$/.test(value);
-export const validRequestId = (value: unknown): value is string =>
-  typeof value === "string" &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 
 export function parentContext(value: string | null) {
-  const match = value?.match(/^00-([0-9a-f]{32})-([0-9a-f]{16})-0[01]$/);
-  if (!match || !validTraceId(match[1]) || !validSpanId(match[2])) return undefined;
-  return { traceId: match[1], parentSpanId: match[2] };
+  const [, traceId, parentSpanId] = value?.match(/^00-([0-9a-f]{32})-([0-9a-f]{16})-0[01]$/) ?? [];
+  return Schema.is(TraceId)(traceId) && Schema.is(SpanId)(parentSpanId)
+    ? { traceId, parentSpanId }
+    : undefined;
 }
 
-const httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] as const;
-
-export const httpMethod = (method: string): (typeof httpMethods)[number] | "_OTHER" =>
+export const httpMethod = (method: string) =>
   httpMethods.find((candidate) => candidate === method) ?? "_OTHER";
 
 export function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
@@ -33,15 +53,5 @@ export function routeLabel(pathname: string, routes: Readonly<Record<string, str
 }
 
 export function validateRoutes(routes: Readonly<Record<string, string>>) {
-  for (const [path, label] of Object.entries(routes)) {
-    if (
-      !path.startsWith("/") ||
-      path.includes("?") ||
-      path.includes("#") ||
-      (path.includes("*") && (!path.endsWith("/*") || path.slice(0, -1).includes("*"))) ||
-      !/^[a-z][a-z0-9_.-]{0,63}$/.test(label)
-    ) {
-      throw new Error("Telemetry routes require fixed paths and bounded labels");
-    }
-  }
+  Schema.decodeUnknownSync(Routes)(routes);
 }

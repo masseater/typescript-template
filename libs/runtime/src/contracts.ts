@@ -1,6 +1,7 @@
+import { applications, roles } from "@template/config";
 import { Effect, Schema } from "effect";
 
-const Role = Schema.Literals(["user", "admin"]);
+const Role = Schema.Literals(roles);
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, 256));
 
 export const ErrorBody = Schema.Struct({ error: Schema.String });
@@ -68,6 +69,6 @@ export const UserDeleted = Schema.Struct({ id: Schema.String });
 
 export const HealthView = Schema.Struct({
   ok: Schema.Literal(true),
-  service: Schema.Literals(["user", "admin", "wiki"]),
+  service: Schema.Literals(applications),
   release: Schema.String,
 });

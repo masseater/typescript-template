@@ -1,4 +1,4 @@
-import { Effect, Schema, SchemaGetter } from "effect";
+import { Effect, Schema } from "effect";
 
 class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
   "HealthMonitorFailure",
@@ -7,26 +7,16 @@ class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
   },
 ) {}
 
-const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
 const Origin = Schema.String.check(
   Schema.makeFilter((value: string) => {
     const url = URL.parse(value);
     return url?.protocol === "https:" && url.origin === value && !url.username && !url.password;
   }),
 );
-const Recipients = Schema.String.pipe(
-  Schema.decodeTo(Schema.Array(Email).check(Schema.isLengthBetween(1, 10)), {
-    decode: SchemaGetter.transform((value: string) => value.split(",")),
-    encode: SchemaGetter.transform((value: readonly string[]) => value.join(",")),
-  }),
-);
-
 const HealthMonitorEnvironment = Schema.Struct({
   USER_ORIGIN: Origin,
   ADMIN_ORIGIN: Origin,
   WIKI_ORIGIN: Origin,
-  ALERT_FROM: Email,
-  ALERT_TO: Recipients,
 });
 
 export type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;

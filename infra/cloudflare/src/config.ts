@@ -1,3 +1,4 @@
+import { applications } from "@template/config";
 import { Effect, Schema } from "effect";
 
 export class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()(
@@ -9,8 +10,7 @@ export class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()(
       "app_origins_must_differ",
       "budget_has_no_usage_allowance",
       "auth_secret_invalid",
-      "billing_read_permission_unavailable",
-      "observability_query_permission_unavailable",
+      "account_permission_unavailable",
       "database_input_invalid",
     ]),
   },
@@ -40,9 +40,7 @@ const SharedSettings = Schema.Struct({
   accountId: Id,
   zoneId: Id,
   prefix: Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/)),
-  userOrigin: Origin,
-  adminOrigin: Origin,
-  wikiOrigin: Origin,
+  origins: Schema.Struct({ user: Origin, admin: Origin, wiki: Origin }),
   mailFrom: Email,
   budget: Schema.Struct({
     budgetJpy: Positive,
@@ -53,18 +51,19 @@ const SharedSettings = Schema.Struct({
   }),
 });
 
-export type AppTarget = "user" | "admin" | "wiki";
+export const workerSubdomain = { enabled: false, previewsEnabled: false };
+
+const DeploymentCommand = Schema.Tuple([
+  Schema.Literals(["preview", "up"]),
+  Schema.Literals(["shared", ...applications]),
+]);
 
 export const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* (
   args: readonly string[],
 ) {
-  const [operation, target] = args;
-  if (
-    args.length !== 2 ||
-    (operation !== "preview" && operation !== "up") ||
-    (target !== "shared" && target !== "user" && target !== "admin" && target !== "wiki")
-  )
-    return yield* fail("deployment_command_invalid");
+  const [operation, target] = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
+    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid" })),
+  );
   return { operation, target };
 });
 
@@ -72,8 +71,8 @@ export const parseSharedConfig = Effect.fn("parseSharedConfig")(function* (input
   const config = yield* Schema.decodeUnknownEffect(SharedSettings)(input).pipe(
     Effect.mapError(() => new CloudflareFailure({ code: "cloudflare_settings_invalid" })),
   );
-  if (new Set([config.userOrigin, config.adminOrigin, config.wikiOrigin]).size !== 3)
-    return yield* fail("app_origins_must_differ");
+  const origins = Object.values(config.origins);
+  if (new Set(origins).size !== origins.length) return yield* fail("app_origins_must_differ");
   if (
     config.budget.budgetJpy / config.budget.jpyPerUsd <=
     config.budget.fixedCostUsd + config.budget.reserveUsd
@@ -88,38 +87,15 @@ export const validateAuthSecret = Effect.fn("validateAuthSecret")(function* (sec
   return secret;
 });
 
-export function appPolicy(config: typeof SharedSettings.Type, target: AppTarget) {
-  return {
-    name: `${config.prefix}-${target}`,
-    origin: { user: config.userOrigin, admin: config.adminOrigin, wiki: config.wikiOrigin }[target],
-    subdomain: { enabled: false, previewsEnabled: false },
-    assets: { runWorkerFirst: true },
-  };
-}
-
-const selectPermission = Effect.fn("selectPermission")(function* (
+export const selectAccountPermission = Effect.fn("selectAccountPermission")(function* (
   groups: readonly { id: string; name: string; scopes: string[] }[],
-  name: string,
-  code: CloudflareFailure["code"],
+  name: "Billing Read" | "Workers Observability Write",
 ) {
   const matches = groups.filter(
     (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
   );
-  if (matches.length !== 1) return yield* fail(code);
+  if (matches.length !== 1) return yield* fail("account_permission_unavailable");
   return yield* Schema.decodeUnknownEffect(Id)(matches[0]?.id).pipe(
-    Effect.mapError(() => new CloudflareFailure({ code })),
+    Effect.mapError(() => new CloudflareFailure({ code: "account_permission_unavailable" })),
   );
 });
-
-export const selectReadPermission = (
-  groups: readonly { id: string; name: string; scopes: string[] }[],
-) => selectPermission(groups, "Billing Read", "billing_read_permission_unavailable");
-
-export const selectObservabilityQueryPermission = (
-  groups: readonly { id: string; name: string; scopes: string[] }[],
-) =>
-  selectPermission(
-    groups,
-    "Workers Observability Write",
-    "observability_query_permission_unavailable",
-  );

@@ -14,13 +14,14 @@
     "browser": "node src/cli.ts browser"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-rc.112",
+    "@effect/platform-node": "catalog:",
+    "@template/config": "workspace:*",
     "agent-browser": "0.37.1",
-    "effect": "4.0.0-rc.112",
+    "effect": "catalog:",
     "portless": "0.15.6"
   },
   "devDependencies": {
-    "@types/node": "24.12.0",
-    "typescript": "7.0.2"
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }

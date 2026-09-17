@@ -1,12 +1,13 @@
 import { fileURLToPath } from "node:url";
 import { NodeRuntime } from "@effect/platform-node";
+import { applications } from "@template/config";
 import { Effect } from "effect";
 import { loadArtifacts } from "./artifacts.ts";
 
 NodeRuntime.runMain(
   Effect.gen(function* () {
     const root = fileURLToPath(new URL("../../../", import.meta.url));
-    for (const target of ["user", "admin", "wiki"] as const) {
+    for (const target of applications) {
       const artifacts = yield* loadArtifacts(root, target);
       console.log(
         JSON.stringify({

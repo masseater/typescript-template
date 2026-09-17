@@ -1,10 +1,10 @@
 import { assert, it } from "@effect/vitest";
 import { eq } from "drizzle-orm";
+import type { Application, Role } from "@template/config";
 import { Effect, Exit } from "effect";
 import { deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { getProfile, query, updateProfile } from "./index.ts";
-import type { Audience, Role } from "./index.ts";
 import {
   account,
   oauthAccessToken,
@@ -32,7 +32,7 @@ const addUser = (id: string, role: Role = "user") =>
     }),
   );
 
-const addSession = Effect.fn(function* (userId: string, audience: Audience, strong = true) {
+const addSession = Effect.fn(function* (userId: string, audience: Application, strong = true) {
   const id = crypto.randomUUID();
   const [owner] = yield* query((database) =>
     database.select().from(user).where(eq(user.id, userId)),

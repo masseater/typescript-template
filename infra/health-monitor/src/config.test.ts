@@ -6,8 +6,6 @@ const valid = {
   USER_ORIGIN: "https://app.example.com",
   ADMIN_ORIGIN: "https://admin.example.com",
   WIKI_ORIGIN: "https://wiki.example.com",
-  ALERT_FROM: "alerts@example.com",
-  ALERT_TO: "operator@example.com,oncall@example.com",
 };
 
 const code = (input: unknown) =>
@@ -16,11 +14,9 @@ const code = (input: unknown) =>
     Effect.map((failure) => failure.code),
   );
 
-it.effect("accepts distinct https origins and verified operator addresses", () =>
+it.effect("accepts distinct https origins", () =>
   Effect.gen(function* () {
-    const config = yield* parseHealthMonitorConfig(valid);
-    assert.deepStrictEqual(config.ALERT_TO, ["operator@example.com", "oncall@example.com"]);
-    assert.deepStrictEqual(healthTargets(config), [
+    assert.deepStrictEqual(healthTargets(yield* parseHealthMonitorConfig(valid)), [
       { service: "user", origin: "https://app.example.com" },
       { service: "admin", origin: "https://admin.example.com" },
       { service: "wiki", origin: "https://wiki.example.com" },
@@ -31,7 +27,6 @@ it.effect("accepts distinct https origins and verified operator addresses", () =
 for (const override of [
   { USER_ORIGIN: "http://app.example.com" },
   { WIKI_ORIGIN: "https://app.example.com/docs" },
-  { ALERT_TO: "private-not-an-address" },
 ])
   it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>
     Effect.gen(function* () {

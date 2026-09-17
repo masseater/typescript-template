@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
+import { applications } from "@template/config";
 import { Cause, Effect, Schema } from "effect";
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 
@@ -14,7 +15,7 @@ class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("Ver
 
 const VerifyInput = Schema.Struct({
   app: Schema.String,
-  service: Schema.Literals(["user-server", "admin-server", "wiki-server"]),
+  service: Schema.Literals(applications.map((application) => `${application}-server` as const)),
 });
 
 const { values } = parseArgs({

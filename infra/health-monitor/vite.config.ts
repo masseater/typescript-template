@@ -7,6 +7,9 @@ export default defineConfig({
     platform: "browser",
     target: "es2023",
     outExtensions: () => ({ js: ".js" }),
-    deps: { alwaysBundle: ["effect"], onlyBundle: ["effect"], neverBundle: [/^cloudflare:/] },
+    deps: {
+      alwaysBundle: ["effect", "@template/monitor"],
+      onlyBundle: ["effect", "@template/monitor"],
+    },
   },
 });

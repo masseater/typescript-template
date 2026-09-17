@@ -1,7 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { readMigrationFiles } from "drizzle-orm/migrator";
+import { SQLiteAsyncDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
-import { compileBootstrapStatement } from "./bootstrap-statement.ts";
+import { bootstrapStatement } from "./bootstrap-statement.ts";
 import type { EmailAddress } from "./bootstrap-statement.ts";
 import { RemoteFailure, fail } from "./remote-input.ts";
 
@@ -17,6 +18,8 @@ const Migration = Schema.Struct({
   hash: Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/)),
 });
 type Migration = typeof Migration.Type;
+
+const StatementParams = Schema.Array(Schema.Union([Schema.String, Schema.Finite, Schema.Null]));
 
 const History = Schema.Array(Schema.Struct({ hash: Schema.String, created_at: Schema.Finite }));
 
@@ -100,10 +103,11 @@ export const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* (
   const migrations = yield* loadRemoteMigrations();
   if ((yield* readHistory(executor, migrations)) !== migrations.length)
     return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
-  const statement = yield* compileBootstrapStatement(email).pipe(
+  const compiled = new SQLiteAsyncDialect().sqlToQuery(bootstrapStatement(email));
+  const params = yield* Schema.decodeUnknownEffect(StatementParams)(compiled.params).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" })),
   );
-  const [rows] = yield* executor.batch([statement]);
+  const [rows] = yield* executor.batch([{ sql: compiled.sql, params }]);
   if (rows?.length !== 1) return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
   yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(rows?.[0]).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),

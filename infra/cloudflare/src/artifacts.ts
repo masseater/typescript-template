@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, lstat, mkdir, readdir, readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
+import type { Application } from "@template/config";
 import { Effect, Schema } from "effect";
-import type { AppTarget } from "./config.ts";
 
 export class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFailure", {
   code: Schema.Literals([
@@ -34,6 +34,13 @@ export const io = <A>(run: () => Promise<A>) =>
   Effect.tryPromise({ try: run, catch: () => new ArtifactFailure({ code: "artifact_io_failed" }) });
 
 const sha256 = (content: string | Buffer) => createHash("sha256").update(content).digest("hex");
+
+const moduleTypes: Readonly<Record<string, string>> = {
+  ".js": "application/javascript+module",
+  ".mjs": "application/javascript+module",
+  ".wasm": "application/wasm",
+  ".txt": "text/plain",
+};
 
 function privateArtifact(relative: string): boolean {
   return relative
@@ -89,7 +96,7 @@ const copyStagedFile = Effect.fn("copyStagedFile")(function* (source: string, de
 
 export const loadArtifacts = Effect.fn("loadArtifacts")(function* (
   repositoryRoot: string,
-  target: AppTarget,
+  target: Application,
 ) {
   const root = path.join(repositoryRoot, "apps", target, "dist");
   const server = path.join(root, "server");
@@ -126,14 +133,7 @@ export const loadArtifacts = Effect.fn("loadArtifacts")(function* (
             return yield* fail("server_css_without_public_asset");
           return undefined;
         }
-        const contentType =
-          extension === ".js" || extension === ".mjs"
-            ? "application/javascript+module"
-            : extension === ".wasm"
-              ? "application/wasm"
-              : extension === ".txt"
-                ? "text/plain"
-                : undefined;
+        const contentType = moduleTypes[extension];
         if (!contentType) return yield* fail("worker_module_type_unsupported");
         return {
           name: path.relative(server, file).replaceAll(path.sep, "/"),

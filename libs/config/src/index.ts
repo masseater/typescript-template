@@ -1,6 +1,23 @@
 import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
 
+export const applications = ["user", "admin", "wiki"] as const;
+export type Application = (typeof applications)[number];
+export const applicationPorts = { user: 3001, admin: 3002, wiki: 3003 } satisfies Record<
+  Application,
+  number
+>;
+export const roles = ["user", "admin"] as const;
+export type Role = (typeof roles)[number];
+export const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
+export type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
+export const authenticationMethods = [
+  "password",
+  ...strongAuthenticationMethods,
+  "recovery",
+] as const;
+export const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
+
 export type AssetFetcher = { fetch(request: Request): Promise<Response> };
 
 export class ConfigurationInvalid extends Schema.TaggedError<ConfigurationInvalid>()(
@@ -12,8 +29,6 @@ export class EmailDeliveryFailed extends Schema.TaggedError<EmailDeliveryFailed>
   "EmailDeliveryFailed",
   { reason: Schema.Literals(["origin_mismatch", "rejected", "unreachable"]) },
 ) {}
-
-const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
 
 const AbsoluteUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.canParse(value) || "Expected an absolute URL"),

@@ -12,9 +12,9 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { assert, it } from "@effect/vitest";
+import type { Application } from "@template/config";
 import { Effect } from "effect";
 import { loadArtifacts } from "./artifacts.ts";
-import type { AppTarget } from "./config.ts";
 
 const temporaryRoot = Effect.acquireRelease(
   Effect.promise(async () => realpath(await mkdtemp(path.join(tmpdir(), "template-artifacts-")))),
@@ -23,7 +23,7 @@ const temporaryRoot = Effect.acquireRelease(
 
 const run = <A>(operation: () => Promise<A>) => Effect.promise(operation);
 
-const failureCode = (root: string, target: AppTarget) =>
+const failureCode = (root: string, target: Application) =>
   loadArtifacts(root, target).pipe(
     Effect.flip,
     Effect.map((failure) => failure.code),
