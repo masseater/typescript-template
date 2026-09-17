@@ -4,7 +4,7 @@ import { Effect } from "effect";
 import type { HttpResponseResolver } from "msw";
 import type { ProbeResult } from "./probe.ts";
 import { probeService } from "./probe.ts";
-import { setupServer } from "msw/node";
+import { setupNetwork } from "@msw/cloudflare";
 
 function otherServiceHealth(): Response {
   return HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "admin" });
@@ -33,15 +33,17 @@ function probe(
 ): Effect.Effect<ProbeResult> {
   return Effect.acquireUseRelease(
     Effect.sync(() => {
-      const server = setupServer(http.get(`${target.origin}/api/health`, resolver));
-      server.listen({ onUnhandledRequest: "error" });
-      return server;
+      const network = setupNetwork();
+      network.configure({ onUnhandledFrame: "error" });
+      network.use(http.get(`${target.origin}/api/health`, resolver));
+      network.enable();
+      return network;
     }),
     () => probeService(target),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (server) =>
+    (network) =>
       Effect.sync(() => {
-        server.close();
+        network.disable();
       }),
   );
 }

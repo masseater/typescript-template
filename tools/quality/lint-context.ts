@@ -1,4 +1,4 @@
-import type { Context, ESTree, Scope } from "vite-plus/lint/plugins";
+import type { Context, ESTree, Scope, Visitor } from "vite-plus/lint/plugins";
 
 type DeepReadonly<Type> = unknown extends Type
   ? Type
@@ -18,9 +18,44 @@ function scopeOf(context: LintContext, node: Node): Scope {
   return context.sourceCode.getScope(node as ESTree.Node);
 }
 
+function importVisitor(checkSource: (node: Node) => void): Visitor {
+  return {
+    ExportAllDeclaration(node: Node): void {
+      if (node.type === "ExportAllDeclaration") {
+        checkSource(node.source);
+      }
+    },
+    ExportNamedDeclaration(node: Node): void {
+      if (node.type === "ExportNamedDeclaration" && node.source) {
+        checkSource(node.source);
+      }
+    },
+    ImportDeclaration(node: Node): void {
+      if (node.type === "ImportDeclaration") {
+        checkSource(node.source);
+      }
+    },
+    ImportExpression(node: Node): void {
+      if (node.type === "ImportExpression") {
+        checkSource(node.source);
+      }
+    },
+    TSExternalModuleReference(node: Node): void {
+      if (node.type === "TSExternalModuleReference") {
+        checkSource(node.expression);
+      }
+    },
+    TSImportType(node: Node): void {
+      if (node.type === "TSImportType") {
+        checkSource(node.source);
+      }
+    },
+  };
+}
+
 function reportViolation(context: LintContext, node: Node): void {
   context.report({ messageId: "violation", node: { range: [node.range[0], node.range[1]] } });
 }
 
-export { reportViolation, scopeOf };
+export { importVisitor, reportViolation, scopeOf };
 export type { DeepReadonly, LintContext, Node, NodeOf };

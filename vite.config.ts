@@ -1,4 +1,6 @@
+import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
@@ -186,6 +188,7 @@ export default defineConfig({
       "project/no-internal-mocks": "error",
       "project/no-manual-memoization": "error",
       "project/test-import-graph": "error",
+      "project/test-runtime": "error",
       "project/worker-fetch": "error",
       "react/exhaustive-deps": "error",
       "react/forbid-component-props": "error",
@@ -267,6 +270,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          exclude: [...defaultExclude, workerTests],
           include: [
             "libs/**/*.test.ts",
             "apps/**/*.test.ts",
@@ -277,6 +281,7 @@ export default defineConfig({
           name: "node",
         },
       },
+      "./tools/quality/vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
     ],
     restoreMocks: false,

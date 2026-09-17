@@ -1,6 +1,6 @@
 import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
-import { setupServer } from "msw/node";
+import { setupNetwork } from "@msw/cloudflare";
 
 const HTTP_BAD_REQUEST = 400;
 const mailConfig = { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: "http://127.0.0.1:8025" };
@@ -34,14 +34,16 @@ const mailServer = Layer.effectDiscard(
   Effect.acquireRelease(
     Effect.sync(() => {
       mailbox.clear();
-      const server = setupServer(http.post(`${mailConfig.MAILPIT_URL}/api/v1/send`, receiveMail));
-      server.listen({ onUnhandledRequest: "error" });
-      return server;
+      const network = setupNetwork();
+      network.configure({ onUnhandledFrame: "error" });
+      network.use(http.post(`${mailConfig.MAILPIT_URL}/api/v1/send`, receiveMail));
+      network.enable();
+      return network;
     }),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (server) =>
+    (network) =>
       Effect.sync(() => {
-        server.close();
+        network.disable();
       }),
   ),
 );

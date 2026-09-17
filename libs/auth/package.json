@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "otpauth": "9.5.2",

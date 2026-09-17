@@ -1,0 +1,49 @@
+import { Monitor, monitorHandler } from "./index.ts";
+import type { MonitorBindings, Notify } from "./index.ts";
+import { Effect } from "effect";
+import { MonitorFailure } from "./failure.ts";
+import type { SentMail } from "./mail-recorder.ts";
+
+type Outcome = "fail" | "notify" | "succeed";
+
+declare global {
+  // oxlint-disable-next-line typescript/no-namespace
+  namespace Cloudflare {
+    interface Env {
+      readonly ALERT_FROM: string;
+      readonly ALERT_TO: string;
+      readonly EMAIL: { readonly taken: () => Promise<SentMail[]> };
+      readonly MONITOR: DurableObjectNamespace;
+    }
+  }
+}
+
+const probeEvent = "probe_monitor";
+const probeAlert = { subject: "probe alert", text: "probe alert" } as const;
+const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
+
+class ProbeMonitor extends Monitor<MonitorBindings> {
+  protected readonly event = probeEvent;
+  protected readonly failure = probeFailure;
+
+  protected check(notify: Notify): Effect.Effect<object, MonitorFailure> {
+    const { ctx } = this;
+    return Effect.gen(function* probe() {
+      const outcome = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
+      if (outcome === "fail") {
+        return yield* new MonitorFailure({ code: "alert_config_invalid" });
+      }
+      if (outcome === "notify") {
+        yield* notify(probeAlert);
+      }
+      return { outcome: outcome ?? "succeed" };
+    });
+  }
+}
+
+export { MailRecorder } from "./mail-recorder.ts";
+export type { SentMail } from "./mail-recorder.ts";
+export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
+export type { Outcome };
+// oxlint-disable-next-line import/no-default-export
+export default monitorHandler(probeEvent);
