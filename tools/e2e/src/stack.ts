@@ -234,7 +234,7 @@ export async function createStack() {
               binding: "DB",
               database_name: `${id}-shared`,
               database_id: databaseId,
-              migrations_dir: path.join(root, "packages/db/migrations"),
+              migrations_dir: path.join(root, "libs/db/migrations"),
             },
           ],
           vars: {},

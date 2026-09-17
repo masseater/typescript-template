@@ -29,7 +29,7 @@ const test = baseTest.extend<{ directory: string }>({
       path.join(directory, "vite.config.ts"),
       `export default {
       lint: {
-        jsPlugins: [${JSON.stringify(path.join(root, "internal/quality/rules.ts"))}],
+        jsPlugins: [${JSON.stringify(path.join(root, "tools/quality/rules.ts"))}],
         categories: { correctness: "error" },
         rules: { "project/boundaries": "error", "project/no-internal-mocks": "error", "project/environment-boundary": "error", "project/worker-fetch": "error" }
       },
@@ -46,7 +46,8 @@ const test = baseTest.extend<{ directory: string }>({
 
 test.for([
   ["apps/user/probe.ts", 'import "../admin/private.ts";', "project(boundaries)"],
-  ["packages/shared/probe.ts", 'import "../../apps/admin/private.ts";', "project(boundaries)"],
+  ["libs/shared/probe.ts", 'import "../../apps/admin/private.ts";', "project(boundaries)"],
+  ["infra/cloudflare/probe.ts", 'import "../../tools/dev/src/cli.ts";', "project(boundaries)"],
   [
     "apps/user/probe.ts",
     'import { vi } from "vitest"; vi.mock("owned-module");',
@@ -54,12 +55,12 @@ test.for([
   ],
   ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "project(environment-boundary)"],
   [
-    "packages/observability/src/server.ts",
+    "libs/observability/src/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
     "project(worker-fetch)",
   ],
   [
-    "internal/budget-monitor/src/billing.ts",
+    "infra/budget-monitor/src/billing.ts",
     'const mode = "error"; export const send = () => fetch("https://api", { redirect: mode });',
     "project(worker-fetch)",
   ],
@@ -86,47 +87,39 @@ test.for([
     "apps/user/src/probe.ts",
     'export const remote = require("@template/db/remote");',
   ],
-  [
-    "shared-remote-laundering",
-    "packages/auth/src/probe.ts",
-    'export * from "@template/db/remote";',
-  ],
-  ["db-root-remote-laundering", "packages/db/src/index.ts", 'export * from "./remote";'],
-  [
-    "db-root-bootstrap-laundering",
-    "packages/db/src/index.ts",
-    'export * from "./bootstrap-local";',
-  ],
-  ["db-root-testing-laundering", "packages/db/src/index.ts", 'export * from "./testing";'],
+  ["shared-remote-laundering", "libs/auth/src/probe.ts", 'export * from "@template/db/remote";'],
+  ["db-root-remote-laundering", "libs/db/src/index.ts", 'export * from "./remote";'],
+  ["db-root-bootstrap-laundering", "libs/db/src/index.ts", 'export * from "./bootstrap-local";'],
+  ["db-root-testing-laundering", "libs/db/src/index.ts", 'export * from "./testing";'],
   [
     "user-relative-remote",
     "apps/user/src/probe.ts",
-    'export * from "../../../packages/db/src/remote";',
+    'export * from "../../../libs/db/src/remote";',
   ],
   [
     "admin-relative-remote",
     "apps/admin/src/probe.ts",
-    'export * from "../../../packages/db/src/remote-operations";',
+    'export * from "../../../libs/db/src/remote-operations";',
   ],
   [
     "user-relative-bootstrap",
     "apps/user/src/probe.ts",
-    'import "../../../packages/db/src/bootstrap-local";',
+    'import "../../../libs/db/src/bootstrap-local";',
   ],
   [
     "admin-relative-bootstrap",
     "apps/admin/src/probe.ts",
-    'import "../../../packages/db/src/bootstrap-local";',
+    'import "../../../libs/db/src/bootstrap-local";',
   ],
   [
     "user-relative-testing",
     "apps/user/src/probe.ts",
-    'export * from "../../../packages/db/src/testing";',
+    'export * from "../../../libs/db/src/testing";',
   ],
   [
     "admin-relative-testing",
     "apps/admin/src/probe.ts",
-    'export * from "../../../packages/db/src/testing";',
+    'export * from "../../../libs/db/src/testing";',
   ],
   ["admin-testing-entry", "apps/admin/src/probe.ts", 'import "@template/db/testing";'],
   [
@@ -176,26 +169,14 @@ test.for([
     'import admin = require("@template/db/admin"); export { admin };',
   ],
   ["relative-admin", "apps/user/src/probe.ts", 'export * from "../../admin/src/server";'],
-  [
-    "relative-db-admin",
-    "apps/user/src/probe.ts",
-    'export * from "../../../packages/db/src/admin";',
-  ],
-  [
-    "relative-package-private",
-    "apps/user/src/probe.ts",
-    'import "../../../packages/db/src/schema";',
-  ],
-  ["shared-laundering", "packages/shared/src/probe.ts", 'export * from "@template/db/admin";'],
-  ["db-root-laundering", "packages/db/src/index.ts", 'export * from "./admin";'],
-  ["shared-app-alias", "packages/shared/src/probe.ts", 'import "@template/admin";'],
-  ["shared-user-app", "packages/shared/src/probe.ts", 'import "@template/user";'],
+  ["relative-db-admin", "apps/user/src/probe.ts", 'export * from "../../../libs/db/src/admin";'],
+  ["relative-package-private", "apps/user/src/probe.ts", 'import "../../../libs/db/src/schema";'],
+  ["shared-laundering", "libs/shared/src/probe.ts", 'export * from "@template/db/admin";'],
+  ["db-root-laundering", "libs/db/src/index.ts", 'export * from "./admin";'],
+  ["shared-app-alias", "libs/shared/src/probe.ts", 'import "@template/admin";'],
+  ["shared-user-app", "libs/shared/src/probe.ts", 'import "@template/user";'],
   ["app-driver", "apps/user/src/probe.ts", 'export * from "drizzle-orm";'],
-  [
-    "dynamic-driver",
-    "packages/auth/src/probe.ts",
-    'export const load = () => import("node:sqlite");',
-  ],
+  ["dynamic-driver", "libs/auth/src/probe.ts", 'export const load = () => import("node:sqlite");'],
   ["production-test-entry", "apps/user/src/probe.ts", 'import "@template/db/testing";'],
   ["admin-signup", "apps/admin/src/probe.ts", 'import "@template/ui/signup";'],
 ] as const)("rejects dependency bypass: %s", async ([_label, name, code], { directory }) => {
@@ -274,7 +255,7 @@ test.for([
   ["meta-destructure", "export const { env: values } = import.meta;"],
   ["meta-nested", "export const { env: { SECRET: value } } = import.meta;"],
 ] as const)("rejects environment bypass: %s", async ([_label, code], { directory }) => {
-  const name = "packages/shared/src/probe.ts";
+  const name = "libs/shared/src/probe.ts";
   await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
   await writeFile(path.join(directory, name), code);
   const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
@@ -285,23 +266,23 @@ test.for([
 
 test.for([
   ["apps/admin/src/probe.ts", 'export * from "@template/db/admin";'],
-  ["packages/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
-  ["internal/dev/src/probe.ts", 'export * from "@template/db/remote";'],
+  ["libs/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
+  ["tools/dev/src/probe.ts", 'export * from "@template/db/remote";'],
   ["infra/cloudflare/src/probe.ts", 'export * from "@template/db/remote";'],
-  ["packages/db/src/remote.ts", 'export * from "./remote-operations";'],
+  ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
   ["apps/user/src/probe.ts", 'export * from "@template/db";'],
   ["apps/user/src/probe.ts", 'export * from "@template/ui/signup";'],
   ["apps/user/src/probe.ts", 'export const load = () => import("./feature");'],
-  ["packages/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
-  ["packages/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],
-  ["packages/shared/src/probe.ts", "export const location = import.meta.url;"],
-  ["packages/shared/src/probe.ts", 'export { http } from "msw";'],
-  ["packages/config/src/probe.ts", "export const value = process.env;"],
-  ["packages/config/src/probe.ts", "export const value = import.meta.env;"],
+  ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
+  ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],
+  ["libs/shared/src/probe.ts", "export const location = import.meta.url;"],
+  ["libs/shared/src/probe.ts", 'export { http } from "msw";'],
+  ["libs/config/src/probe.ts", "export const value = process.env;"],
+  ["libs/config/src/probe.ts", "export const value = import.meta.env;"],
   ["infra/cloudflare/src/probe.ts", "export const value = process.env;"],
-  ["internal/observability/src/probe.ts", "export const value = process.env;"],
-  ["packages/db/src/probe.ts", 'export * from "drizzle-orm";'],
-  ["packages/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
+  ["tools/observe/src/probe.ts", "export const value = process.env;"],
+  ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
+  ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
 ] as const)("allows valid boundary in %s", async ([name, code], { directory }) => {
   const target = path.join(directory, name);
   await mkdir(path.dirname(target), { recursive: true });
@@ -465,8 +446,8 @@ test.for([
 });
 
 test.for([
-  ["packages/db/src/security.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
-  ["internal/dev/src/probe.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
+  ["libs/db/src/security.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
+  ["tools/dev/src/probe.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
   ["apps/user/src/probe.test.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
 ] as const)("rejects raw D1 outside the adapter in %s", async ([name, code], { directory }) => {
   await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
@@ -514,7 +495,7 @@ test.for([
     'import { createDb } from "@template/db"; export const load = (binding: D1Database) => createDb(binding);',
   ],
 ] as const)("allows non-D1 operation: %s", async ([_label, code], { directory }) => {
-  const name = "packages/shared/src/probe.ts";
+  const name = "libs/shared/src/probe.ts";
   await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
   await writeFile(path.join(directory, name), code);
   const result = spawnSync("vp", ["lint", name], { ...execution, cwd: directory });
@@ -525,7 +506,7 @@ test.for([
 test.for(["instrumentation", "testing"])(
   "allows raw D1 in the %s adapter",
   async (adapter, { directory }) => {
-    const name = `packages/db/src/${adapter}.ts`;
+    const name = `libs/db/src/${adapter}.ts`;
     await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
     await writeFile(
       path.join(directory, name),

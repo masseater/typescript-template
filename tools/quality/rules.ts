@@ -56,16 +56,16 @@ export default definePlugin({
   rules: {
     boundaries: {
       meta: metadata(
-        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは packages/db 内だけで使用できます。生 D1 操作は packages/db/src/instrumentation.ts と testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。",
+        "依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は libs/db/src/instrumentation.ts と testing.ts だけに限定し、業務処理は計測付き ORM を使用してください。",
       ),
       create(context) {
         const current = filename(context);
-        const rawD1Allowed = /\/packages\/db\/src\/(?:instrumentation|testing)\.ts$/.test(current);
+        const rawD1Allowed = /\/libs\/db\/src\/(?:instrumentation|testing)\.ts$/.test(current);
         const checkD1 = (node: ESTree.Node) => {
           if (!rawD1Allowed && isD1Operation(context, node))
             context.report({ node, messageId: "violation" });
         };
-        const location = current.match(/^(.*?)\/(apps|packages|internal|infra)\/([^/]+)\//);
+        const location = current.match(/^(.*?)\/(apps|libs|tools|infra)\/([^/]+)\//);
         const root = location?.[1];
         const area = location?.[2];
         const owner = location?.[3];
@@ -73,7 +73,7 @@ export default definePlugin({
         function check(node: ESTree.Node) {
           const source = staticText(context, node);
           if (source === undefined) {
-            if (area === "apps" || area === "packages")
+            if (area === "apps" || area === "libs")
               context.report({ node, messageId: "violation" });
             return;
           }
@@ -82,37 +82,35 @@ export default definePlugin({
           const resolved = relative
             ? path.resolve(path.dirname(current), clean).replaceAll("\\", "/")
             : clean;
-          const target = resolved.match(/\/(apps|packages|internal|infra)\/([^/]+)(?:\/|$)/);
+          const target = resolved.match(/\/(apps|libs|tools|infra)\/([^/]+)(?:\/|$)/);
           const namedApp = clean.match(/^@template\/(user|admin)(?:\/|$)/)?.[1];
           const targetApp = target?.[1] === "apps" ? target[2] : namedApp;
           const dbAdmin =
             /^@template\/db\/(?:src\/)?admin(?:[/.]|$)/.test(clean) ||
-            /\/packages\/db\/(?:src\/)?admin(?:[/.]|$)/.test(resolved);
+            /\/libs\/db\/(?:src\/)?admin(?:[/.]|$)/.test(resolved);
           const dbOperations =
             /^@template\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|testing)(?:[/.]|$)/.test(
               clean,
             ) ||
-            /\/packages\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|testing)(?:[/.]|$)/.test(
-              resolved,
-            );
-          const withinDb = area === "packages" && owner === "db";
+            /\/libs\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|testing)(?:[/.]|$)/.test(resolved);
+          const withinDb = area === "libs" && owner === "db";
           const dbRoot = withinDb && /\/src\/index\.[cm]?[jt]s$/.test(current);
           const packageEscape =
             relative &&
             root !== undefined &&
-            (area === "apps" || area === "packages") &&
+            (area === "apps" || area === "libs") &&
             !resolved.startsWith(`${root}/${area}/${owner}/`);
           const forbidden =
-            ((area === "packages" || (area === "apps" && owner !== targetApp)) && !!targetApp) ||
+            ((area === "libs" || (area === "apps" && owner !== targetApp)) && !!targetApp) ||
             packageEscape ||
-            ((area === "apps" || area === "packages") && target?.[1] === "internal") ||
+            ((area === "apps" || area === "libs" || area === "infra") && target?.[1] === "tools") ||
             (dbAdmin &&
               ((area === "apps" && owner === "user") ||
-                (area === "packages" && !withinDb && !isTest) ||
+                (area === "libs" && !withinDb && !isTest) ||
                 dbRoot)) ||
             (dbOperations &&
               (area === "apps" ||
-                (area === "packages" &&
+                (area === "libs" &&
                   (dbRoot || (!withinDb && !(isTest && /\/testing(?:[/.]|$)/.test(resolved))))))) ||
             (!withinDb &&
               /^(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|node:sqlite|pg|postgres)(?:\/|$)/.test(
@@ -202,8 +200,8 @@ export default definePlugin({
       create(context) {
         const current = filename(context);
         if (
-          !/\/(?:apps|packages|internal\/budget-monitor)\//.test(current) ||
-          /\/packages\/ui\/|\/packages\/observability\/src\/(?:sentry-)?browser\.ts$|\/packages\/runtime\/src\/client\.ts$|\/packages\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(
+          !/\/(?:apps|libs|infra\/budget-monitor)\//.test(current) ||
+          /\/libs\/ui\/|\/libs\/observability\/src\/(?:sentry-)?browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(
             current,
           )
         )
@@ -222,10 +220,10 @@ export default definePlugin({
     },
     "environment-boundary": {
       meta: metadata(
-        "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め packages/config の検証境界へ集約してください。運用 CLI とインフラの境界では Valibot で検証してください。",
+        "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Valibot で検証してください。",
       ),
       create(context) {
-        if (/\/(?:packages\/config|infra|internal)\//.test(filename(context))) return {};
+        if (/\/(?:libs\/config|infra|tools)\//.test(filename(context))) return {};
         const check = (node: ESTree.Node) => {
           if (origins(context, node).some(isEnvironment))
             context.report({ node, messageId: "violation" });

@@ -40,7 +40,7 @@ test.for([
   "pnpm --filter @template/dev run setup -- --filter anything",
   "pnpm run test",
   "pnpm -r --if-present build",
-  "node internal/dev/src/cli.ts",
+  "node tools/dev/src/cli.ts",
   "echo 'pnpm --filter @template/dev setup'",
 ])("allows explicit workspace script execution: %s", (command) => {
   expect(scriptViolations({ scripts: { probe: command } })).toEqual([]);
@@ -59,7 +59,7 @@ test("rejects malformed script definitions", () => {
 test("all repository workspace manifests use explicit run after pnpm filters", async () => {
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const directories = await Promise.all(
-    ["apps", "packages", "infra", "internal"].map(async (area) => {
+    ["apps", "libs", "infra", "tools"].map(async (area) => {
       const entries = await readdir(path.join(root, area), { withFileTypes: true });
       return entries
         .filter((entry) => entry.isDirectory())
@@ -77,3 +77,44 @@ test("all repository workspace manifests use explicit run after pnpm filters", a
   );
   expect(violations.flat()).toEqual([]);
 });
+
+test("workspaces outside tools do not depend on tools packages", async () => {
+  const root = fileURLToPath(new URL("../../", import.meta.url));
+  const manifests = async (area: string) => {
+    const entries = await readdir(path.join(root, area), { withFileTypes: true });
+    const found = await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory())
+        .map(async (entry) => {
+          const name = path.join(area, entry.name, "package.json");
+          const text = await readFile(path.join(root, name), "utf8").catch(() => undefined);
+          const manifest: unknown = text === undefined ? undefined : JSON.parse(text);
+          return manifest === undefined ? [] : [{ name, manifest }];
+        }),
+    );
+    return found.flat();
+  };
+  const tools = (await manifests("tools")).flatMap(({ manifest }) => {
+    const name = field(manifest, "name");
+    return typeof name === "string" ? [name] : [];
+  });
+  const consumers = (await Promise.all(["apps", "libs", "infra"].map(manifests))).flat();
+  const violations = consumers.flatMap(({ name, manifest }) => {
+    const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
+      const value = field(manifest, key);
+      return typeof value === "object" && value !== null ? Object.entries(value) : [];
+    });
+    return declared
+      .filter(([key, value]) =>
+        tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
+      )
+      .map(([key]) => `${name}: ${key}`);
+  });
+  expect(violations).toEqual([]);
+});
+
+function field(manifest: unknown, key: string): unknown {
+  return typeof manifest === "object" && manifest !== null
+    ? Object.getOwnPropertyDescriptor(manifest, key)?.value
+    : undefined;
+}

@@ -195,7 +195,7 @@ export function assertSeparation(pair: ArtifactPair): void {
       !sources.some(
         (source: unknown) =>
           typeof source === "string" &&
-          /(?:^|\/)apps\/admin\/|(?:^|\/)packages\/db\/src\/admin\.ts$/.test(source),
+          /(?:^|\/)apps\/admin\/|(?:^|\/)libs\/db\/src\/admin\.ts$/.test(source),
       ),
       "E2E_ADMIN_SOURCE_IN_USER_SERVER_MAP",
     );

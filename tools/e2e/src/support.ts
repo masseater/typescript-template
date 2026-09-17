@@ -32,7 +32,7 @@ export function safeFailure(error: unknown, stage: string): Error {
   const frame =
     error instanceof Error
       ? error.stack
-          ?.match(/\/internal\/e2e\/src\/([a-z.-]+\.ts):(\d+)/)
+          ?.match(/\/tools\/e2e\/src\/([a-z.-]+\.ts):(\d+)/)
           ?.slice(1, 3)
           .join(":")
       : undefined;

@@ -7,8 +7,8 @@ function privatePath(value: string, repository: string): boolean {
   const normalized = value.replaceAll("\\", "/");
   const relative = path.relative(repository, normalized).replaceAll("\\", "/");
   return (
-    /^(?:infra|internal)(?:\/|$)/.test(relative) ||
-    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)apps\/admin(?:\/|$)|(?:^|\/)packages\/db\/src\/(?:admin|remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$|(?:^|\/)(?:\.env(?:\.[^/]*)?|\.dev\.vars(?:\.[^/]*)?|[^/]*\.(?:pem|key))$/.test(
+    /^(?:infra|tools)(?:\/|$)/.test(relative) ||
+    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)apps\/admin(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:admin|remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$|(?:^|\/)(?:\.env(?:\.[^/]*)?|\.dev\.vars(?:\.[^/]*)?|[^/]*\.(?:pem|key))$/.test(
       normalized,
     ) ||
     /@template\/(?:admin(?:\/|$)|db\/(?:admin|remote|testing)(?:\/|$))/.test(normalized)
@@ -30,11 +30,7 @@ export function userDevBoundary(
           cors: false,
           fs: {
             strict: true,
-            allow: [
-              appRoot,
-              path.join(repository, "packages"),
-              path.join(repository, "node_modules"),
-            ],
+            allow: [appRoot, path.join(repository, "libs"), path.join(repository, "node_modules")],
             deny: [
               ".env",
               ".env.*",
@@ -44,12 +40,12 @@ export function userDevBoundary(
               "**/.local/**",
               "**/.local-agents/**",
               "**/apps/admin/**",
-              "**/packages/db/src/admin.*",
-              "**/packages/db/src/remote*",
-              "**/packages/db/src/bootstrap*",
-              "**/packages/db/src/testing.*",
+              "**/libs/db/src/admin.*",
+              "**/libs/db/src/remote*",
+              "**/libs/db/src/bootstrap*",
+              "**/libs/db/src/testing.*",
               "**/infra/**",
-              "**/internal/**",
+              "**/tools/**",
             ],
           },
         },

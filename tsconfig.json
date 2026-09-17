@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["vite.config.ts", "knip.ts", "internal/quality/**/*.ts"]
+  "include": ["vite.config.ts", "knip.ts", "tools/quality/**/*.ts"]
 }

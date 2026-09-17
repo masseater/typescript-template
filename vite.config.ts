@@ -4,7 +4,7 @@ export default defineConfig({
   lint: {
     options: { typeAware: true, typeCheck: true },
     plugins: ["typescript", "react", "react-perf", "jsx-a11y", "import", "promise", "vitest"],
-    jsPlugins: ["./internal/quality/rules.ts"],
+    jsPlugins: ["./tools/quality/rules.ts"],
     categories: { correctness: "error", suspicious: "error" },
     overrides: [
       {
@@ -55,11 +55,10 @@ export default defineConfig({
   },
   test: {
     include: [
-      "packages/**/*.test.ts",
+      "libs/**/*.test.ts",
       "apps/**/*.test.ts",
-      "internal/quality/**/*.test.ts",
-      "internal/budget-monitor/**/*.test.ts",
-      "internal/observability/**/*.test.ts",
+      "tools/quality/**/*.test.ts",
+      "tools/observe/**/*.test.ts",
       "infra/**/*.test.ts",
     ],
     restoreMocks: false,

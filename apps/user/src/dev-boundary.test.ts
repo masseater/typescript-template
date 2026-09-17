@@ -12,10 +12,10 @@ test("user Vite serves its app but rejects secret files and administrator source
   for (const folder of [
     "apps/user/src",
     "apps/admin/src",
-    "packages/db/src",
-    "packages/ui",
+    "libs/db/src",
+    "libs/ui",
     ".local",
-    "internal",
+    "tools",
   ])
     await mkdir(path.join(root, folder), { recursive: true });
   await writeFile(
@@ -28,12 +28,12 @@ test("user Vite serves its app but rejects secret files and administrator source
     'export const label = "private-admin-module";',
   );
   await writeFile(
-    path.join(root, "packages/db/src/admin.ts"),
+    path.join(root, "libs/db/src/admin.ts"),
     'export const label = "private-admin-database";',
   );
   await writeFile(path.join(root, ".local/runtime.json"), '{"password":"test-secret-marker"}');
   await writeFile(
-    path.join(root, "internal/private.js"),
+    path.join(root, "tools/private.js"),
     'export const label = "private-internal-module";',
   );
   await symlink(path.join(root, ".local/runtime.json"), path.join(app, "src/alias.json"));
@@ -55,8 +55,8 @@ test("user Vite serves its app but rejects secret files and administrator source
     for (const file of [
       ".local/runtime.json",
       "apps/admin/src/private.js",
-      "packages/db/src/admin.ts",
-      "internal/private.js",
+      "libs/db/src/admin.ts",
+      "tools/private.js",
     ]) {
       for (const suffix of ["", "?raw", "?import"]) {
         const response = await fetch(`${origin}/@fs/${root}/${file}${suffix}`);

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "X_LOCAL_EXPLORER=false vp dev",
-    "build": "vp build && pnpm --filter @template/dev run private-maps user",
+    "build": "vp build",
     "preview": "X_LOCAL_EXPLORER=false vp preview",
     "typecheck": "tsc --noEmit"
   },
