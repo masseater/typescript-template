@@ -1,5 +1,13 @@
-import { MemberQuery, MemberView, ProfileUpdate, ProfileView } from "@template/runtime/contracts";
-import { UserNotFound, getMember, getProfile, updateProfile } from "@template/db";
+import {
+  MemberList,
+  MemberListQuery,
+  MemberQuery,
+  MemberView,
+  ProfileUpdate,
+  ProfileView,
+  memberPageSize,
+} from "@template/runtime/contracts";
+import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
 import {
   apiBridge,
@@ -50,6 +58,22 @@ const api = createApi()
           const { user } = yield* verifySession(request.headers);
           const { id } = yield* readSearchParams(MemberQuery, request);
           return yield* getMember(user.id, id);
+        }),
+      failures,
+    ),
+  )
+  .get(
+    "/api/members",
+    bridge.route(
+      MemberList,
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      (request) =>
+        Effect.gen(function* handleRequest() {
+          yield* verifySession(request.headers);
+          const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
+          const offset = (page - 1) * memberPageSize;
+          const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
+          return { ...list, pageSize: memberPageSize };
         }),
       failures,
     ),

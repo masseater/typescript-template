@@ -1,9 +1,9 @@
 import { range } from "es-toolkit";
-import { secondPage } from "#users-pagination.ts";
 
 type PageItem = Readonly<{ kind: "gap"; after: number }> | Readonly<{ kind: "page"; page: number }>;
 
 const MAX_PAGES_WITHOUT_GAPS = 7;
+const secondPage = 2;
 
 function pages(first: number, last: number): PageItem[] {
   return range(first, last + 1).map((page) => ({ kind: "page", page }));

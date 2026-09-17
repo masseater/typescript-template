@@ -9,6 +9,9 @@ function MemberNavigation({ userId }: Readonly<{ userId: string }>): ReactElemen
         <NavigationLink to="/users/$id" params={{ id: userId }}>
           ホーム
         </NavigationLink>
+        <NavigationLink to="/users" activeOptions={{ exact: true, includeSearch: false }}>
+          ユーザーを探す
+        </NavigationLink>
       </nav>
       <div className="md:hidden">
         <CompactNavigation userId={userId} />
