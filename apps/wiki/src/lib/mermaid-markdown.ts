@@ -1,6 +1,13 @@
+import { is, literal, object, string } from "valibot";
 import type { Root } from "mdast";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { visit } from "unist-util-visit";
+
+const chartAttribute = object({
+  name: literal("chart"),
+  type: literal("mdxJsxAttribute"),
+  value: string(),
+});
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function remarkMermaidSource(): (tree: Root) => void {
@@ -12,11 +19,7 @@ function remarkMermaidSource(): (tree: Root) => void {
         return;
       }
       for (const attribute of node.attributes) {
-        if (
-          attribute.type === "mdxJsxAttribute" &&
-          attribute.name === "chart" &&
-          typeof attribute.value === "string"
-        ) {
+        if (is(chartAttribute, attribute)) {
           const text = toMarkdown({ lang: "mermaid", type: "code", value: attribute.value });
           node.data = { ...node.data, _stringify: { text: text.trimEnd() } };
         }
