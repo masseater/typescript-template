@@ -7,18 +7,20 @@
     "./admin": "./src/admin.ts",
     "./security": "./src/security.ts",
     "./testing": "./src/testing.ts",
-    "./remote": "./src/remote-command.ts"
+    "./remote": "./src/remote-command.ts",
+    "./local": "./src/local.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local --config ../../apps/user/wrangler.jsonc --persist-to ../../.local/d1",
+    "db:migrate:local": "node src/migrate-local.ts",
     "db:bootstrap:local": "node src/bootstrap-local.ts",
     "db:migrate:remote": "node src/remote-cli.ts migrate",
     "db:bootstrap:remote": "node src/remote-cli.ts bootstrap"
   },
   "dependencies": {
+    "@template/config": "workspace:*",
     "drizzle-orm": "0.45.2",
     "miniflare": "4.20260730.0",
     "valibot": "1.5.0",
