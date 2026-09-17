@@ -1,0 +1,23 @@
+{
+  "name": "@template/interview",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts.ts"
+  },
+  "scripts": {},
+  "dependencies": {
+    "@cloudflare/tanstack-ai": "0.2.1",
+    "@tanstack/ai": "0.54.0",
+    "@template/config": "workspace:*",
+    "@template/db": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
+    "msw": "catalog:",
+    "typescript": "catalog:"
+  }
+}

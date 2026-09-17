@@ -20,6 +20,8 @@ allowBuilds:
   protobufjs: true
   agent-browser: false
   msgpackr-extract: false
+  "@google/genai": false
+  "@openrouter/sdk": false
 minimumReleaseAgeExclude:
   - "@cloudflare/vite-plugin@1.54.10"
   - "@cloudflare/workers-types@5.20260916.1"
