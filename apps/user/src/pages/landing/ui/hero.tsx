@@ -1,5 +1,4 @@
-import { ButtonLink } from "@template/ui";
-import { Link } from "@tanstack/react-router";
+import { ButtonLink, TextLink } from "@template/ui";
 import type { ReactElement } from "react";
 
 function Hero(): ReactElement {
@@ -15,7 +14,7 @@ function Hero(): ReactElement {
         <ButtonLink to="/signup" size="large" variant="primary">
           新規登録
         </ButtonLink>
-        <Link to="/login">ログイン</Link>
+        <TextLink to="/login">ログイン</TextLink>
       </div>
     </section>
   );

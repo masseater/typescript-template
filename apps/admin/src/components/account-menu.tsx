@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  Icon,
   useSignOut,
   useToast,
 } from "@template/ui";
@@ -23,7 +24,7 @@ function AccountMenu({ email }: Readonly<{ email: string }>): ReactElement {
     <DropdownMenu>
       <DropdownMenuTrigger aria-label={`${email} のアカウントメニュー`}>
         <span className="max-w-48 truncate">{email}</span>
-        <ChevronDownIcon aria-hidden="true" className="size-4" />
+        <Icon icon={ChevronDownIcon} size="small" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel>{email}</DropdownMenuLabel>

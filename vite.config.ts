@@ -65,17 +65,6 @@ export default defineConfig({
         },
       },
       {
-        files: [
-          "apps/admin/src/components/account-menu.tsx",
-          "apps/admin/src/components/admin-header.tsx",
-          "apps/admin/src/components/admin-navigation-item.tsx",
-          "apps/admin/src/components/empty-results.tsx",
-          "apps/admin/src/components/page-link.tsx",
-          "apps/admin/src/components/row-action-menu.tsx",
-        ],
-        rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
-      },
-      {
         files: ["infra/cloudflare/src/**"],
         rules: {
           "eslint/new-cap": [

@@ -9,7 +9,7 @@ const navigationLinkVariants = cva(
     variants: {
       variant: {
         brand: "text-lg leading-tight font-bold",
-        item: "px-3 py-2 text-base leading-tight font-bold hover:bg-card-hover aria-[current=page]:bg-secondary",
+        item: "block px-3 py-2 text-base leading-tight font-bold hover:bg-card-hover aria-[current=page]:bg-secondary",
       },
     },
   },
