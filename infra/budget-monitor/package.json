@@ -2,9 +2,6 @@
   "name": "@template/budget-monitor",
   "private": true,
   "type": "module",
-  "exports": {
-    "./artifact": "./src/artifact.ts"
-  },
   "scripts": {
     "inspect": "node src/inspect.ts"
   },
