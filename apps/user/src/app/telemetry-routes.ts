@@ -1,13 +1,17 @@
 export const routes = {
-  "/": "profile",
+  "/": "landing",
+  "/_serverFn/*": "server-function",
   "/api/auth/*": "auth",
   "/api/health": "health",
+  "/api/member": "member-api",
   "/api/profile": "profile-api",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
   "/api/verify-email": "verify-email-api",
   "/login": "login",
   "/security": "security",
+  "/settings/profile": "profile-edit",
   "/signup": "signup",
+  "/users/*": "profile",
   "/verify-email": "verify-email",
 } as const;

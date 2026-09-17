@@ -9,7 +9,7 @@ import { useTextInput } from "./use-text-input";
 
 interface SignUpFieldsProps {
   readonly action: ActionState;
-  readonly onSent: (sent: boolean) => void;
+  readonly onSent: () => void;
 }
 
 interface SignUpInputs extends SignUpFieldsProps {
@@ -42,7 +42,7 @@ function useSignUpSubmit({
           }),
         );
         setPassword("");
-        onSent(true);
+        onSent();
       });
     },
     [emailValue, nameValue, onSent, passwordValue, run, setPassword],
@@ -56,7 +56,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
   const submit = useSignUpSubmit({ action, email, name, onSent, password });
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <Field
           label="ユーザー名"
           name="name"
@@ -87,7 +87,7 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
           onChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
-          登録して確認メールを送信
+          登録する
         </Button>
       </div>
     </form>

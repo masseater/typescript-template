@@ -1,18 +1,17 @@
-import { AppShell, appHead } from "@template/ui/shell";
+import { AppDocument, appHead } from "@template/ui/shell";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { createRootRoute } from "@tanstack/react-router";
 import { routes } from "#app/telemetry-routes.ts";
+import { serviceName } from "#shared/config/index.ts";
 import styles from "#app/styles.css?url";
 
-const navigation = [
-  { href: "/", label: "プロフィール" },
-  { href: "/security", label: "認証設定" },
-  { href: "/login", label: "ログイン" },
-] as const;
-
 const Route = createRootRoute({
-  component: (): ReactElement => <AppShell navigation={navigation} routes={routes} />,
-  head: () => appHead("ユーザーアプリ", styles),
+  component: (): ReactElement => (
+    <AppDocument routes={routes}>
+      <Outlet />
+    </AppDocument>
+  ),
+  head: () => appHead(serviceName, styles),
 });
 
 export { Route };

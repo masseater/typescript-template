@@ -1,9 +1,8 @@
-import { AppBody } from "./app-body";
-import { HeadContent } from "@tanstack/react-router";
+import { AppDocument } from "./app-document";
+import { AppNavigation } from "./app-navigation";
 import type { NavigationLink } from "./app-navigation";
+import { Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { initBrowserTelemetry } from "@template/observability/browser";
-import { useEffect } from "react";
 
 function AppShell({
   navigation,
@@ -12,19 +11,11 @@ function AppShell({
   navigation: readonly NavigationLink[];
   routes: Readonly<Record<string, string>>;
 }>): ReactElement {
-  useEffect(() => {
-    const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
-    return (): void => {
-      telemetry.dispose();
-    };
-  }, [routes]);
   return (
-    <html lang="ja">
-      <head>
-        <HeadContent />
-      </head>
-      <AppBody navigation={navigation} />
-    </html>
+    <AppDocument routes={routes}>
+      <AppNavigation links={navigation} />
+      <Outlet />
+    </AppDocument>
   );
 }
 

@@ -6,6 +6,7 @@ import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
 import { PasskeyLoginButton } from "./passkey-login-button";
 import type { ReactElement } from "react";
+import { Separator } from "./shared/ui";
 import { useAction } from "./action";
 import { useTextInput } from "./use-text-input";
 
@@ -34,6 +35,7 @@ function LoginForm({
             onChallenge={setChallenge}
             password={password}
           />
+          <Separator label="または" />
           <PasskeyLoginButton action={action} onAuthenticated={onAuthenticated} />
         </>
       ) : (
