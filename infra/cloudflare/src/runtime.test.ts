@@ -1,45 +1,24 @@
-import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { expect, test } from "vite-plus/test";
 
-it.effect(
-  "real Pulumi SDK and Cloudflare SDK run under native Node type stripping without loading a TypeScript compiler",
-  () =>
-    Effect.gen(function* () {
-      const result = yield* Effect.promise(() =>
-        promisify(execFile)(process.execPath, ["src/runtime-probe.ts"], {
-          cwd: fileURLToPath(new URL("../", import.meta.url)),
-          env: { PATH: process.env["PATH"], PULUMI_NODEJS_TYPESCRIPT: "false" },
-          timeout: 20_000,
-        }),
-      );
-      assert.deepStrictEqual(JSON.parse(result.stdout), {
-        event: "pulumi.runtime_verified",
-        compilerLoaded: false,
-        secretPreserved: true,
-      });
-    }),
-  { timeout: 30_000 },
+const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/Pulumi.yaml"], {
+  eager: true,
+  import: "default",
+});
+
+test("every Pulumi project is covered", () => {
+  expect(Object.keys(projects).sort()).toEqual([
+    "../../bootstrap/Pulumi.yaml",
+    "../admin/Pulumi.yaml",
+    "../shared/Pulumi.yaml",
+    "../user/Pulumi.yaml",
+    "../wiki/Pulumi.yaml",
+  ]);
+});
+
+test.for(Object.entries(projects))(
+  "%s disables Pulumi compiler loading and runs TypeScript with plain Node",
+  ([, yaml]) => {
+    expect(yaml).toContain("typescript: false");
+    expect(yaml).not.toContain("nodeargs");
+  },
 );
-
-for (const filename of [
-  "../shared/Pulumi.yaml",
-  "../user/Pulumi.yaml",
-  "../admin/Pulumi.yaml",
-  "../wiki/Pulumi.yaml",
-  "../../bootstrap/Pulumi.yaml",
-])
-  it.effect(
-    `${filename} disables Pulumi compiler loading and runs TypeScript with plain Node`,
-    () =>
-      Effect.gen(function* () {
-        const yaml = yield* Effect.promise(() =>
-          readFile(new URL(filename, import.meta.url), "utf8"),
-        );
-        assert.include(yaml, "typescript: false");
-        assert.notInclude(yaml, "nodeargs");
-      }),
-  );

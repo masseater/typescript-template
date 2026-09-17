@@ -1,6 +1,3 @@
-import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 import { assert, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
@@ -111,62 +108,64 @@ it.effect(
     }).pipe(Effect.provide(telemetry)),
 );
 
-const probe = `
-import { Effect } from "effect";
-import { Telemetry, ingestBrowser, observeRequest } from "./src/server.ts";
-const base = {
-  route: "home",
-  start: Date.now(),
-  duration: 25,
-  traceId: "a".repeat(32),
-  spanId: "b".repeat(16),
-  requestId: "11111111-1111-4111-8111-111111111111",
-};
-const program = Effect.gen(function* () {
-  const response = yield* ingestBrowser(
-    new Request("http://localhost/api/telemetry", {
-      method: "POST",
-      headers: { origin: "http://localhost", "content-type": "application/json" },
-      body: JSON.stringify([
-        { ...base, kind: "http", status: 201, method: "POST", name: "http.client.request", value: 0 },
-        {
-          ...base,
-          kind: "exception",
-          status: 0,
-          method: "GET",
-          name: "browser.error",
-          value: 1,
-          errorType: "TypeError",
-          locations: "/assets/index-abc.js:1:234",
-        },
-      ]),
-    }),
-  );
-  yield* observeRequest(new Request("http://localhost/"), () =>
-    Effect.die(new RangeError("private@example.test")),
-  );
-  console.info(JSON.stringify({ event: "probe.done", status: response.status }));
-}).pipe(
-  Effect.provide(Telemetry.layer({ serviceName: "user", release: "abc123", routes: { "/": "home" } })),
-);
-await Effect.runPromise(program);
-`;
-
-const lines = (output: string): unknown[] =>
-  output
-    .split("\n")
-    .filter(Boolean)
-    .map((line): unknown => JSON.parse(line));
-
 it.effect("browser events and server errors become structured log lines", () =>
   Effect.gen(function* () {
-    const result = yield* Effect.promise(() =>
-      promisify(execFile)(process.execPath, ["--input-type=module", "-e", probe], {
-        cwd: fileURLToPath(new URL("../", import.meta.url)),
-        timeout: 20_000,
-      }),
+    const stdout: unknown[] = [];
+    const stderr: unknown[] = [];
+    const base = {
+      route: "home",
+      start: Date.now(),
+      duration: 25,
+      traceId: "a".repeat(32),
+      spanId: "b".repeat(16),
+      requestId: "11111111-1111-4111-8111-111111111111",
+    };
+    const response = yield* Effect.gen(function* () {
+      const accepted = yield* ingestBrowser(
+        new Request("http://localhost/api/telemetry", {
+          method: "POST",
+          headers: { origin: "http://localhost", "content-type": "application/json" },
+          body: JSON.stringify([
+            {
+              ...base,
+              kind: "http",
+              status: 201,
+              method: "POST",
+              name: "http.client.request",
+              value: 0,
+            },
+            {
+              ...base,
+              kind: "exception",
+              status: 0,
+              method: "GET",
+              name: "browser.error",
+              value: 1,
+              errorType: "TypeError",
+              locations: "/assets/index-abc.js:1:234",
+            },
+          ]),
+        }),
+      );
+      yield* observeRequest(new Request("http://localhost/"), () =>
+        Effect.die(new RangeError("private@example.test")),
+      );
+      return accepted;
+    }).pipe(
+      Effect.provide(
+        Telemetry.layer({
+          serviceName: "user",
+          release: "abc123",
+          routes: { "/": "home" },
+          log: {
+            info: (line) => stdout.push(JSON.parse(line)),
+            error: (line) => stderr.push(JSON.parse(line)),
+          },
+        }),
+      ),
     );
-    expect(lines(result.stdout)).toEqual([
+    assert.strictEqual(response.status, 202);
+    expect(stdout).toEqual([
       expect.objectContaining({
         event: "http.client.request",
         service: "user-browser",
@@ -174,9 +173,7 @@ it.effect("browser events and server errors become structured log lines", () =>
         trace_id: "a".repeat(32),
         "http.response.status_code": 201,
       }),
-      { event: "probe.done", status: 202 },
     ]);
-    const stderr = lines(result.stderr);
     expect(stderr).toEqual([
       expect.objectContaining({
         event: "browser.error",
@@ -200,6 +197,6 @@ it.effect("browser events and server errors become structured log lines", () =>
     expect(JSON.stringify(stderr)).toMatch(
       /"error\.fingerprint":"[0-9a-f]{8}".*"error\.fingerprint":"[0-9a-f]{8}"/,
     );
-    assert.notInclude(result.stderr, "private@example.test");
+    assert.notInclude(JSON.stringify(stderr), "private@example.test");
   }),
 );

@@ -53,6 +53,23 @@ const isEnvironment = (origin: Origin) => {
   );
 };
 
+const outOfGraphModules = new Set([
+  "node:child_process",
+  "child_process",
+  "node:worker_threads",
+  "worker_threads",
+]);
+const isOutOfGraph = (origin: Origin) => {
+  const [source, ...members] = origin;
+  return (
+    outOfGraphModules.has(source ?? "") ||
+    (source === "import.meta" &&
+      ["url", "dirname", "filename", "resolve"].includes(members[0] ?? "")) ||
+    ((source === "node:process" || source === "process") && members[0] === "cwd") ||
+    (source === "global" && members[0] === "process" && members[1] === "cwd")
+  );
+};
+
 export default definePlugin({
   meta: { name: "project" },
   rules: {
@@ -195,6 +212,82 @@ export default definePlugin({
             for (const variable of context.sourceCode.getDeclaredVariables(node)) {
               for (const identifier of variable.identifiers) check(identifier);
             }
+          },
+        };
+      },
+    },
+    "test-import-graph": {
+      meta: metadata(
+        "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
+      ),
+      create(context) {
+        if (!/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(filename(context))) return {};
+        const check = (node: ESTree.Node) => {
+          if (origins(context, node).some(isOutOfGraph))
+            context.report({ node, messageId: "violation" });
+        };
+        const checkSource = (node: ESTree.Node) => {
+          const source = staticText(context, node) ?? "";
+          if (outOfGraphModules.has(source) || source.includes("?"))
+            context.report({ node, messageId: "violation" });
+        };
+        return {
+          MemberExpression: check,
+          ImportExpression: (node) => checkSource(node.source),
+          ImportDeclaration(node) {
+            checkSource(node.source);
+            for (const specifier of node.specifiers) check(specifier.local);
+          },
+          ExportNamedDeclaration(node) {
+            if (node.source) checkSource(node.source);
+          },
+          ExportAllDeclaration: (node) => checkSource(node.source),
+          VariableDeclarator(node) {
+            if (node.id.type !== "ObjectPattern") return;
+            for (const variable of context.sourceCode.getDeclaredVariables(node)) {
+              for (const identifier of variable.identifiers) check(identifier);
+            }
+          },
+          AssignmentExpression(node) {
+            if (
+              node.left.type === "ObjectPattern" &&
+              destructuredOrigins(context, node.left, origins(context, node.right)).some(
+                isOutOfGraph,
+              )
+            )
+              context.report({ node, messageId: "violation" });
+          },
+          CallExpression(node) {
+            const callee = origins(context, node.callee);
+            if (callee.some((origin) => origin.join(".") === "import.meta.glob")) {
+              const [patterns, options] = node.arguments;
+              for (const pattern of patterns?.type === "ArrayExpression"
+                ? patterns.elements
+                : [patterns]) {
+                if (pattern && pattern.type !== "SpreadElement") checkSource(pattern);
+              }
+              const query =
+                options?.type === "ObjectExpression"
+                  ? options.properties.some(
+                      (property) =>
+                        property.type !== "Property" ||
+                        (!property.computed && property.key.type === "Identifier"
+                          ? property.key.name
+                          : staticText(context, property.key)) === "query",
+                    )
+                  : options !== undefined;
+              if (options && query) context.report({ node: options, messageId: "violation" });
+            }
+            const argument = node.arguments[0];
+            if (
+              argument &&
+              callee.some(
+                (origin) =>
+                  (origin[0] === "require" && origin.length === 1) ||
+                  /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/.test(origin.join(".")),
+              )
+            )
+              checkSource(argument);
           },
         };
       },

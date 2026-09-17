@@ -44,8 +44,9 @@
     "infra:deploy:admin": "vp run --filter @template/infra-cloudflare deploy:admin",
     "infra:deploy:wiki": "vp run --filter @template/infra-cloudflare deploy:wiki",
     "test:artifacts": "vp run --filter @template/infra-cloudflare verify:artifacts",
+    "test:runtime": "vp run --filter @template/infra-cloudflare verify:runtime",
     "precommit": "vp run check",
-    "prepush": "vp run check && vp test run && vp run build && vp run test:artifacts"
+    "prepush": "vp run check && vp test run --changed origin/main && vp run test:runtime && vp run build && vp run test:artifacts"
   },
   "devDependencies": {
     "@effect/platform-node": "4.0.0-rc.112",

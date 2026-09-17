@@ -1,6 +1,16 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+  plugins: [
+    {
+      name: "text-modules",
+      enforce: "pre",
+      transform: (code, id) =>
+        /\.ya?ml$|\/\.vite-hooks\/[^/]+$/.test(id)
+          ? `export default ${JSON.stringify(code)};`
+          : undefined,
+    },
+  ],
   lint: {
     options: { typeAware: true, typeCheck: true },
     plugins: ["typescript", "react", "react-perf", "jsx-a11y", "import", "promise", "vitest"],
@@ -52,6 +62,7 @@ export default defineConfig({
       "project/worker-fetch": "error",
       "project/effect-stack": "error",
       "project/effect-failures": "error",
+      "project/test-import-graph": "error",
     },
     ignorePatterns: [
       "**/routeTree.gen.ts",

@@ -8,6 +8,11 @@ export type { ServiceName } from "./protocol.ts";
 
 export type RequestContext = Correlation & { readonly traceparent: string };
 
+export type LogSink = {
+  readonly info: (line: string) => void;
+  readonly error: (line: string) => void;
+};
+
 export class TelemetryInvalid extends Schema.TaggedError<TelemetryInvalid>()("TelemetryInvalid", {
   reason: Schema.Literals(["release", "service", "routes"]),
 }) {}
@@ -25,6 +30,7 @@ export class Telemetry extends Context.Service<
     readonly serviceName: ServiceName;
     readonly release: string;
     readonly routes: Readonly<Record<string, string>>;
+    readonly log?: LogSink;
   }) {
     return Layer.effect(
       Telemetry,
@@ -38,7 +44,9 @@ export class Telemetry extends Context.Service<
           catch: () => new TelemetryInvalid({ reason: "routes" }),
         });
         return Telemetry.of({
-          ...options,
+          serviceName: options.serviceName,
+          release: options.release,
+          routes: options.routes,
           labels: new Set([...Object.values(options.routes), "unmatched"]),
         });
       }),
@@ -53,7 +61,11 @@ export class CurrentRequest extends Context.Service<CurrentRequest, RequestConte
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const structuredLogs = (options: { readonly serviceName: ServiceName; readonly release: string }) =>
+const structuredLogs = (options: {
+  readonly serviceName: ServiceName;
+  readonly release: string;
+  readonly log?: LogSink;
+}) =>
   Logger.layer([
     Logger.make(({ message, logLevel, fiber }) => {
       const parts: ReadonlyArray<unknown> = Array.isArray(message) ? message : [message];
@@ -65,8 +77,9 @@ const structuredLogs = (options: { readonly serviceName: ServiceName; readonly r
         ...fiber.getRef(References.CurrentLogAnnotations),
         ...(record(attributes) ? attributes : {}),
       });
-      if (logLevel === "Error" || logLevel === "Fatal" || logLevel === "Warn") console.error(line);
-      else console.info(line);
+      const sink = options.log ?? console;
+      if (logLevel === "Error" || logLevel === "Fatal" || logLevel === "Warn") sink.error(line);
+      else sink.info(line);
     }),
   ]);
 
