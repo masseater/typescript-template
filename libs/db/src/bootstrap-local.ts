@@ -1,8 +1,8 @@
-import { fileURLToPath } from "node:url";
 import * as v from "valibot";
 import { getPlatformProxy } from "wrangler";
 import { bootstrapAdmin } from "./admin.ts";
 import { createDb } from "./index.ts";
+import { localDatabasePersistence, writeLocalDatabaseConfig } from "./local.ts";
 import type { DatabaseBinding } from "./index.ts";
 
 async function bootstrapLocal() {
@@ -10,8 +10,8 @@ async function bootstrapLocal() {
   const platform = await getPlatformProxy<{ DB: DatabaseBinding }>({
     remoteBindings: false,
     envFiles: [],
-    configPath: fileURLToPath(new URL("../../../apps/user/wrangler.jsonc", import.meta.url)),
-    persist: { path: fileURLToPath(new URL("../../../.local/d1/v3", import.meta.url)) },
+    configPath: await writeLocalDatabaseConfig(),
+    persist: { path: `${localDatabasePersistence}/v3` },
   });
   try {
     const administrator = await bootstrapAdmin(createDb(platform.env.DB), email);
