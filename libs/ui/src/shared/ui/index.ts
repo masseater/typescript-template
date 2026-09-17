@@ -27,3 +27,5 @@ export { Separator } from "./separator";
 export { ButtonLink } from "./button-link";
 export { Icon } from "./icon";
 export { NavigationLink } from "./navigation-link";
+export { CardLink } from "./card-link";
+export { PaginationLink } from "./pagination-link";

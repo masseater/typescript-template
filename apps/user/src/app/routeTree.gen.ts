@@ -17,6 +17,7 @@ import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
+import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 
 const MemberRoute = MemberRouteImport.update({
@@ -57,6 +58,11 @@ const MemberSettingsProfileRoute = MemberSettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberUsersIndexRoute = MemberUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberUsersIdRoute = MemberUsersIdRouteImport.update({
   id: '/users/$id',
   path: '/users/$id',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof PublicVerifyEmailRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/users/$id': typeof MemberUsersIdRoute
+  '/users/': typeof MemberUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof PublicVerifyEmailRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/users/$id': typeof MemberUsersIdRoute
+  '/users': typeof MemberUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_public/': typeof PublicIndexRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
+  '/_member/users/': typeof MemberUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/settings/profile'
     | '/users/$id'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/settings/profile'
     | '/users/$id'
+    | '/users'
   id:
     | '__root__'
     | '/_member'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/_public/'
     | '/_member/settings/profile'
     | '/_member/users/$id'
+    | '/_member/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -188,6 +200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberSettingsProfileRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_member/users/': {
+      id: '/_member/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof MemberUsersIndexRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/users/$id': {
       id: '/_member/users/$id'
       path: '/users/$id'
@@ -202,12 +221,14 @@ interface MemberRouteChildren {
   MemberSecurityRoute: typeof MemberSecurityRoute
   MemberSettingsProfileRoute: typeof MemberSettingsProfileRoute
   MemberUsersIdRoute: typeof MemberUsersIdRoute
+  MemberUsersIndexRoute: typeof MemberUsersIndexRoute
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
   MemberSecurityRoute: MemberSecurityRoute,
   MemberSettingsProfileRoute: MemberSettingsProfileRoute,
   MemberUsersIdRoute: MemberUsersIdRoute,
+  MemberUsersIndexRoute: MemberUsersIndexRoute,
 }
 
 const MemberRouteWithChildren =

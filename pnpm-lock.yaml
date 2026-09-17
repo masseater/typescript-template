@@ -415,6 +415,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
+      es-toolkit:
+        specifier: 1.52.0
+        version: 1.52.0
       lucide-react:
         specifier: 'catalog:'
         version: 1.46.0(react@19.3.0)
