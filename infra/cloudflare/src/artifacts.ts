@@ -13,24 +13,32 @@ import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { stageClientFiles } from "./staging.ts";
+import { stageFiles } from "./staging.ts";
+
+const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const MAIN_MODULE = "index.js";
+
+function monitorArtifact(unit: string): string {
+  return path.join(repositoryRoot, "infra", unit, "dist", MAIN_MODULE);
+}
+
 const RELEASE_LENGTH = 16;
 const SERVER_ONLY_MARKERS: readonly string[] = ["drizzle:entityKind", "better-auth/api"];
-const MODULE_CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
-  [".js", "application/javascript+module"],
-  [".mjs", "application/javascript+module"],
-  [".txt", "text/plain"],
-  [".wasm", "application/wasm"],
-]);
+const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
 
 interface WorkerModule {
   readonly contentFile: string;
-  readonly contentType: string;
   readonly name: string;
 }
+
+const workerModuleGlobs = [
+  ...[...MODULE_EXTENSIONS].map((extension) => `**/*${extension}`),
+  "**/*.map",
+];
 
 interface Artifacts {
   readonly clientDirectory: string;
@@ -49,9 +57,8 @@ function privateArtifact(relative: string): boolean {
     .split(path.sep)
     .some(
       (name) =>
-        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*|Pulumi(?:\..*)?\.ya?ml)$/u.test(
-          name,
-        ) || /\.(?:pem|key)$/u.test(name),
+        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*)$/u.test(name) ||
+        /\.(?:pem|key)$/u.test(name),
     );
 }
 
@@ -102,14 +109,12 @@ function assertServerCssPublished(
 }
 
 function workerModule(server: string, file: string): Effect.Effect<WorkerModule, ArtifactFailure> {
-  const contentType = MODULE_CONTENT_TYPES.get(path.extname(file));
-  return contentType === undefined
-    ? fail("worker_module_type_unsupported")
-    : Effect.succeed({
+  return MODULE_EXTENSIONS.has(path.extname(file))
+    ? Effect.succeed({
         contentFile: file,
-        contentType,
         name: path.relative(server, file).replaceAll(path.sep, "/"),
-      });
+      })
+    : fail("worker_module_type_unsupported");
 }
 
 function sourceMapModules(
@@ -122,7 +127,6 @@ function sourceMapModules(
     .filter((file) => file.endsWith(".map") && codeFiles.has(file.slice(0, -".map".length)))
     .map((file) => ({
       contentFile: file,
-      contentType: "application/source-map",
       name: path.relative(server, file).replaceAll(path.sep, "/"),
     }));
 }
@@ -151,39 +155,23 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
   return { code, sourceMaps: sourceMapModules(output.server, allServerFiles, code) };
 });
 
-function clientDigest(
-  client: string,
-  clientFiles: readonly string[],
+function manifestDigest(
+  root: string,
+  contentFiles: readonly string[],
 ): Effect.Effect<string, ArtifactFailure> {
   return Effect.all(
-    clientFiles.map((file) =>
-      fileSha256(file).pipe(Effect.map((hash) => [path.relative(client, file), hash])),
+    contentFiles.map((file) =>
+      fileSha256(file).pipe(Effect.map((hash) => [path.relative(root, file), hash])),
     ),
     { concurrency: "unbounded" },
   ).pipe(Effect.flatMap(jsonSha256));
 }
 
-function releaseId(
-  codeModules: readonly WorkerModule[],
-  digest: string,
-): Effect.Effect<string, ArtifactFailure> {
-  return Effect.all(
-    codeModules.map((module) =>
-      fileSha256(module.contentFile).pipe(Effect.map((hash) => [module.name, hash])),
-    ),
-    { concurrency: "unbounded" },
-  ).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    Effect.flatMap((manifest) => jsonSha256([manifest, digest])),
-    Effect.map((hash) => hash.slice(0, RELEASE_LENGTH)),
-  );
-}
-
 const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
-  repositoryRoot: string,
+  repository: string,
   target: Application,
 ) {
-  const root = path.join(repositoryRoot, "apps", target, "dist");
+  const root = path.join(repository, "apps", target, "dist");
   const output: BuildOutput = {
     client: path.join(root, "client"),
     server: path.join(root, "server"),
@@ -197,24 +185,53 @@ const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
   return output;
 });
 
+function serverDigest(
+  server: string,
+  modules: readonly WorkerModule[],
+): Effect.Effect<string, ArtifactFailure> {
+  return manifestDigest(
+    server,
+    modules.map((module) => module.contentFile),
+  );
+}
+
+const digests = Effect.fn("digests")(function* digests(
+  output: BuildOutput,
+  clientFiles: readonly string[],
+  server: Readonly<{ code: readonly WorkerModule[]; modules: readonly WorkerModule[] }>,
+) {
+  const { code, modules } = server;
+  const client = yield* manifestDigest(output.client, clientFiles);
+  const release = yield* jsonSha256([yield* serverDigest(output.server, code), client]);
+  const uploaded = yield* jsonSha256([yield* serverDigest(output.server, modules), client]);
+  return { release: release.slice(0, RELEASE_LENGTH), uploaded };
+});
+
 const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
-  repositoryRoot: string,
+  repository: string,
   target: Application,
 ) {
-  const output = yield* buildOutput(repositoryRoot, target);
+  const output = yield* buildOutput(repository, target);
   const clientFiles = yield* clientArtifactFiles(output.client);
   const { code, sourceMaps } = yield* loadWorkerModules(output, clientFiles);
-  const digest = yield* clientDigest(output.client, clientFiles);
-  const release = yield* releaseId(code, digest);
-  const staging = path.join(repositoryRoot, "infra", "cloudflare", ".artifacts", target, digest);
-  yield* stageClientFiles(output.client, staging, clientFiles);
+  const modules = [...code, ...sourceMaps];
+  const { release, uploaded } = yield* digests(output, clientFiles, { code, modules });
+  const staging = path.join(repository, "infra", "cloudflare", ".artifacts", target, uploaded);
   const artifacts: Artifacts = {
-    clientDirectory: staging,
-    mainModule: MAIN_MODULE,
-    modules: [...code, ...sourceMaps],
+    clientDirectory: path.join(staging, "client"),
+    mainModule: path.join(staging, "server", MAIN_MODULE),
+    modules,
     release,
   };
+  yield* Effect.all([
+    stageFiles(output.client, artifacts.clientDirectory, clientFiles),
+    stageFiles(
+      output.server,
+      path.dirname(artifacts.mainModule),
+      modules.map((module) => module.contentFile),
+    ),
+  ]);
   return artifacts;
 });
 
-export { loadArtifacts };
+export { loadArtifacts, monitorArtifact, repositoryRoot, workerModuleGlobs };

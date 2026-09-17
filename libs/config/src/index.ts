@@ -123,15 +123,23 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
 export {
+  applicationCapabilities,
   applicationPorts,
   applications,
   authenticationMethods,
+  grants,
   loopbackHosts,
   roles,
   storybookPort,
   strongAuthenticationMethods,
 } from "./applications.ts";
-export type { Application, Role, StrongAuthenticationMethod } from "./applications.ts";
+export type {
+  Application,
+  Capability,
+  CapabilityOf,
+  Role,
+  StrongAuthenticationMethod,
+} from "./applications.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 export { sendVerificationEmail } from "./email.ts";

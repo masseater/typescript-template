@@ -2,9 +2,6 @@
   "name": "@template/health-monitor",
   "private": true,
   "type": "module",
-  "exports": {
-    "./artifact": "./src/artifact.ts"
-  },
   "dependencies": {
     "@template/monitor": "workspace:*",
     "effect": "catalog:"

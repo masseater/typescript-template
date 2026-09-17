@@ -1,6 +1,6 @@
-import { Effect } from "effect";
-import { deployApplication } from "./app.ts";
+import { stackName, stackOptions } from "./stacks.ts";
+import { Stack } from "alchemy";
+import { applicationProgram } from "./app.ts";
 
-const { origin, workerName } = await Effect.runPromise(deployApplication("admin"));
-
-export { origin, workerName };
+// oxlint-disable-next-line import/no-default-export
+export default Stack(stackName("admin"), stackOptions, applicationProgram("admin"));

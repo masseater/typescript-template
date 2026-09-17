@@ -4,9 +4,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./worker": "./src/worker.ts",
+    "./deployment": "./src/deployment.ts",
+    "./mode": "./src/mode.ts",
     "./vite": "./src/vite.ts",
-    "./mode": "./src/mode.ts"
+    "./worker": "./src/worker.ts"
   },
   "scripts": {},
   "dependencies": {

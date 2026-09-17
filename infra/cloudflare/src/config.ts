@@ -1,22 +1,24 @@
-import { Effect, Schema } from "effect";
-import { applyPlan, stackNames } from "./stacks.ts";
+import { Config, Effect, Schema } from "effect";
+import type { WorkerObservability } from "alchemy/Cloudflare";
+import { stackNames } from "./stacks.ts";
+import { workerCompatibility } from "@template/config/worker";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
     "deployment_command_invalid",
-    "cloudflare_settings_invalid",
     "app_origins_must_differ",
     "budget_has_no_usage_allowance",
-    "auth_secret_invalid",
-    "account_permission_unavailable",
     "database_input_invalid",
-    "stack_consumer_mismatch",
-    "stack_output_invalid",
+    "database_output_unavailable",
   ]),
+  keys: Schema.Array(Schema.String),
 }) {}
 
-function fail(code: CloudflareFailure["code"]): Effect.Effect<never, CloudflareFailure> {
-  return Effect.fail(new CloudflareFailure({ code }));
+function fail(
+  code: CloudflareFailure["code"],
+  keys: readonly string[] = [],
+): Effect.Effect<never, CloudflareFailure> {
+  return Effect.fail(new CloudflareFailure({ code, keys }));
 }
 
 const MAX_BUDGET_RECIPIENTS = 10;
@@ -26,6 +28,7 @@ const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
+const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
 const Origin = Schema.String.check(
   Schema.makeFilter((value: string) => URL.canParse(value)),
   Schema.makeFilter((value: string) => {
@@ -39,8 +42,15 @@ const Origin = Schema.String.check(
     );
   }),
 );
-
-const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
+const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
+const SamplingRate = Schema.Number.check(
+  Schema.isFinite(),
+  Schema.isBetween({ maximum: 1, minimum: 0 }),
+);
+const AuthSecret = Schema.String.check(
+  Schema.isMinLength(MIN_AUTH_SECRET_LENGTH),
+  Schema.makeFilter((value: string) => value.trim() === value),
+);
 
 const SharedSettings = Schema.Struct({
   accountId: Id,
@@ -52,17 +62,36 @@ const SharedSettings = Schema.Struct({
     reserveUsd: Nonnegative,
   }),
   mailFrom: Email,
+  observabilitySampling: SamplingRate,
   origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
-  prefix: Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u)),
+  prefix: Prefix,
   zoneId: Id,
 });
 
 type SharedConfig = typeof SharedSettings.Type;
 
+const originKeys = {
+  admin: "TEMPLATE_ADMIN_ORIGIN",
+  user: "TEMPLATE_USER_ORIGIN",
+  wiki: "TEMPLATE_WIKI_ORIGIN",
+} as const;
+
 const workerSubdomain = { enabled: false, previewsEnabled: false };
+const workerCompatibilityOptions = {
+  date: workerCompatibility.date,
+  flags: [...workerCompatibility.flags],
+};
+function workerObservability(headSamplingRate: number): WorkerObservability {
+  return {
+    enabled: true,
+    headSamplingRate,
+    logs: { enabled: true, headSamplingRate, invocationLogs: false },
+    traces: { enabled: true, headSamplingRate },
+  };
+}
 
 const DeploymentCommand = Schema.Tuple([
-  Schema.Literals(["preview", "up"]),
+  Schema.Literals(["plan", "deploy"]),
   Schema.Literals(["all", ...stackNames]),
 ]);
 
@@ -70,72 +99,64 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   args: readonly string[],
 ) {
   const [operation, target] = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
-    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid" })),
+    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid", keys: [] })),
   );
-  const plan = yield* applyPlan();
   return {
     operation,
-    targets: target === "all" ? plan : plan.filter(({ stack }) => stack === target),
+    targets: stackNames
+      .filter((stack) => target === "all" || stack === target)
+      .map((stack) => ({ stack })),
   };
 });
 
-const parseSharedConfig = Effect.fn("parseSharedConfig")(function* parseSharedConfig(
-  input: unknown,
-) {
-  const config = yield* Schema.decodeUnknownEffect(SharedSettings)(input).pipe(
-    Effect.mapError(() => new CloudflareFailure({ code: "cloudflare_settings_invalid" })),
+function duplicatedOrigins(config: SharedConfig): readonly string[] {
+  const origins = [
+    [originKeys.admin, config.origins.admin],
+    [originKeys.user, config.origins.user],
+    [originKeys.wiki, config.origins.wiki],
+  ] as const;
+  return origins.flatMap(([key, origin]) =>
+    origins.some(([other, value]) => other !== key && value === origin) ? [key] : [],
   );
-  const origins = Object.values(config.origins);
-  if (new Set(origins).size !== origins.length) {
-    return yield* fail("app_origins_must_differ");
+}
+
+const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedConfig(
+  config: SharedConfig,
+) {
+  const duplicated = duplicatedOrigins(config);
+  if (duplicated.length > 0) {
+    return yield* fail("app_origins_must_differ", duplicated);
   }
   if (
     config.budget.budgetJpy / config.budget.jpyPerUsd <=
     config.budget.fixedCostUsd + config.budget.reserveUsd
   ) {
-    return yield* fail("budget_has_no_usage_allowance");
+    return yield* fail("budget_has_no_usage_allowance", [
+      "BUDGET_JPY",
+      "TEMPLATE_FIXED_COST_USD",
+      "TEMPLATE_RESERVE_USD",
+    ]);
   }
   return config;
 });
 
-const validateAuthSecret = Effect.fn("validateAuthSecret")(function* validateAuthSecret(
-  secret: unknown,
-) {
-  if (
-    typeof secret !== "string" ||
-    secret.length < MIN_AUTH_SECRET_LENGTH ||
-    secret.trim() !== secret
-  ) {
-    return yield* fail("auth_secret_invalid");
-  }
-  return secret;
-});
-
-const selectAccountPermission = Effect.fn("selectAccountPermission")(
-  function* selectAccountPermission(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    groups: readonly { id: string; name: string; scopes: string[] }[],
-    name: "Billing Read" | "Workers Observability Write",
-  ) {
-    const matches = groups.filter(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (group) => group.name === name && group.scopes.includes("com.cloudflare.api.account"),
-    );
-    if (matches.length !== 1) {
-      return yield* fail("account_permission_unavailable");
-    }
-    return yield* Schema.decodeUnknownEffect(Id)(matches[0]?.id).pipe(
-      Effect.mapError(() => new CloudflareFailure({ code: "account_permission_unavailable" })),
-    );
-  },
-);
-
 export {
+  AuthSecret,
+  SamplingRate,
   CloudflareFailure,
+  Email,
+  Id,
+  Nonnegative,
+  Origin,
+  Positive,
+  Prefix,
+  Recipients,
+  SharedSettings,
+  checkSharedConfig,
+  originKeys,
   parseDeploymentCommand,
-  parseSharedConfig,
-  selectAccountPermission,
-  validateAuthSecret,
+  workerCompatibilityOptions,
+  workerObservability,
   workerSubdomain,
 };
 export type { SharedConfig };

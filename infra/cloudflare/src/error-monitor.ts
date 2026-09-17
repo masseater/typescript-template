@@ -1,25 +1,24 @@
-import { consume, consumeSettings } from "./reference.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 import { Effect } from "effect";
-import { deployMonitor } from "./worker.ts";
-import { errorWorkerArtifact } from "@template/error-monitor/artifact";
+import { Stack } from "alchemy";
+import { accountTokenRef } from "./tokens.ts";
+import { monitorArtifact } from "./artifacts.ts";
+import { monitorProgram } from "./monitor.ts";
 
-const errors = await Effect.runPromise(
-  Effect.gen(function* errors() {
-    const { settings } = yield* consumeSettings("error-monitor", "settings");
-    const tokens = yield* consume("error-monitor", "tokens");
-    return yield* deployMonitor("error", {
-      accountId: settings.accountId,
-      alert: { from: settings.mailFrom, to: settings.budget.recipients },
-      artifact: errorWorkerArtifact,
-      className: "ErrorMonitor",
-      cron: "*/5 * * * *",
-      name: `${settings.prefix}-errors`,
-      token: { binding: "OBSERVABILITY_TOKEN", text: tokens.text("observabilityQueryToken") },
-      variables: { CLOUDFLARE_ACCOUNT_ID: settings.accountId },
-    });
+const stack = Stack(
+  stackName("error-monitor"),
+  stackOptions,
+  monitorProgram("error", {
+    artifact: monitorArtifact("error-monitor"),
+    className: "ErrorMonitor",
+    cron: "*/5 * * * *",
+    name: "errors",
+    variables: Effect.fn("errorVariables")(function* errorVariables(config) {
+      const token = yield* accountTokenRef("ObservabilityQuery");
+      return { CLOUDFLARE_ACCOUNT_ID: config.accountId, OBSERVABILITY_TOKEN: token.value };
+    }),
   }),
 );
 
-const { scheduleId, workerName } = errors;
-
-export { scheduleId, workerName };
+// oxlint-disable-next-line import/no-default-export
+export default stack;
