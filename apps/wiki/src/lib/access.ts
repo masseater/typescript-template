@@ -13,13 +13,16 @@ type SessionUnavailable = Exclude<
 const publicPaths: ReadonlySet<string> = new Set([
   "/login",
   "/consent",
+  "/mcp",
   "/api/telemetry",
   "/api/health",
   "/api/session",
 ]);
 
 function isPublic(path: string): boolean {
-  return publicPaths.has(path) || path.startsWith("/api/auth/");
+  return (
+    publicPaths.has(path) || path.startsWith("/api/auth/") || path.startsWith("/.well-known/oauth-")
+  );
 }
 
 function currentSession(

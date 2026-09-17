@@ -7,8 +7,24 @@ import { jsonResponse } from "./responses.ts";
 interface Tagged {
   readonly _tag: string;
 }
+type SettledStatus =
+  | typeof httpStatus.accepted
+  | typeof httpStatus.found
+  | typeof httpStatus.noContent
+  | typeof httpStatus.ok;
+type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus];
+type FailureStatus = Exclude<HttpStatus, SettledStatus>;
+const settledStatuses: ReadonlySet<HttpStatus> = new Set([
+  httpStatus.accepted,
+  httpStatus.found,
+  httpStatus.noContent,
+  httpStatus.ok,
+]);
+const failureStatuses = Object.values(httpStatus).filter(
+  (code): code is FailureStatus => !settledStatuses.has(code),
+);
 interface Failure {
-  readonly status: number;
+  readonly status: FailureStatus;
   readonly message: string;
 }
 type FailureTable<Failures extends Tagged> = {
@@ -28,7 +44,10 @@ type CommonFailure =
 const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
 const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
-const FailureShape = Schema.Struct({ message: Schema.String, status: Schema.Int });
+const FailureShape = Schema.Struct({
+  message: Schema.String,
+  status: Schema.Literals(failureStatuses),
+});
 const TaggedShape = Schema.Struct({ _tag: Schema.String });
 const isFailure = Schema.is(FailureShape);
 const isTagged = Schema.is(TaggedShape);
@@ -83,4 +102,4 @@ function failureResponse(
 }
 
 export { failureResponse, reportedFailure };
-export type { CommonFailure, Failure, FailureTable, Tagged };
+export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };

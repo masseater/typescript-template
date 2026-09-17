@@ -11,6 +11,7 @@ import { Telemetry, httpStatus } from "@template/observability";
 import { assert, describe, it } from "@effect/vitest";
 import type { AnyElysia } from "elysia";
 import { ProfileUpdate } from "./contracts.ts";
+import { startRoute } from "./worker.ts";
 
 const origin = "http://localhost:3001";
 const oversizedBody = 16_385;
@@ -27,15 +28,28 @@ function mutation(headers: Readonly<Record<string, string>>, body: string): Requ
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function patchApi(app: AnyElysia, request: Request): Promise<Response> {
+function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
-  return handlers.PATCH({ request });
+  const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
+  return startRoute({
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    fetch: async (request: Request): Promise<Response> => {
+      const handle = byMethod[request.method];
+      return handle === undefined
+        ? new Response(undefined, { status: httpStatus.methodNotAllowed })
+        : handle({ request });
+    },
+  });
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function patchApi(app: AnyElysia, request: Request): Promise<Response> {
+  return Effect.runPromise(servedThroughStart(app)(request));
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function getApi(app: AnyElysia, request: Request): Promise<Response> {
-  const { handlers } = elysiaServer(app);
-  return handlers.GET({ request });
+  return Effect.runPromise(servedThroughStart(app)(request));
 }
 
 const rejections = [
@@ -97,7 +111,7 @@ describe("api routes behind a start server route", () => {
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {
-      const app = createApi().patch("/api/profile", echo);
+      const app = createApi("").patch("/api/profile", echo);
       const name = "private-profile-text".repeat(repeatedPrivateText);
       const body = JSON.stringify({ name, profile: 1 });
       const response = yield* Effect.promise(async () =>
@@ -113,7 +127,7 @@ describe("api routes behind a start server route", () => {
   for (const { headers, body, reason } of rejections) {
     it.effect(`keeps the request body readable so ${reason} is still rejected`, () =>
       Effect.gen(function* program() {
-        const app = createApi().patch("/api/profile", echo);
+        const app = createApi("").patch("/api/profile", echo);
         const response = yield* Effect.promise(async () => patchApi(app, mutation(headers, body)));
         assert.isAtLeast(response.status, httpStatus.badRequest);
         assert.isBelow(response.status, httpStatus.internalServerError);
@@ -127,12 +141,21 @@ describe("api responses behind a start server route", () => {
     Effect.gen(function* program() {
       const View = Schema.Struct({ id: Schema.String });
       const handler = api.route(View, () => Effect.succeed({ id: "visible", profile: "x" }), {});
-      const app = createApi().get("/api/view", handler);
+      const app = createApi("").get("/api/view", handler);
       const response = yield* Effect.promise(async () =>
         getApi(app, new Request(`${origin}/api/view`)),
       );
       assert.strictEqual(response.status, httpStatus.ok);
       assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), { id: "visible" });
+      assert.deepStrictEqual(
+        [
+          response.headers.get("x-frame-options"),
+          response.headers.get("cache-control"),
+          response.headers.get("referrer-policy"),
+          response.headers.get("x-content-type-options"),
+        ],
+        ["DENY", "no-store", "no-referrer", "nosniff"],
+      );
     }),
   );
 
@@ -142,7 +165,7 @@ describe("api responses behind a start server route", () => {
       const handler = api.route(Schema.Struct({}), () => Effect.fail(broken), {
         Broken: "unexpected",
       });
-      const app = createApi().get("/api/broken", handler);
+      const app = createApi("").get("/api/broken", handler);
       const response = yield* Effect.promise(async () =>
         getApi(app, new Request(`${origin}/api/broken`)),
       );

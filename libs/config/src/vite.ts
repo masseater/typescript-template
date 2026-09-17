@@ -31,33 +31,13 @@ function previewDevVars(appRoot: string): Plugin {
   };
 }
 
-const serverOnlyModule =
-  /\/(?:libs\/(?:auth|db)\/src\/|apps\/[^/]+\/src\/(?:api|runtime|server)\.ts$)|\/node_modules\/(?:elysia|drizzle-orm|kysely)\//u;
-
-function leakedModules(chunk: object): string[] {
-  if (!("modules" in chunk) || typeof chunk.modules !== "object" || chunk.modules === null) {
-    return [];
-  }
-  return Object.keys(chunk.modules).filter((id) => serverOnlyModule.test(id.replaceAll("\\", "/")));
-}
-
-function clientBoundary(): Plugin {
-  return {
-    apply: "build",
-    applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
-    generateBundle(_options: unknown, bundle: Readonly<Record<string, object>>) {
-      const leaked = Object.values(bundle)
-        .flatMap((chunk) => leakedModules(chunk))
-        .map((id) => path.relative(process.cwd(), id))
-        .toSorted();
-      const [first] = leaked;
-      if (first !== undefined) {
-        this.error(`${leaked.length} server modules reached the browser bundle, e.g. ${first}`);
-      }
-    },
-    name: "template-client-boundary",
-  };
-}
+const serverOnlyFiles: (string | RegExp)[] = [
+  "**/src/**/{api,runtime,server}.ts",
+  "**/src/**/*-api.ts",
+  "**/libs/auth/src/**",
+];
+const serverOnlySpecifiers: (string | RegExp)[] = ["elysia", /^elysia\//u];
+const importProtection = { client: { files: serverOnlyFiles, specifiers: serverOnlySpecifiers } };
 
 const envFileLoader = "tanstack-start-core:load-env";
 
@@ -103,4 +83,4 @@ const appRun = {
   tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
 
-export { appRun, appServer, clientBoundary, previewDevVars, withoutEnvFileLoader };
+export { appRun, appServer, importProtection, previewDevVars, withoutEnvFileLoader };

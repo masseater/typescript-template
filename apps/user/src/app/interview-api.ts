@@ -5,23 +5,22 @@ import { openInterview, restartInterview, saveInterview, takeTurn } from "@templ
 import type { ApiRoutes } from "@template/runtime/http";
 import type { AppServices } from "@template/runtime";
 import type { Interviewer } from "@template/interview";
+import { httpStatus } from "@template/observability";
 import { unavailable } from "@template/runtime/account";
 import { verifySession } from "@template/auth";
 
-const conflict = 409;
-const tooManyRequests = 429;
 const Empty = Schema.Struct({});
 const failures = {
   ...unavailable,
   InterviewConflict: {
     message: "別の画面で会話が進んでいます。読み込み直してください。",
-    status: conflict,
+    status: httpStatus.conflict,
   },
   InterviewLimitReached: {
     message: "今日はこれ以上話せません。スキップと終了は使えます。明日また話しかけてください。",
-    status: tooManyRequests,
+    status: httpStatus.tooManyRequests,
   },
-  TurnRejected: { message: "いまはその操作を受け付けられません。", status: conflict },
+  TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
 };
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -51,11 +50,11 @@ const restart = Effect.fn("interview.api.restart")(function* restart(request: Re
 });
 
 function interviewApi(api: ApiRoutes<AppServices | Interviewer>) {
-  return createApi()
-    .get("/api/interview", api.route(InterviewView, open, failures))
-    .post("/api/interview/turns", api.route(InterviewView, turn, failures))
-    .post("/api/interview/sheet", api.route(InterviewView, saveSheet, failures))
-    .post("/api/interview/restart", api.route(InterviewView, restart, failures));
+  return createApi("")
+    .get("/interview", api.route(InterviewView, open, failures))
+    .post("/interview/turns", api.route(InterviewView, turn, failures))
+    .post("/interview/sheet", api.route(InterviewView, saveSheet, failures))
+    .post("/interview/restart", api.route(InterviewView, restart, failures));
 }
 
 export { interviewApi };

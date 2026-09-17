@@ -2,7 +2,7 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 import {
   appRun,
   appServer,
-  clientBoundary,
+  importProtection,
   previewDevVars,
   withoutEnvFileLoader,
 } from "@template/config/vite";
@@ -20,7 +20,6 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
   build: { sourcemap: "hidden" },
   plugins: [
     previewDevVars(import.meta.dirname),
-    clientBoundary(),
     devBoundary("user"),
     cloudflare({
       config: {
@@ -38,6 +37,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     tailwindcss(),
     ...withoutEnvFileLoader(
       tanstackStart({
+        importProtection,
         router: {
           entry: "app/router.tsx",
           generatedRouteTree: "app/routeTree.gen.ts",

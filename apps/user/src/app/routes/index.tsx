@@ -1,26 +1,22 @@
-import { apiData, apiDataOrNone } from "@template/runtime/client";
+import { apiData, apiDataOrNone, apiServerClient } from "@template/runtime/client";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { createIsomorphicFn, createServerFn } from "@tanstack/react-start";
 import { ProfilePage } from "#pages/profile/index.ts";
 import { ProfileView } from "@template/runtime/contracts";
 import type { ReactElement } from "react";
-import { getRequest } from "@tanstack/react-start/server";
-import { treaty } from "@elysiajs/eden";
-import { userApi } from "#app/api.ts";
+import { createIsomorphicFn } from "@tanstack/react-start";
 import { userClient } from "#app/api-client.ts";
 
 type Profile = typeof ProfileView.Type;
 
-const loadOnServer = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Profile | undefined> =>
-    apiDataOrNone(
-      ProfileView,
-      await treaty(userApi, { headers: getRequest().headers, parseDate: false }).api.profile.get(),
-    ),
-);
-
 const loadProfile = createIsomorphicFn()
-  .server(async (): Promise<Profile | undefined> => loadOnServer())
+  .server(async (): Promise<Profile | undefined> => {
+    const [{ userApi }, { getRequest }] = await Promise.all([
+      import("#app/api.ts"),
+      import("@tanstack/react-start/server"),
+    ]);
+    const headers = { cookie: getRequest().headers.get("cookie") ?? "" };
+    return apiDataOrNone(ProfileView, await apiServerClient(userApi, headers).api.profile.get());
+  })
   .client(async (): Promise<Profile | undefined> =>
     apiDataOrNone(ProfileView, await userClient().profile.get()),
   );

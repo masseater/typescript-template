@@ -3,7 +3,12 @@ import { Effect, Result } from "effect";
 import { httpStatus, observeRequest } from "@template/observability";
 import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
+import { secureResponse } from "./responses.ts";
 
+interface StartHandler {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  readonly fetch: (request: Request) => Promise<Response> | Response;
+}
 interface FetchWorker {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
@@ -77,5 +82,13 @@ function serveApp<Requirements>(
   });
 }
 
-export { serveApp, serveWorker };
+function startRoute(
+  handler: StartHandler,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+): (request: Request) => Effect.Effect<Response> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
+}
+
+export { serveApp, serveWorker, startRoute };
 export type { AppRoute, FetchWorker };

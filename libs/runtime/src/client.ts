@@ -1,6 +1,8 @@
 import { Result, Schema } from "effect";
+import type { AnyElysia } from "elysia";
 import { ErrorBody } from "./contracts.ts";
 import { httpStatus } from "@template/observability";
+import { treaty } from "@elysiajs/eden";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 
@@ -55,5 +57,18 @@ function apiDataOrNone<Contract extends Decodable>(
   return reply.error?.status === httpStatus.unauthorized ? undefined : apiData(contract, reply);
 }
 
-export { apiData, apiDataOrNone, decodeJson };
-export type { ApiReply };
+function apiServerClient<App extends AnyElysia>(
+  app: App,
+  headers: Readonly<Record<string, string>>,
+): ReturnType<typeof treaty<App, string>> {
+  return treaty(app, { headers, parseDate: false });
+}
+
+function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
+  return treaty<App>(globalThis.location.origin, {
+    fetch: { cache: "no-store", credentials: "same-origin", redirect: "error" },
+    parseDate: false,
+  });
+}
+
+export { apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson };

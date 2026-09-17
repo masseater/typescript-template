@@ -1,8 +1,8 @@
 import type { adminApi } from "./api.ts";
-import { treaty } from "@elysiajs/eden";
+import { apiClient } from "@template/runtime/client";
 
-function adminClient(): ReturnType<typeof treaty<typeof adminApi>>["api"] {
-  return treaty<typeof adminApi>(globalThis.location.origin, { parseDate: false }).api;
+function adminClient(): ReturnType<typeof apiClient<typeof adminApi>>["api"] {
+  return apiClient<typeof adminApi>().api;
 }
 
 export { adminClient };

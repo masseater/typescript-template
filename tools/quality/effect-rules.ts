@@ -1,4 +1,4 @@
-import type { LintContext, Node } from "./lint-context.ts";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
@@ -9,6 +9,22 @@ function filename(context: LintContext): string {
   return context.filename.replaceAll("\\", "/");
 }
 
+function definesFileRoute(context: LintContext, node: Node): boolean {
+  return (
+    node.type === "CallExpression" &&
+    node.callee.type === "CallExpression" &&
+    origins(context, node.callee.callee).some((origin) => origin[1] === "createFileRoute")
+  );
+}
+
+function routeOptions(node: Node): NodeOf<"Property">[] {
+  const [options] = node.type === "CallExpression" ? node.arguments : [];
+  if (options?.type !== "ObjectExpression") {
+    return [];
+  }
+  return options.properties.filter((property) => property.type === "Property");
+}
+
 function servesElysia(context: LintContext, node: Node): boolean {
   return (
     node.type === "CallExpression" &&
@@ -16,6 +32,17 @@ function servesElysia(context: LintContext, node: Node): boolean {
       (origin) => origin.join(".") === elysiaServerOrigin.join("."),
     )
   );
+}
+
+function reportForeignServer(context: LintContext, node: Node): void {
+  if (!definesFileRoute(context, node)) {
+    return;
+  }
+  for (const property of routeOptions(node)) {
+    if (propertyName(context, property) === "server" && !servesElysia(context, property.value)) {
+      reportViolation(context, property);
+    }
+  }
 }
 
 function effectStackVisitor(context: LintContext): Visitor {
@@ -35,6 +62,11 @@ function effectStackVisitor(context: LintContext): Visitor {
     }
   }
   return {
+    CallExpression(node: Node): void {
+      if (startRoute) {
+        reportForeignServer(context, node);
+      }
+    },
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
         check(node.source, false);
@@ -53,15 +85,6 @@ function effectStackVisitor(context: LintContext): Visitor {
     ImportExpression(node: Node): void {
       if (node.type === "ImportExpression") {
         check(node.source, false);
-      }
-    },
-    Property(node: Node): void {
-      if (!startRoute || node.type !== "Property") {
-        return;
-      }
-      const name = propertyName(context, node);
-      if (name === "handlers" || (name === "server" && !servesElysia(context, node.value))) {
-        reportViolation(context, node);
       }
     },
   };

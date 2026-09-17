@@ -1,8 +1,9 @@
 import { ProfileUpdate, ProfileView } from "@template/runtime/contracts";
 import { UserNotFound, getProfile, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
-import { apiRoutes, createApi, readJsonBody } from "@template/runtime/http";
+import { apiRoot, apiRoutes, createApi, readJsonBody } from "@template/runtime/http";
 import { Effect } from "effect";
+import { httpStatus } from "@template/observability";
 import { interviewApi } from "./interview-api.ts";
 import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
@@ -10,14 +11,14 @@ import { verifySession } from "@template/auth";
 const api = apiRoutes(runtime);
 const failures = {
   ...unavailable,
-  UserNotFound: { message: "対象が見つかりません。", status: 404 },
+  UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-const userApi = createApi()
+const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(interviewApi(api))
   .get(
-    "/api/profile",
+    "/profile",
     api.route(
       ProfileView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -34,7 +35,7 @@ const userApi = createApi()
     ),
   )
   .patch(
-    "/api/profile",
+    "/profile",
     api.route(
       ProfileView,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

@@ -49,6 +49,13 @@ export default defineConfig({
     },
     overrides: [
       {
+        files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts", "libs/runtime/src/account.ts"],
+        rules: {
+          "typescript/explicit-function-return-type": "off",
+          "typescript/explicit-module-boundary-types": "off",
+        },
+      },
+      {
         files: ["libs/ui/src/shared/ui/**"],
         rules: { "shadcn/no-restyle": "off" },
       },
@@ -84,10 +91,7 @@ export default defineConfig({
     ],
     rules: {
       "eslint/func-style": ["error", "declaration"],
-      "eslint/new-cap": [
-        "error",
-        { capIsNewExceptionPattern: "^(?:Schema|Context|Data|handlers)\\." },
-      ],
+      "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." }],
       "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
       "eslint/no-magic-numbers": [
         "error",
@@ -153,11 +157,11 @@ export default defineConfig({
       "typescript/consistent-return": "off",
       "typescript/explicit-function-return-type": [
         "error",
-        { allowedNames: ["accountApi", "createApi", "createAuth", "interviewApi", "sessionApi"] },
+        { allowedNames: ["createApi", "createAuth"] },
       ],
       "typescript/explicit-module-boundary-types": [
         "error",
-        { allowedNames: ["accountApi", "createApi", "createAuth", "interviewApi", "sessionApi"] },
+        { allowedNames: ["createApi", "createAuth"] },
       ],
       "typescript/no-explicit-any": "error",
       "typescript/no-floating-promises": "error",

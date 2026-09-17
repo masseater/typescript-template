@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as SecurityRouteImport } from './routes/security'
+import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known.$'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 
 const SplatRoute = SplatRouteImport.update({
@@ -30,9 +32,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
+  id: '/.well-known/$',
+  path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
@@ -45,14 +57,18 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/security': typeof SecurityRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/api/$': typeof ApiSplatRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/security': typeof SecurityRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/api/$': typeof ApiSplatRoute
 }
 export interface FileRoutesById {
@@ -60,22 +76,48 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/security': typeof SecurityRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/api/$': typeof ApiSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/$' | '/consent' | '/login' | '/security' | '/api/$'
+  fullPaths:
+    | '/$'
+    | '/consent'
+    | '/login'
+    | '/mcp'
+    | '/security'
+    | '/.well-known/$'
+    | '/api/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/$' | '/consent' | '/login' | '/security' | '/api/$'
-  id: '__root__' | '/$' | '/consent' | '/login' | '/security' | '/api/$'
+  to:
+    | '/$'
+    | '/consent'
+    | '/login'
+    | '/mcp'
+    | '/security'
+    | '/.well-known/$'
+    | '/api/$'
+  id:
+    | '__root__'
+    | '/$'
+    | '/consent'
+    | '/login'
+    | '/mcp'
+    | '/security'
+    | '/.well-known/$'
+    | '/api/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   ConsentRoute: typeof ConsentRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   SecurityRoute: typeof SecurityRoute
+  DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
 
@@ -102,11 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/security': {
       id: '/security'
       path: '/security'
       fullPath: '/security'
       preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/$': {
+      id: '/.well-known/$'
+      path: '/.well-known/$'
+      fullPath: '/.well-known/$'
+      preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/$': {
@@ -123,7 +179,9 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   ConsentRoute: ConsentRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   SecurityRoute: SecurityRoute,
+  DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport
@@ -131,10 +189,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

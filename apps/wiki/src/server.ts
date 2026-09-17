@@ -1,7 +1,6 @@
-import { createAppWorker } from "@template/runtime/app";
+import { serveApp, startRoute } from "@template/runtime/worker";
+import handler from "@tanstack/react-start/server-entry";
 import { runtime } from "./runtime.ts";
-import { wikiApi } from "./api.ts";
-import { wikiRoute } from "./routing.ts";
 
 // oxlint-disable-next-line import/no-default-export
-export default createAppWorker({ api: wikiApi, route: wikiRoute, runtime });
+export default serveApp(runtime, startRoute(handler));

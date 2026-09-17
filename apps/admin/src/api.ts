@@ -7,25 +7,38 @@ import {
   UserListQuery,
 } from "@template/runtime/contracts";
 import { accountApi, unavailable } from "@template/runtime/account";
-import { apiRoutes, createApi, readJsonBody, readSearchParams } from "@template/runtime/http";
+import {
+  apiRoot,
+  apiRoutes,
+  createApi,
+  readJsonBody,
+  readSearchParams,
+} from "@template/runtime/http";
 import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
 import { Effect } from "effect";
+import { httpStatus } from "@template/observability";
 import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
 const api = apiRoutes(runtime);
-const forbidden = { message: "この操作は許可されていません。", status: 403 };
+const forbidden = { message: "この操作は許可されていません。", status: httpStatus.forbidden };
 const failures = {
   ...unavailable,
   AdminStrongSessionRequired: forbidden,
-  LastAdminRequired: { message: "最後の管理者は削除・降格できません。", status: 409 },
-  TargetUnavailable: { message: "対象が存在しないか、操作権限が失効しています。", status: 409 },
+  LastAdminRequired: {
+    message: "最後の管理者は削除・降格できません。",
+    status: httpStatus.conflict,
+  },
+  TargetUnavailable: {
+    message: "対象が存在しないか、操作権限が失効しています。",
+    status: httpStatus.conflict,
+  },
 };
 
-const adminApi = createApi()
+const adminApi = createApi(apiRoot)
   .use(accountApi(api))
   .get(
-    "/api/users",
+    "/users",
     api.route(
       UserList,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -39,7 +52,7 @@ const adminApi = createApi()
     ),
   )
   .patch(
-    "/api/users",
+    "/users",
     api.route(
       RoleChanged,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -53,7 +66,7 @@ const adminApi = createApi()
     ),
   )
   .delete(
-    "/api/users",
+    "/users",
     api.route(
       UserDeleted,
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

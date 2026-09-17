@@ -45,22 +45,22 @@ const forbiddenCode = [
   ],
   [
     "apps/user/src/routes/api.probe.ts",
-    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
     "effect-stack",
   ],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    "export const Route = { server: { handlers: { GET: () => new Response() } } };",
+    'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
     "effect-stack",
   ],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    'import { ownServer } from "../own.ts"; export const Route = { server: ownServer() };',
+    'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: ownServer() });',
     "effect-stack",
   ],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    'import { userApi } from "../api.ts"; export const Route = { server: { handlers: userApi } };',
+    'import { createFileRoute } from "@tanstack/react-router"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { handlers: userApi } });',
     "effect-stack",
   ],
   [
@@ -215,8 +215,9 @@ const validBoundaries = [
   ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    'import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = { server: elysiaServer(userApi) };',
+    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
   ],
+  ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;
 
 describe("project lint rules on dependency boundaries", () => {

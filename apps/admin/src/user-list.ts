@@ -61,13 +61,14 @@ async function fetchUsers(query: Readonly<Record<string, string>>): Promise<User
 }
 
 function useUserList(search: UsersSearch): Readonly<{ reload: () => void; state: UserListState }> {
-  const path = new URLSearchParams(userListQuery(search)).toString();
+  const query = userListQuery(search);
+  const path = new URLSearchParams(query).toString();
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>();
   useEffect(() => {
     const controller = { active: true };
     async function load(): Promise<void> {
-      const state = await fetchUsers(Object.fromEntries(new URLSearchParams(path)));
+      const state = await fetchUsers(query);
       if (controller.active) {
         setOutcome({ attempt, path, state });
       }
@@ -76,7 +77,7 @@ function useUserList(search: UsersSearch): Readonly<{ reload: () => void; state:
     return (): void => {
       controller.active = false;
     };
-  }, [attempt, path]);
+  }, [attempt, path, query]);
   const reload = useCallback(() => {
     setAttempt((current) => current + 1);
   }, []);

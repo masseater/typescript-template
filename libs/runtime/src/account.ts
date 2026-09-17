@@ -25,22 +25,22 @@ function emailVerificationFailure(error: EmailVerificationFailed): Failure {
 }
 
 function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
-  return createApi()
-    .all("/api/auth/*", api.raw(handleAuthRequest, unavailable))
-    .post("/api/telemetry", api.raw(ingestBrowser, {}))
-    .get("/api/health", api.route(HealthView, health, unavailable))
+  return createApi("")
+    .all("/auth/*", api.raw(handleAuthRequest, unavailable))
+    .post("/telemetry", api.raw(ingestBrowser, {}))
+    .get("/health", api.route(HealthView, health, unavailable))
     .get(
-      "/api/session",
+      "/session",
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
     );
 }
 
 function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
-  return createApi()
+  return createApi("")
     .use(sessionApi(api))
     .post(
-      "/api/verify-email",
+      "/verify-email",
       api.route(
         EmailVerified,
         // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

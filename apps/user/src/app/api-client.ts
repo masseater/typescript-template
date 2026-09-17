@@ -1,8 +1,8 @@
-import { treaty } from "@elysiajs/eden";
+import { apiClient } from "@template/runtime/client";
 import type { userApi } from "./api.ts";
 
-function userClient(): ReturnType<typeof treaty<typeof userApi>>["api"] {
-  return treaty<typeof userApi>(globalThis.location.origin, { parseDate: false }).api;
+function userClient(): ReturnType<typeof apiClient<typeof userApi>>["api"] {
+  return apiClient<typeof userApi>().api;
 }
 
 export { userClient };

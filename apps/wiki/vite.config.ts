@@ -2,7 +2,7 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 import {
   appRun,
   appServer,
-  clientBoundary,
+  importProtection,
   previewDevVars,
   withoutEnvFileLoader,
 } from "@template/config/vite";
@@ -21,7 +21,6 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
   build: { sourcemap: "hidden" },
   plugins: [
     previewDevVars(import.meta.dirname),
-    clientBoundary(),
     devBoundary("wiki"),
     cloudflare({
       config: {
@@ -38,7 +37,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     }),
     fumadocsMdx(),
     tailwindcss(),
-    ...withoutEnvFileLoader(tanstackStart()),
+    ...withoutEnvFileLoader(tanstackStart({ importProtection })),
     react(),
   ],
   preview: appServer("wiki"),
