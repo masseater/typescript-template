@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@template/ui/ui";
+import { nextRoles, roleLabels } from "#user-labels.ts";
 import { EllipsisIcon } from "lucide-react";
 import type { ListedUser } from "#user-list.ts";
 import type { ReactElement } from "react";
@@ -26,7 +27,7 @@ function RowActionMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={onRoleChange}>
-          {user.role === "admin" ? "一般ユーザーにする" : "管理者にする"}
+          {`${roleLabels[nextRoles[user.role]]}にする`}
         </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={onDelete}>
           削除

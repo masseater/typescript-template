@@ -1,3 +1,4 @@
 const usersPageSize = 50;
+const secondPage = 2;
 
-export { usersPageSize };
+export { secondPage, usersPageSize };

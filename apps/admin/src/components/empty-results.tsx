@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { Status } from "@template/ui/ui";
 import type { UsersSearch } from "#users-search.ts";
-import { normalizeUsersSearch } from "#users-search.ts";
+import { omit } from "es-toolkit";
 import { useMemo } from "react";
 
 const linkClassName = "text-link underline hover:text-link-hover";
@@ -12,7 +12,7 @@ function EmptyResults({
   search,
 }: Readonly<{ beyondLastPage: boolean; search: UsersSearch }>): ReactElement {
   const target = useMemo(
-    () => (beyondLastPage ? normalizeUsersSearch({ ...search, page: 1 }) : {}),
+    () => (beyondLastPage ? omit(search, ["page"]) : {}),
     [beyondLastPage, search],
   );
   return (

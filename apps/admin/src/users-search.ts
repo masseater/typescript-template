@@ -1,16 +1,15 @@
-import { EmailVerificationFilter, Role, UserKeyword } from "@template/runtime/contracts";
+import { BooleanText, Role, UserKeyword } from "@template/runtime/contracts";
 import { Option, Schema } from "effect";
-import { usersPageSize } from "#users-pagination.ts";
-
-const SECOND_PAGE = 2;
+import { secondPage, usersPageSize } from "#users-pagination.ts";
 
 const PageNumber = Schema.Union([Schema.Number, Schema.NumberFromString]).check(
   Schema.isInt(),
-  Schema.isGreaterThanOrEqualTo(SECOND_PAGE),
+  Schema.isGreaterThanOrEqualTo(secondPage),
 );
+const Verified = Schema.Union([Schema.Boolean, BooleanText]);
 
 const isSearchRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
-const isVerificationText = Schema.is(EmailVerificationFilter);
+const isJsonScalar = Schema.is(Schema.Union([Schema.Number, Schema.Boolean, Schema.Null]));
 
 interface UsersSearch {
   readonly keyword?: typeof UserKeyword.Type;
@@ -31,17 +30,13 @@ function decoded<Type>(
 function normalizeUsersSearch(raw: unknown): UsersSearch {
   const search = isSearchRecord(raw) ? raw : {};
   const keywordInput = search["keyword"];
-  const verifiedInput = search["verified"];
   const keyword = decoded(
     UserKeyword,
-    typeof keywordInput === "number" ? String(keywordInput) : keywordInput,
+    isJsonScalar(keywordInput) ? String(keywordInput) : keywordInput,
   );
   const page = decoded(PageNumber, search["page"]);
   const role = decoded(Role, search["role"]);
-  const verified = decoded(
-    Schema.Boolean,
-    isVerificationText(verifiedInput) ? verifiedInput === "true" : verifiedInput,
-  );
+  const verified = decoded(Verified, search["verified"]);
   return {
     ...(keyword && { keyword: keyword.value }),
     ...(page && { page: page.value }),
@@ -58,7 +53,7 @@ function userListRequestPath(search: UsersSearch): string {
   for (const [name, value] of [
     ["keyword", search.keyword],
     ["role", search.role],
-    ["verified", search.verified === undefined ? undefined : String(search.verified)],
+    ["emailVerified", search.verified === undefined ? undefined : String(search.verified)],
   ] as const) {
     if (value !== undefined) {
       params.set(name, value);

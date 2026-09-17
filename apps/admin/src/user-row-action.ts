@@ -2,6 +2,7 @@ import { RoleChanged, UserDeleted } from "@template/runtime/contracts";
 import { useCallback, useState } from "react";
 import type { ListedUser } from "#user-list.ts";
 import { errorMessage } from "@template/ui";
+import { nextRoles } from "#user-labels.ts";
 import { requestJson } from "@template/runtime/client";
 import { useToast } from "@template/ui/ui";
 
@@ -21,7 +22,7 @@ async function perform(user: ListedUser, operation: RowOperation): Promise<strin
     await requestJson("/api/users", UserDeleted, { body: { id: user.id }, method: "DELETE" });
     return `${user.email} を削除しました。`;
   }
-  const role = user.role === "admin" ? "user" : "admin";
+  const role = nextRoles[user.role];
   await requestJson("/api/users", RoleChanged, { body: { id: user.id, role }, method: "PATCH" });
   return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
 }

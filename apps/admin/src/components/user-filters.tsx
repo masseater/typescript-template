@@ -1,21 +1,9 @@
 import { Button, Field, SelectField } from "@template/ui/ui";
+import { roleOptions, verificationOptions } from "#user-labels.ts";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#users-search.ts";
+import { maximumKeywordLength } from "@template/runtime/contracts";
 import { useUserFilterForm } from "#user-filter-form.ts";
-
-const KEYWORD_LIMIT = 100;
-
-const roleOptions = [
-  { label: "すべて", value: "" },
-  { label: "管理者", value: "admin" },
-  { label: "一般", value: "user" },
-] as const;
-
-const verifiedOptions = [
-  { label: "すべて", value: "" },
-  { label: "確認済み", value: "true" },
-  { label: "未確認", value: "false" },
-] as const;
 
 function UserFilters({ search }: Readonly<{ search: UsersSearch }>): ReactElement {
   const form = useUserFilterForm(search);
@@ -30,7 +18,7 @@ function UserFilters({ search }: Readonly<{ search: UsersSearch }>): ReactElemen
           label="名前・メールアドレス"
           name="keyword"
           type="search"
-          maxLength={KEYWORD_LIMIT}
+          maxLength={maximumKeywordLength}
           value={form.keyword}
           onChange={form.handleKeywordChange}
         />
@@ -48,7 +36,7 @@ function UserFilters({ search }: Readonly<{ search: UsersSearch }>): ReactElemen
         <SelectField
           label="メール確認"
           name="verified"
-          options={verifiedOptions}
+          options={verificationOptions}
           value={form.verified}
           onValueChange={form.handleVerifiedChange}
         />

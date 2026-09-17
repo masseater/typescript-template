@@ -6,23 +6,18 @@ import { useMemo } from "react";
 
 const baseClassName =
   "inline-flex min-w-8 items-center justify-center rounded-md border px-2 py-1 text-base leading-tight outline-none focus-visible:focus-indicator";
-const currentClassName = `${baseClassName} border-primary bg-primary text-primary-foreground`;
-const otherClassName = `${baseClassName} border-border bg-card text-foreground hover:bg-card-hover`;
+const activeProps = { className: "border-primary bg-primary text-primary-foreground" } as const;
+const inactiveProps = {
+  className: "border-border bg-card text-foreground hover:bg-card-hover",
+} as const;
 const exactMatch = { exact: true, includeSearch: true } as const;
 
 function PageLink({
-  current,
   label,
   page,
   search,
   text,
-}: Readonly<{
-  current: boolean;
-  label: string;
-  page: number;
-  search: UsersSearch;
-  text: string;
-}>): ReactElement {
+}: Readonly<{ label: string; page: number; search: UsersSearch; text: string }>): ReactElement {
   const target = useMemo(() => normalizeUsersSearch({ ...search, page }), [page, search]);
   return (
     <li>
@@ -30,9 +25,10 @@ function PageLink({
         to="/"
         search={target}
         activeOptions={exactMatch}
+        activeProps={activeProps}
+        inactiveProps={inactiveProps}
         aria-label={label}
-        aria-current={current ? "page" : undefined}
-        className={current ? currentClassName : otherClassName}
+        className={baseClassName}
       >
         {text}
       </Link>

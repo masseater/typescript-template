@@ -1,3 +1,4 @@
+import { nextRoles, roleLabels } from "#user-labels.ts";
 import { ConfirmDialog } from "@template/ui/ui";
 import type { ListedUser } from "#user-list.ts";
 import type { ReactElement } from "react";
@@ -10,7 +11,7 @@ function UserRowActions({
 }: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
   const action = useUserRowAction(user, onChanged);
   const deleting = action.confirming === "delete";
-  const nextRole = user.role === "admin" ? "一般ユーザー" : "管理者";
+  const nextRole = roleLabels[nextRoles[user.role]];
   return (
     <>
       <RowActionMenu

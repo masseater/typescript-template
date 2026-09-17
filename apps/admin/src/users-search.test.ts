@@ -18,6 +18,10 @@ describe("users page search normalization", () => {
       normalizeUsersSearch({ keyword: NUMERIC_KEYWORD, page: "2", verified: "true" }),
     ).toStrictEqual({ keyword: "2026", page: 2, verified: true });
     expect(normalizeUsersSearch({ verified: "false" })).toStrictEqual({ verified: false });
+    expect(normalizeUsersSearch({ keyword: true })).toStrictEqual({ keyword: "true" });
+    expect(normalizeUsersSearch(JSON.parse('{"keyword":null}'))).toStrictEqual({
+      keyword: "null",
+    });
   });
 
   it("drops malformed conditions and keeps the rest", () => {
@@ -54,10 +58,10 @@ describe("user list request path", () => {
   it("turns the page number into an offset and forwards the filters", () => {
     expect.hasAssertions();
     expect(userListRequestPath({ keyword: "花子", page: 3, role: "user", verified: true })).toBe(
-      "/api/users?limit=50&offset=100&keyword=%E8%8A%B1%E5%AD%90&role=user&verified=true",
+      "/api/users?limit=50&offset=100&keyword=%E8%8A%B1%E5%AD%90&role=user&emailVerified=true",
     );
     expect(userListRequestPath({ verified: false })).toBe(
-      "/api/users?limit=50&offset=0&verified=false",
+      "/api/users?limit=50&offset=0&emailVerified=false",
     );
     expect(userListRequestPath({})).toBe("/api/users?limit=50&offset=0");
   });

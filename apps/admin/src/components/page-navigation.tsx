@@ -15,15 +15,7 @@ function PageNavigation({
   return (
     <nav aria-label="ページ送り">
       <ul className="flex flex-wrap items-center gap-1">
-        {current > 1 && (
-          <PageLink
-            page={current - 1}
-            search={search}
-            label="前のページ"
-            text="‹"
-            current={false}
-          />
-        )}
+        {current > 1 && <PageLink page={current - 1} search={search} label="前のページ" text="‹" />}
         {pageItems({ current, last }).map((item) =>
           item.kind === "gap" ? (
             <PageGap key={`gap-${item.after}`} />
@@ -34,18 +26,11 @@ function PageNavigation({
               search={search}
               label={`${item.page} ページ目`}
               text={String(item.page)}
-              current={item.page === current}
             />
           ),
         )}
         {current < last && (
-          <PageLink
-            page={current + 1}
-            search={search}
-            label="次のページ"
-            text="›"
-            current={false}
-          />
+          <PageLink page={current + 1} search={search} label="次のページ" text="›" />
         )}
       </ul>
     </nav>

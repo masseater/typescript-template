@@ -12,14 +12,14 @@ describe("user list query parameters", () => {
     Effect.gen(function* program() {
       const query = yield* readSearchParams(
         UserListQuery,
-        usersRequest("limit=50&offset=100&keyword=%20Alice%20&role=user&verified=false"),
+        usersRequest("limit=50&offset=100&keyword=%20Alice%20&role=user&emailVerified=false"),
       );
       assert.deepStrictEqual(query, {
+        emailVerified: false,
         keyword: "Alice",
         limit: 50,
         offset: 100,
         role: "user",
-        verified: "false",
       });
     }),
   );
@@ -35,7 +35,7 @@ describe("user list query parameters", () => {
 
   it.effect("rejects malformed filters", () =>
     Effect.gen(function* program() {
-      for (const query of ["role=owner", "verified=yes", "keyword=", "unknown=1"]) {
+      for (const query of ["role=owner", "emailVerified=yes", "keyword=", "verified=true"]) {
         const failure = yield* readSearchParams(UserListQuery, usersRequest(query)).pipe(
           Effect.flip,
         );

@@ -55,14 +55,14 @@ function pageNumber(
 }
 
 const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
-const EmailVerificationFilter = Schema.Literals(["true", "false"]);
+const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
 
 const UserListQuery = Schema.Struct({
+  emailVerified: Schema.optionalKey(BooleanText),
   keyword: Schema.optionalKey(UserKeyword),
   limit: pageNumber(defaultPageSize, 1, maximumPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
   role: Schema.optionalKey(Role),
-  verified: Schema.optionalKey(EmailVerificationFilter),
 });
 
 const UserSummary = Schema.Struct({
@@ -92,7 +92,7 @@ const HealthView = Schema.Struct({
 });
 
 export {
-  EmailVerificationFilter,
+  BooleanText,
   EmailVerificationRequest,
   EmailVerified,
   ErrorBody,
@@ -108,4 +108,5 @@ export {
   UserKeyword,
   UserList,
   UserListQuery,
+  maximumKeywordLength,
 };
