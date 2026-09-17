@@ -1,11 +1,5 @@
-import {
-  AccountToken,
-  Worker,
-  WorkerVersion,
-  WorkersCronTrigger,
-  WorkersDeployment,
-} from "@pulumi/cloudflare";
 import type { Input, Output } from "@pulumi/pulumi";
+import { Worker, WorkerVersion, WorkersCronTrigger, WorkersDeployment } from "@pulumi/cloudflare";
 import type { WorkerVersionArgs, types } from "@pulumi/cloudflare";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
@@ -33,8 +27,7 @@ interface WorkerOptions {
 
 interface MonitorToken {
   readonly binding: string;
-  readonly name: string;
-  readonly permission: Input<string>;
+  readonly text: Input<string>;
 }
 
 interface MonitorOptions {
@@ -79,43 +72,22 @@ function deployWorker(resource: string, options: WorkerOptions): WorkerDeploymen
   return { deployment, worker };
 }
 
-async function artifactSha256(resource: string, artifact: string): Promise<string> {
+async function assertArtifact(resource: string, artifact: string): Promise<void> {
   const content = await readFile(artifact);
   if (content.length === 0) {
     throw new Error(`${resource}_worker_artifact_empty`);
   }
-  return Buffer.from(await crypto.subtle.digest("SHA-256", content)).toString("hex");
 }
 
-function tokenBindings(
-  resource: string,
-  accountId: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  token: MonitorToken | undefined,
-): WorkerVersionBinding[] {
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function tokenBindings(token: MonitorToken | undefined): WorkerVersionBinding[] {
   if (token === undefined) {
     return [];
   }
-  const accountToken = new AccountToken(
-    `${resource}-token`,
-    {
-      accountId,
-      name: token.name,
-      policies: [
-        {
-          effect: "allow",
-          permissionGroups: [{ id: token.permission }],
-          resources: JSON.stringify({ [`com.cloudflare.api.account.${accountId}`]: "*" }),
-        },
-      ],
-    },
-    { additionalSecretOutputs: ["value"] },
-  );
-  return [{ name: token.binding, text: secret(accountToken.value), type: "secret_text" }];
+  return [{ name: token.binding, text: secret(token.text), type: "secret_text" }];
 }
 
 function monitorBindings(
-  resource: string,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options: MonitorOptions,
 ): WorkerVersionBinding[] {
@@ -132,7 +104,7 @@ function monitorBindings(
       name: "EMAIL",
       type: "send_email",
     },
-    ...tokenBindings(resource, options.accountId, options.token),
+    ...tokenBindings(options.token),
     ...Object.entries(variables).map(([name, text]: readonly [string, string]) => ({
       name,
       text,
@@ -146,18 +118,17 @@ async function deployMonitor(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options: MonitorOptions,
 ): Promise<MonitorDeployment> {
-  const contentSha256 = await artifactSha256(resource, options.artifact);
+  await assertArtifact(resource, options.artifact);
   const { deployment, worker } = deployWorker(resource, {
     accountId: options.accountId,
     name: options.name,
     version: {
-      bindings: monitorBindings(resource, options),
+      bindings: monitorBindings(options),
       mainModule: "index.js",
       migrations: { newSqliteClasses: [options.className], newTag: "v1" },
       modules: [
         {
           contentFile: options.artifact,
-          contentSha256,
           contentType: "application/javascript+module",
           name: "index.js",
         },

@@ -1,11 +1,11 @@
-import { Config, StackReference, interpolate } from "@pulumi/pulumi";
 import type { Output, OutputInstance } from "@pulumi/pulumi";
-import { parseSharedConfig, validateAuthSecret } from "./config.ts";
+import { consume, consumeSettings } from "./reference.ts";
 import type { Application } from "@template/config";
 import type { SharedConfig } from "./config.ts";
 import { WorkersCustomDomain } from "@pulumi/cloudflare";
 import { archiveSourceMaps } from "./source-maps.ts";
 import { deployWorker } from "./worker.ts";
+import { interpolate } from "@pulumi/pulumi";
 import { loadArtifacts } from "./artifacts.ts";
 import type { types } from "@pulumi/cloudflare";
 
@@ -43,20 +43,6 @@ interface BindingSources {
   readonly target: Application;
 }
 
-function authSecret(value: unknown): string {
-  if (typeof value !== "string") {
-    throw new TypeError("auth_secret_invalid");
-  }
-  return validateAuthSecret(value);
-}
-
-function stackString(value: unknown): string {
-  if (typeof value !== "string") {
-    throw new TypeError("shared_stack_output_invalid");
-  }
-  return value;
-}
-
 function runtimeBindings(sources: BindingSources): WorkerVersionBinding[] {
   const plaintext = {
     APP_ORIGIN: sources.origin,
@@ -76,16 +62,10 @@ function runtimeBindings(sources: BindingSources): WorkerVersionBinding[] {
   ];
 }
 
-async function readSharedStack(): Promise<SharedStack> {
-  const shared = new StackReference(new Config().require("sharedStack"));
-  const rawSettings = await shared.getOutputDetails("applicationSettings");
-  return {
-    outputs: {
-      authSecret: shared.requireOutput("authSecret").apply(authSecret),
-      databaseId: shared.requireOutput("databaseId").apply(stackString),
-    },
-    settings: parseSharedConfig(rawSettings.value),
-  };
+async function readSharedStack(target: Application): Promise<SharedStack> {
+  const { authSecret, settings } = await consumeSettings(target, "settings");
+  const database = consume(target, "database");
+  return { outputs: { authSecret, databaseId: database.text("databaseId") }, settings };
 }
 
 function versionArgs(release: Release): Parameters<typeof deployWorker>[1]["version"] {
@@ -112,7 +92,7 @@ async function loadReleaseArtifacts(target: Application): Promise<Release["artif
 }
 
 async function deployApplication(target: Application): Promise<Deployment> {
-  const { outputs, settings } = await readSharedStack();
+  const { outputs, settings } = await readSharedStack(target);
   const origin = settings.origins[target];
   const artifacts = await loadReleaseArtifacts(target);
   const { deployment, worker } = deployWorker(target, {

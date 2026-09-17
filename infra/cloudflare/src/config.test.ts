@@ -6,6 +6,7 @@ import {
   validateAuthSecret,
   workerSubdomain,
 } from "./config.ts";
+import { applyPlan } from "./stacks.ts";
 import { readWikiConfig } from "@template/config";
 
 const HEX_32_LENGTH = 32;
@@ -38,16 +39,21 @@ describe("deployment commands", () => {
     expect.hasAssertions();
     expect(parseDeploymentCommand(["preview", "admin"])).toStrictEqual({
       operation: "preview",
-      target: "admin",
+      targets: [{ dependencies: ["settings", "database"], stack: "admin" }],
     });
     expect(() => parseDeploymentCommand(["up", "user", "--stack", "other"])).toThrow(
       "deployment_command_invalid",
     );
-    expect(parseDeploymentCommand(["up", "wiki"])).toStrictEqual({
-      operation: "up",
-      target: "wiki",
-    });
+    expect(parseDeploymentCommand(["up", "wiki"]).targets.map(({ stack }) => stack)).toStrictEqual([
+      "wiki",
+    ]);
     expect(() => parseDeploymentCommand(["up", "unknown"])).toThrow("deployment_command_invalid");
+  });
+
+  it("applies every stack in dependency order and rejects the removed shared stack", () => {
+    expect.hasAssertions();
+    expect(parseDeploymentCommand(["up", "all"]).targets).toStrictEqual(applyPlan());
+    expect(() => parseDeploymentCommand(["up", "shared"])).toThrow("deployment_command_invalid");
   });
 });
 

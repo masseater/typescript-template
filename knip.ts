@@ -22,7 +22,12 @@ const config: KnipConfig = {
     },
     "infra/cloudflare": {
       entry: [
-        "src/shared.ts!",
+        "src/settings.ts!",
+        "src/database.ts!",
+        "src/tokens.ts!",
+        "src/budget-monitor.ts!",
+        "src/error-monitor.ts!",
+        "src/health-monitor.ts!",
         "src/user.ts!",
         "src/admin.ts!",
         "src/wiki.ts!",
@@ -30,7 +35,7 @@ const config: KnipConfig = {
         "src/cli.ts!",
         "src/check-artifacts.ts!",
         "src/engine-check.ts!",
-        "src/database.ts!",
+        "src/database-command.ts!",
       ],
       project: ["src/**/*.ts!"],
     },

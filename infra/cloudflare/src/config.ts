@@ -19,7 +19,7 @@ import {
   url,
 } from "valibot";
 import type { InferOutput } from "valibot";
-import { applications } from "@template/config";
+import { applyPlan } from "./stacks.ts";
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
@@ -59,13 +59,13 @@ const sharedSchema = object({
 });
 const deploymentCommandSchema = strictTuple([
   picklist(["preview", "up"]),
-  picklist(["shared", ...applications]),
+  picklist(["all", ...applyPlan().map(({ stack }) => stack)]),
 ]);
 
 type SharedConfig = InferOutput<typeof sharedSchema>;
 type DeploymentCommand = Readonly<{
   operation: InferOutput<typeof deploymentCommandSchema>[0];
-  target: InferOutput<typeof deploymentCommandSchema>[1];
+  targets: ReturnType<typeof applyPlan>;
 }>;
 type AccountPermission = "Billing Read" | "Workers Observability Write";
 
@@ -83,7 +83,11 @@ function parseDeploymentCommand(args: readonly string[]): DeploymentCommand {
     throw new Error("deployment_command_invalid");
   }
   const [operation, target] = parsed.output;
-  return { operation, target };
+  const plan = applyPlan();
+  return {
+    operation,
+    targets: target === "all" ? plan : plan.filter(({ stack }) => stack === target),
+  };
 }
 
 function assertDistinctOrigins(config: Readonly<Pick<SharedConfig, "origins">>): void {

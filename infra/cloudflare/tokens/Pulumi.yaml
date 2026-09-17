@@ -1,0 +1,6 @@
+name: template-tokens
+runtime:
+  name: nodejs
+  options:
+    typescript: false
+main: ../src/tokens.ts

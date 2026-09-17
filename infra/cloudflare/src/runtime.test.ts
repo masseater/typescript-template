@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import { applyPlan } from "./stacks.ts";
 
 const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/Pulumi.yaml"], {
   eager: true,
@@ -8,13 +9,12 @@ const projects = import.meta.glob<string>(["../*/Pulumi.yaml", "../../bootstrap/
 describe("pulumi runtime", () => {
   it("every Pulumi project is covered", () => {
     expect.hasAssertions();
-    expect(Object.keys(projects).toSorted()).toStrictEqual([
-      "../../bootstrap/Pulumi.yaml",
-      "../admin/Pulumi.yaml",
-      "../shared/Pulumi.yaml",
-      "../user/Pulumi.yaml",
-      "../wiki/Pulumi.yaml",
-    ]);
+    expect(new Set(Object.keys(projects))).toStrictEqual(
+      new Set([
+        "../../bootstrap/Pulumi.yaml",
+        ...applyPlan().map(({ stack }) => `../${stack}/Pulumi.yaml`),
+      ]),
+    );
   });
 
   it.for(Object.entries(projects))(
