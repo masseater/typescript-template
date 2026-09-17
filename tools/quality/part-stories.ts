@@ -102,6 +102,7 @@ function a11yRelaxations(): A11yRelaxation[] {
     );
 }
 
+const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
 const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
 const agentConfigFile = ".mcp.json";
 
@@ -112,7 +113,7 @@ function vendoredWorkerViolations(): string[] {
     .flatMap((node: unknown) => nodes(node, "declarations"))
     .find((declaration: unknown) => field(field(declaration, "id"), "name") === "PACKAGE_VERSION");
   const vendored: unknown = literal(field(declarator, "init"));
-  const manifest = createRequire(import.meta.url).resolve("msw/package.json");
+  const manifest = createRequire(partsManifest).resolve("msw/package.json");
   // oxlint-disable-next-line node/no-sync
   const installed: unknown = field(JSON.parse(readFileSync(manifest, "utf-8")), "version");
   return vendored === installed
