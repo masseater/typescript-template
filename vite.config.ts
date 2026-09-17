@@ -244,6 +244,7 @@ export default defineConfig({
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
+      mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
     },
   },
   test: {

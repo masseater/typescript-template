@@ -11,6 +11,8 @@
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
     "@shadcn/lint": "catalog:",
+    "@stryker-mutator/core": "10.0.0",
+    "@stryker-mutator/vitest-runner": "10.0.0",
     "@template/config": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",
@@ -18,7 +20,8 @@
     "steiger": "0.6.0",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitest": "^5.0.1"
   },
   "devEngines": {
     "runtime": {

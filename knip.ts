@@ -9,8 +9,10 @@ const config: KnipConfig = {
   ignoreDependencies: ["vite", "vitest"],
   workspaces: {
     ".": {
+      ignoreBinaries: ["stryker"],
       ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo", "steiger"],
       project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],
+      vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
     },
     "apps/*": application,
     "apps/user": {
