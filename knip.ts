@@ -13,7 +13,7 @@ const config: KnipConfig = {
     },
     "apps/wiki": {
       entry: ["vite.config.ts", "src/router.tsx!", "src/server.ts!", "src/**/*.test.ts"],
-      project: ["vite.config.ts", "semantic-build.ts", "src/**/*.{ts,tsx}!"],
+      project: ["vite.config.ts", "src/**/*.{ts,tsx}!"],
       ignoreDependencies: ["tailwindcss"],
     },
     "libs/db": {

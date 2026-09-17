@@ -326,9 +326,6 @@ importers:
 
   apps/wiki:
     dependencies:
-      '@huggingface/tokenizers':
-        specifier: 0.2.0
-        version: 0.2.0
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
@@ -396,9 +393,6 @@ importers:
       typescript:
         specifier: 7.0.2
         version: 7.0.2
-      valibot:
-        specifier: 1.5.0
-        version: 1.5.0(typescript@7.0.2)
       vite-plus:
         specifier: 0.3.2
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@24.12.0)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@24.12.0)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
@@ -1697,9 +1691,6 @@ packages:
 
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
-
-  '@huggingface/tokenizers@0.2.0':
-    resolution: {integrity: sha512-LidMHe1FpcSYH4vcSjXooda34pC0M8m1gmDOv7SQi6Iv+ib1zX7J3sHBCC9/3FPCkn2k1b55FneVqMRxrr99pg==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -7753,8 +7744,6 @@ snapshots:
       yargs: 17.7.3
 
   '@hexagon/base64@1.1.28': {}
-
-  '@huggingface/tokenizers@0.2.0': {}
 
   '@img/colour@1.1.0': {}
 

@@ -42,7 +42,6 @@ export default defineConfig({
       ".local/**",
       ".local-agents/**",
       "**/.wrangler/**",
-      "apps/wiki/public/semantic/**",
     ],
   },
   fmt: {
@@ -52,7 +51,6 @@ export default defineConfig({
       ".local-agents/**",
       "**/.wrangler/**",
       "**/dist/**",
-      "apps/wiki/public/semantic/**",
     ],
   },
   test: {

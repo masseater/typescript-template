@@ -33,9 +33,7 @@ function data(): ArtifactPair {
       directory: "/test/wiki/dist",
       entry: "index.js",
       workerFirst: true,
-      server: new Map([
-        ["index.js", Buffer.from('throw new Error("WIKI_SEMANTIC_ASSET_UNAVAILABLE")')],
-      ]),
+      server: new Map([["index.js", Buffer.from('ai.run("@cf/baai/bge-m3", { text })')]]),
       client: new Map([["assets/index-wiki.js", Buffer.from('document.title = "Wiki";')]]),
     },
   };

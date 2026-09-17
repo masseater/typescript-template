@@ -10,6 +10,10 @@ test("non-HTTP external operations never manufacture an HTTP status", () => {
     "external.operation": "email",
     "external.outcome": "failure",
   });
+  expect(externalAttributes("ai", undefined, false)).toEqual({
+    "external.operation": "ai",
+    "external.outcome": "success",
+  });
 });
 
 test("HTTP external operations retain the actual response status", () => {

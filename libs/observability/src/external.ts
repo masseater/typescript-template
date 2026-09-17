@@ -1,7 +1,7 @@
 import type { Attributes } from "./protocol.ts";
 
 export function externalAttributes(
-  operation: "email",
+  operation: "email" | "ai",
   status: number | undefined,
   failed: boolean,
 ): Attributes {

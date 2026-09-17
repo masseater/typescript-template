@@ -26,13 +26,14 @@ export default {
           return new Response(null, { status: 400 });
         }
         if (path.endsWith(".map")) return new Response(null, { status: 404 });
-        if (path.startsWith("/assets/") || path.startsWith("/semantic/"))
-          return runtime.config.ASSETS.fetch(incoming);
+        if (path.startsWith("/assets/")) return runtime.config.ASSETS.fetch(incoming);
         if (path === "/api/telemetry")
           return runtime.telemetry.ingestBrowser(incoming, executionContext);
         if (path === "/api/client-config") return jsonResponse({ sentry: runtime.config.sentry });
         const action = async () => {
-          const search = createWikiSearch(runtime.config.ASSETS, runtime.config.APP_ORIGIN);
+          const search = createWikiSearch(runtime.embedder(correlation), (error) =>
+            runtime.reportError(correlation, error),
+          );
           if (path === "/api/search") {
             const query = new URL(incoming.url).searchParams.get("query")?.trim() ?? "";
             return jsonResponse(query ? await search.search(query.slice(0, 200)) : []);

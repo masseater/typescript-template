@@ -187,6 +187,16 @@ test("the wiki reads its runtime settings without authentication or database bin
   });
   expect(runtime.APP_ORIGIN).toBe(settings.wikiOrigin);
   expect(runtime.sentry).toBeNull();
+  expect(runtime.AI).toBeNull();
+  const ai = { run: () => Promise.resolve({ data: [] }) };
+  expect(
+    readWikiConfig({
+      APP_ORIGIN: appPolicy(config, "wiki").origin,
+      OTEL_EXPORTER_OTLP_ENDPOINT: config.otelEndpoint,
+      ASSETS: { fetch: () => Promise.resolve(new Response()) },
+      AI: ai,
+    }).AI,
+  ).toBe(ai);
 });
 
 test.each([

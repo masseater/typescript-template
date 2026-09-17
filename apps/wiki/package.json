@@ -9,7 +9,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@huggingface/tokenizers": "0.2.0",
     "@modelcontextprotocol/server": "2.0.0",
     "@tanstack/react-router": "1.170.36",
     "@tanstack/react-start": "1.168.54",
@@ -34,7 +33,6 @@
     "@vitejs/plugin-react": "6.1.1",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "valibot": "1.5.0",
     "vite-plus": "0.3.2",
     "vitest": "4.1.11",
     "wrangler": "4.132.0"

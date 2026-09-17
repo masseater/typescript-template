@@ -314,7 +314,7 @@ export function createInstrumentation(options: InstrumentationOptions) {
 
   async function withExternalSpan<T>(
     context: RequestContext,
-    operation: "email",
+    operation: "email" | "ai",
     action: (context: RequestContext) => Promise<T>,
   ): Promise<T> {
     const start = Date.now();

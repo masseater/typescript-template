@@ -53,7 +53,7 @@ export async function deployApplication(target: AppTarget) {
   };
   const bindings: cloudflare.types.input.WorkerVersionBinding[] = [
     ...(target === "wiki"
-      ? []
+      ? [{ type: "ai", name: "AI" }]
       : [
           { type: "d1", name: "DB", id: shared.requireOutput("databaseId") },
           {

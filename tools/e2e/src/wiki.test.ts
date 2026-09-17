@@ -36,7 +36,7 @@ function toolText(result: Record<string, unknown>) {
   return string(object(content[0])["text"]);
 }
 
-test("public wiki Worker: Markdown pages, semantic search UI, MCP tools and correlated telemetry", async () => {
+test("public wiki Worker: Markdown pages, keyword search without Workers AI, MCP tools and correlated telemetry", async () => {
   const stack = await createStack();
   let stage = "pages";
   try {
@@ -55,17 +55,17 @@ test("public wiki Worker: Markdown pages, semantic search UI, MCP tools and corr
       ensure(response.status === 404, "E2E_APPLICATION_ROUTE_EXPOSED_BY_WIKI");
     }
 
-    stage = "semantic-search";
+    stage = "search";
     const search = await reader.api(
-      `/api/search?${new URLSearchParams({ query: "パスワードを使わずにサインインしたい" }).toString()}`,
+      `/api/search?${new URLSearchParams({ query: "パスキー" }).toString()}`,
     );
     ensure(search.status === 200 && Array.isArray(search.data), "E2E_WIKI_SEARCH_FAILED");
-    ensure(object(search.data[0])["url"] === "/authentication", "E2E_WIKI_SEMANTIC_RANKING_WRONG");
+    ensure(object(search.data[0])["url"] === "/authentication", "E2E_WIKI_KEYWORD_RANKING_WRONG");
     await verifyCorrelation(search, "wiki", []);
     await reader.commands(
       ["find", "role", "button", "click", "--name", "検索 ⌘ K", "--exact"],
       ["wait", 'input[placeholder="検索"]'],
-      ["fill", 'input[placeholder="検索"]', "テーブル定義を変えたい"],
+      ["fill", 'input[placeholder="検索"]', "マイグレーション"],
       ["wait", "--text", "差分から SQL を生成します。"],
     );
 
@@ -77,12 +77,12 @@ test("public wiki Worker: Markdown pages, semantic search UI, MCP tools and corr
     ensure(toolNames.join(",") === "get_page,list_pages,search", "E2E_WIKI_MCP_TOOLS_UNEXPECTED");
     const found = await mcp(stack.wikiOrigin, 2, "tools/call", {
       name: "search",
-      arguments: { query: "本番に反映したい" },
+      arguments: { query: "infra:deploy:shared" },
     });
     const results: unknown = JSON.parse(toolText(found.result));
     ensure(
       Array.isArray(results) && object(results[0])["url"] === "/deploy",
-      "E2E_WIKI_MCP_SEMANTIC_RANKING_WRONG",
+      "E2E_WIKI_MCP_KEYWORD_RANKING_WRONG",
     );
     await verifyCorrelation(found, "wiki", []);
     const page = await mcp(stack.wikiOrigin, 3, "tools/call", {

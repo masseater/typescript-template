@@ -14,7 +14,7 @@ type Build = {
 export type ArtifactPair = { user: Build; admin: Build; wiki: Build; secrets: readonly string[] };
 const adminMarkers = ["ADMIN_STRONG_SESSION_REQUIRED", "LOCAL_ADMIN_PASSWORD"];
 const adminRoute = /["'`]\/api\/users(?:["'`?])/;
-const wikiMarker = "WIKI_SEMANTIC_ASSET_UNAVAILABLE";
+const wikiMarker = "@cf/baai/bge-m3";
 const privateWikiSource = /(?:^|\/)(?:apps\/(?:user|admin)|libs\/(?:db|auth|ui))\//;
 
 async function readFiles(directory: string): Promise<Map<string, Buffer>> {

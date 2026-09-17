@@ -42,6 +42,7 @@ function requireSecureOrigin(value: string) {
 export type EmailMessage = { to: string; from: string; subject: string; text: string };
 export type EmailBinding = { send(message: EmailMessage): Promise<unknown> };
 type AssetBinding = { fetch(request: Request): Promise<Response> };
+type AiBinding = { run(model: string, inputs: { text: string[] }): Promise<unknown> };
 
 function hasFunction(value: unknown, key: string): boolean {
   return (
@@ -139,6 +140,7 @@ const wikiSchema = v.object({
   SENTRY_ENVIRONMENT: v.optional(sentrySchemas.environment),
   SENTRY_RELEASE: v.optional(sentrySchemas.release),
   ASSETS: v.custom<AssetBinding>((value) => hasFunction(value, "fetch")),
+  AI: v.optional(v.custom<AiBinding>((value) => hasFunction(value, "run"))),
 });
 
 export function readWikiConfig(input: unknown) {
@@ -147,6 +149,7 @@ export function readWikiConfig(input: unknown) {
   return {
     APP_ORIGIN: config.APP_ORIGIN,
     ASSETS: config.ASSETS,
+    AI: config.AI ?? null,
     OTEL_EXPORTER_OTLP_ENDPOINT: config.OTEL_EXPORTER_OTLP_ENDPOINT,
     otelHeaders:
       config.OTEL_EXPORTER_OTLP_HEADERS === undefined
