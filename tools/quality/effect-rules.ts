@@ -10,7 +10,7 @@ function filename(context: LintContext): string {
 function effectStackVisitor(context: LintContext): Visitor {
   const current = filename(context);
   const elysiaFactory = current.endsWith("/libs/runtime/src/http.ts");
-  const startRoute = /\/apps\/[^/]+\/src\/routes\//u.test(current);
+  const startRoute = /\/apps\/[^/]+\/src\/(?:[^/]+\/)*routes\//u.test(current);
   function check(node: Node, typeOnly: boolean): void {
     const source = staticText(context, node);
     if (source === undefined) {

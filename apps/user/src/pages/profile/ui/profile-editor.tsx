@@ -1,5 +1,5 @@
 import { Button, Field, FormColumn } from "@template/ui/ui";
-import type { ProfileForm } from "#profile-form.ts";
+import type { ProfileForm } from "#pages/profile/model/profile-form.ts";
 import type { ReactElement } from "react";
 
 const nameMaxLength = 100;
