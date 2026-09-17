@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
+    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts && vp run --filter @template/ui browsers",
     "precommit": "vp run check",
     "prepush": "vp run check && vp test run --changed origin/main && vp run --filter @template/infra-cloudflare verify:runtime && vp run build && vp run --filter @template/infra-cloudflare verify:artifacts"
   },
