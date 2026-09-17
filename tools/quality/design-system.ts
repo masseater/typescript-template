@@ -123,6 +123,12 @@ function declaredSources(css: string): string[] {
   return found;
 }
 
+function scannedDirectories(file: string, css: string): string[] {
+  return declaredSources(css).map((directory) =>
+    path.normalize(path.join(path.dirname(file), directory)),
+  );
+}
+
 function sourceViolations(app: string, file: string, css: string): string[] {
   const declared = declaredSources(css);
   if (declared.length === 0) {
@@ -141,6 +147,22 @@ function sourceViolations(app: string, file: string, css: string): string[] {
   });
 }
 
+function styledFiles(app: string): string[] {
+  return appFiles(appModules, app).filter(
+    (file) => file.endsWith(".tsx") && read(file).includes("className"),
+  );
+}
+
+function coverageViolations(app: string, scanned: readonly string[]): string[] {
+  return styledFiles(app).flatMap((file) =>
+    scanned.some((directory) => file === directory || file.startsWith(`${directory}/`))
+      ? []
+      : [
+          `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
+        ],
+  );
+}
+
 function linkViolations(app: string, file: string): string[] {
   const link = `${file.slice(`${app}/src/`.length)}?url`;
   return appFiles(appModules, app).some((module) => read(module).includes(link))
@@ -148,22 +170,25 @@ function linkViolations(app: string, file: string): string[] {
     : [`${file}: ${app} のソースから ${link} で読み込まれていません。`];
 }
 
-function appStylesheetViolations(apps: readonly string[]): string[] {
+function entryViolations(app: string, entries: readonly string[]): string[] {
   const violations: string[] = [];
-  for (const app of apps) {
+  const scanned: string[] = [];
+  for (const file of entries) {
+    violations.push(...sourceViolations(app, file, read(file)), ...linkViolations(app, file));
+    scanned.push(...scannedDirectories(file, read(file)));
+  }
+  return [...violations, ...coverageViolations(app, scanned)];
+}
+
+function appStylesheetViolations(apps: readonly string[]): string[] {
+  return apps.flatMap((app) => {
     const entries = appFiles(appStylesheets, app).filter((file) =>
       read(file).includes(partsImport),
     );
-    if (entries.length === 0) {
-      violations.push(
-        `${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`,
-      );
-    }
-    for (const file of entries) {
-      violations.push(...sourceViolations(app, file, read(file)), ...linkViolations(app, file));
-    }
-  }
-  return violations;
+    return entries.length === 0
+      ? [`${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`]
+      : entryViolations(app, entries);
+  });
 }
 
 function tokenViolations(css: string): string[] {
@@ -185,6 +210,7 @@ function tokenViolations(css: string): string[] {
 
 export {
   appStylesheetViolations,
+  coverageViolations,
   designSystemComponents,
   designSystemProbe,
   linkViolations,

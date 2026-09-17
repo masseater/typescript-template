@@ -14,7 +14,7 @@ function CheckboxField({
 }>): ReactElement {
   return (
     <FieldPrimitive.Root data-slot="field" className="flex w-fit items-center gap-2">
-      <Checkbox checked={checked} onCheckedChange={onCheckedChange} />
+      <Checkbox aria-label={label} checked={checked} onCheckedChange={onCheckedChange} />
       <FieldPrimitive.Label className={`cursor-pointer ${labelClassName}`}>
         {label}
       </FieldPrimitive.Label>

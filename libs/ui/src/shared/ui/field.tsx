@@ -43,15 +43,17 @@ function Field({
 }: Readonly<
   Pick<
     ComponentProps<"input">,
-    "inputMode" | "maxLength" | "minLength" | "name" | "pattern" | "readOnly" | "required" | "value"
+    "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
   > & {
     autoComplete?: AutoComplete;
     label: string;
-    multiline?: boolean;
     onValueChange?: (value: string) => void;
-    type?: "email" | "password" | "search" | "text";
   }
->): ReactElement {
+> &
+  Readonly<
+    | { multiline: true; pattern?: never; type?: never }
+    | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
+  >): ReactElement {
   return (
     <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>

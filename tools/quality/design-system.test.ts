@@ -1,5 +1,6 @@
 import {
   appStylesheetViolations,
+  coverageViolations,
   designSystemComponents,
   designSystemProbe,
   linkViolations,
@@ -155,6 +156,20 @@ describe("app stylesheet ownership", () => {
   it("reports a stylesheet the app never links", () => {
     expect.hasAssertions();
     expect(linkViolations("apps/wiki", "apps/wiki/src/styles/unlinked.css")).toHaveLength(1);
+  });
+});
+
+describe("app stylesheet coverage", () => {
+  it("reports a @source narrowed past the screens it has to cover", () => {
+    expect.hasAssertions();
+    expect(coverageViolations("apps/wiki", ["apps/wiki/src/styles"])).toContainEqual(
+      expect.stringContaining("apps/wiki/src/components/consent-actions.tsx"),
+    );
+  });
+
+  it("accepts a @source that covers every styled file of the app", () => {
+    expect.hasAssertions();
+    expect(coverageViolations("apps/wiki", ["apps/wiki/src/components"])).toStrictEqual([]);
   });
 });
 
