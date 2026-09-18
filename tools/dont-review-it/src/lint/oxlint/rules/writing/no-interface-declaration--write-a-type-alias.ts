@@ -7,7 +7,7 @@ const isAmbientModule = (node: ESTree.Node): boolean =>
 
 const mergesIntoAnAmbientModule = (node: ESTree.Node): boolean => {
   const { parent } = node;
-  if (parent === null || parent === undefined) return false;
+  if (parent === null) return false;
   return isAmbientModule(parent) || mergesIntoAnAmbientModule(parent);
 };
 
@@ -22,7 +22,7 @@ export const noInterfaceDeclaration = createDontReviewItRule({
     },
     messages: {
       interfaceDeclaration:
-        "An object type must not be declared with `interface` here. Write it as a `type` alias. Only an `interface` inside `declare module`, `declare global` or `declare namespace` stays, because merging into a declaration someone else owns is the one thing a `type` alias cannot do.",
+        "An object type must not be declared with `interface` here. Write it as a `type` alias. Only an `interface` inside `declare module`, `declare global` or `declare namespace` stays.",
     },
     schema: [],
   },
