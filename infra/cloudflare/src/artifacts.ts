@@ -10,7 +10,7 @@ import {
 } from "./artifact-io.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, stat } from "node:fs/promises";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { archiveSourceMaps } from "./source-maps.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 import { retainGenerations } from "./retention.ts";
-import { serverOnlyMarkers } from "@template/config/vite";
+import { serverOnlyMarkers } from "@repo/config/vite";
 import { stageFiles } from "./staging.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -35,7 +35,7 @@ const ARCHIVED_RELEASES_KEPT = 5;
 
 type ArtifactMode = "describe" | "publish" | "stage";
 
-const ArtifactWrites = Context.Reference<ArtifactMode>("template/cloudflare/ArtifactWrites", {
+const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/ArtifactWrites", {
   defaultValue: (): ArtifactMode => "describe",
 });
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);

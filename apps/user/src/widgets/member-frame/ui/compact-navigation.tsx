@@ -4,7 +4,7 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
   Icon,
-} from "@template/ui";
+} from "@repo/ui";
 import { Link } from "@tanstack/react-router";
 import { MenuIcon } from "lucide-react";
 import type { ReactElement } from "react";

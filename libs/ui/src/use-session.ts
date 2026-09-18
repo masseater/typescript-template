@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { SessionView as SessionContract } from "@template/runtime/contracts";
+import { SessionView as SessionContract } from "@repo/runtime/contracts";
 import type { SessionView } from "./protocol";
-import { decodeJson } from "@template/runtime/client";
+import { decodeJson } from "@repo/runtime/client";
 import { errorMessage } from "./protocol";
 
 interface SessionSnapshot {

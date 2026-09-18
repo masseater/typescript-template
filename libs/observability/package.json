@@ -1,5 +1,5 @@
 {
-  "name": "@template/observability",
+  "name": "@repo/observability",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,6 +13,6 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@template/config": "workspace:*"
+    "@repo/config": "workspace:*"
   }
 }

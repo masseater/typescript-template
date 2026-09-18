@@ -1,11 +1,11 @@
 import { Effect, Layer } from "effect";
-import { TestDatabase, runStatement } from "@template/db/testing";
+import { TestDatabase, runStatement } from "@repo/db/testing";
 import { assert, it } from "@effect/vitest";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
 import { Interviewer } from "./interviewer.ts";
 import { TestClock } from "effect/testing";
 import { UnderstandingFailed } from "./understanding-failed.ts";
-import { findInterview } from "@template/db/interview";
+import { findInterview } from "@repo/db/interview";
 
 type Understand = Parameters<typeof Interviewer.of>[0]["understand"];
 

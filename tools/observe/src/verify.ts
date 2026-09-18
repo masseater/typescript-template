@@ -1,7 +1,7 @@
 import { Cause, Console, Effect, Schema } from "effect";
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 import { reportFailed } from "./failure.ts";

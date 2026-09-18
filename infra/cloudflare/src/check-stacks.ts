@@ -1,9 +1,9 @@
 import { Cause, Console, Effect, Schema } from "effect";
-import { applications, grants } from "@template/config";
+import { applications, grants } from "@repo/config";
 import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";

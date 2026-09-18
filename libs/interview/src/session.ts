@@ -6,7 +6,7 @@ import {
   findInterview,
   startInterview,
   storeInterview,
-} from "@template/db/interview";
+} from "@repo/db/interview";
 import { Interviewer } from "./interviewer.ts";
 import { State } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { TextLink } from "@template/ui";
+import { TextLink } from "@repo/ui";
 
 function Biography({ own, text }: Readonly<{ own: boolean; text: string }>): ReactElement {
   if (text !== "") {
