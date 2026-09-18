@@ -1,5 +1,5 @@
 {
-  "name": "@template/auth",
+  "name": "@repo/auth",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,8 +12,8 @@
     "@better-auth/mcp": "1.7.5",
     "@better-auth/oauth-provider": "1.7.5",
     "@better-auth/passkey": "catalog:",
-    "@template/config": "workspace:*",
-    "@template/db": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
     "effect": "catalog:"

@@ -1,4 +1,4 @@
-import { Icon, NavigationLink } from "@template/ui";
+import { Icon, NavigationLink } from "@repo/ui";
 import { AccountMenu } from "./account-menu.tsx";
 import { MenuIcon } from "lucide-react";
 import type { ReactElement } from "react";

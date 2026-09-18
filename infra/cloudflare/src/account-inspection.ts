@@ -17,7 +17,7 @@ import type { AccountAccess } from "./account-read.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
 import type { StateService } from "alchemy/State";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 import { databaseVerdict } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";

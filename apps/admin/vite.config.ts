@@ -6,14 +6,14 @@ import {
   reactCompiler,
   startOptions,
   withoutEnvFileLoader,
-} from "@template/config/vite";
-import { localDatabase, localDatabasePersistence } from "@template/db/local";
+} from "@repo/config/vite";
+import { localDatabase, localDatabasePersistence } from "@repo/db/local";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
-import { devBoundary } from "@template/dev-boundary";
+import { devBoundary } from "@repo/dev-boundary";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import { workerCompatibility } from "@template/config/worker";
+import { workerCompatibility } from "@repo/config/worker";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({

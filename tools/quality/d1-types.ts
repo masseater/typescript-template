@@ -23,18 +23,18 @@ const workerTypeKinds = new Map<string, D1Kind>([
 ]);
 const templateTypes = new Map<string, ReadonlyMap<string, D1Reference>>([
   [
-    "@template/db",
+    "@repo/db",
     new Map<string, D1Reference>([
       ["DatabaseBinding", { kind: "database", path: [] }],
       ["Database", { kind: "orm", path: [] }],
     ]),
   ],
   [
-    "@template/config",
+    "@repo/config",
     new Map<string, D1Reference>([["AppConfig", { kind: "database", path: ["DB"] }]]),
   ],
   [
-    "@template/runtime",
+    "@repo/runtime",
     new Map<string, D1Reference>([
       ["AppRequestContext", { kind: "database", path: ["runtime", "config", "DB"] }],
     ]),

@@ -1,5 +1,5 @@
 import { Console, Logger, References } from "effect";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { Layer } from "effect";
 
 interface LogSink {

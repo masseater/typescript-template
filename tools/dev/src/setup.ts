@@ -18,7 +18,7 @@ import {
 import { mkdir, stat } from "node:fs/promises";
 import { Effect } from "effect";
 import type { LocalCommandFailure } from "./failure.ts";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules

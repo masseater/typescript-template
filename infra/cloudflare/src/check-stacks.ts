@@ -1,5 +1,5 @@
 import { Cause, Console, Effect, Schema } from "effect";
-import { applications, grants } from "@template/config";
+import { applications, grants } from "@repo/config";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -15,7 +15,7 @@ import {
   describeCause,
 } from "./inventory.ts";
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";

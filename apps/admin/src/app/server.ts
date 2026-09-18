@@ -1,4 +1,4 @@
-import { serveApp, startRoute } from "@template/runtime/worker";
+import { serveApp, startRoute } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { runtime } from "#shared/server-api/index.ts";
 

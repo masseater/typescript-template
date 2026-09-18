@@ -1,4 +1,4 @@
-import { NavigationLink } from "@template/ui";
+import { NavigationLink } from "@repo/ui";
 import type { ReactElement } from "react";
 
 const activeOptions = { exact: true, includeSearch: false } as const;
