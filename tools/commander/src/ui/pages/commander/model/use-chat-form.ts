@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { usePost } from "./use-post.ts";
+import { usePost } from "#ui/shared/api/index.ts";
 
 interface ChatFormState {
   readonly failed: boolean;

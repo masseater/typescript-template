@@ -1,13 +1,13 @@
 import type { ReactElement } from "react";
 
+import { useView } from "#ui/pages/commander/model/store.ts";
 import { Status } from "@repo/ui";
 
 import { ChatPane } from "./chat-pane.tsx";
 import { LedgerMissing } from "./ledger-missing.tsx";
-import { useView } from "./store.ts";
 import { TaskSide } from "./task-side.tsx";
 
-function App(): ReactElement {
+function CommanderPage(): ReactElement {
   const view = useView();
   if (view.status === "connecting") {
     return <Status variant="pending">つないでいます…</Status>;
@@ -29,4 +29,4 @@ function App(): ReactElement {
   );
 }
 
-export { App };
+export { CommanderPage };

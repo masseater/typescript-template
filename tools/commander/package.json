@@ -5,6 +5,9 @@
   "imports": {
     "#*": "./src/*"
   },
+  "scripts": {
+    "check": "steiger src/ui --fail-on-warnings"
+  },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/observability": "workspace:*",
@@ -22,6 +25,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "steiger": "0.6.0",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { App } from "./app.tsx";
+import { CommanderPage } from "#ui/pages/commander/index.ts";
 
 import styles from "./styles.css?url";
 
@@ -11,7 +11,7 @@ if (root !== null) {
   createRoot(root).render(
     <StrictMode>
       <link rel="stylesheet" href={styles} precedence="default" />
-      <App />
+      <CommanderPage />
     </StrictMode>,
   );
 }

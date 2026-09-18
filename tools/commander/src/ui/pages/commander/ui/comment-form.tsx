@@ -1,10 +1,9 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { usePost } from "#ui/shared/api/index.ts";
+import { MessageBox } from "#ui/shared/ui/index.ts";
 import { Button, Status } from "@repo/ui";
-
-import { MessageBox } from "./message-box.tsx";
-import { usePost } from "./use-post.ts";
 
 function CommentForm({ taskId }: Readonly<{ taskId: string }>): ReactElement {
   const [text, setText] = useState("");
