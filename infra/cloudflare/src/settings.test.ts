@@ -11,11 +11,11 @@ const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;
 
 function environment(
-  overrides: Readonly<Record<string, string>>,
+  overrides: Readonly<Record<string, string | undefined>>,
 ): ReturnType<typeof fromDotEnvContents> {
   return fromDotEnvContents(
     Object.entries({ ...verificationEnvironment, ...overrides })
-      .map(([key, value]) => `${key}=${value}`)
+      .flatMap(([key, value]) => (value === undefined ? [] : [`${key}=${value}`]))
       .join("\n"),
   );
 }
@@ -119,6 +119,44 @@ it.effect("accepts a sender address on the subdomain named by the prefix", () =>
   Effect.gen(function* program() {
     const config = yield* Schema.decodeUnknownEffect(SharedSettings)(settings);
     assert.strictEqual((yield* checkSharedConfig(config)).mailFrom, settings.mailFrom);
+  }),
+);
+
+it.effect("refuses an OTLP switch that has no endpoint to switch", () =>
+  Effect.forEach(["true", "false"], (enabled) =>
+    Effect.gen(function* program() {
+      const failure = yield* Effect.provideService(
+        deploymentSettings,
+        ConfigProvider,
+        environment({ TEMPLATE_OTLP_ENABLED: enabled, TEMPLATE_OTLP_ENDPOINT: undefined }),
+      ).pipe(Effect.flip);
+      assert.deepStrictEqual(describeFailure(failure, []), {
+        code: "otlp_enabled_without_endpoint",
+        keys: ["TEMPLATE_OTLP_ENABLED", "TEMPLATE_OTLP_ENDPOINT"],
+      });
+    }),
+  ),
+);
+
+it.effect("leaves OTLP unconfigured when neither the endpoint nor the switch is given", () =>
+  Effect.gen(function* program() {
+    const config = yield* Effect.provideService(
+      deploymentSettings,
+      ConfigProvider,
+      environment({ TEMPLATE_OTLP_ENABLED: undefined, TEMPLATE_OTLP_ENDPOINT: undefined }),
+    );
+    assert.isUndefined(config.otlp);
+  }),
+);
+
+it.effect("an endpoint without the switch keeps OTLP enabled", () =>
+  Effect.gen(function* program() {
+    const config = yield* Effect.provideService(
+      deploymentSettings,
+      ConfigProvider,
+      environment({ TEMPLATE_OTLP_ENABLED: undefined }),
+    );
+    assert.deepStrictEqual(config.otlp, { enabled: true, endpoint: settings.otlp.endpoint });
   }),
 );
 
