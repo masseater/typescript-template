@@ -34,7 +34,6 @@ const account = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [index("account_user_id_idx").on(table.userId)],
 );
 
@@ -49,7 +48,6 @@ const verification = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     value: text("value").notNull(),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
@@ -66,7 +64,6 @@ const twoFactor = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     verified: integer("verified", { mode: "boolean" }).notNull().default(false),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [uniqueIndex("two_factor_user_id_idx").on(table.userId)],
 );
 
@@ -88,7 +85,6 @@ const passkey = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [
     index("passkey_user_id_idx").on(table.userId),
     uniqueIndex("passkey_credential_id_unique").on(table.credentialID),
@@ -103,7 +99,6 @@ const rateLimit = sqliteTable(
     key: text("key").notNull(),
     lastRequest: integer("last_request").notNull(),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
 );
 
@@ -116,7 +111,6 @@ const auditEvent = sqliteTable(
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
 );
 

@@ -17,7 +17,6 @@ import { isRecord } from "./structured-logs.ts";
 import { Telemetry } from "./telemetry.ts";
 
 type RequestHandler<Requirements> = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
 type FailureAttributes = ErrorAttributes & { readonly "error.tag"?: string };
@@ -30,7 +29,6 @@ function failureTag(error: unknown): string | undefined {
   return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
   const error = Cause.squash(cause);
   const attributes = errorAttributes(error);
@@ -45,7 +43,6 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
   return { ...attributes, "error.fingerprint": fingerprint, "error.tag": tag };
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
   return Effect.logError("application.error", failureAttributes(cause));
 }
@@ -61,7 +58,6 @@ function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContex
   };
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function correlatedResponse(response: Response, context: RequestContext): Response {
   const headers = new Headers(response.headers);
   headers.set("x-request-id", context.requestId);
@@ -73,7 +69,6 @@ function correlatedResponse(response: Response, context: RequestContext): Respon
   });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function failureResponse(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> {
   return reportFailure(cause).pipe(
     Effect.as(
@@ -103,7 +98,6 @@ const recordRequest = Effect.fn("recordRequest")(function* recordRequest(
 });
 
 function respond<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
   context: RequestContext,
   handler: RequestHandler<Requirements>,
@@ -120,7 +114,6 @@ function respond<Requirements>(
 }
 
 function observeRequest<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
   handler: RequestHandler<Requirements>,
 ): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> {

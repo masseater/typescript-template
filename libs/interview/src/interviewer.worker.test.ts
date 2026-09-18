@@ -26,7 +26,6 @@ function withServer(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();
@@ -131,7 +130,6 @@ it.effect("the member's words reach the model only as data beside the instructio
   Effect.gen(function* program() {
     const received: unknown[] = [];
     yield* withServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.post(endpoint, async ({ request }) => {
         received.push(request.headers.get("authorization"), await request.json());
         return completion({ finish: false, skip: false, values: {} });

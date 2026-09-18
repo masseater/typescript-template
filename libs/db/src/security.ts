@@ -19,7 +19,6 @@ class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoke
 const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
   function* hasVerificationAudience(identifier: string, audience: Application) {
     const now = new Date();
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     const [record] = yield* query((database) =>
       database
         .select({ id: verification.id })
@@ -38,7 +37,6 @@ const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
 );
 
 const findUser = Effect.fn("findUser")(function* findUser(userId: string) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database.select().from(user).where(eq(user.id, userId)).limit(1),
   );
@@ -50,7 +48,6 @@ const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
   credentialId: string,
   audience: Application,
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database
       .select({ user })
@@ -67,14 +64,12 @@ const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFa
   userId: string,
   audience: Application,
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [keys] = yield* query((database) =>
     database
       .select({ count: count() })
       .from(passkey)
       .where(and(eq(passkey.userId, userId), eq(passkey.audience, audience))),
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [totp] = yield* query((database) =>
     database
       .select({ id: twoFactor.id })
@@ -90,7 +85,6 @@ const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionS
   audience: Application,
 ) {
   const now = new Date();
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database
       .select({ session, user })
@@ -115,7 +109,6 @@ const markSessionStrong = Effect.fn("markSessionStrong")(function* markSessionSt
   audience: Application,
   method: StrongAuthenticationMethod,
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [updated] = yield* query((database) =>
     database
       .update(session)
@@ -131,7 +124,6 @@ const markSessionStrong = Effect.fn("markSessionStrong")(function* markSessionSt
 const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserSessions(
   userId: string,
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query(async (database): Promise<void> => {
     await database.batch([
       database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
@@ -142,7 +134,6 @@ const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserS
 });
 
 const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database
       .select({ id: user.id })

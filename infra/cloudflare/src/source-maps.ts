@@ -27,10 +27,8 @@ function directoryExists(source: string): Effect.Effect<boolean, ArtifactFailure
     try: async () => lstat(source),
   }).pipe(
     Effect.matchEffect({
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onFailure: ({ cause }) =>
         isMissing(cause) ? Effect.succeed(false) : fail("artifact_io_failed"),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onSuccess: (information) =>
         information.isDirectory() ? Effect.succeed(true) : fail("source_map_directory_invalid"),
     }),
@@ -74,11 +72,9 @@ function copyMaps(source: string, destination: string): Effect.Effect<number, Ar
     Effect.flatMap((exists) =>
       exists
         ? io(async () => readdir(source, { withFileTypes: true })).pipe(
-            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
             Effect.flatMap((entries) =>
               Effect.all(entries.map((entry: MapEntry) => copyEntry(entry, source, destination))),
             ),
-            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
             Effect.map((copied) => copied.reduce((total, count) => total + count, 0)),
           )
         : Effect.succeed(0),

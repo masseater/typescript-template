@@ -66,7 +66,6 @@ function browserEvent(): Record<string, unknown> {
 
 function ingestStatus(init?: IngestInit): Effect.Effect<number, never, Telemetry> {
   return ingestBrowser(new Request(telemetryUrl, init)).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((response) => response.status),
   );
 }

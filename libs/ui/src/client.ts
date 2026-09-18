@@ -9,7 +9,6 @@ const authClient = createAuthClient({
   fetchOptions: {
     baseURL: "/api/auth",
     credentials: "same-origin",
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     customFetchImpl: async (input, init) => globalThis.fetch(input, init),
     onSuccess: ({
       data,

@@ -18,15 +18,11 @@ function isErrorCode(error: unknown, code: string): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }
 
-function closeFile(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  file: FileHandle,
-): Effect.Effect<void, LocalCommandFailure> {
+function closeFile(file: FileHandle): Effect.Effect<void, LocalCommandFailure> {
   return fileIo(async () => file.close());
 }
 
 const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   location: FileLocation,
 ) {
   const entry = yield* fileIo(async () => stat(location));
@@ -38,13 +34,11 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
 });
 
 const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePrivateFile(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   location: FileLocation,
   content: string,
 ) {
   yield* Effect.acquireUseRelease(
     fileIo(async () => open(location, "w", privateFileMode)),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (file) => fileIo(async () => file.writeFile(content)),
     closeFile,
   );
@@ -52,7 +46,6 @@ const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePriv
 });
 
 const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFile(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   location: FileLocation,
   content: string,
 ) {
@@ -62,12 +55,10 @@ const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFil
         failure(isErrorCode(error, "EEXIST") ? "configuration_exists" : "file_io_failed"),
       try: async () => open(location, "wx", privateFileMode),
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (file) => fileIo(async () => file.writeFile(content)),
     closeFile,
   ).pipe(
     Effect.catchIf(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (error) => error.reason === "configuration_exists",
       () =>
         fileIo(async () => readFile(location, "utf-8")).pipe(

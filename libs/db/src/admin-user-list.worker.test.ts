@@ -45,7 +45,6 @@ const members = [
 const seedMembers = Effect.fn("seedMembers")(function* seedMembers() {
   for (const member of members) {
     const createdAt = new Date(member.createdAt);
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     yield* query(async (database): Promise<void> => {
       await database.insert(user).values({
         createdAt,

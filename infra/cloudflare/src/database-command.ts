@@ -27,7 +27,6 @@ const readBootstrapEmail = Effect.tryPromise({
     return chunks;
   },
 }).pipe(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   Effect.flatMap((chunks) =>
     chunks.every((chunk) => Buffer.isBuffer(chunk))
       ? Effect.succeed(Buffer.concat(chunks).toString("utf-8").trim())
@@ -54,16 +53,8 @@ NodeRuntime.runMain(
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,
-      Effect.catchCause(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (cause) => reportCause(EVENT, cause, confidential),
-      ),
+      Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );
-  }).pipe(
-    Effect.catchCause(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause(EVENT, cause),
-    ),
-  ),
+  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
   { disableErrorReporting: true },
 );

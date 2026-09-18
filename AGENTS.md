@@ -10,7 +10,7 @@ main は高頻度で更新されるので、切りが良いタイミングで都
 
 作業を指示された後は、実装・検証が完了して main に merge され、ローカルのリポジトリが更新されるとこまで行い、それがデプロイを伴う場合はデプロイ後にインフラログを見ることまで行うこと。
 
-ファイルを編集する時は必ず git worktree を使用すること。main ブランチが開いている場所のブランチを変更してはいけない。
+ファイルを編集する時は必ず gwq を用いて新しい git worktree を作成して、それに EnterWorktree ツールで移動してから行うこと。main ブランチが開いている場所のブランチを変更してはいけない。
 
 main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の merge queue に入れる。
 
@@ -41,3 +41,12 @@ main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の 
 - tanstack start
 - elysia
 - effect-ts
+
+## Skills
+
+以下の Skills を積極的に使用すること。導入されていない場合は導入すること。ユーザーに許可を取る必要はない。
+
+- tanstack start https://github.com/tanstack-skills/tanstack-skills/blob/main/plugins/tanstack-start/skills/tanstack-start/SKILL.md
+- effect-ts https://github.com/Effect-TS/skills
+- elysiajs https://github.com/elysiajs/skills
+- shadcn https://ui.shadcn.com/docs/skills

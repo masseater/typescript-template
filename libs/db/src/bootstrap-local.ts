@@ -16,7 +16,6 @@ const platform = Effect.acquireRelease(
       remoteBindings: false,
     }),
   ),
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 

@@ -15,11 +15,7 @@ const embeddingBatch = 32;
 const EmbeddingOutput = Schema.Struct({ data: Schema.Array(Schema.Array(Schema.Finite)) });
 const decodeOutput = Schema.decodeUnknownEffect(EmbeddingOutput);
 
-const embedBatch = Effect.fn("embedBatch")(function* embedBatch(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ai: Ai,
-  text: readonly string[],
-) {
+const embedBatch = Effect.fn("embedBatch")(function* embedBatch(ai: Ai, text: readonly string[]) {
   const output = yield* Effect.tryPromise({
     catch: () => new EmbeddingFailed({ reason: "unavailable" }),
     try: async () => ai.run(embeddingModel, { text: [...text] }),
@@ -39,15 +35,11 @@ function batches(texts: readonly string[]): readonly (readonly string[])[] {
   );
 }
 
-function embedWith(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ai: Ai | undefined,
-): EmbedderShape["embed"] {
+function embedWith(ai: Ai | undefined): EmbedderShape["embed"] {
   return (texts) =>
     ai === undefined
       ? Effect.fail(new EmbeddingFailed({ reason: "unavailable" }))
       : Effect.forEach(batches(texts), (text) => embedBatch(ai, text)).pipe(
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           Effect.map((vectors) => vectors.flat()),
         );
 }

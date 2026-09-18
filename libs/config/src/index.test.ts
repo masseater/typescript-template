@@ -15,7 +15,6 @@ function reason(
 ): Effect.Effect<string, Effect.Success<ReturnType<typeof readEnvironment>>> {
   return readEnvironment(input).pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((error) => error.reason),
   );
 }

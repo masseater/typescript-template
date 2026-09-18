@@ -91,7 +91,6 @@ const textCache: { texts: ReadonlyMap<string, string> | undefined } = { texts: u
 const processedTexts = Effect.suspend(() =>
   textCache.texts === undefined
     ? Effect.promise(readProcessedTexts).pipe(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         Effect.tap((texts) =>
           Effect.sync(() => {
             textCache.texts = texts;
@@ -145,9 +144,7 @@ const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(quer
   }
   return yield* semantic(query).pipe(
     Effect.matchEffect({
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onFailure: (error) => reportFailure(Cause.fail(error)).pipe(Effect.as([])),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onSuccess: (matches) => Effect.succeed(matches),
     }),
   );
@@ -179,11 +176,9 @@ const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
   return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function searchServer(context: Context.Context<WikiServices>): SearchServer {
   return {
     export: async () => keyword.export(),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     search: async (query, options) => Effect.runPromiseWith(context)(searchWiki(query, options)),
   };
 }

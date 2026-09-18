@@ -17,7 +17,6 @@ interface Seed {
 }
 
 function addMembers(seeds: readonly Seed[]): Effect.Effect<void, DatabaseFailure, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.insert(user).values(
       seeds.map((seed) => ({

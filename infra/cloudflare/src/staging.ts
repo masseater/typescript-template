@@ -33,7 +33,6 @@ const stageFile = Effect.fn("stageFile")(function* stageFile(source: string, des
     catch: (cause) => ({ cause }),
     try: async () => copyFile(source, destination, constants.COPYFILE_EXCL),
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catch(({ cause }) =>
       isExistingFile(cause)
         ? assertExistingStagedCopy(source, destination)

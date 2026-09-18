@@ -55,7 +55,6 @@ function digest(value: unknown): string {
 
 const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "stack", "stage"];
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
   const node: unknown = Reflect.get(value, ExprSymbol);
   if (typeof node !== "object" || node === null) {
@@ -77,7 +76,6 @@ function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
   };
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
   const nested = new Set([...seen, value]);
   if (Array.isArray(value)) {
@@ -94,7 +92,6 @@ function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function stable(value: unknown, seen: ReadonlySet<unknown>): unknown {
   if (Redacted.isRedacted(value)) {
     return { redacted: digest(String(Redacted.value(value))) };
@@ -207,7 +204,6 @@ function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unkno
 }
 
 function plannedStack(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "native" | "resources" | "stack">,
 ): PlannedStack {
   return {

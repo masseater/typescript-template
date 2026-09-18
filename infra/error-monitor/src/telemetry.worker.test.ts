@@ -63,7 +63,6 @@ function withServer(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();
@@ -74,7 +73,6 @@ function withServer(
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.Scope> {
   return withServer(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     http.post(endpoint, async ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${token}`) {
         return HttpResponse.json({ error: "unauthorized" }, { status: 401 });

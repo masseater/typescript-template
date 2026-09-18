@@ -58,7 +58,6 @@ const commonFailures: FailureTable<CommonFailure> = {
   AdminMfaRequired: { message: forbidden, status: httpStatus.forbidden },
   AdminRequired: { message: forbidden, status: httpStatus.forbidden },
   InputInvalid: { message: invalidInput, status: httpStatus.badRequest },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   RequestRejected: (error) => ({
     message: error.reason === "invalid_json" ? invalidInput : forbidden,
     status: rejectionStatus[error.reason],
@@ -79,7 +78,6 @@ function toFailure(table: object, error: unknown): Failure | undefined {
 
 function reportedFailure(
   table: object,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   cause: Readonly<Cause.Cause<unknown>>,
 ): Effect.Effect<Failure> {
   const error = Cause.findErrorOption(cause);
@@ -95,7 +93,6 @@ function reportedFailure(
 
 function failureResponse(
   table: object,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   cause: Readonly<Cause.Cause<unknown>>,
 ): Effect.Effect<Response> {
   return reportedFailure(table, cause).pipe(

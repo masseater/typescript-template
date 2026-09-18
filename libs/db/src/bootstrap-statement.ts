@@ -31,13 +31,11 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof EmailAddress.Type,
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [updated] = yield* query(async (database) => database.all(bootstrapStatement(email)));
   if (updated === undefined) {
     return yield* new BootstrapUnavailable();
   }
   return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((cause) => new DatabaseFailure({ cause })),
   );
 });

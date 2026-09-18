@@ -46,11 +46,9 @@ function mentionsLastAdmin(failure: DatabaseFailure): boolean {
 }
 
 function protectLastAdmin<Value, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
 ): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> {
   return effect.pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((failure) => (mentionsLastAdmin(failure) ? new LastAdminRequired() : failure)),
   );
 }
@@ -60,7 +58,6 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
   page: typeof UserPage.Type,
 ) {
   yield* requireAdmin(sessionId);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const users = yield* query((database) =>
     database
       .select({
@@ -78,7 +75,6 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
       .limit(page.limit)
       .offset(page.offset),
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [total] = yield* query((database) =>
     database
       .select({ count: count() })
@@ -89,7 +85,6 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
 });
 
 function auditWhenTargeted(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: DrizzleDatabase,
   {
     action,
@@ -111,12 +106,10 @@ function auditWhenTargeted(
     [auditEvent.targetId, targetId],
   ] as const;
   const names = sql.join(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     record.map(([column]) => sql.identifier(column.name)),
     sql`, `,
   );
   const values = sql.join(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     record.map(([, value]) => sql`${value}`),
     sql`, `,
   );
@@ -131,7 +124,6 @@ const setUserRole = Effect.fn("setUserRole")(function* setUserRole(
 ) {
   const actor = yield* requireAdmin(sessionId);
   const change = { action: "role_changed", actorId: actor.user.id, sessionId, targetId } as const;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [, rows] = yield* query(async (database) => {
     const audit = database.run(auditWhenTargeted(database, change));
     const promotion = database
@@ -154,7 +146,6 @@ const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
 ) {
   const actor = yield* requireAdmin(sessionId);
   const change = { action: "user_deleted", actorId: actor.user.id, sessionId, targetId } as const;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [, rows] = yield* query(async (database) => {
     const audit = database.run(auditWhenTargeted(database, change));
     const removal = database

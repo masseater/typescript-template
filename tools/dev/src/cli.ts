@@ -53,7 +53,6 @@ const [action = "", app, ...args] = process.argv.slice(firstUserArgumentIndex);
 NodeRuntime.runMain(
   selectCommand(action, app, args).pipe(
     Effect.flatMap(writeReport),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)

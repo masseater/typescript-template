@@ -61,19 +61,16 @@ function entryFiles(
 
 function files(directory: string): Effect.Effect<string[], ArtifactFailure> {
   return io(async () => readdir(directory, { withFileTypes: true })).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((entries) =>
       Effect.all(
         entries.map((entry: ArtifactEntry) => entryFiles(directory, entry)),
         { concurrency: "unbounded" },
       ),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((nested) => nested.flat().toSorted()),
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function sha256Hex(content: Uint8Array<ArrayBuffer>): Effect.Effect<string, ArtifactFailure> {
   return io(async () =>
     Buffer.from(await crypto.subtle.digest("SHA-256", content)).toString("hex"),
@@ -90,7 +87,6 @@ function jsonSha256(value: unknown): Effect.Effect<string, ArtifactFailure> {
 
 function sameContent(left: string, right: string): Effect.Effect<boolean, ArtifactFailure> {
   return io(async () => Promise.all([readFile(left), readFile(right)])).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map(([leftContent, rightContent]) => leftContent.equals(rightContent)),
   );
 }

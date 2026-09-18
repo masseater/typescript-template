@@ -30,12 +30,10 @@ function mutation(headers: Readonly<Record<string, string>>, body: string): Requ
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
   const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
   return startRoute({
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     fetch: async (request: Request): Promise<Response> => {
       const handle = byMethod[request.method];
       return handle === undefined
@@ -45,7 +43,6 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
   });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function callApi(app: AnyElysia, request: Request): Promise<Response> {
   return Effect.runPromise(servedThroughStart(compileApi(app))(request));
 }
@@ -100,12 +97,7 @@ describe("json request bodies", () => {
 });
 
 describe("api routes behind a start server route", () => {
-  const echo = api.route(
-    ProfileUpdate,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (request) => readJsonBody(ProfileUpdate, request),
-    {},
-  );
+  const echo = api.route(ProfileUpdate, (request) => readJsonBody(ProfileUpdate, request), {});
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {

@@ -195,7 +195,6 @@ async function enforceSessionPolicy(
 
 function createRequestHooks(run: Run, audience: Application): RequestHooks {
   return {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.context.returned instanceof APIError) {
         return;
@@ -208,7 +207,6 @@ function createRequestHooks(run: Run, audience: Application): RequestHooks {
         await revokeSessionsAfterFactorChange(scope);
       }
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
       const scope = { audience, ctx, run };

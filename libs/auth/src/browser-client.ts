@@ -60,7 +60,6 @@ class BrowserClient {
     return this.send(new Request(url, { headers, redirect: "manual" }));
   }
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public send(request: Request): Effect.Effect<Response> {
     return Effect.promise(async () => {
       const response = await this.#auth.instance.handler(request);
@@ -76,7 +75,6 @@ class BrowserClient {
     body?: Readonly<Record<string, unknown>>,
   ): Effect.Effect<JsonResponse> {
     return this.request(endpoint, body).pipe(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.flatMap((response) =>
         Effect.promise(async (): Promise<JsonResponse> => ({
           body: await response.json(),

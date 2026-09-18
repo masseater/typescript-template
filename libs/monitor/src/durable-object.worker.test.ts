@@ -21,7 +21,6 @@ function mailed(alert: { readonly subject: string; readonly text: string }): Sen
 
 async function seed(outcome: Outcome): Promise<void> {
   await reset();
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   await runInDurableObject(stub(), async (_instance, state) =>
     state.storage.put("outcome", outcome),
   );
@@ -29,7 +28,6 @@ async function seed(outcome: Outcome): Promise<void> {
 }
 
 async function stored<Value>(key: string): Promise<Value | undefined> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return runInDurableObject(stub(), async (_instance, state) => state.storage.get<Value>(key));
 }
 

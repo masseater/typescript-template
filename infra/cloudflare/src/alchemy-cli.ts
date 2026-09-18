@@ -19,7 +19,6 @@ class AlchemyFailure extends Schema.TaggedError<AlchemyFailure>()("AlchemyFailur
 const alchemyBinary = fileURLToPath(new URL("../node_modules/.bin/alchemy", import.meta.url));
 
 function forward(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   stream: Readable | null,
   target: Readonly<{ write: (chunk: string) => unknown }>,
   confidential: readonly Confidential[],

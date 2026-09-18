@@ -41,7 +41,6 @@ function responseInvalid(): ExplorerFailure {
   return new ExplorerFailure({ reason: "response_invalid" });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function isLoopbackAppOrigin(url: Readonly<URL>): boolean {
   return (
     url.protocol === "http:" &&
@@ -69,7 +68,6 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   const origin = yield* explorerOrigin(app);
   const response = yield* Effect.tryPromise({
     catch: queryFailed,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(new URL("/cdn-cgi/local/explorer/api/local/observability/query", origin), {
         body: JSON.stringify({ params, sql }),
@@ -136,7 +134,6 @@ const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetr
     ],
     { concurrency: "unbounded" },
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const telemetry: RequestTelemetry = { logs: logs.map((row) => withEvent(row)), spans };
   return telemetry;
 });

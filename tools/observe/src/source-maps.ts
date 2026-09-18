@@ -83,7 +83,6 @@ function directoryEntries(directory: string): Effect.Effect<Dirent[], SourceMapF
   }).pipe(
     Effect.matchEffect({
       onFailure: ({ missing }) => (missing ? Effect.succeed([]) : Effect.fail(unreadable())),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onSuccess: (entries) => Effect.succeed(entries),
     }),
   );
@@ -107,11 +106,9 @@ function findMap(
   filename: string,
 ): Effect.Effect<string | undefined, SourceMapFailure> {
   return directoryEntries(directory).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((entries) =>
       Effect.forEach(entries, (entry: DirectoryEntry) => entryMap(directory, entry, filename)),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((found) => found.find((candidate) => candidate !== undefined)),
   );
 }
@@ -208,7 +205,6 @@ function findCandidate(
         mapFile === undefined ? undefined : { mapFile, runtime, runtimeDirectory },
       ),
     );
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   }).pipe(Effect.map((candidates) => candidates.find((candidate) => candidate !== undefined)));
 }
 

@@ -61,7 +61,6 @@ function queryLogs(app: string, input: Query, since: number): Effect.Effect<unkn
     app,
     `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${levelFilter} ORDER BY ts_ms DESC LIMIT ?`,
     params,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
 }
 

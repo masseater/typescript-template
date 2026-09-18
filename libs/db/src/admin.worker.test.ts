@@ -14,7 +14,6 @@ import { TestDatabase } from "./testing.ts";
 const page = { limit: 50, offset: 0 };
 
 function auditRecords(): Effect.Effect<readonly unknown[], unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database) => database.select().from(auditEvent));
 }
 
@@ -67,7 +66,6 @@ it.effect("protects final administrator and credentials during deletion", () =>
     const actor = yield* addSession("last", "admin");
     assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
     assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     assert.lengthOf(yield* query(async (database) => database.select().from(account)), 1);
     assert.strictEqual((yield* getSessionSecurity(actor, "admin"))?.user.role, "admin");
   }).pipe(Effect.provide(TestDatabase)),
@@ -87,7 +85,6 @@ it.effect("simultaneous self-demotions cannot remove all administrators", () =>
       { concurrency: "unbounded" },
     );
     assert.strictEqual(successCount(outcomes), 1);
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     const admins = yield* query(async (database) =>
       database.select().from(user).where(eq(user.role, "admin")),
     );

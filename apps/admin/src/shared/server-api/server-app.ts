@@ -44,7 +44,6 @@ const app = createApi(apiRoot)
     "/users",
     api.route(
       UserList,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
@@ -58,7 +57,6 @@ const app = createApi(apiRoot)
     "/users",
     api.route(
       RoleChanged,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
@@ -72,7 +70,6 @@ const app = createApi(apiRoot)
     "/users",
     api.route(
       UserDeleted,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);

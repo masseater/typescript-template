@@ -92,7 +92,6 @@ function responseOutcome(
   };
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function tracedFetch(setup: FetchInstrumentation, request: Request): Promise<Response> {
   const timer = performance.now();
   const span = {
@@ -123,9 +122,7 @@ async function tracedFetch(setup: FetchInstrumentation, request: Request): Promi
 function patchFetch(setup: FetchInstrumentation): () => void {
   const originalFetch = globalThis.fetch;
   async function instrumentedFetch(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     input: RequestInfo | URL,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     init?: RequestInit,
   ): Promise<Response> {
     const url = new URL(

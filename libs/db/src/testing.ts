@@ -24,7 +24,6 @@ const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
 function getSchemaShape(): Record<string, string[]> {
   return Object.fromEntries(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Object.entries(schema).map(([name, table]) => [name, Object.keys(getColumns(table))]),
   );
 }

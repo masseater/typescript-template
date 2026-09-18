@@ -29,7 +29,6 @@ function mockServer(
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (server) =>
       Effect.sync(() => {
         server.close();

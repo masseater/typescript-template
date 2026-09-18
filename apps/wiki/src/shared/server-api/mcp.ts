@@ -12,7 +12,6 @@ import { searchServer, wikiLlms } from "./search.ts";
 
 const mcpVersion = "1.0.0";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function createServer(context: Context.Context<WikiServices>): McpServer {
   const server = new McpServer({ name: "wiki", version: mcpVersion });
   registerSearchTool(server, searchServer(context));
@@ -20,7 +19,6 @@ function createServer(context: Context.Context<WikiServices>): McpServer {
   return server;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function handleMcp(request: Request): Effect.Effect<Response, never, WikiServices> {
   return Effect.gen(function* handleMcpRequest() {
     const context = yield* Effect.context<WikiServices>();
@@ -29,10 +27,7 @@ function handleMcp(request: Request): Effect.Effect<Response, never, WikiService
   });
 }
 
-const serveMcp = Effect.fn("serveMcp")(function* serveMcp(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  request: Request,
-) {
+const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   const authorized = yield* authorizeMcpRequest(request, yield* AppOrigin);
   if (authorized instanceof Response) {
     return authorized;

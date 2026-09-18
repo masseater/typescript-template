@@ -26,7 +26,6 @@ const Paged = Schema.Struct({
   result_info: Schema.optional(Schema.NullOr(PageInfo)),
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function endpoint(parts: TemplateStringsArray, ...values: readonly string[]): Endpoint {
   return {
     marker: cloudflareEndpoint,
@@ -78,7 +77,6 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
   }
   const response = yield* Effect.tryPromise({
     catch: (error) => unreadable(source, requestReason(error)),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(url, {
         headers: { authorization: `Bearer ${apiToken}` },
@@ -101,7 +99,6 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
 
 const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
   source: Endpoint,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
   body: unknown,
 ) {
@@ -113,7 +110,6 @@ const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
 const readResource = Effect.fn("readResource")(function* readResource<Shape, Encoded>(
   access: AccountAccess,
   source: Endpoint,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
 ) {
   const reading = yield* fetchJson(access.apiToken, source, {});
@@ -123,7 +119,6 @@ const readResource = Effect.fn("readResource")(function* readResource<Shape, Enc
 const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Encoded>(
   access: AccountAccess,
   source: Endpoint,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
 ) {
   const found = yield* readResource(access, source, shape);
@@ -136,7 +131,6 @@ const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Enc
 const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
   access: AccountAccess,
   collection: Collection,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
 ) {
   const reading = yield* fetchJson(access.apiToken, collection.source, listedQuery(collection));

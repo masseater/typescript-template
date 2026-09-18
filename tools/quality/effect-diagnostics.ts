@@ -24,12 +24,9 @@ function areaProjects(area: string): Effect.Effect<string[]> {
   return Effect.promise(async () =>
     readdir(new URL(`../../${area}/`, import.meta.url), { withFileTypes: true }),
   ).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((entries) =>
       entries
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         .filter((entry) => entry.isDirectory())
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         .map((entry) => `${area}/${entry.name}/tsconfig.json`),
     ),
   );
@@ -38,7 +35,6 @@ function areaProjects(area: string): Effect.Effect<string[]> {
 function hasProject(project: string): Effect.Effect<boolean> {
   const directory = new URL(`../../${project.replace(/tsconfig\.json$/u, "")}`, import.meta.url);
   return Effect.promise(async () => readdir(directory)).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((names) => names.includes("tsconfig.json")),
   );
 }
@@ -52,7 +48,6 @@ function diagnose(project: string): Effect.Effect<Diagnosis> {
           executable,
           ["diagnostics", "--project", `${root}${project}`, "--format", "text", "--strict"],
           { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           (failure, stdout, stderr) => {
             resolve({ ok: failure === null, output: `${stdout}${stderr}`, project });
           },
@@ -76,7 +71,6 @@ const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
 
 NodeRuntime.runMain(
   diagnoseAll().pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((results) =>
       Effect.sync(() => {
         const failed = results.filter((result) => !result.ok);

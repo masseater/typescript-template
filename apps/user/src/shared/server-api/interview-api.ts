@@ -24,26 +24,22 @@ const failures = {
   TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {
   const { user } = yield* verifySession(request.headers);
   return yield* openInterview(user.id);
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const turn = Effect.fn("interview.api.turn")(function* turn(request: Request) {
   const { user } = yield* verifySession(request.headers);
   return yield* takeTurn(user.id, yield* readJsonBody(Utterance, request));
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const saveSheet = Effect.fn("interview.api.save")(function* saveSheet(request: Request) {
   const { user } = yield* verifySession(request.headers);
   yield* readJsonBody(Empty, request);
   return yield* saveInterview(user.id);
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const restart = Effect.fn("interview.api.restart")(function* restart(request: Request) {
   const { user } = yield* verifySession(request.headers);
   yield* readJsonBody(Empty, request);

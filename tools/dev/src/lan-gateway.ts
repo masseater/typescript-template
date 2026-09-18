@@ -75,7 +75,6 @@ const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
 
 function certificateAuthorityBase64(): Effect.Effect<string, LocalCommandFailure> {
   return fileIo(async () => readFile(certificateAuthority)).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((certificate) => certificate.toString("base64")),
   );
 }

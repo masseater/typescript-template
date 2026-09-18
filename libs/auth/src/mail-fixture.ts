@@ -13,7 +13,6 @@ const MailpitMessage = Schema.Struct({
 const decodeMail = Schema.decodeUnknownPromise(MailpitMessage);
 const mailbox = new Map<string, string>();
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function receiveMail({ request }: { readonly request: Request }): Promise<Response> {
   const message = await decodeMail(await request.json());
   const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
@@ -40,7 +39,6 @@ const mailServer = Layer.effectDiscard(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();

@@ -89,7 +89,6 @@ function failureCode(
 ): Effect.Effect<ArtifactFailure["code"], Effect.Success<ReturnType<typeof loadArtifacts>>> {
   return load(root, target).pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((failure) => failure.code),
   );
 }

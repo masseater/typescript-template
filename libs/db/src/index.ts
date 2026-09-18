@@ -13,12 +13,10 @@ const profileColumns = {
 };
 
 const checkDatabase = Effect.fn("checkDatabase")(function* checkDatabase() {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query((database) => database.select({ id: user.id }).from(user).limit(1));
 });
 
 const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [profile] = yield* query((database) =>
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
   );
@@ -30,7 +28,6 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
   userId: string,
   values: { readonly name: string; readonly profile: string },
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [profile] = yield* query((database) =>
     database
       .update(user)

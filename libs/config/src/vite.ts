@@ -61,12 +61,9 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
   let removed = 0;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   function strip(options: readonly PluginOption[]): PluginOption[] {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     return options.flatMap((plugin: PluginOption): PluginOption[] => {
       if (Array.isArray(plugin)) {
         return [strip(plugin)];

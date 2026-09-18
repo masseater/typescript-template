@@ -35,7 +35,6 @@ const stack = Stack(
                 resources: { [`com.cloudflare.api.account.${config.accountId}`]: "*" },
               },
             ],
-            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           }).pipe(Effect.map((token) => token.name)),
       ),
     );

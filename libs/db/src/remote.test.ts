@@ -23,18 +23,15 @@ const target = {
 const executeFlags = ["--execute", "--confirm-database"] as const;
 
 function code<Value, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, RemoteFailure, Requirements>,
 ): Effect.Effect<RemoteFailure["code"], Value, Requirements> {
   return effect.pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((failure) => failure.code),
   );
 }
 
 function tag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, Failure, Requirements>,
 ): Effect.Effect<string, Value, Requirements> {
   return effect.pipe(
@@ -44,7 +41,6 @@ function tag<Value, Failure extends { readonly _tag: string }, Requirements>(
 }
 
 function insertUser(id: string, verified: boolean): Effect.Effect<void, unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),
@@ -58,7 +54,6 @@ function insertUser(id: string, verified: boolean): Effect.Effect<void, unknown,
 }
 
 function insertSession(id: string, userId: string): Effect.Effect<void, unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.insert(session).values({
       audience: "user",

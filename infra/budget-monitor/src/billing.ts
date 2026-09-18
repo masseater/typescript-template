@@ -145,7 +145,6 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   }
   const response = yield* Effect.tryPromise({
     catch: httpFailed,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, {
         headers: { Accept: "application/json", Authorization: `Bearer ${token}` },

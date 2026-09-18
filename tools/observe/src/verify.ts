@@ -85,11 +85,9 @@ function waitForCorrelation(
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<URL>) {
   const response = yield* Effect.tryPromise({
     catch: () => fail("request_failed"),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(app, {
         method: "GET",
@@ -131,13 +129,11 @@ const verify = Effect.fn("verify")(function* verify() {
 
 NodeRuntime.runMain(
   verify().pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((report) =>
       Effect.sync(() => {
         process.stdout.write(`${JSON.stringify(report)}\n`);
       }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)

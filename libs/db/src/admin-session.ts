@@ -22,7 +22,6 @@ const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId:
   return actor;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function liveAdmin(database: DrizzleDatabase, sessionId: string): SQL {
   const actor = alias(user, "actor");
   const now = new Date();
