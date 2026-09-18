@@ -149,6 +149,7 @@ export type {
   Capability,
   CapabilityOf,
   Role,
+  ServiceName,
   StrongAuthenticationMethod,
 } from "./applications.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";

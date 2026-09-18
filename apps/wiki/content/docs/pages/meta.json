@@ -10,6 +10,7 @@
     "user-login",
     "user-profile",
     "user-users",
-    "user-interview"
+    "user-interview",
+    "commander"
   ]
 }

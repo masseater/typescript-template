@@ -1,6 +1,6 @@
 import { Effect, Result } from "effect";
 
-import type { Application } from "@repo/config";
+import type { ServiceName } from "@repo/config";
 
 import { errorFingerprint } from "./errors.ts";
 import type { BrowserEvent } from "./events.ts";
@@ -22,7 +22,7 @@ const maximumBodyBytes = 32_768;
 const rateWindowMilliseconds = 60_000;
 const maximumEventsPerWindow = 1200;
 const retryAfterSeconds = "60";
-const ingressWindows = new Map<Application, IngressWindow>();
+const ingressWindows = new Map<ServiceName, IngressWindow>();
 const noStore = { "cache-control": "no-store" };
 
 function emptyResponse(
@@ -32,7 +32,7 @@ function emptyResponse(
   return new Response(undefined, { headers, status });
 }
 
-function currentWindow(serviceName: Application): IngressWindow {
+function currentWindow(serviceName: ServiceName): IngressWindow {
   const now = Date.now();
   const window = ingressWindows.get(serviceName) ?? { count: 0, recorded: new Set(), start: now };
   if (now - window.start > rateWindowMilliseconds) {
@@ -59,7 +59,7 @@ function unrecorded(
 }
 
 function admitUnrecorded(
-  serviceName: Application,
+  serviceName: ServiceName,
   events: readonly BrowserEvent[],
 ): readonly BrowserEvent[] | undefined {
   const window = currentWindow(serviceName);
@@ -91,7 +91,7 @@ function kindFields(event: BrowserEvent): LogFields {
   return {};
 }
 
-function recordBrowserEvent(serviceName: Application, event: BrowserEvent): Effect.Effect<void> {
+function recordBrowserEvent(serviceName: ServiceName, event: BrowserEvent): Effect.Effect<void> {
   const failed =
     event.kind === "exception" ||
     (event.kind === "http" && (event.status === 0 || event.status >= httpStatus.badRequest));
@@ -128,7 +128,7 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(request: Ingress
 });
 
 function recordUnseen(
-  serviceName: Application,
+  serviceName: ServiceName,
   events: readonly BrowserEvent[],
 ): Effect.Effect<Response> {
   const fresh = admitUnrecorded(serviceName, events);
