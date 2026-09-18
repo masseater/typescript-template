@@ -1,4 +1,5 @@
 import type { App, Credentials } from "./local-environment.ts";
+import { Effect, Schema } from "effect";
 import {
   credentialsFile,
   lanOrigin,
@@ -16,7 +17,6 @@ import {
 } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, stat } from "node:fs/promises";
-import { Effect } from "effect";
 import type { LocalCommandFailure } from "./failure.ts";
 import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -24,10 +24,12 @@ import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { randomBytes } from "node:crypto";
 
+const OriginMode = Schema.Literals(["lan", "loopback"]);
 interface SetupReport {
   readonly credentialsFile: string;
   readonly event: "local.app_configuration_ready";
   readonly ok: true;
+  readonly origins: typeof OriginMode.Type;
   readonly secretsPrinted: false;
 }
 
@@ -58,9 +60,17 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
   },
 );
 
-function appVariables(app: App, credentials: Credentials): Readonly<Record<string, string>> {
+function appOrigin(app: App, mode: typeof OriginMode.Type): string {
+  return mode === "lan" ? lanOrigin(app) : `http://127.0.0.1:${routes[app]}`;
+}
+
+function appVariables(
+  app: App,
+  credentials: Credentials,
+  mode: typeof OriginMode.Type,
+): Readonly<Record<string, string>> {
   return {
-    APP_ORIGIN: lanOrigin(app),
+    APP_ORIGIN: appOrigin(app, mode),
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
     MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
@@ -70,25 +80,31 @@ function appVariables(app: App, credentials: Credentials): Readonly<Record<strin
 function writeAppVariables(
   app: App,
   credentials: Credentials,
+  mode: typeof OriginMode.Type,
 ): Effect.Effect<void, LocalCommandFailure> {
-  const content = `${Object.entries(appVariables(app, credentials))
+  const content = `${Object.entries(appVariables(app, credentials, mode))
     .map(([key, value]: readonly [string, string]) => `${key}=${JSON.stringify(value)}`)
     .join("\n")}\n`;
   return replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
 }
 
-const setup = Effect.fn("setup")(function* setup() {
+const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
+  const [requested = "lan"] = args;
+  const origins = yield* Schema.decodeUnknownEffect(OriginMode)(requested).pipe(
+    Effect.mapError(() => failure("origin_mode_invalid")),
+  );
   yield* fileIo(async () => mkdir(local, { mode: privateDirectoryMode, recursive: true }));
   yield* fileIo(async () =>
     mkdir(new URL("logs/", local), { mode: privateDirectoryMode, recursive: true }),
   );
   yield* refreshBrowserConfig();
   const credentials = yield* loadOrCreateCredentials();
-  yield* Effect.forEach(applications, (app) => writeAppVariables(app, credentials));
+  yield* Effect.forEach(applications, (app) => writeAppVariables(app, credentials, origins));
   const report: SetupReport = {
     credentialsFile: fileURLToPath(credentialsFile),
     event: "local.app_configuration_ready",
     ok: true,
+    origins,
     secretsPrinted: false,
   };
   return report;

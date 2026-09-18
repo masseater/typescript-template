@@ -11,6 +11,11 @@ const applicationPorts: Readonly<Record<Application, number>> = {
   user: USER_PORT,
   wiki: WIKI_PORT,
 };
+const applicationReadyPaths: Readonly<Record<Application, string>> = {
+  admin: "/login",
+  user: "/login",
+  wiki: "/",
+};
 const capabilities = ["ai"] as const;
 type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {
@@ -37,6 +42,7 @@ const mailpitPort = MAILPIT_PORT;
 
 export {
   applicationPorts,
+  applicationReadyPaths,
   applications,
   authenticationMethods,
   grants,

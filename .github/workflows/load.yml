@@ -27,7 +27,7 @@ jobs:
           node-version-file: package.json
           cache: true
       - run: vp run --filter @template/local up
-      - run: vp run --filter @template/load environment user
+      - run: vp run --filter @template/dev setup loopback
       - run: vp run --filter @template/db db:migrate:local
       - run: vp run --filter @template/user build
       - run: vp run --filter @template/user preview &

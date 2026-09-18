@@ -1,5 +1,13 @@
-import { Application, requireLoopbackOrigin, targetOrigin } from "./environment.ts";
+import {
+  Application,
+  awaitReady,
+  clearTraces,
+  oneMinuteLoadAverage,
+  requireLoopbackOrigin,
+  targetOrigin,
+} from "./environment.ts";
 import { Console, Effect, Schema } from "effect";
+import { discardSummary, readSummary } from "./summary.ts";
 import { exists, installBinary } from "./binary.ts";
 import type { BinaryUnavailable } from "./binary.ts";
 import type { EnvironmentUnusable } from "./environment.ts";
@@ -11,7 +19,6 @@ import { mailpitPort } from "@template/config";
 import { memberPageSize } from "@template/runtime/contracts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { readSummary } from "./summary.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
@@ -43,10 +50,20 @@ const peak = Effect.succeed("peak" as const);
 const Profile = Schema.Literals(["peak", "smoke"]).pipe(Schema.withDecodingDefaultKey(peak));
 const Arguments = Schema.Struct({ app: Application, profile: Profile });
 const usage = "vp run --filter @template/load load <user|admin|wiki> [smoke|peak]";
-function clearTraces(origin: string): Effect.Effect<void> {
-  return Effect.promise(async () =>
-    fetch(`${origin}/cdn-cgi/local/explorer/api/local/observability/clear`, { method: "POST" }),
-  ).pipe(Effect.ignore);
+const rebuild =
+  "vp run --filter @template/dev setup loopback, then vp run --filter @template/<app> build";
+const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
+  build_missing: rebuild,
+  origin_mismatch: rebuild,
+  target_unreachable: "vp run --filter @template/<app> preview",
+  traces_not_cleared: "restart vp run --filter @template/<app> preview",
+  usage_invalid: usage,
+};
+
+function discardPreviousSummary(): Effect.Effect<void, LoadTestFailure> {
+  return discardSummary(summaryFile).pipe(
+    Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
+  );
 }
 
 function runScenario(
@@ -95,6 +112,7 @@ function scenarioEnvironment(
 interface Measured {
   readonly app: string;
   readonly crossed: boolean;
+  readonly loadAverage: Readonly<{ after: number; before: number }>;
   readonly measured: Report;
   readonly origin: string;
   readonly profile: string;
@@ -110,7 +128,9 @@ const prepare = Effect.fn("prepare")(function* prepare(
   }
   yield* requireLoopbackOrigin(app);
   const binary = yield* installBinary(home);
+  yield* awaitReady(app);
   yield* clearTraces(origin);
+  yield* discardPreviousSummary();
   return { binary, scenario };
 });
 
@@ -118,8 +138,17 @@ const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.T
   const { app, profile } = input;
   const origin = targetOrigin(app);
   const { binary, scenario } = yield* prepare(app, origin);
+  const before = oneMinuteLoadAverage();
   const crossed = yield* runScenario(binary, scenario, scenarioEnvironment(profile, origin));
-  const measured: Measured = { app, crossed, measured: yield* readReport(), origin, profile };
+  const loadAverage = { after: oneMinuteLoadAverage(), before };
+  const measured: Measured = {
+    app,
+    crossed,
+    loadAverage,
+    measured: yield* readReport(),
+    origin,
+    profile,
+  };
   return measured;
 });
 
@@ -135,22 +164,19 @@ const announce = Effect.fn("announce")(function* announce(result: Measured) {
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function announceFailure(failure: Failure): Effect.Effect<void> {
-  const details =
-    failure._tag === "LoadTestFailure"
-      ? {
-          ...(failure.code === undefined ? {} : { exitCode: failure.code }),
-          ...(failure.crossed === undefined ? {} : { crossed: failure.crossed }),
-        }
-      : {};
+  const remediation = remediations[failure.reason];
+  const details = {
+    ...(failure._tag === "LoadTestFailure" && failure.code !== undefined
+      ? { exitCode: failure.code }
+      : {}),
+    ...(failure._tag === "LoadTestFailure" && failure.crossed !== undefined
+      ? { crossed: failure.crossed }
+      : {}),
+    ...(remediation === undefined ? {} : { remediation }),
+  };
   return Effect.gen(function* reportFailure() {
     yield* Console.error(
-      JSON.stringify({
-        event: "load.run_failed",
-        ok: false,
-        reason: failure.reason,
-        ...details,
-        usage,
-      }),
+      JSON.stringify({ event: "load.run_failed", ok: false, reason: failure.reason, ...details }),
     );
     process.exitCode = 1;
   });

@@ -1,4 +1,4 @@
-import { applicationPorts, applications } from "@template/config";
+import { applicationPorts, applicationReadyPaths, applications } from "@template/config";
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile } from "node:fs/promises";
@@ -6,7 +6,6 @@ import {
   lanOrigin,
   logFileUrl,
   readCredentials,
-  readyPaths,
   root,
   routeNames,
   run,
@@ -41,7 +40,7 @@ const statusTimeoutMilliseconds = 3000;
 
 function httpStatus(app: App): Effect.Effect<number | null> {
   return Effect.tryPromise(async (signal) =>
-    fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
+    fetch(`http://127.0.0.1:${applicationPorts[app]}${applicationReadyPaths[app]}`, {
       redirect: "manual",
       signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
     }),

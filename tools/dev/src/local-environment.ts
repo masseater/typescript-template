@@ -38,7 +38,6 @@ const CredentialsFile = Schema.Struct({
 });
 const routes = { ...applicationPorts, mailpit: mailpitPort };
 const routeNames = [...applications, "mailpit"] as const;
-const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 
 type Credentials = typeof CredentialsFile.Type;
 
@@ -122,7 +121,6 @@ export {
   local,
   logFileUrl,
   readCredentials,
-  readyPaths,
   refreshBrowserConfig,
   root,
   routeNames,

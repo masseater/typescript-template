@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "load": "node src/cli.ts",
-    "environment": "node src/environment-file.ts"
+    "load": "node src/cli.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
