@@ -1,6 +1,7 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const application = {
+  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
   ignoreDependencies: ["cloudflare"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
@@ -14,13 +15,9 @@ const loadCommands = ["src/cli.ts!", "src/prepare.ts!"];
 
 const workspaces = {
   ".": {
-    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo", "steiger"],
-    project: ["*.ts", "tools/quality/**/*.{ts,mjs}"],
-  },
-  "apps/*": application,
-  "apps/wiki": {
-    ...application,
-    project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
+    entry: ["steiger.config.js"],
+    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
+    project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
@@ -91,16 +88,14 @@ function config({
   function productionOnly(...files: readonly string[]): string[] {
     return production || strict ? [...files] : [];
   }
+  const app = { ...application, ignore: productionOnly("src/app/routeTree.gen.ts") };
   return {
     ignoreDependencies: ["vite", "vitest"],
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
-      "apps/user": {
-        ...application,
-        entry: ["src/app/server.ts!", "src/app/router.tsx!", "src/app/routes/**/*.tsx!"],
-        ignore: productionOnly("src/app/routeTree.gen.ts"),
-      },
+      "apps/*": app,
+      "apps/wiki": { ...app, project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"] },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
         project: ["src/**/*.ts!"],

@@ -42,8 +42,14 @@ const clientReachableFiles: (string | RegExp)[] = [
   "**/node_modules/**",
   "**/libs/runtime/src/{client,contracts}.ts",
 ];
-const importProtection = {
-  client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles },
+const startOptions = {
+  importProtection: { client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles } },
+  router: {
+    entry: "app/router.tsx",
+    generatedRouteTree: "app/routeTree.gen.ts",
+    routesDirectory: "app/routes",
+  },
+  start: { entry: "app/start.ts" },
 };
 const serverOnlyMarkers: readonly string[] = [
   "ELYSIA_REQUEST_ID",
@@ -102,9 +108,9 @@ const appRun = {
 export {
   appRun,
   appServer,
-  importProtection,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
+  startOptions,
   withoutEnvFileLoader,
 };
