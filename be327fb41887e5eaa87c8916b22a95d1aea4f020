@@ -1,1 +1,6 @@
-CI が落ちた 3 つの不変条件テストを新しい設定の形に合わせ、project/no-internal-mocks と project/test-import-graph を残した。#325 の新しい文言から AGENTS.md と skill を作り直した。
+Revision history for #324:
+
+rev 2 (content) 2026-09-18 15:48 UTC — CI が落ちた 3 つの不変条件テストを新しい設定の形に合わせ、project/no-internal-mocks と project/test-import-graph を残した。#325 の新しい文言から AGENTS.md と skill を作り直した。
+rev 1 (initial) 2026-09-18 15:48 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":324,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"4f940620bf9728b00895daebb901d86f0c4ca21e","timestamp_iso":"2026-09-18T15:48:35Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"4f940620bf9728b00895daebb901d86f0c4ca21e","new_sha":"be327fb41887e5eaa87c8916b22a95d1aea4f020","timestamp_iso":"2026-09-18T15:48:35Z","reason":"CI が落ちた 3 つの不変条件テストを新しい設定の形に合わせ、project/no-internal-mocks と project/test-import-graph を残した。#325 の新しい文言から AGENTS.md と skill を作り直した。","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/4f940620bf9728b00895daebb901d86f0c4ca21e...be327fb41887e5eaa87c8916b22a95d1aea4f020"}]} -->
