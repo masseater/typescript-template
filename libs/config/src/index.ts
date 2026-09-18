@@ -1,7 +1,8 @@
 import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
-import { ConfigurationInvalid } from "./configuration-invalid.ts";
+
 import { loopbackHosts } from "./applications.ts";
+import { ConfigurationInvalid } from "./configuration-invalid.ts";
 
 interface AssetFetcher {
   readonly fetch: (request: Request) => Promise<Response>;
@@ -122,10 +123,12 @@ type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
 export {
   applicationPorts,
+  applicationReadyPaths,
   applications,
   authenticationMethods,
   grants,
   loopbackHosts,
+  mailpitPort,
   roles,
   storybookPort,
   strongAuthenticationMethods,

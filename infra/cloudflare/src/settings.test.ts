@@ -1,13 +1,24 @@
-import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
-import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
-import { Effect, Redacted, Schema } from "effect";
 import { assert, it } from "@effect/vitest";
-import { authSecret } from "./settings.ts";
+import { Effect, Redacted, Schema } from "effect";
+import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
+
+import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
 import { describeFailure } from "./secrets.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { authSecret, settings as deploymentSettings } from "./settings.ts";
+import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 
 const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;
+
+function environment(
+  overrides: Readonly<Record<string, string>>,
+): ReturnType<typeof fromDotEnvContents> {
+  return fromDotEnvContents(
+    Object.entries({ ...verificationEnvironment, ...overrides })
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n"),
+  );
+}
 
 function rejects(schema: Schema.Codec<unknown, unknown>, value: unknown): Effect.Effect<void> {
   return Schema.decodeUnknownEffect(schema)(value).pipe(Effect.flip, Effect.asVoid, Effect.orDie);
@@ -87,5 +98,44 @@ it.effect("refuses a budget exhausted by fixed fees and names the keys", () =>
     const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
     assert.strictEqual(failure.code, "budget_has_no_usage_allowance");
     assert.include([...failure.keys], "BUDGET_JPY");
+  }),
+);
+
+it.effect("refuses a sender address outside the subdomain named by the prefix", () =>
+  Effect.forEach(
+    ["mail@example.com", "mail@send.example.com", `mail@${settings.prefix}x.example.com`],
+    (mailFrom) =>
+      Effect.gen(function* program() {
+        const config = yield* Schema.decodeUnknownEffect(SharedSettings)({ ...settings, mailFrom });
+        const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
+        assert.strictEqual(failure.code, "mail_from_outside_deployment");
+        assert.deepStrictEqual([...failure.keys], ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
+        assert.notInclude(JSON.stringify(failure), mailFrom);
+      }),
+  ),
+);
+
+it.effect("accepts a sender address on the subdomain named by the prefix", () =>
+  Effect.gen(function* program() {
+    const config = yield* Schema.decodeUnknownEffect(SharedSettings)(settings);
+    assert.strictEqual((yield* checkSharedConfig(config)).mailFrom, settings.mailFrom);
+  }),
+);
+
+it.effect("the settings every command reads carry the shared checks", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      (yield* Effect.provideService(deploymentSettings, ConfigProvider, environment({}))).mailFrom,
+      settings.mailFrom,
+    );
+    const failure = yield* Effect.provideService(
+      deploymentSettings,
+      ConfigProvider,
+      environment({ TEMPLATE_MAIL_FROM: "mail@example.com" }),
+    ).pipe(Effect.flip);
+    assert.deepStrictEqual(describeFailure(failure, []), {
+      code: "mail_from_outside_deployment",
+      keys: ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"],
+    });
   }),
 );

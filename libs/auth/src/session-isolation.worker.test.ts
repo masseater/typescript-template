@@ -1,3 +1,8 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { setUserRole } from "@repo/db/admin";
+
 import {
   Fixture,
   HTTP_FORBIDDEN,
@@ -12,10 +17,7 @@ import {
   withAuth,
   withEmptyDatabase,
 } from "./auth-test-fixture.ts";
-import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
-import { Effect } from "effect";
-import { setUserRole } from "@repo/db/admin";
 
 const adminEmail = "admin@example.com";
 

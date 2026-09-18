@@ -1,17 +1,18 @@
+import { assert, describe, it } from "@effect/vitest";
+import { Effect, Layer, ManagedRuntime, Schema } from "effect";
+import type { AnyElysia } from "elysia";
+
+import { Telemetry, httpStatus } from "@repo/observability";
+
+import { ProfileUpdate } from "./contracts.ts";
 import {
   AppOrigin,
   apiRoutes,
-  compileApi,
   createApi,
   elysiaServer,
   readJsonBody,
   secureResponse,
 } from "./http.ts";
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
-import { Telemetry, httpStatus } from "@repo/observability";
-import { assert, describe, it } from "@effect/vitest";
-import type { AnyElysia } from "elysia";
-import { ProfileUpdate } from "./contracts.ts";
 import { startRoute } from "./worker.ts";
 
 const origin = "http://localhost:3001";
@@ -22,7 +23,7 @@ const jsonHeaders = { "content-type": "application/json", origin };
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
 const runtime = ManagedRuntime.make(context);
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, { service: "user" });
 
 function mutation(headers: Readonly<Record<string, string>>, body: string): Request {
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
@@ -42,7 +43,7 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
 }
 
 async function callApi(app: AnyElysia, request: Request): Promise<Response> {
-  return Effect.runPromise(servedThroughStart(compileApi(app))(request));
+  return Effect.runPromise(servedThroughStart(app)(request));
 }
 
 const rejections = [

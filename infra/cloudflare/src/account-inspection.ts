@@ -1,20 +1,22 @@
+import type { StateService } from "alchemy/State";
+import { Effect } from "effect";
+
+import { applications } from "@repo/config";
+
 import {
   attachedService,
-  dnsRecordNames,
   grantedPermissions,
+  recordsPresent,
   secretsStoreCount,
   stateStorePresent,
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
-import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
-import type { StateService } from "alchemy/State";
-import { applications } from "@repo/config";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { databaseVerdict } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
+import { alertQuotaVerdict, emailBlocked, emailVerdicts } from "./email-guard.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
 
 type Claim = "free" | "owned" | "taken";
@@ -44,23 +46,6 @@ function claim(present: boolean, owned: boolean): Claim {
   return owned ? "owned" : "taken";
 }
 
-const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
-  Failure,
-  Requirements,
->(
-  access: AccountAccess,
-  config: SharedConfig,
-  store: Effect.Effect<StateService, Failure, Requirements>,
-) {
-  if ((yield* findDatabaseId(access, databaseName(config.prefix))) === undefined) {
-    return "free" as const;
-  }
-  return yield* assertDatabaseUnclaimed(access, config, store).pipe(
-    Effect.as("owned" as const),
-    Effect.catchCause(() => Effect.succeed("taken" as const)),
-  );
-});
-
 const workerVerdict = Effect.fn("workerVerdict")(function* workerVerdict(
   access: AccountAccess,
   declared: readonly string[],
@@ -89,16 +74,6 @@ const domainVerdict = Effect.fn("domainVerdict")(function* domainVerdict(
   );
 });
 
-const dnsVerdict = Effect.fn("dnsVerdict")(function* dnsVerdict(
-  access: AccountAccess,
-  config: SharedConfig,
-) {
-  const found = yield* Effect.forEach(hostnames(config), (hostname) =>
-    dnsRecordNames(access, config.zoneId, hostname),
-  );
-  return found.flat().length > 0 ? ("taken" as const) : ("free" as const);
-});
-
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
   return yield* grantedPermissions(access).pipe(
     Effect.map((granted) => missingPermissions(granted)),
@@ -116,11 +91,16 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
     Effect.catchCause(() => Effect.succeed<readonly string[]>([])),
   );
+  const email = yield* emailVerdicts(access, config, store);
   return {
+    alertQuota: yield* alertQuotaVerdict(access, config.budget.recipients),
     database: yield* databaseVerdict(access, config, store),
     deployToken: yield* tokenVerdict(access),
-    dnsRecords: yield* dnsVerdict(access, config),
+    dnsRecords: claim(yield* recordsPresent(access, config.zoneId, hostnames(config)), false),
+    emailSending: email.emailSending,
     secretsStore: presence((yield* secretsStoreCount(access)) > 0),
+    senderDomain: email.senderDomain,
+    sendingSubdomain: email.sendingSubdomain,
     stateStore: presence(yield* stateStorePresent(access)),
     workerDomains: yield* domainVerdict(access, config, recorded),
     workerNames: yield* workerVerdict(access, declaredNames(config.prefix), recorded),
@@ -131,10 +111,10 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
 type Inspection = Effect.Success<ReturnType<typeof inspectAccount>>;
 
 function blocked(inspection: Readonly<Inspection>): readonly string[] {
-  const claimed = ["database", "workerDomains", "workerNames"] as const;
+  const claimed = ["database", "dnsRecords", "workerDomains", "workerNames"] as const;
   return [
     ...claimed.filter((name) => inspection[name] === "taken"),
-    ...(inspection.dnsRecords === "taken" ? ["dnsRecords"] : []),
+    ...emailBlocked(inspection),
     ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
     ...(inspection.deployToken.length > 0 ? ["deployToken"] : []),
   ];

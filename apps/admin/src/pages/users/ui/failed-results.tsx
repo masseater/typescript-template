@@ -1,5 +1,6 @@
-import { Button, Status } from "@repo/ui";
 import type { ReactElement } from "react";
+
+import { Button, Status } from "@repo/ui";
 
 function FailedResults({
   message,

@@ -1,6 +1,6 @@
+import { cva } from "class-variance-authority";
 import type { LucideIcon } from "lucide-react";
 import type { ReactElement } from "react";
-import { cva } from "class-variance-authority";
 
 const iconVariants = cva("shrink-0", {
   defaultVariants: { size: "medium", tone: "current" },

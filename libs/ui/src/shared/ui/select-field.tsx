@@ -1,6 +1,7 @@
-import { controlClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 import type { ReactElement } from "react";
+
+import { controlClassName, fieldClassName, labelClassName } from "./control";
 
 function SelectField({
   label,

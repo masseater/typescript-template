@@ -1,8 +1,11 @@
-import { ManagedRuntime } from "effect";
 import { env } from "cloudflare:workers";
-import { routes } from "#shared/telemetry/index.ts";
-import { wikiLayer } from "@repo/runtime/wiki";
+import { ManagedRuntime } from "effect";
 
+import { routes } from "#shared/telemetry/index.ts";
+import type { Reporting } from "@repo/observability";
+import { wikiLayer, wikiService } from "@repo/runtime/wiki";
+
+const reporting: Reporting = { service: wikiService };
 const runtime = ManagedRuntime.make(wikiLayer(env, routes));
 
-export { runtime };
+export { reporting, runtime };

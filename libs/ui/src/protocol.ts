@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+
 import type { SessionView as SessionContract } from "@repo/runtime/contracts";
 
 const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));

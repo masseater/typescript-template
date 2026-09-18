@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vite-plus/test";
-import type { BrowserEvent } from "./events.ts";
-import { BrowserEventQueue } from "./browser-queue.ts";
-import { randomHex } from "./protocol.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { setTimeout as wait } from "node:timers/promises";
+
+import { describe, expect, it } from "vite-plus/test";
+
+import { BrowserEventQueue } from "./browser-queue.ts";
+import type { BrowserEvent } from "./events.ts";
+import { randomHex } from "./protocol.ts";
 
 interface RefusedDeliveries {
   readonly batches: (readonly BrowserEvent[])[];

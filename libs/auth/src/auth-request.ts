@@ -1,10 +1,11 @@
 import { APIError } from "better-auth/api";
+import { Effect } from "effect";
+
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
-import { Auth } from "./auth.ts";
 import { AuthFailure } from "./auth-failure.ts";
+import { Auth } from "./auth.ts";
 import type { BetterAuthInstance } from "./create-auth.ts";
-import { Effect } from "effect";
 import { EmailVerificationFailed } from "./email-verification-failed.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 

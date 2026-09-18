@@ -1,3 +1,9 @@
+import { Effect } from "effect";
+
+import { verifySession } from "@repo/auth";
+import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
+import { httpStatus } from "@repo/observability";
+import { accountApi, unavailable } from "@repo/runtime/account";
 import {
   RoleChange,
   RoleChanged,
@@ -6,22 +12,11 @@ import {
   UserList,
   UserListQuery,
 } from "@repo/runtime/contracts";
-import { accountApi, unavailable } from "@repo/runtime/account";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@repo/runtime/http";
-import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
-import { Effect } from "effect";
-import { httpStatus } from "@repo/observability";
-import { runtime } from "./runtime.ts";
-import { verifySession } from "@repo/auth";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 
-const api = apiRoutes(runtime);
+import { reporting, runtime } from "./runtime.ts";
+
+const api = apiRoutes(runtime, reporting);
 const forbidden = { message: "この操作は許可されていません。", status: httpStatus.forbidden };
 const failures = {
   ...unavailable,
@@ -36,7 +31,7 @@ const failures = {
   },
 };
 
-const app = createApi(apiRoot)
+const adminApi = createApi(apiRoot)
   .use(accountApi(api))
   .get(
     "/users",
@@ -77,7 +72,5 @@ const app = createApi(apiRoot)
       failures,
     ),
   );
-
-const adminApi = compileApi(app);
 
 export { adminApi };

@@ -1,3 +1,12 @@
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
+import type { Metric } from "web-vitals";
+
+import { captureObservers } from "./browser-observers.ts";
+import { BrowserEventQueue } from "./browser-queue.ts";
+import type { EventQueue } from "./browser-queue.ts";
+import { errorAttributes } from "./errors.ts";
+import type { BrowserEvent } from "./events.ts";
+import { maximumMeasurement } from "./events.ts";
 import type { Correlation, HttpMethod } from "./protocol.ts";
 import {
   httpMethod,
@@ -9,14 +18,6 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
-import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
-import type { BrowserEvent } from "./events.ts";
-import { BrowserEventQueue } from "./browser-queue.ts";
-import type { EventQueue } from "./browser-queue.ts";
-import type { Metric } from "web-vitals";
-import { captureObservers } from "./browser-observers.ts";
-import { errorAttributes } from "./errors.ts";
-import { maximumMeasurement } from "./events.ts";
 
 interface BrowserTelemetryOptions {
   readonly endpoint: "/api/telemetry";

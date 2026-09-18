@@ -1,14 +1,16 @@
-import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import { Effect, Exit, Schema } from "effect";
+import type { Cause, ManagedRuntime } from "effect";
 import { Elysia, status } from "elysia";
-import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
-import { httpStatus, readJson } from "@repo/observability";
 import type { AnyElysia } from "elysia";
-import { AppOrigin } from "./app-origin.ts";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
+
+import { httpStatus, readJson } from "@repo/observability";
+import type { Reporting, RequestRejected } from "@repo/observability";
+
+import { AppOrigin } from "./app-origin.ts";
+import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
+import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
-import type { ManagedRuntime } from "effect";
-import type { RequestRejected } from "@repo/observability";
 import { jsonResponse } from "./responses.ts";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
@@ -64,16 +66,11 @@ function readSearchParams<Contract extends Decodable>(
 const apiRoot = "/api";
 
 function createApi<const Prefix extends string>(prefix: Prefix) {
-  return new Elysia({ adapter: CloudflareAdapter, prefix })
+  return new Elysia({ adapter: CloudflareAdapter, aot: false, prefix })
     .onParse(() => unreadBody)
     .onError(({ code }) =>
       code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
     );
-}
-
-function compileApi<App extends AnyElysia>(app: App): App {
-  app.compile();
-  return app;
 }
 
 type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
@@ -84,11 +81,22 @@ function elysiaServer(app: AnyElysia): {
   async function handle(context: ElysiaContext): Promise<Response> {
     return app.fetch(context.request);
   }
+  async function handleHead(context: ElysiaContext): Promise<Response> {
+    const response = await app.fetch(new Request(context.request, { method: "GET" }));
+    const body = await response.arrayBuffer();
+    const headers = new Headers(response.headers);
+    headers.set("content-length", String(body.byteLength));
+    return new Response(undefined, {
+      headers,
+      status: response.status,
+      statusText: response.statusText,
+    });
+  }
   return {
     handlers: {
       DELETE: handle,
       GET: handle,
-      HEAD: handle,
+      HEAD: handleHead,
       OPTIONS: handle,
       PATCH: handle,
       POST: handle,
@@ -101,13 +109,20 @@ function failedStatus(failure: Failure): Failed {
   return status(failure.status, { error: failure.message });
 }
 
-function unavailableResponse(): Response {
-  const failure = runtimeUnavailable();
-  return jsonResponse({ error: failure.message }, failure.status);
+function unavailableResponse(
+  cause: Readonly<Cause.Cause<unknown>>,
+  reporting: Reporting,
+): Effect.Effect<Response> {
+  return runtimeUnavailable(cause, reporting).pipe(
+    Effect.map((failure) => jsonResponse({ error: failure.message }, failure.status)),
+  );
 }
 
-function unavailableStatus(): Failed {
-  return failedStatus(runtimeUnavailable());
+function unavailableStatus(
+  cause: Readonly<Cause.Cause<unknown>>,
+  reporting: Reporting,
+): Effect.Effect<Failed> {
+  return runtimeUnavailable(cause, reporting).pipe(Effect.map(failedStatus));
 }
 
 function respondRaw<Failures extends Tagged, Requirements>(
@@ -133,21 +148,24 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
 
 function apiRoutes<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements, unknown>,
+  reporting: Reporting,
 ): ApiRoutes<Requirements> {
   async function settle<Value>(
     context: ElysiaContext,
     program: (request: Request) => Effect.Effect<Value, never, Requirements>,
-    unavailable: () => Value,
+    unavailable: (cause: Readonly<Cause.Cause<unknown>>) => Effect.Effect<Value>,
   ): Promise<Value> {
     const exit = await runtime.runPromiseExit(program(context.request));
-    return Exit.isSuccess(exit) ? exit.value : unavailable();
+    return Exit.isSuccess(exit) ? exit.value : Effect.runPromise(unavailable(exit.cause));
   }
   function raw<Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ): ElysiaHandler {
     return async (context): Promise<Response> =>
-      settle(context, respondRaw(handler, failures), unavailableResponse);
+      settle(context, respondRaw(handler, failures), (cause) =>
+        unavailableResponse(cause, reporting),
+      );
   }
   function route<Value, Encoded, Failures extends Tagged>(
     response: Schema.Codec<Value, Encoded>,
@@ -155,7 +173,9 @@ function apiRoutes<Requirements>(
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ): (context: ElysiaContext) => Promise<Encoded | Failed> {
     return async (context): Promise<Encoded | Failed> =>
-      settle(context, respondValue(response, handler, failures), unavailableStatus);
+      settle(context, respondValue(response, handler, failures), (cause) =>
+        unavailableStatus(cause, reporting),
+      );
   }
   return { raw, route };
 }
@@ -164,6 +184,6 @@ export { AppOrigin } from "./app-origin.ts";
 export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
-export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer, readJsonBody, readSearchParams };
+export { apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
 export type { ApiRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

@@ -1,8 +1,9 @@
-import { HttpResponse, http } from "msw";
-import { PasskeySettings } from "./passkey-settings";
-import { expect } from "storybook/test";
 import { noop } from "es-toolkit";
+import { HttpResponse, http } from "msw";
+import { expect } from "storybook/test";
+
 import preview from "../.storybook/preview";
+import { PasskeySettings } from "./passkey-settings";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";
 

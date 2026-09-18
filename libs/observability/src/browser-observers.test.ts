@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vite-plus/test";
-import { captureObservers } from "./browser-observers.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { setTimeout as wait } from "node:timers/promises";
+
+import { describe, expect, it } from "vite-plus/test";
+
+import { captureObservers } from "./browser-observers.ts";
 
 const settleMilliseconds = 50;
 

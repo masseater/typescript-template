@@ -1,5 +1,10 @@
 import { Cause, Effect } from "effect";
+
+import { CurrentRequest } from "./current-request.ts";
+import type { RequestContext } from "./current-request.ts";
 import { errorAttributes, errorFingerprint } from "./errors.ts";
+import type { ErrorAttributes } from "./errors.ts";
+import { httpStatus } from "./http-status.ts";
 import {
   httpMethod,
   parentContext,
@@ -8,12 +13,8 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
-import { CurrentRequest } from "./current-request.ts";
-import type { ErrorAttributes } from "./errors.ts";
-import type { RequestContext } from "./current-request.ts";
-import { Telemetry } from "./telemetry.ts";
-import { httpStatus } from "./http-status.ts";
 import { isRecord } from "./structured-logs.ts";
+import { Telemetry } from "./telemetry.ts";
 
 type RequestHandler<Requirements> = (
   request: Request,
@@ -28,8 +29,7 @@ function failureTag(error: unknown): string | undefined {
   return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
 }
 
-function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
-  const error = Cause.squash(cause);
+function failureAttributesOf(error: unknown): FailureAttributes {
   const attributes = errorAttributes(error);
   const tag = failureTag(error);
   if (tag === undefined) {
@@ -43,7 +43,7 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
 }
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
-  return Effect.logError("application.error", failureAttributes(cause));
+  return Effect.logError("application.error", failureAttributesOf(Cause.squash(cause)));
 }
 
 function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContext {
@@ -128,4 +128,4 @@ function observeRequest<Requirements>(
   });
 }
 
-export { observeRequest, reportFailure };
+export { failureAttributesOf, observeRequest, reportFailure };
