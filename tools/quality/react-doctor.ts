@@ -1,9 +1,10 @@
-import { Console, Effect, Schema } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
 
 interface Scan {
   readonly failed: boolean;
