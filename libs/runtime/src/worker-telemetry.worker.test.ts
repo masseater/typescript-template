@@ -1,13 +1,13 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { Effect, Layer, ManagedRuntime } from "effect";
+import { Effect, Layer } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { Telemetry } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 
-import { serveWorker } from "./worker.ts";
+import { serveWorker, workerRuntime } from "./worker.ts";
 
 interface Exported {
   readonly logs: readonly unknown[];
@@ -37,7 +37,7 @@ function served(): Effect.Effect<Exported> {
     };
   }
   async function invoke(): Promise<Exported> {
-    const runtime = ManagedRuntime.make(exporting);
+    const runtime = workerRuntime(() => exporting);
     const worker = serveWorker(
       runtime,
       () => Effect.succeed(new Response(undefined, { status: noContent })),
