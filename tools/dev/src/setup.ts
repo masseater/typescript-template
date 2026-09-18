@@ -14,6 +14,7 @@ import { failure, fileIo } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App, Credentials } from "./local-environment.ts";
 import {
+  OriginMode,
   credentialsFile,
   lanOrigin,
   local,
@@ -28,7 +29,6 @@ import {
   writePrivateFile,
 } from "./private-files.ts";
 
-const OriginMode = Schema.Literals(["lan", "loopback"]);
 interface SetupReport {
   readonly credentialsFile: string;
   readonly event: "local.app_configuration_ready";
@@ -93,23 +93,39 @@ function writeAppVariables(
   return replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
 }
 
-const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
-  const [requested = "lan"] = args;
+const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(
+  args: readonly string[],
+) {
+  const stored = yield* loadOrCreateCredentials();
+  const [requested = stored.origins ?? "lan"] = args;
   const origins = yield* Schema.decodeUnknownEffect(OriginMode)(requested).pipe(
     Effect.mapError(() => failure("origin_mode_invalid")),
   );
+  const credentials = { ...stored, origins };
+  if (stored.origins !== origins) {
+    yield* replacePrivateFile(
+      credentialsFile,
+      `${JSON.stringify(credentials, undefined, jsonIndentation)}\n`,
+    );
+  }
+  return credentials;
+});
+
+const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
   yield* fileIo(async () => mkdir(local, { mode: privateDirectoryMode, recursive: true }));
   yield* fileIo(async () =>
     mkdir(new URL("logs/", local), { mode: privateDirectoryMode, recursive: true }),
   );
   yield* refreshBrowserConfig();
-  const credentials = yield* loadOrCreateCredentials();
-  yield* Effect.forEach(applications, (app) => writeAppVariables(app, credentials, origins));
+  const credentials = yield* rememberOrigins(args);
+  yield* Effect.forEach(applications, (app) =>
+    writeAppVariables(app, credentials, credentials.origins),
+  );
   const report: SetupReport = {
     credentialsFile: fileURLToPath(credentialsFile),
     event: "local.app_configuration_ready",
     ok: true,
-    origins,
+    origins: credentials.origins,
     secretsPrinted: false,
   };
   return report;

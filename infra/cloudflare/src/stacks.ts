@@ -2,6 +2,9 @@ import { providers, state } from "alchemy/Cloudflare";
 
 import type { Application } from "@repo/config";
 
+import { monitorStacks } from "./monitors.ts";
+import type { MonitorStack } from "./monitors.ts";
+
 const application = ["database"] as const;
 const stackReferences = {
   admin: application,
@@ -15,7 +18,8 @@ const stackReferences = {
   user: application,
   wiki: application,
 } as const satisfies Readonly<Record<string, readonly string[]>> &
-  Readonly<Record<Application, typeof application>>;
+  Readonly<Record<Application, typeof application>> &
+  Readonly<Record<MonitorStack, readonly string[]>>;
 
 type StackName = keyof typeof stackReferences;
 
@@ -36,9 +40,7 @@ const stackNames = [
   "database",
   "observability",
   "tokens",
-  "budget-monitor",
-  "error-monitor",
-  "health-monitor",
+  ...monitorStacks,
   "user",
   "admin",
   "wiki",
@@ -46,9 +48,7 @@ const stackNames = [
 
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
-  "budget-monitor",
-  "error-monitor",
-  "health-monitor",
+  ...monitorStacks,
   "user",
   "admin",
   "wiki",

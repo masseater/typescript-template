@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-import { effectDiagnostics, taskInput } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
@@ -15,5 +15,11 @@ export default defineConfig({
     platform: "browser",
     target: "es2023",
   },
-  run: { tasks: { ...effectDiagnostics, build: { command: "vp pack", input: [...taskInput] } } },
+  run: {
+    tasks: {
+      ...effectDiagnostics,
+      build: { command: "vp pack", input: [...taskInput] },
+      ...lifecycle({ precommit: [], premerge: ["build"], prepush: ["check:effect"] }),
+    },
+  },
 });
