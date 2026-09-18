@@ -32,7 +32,7 @@ function ProfileEditor({
         <p className="text-sm leading-normal text-muted-foreground">
           残り {maximumProfileLength - form.profile.length} 文字
         </p>
-        <ProfileActions homeId={homeId} pending={form.pending} />
+        <ProfileActions blocked={form.blocked} homeId={homeId} />
       </FormColumn>
     </form>
   );
