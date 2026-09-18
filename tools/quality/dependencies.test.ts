@@ -73,7 +73,7 @@ describe("root-only packages", () => {
       {
         area: "libs",
         file: "libs/ui/package.json",
-        manifest: { devDependencies: { [dependency]: "1.0.0" }, name: "@template/ui" },
+        manifest: { devDependencies: { [dependency]: "1.0.0" }, name: "@repo/ui" },
       },
     ]);
     expect(violations).toHaveLength(1);
