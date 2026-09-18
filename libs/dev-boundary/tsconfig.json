@@ -1,5 +1,8 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["node"] },
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "plugins": [{ "name": "@effect/language-service" }]
+  },
   "include": ["src/**/*.ts"]
 }
