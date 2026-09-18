@@ -1,4 +1,4 @@
-import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -10,7 +10,7 @@ import {
 } from "../repository-scan/worktree-files.ts";
 import { isRunnerConfigurationFile, sharedSetupFilesUnder } from "./registered-setup-files.ts";
 
-const FIXTURE_ROOT = join(realpathSync(tmpdir()), "dont-review-it-registered-setup-files");
+const FIXTURE_ROOT = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-registered-setup-files-"));
 
 describe("isRunnerConfigurationFile", () => {
   describe("a module carrying the name the toolchain gives the runner configuration", () => {

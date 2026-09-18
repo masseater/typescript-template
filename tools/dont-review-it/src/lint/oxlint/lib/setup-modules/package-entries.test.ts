@@ -11,6 +11,10 @@ import {
   publicEntryFilesOf,
 } from "./package-entries.ts";
 
+const conditionedRoot = mkdtempSync(join(tmpdir(), "setup-modules-package-entries-conditioned-"));
+
+const severalRoot = mkdtempSync(join(tmpdir(), "setup-modules-package-entries-several-"));
+
 describe("publicEntryFilesOf", () => {
   describe("a manifest that is not an object", () => {
     const it = test.extend("entryFilesOfAManifestThatIsNotAnObject", ({}, { onCleanup }) => {
@@ -43,7 +47,7 @@ describe("publicEntryFilesOf", () => {
 
   describe("an entry named under a condition", () => {
     const it = test.extend("entryFilesOfAnEntryNamedUnderACondition", ({}, { onCleanup }) => {
-      const root = join(tmpdir(), "setup-modules-package-entries-conditioned");
+      const root = conditionedRoot;
       rmSync(root, { recursive: true, force: true });
       onCleanup(() => {
         rmSync(root, { recursive: true, force: true });
@@ -63,14 +67,14 @@ describe("publicEntryFilesOf", () => {
 
     it("is taken as the entry of its subpath", ({ entryFilesOfAnEntryNamedUnderACondition }) => {
       expect(entryFilesOfAnEntryNamedUnderACondition).toStrictEqual([
-        join(tmpdir(), "setup-modules-package-entries-conditioned", "src/index.ts"),
+        join(conditionedRoot, "src/index.ts"),
       ]);
     });
   });
 
   describe("a subpath offering several entries", () => {
     const it = test.extend("entryFilesOfASubpathOfferingSeveralEntries", ({}, { onCleanup }) => {
-      const root = join(tmpdir(), "setup-modules-package-entries-several");
+      const root = severalRoot;
       rmSync(root, { recursive: true, force: true });
       onCleanup(() => {
         rmSync(root, { recursive: true, force: true });
@@ -90,8 +94,8 @@ describe("publicEntryFilesOf", () => {
 
     it("takes each of them", ({ entryFilesOfASubpathOfferingSeveralEntries }) => {
       expect(entryFilesOfASubpathOfferingSeveralEntries).toStrictEqual([
-        join(tmpdir(), "setup-modules-package-entries-several", "src/index.ts"),
-        join(tmpdir(), "setup-modules-package-entries-several", "src/plugin.ts"),
+        join(severalRoot, "src/index.ts"),
+        join(severalRoot, "src/plugin.ts"),
       ]);
     });
   });

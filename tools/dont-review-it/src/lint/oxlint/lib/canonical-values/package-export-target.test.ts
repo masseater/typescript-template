@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -14,7 +14,7 @@ import {
   winningPackageExportSubpath,
 } from "./package-export-target.ts";
 
-const PACKAGE_DIRECTORY = join(tmpdir(), "package-export-target-spec");
+const PACKAGE_DIRECTORY = mkdtempSync(join(tmpdir(), "package-export-target-spec-"));
 
 const PATH_ONLY_PACKAGE_DIRECTORY = "/packages/example";
 
