@@ -1,6 +1,7 @@
 import { Console, Logger, References } from "effect";
-import type { Application } from "@repo/config";
 import type { Layer } from "effect";
+
+import type { Application } from "@repo/config";
 
 interface LogSink {
   readonly error: (line: string) => void;

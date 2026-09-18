@@ -1,4 +1,8 @@
-import { alertQuotaVerdict, emailBlocked, emailVerdicts } from "./email-guard.ts";
+import type { StateService } from "alchemy/State";
+import { Effect } from "effect";
+
+import { applications } from "@repo/config";
+
 import {
   attachedService,
   grantedPermissions,
@@ -9,12 +13,10 @@ import {
   workersSubdomain,
 } from "./account-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
-import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
-import type { StateService } from "alchemy/State";
-import { applications } from "@repo/config";
 import { databaseVerdict } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
+import { alertQuotaVerdict, emailBlocked, emailVerdicts } from "./email-guard.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
 
 type Claim = "free" | "owned" | "taken";

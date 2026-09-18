@@ -1,12 +1,14 @@
-import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
-import { Effect } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { symbolicate } from "./source-maps.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { symbolicate } from "./source-maps.ts";
 
 const release = "0123456789abcdef";
 

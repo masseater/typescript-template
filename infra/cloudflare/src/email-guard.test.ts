@@ -1,3 +1,8 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { mockServer } from "./account-fixture.ts";
+import { assertSendingDomainUnclaimed } from "./email-guard.ts";
 import {
   access,
   accountHandlers,
@@ -7,11 +12,7 @@ import {
   sending,
   sendingRecords,
 } from "./inspection-fixture.ts";
-import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { assertSendingDomainUnclaimed } from "./email-guard.ts";
 import { describeFailure } from "./secrets.ts";
-import { mockServer } from "./account-fixture.ts";
 
 const otherZoneId = "c".repeat(config.zoneId.length);
 

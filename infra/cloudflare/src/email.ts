@@ -1,9 +1,10 @@
 import { RemovalPolicy, Stack } from "alchemy";
-import { stackName, stackOptions } from "./stacks.ts";
-import { Effect } from "effect";
 import { Email } from "alchemy/Cloudflare";
+import { Effect } from "effect";
+
 import { sendingDomain } from "./config.ts";
 import { settings } from "./settings.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 
 const stack = Stack(
   stackName("email"),

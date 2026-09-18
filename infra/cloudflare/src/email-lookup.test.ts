@@ -1,9 +1,10 @@
 import { assert, it } from "@effect/vitest";
-import { mockServer, pagedCollection } from "./account-fixture.ts";
 import { Effect } from "effect";
 import { HttpResponse } from "msw";
-import { verificationSettings } from "./verification-fixture.ts";
+
+import { mockServer, pagedCollection } from "./account-fixture.ts";
 import { verifiedAddresses } from "./email-lookup.ts";
+import { verificationSettings } from "./verification-fixture.ts";
 
 const ADDRESS_PAGE_LIMIT = 50;
 const access = {

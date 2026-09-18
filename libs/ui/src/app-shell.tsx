@@ -1,9 +1,11 @@
-import { AppBody } from "./app-body";
-import type { Children } from "./shared/ui/types";
 import { HeadContent } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { initBrowserTelemetry } from "@repo/observability/browser";
 import { useEffect } from "react";
+
+import { initBrowserTelemetry } from "@repo/observability/browser";
+
+import { AppBody } from "./app-body";
+import type { Children } from "./shared/ui/types";
 
 function AppShell({
   children,

@@ -1,6 +1,6 @@
+import preview from "../../../.storybook/preview";
 import { Page } from "./page";
 import { Status } from "./status";
-import preview from "../../../.storybook/preview";
 
 const meta = preview.meta({ component: Page, parameters: { layout: "fullscreen" } });
 

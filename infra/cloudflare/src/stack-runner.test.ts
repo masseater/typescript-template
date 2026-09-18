@@ -1,8 +1,9 @@
-import { access, accountHandlers, config, sendingRecords } from "./inspection-fixture.ts";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { describeCause } from "./secrets.ts";
+
 import { mockServer } from "./account-fixture.ts";
+import { access, accountHandlers, config, sendingRecords } from "./inspection-fixture.ts";
+import { describeCause } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 
 const CONFIRMATION = "0123456789abcdef";

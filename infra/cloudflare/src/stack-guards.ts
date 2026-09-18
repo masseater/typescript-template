@@ -1,10 +1,11 @@
-import type { AccountAccess } from "./account-read.ts";
-import { Effect } from "effect";
-import type { SharedConfig } from "./config.ts";
-import type { StackName } from "./stacks.ts";
 import type { StateService } from "alchemy/State";
+import { Effect } from "effect";
+
+import type { AccountAccess } from "./account-read.ts";
+import type { SharedConfig } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { assertSendingDomainUnclaimed } from "./email-guard.ts";
+import type { StackName } from "./stacks.ts";
 import { onboardingStack } from "./stacks.ts";
 
 const assertStackUnclaimed = Effect.fn("assertStackUnclaimed")(function* assertStackUnclaimed<

@@ -1,10 +1,11 @@
-import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
-import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
-import { Effect, Redacted, Schema } from "effect";
 import { assert, it } from "@effect/vitest";
+import { Effect, Redacted, Schema } from "effect";
+import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
+
+import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
+import { describeFailure } from "./secrets.ts";
 import { authSecret, settings as deploymentSettings } from "./settings.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
-import { describeFailure } from "./secrets.ts";
 
 const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;

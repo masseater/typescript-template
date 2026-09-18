@@ -1,15 +1,16 @@
+import type { StateService } from "alchemy/State";
+import { Effect } from "effect";
+
+import { recordsPresent } from "./account-lookup.ts";
+import type { AccountAccess } from "./account-read.ts";
+import { CloudflareFailure } from "./config.ts";
+import type { SharedConfig } from "./config.ts";
 import {
   onboardingVerdict,
   senderVerdict,
   sendingRecordNames,
   verifiedAddresses,
 } from "./email-lookup.ts";
-import type { AccountAccess } from "./account-read.ts";
-import { CloudflareFailure } from "./config.ts";
-import { Effect } from "effect";
-import type { SharedConfig } from "./config.ts";
-import type { StateService } from "alchemy/State";
-import { recordsPresent } from "./account-lookup.ts";
 
 type Onboarding = Effect.Success<ReturnType<typeof onboardingVerdict>>;
 

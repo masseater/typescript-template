@@ -1,3 +1,8 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { mockServer } from "./account-fixture.ts";
+import { blocked, inspectAccount } from "./account-inspection.ts";
 import {
   access,
   accountHandlers,
@@ -11,10 +16,6 @@ import {
   unverifiableToken,
   workers,
 } from "./inspection-fixture.ts";
-import { assert, it } from "@effect/vitest";
-import { blocked, inspectAccount } from "./account-inspection.ts";
-import { Effect } from "effect";
-import { mockServer } from "./account-fixture.ts";
 
 it.effect("clears an account that holds nothing this deployment claims", () =>
   Effect.gen(function* program() {

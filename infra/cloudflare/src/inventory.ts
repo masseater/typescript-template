@@ -1,12 +1,13 @@
-import { Effect, References, Result, Schema } from "effect";
 import { Stage, inMemoryState } from "alchemy";
-import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
-import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
-import type { StackName } from "./stacks.ts";
 import { providers } from "alchemy/Cloudflare";
-import { repositoryRoot } from "./artifacts.ts";
-import { stackName } from "./stacks.ts";
+import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
+import { Effect, References, Result, Schema } from "effect";
+
+import { repositoryRoot } from "./artifacts.ts";
+import type { StackName } from "./stacks.ts";
+import { stackName } from "./stacks.ts";
+import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 
 interface ResourceInventory {
   readonly adopt: boolean;

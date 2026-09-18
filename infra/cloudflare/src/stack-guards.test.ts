@@ -1,3 +1,7 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { mockServer } from "./account-fixture.ts";
 import {
   access,
   accountHandlers,
@@ -6,11 +10,8 @@ import {
   emptyState,
   sendingRecords,
 } from "./inspection-fixture.ts";
-import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { assertStackUnclaimed } from "./stack-guards.ts";
 import { describeFailure } from "./secrets.ts";
-import { mockServer } from "./account-fixture.ts";
+import { assertStackUnclaimed } from "./stack-guards.ts";
 import { sendingStacks } from "./stacks.ts";
 
 const deployment = { access, config };

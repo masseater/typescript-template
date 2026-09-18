@@ -1,10 +1,11 @@
+import type { StateService } from "alchemy/State";
 import { Effect, Schema } from "effect";
+
 import { endpoint, readList, readPages, readRequired } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import type { SharedConfig } from "./config.ts";
-import type { StateService } from "alchemy/State";
-import { recordedSendingDomains } from "./state-ownership.ts";
 import { sendingDomain } from "./config.ts";
+import { recordedSendingDomains } from "./state-ownership.ts";
 
 const ADDRESS_PAGE_SIZE = 50;
 const WILDCARD = "*.";

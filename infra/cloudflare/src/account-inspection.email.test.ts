@@ -1,3 +1,9 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { mockServer } from "./account-fixture.ts";
+import { blocked, inspectAccount } from "./account-inspection.ts";
 import {
   FORBIDDEN_STATUS,
   access,
@@ -9,11 +15,6 @@ import {
   sendingRecords,
   zone,
 } from "./inspection-fixture.ts";
-import { HttpResponse, http } from "msw";
-import { assert, it } from "@effect/vitest";
-import { blocked, inspectAccount } from "./account-inspection.ts";
-import { Effect } from "effect";
-import { mockServer } from "./account-fixture.ts";
 
 it.effect("blocks a sending domain carrying any record Email Service manages", () =>
   Effect.forEach(sendingRecords, (record) =>
