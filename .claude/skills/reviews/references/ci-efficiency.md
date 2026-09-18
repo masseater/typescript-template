@@ -1,9 +1,7 @@
 ---
 name: ci-efficiency
-description: CIの実行時間と実行量を削減する。CIの高速化、テスト対象の最適化、キャッシュ、merge queueの活用を行うときに使用する。
+description: CIの実行時間と実行量を削減する。
 ---
-
-# CI Efficiency
 
 CIは、不要な処理を実行しないことを最優先にして効率化する。
 
