@@ -108,14 +108,29 @@ const taskInput = [
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
 ] as const;
 
+const effectDiagnostics = {
+  "check:effect": {
+    command:
+      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+    input: [...taskInput],
+  },
+} satisfies NonNullable<UserConfig["run"]>["tasks"];
+
+const effectRun = { tasks: { ...effectDiagnostics } } satisfies UserConfig["run"];
+
 const appRun = {
-  tasks: { build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] } },
+  tasks: {
+    ...effectDiagnostics,
+    build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
+  },
 } satisfies UserConfig["run"];
 
 export {
   appRun,
   appServer,
   clientReachableModules,
+  effectDiagnostics,
+  effectRun,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
