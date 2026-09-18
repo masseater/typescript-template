@@ -1,0 +1,39 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { describe, expect, test } from "vite-plus/test";
+
+import { couplingEdgesOf, parsedProgramAt } from "./entry-reachability.ts";
+
+describe("parsedProgramAt", () => {
+  describe("a path holding no file", () => {
+    const it = test.extend("parsedProgram", ({}, { onCleanup }) => {
+      const root = mkdtempSync(join(tmpdir(), "setup-modules-entry-reachability-"));
+      onCleanup(() => {
+        rmSync(root, { recursive: true, force: true });
+      });
+      return parsedProgramAt(join(root, "never-written.ts"));
+    });
+
+    it("parses into no program", ({ parsedProgram }) => {
+      expect(parsedProgram).toBe(null);
+    });
+  });
+});
+
+describe("couplingEdgesOf", () => {
+  describe("a path holding no file", () => {
+    const it = test.extend("couplingEdges", ({}, { onCleanup }) => {
+      const root = mkdtempSync(join(tmpdir(), "setup-modules-entry-reachability-"));
+      onCleanup(() => {
+        rmSync(root, { recursive: true, force: true });
+      });
+      return couplingEdgesOf(join(root, "never-written.ts"));
+    });
+
+    it("couples to nothing", ({ couplingEdges }) => {
+      expect(couplingEdges).toStrictEqual([]);
+    });
+  });
+});
