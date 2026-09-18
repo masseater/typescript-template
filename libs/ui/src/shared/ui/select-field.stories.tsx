@@ -1,13 +1,14 @@
 import { expect, fn, userEvent } from "storybook/test";
 import { SelectField } from "./select-field";
-import { noop } from "es-toolkit";
 import preview from "../../../.storybook/preview";
+
+const changeRole = fn<(value: string) => void>();
 
 const meta = preview.meta({
   args: {
     label: "権限",
     name: "role",
-    onValueChange: noop,
+    onValueChange: changeRole,
     options: [
       { label: "一般", value: "user" },
       { label: "管理者", value: "admin" },
@@ -22,9 +23,8 @@ export const Default = meta.story();
 export const Admin = meta.story({ args: { value: "admin" } });
 
 export const Selects = meta.story({
-  args: { onValueChange: fn() },
-  play: async ({ args, canvas }) => {
+  play: async ({ canvas }) => {
     await userEvent.selectOptions(canvas.getByLabelText("権限"), "admin");
-    await expect(args.onValueChange).toHaveBeenCalledWith("admin", expect.anything());
+    await expect(changeRole.mock.calls.at(0)?.at(0)).toBe("admin");
   },
 });
