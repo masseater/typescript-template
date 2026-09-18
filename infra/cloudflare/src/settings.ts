@@ -11,6 +11,7 @@ import {
   Prefix,
   Recipients,
   SamplingRate,
+  checkOtlpSettings,
   checkSharedConfig,
   originKeys,
 } from "./config.ts";
@@ -39,13 +40,9 @@ const budget = Config.all({
 });
 
 const otlpDestination = Config.all({
-  enabled: Config.boolean("TEMPLATE_OTLP_ENABLED").pipe(Config.withDefault(true)),
+  enabled: optional(Config.boolean("TEMPLATE_OTLP_ENABLED")),
   endpoint: optional(Config.schema(HttpsUrl, "TEMPLATE_OTLP_ENDPOINT")),
-}).pipe(
-  Config.map(({ enabled, endpoint }) =>
-    endpoint === undefined ? undefined : { enabled, endpoint },
-  ),
-);
+});
 
 const settings = Config.all({
   accountId: Config.schema(Id, "CLOUDFLARE_ACCOUNT_ID"),
@@ -62,7 +59,13 @@ const settings = Config.all({
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
   zoneId: Config.schema(Id, "CLOUDFLARE_ZONE_ID"),
-}).pipe(Effect.flatMap(checkSharedConfig));
+}).pipe(
+  Effect.flatMap((config) =>
+    checkOtlpSettings(config.otlp).pipe(
+      Effect.flatMap((otlp) => checkSharedConfig({ ...config, otlp })),
+    ),
+  ),
+);
 
 const authSecret = Config.schema(AuthSecret, "TEMPLATE_AUTH_SECRET").pipe(
   Config.map(Redacted.make),
