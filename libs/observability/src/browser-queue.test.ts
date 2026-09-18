@@ -7,11 +7,6 @@ import { BrowserEventQueue } from "./browser-queue.ts";
 import type { BrowserEvent } from "./events.ts";
 import { randomHex } from "./protocol.ts";
 
-interface RefusedDeliveries {
-  readonly batches: (readonly BrowserEvent[])[];
-  readonly queue: BrowserEventQueue;
-}
-
 const maximumDeliveryAttempts = 3;
 const retryBackoffMilliseconds = 1000;
 const spanIdBytes = 8;
@@ -35,7 +30,10 @@ function vitalEvent(): BrowserEvent {
   };
 }
 
-function refusedDeliveries(): RefusedDeliveries {
+function refusedDeliveries(): {
+  readonly batches: (readonly BrowserEvent[])[];
+  readonly queue: BrowserEventQueue;
+} {
   const batches: (readonly BrowserEvent[])[] = [];
   const queue = new BrowserEventQueue(async (events) => {
     batches.push(events);
@@ -53,11 +51,6 @@ async function attemptFlush(queue: Readonly<BrowserEventQueue>): Promise<boolean
   }
 }
 
-async function attemptTwice(queue: Readonly<BrowserEventQueue>): Promise<void> {
-  await attemptFlush(queue);
-  await attemptFlush(queue);
-}
-
 async function exhaustAttempts(queue: Readonly<BrowserEventQueue>): Promise<void> {
   await attemptFlush(queue);
   await wait(retryBackoffMilliseconds);
@@ -71,10 +64,11 @@ describe("browser event queue", () => {
     expect.hasAssertions();
     const { batches, queue } = refusedDeliveries();
     queue.enqueue(vitalEvent());
-    await attemptTwice(queue);
+    await attemptFlush(queue);
+    await attemptFlush(queue);
     expect(batches).toHaveLength(1);
     await wait(retryBackoffMilliseconds);
-    await attemptTwice(queue);
+    await attemptFlush(queue);
     expect(batches).toHaveLength(secondAttempt);
   });
 

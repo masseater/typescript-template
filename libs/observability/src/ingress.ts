@@ -45,13 +45,12 @@ function currentWindow(serviceName: Application): IngressWindow {
 }
 
 function unrecorded(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  window: IngressWindow,
+  recorded: ReadonlySet<string>,
   events: readonly BrowserEvent[],
 ): readonly BrowserEvent[] {
   const batch = new Set<string>();
   return events.filter((event) => {
-    if (window.recorded.has(event.spanId) || batch.has(event.spanId)) {
+    if (recorded.has(event.spanId) || batch.has(event.spanId)) {
       return false;
     }
     batch.add(event.spanId);
@@ -59,13 +58,20 @@ function unrecorded(
   });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function admit(window: IngressWindow, count: number): boolean {
-  if (window.count + count > maximumEventsPerWindow) {
-    return false;
+function admitUnrecorded(
+  serviceName: Application,
+  events: readonly BrowserEvent[],
+): readonly BrowserEvent[] | undefined {
+  const window = currentWindow(serviceName);
+  const fresh = unrecorded(window.recorded, events);
+  if (window.count + fresh.length > maximumEventsPerWindow) {
+    return undefined;
   }
-  window.count += count;
-  return true;
+  window.count += fresh.length;
+  for (const event of fresh) {
+    window.recorded.add(event.spanId);
+  }
+  return fresh;
 }
 
 function kindFields(event: BrowserEvent): LogFields {
@@ -121,26 +127,20 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(request: Ingress
   return events.success;
 });
 
-const recordUnseen = Effect.fn("recordUnseen")(function* recordUnseen(
+function recordUnseen(
   serviceName: Application,
   events: readonly BrowserEvent[],
-) {
-  const window = currentWindow(serviceName);
-  const fresh = unrecorded(window, events);
-  if (!admit(window, fresh.length)) {
-    return emptyResponse(httpStatus.tooManyRequests, {
-      ...noStore,
-      "retry-after": retryAfterSeconds,
-    });
+): Effect.Effect<Response> {
+  const fresh = admitUnrecorded(serviceName, events);
+  if (fresh === undefined) {
+    return Effect.succeed(
+      emptyResponse(httpStatus.tooManyRequests, { ...noStore, "retry-after": retryAfterSeconds }),
+    );
   }
-  for (const event of fresh) {
-    window.recorded.add(event.spanId);
-  }
-  yield* Effect.forEach(fresh, (event) => recordBrowserEvent(serviceName, event), {
+  return Effect.forEach(fresh, (event) => recordBrowserEvent(serviceName, event), {
     discard: true,
-  });
-  return emptyResponse(httpStatus.accepted);
-});
+  }).pipe(Effect.as(emptyResponse(httpStatus.accepted)));
+}
 
 const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(request: IngressRequest) {
   if (request.method !== "POST") {
