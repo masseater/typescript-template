@@ -5,16 +5,11 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
+import { applicationReadyPaths } from "@repo/config";
+
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
-import {
-  browserConfig,
-  lanOrigin,
-  readyPaths,
-  refreshBrowserConfig,
-  root,
-  run,
-} from "./local-environment.ts";
+import { browserConfig, lanOrigin, refreshBrowserConfig, root, run } from "./local-environment.ts";
 import type { App } from "./local-environment.ts";
 
 interface BrowserReport {
@@ -50,7 +45,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const args = yield* sessionArguments(app);
   // oxlint-disable-next-line node/no-process-env
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  yield* run("agent-browser", [...args, "open", `${lanOrigin(app)}${readyPaths[app]}`], {
+  yield* run("agent-browser", [...args, "open", `${lanOrigin(app)}${applicationReadyPaths[app]}`], {
     cwd: root,
     env,
   });
