@@ -4,20 +4,13 @@ import { stackName, stackNames } from "./stacks.ts";
 import type { StackName } from "./stacks.ts";
 import type { StateService } from "alchemy/State";
 
-type StateStore<Failure = never, Requirements = never> = Effect.Effect<
-  StateService,
-  Failure,
-  Requirements
->;
-
 const StoredDatabase = Schema.Struct({ attr: Schema.Struct({ databaseId: Schema.String }) });
 const StoredWorker = Schema.Struct({ attr: Schema.Struct({ workerName: Schema.String }) });
 const isStoredDatabase = Schema.is(StoredDatabase);
 const isStoredWorker = Schema.is(StoredWorker);
 
 const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
+  store: Effect.Effect<StateService, Failure, Requirements>,
   prefix: string,
   stacks: readonly StackName[],
 ) {
@@ -25,7 +18,6 @@ const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, R
   const found = yield* Effect.forEach(stacks, (stack) =>
     readState({ path: `${stackName(stack)}/${prefix}`, recursive: true }).pipe(
       Effect.provideService(State, Effect.succeed(state)),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.map((entries) => entries.map((entry) => entry.value)),
       Effect.catchTag("InvalidStatePath", () => Effect.succeed<readonly unknown[]>([])),
     ),
@@ -36,11 +28,7 @@ const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, R
 const recordedDatabaseIds = Effect.fn("recordedDatabaseIds")(function* recordedDatabaseIds<
   Failure,
   Requirements,
->(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
-  prefix: string,
-) {
+>(store: Effect.Effect<StateService, Failure, Requirements>, prefix: string) {
   const rows = yield* recordedRows(store, prefix, ["database"]);
   return rows.flatMap((row) => (isStoredDatabase(row) ? [row.attr.databaseId] : []));
 });
@@ -48,14 +36,9 @@ const recordedDatabaseIds = Effect.fn("recordedDatabaseIds")(function* recordedD
 const recordedWorkerNames = Effect.fn("recordedWorkerNames")(function* recordedWorkerNames<
   Failure,
   Requirements,
->(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
-  prefix: string,
-) {
+>(store: Effect.Effect<StateService, Failure, Requirements>, prefix: string) {
   const rows = yield* recordedRows(store, prefix, stackNames);
   return rows.flatMap((row) => (isStoredWorker(row) ? [row.attr.workerName] : []));
 });
 
 export { recordedDatabaseIds, recordedWorkerNames };
-export type { StateStore };
