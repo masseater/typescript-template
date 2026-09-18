@@ -6,12 +6,12 @@ const verificationSettings = {
   budget: {
     budgetJpy: 5000,
     fixedCostUsd: 5,
-    jpyPerUsd: 150,
+    jpyPerUsd: 151,
     recipients: ["billing@example.com"],
     reserveUsd: 2,
   },
   mailFrom: "mail@template-verify.example.com",
-  observabilitySampling: 1,
+  observabilitySampling: 0.5,
   origins: {
     admin: "https://admin.example.com",
     user: "https://user.example.com",
