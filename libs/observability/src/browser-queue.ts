@@ -10,6 +10,17 @@ interface EventQueue {
 }
 
 const maximumPendingEvents = 128;
+const maximumDeliveryAttempts = 3;
+const retryBackoffMilliseconds = 1000;
+const maximumRetryBackoffMilliseconds = 60_000;
+const backoffFactor = 2;
+
+function backoffAfter(failures: number): number {
+  return Math.min(
+    retryBackoffMilliseconds * backoffFactor ** (failures - 1),
+    maximumRetryBackoffMilliseconds,
+  );
+}
 
 function logError(event: string): void {
   // oxlint-disable-next-line no-console
@@ -33,6 +44,8 @@ class BrowserEventQueue implements EventQueue {
   private readonly pending: BrowserEvent[] = [];
   private active: Promise<void> | undefined;
   private closed = false;
+  private failures = 0;
+  private retryAt = 0;
 
   public constructor(deliver: Deliver) {
     this.deliver = deliver;
@@ -81,17 +94,37 @@ class BrowserEventQueue implements EventQueue {
   }
 
   private async drain(): Promise<void> {
+    if (Date.now() < this.retryAt) {
+      return;
+    }
     const events = this.pending.splice(0, maximumBatchSize);
     if (events.length === 0) {
       return;
     }
+    await this.attempt(events);
+    await this.drain();
+  }
+
+  private async attempt(events: readonly BrowserEvent[]): Promise<void> {
     try {
       await this.deliver(events);
     } catch (error) {
-      this.pending.unshift(...events);
+      this.giveUpOrRetry(events);
       throw error;
     }
-    await this.drain();
+    this.failures = 0;
+    this.retryAt = 0;
+  }
+
+  private giveUpOrRetry(events: readonly BrowserEvent[]): void {
+    this.failures += 1;
+    this.retryAt = Date.now() + backoffAfter(this.failures);
+    if (this.failures < maximumDeliveryAttempts) {
+      this.pending.unshift(...events);
+      return;
+    }
+    this.failures = 0;
+    logError("browser.telemetry_batch_dropped");
   }
 }
 

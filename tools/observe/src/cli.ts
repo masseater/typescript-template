@@ -7,13 +7,14 @@ import { Console, Effect, Schema } from "effect";
 import { applicationPorts } from "@repo/config";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
+import { exportedTelemetry } from "./exported.ts";
 import { reportFailed } from "./failure.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
 }) {}
 
-const commands = ["logs", "traces", "trace", "request"] as const;
+const commands = ["logs", "traces", "trace", "request", "exported"] as const;
 const minutesPerDay = 1440;
 const maxQueryLimit = 500;
 const millisecondsPerMinute = 60_000;
@@ -72,6 +73,11 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
       Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
     );
   }
+  if (input.command === "exported") {
+    return required(input.traceId).pipe(
+      Effect.flatMap((traceId) => exportedTelemetry(traceId, input.minutes)),
+    );
+  }
   if (input.command === "trace") {
     return required(input.traceId).pipe(
       Effect.flatMap((traceId) =>
@@ -98,9 +104,19 @@ const help = Console.log(
     commands,
     flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
     readOnly: true,
-    source: "Cloudflare Local Explorer of the running app",
+    sources: {
+      default: "Cloudflare Local Explorer of the running app",
+      exported: "OTLP receiver of infra/local",
+    },
   }),
 );
+
+const remediation = {
+  explorer:
+    "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
+  exported:
+    "Start the OTLP receiver with `pnpm --filter @repo/local up` and check that --trace-id and --minutes cover the exported trace.",
+} as const;
 
 const query = Effect.fn("query")(function* query() {
   const input = yield* Schema.decodeUnknownEffect(QueryInput)({
@@ -132,8 +148,7 @@ NodeRuntime.runMain(
       reportFailed({
         event: "observability.query_failed",
         ok: false,
-        remediation:
-          "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
+        remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
       }),
     ),
   ),
