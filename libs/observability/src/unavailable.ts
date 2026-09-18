@@ -73,7 +73,7 @@ function causeChain(error: unknown): string {
   for (let depth = 0; depth < chainDepth && current !== undefined && current !== null; depth += 1) {
     const text = causeText(current);
     if (text !== undefined) {
-      links.push(text);
+      links.push(scanned(text));
     }
     current = nestedCause(current);
   }

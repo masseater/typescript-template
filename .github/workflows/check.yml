@@ -16,7 +16,7 @@ jobs:
   check:
     if: github.event_name == 'pull_request'
     name: ${{ startsWith(github.head_ref, 'mergify/merge-queue/') && 'merge-queue' || 'check' }}
-    runs-on: ubuntu-latest
+    runs-on: &runner ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
     timeout-minutes: 15
     env:
       TEST_SCOPE: ${{ !startsWith(github.head_ref, 'mergify/merge-queue/') && '--changed HEAD^1' || '' }}
@@ -26,6 +26,7 @@ jobs:
         with:
           fetch-depth: 2
       - &browser-cache
+        if: vars.CI_RUNNER == ''
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
@@ -34,12 +35,13 @@ jobs:
         uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
-          cache: true
+          cache: ${{ vars.CI_RUNNER == '' }}
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install_args: github:gastownhall/beads
       - &task-cache-restore
         id: vite-task-cache
+        if: vars.CI_RUNNER == ''
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
@@ -53,14 +55,14 @@ jobs:
         run: vp run build
       - &task-cache-save
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always()
+        if: always() && vars.CI_RUNNER == ''
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
 
   cache:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: *runner
     timeout-minutes: 15
     steps:
       - *checkout

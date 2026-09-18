@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { Effect, ManagedRuntime, Schema } from "effect";
 import type { Layer } from "effect";
@@ -38,7 +39,9 @@ async function servedUnavailable(
     () => Effect.succeed(new Response("reached the route")),
     reporting,
   );
-  const response = await worker.fetch(new Request("http://localhost:3001/"));
+  const context = createExecutionContext();
+  const response = await worker.fetch(new Request("http://localhost:3001/"), {}, context);
+  await waitOnExecutionContext(context);
   return { body: await response.json(), status: response.status };
 }
 

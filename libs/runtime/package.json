@@ -23,7 +23,10 @@
     "elysia": "1.4.30"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "catalog:",
     "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
