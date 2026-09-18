@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
-import { deploymentValues, secretViolations } from "./secrets.ts";
+import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
+import type { DeploymentValue } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
@@ -13,12 +14,8 @@ import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
 import { secretsFile } from "@template/config/deployment";
 
-interface StagedFailure {
-  readonly file: string;
-  readonly rules: string[];
-}
-
 const MAX_OUTPUT_BYTES = 33_554_432;
+const FAILED_EXIT_CODE = 1;
 
 // oxlint-disable-next-line typescript/strict-void-return
 const run = promisify(execFile);
@@ -47,39 +44,41 @@ const environmentValues = read(path.join(root, "package.json")).pipe(
   Effect.flatMap(Schema.decodeUnknownEffect(Manifest)),
   Effect.flatMap(({ name }) => read(secretsFile(name))),
   Effect.map(deploymentValues),
-  Effect.orElseSucceed((): readonly string[] => []),
+  Effect.orElseSucceed((): readonly DeploymentValue[] => []),
 );
 
-function stagedFailure(
-  file: string,
-  values: readonly string[],
-): Effect.Effect<StagedFailure[], unknown> {
-  return git(["show", `:${file}`]).pipe(
-    Effect.map((content) => {
-      const rules = secretViolations(file, content, values);
-      return rules.length > 0 ? [{ file, rules }] : [];
-    }),
-  );
+function stagedFile(
+  filename: string,
+): Effect.Effect<{ content: string; filename: string }, unknown> {
+  return git(["show", `:${filename}`]).pipe(Effect.map((content) => ({ content, filename })));
 }
 
 const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
   const values = yield* environmentValues;
   const listed = yield* git(["ls-files", "--cached", "-z"]);
   const files = listed.split("\0").filter(Boolean);
-  const failures = yield* Effect.all(files.map((file) => stagedFailure(file, values)));
-  return failures.flat();
+  const staged = yield* Effect.all(files.map((file) => stagedFile(file)));
+  const scan = prefixScan(
+    values,
+    staged.map((entry: Readonly<{ content: string }>) => entry.content),
+  );
+  const failures = staged.flatMap((entry: Readonly<{ content: string; filename: string }>) => {
+    const rules = secretViolations(entry, values, scan);
+    return rules.length > 0 ? [{ file: entry.filename, rules }] : [];
+  });
+  return { failures, scan };
 });
 
 NodeRuntime.runMain(
   scanStaged().pipe(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    Effect.flatMap((failures) =>
+    Effect.flatMap(({ failures, scan }) =>
       Effect.sync(() => {
         process.stdout.write(
-          `${JSON.stringify({ event: "quality.staged_secrets", failures, ok: failures.length === 0 })}\n`,
+          `${JSON.stringify({ event: "quality.staged_secrets", failures, ok: failures.length === 0, prefixScan: scan })}\n`,
         );
         if (failures.length > 0) {
-          process.exitCode = 1;
+          process.exitCode = FAILED_EXIT_CODE;
         }
       }),
     ),

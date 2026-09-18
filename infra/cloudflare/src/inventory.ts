@@ -16,6 +16,7 @@ interface ResourceInventory {
 }
 
 interface StackInventory {
+  readonly dependencies: readonly string[];
   readonly name: string;
   readonly resources: Readonly<Record<string, ResourceInventory>>;
 }
@@ -78,16 +79,32 @@ function applyVerificationEnvironment(): void {
   }
 }
 
+const bindingDetails = [
+  "className",
+  "destinationAddress",
+  "allowedDestinationAddresses",
+  "allowedSenderAddresses",
+] as const;
+
+const isBindingDetail = Schema.is(Schema.Union([Schema.String, Schema.Array(Schema.String)]));
+
+function bindingDetail(value: unknown): readonly string[] {
+  if (!isBindingDetail(value)) {
+    return [];
+  }
+  return [typeof value === "string" ? value : [...value].toSorted().join(",")];
+}
+
 function describeBinding(entry: typeof BindingEntry.Type): string {
   const [binding] = entry.data.bindings;
   if (typeof binding !== "object" || binding === null) {
     return `${entry.sid}:deferred`;
   }
-  const kind: unknown = Reflect.get(binding, "type");
-  const className: unknown = Reflect.get(binding, "className");
-  return typeof className === "string"
-    ? `${entry.sid}:${String(kind)}:${className}`
-    : `${entry.sid}:${String(kind)}`;
+  return [
+    entry.sid,
+    String(Reflect.get(binding, "type")),
+    ...bindingDetails.flatMap((key) => bindingDetail(Reflect.get(binding, key))),
+  ].join(":");
 }
 
 function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
@@ -98,8 +115,39 @@ function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
   );
 }
 
+const REFERENCE_KIND = "RefExpr";
+const CALLABLE_KEYS: ReadonlySet<string> = new Set(["length", "name", "prototype"]);
+
+function traversable(value: unknown): value is object {
+  return value !== null && (typeof value === "object" || typeof value === "function");
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string>): void {
+  if (!traversable(value) || seen.has(value)) {
+    return;
+  }
+  seen.add(value);
+  const referenced: unknown = Reflect.get(value, "stack");
+  if (Reflect.get(value, "kind") === REFERENCE_KIND && typeof referenced === "string") {
+    found.add(referenced);
+  }
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key === "string" && !CALLABLE_KEYS.has(key)) {
+      collectReferences(Reflect.get(value, key), seen, found);
+    }
+  }
+}
+
+function referencedStacks(shape: typeof CompiledShape.Type): readonly string[] {
+  const found = new Set<string>();
+  collectReferences(shape.bindings, new Set(), found);
+  return [...found].filter((referenced) => referenced !== shape.name).toSorted();
+}
+
 function inventoryOf(shape: typeof CompiledShape.Type): StackInventory {
   return {
+    dependencies: referencedStacks(shape),
     name: shape.name,
     resources: Object.fromEntries(
       Object.entries(shape.resources).map(

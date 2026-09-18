@@ -42,24 +42,32 @@ const userBindings: AppBindings<"user"> = {
   APP_ORIGIN: settings.origins.user,
 };
 
+const confirmation = "0123456789abcdef";
+
 it.effect(
   "deployment commands reject ignored arguments instead of selecting an unintended stack",
   () =>
     Effect.gen(function* program() {
       assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "admin"]), {
         operation: "plan",
-        targets: [{ stack: "admin" }],
+        stacks: ["admin"],
+      });
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "all"]), {
+        operation: "plan",
+        stacks: [...stackNames],
       });
       assert.deepStrictEqual(
-        (yield* parseDeploymentCommand(["deploy", "all"])).targets.flatMap(
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-          ({ stack }) => [stack],
-        ),
-        [...stackNames],
+        yield* parseDeploymentCommand(["deploy", "user", "--confirm-plan", confirmation]),
+        { confirmation, operation: "deploy", stack: "user" },
       );
       for (const args of [
-        ["deploy", "user", "--stage", "other"],
-        ["deploy", "unknown"],
+        ["deploy", "user"],
+        ["deploy", "all", "--confirm-plan", confirmation],
+        ["deploy", "user", "--confirm-plan", confirmation, "--stage", "other"],
+        ["deploy", "user", "--confirm-plan", "not-a-confirmation"],
+        ["deploy", "user", "--yes"],
+        ["deploy", "unknown", "--confirm-plan", confirmation],
+        ["plan", "all", "--confirm-plan", confirmation],
         ["up", "all"],
       ]) {
         const failure = yield* parseDeploymentCommand(args).pipe(Effect.flip);

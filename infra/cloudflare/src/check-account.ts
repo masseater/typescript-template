@@ -1,36 +1,42 @@
-import { Config, Effect, Redacted } from "effect";
-import { reportCause, reportRejection, withVerifiedSecrets } from "./secrets.ts";
+import { FAILED_EXIT_CODE, reportCause } from "./secrets.ts";
+import { blocked, inspectAccount } from "./account-inspection.ts";
+import { deploymentAccess, stateStore } from "./deployment-access.ts";
+import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { findDatabaseId } from "./database-lookup.ts";
-import { settings } from "./settings.ts";
-import { verifiedSecrets } from "./credentials.ts";
+import { layer } from "alchemy/Alchemist";
 
-const apiToken = Config.redacted("CLOUDFLARE_API_TOKEN");
+const EVENT = "account.rejected";
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const secrets = yield* verifiedSecrets();
-    const config = yield* withVerifiedSecrets(secrets, settings);
-    const token = yield* withVerifiedSecrets(secrets, apiToken);
-    const existing = yield* findDatabaseId({
-      accountId: config.accountId,
-      apiToken: Redacted.value(token),
-      name: `${config.prefix}-db`,
-    });
-    // oxlint-disable-next-line no-console
-    console.log(
-      JSON.stringify({ databaseAlreadyExists: existing !== undefined, event: "account.inspected" }),
+    const { access, confidential, config, secrets } = yield* deploymentAccess();
+    yield* Effect.gen(function* inspected() {
+      const inspection = yield* inspectAccount(access, config, stateStore(secrets));
+      const refused = blocked(inspection);
+      // oxlint-disable-next-line no-console
+      console.log(
+        JSON.stringify({
+          blocked: refused,
+          checks: inspection,
+          event: "account.inspected",
+          ok: refused.length === 0,
+        }),
+      );
+      if (refused.length > 0) {
+        process.exitCode = FAILED_EXIT_CODE;
+      }
+    }).pipe(
+      Effect.provide(layer()),
+      Effect.scoped,
+      Effect.catchCause(
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        (cause) => reportCause(EVENT, cause, confidential),
+      ),
     );
-    if (existing !== undefined) {
-      yield* reportRejection("account.rejected", {
-        code: "database_name_taken",
-        keys: ["TEMPLATE_PREFIX"],
-      });
-    }
   }).pipe(
     Effect.catchCause(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause("account.rejected", cause),
+      (cause) => reportCause(EVENT, cause),
     ),
   ),
   { disableErrorReporting: true },

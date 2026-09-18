@@ -1,11 +1,13 @@
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
-import { stackName, stackNames } from "./stacks.ts";
+import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
+import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
+import { databaseName } from "./database-lookup.ts";
 import { grants } from "@template/config";
 import { verificationSettings } from "./verification-fixture.ts";
 import { workerModuleGlobs } from "./artifacts.ts";
@@ -35,7 +37,7 @@ function applicationResource(app: Application): unknown {
       "APP_RELEASE:plain_text",
       "AUTH_SECRET:secret_text",
       "DB:d1",
-      "EMAIL:send_email",
+      `EMAIL:send_email:${verificationSettings.mailFrom}`,
       "EMAIL_FROM:plain_text",
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
@@ -68,7 +70,7 @@ function monitorResource(options: {
     bindings: [
       "ALERT_FROM:plain_text",
       "ALERT_TO:plain_text",
-      "EMAIL:send_email",
+      `EMAIL:send_email:${[...verificationSettings.budget.recipients].toSorted().join(",")}:${verificationSettings.mailFrom}`,
       `MONITOR:durable_object_namespace:${options.className}`,
       ...options.variables,
     ].toSorted(),
@@ -103,72 +105,65 @@ function accountToken(slug: string, permission: string): unknown {
   };
 }
 
+function declaredStack(stack: StackName, resources: Readonly<Record<string, unknown>>): unknown {
+  return {
+    dependencies: stackDependencies[stack].map((dependency) => stackName(dependency)).toSorted(),
+    name: stackName(stack),
+    resources,
+  };
+}
+
 const expected: Readonly<Record<StackName, unknown>> = {
-  admin: { name: stackName("admin"), resources: { Worker: applicationResource("admin") } },
-  "budget-monitor": {
-    name: stackName("budget-monitor"),
-    resources: {
-      Worker: monitorResource({
-        artifact: "infra/budget-monitor/dist/index.js",
-        className: "BudgetMonitor",
-        cron: "17 */6 * * *",
-        name: "budget",
-        variables: [
-          "BILLING_READ_TOKEN:deferred",
-          "BUDGET_JPY:plain_text",
-          "CLOUDFLARE_ACCOUNT_ID:plain_text",
-          "FIXED_COST_USD:plain_text",
-          "JPY_PER_USD:plain_text",
-          "RESERVE_USD:plain_text",
-        ],
-      }),
+  admin: declaredStack("admin", { Worker: applicationResource("admin") }),
+  "budget-monitor": declaredStack("budget-monitor", {
+    Worker: monitorResource({
+      artifact: "infra/budget-monitor/dist/index.js",
+      className: "BudgetMonitor",
+      cron: "17 */6 * * *",
+      name: "budget",
+      variables: [
+        "BILLING_READ_TOKEN:deferred",
+        "BUDGET_JPY:plain_text",
+        "CLOUDFLARE_ACCOUNT_ID:plain_text",
+        "FIXED_COST_USD:plain_text",
+        "JPY_PER_USD:plain_text",
+        "RESERVE_USD:plain_text",
+      ],
+    }),
+  }),
+  database: declaredStack("database", {
+    Database: {
+      adopt: false,
+      bindings: [],
+      declared: { name: databaseName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.D1Database",
     },
-  },
-  database: {
-    name: stackName("database"),
-    resources: {
-      Database: {
-        adopt: false,
-        bindings: [],
-        declared: { name: `${prefix}-db` },
-        removalPolicy: "retain",
-        type: "Cloudflare.D1Database",
-      },
-    },
-  },
-  "error-monitor": {
-    name: stackName("error-monitor"),
-    resources: {
-      Worker: monitorResource({
-        artifact: "infra/error-monitor/dist/index.js",
-        className: "ErrorMonitor",
-        cron: "*/5 * * * *",
-        name: "errors",
-        variables: ["CLOUDFLARE_ACCOUNT_ID:plain_text", "OBSERVABILITY_TOKEN:deferred"],
-      }),
-    },
-  },
-  "health-monitor": {
-    name: stackName("health-monitor"),
-    resources: {
-      Worker: monitorResource({
-        artifact: "infra/health-monitor/dist/index.js",
-        className: "HealthMonitor",
-        cron: "37 * * * *",
-        name: "health",
-        variables: ["ADMIN_ORIGIN:plain_text", "USER_ORIGIN:plain_text", "WIKI_ORIGIN:plain_text"],
-      }),
-    },
-  },
-  tokens: {
-    name: stackName("tokens"),
-    resources: {
-      BillingRead: accountToken("billing-read", "Billing Read"),
-      ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
-    },
-  },
-  user: { name: stackName("user"), resources: { Worker: applicationResource("user") } },
-  wiki: { name: stackName("wiki"), resources: { Worker: applicationResource("wiki") } },
+  }),
+  "error-monitor": declaredStack("error-monitor", {
+    Worker: monitorResource({
+      artifact: "infra/error-monitor/dist/index.js",
+      className: "ErrorMonitor",
+      cron: "*/5 * * * *",
+      name: "errors",
+      variables: ["CLOUDFLARE_ACCOUNT_ID:plain_text", "OBSERVABILITY_TOKEN:deferred"],
+    }),
+  }),
+  "health-monitor": declaredStack("health-monitor", {
+    Worker: monitorResource({
+      artifact: "infra/health-monitor/dist/index.js",
+      className: "HealthMonitor",
+      cron: "37 * * * *",
+      name: "health",
+      variables: ["ADMIN_ORIGIN:plain_text", "USER_ORIGIN:plain_text", "WIKI_ORIGIN:plain_text"],
+    }),
+  }),
+  tokens: declaredStack("tokens", {
+    BillingRead: accountToken("billing-read", "Billing Read"),
+    ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
+  }),
+  user: declaredStack("user", { Worker: applicationResource("user") }),
+  wiki: declaredStack("wiki", { Worker: applicationResource("wiki") }),
 };
 
 applyVerificationEnvironment();
@@ -208,7 +203,7 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
-      process.exitCode = 1;
+      process.exitCode = FAILED_EXIT_CODE;
     }
   }).pipe(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -218,14 +213,14 @@ NodeRuntime.runMain(
         console.error(
           JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
         );
-        process.exitCode = 1;
+        process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
     Effect.catchCause(() =>
       Effect.sync(() => {
         // oxlint-disable-next-line no-console
         console.error(JSON.stringify({ event: "stacks.invalid" }));
-        process.exitCode = 1;
+        process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
   ),

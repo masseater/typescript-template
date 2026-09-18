@@ -1,3 +1,4 @@
+import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import {
@@ -15,7 +16,6 @@ import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { Effect } from "effect";
 import type { Scope } from "effect";
-import { loadArtifacts } from "./artifacts.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -76,11 +76,15 @@ const userBuild: Effect.Effect<UserBuild, never, Scope.Scope> = temporaryRoot.pi
   Effect.flatMap((root) => run(async () => writeUserBuild(root))),
 );
 
+function load(root: string, target: Application): ReturnType<typeof loadArtifacts> {
+  return loadArtifacts(root, target).pipe(Effect.provideService(ArtifactWrites, "publish"));
+}
+
 function failureCode(
   root: string,
   target: Application,
 ): Effect.Effect<ArtifactFailure["code"], Effect.Success<ReturnType<typeof loadArtifacts>>> {
-  return loadArtifacts(root, target).pipe(
+  return load(root, target).pipe(
     Effect.flip,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((failure) => failure.code),
@@ -93,7 +97,7 @@ it.effect(
     Effect.gen(function* program() {
       const { client, root, server } = yield* userBuild;
       yield* run(async () => writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" }));
-      const artifacts = yield* loadArtifacts(root, "user");
+      const artifacts = yield* load(root, "user");
       assert.deepStrictEqual(
         artifacts.modules.map((module) => module.name),
         ["chunks/handler.js", "index.js", "index.js.map"],
@@ -117,9 +121,58 @@ it.effect(
 it.effect("reuses the staging directory for unchanged client content", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const first = yield* loadArtifacts(root, "user");
-    const second = yield* loadArtifacts(root, "user");
+    const first = yield* load(root, "user");
+    const second = yield* load(root, "user");
     assert.strictEqual(second.clientDirectory, first.clientDirectory);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("resolves the upload without writing anything outside a deployment", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    const artifacts = yield* loadArtifacts(root, "user");
+    assert.include(artifacts.clientDirectory, artifacts.uploaded);
+    assert.deepStrictEqual(
+      yield* run(async () => readdir(path.join(root, "infra", "cloudflare")).catch(() => [])),
+      [],
+    );
+    assert.deepStrictEqual(
+      yield* run(async () => readdir(path.join(root, ".local")).catch(() => [])),
+      [],
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("leaves earlier digests alone while a preview is still awaiting approval", () =>
+  Effect.gen(function* program() {
+    const { client, root } = yield* userBuild;
+    const first = yield* loadArtifacts(root, "user").pipe(
+      Effect.provideService(ArtifactWrites, "stage"),
+    );
+    yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 4;"));
+    const second = yield* loadArtifacts(root, "user").pipe(
+      Effect.provideService(ArtifactWrites, "stage"),
+    );
+    assert.deepStrictEqual(
+      (yield* run(async () =>
+        readdir(path.join(root, "infra", "cloudflare", ".artifacts", "user")),
+      )).toSorted(),
+      [first.uploaded, second.uploaded].toSorted(),
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("keeps only the staged digest a deployment is about to upload", () =>
+  Effect.gen(function* program() {
+    const { client, root } = yield* userBuild;
+    const first = yield* load(root, "user");
+    yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 3;"));
+    const second = yield* load(root, "user");
+    assert.notStrictEqual(second.uploaded, first.uploaded);
+    assert.deepStrictEqual(
+      yield* run(async () => readdir(path.join(root, "infra", "cloudflare", ".artifacts", "user"))),
+      [second.uploaded],
+    );
   }).pipe(Effect.scoped),
 );
 
@@ -134,7 +187,7 @@ it.effect("refuses server CSS that differs from its public asset", () =>
 it.effect("never writes through a link placed in the staging directory", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const artifacts = yield* loadArtifacts(root, "user");
+    const artifacts = yield* load(root, "user");
     const protectedFile = path.join(root, "protected.txt");
     yield* run(async () => {
       await writeFile(protectedFile, "do not overwrite");
@@ -152,9 +205,9 @@ it.effect("never writes through a link placed in the staging directory", () =>
 it.effect("stages changed client content in a new directory", () =>
   Effect.gen(function* program() {
     const { client, root } = yield* userBuild;
-    const first = yield* loadArtifacts(root, "user");
+    const first = yield* load(root, "user");
     yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 2;"));
-    const second = yield* loadArtifacts(root, "user");
+    const second = yield* load(root, "user");
     assert.notStrictEqual(second.clientDirectory, first.clientDirectory);
     assert.notStrictEqual(second.release, first.release);
   }).pipe(Effect.scoped),
@@ -164,13 +217,13 @@ it.effect("derives the release from code and client content but not from source 
   Effect.gen(function* program() {
     const { root, server } = yield* userBuild;
     yield* run(async () => writeFiles(server, { "index.js.map": "{}" }));
-    const first = yield* loadArtifacts(root, "user");
+    const first = yield* load(root, "user");
     yield* run(async () => writeFile(path.join(server, "index.js.map"), '{"version":3}'));
-    const mapChanged = yield* loadArtifacts(root, "user");
+    const mapChanged = yield* load(root, "user");
     yield* run(async () =>
       writeFile(path.join(server, "chunks/handler.js"), "export default { changed: true };"),
     );
-    const codeChanged = yield* loadArtifacts(root, "user");
+    const codeChanged = yield* load(root, "user");
     assert.strictEqual(mapChanged.release, first.release);
     assert.notStrictEqual(codeChanged.release, first.release);
   }).pipe(Effect.scoped),
