@@ -36,7 +36,6 @@ const app = createApi(apiRoot)
     "/users",
     ...api.route(
       { query: UserListQuery, response: UserList },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request, page) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
@@ -49,7 +48,6 @@ const app = createApi(apiRoot)
     "/users",
     ...api.route(
       { body: RoleChange, response: RoleChanged },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request, change) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
@@ -62,7 +60,6 @@ const app = createApi(apiRoot)
     "/users",
     ...api.route(
       { body: UserDeletion, response: UserDeleted },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request, deletion) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);

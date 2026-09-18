@@ -23,14 +23,12 @@ const failures = {
   TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {
   const { user } = yield* verifySession(request.headers);
   return yield* openInterview(user.id);
 });
 
 const turn = Effect.fn("interview.api.turn")(function* turn(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
   utterance: typeof Utterance.Type,
 ) {
@@ -38,13 +36,11 @@ const turn = Effect.fn("interview.api.turn")(function* turn(
   return yield* takeTurn(user.id, utterance);
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const saveSheet = Effect.fn("interview.api.save")(function* saveSheet(request: Request) {
   const { user } = yield* verifySession(request.headers);
   return yield* saveInterview(user.id);
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const restart = Effect.fn("interview.api.restart")(function* restart(request: Request) {
   const { user } = yield* verifySession(request.headers);
   return yield* restartInterview(user.id);

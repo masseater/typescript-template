@@ -30,7 +30,6 @@ const app = createApi(apiRoot)
     "/profile",
     ...api.route(
       { response: ProfileView },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
@@ -47,7 +46,6 @@ const app = createApi(apiRoot)
     "/member",
     ...api.route(
       { query: MemberQuery, response: MemberView },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request, { id }) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
@@ -60,7 +58,6 @@ const app = createApi(apiRoot)
     "/members",
     ...api.route(
       { query: MemberListQuery, response: MemberList },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request, { keyword, page }) =>
         Effect.gen(function* handleRequest() {
           yield* verifySession(request.headers);
@@ -75,7 +72,6 @@ const app = createApi(apiRoot)
     "/profile",
     ...api.route(
       { body: ProfileUpdate, response: ProfileView },
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request, values) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);

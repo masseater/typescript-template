@@ -24,7 +24,6 @@ const options = { cwd: root, maxBuffer: MAX_OUTPUT_BYTES };
 
 function git(args: readonly string[]): Effect.Effect<string, unknown> {
   return Effect.tryPromise(async () => run("git", [...args], options)).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map(({ stdout }) => stdout),
   );
 }
@@ -71,7 +70,6 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
 
 NodeRuntime.runMain(
   scanStaged().pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap(({ failures, scan }) =>
       Effect.sync(() => {
         process.stdout.write(

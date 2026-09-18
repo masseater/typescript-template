@@ -185,6 +185,9 @@ catalogs:
     '@effect/vitest':
       specifier: 4.0.0-rc.112
       version: 4.0.0-rc.112
+    '@feature-sliced/steiger-plugin':
+      specifier: 0.7.0
+      version: 0.7.0
     '@msw/cloudflare':
       specifier: 0.0.1
       version: 0.0.1
@@ -257,6 +260,9 @@ catalogs:
     shadcn:
       specifier: 4.21.0
       version: 4.21.0
+    steiger:
+      specifier: 0.6.0
+      version: 0.6.0
     tailwindcss:
       specifier: 4.3.3
       version: 4.3.3
@@ -283,6 +289,7 @@ overrides:
   drizzle-orm@*: 1.0.0-rc.4
   drizzle-kit@*: 1.0.0-rc.4
   '@effect/platform-node-shared@*': 4.0.0-rc.112
+  steiger>cosmiconfig: 10.0.1
 
 patchedDependencies:
   '@better-auth/oauth-provider@1.7.5': 1ab2e21676aee36496443c4993fc64405f3fcc50b7683ec7d4b0d17a6816a417
@@ -300,9 +307,6 @@ importers:
       '@effect/tsgo':
         specifier: 0.45.0
         version: 0.45.0
-      '@feature-sliced/steiger-plugin':
-        specifier: 0.7.0
-        version: 0.7.0(typescript@7.0.2)
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
@@ -327,9 +331,6 @@ importers:
       miniflare:
         specifier: 5.20260917.0-alpha
         version: 5.20260917.0-alpha(@types/node@26.6.1)
-      steiger:
-        specifier: 0.6.0
-        version: 0.6.0(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -385,6 +386,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@feature-sliced/steiger-plugin':
+        specifier: 'catalog:'
+        version: 0.7.0(typescript@7.0.2)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
@@ -406,6 +410,9 @@ importers:
       jiti:
         specifier: 2.7.0
         version: 2.7.0
+      steiger:
+        specifier: 'catalog:'
+        version: 0.6.0(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -464,6 +471,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@feature-sliced/steiger-plugin':
+        specifier: 'catalog:'
+        version: 0.7.0(typescript@7.0.2)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
@@ -482,6 +492,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
+      steiger:
+        specifier: 'catalog:'
+        version: 0.6.0(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -552,6 +565,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@feature-sliced/steiger-plugin':
+        specifier: 'catalog:'
+        version: 0.7.0(typescript@7.0.2)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
@@ -582,6 +598,9 @@ importers:
       remark-mdx:
         specifier: 3.1.1
         version: 3.1.1(supports-color@10.2.2)
+      steiger:
+        specifier: 'catalog:'
+        version: 0.6.0(typescript@7.0.2)
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -668,9 +687,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@template/interview':
-        specifier: workspace:*
-        version: link:../../libs/interview
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -6837,6 +6853,10 @@ packages:
   cose-base@2.2.0:
     resolution: {integrity: sha512-AzlgcsCbUMymkADOJtQm3wO9S3ltPfYOFD5033keQn9NJzIbtnZj+UdBJe7DYml/8TdbtHJW3j58SOnKhWY/5g==}
 
+  cosmiconfig@10.0.1:
+    resolution: {integrity: sha512-/zvGoYn0y27QTBmK+0B+oPdEPC4fKGUmJsMTQbDjqph00TrkqfVFW/M+C6ya54sYCgHC6QCwK/mI6djt8cEGHQ==}
+    engines: {node: ^22.18 || >= 24}
+
   cosmiconfig@9.0.2:
     resolution: {integrity: sha512-gtTZxTDau1wL7Y7zifc2dd8jHSK/k6BTx/2Xp/BpdlAdnlYWFVt7qhJqgwi7637yRwRQ3qL4ZidbB4I8tA5VOg==}
     engines: {node: '>=14'}
@@ -8262,6 +8282,10 @@ packages:
 
   js-yaml@4.3.2:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
+    hasBin: true
+
+  js-yaml@5.4.2:
+    resolution: {integrity: sha512-m+aqu+LwO1O6sIopafj8HUVl5aawITwZQe/yHpMCKjaWBaA/d07B/QdMb3529REftiU+RMMHL3Vlsw3hON7vWg==}
     hasBin: true
 
   jsbi@4.3.2:
@@ -16244,6 +16268,11 @@ snapshots:
     dependencies:
       layout-base: 2.0.1
 
+  cosmiconfig@10.0.1:
+    dependencies:
+      env-paths: 2.2.1
+      js-yaml: 5.4.2
+
   cosmiconfig@9.0.2(typescript@7.0.2):
     dependencies:
       env-paths: 2.2.1
@@ -17760,6 +17789,10 @@ snapshots:
   js-tokens@4.0.0: {}
 
   js-yaml@4.3.2:
+    dependencies:
+      argparse: 2.0.1
+
+  js-yaml@5.4.2:
     dependencies:
       argparse: 2.0.1
 
@@ -19833,7 +19866,7 @@ snapshots:
       '@clack/prompts': 0.9.1
       '@feature-sliced/steiger-plugin': 0.7.0(typescript@7.0.2)
       chokidar: 4.0.3
-      cosmiconfig: 9.0.2(typescript@7.0.2)
+      cosmiconfig: 10.0.1
       effector: 23.4.4
       empathic: 1.1.0
       fastest-levenshtein: 1.0.16

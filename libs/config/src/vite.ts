@@ -56,9 +56,7 @@ async function writeScalarReference(response: ServerResponse): Promise<void> {
 function scalarReference(): Plugin {
   return {
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     configureServer(server) {
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       server.middlewares.use(scalarReferencePath, (_request, response) => {
         void writeScalarReference(response);
       });
@@ -101,12 +99,9 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
   let removed = 0;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   function strip(options: readonly PluginOption[]): PluginOption[] {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     return options.flatMap((plugin: PluginOption): PluginOption[] => {
       if (Array.isArray(plugin)) {
         return [strip(plugin)];
@@ -149,7 +144,10 @@ const taskInput = [
 ] as const;
 
 const appRun = {
-  tasks: { build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] } },
+  tasks: {
+    build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
+    check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
+  },
 } satisfies UserConfig["run"];
 
 const monitorWorker = {

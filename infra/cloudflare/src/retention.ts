@@ -28,7 +28,6 @@ const generations = Effect.fn("generations")(function* generations(parent: strin
       .filter((entry: GenerationEntry) => entry.isDirectory())
       .map((entry: GenerationEntry) =>
         io(async () => stat(path.join(parent, entry.name))).pipe(
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           Effect.map((information): Generation => ({
             modified: information.mtimeMs,
             name: entry.name,
@@ -45,7 +44,6 @@ function retainGenerations(
   kept: number,
 ): Effect.Effect<void, ArtifactFailure> {
   return generations(parent).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((found) => {
       const retained = new Set([
         pinned,

@@ -54,7 +54,6 @@ function queryParameters(contract: Decodable): Parameters {
   }
   const { properties, required } = decoded.success;
   const names = new Set(required);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return Object.entries(properties).map(([name, property]) => ({
     in: "query",
     name,
@@ -69,7 +68,6 @@ function failureResponses(failures: object): DocumentDecoration["responses"] {
 }
 
 function routeDetail<Input extends Decodable, Value, Encoded>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   spec: RouteSpec<Input, Value, Encoded>,
   failures: object,
 ): RouteDetail {

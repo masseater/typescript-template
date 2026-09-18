@@ -17,12 +17,10 @@ import { serveMcp } from "./mcp.ts";
 const maximumQueryLength = 200;
 const api = apiRoutes(runtime);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function search(request: Request): Effect.Effect<Response, never, WikiServices> {
   const query = new URL(request.url).searchParams.get("query")?.trim() ?? "";
   return query
     ? searchWiki(query.slice(0, maximumQueryLength)).pipe(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         Effect.map((results) => jsonResponse(results)),
       )
     : Effect.succeed(jsonResponse([]));

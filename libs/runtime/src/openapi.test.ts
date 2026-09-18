@@ -28,7 +28,6 @@ const app = compileApi(
       "/members",
       ...api.route(
         { query: MemberListQuery, response: MemberList },
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         (_request, query) => Effect.succeed({ ...members, total: query.page }),
         { MemberGone: { message: "見つかりません。", status: httpStatus.conflict } },
       ),
@@ -37,7 +36,6 @@ const app = compileApi(
       "/profile",
       ...api.route(
         { body: ProfileUpdate, response: ProfileView },
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         (_request, values) => Effect.succeed({ ...stored, ...values }),
         {},
       ),
@@ -68,7 +66,6 @@ const Route = Schema.Struct({
 const readDocument = Schema.decodeUnknownEffect(Document);
 const readRoutes = Schema.decodeUnknownEffect(Schema.Array(Route));
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function readJson(reply: Response): Effect.Effect<unknown> {
   return Effect.promise(async () => reply.json());
 }
@@ -116,9 +113,8 @@ function served(): Effect.Effect<readonly string[], unknown> {
 
 function listed(document: typeof Document.Type): readonly string[] {
   return Object.entries(document.paths)
-    .flatMap(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      ([path, methods]) => Object.keys(methods).map((method) => `${method.toUpperCase()} ${path}`),
+    .flatMap(([path, methods]) =>
+      Object.keys(methods).map((method) => `${method.toUpperCase()} ${path}`),
     )
     .toSorted();
 }
