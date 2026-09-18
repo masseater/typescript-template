@@ -38,14 +38,20 @@ it.effect("reads an untouched account as free of the names this deployment claim
         HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
       ),
       pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
-        HttpResponse.json({ result: [], result_info: { per_page: 100, total_count: 0 } }),
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 20, total_count: 0 },
+        }),
       ),
       unpagedCollection(`${account}/workers/scripts`, () =>
         // oxlint-disable-next-line unicorn/no-null
         HttpResponse.json({ result: [], result_info: null }),
       ),
       unpagedCollection(`${account}/workers/domains`, () =>
-        HttpResponse.json({ result: [], result_info: { per_page: 20, total_count: 0 } }),
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 0, total_count: 0 },
+        }),
       ),
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       unpagedCollection(`${zone}/dns_records`, ({ request }) => {

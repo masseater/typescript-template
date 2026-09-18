@@ -99,6 +99,10 @@ function page(total: number): Readonly<{ per_page: number; total_count: number }
   return { per_page: RETURNED_PAGE_SIZE, total_count: total };
 }
 
+function rowsAsPage(rows: number): Readonly<{ per_page: number; total_count: number }> {
+  return { per_page: rows, total_count: rows };
+}
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function accountHandlers(options: {
   readonly token?: readonly ReturnType<typeof http.get>[];
@@ -134,7 +138,7 @@ function accountHandlers(options: {
     unpagedCollection(`${account}/workers/domains`, ({ request }) => {
       const wanted = new URL(request.url).searchParams.get("hostname");
       const matching = options.domains.filter((domain) => domain.hostname === wanted);
-      return HttpResponse.json({ result: matching, result_info: page(options.domains.length) });
+      return HttpResponse.json({ result: matching, result_info: rowsAsPage(matching.length) });
     }),
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),

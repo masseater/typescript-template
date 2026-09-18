@@ -58,6 +58,50 @@ it.effect("accepts a filtered page that Cloudflare counted against the whole col
   }).pipe(Effect.scoped),
 );
 
+it.effect("accepts an empty collection that reports a page size of zero", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(url, () =>
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 0, total_count: 0 },
+        }),
+      ),
+    );
+    const listed = yield* readList(
+      access,
+      {
+        filter: { "name.exact": "user.example.com" },
+        source: endpoint`zones/${access.accountId}/dns_records`,
+      },
+      Rows,
+    );
+    assert.deepStrictEqual(listed.result, []);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("accepts a collection that reports the rows it returned as the page size", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(url, () =>
+        HttpResponse.json({
+          result: [{ name: "user.example.com" }, { name: "admin.example.com" }],
+          result_info: { count: 2, page: 1, per_page: 2, total_count: 2, total_pages: 1 },
+        }),
+      ),
+    );
+    const listed = yield* readList(
+      access,
+      { source: endpoint`zones/${access.accountId}/dns_records` },
+      Rows,
+    );
+    assert.deepStrictEqual(listed.result, [
+      { name: "user.example.com" },
+      { name: "admin.example.com" },
+    ]);
+  }).pipe(Effect.scoped),
+);
+
 it.effect("refuses a page that came back as full as the page size", () =>
   Effect.gen(function* program() {
     yield* mockServer(

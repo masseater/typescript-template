@@ -58,9 +58,12 @@ function overflowed(
     | undefined,
   collection: Collection,
 ): boolean {
+  const counted = info?.total_count;
+  if (counted !== undefined && (counted <= rows || collection.filter === undefined)) {
+    return counted > rows;
+  }
   const page = info?.per_page ?? collection.pageSize;
-  const counted = collection.filter === undefined ? info?.total_count : undefined;
-  return (page !== undefined && rows >= page) || (counted !== undefined && counted !== rows);
+  return page !== undefined && page > 0 && rows >= page;
 }
 
 const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
