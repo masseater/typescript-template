@@ -14,7 +14,6 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:check": "drizzle-kit check",
     "db:migrate:local": "node src/migrate-local.ts",
     "db:bootstrap:local": "node src/bootstrap-local.ts"
   },
