@@ -6,8 +6,9 @@ import { SQLiteDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import type { EmailAddress } from "./bootstrap-statement.ts";
 import { RemoteFailure, fail } from "./remote-input.ts";
+
+import type { EmailAddress } from "./bootstrap-statement.ts";
 
 interface RemoteQuery {
   readonly params: readonly (string | number | null)[];

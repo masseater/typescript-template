@@ -4,9 +4,8 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
-
 import { applications } from "@repo/config";
+import { Console, Effect, Schema } from "effect";
 
 import { reportFailed } from "./failure.ts";
 import { symbolicate } from "./source-maps.ts";

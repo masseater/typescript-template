@@ -1,12 +1,12 @@
-import { Effect, Result } from "effect";
-import type { Cause, ManagedRuntime } from "effect";
-
-import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
 import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
+import { Effect, Result } from "effect";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
 import { jsonResponse, secureResponse } from "./responses.ts";
+
+import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
+import type { Cause, ManagedRuntime } from "effect";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;

@@ -1,6 +1,4 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
@@ -8,11 +6,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NodeRuntime } from "@effect/platform-node";
+import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
-import { applications } from "@repo/config";
-
 import { reportFailed } from "./failure.ts";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Dirent } from "node:fs";
 
 class PrivateMapsFailure extends Schema.TaggedError<PrivateMapsFailure>()("PrivateMapsFailure", {
   reason: Schema.Literals([

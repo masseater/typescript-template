@@ -5,11 +5,9 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
+import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
 import { Effect } from "effect";
 
-import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
-
-import type { LocalCommandFailure } from "./failure.ts";
 import { fileIo } from "./failure.ts";
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import {
@@ -22,8 +20,10 @@ import {
   running,
   socket,
 } from "./local-environment.ts";
-import type { App } from "./local-environment.ts";
 import { privateFileMode } from "./private-files.ts";
+
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App } from "./local-environment.ts";
 
 interface AppStatus {
   readonly app: App;

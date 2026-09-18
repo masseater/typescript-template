@@ -7,6 +7,7 @@ import { Cause, Console, Effect, Option } from "effect";
 import { deploymentCredentials } from "./credentials.ts";
 import { prefixScan, secretViolations } from "./secrets.ts";
 import { stagedFiles } from "./staged.ts";
+
 import type { StagedFile } from "./staged.ts";
 
 const FAILED_EXIT_CODE = 1;

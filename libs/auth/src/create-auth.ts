@@ -1,17 +1,17 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import type { BetterAuthOptions } from "better-auth";
-import { betterAuth } from "better-auth";
-import { Effect } from "effect";
-
 import { applications, authenticationMethods, roles } from "@repo/config";
-import type { Application } from "@repo/config";
-import type { DrizzleDatabase } from "@repo/db";
 import { schema } from "@repo/db";
 import { findUser } from "@repo/db/security";
+import { betterAuth } from "better-auth";
+import { Effect } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
 import { createRequestHooks } from "./request-hooks.ts";
+
+import type { Application } from "@repo/config";
+import type { DrizzleDatabase } from "@repo/db";
+import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
 interface AuthOptions {

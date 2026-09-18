@@ -1,8 +1,7 @@
 import { NodeRuntime } from "@effect/platform-node";
+import { runRemoteDatabaseCommand } from "@repo/db/remote";
 import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
-
-import { runRemoteDatabaseCommand } from "@repo/db/remote";
 
 import { CloudflareFailure } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";

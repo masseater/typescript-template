@@ -1,11 +1,11 @@
-import type { ReactElement } from "react";
-
-import type { ActionState } from "./action";
-import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeForm } from "./challenge-form";
-import type { ChallengeMode } from "./challenge-form";
 import { Button } from "./shared/ui/button";
 import { useTextInput } from "./use-text-input";
+
+import type { ReactElement } from "react";
+import type { ActionState } from "./action";
+import type { AuthenticatedHandler } from "./authenticated-handler";
+import type { ChallengeMode } from "./challenge-form";
 
 interface ChallengeLoginProps {
   readonly action: ActionState;

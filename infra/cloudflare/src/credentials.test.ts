@@ -6,14 +6,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import type { Scope } from "effect";
-
 import { secretsFile } from "@repo/config/deployment";
 import { deploymentKeys } from "@repo/config/deployment-keys";
+import { Effect } from "effect";
 
 import { verifySecretsFile } from "./credentials.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
+
+import type { Scope } from "effect";
 
 const OWNER_ONLY_FILE_MODE = 0o600;
 const GROUP_READABLE_FILE_MODE = 0o640;

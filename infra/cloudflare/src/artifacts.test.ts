@@ -17,12 +17,12 @@ import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { Scope } from "effect";
+
+import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 
 import type { Application } from "@repo/config";
-
+import type { Scope } from "effect";
 import type { ArtifactFailure } from "./artifact-io.ts";
-import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 
 interface UserBuild {
   readonly client: string;

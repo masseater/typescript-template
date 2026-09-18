@@ -1,5 +1,6 @@
-import type { UserConfig } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
+
+import type { UserConfig } from "vite-plus";
 
 const configs: Readonly<Record<string, Readonly<UserConfig>>> = import.meta.glob(
   "../../vite.config.ts",

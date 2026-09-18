@@ -1,17 +1,17 @@
 import { assert } from "@effect/vitest";
+import { sendVerificationEmail } from "@repo/config";
+import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@repo/db/testing";
 import { Context, Effect, Layer, Schema } from "effect";
-import type { Scope } from "effect";
 import { URI } from "otpauth";
 
-import type { Application } from "@repo/config";
-import { sendVerificationEmail } from "@repo/config";
-import type { Database } from "@repo/db";
-import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@repo/db/testing";
-
-import type { AuthFailure } from "./auth-failure.ts";
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
 import { mailConfig, mailServer, mailbox } from "./mail-fixture.ts";
+
+import type { Application } from "@repo/config";
+import type { Database } from "@repo/db";
+import type { Scope } from "effect";
+import type { AuthFailure } from "./auth-failure.ts";
 
 type AuthService = Auth["Service"];
 type TestServices = Layer.Success<typeof TestDatabase>;

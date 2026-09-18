@@ -1,17 +1,18 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { Scope } from "effect";
 import { HttpResponse, http } from "msw";
-import type { SetupServer } from "msw/node";
 import { setupServer } from "msw/node";
 
-import type { Database } from "./database.ts";
 import { query } from "./database.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { remoteExecutor } from "./remote-http.ts";
 import { user } from "./schema.ts";
 import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
+import type { Database } from "./database.ts";
 
 const HEX_ID_LENGTH = 32;
 const REDIRECT_STATUS = 302;

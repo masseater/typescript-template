@@ -1,8 +1,8 @@
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-
 import { Heading } from "@repo/ui";
 
 import { SearchForm } from "./search-form.tsx";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function UsersBody({
   children,

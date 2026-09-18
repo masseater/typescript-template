@@ -1,11 +1,10 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
+import { Telemetry } from "@repo/observability";
+import { recordingSink } from "@repo/observability/testing";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { Effect, Layer, ManagedRuntime } from "effect";
 import { HttpResponse, http } from "msw";
-
-import { Telemetry } from "@repo/observability";
-import { recordingSink } from "@repo/observability/testing";
 
 import { serveWorker } from "./worker.ts";
 

@@ -11,9 +11,9 @@ import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
+import { applications } from "@repo/config";
 import { createServer } from "vite-plus";
 
-import { applications } from "@repo/config";
 import type { Application } from "@repo/config";
 
 interface Probed {

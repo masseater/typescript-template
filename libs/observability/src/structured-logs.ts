@@ -1,9 +1,9 @@
 import { Console, Logger, References } from "effect";
-import type { Layer } from "effect";
-
-import type { Application } from "@repo/config";
 
 import { redactedField } from "./redact.ts";
+
+import type { Application } from "@repo/config";
+import type { Layer } from "effect";
 
 interface LogSink {
   readonly error: (line: string) => void;

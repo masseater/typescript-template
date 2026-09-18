@@ -1,7 +1,8 @@
-import type { ReactDoctorConfig } from "react-doctor/api";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
+
+import type { ReactDoctorConfig } from "react-doctor/api";
 
 const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,

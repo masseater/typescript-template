@@ -6,13 +6,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
-
 import { mailpitPort } from "@repo/config";
 import { memberPageSize } from "@repo/runtime/contracts";
+import { Console, Effect, Schema } from "effect";
 
 import { exists, installBinary } from "./binary.ts";
-import type { BinaryUnavailable } from "./binary.ts";
 import {
   Application,
   awaitReady,
@@ -21,8 +19,10 @@ import {
   requireLoopbackOrigin,
   targetOrigin,
 } from "./environment.ts";
-import type { EnvironmentUnusable } from "./environment.ts";
 import { discardSummary, readSummary } from "./summary.ts";
+
+import type { BinaryUnavailable } from "./binary.ts";
+import type { EnvironmentUnusable } from "./environment.ts";
 import type { Report } from "./summary.ts";
 
 class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFailure", {

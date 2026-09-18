@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+
 import type { LLMsOptions } from "fumadocs-core/mdx-plugins";
 
 const isChartAttribute = Schema.is(

@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vite-plus/test";
-
 import { effectDiagnostics } from "@repo/config/vite";
+import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
 

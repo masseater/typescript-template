@@ -1,9 +1,10 @@
-import type { ReactElement } from "react";
+import { PaginationLink } from "@repo/ui";
+
+import { normalizeUsersSearch } from "#pages/users/model/users-search.ts";
 
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
-import { normalizeUsersSearch } from "#pages/users/model/users-search.ts";
 import type { PageTarget } from "@repo/ui";
-import { PaginationLink } from "@repo/ui";
+import type { ReactElement } from "react";
 
 function MemberPageLink({
   search,

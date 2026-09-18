@@ -1,8 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
-import type { AnyElysia } from "elysia";
-
 import { Telemetry, httpStatus } from "@repo/observability";
+import { Effect, Layer, ManagedRuntime, Schema } from "effect";
 
 import { ProfileUpdate } from "./contracts.ts";
 import {
@@ -14,6 +12,8 @@ import {
   secureResponse,
 } from "./http.ts";
 import { startRoute } from "./worker.ts";
+
+import type { AnyElysia } from "elysia";
 
 const origin = "http://localhost:3001";
 const oversizedBody = 16_385;

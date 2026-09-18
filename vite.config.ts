@@ -1,26 +1,30 @@
+import { taskInput } from "@repo/config/vite";
+import { dontReviewItPreset } from "@repo/dont-review-it";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
-import { taskInput } from "@repo/config/vite";
-
-import { generatedFiles, importedToolPatterns, lint } from "./tools/quality/lint.ts";
+import { generatedFiles, lintOptions } from "./tools/quality/lint.ts";
 import { workerTests } from "./tools/quality/test-runtime.ts";
+
+const importedTools = [
+  "./tools/ai-native",
+  "./tools/dont-review-it",
+  "./tools/lint-rule-authoring",
+  "./tools/repository-checks",
+  "./tools/stop-ai-slop",
+];
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
-function textModule(code: string, id: string): string | undefined {
-  return textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
-}
+const textModule = (code: string, moduleId: string): string | undefined =>
+  textModulePattern.test(moduleId) ? `export default ${JSON.stringify(code)};` : undefined;
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
-  fmt: {
-    ignorePatterns: [...generatedFiles, ...importedToolPatterns],
-    sortImports: { internalPattern: ["@repo/"], newlinesBetween: true },
-    sortPackageJson: { sortScripts: true },
+  fmt: dontReviewItPreset.fmt({
+    ignorePatterns: [...generatedFiles],
     sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
-  },
-  lint,
+  }),
+  lint: dontReviewItPreset.lint(lintOptions),
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
@@ -55,6 +59,11 @@ export default defineConfig({
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
+      "check:repository": [
+        "dont-review-it check",
+        "lint-rule-authoring check",
+        "stop-ai-slop check",
+      ],
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
@@ -74,7 +83,7 @@ export default defineConfig({
     },
   },
   test: {
-    clearMocks: false,
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
     forceRerunTriggers: [
       "**/package.json",
       "**/tsconfig*.json",
@@ -104,13 +113,10 @@ export default defineConfig({
       },
       "./tools/quality/vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
-      "./tools/ai-native",
-      "./tools/dont-review-it",
-      "./tools/lint-rule-authoring",
-      "./tools/repository-checks",
-      "./tools/stop-ai-slop",
+      ...importedTools,
     ],
-    restoreMocks: false,
+    mockReset: true,
+    restoreMocks: true,
     testTimeout: 30_000,
   },
 });

@@ -1,8 +1,9 @@
-import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
 
 import { loopbackHosts } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
+
+import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 
 interface AssetFetcher {
   readonly fetch: (request: Request) => Promise<Response>;

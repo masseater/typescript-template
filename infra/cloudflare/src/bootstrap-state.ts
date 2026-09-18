@@ -2,13 +2,14 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
 
 import { secretsStoreCount, workerNames } from "./account-lookup.ts";
-import type { AccountAccess } from "./account-read.ts";
 import { AlchemyFailure, runAlchemy } from "./alchemy-cli.ts";
-import type { AlchemyCommand } from "./alchemy-cli.ts";
 import { CloudflareFailure } from "./config.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 import { deploymentAccess } from "./deployment-access.ts";
 import { OK_EXIT_CODE, reportCause } from "./secrets.ts";
+
+import type { AccountAccess } from "./account-read.ts";
+import type { AlchemyCommand } from "./alchemy-cli.ts";
 
 const ADOPT_FLAG = "--adopt-account-state";
 const EVENT = "cloudflare.state_store_rejected";

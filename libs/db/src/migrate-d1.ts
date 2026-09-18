@@ -1,9 +1,10 @@
-import type { D1Database, D1PreparedStatement } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 
 import { RemoteFailure } from "./remote-input.ts";
-import type { DatabaseExecutor, RemoteQuery } from "./remote-operations.ts";
 import { loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
+
+import type { D1Database, D1PreparedStatement } from "@cloudflare/workers-types";
+import type { DatabaseExecutor, RemoteQuery } from "./remote-operations.ts";
 
 function prepareBatch(
   database: D1Database,

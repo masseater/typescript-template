@@ -1,9 +1,9 @@
-import { SearchIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
-import type { ReactElement } from "react";
-
 import { Heading, Icon } from "@repo/ui";
+import { SearchIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
 
 import { Feature } from "./feature.tsx";
+
+import type { ReactElement } from "react";
 
 const features = [
   {

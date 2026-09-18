@@ -1,10 +1,11 @@
-import type { StateService } from "alchemy/State";
 import { Effect } from "effect";
 
 import { CloudflareFailure, traceDestination } from "./config.ts";
-import type { SharedConfig } from "./config.ts";
 import { traceDestinationStack } from "./stacks.ts";
 import { recordedTraceDestinations } from "./state-ownership.ts";
+
+import type { StateService } from "alchemy/State";
+import type { SharedConfig } from "./config.ts";
 
 const assertTraceDestinationApplied = Effect.fn("assertTraceDestinationApplied")(
   function* assertTraceDestinationApplied<Failure, Requirements>(

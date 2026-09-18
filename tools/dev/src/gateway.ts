@@ -1,13 +1,14 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { connect, createServer } from "node:net";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Server } from "node:net";
 
 import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Schema } from "effect";
-import type { Scope } from "effect";
 
 import { reportFailed } from "./failure.ts";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Server } from "node:net";
+import type { Scope } from "effect";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),

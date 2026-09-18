@@ -1,15 +1,15 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect } from "effect";
 
-import type { Application } from "@repo/config";
-
 import { fail, io } from "./artifact-io.ts";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Dirent } from "node:fs";
+import type { Application } from "@repo/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;

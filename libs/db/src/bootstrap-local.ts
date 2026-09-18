@@ -1,4 +1,3 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
@@ -6,6 +5,8 @@ import { getPlatformProxy } from "wrangler";
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
 import { Database } from "./database.ts";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>

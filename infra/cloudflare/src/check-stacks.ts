@@ -2,10 +2,8 @@
 import { isDeepStrictEqual } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Console, Effect, Schema } from "effect";
-
 import { applications, grants } from "@repo/config";
-import type { Application } from "@repo/config";
+import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import {
@@ -14,7 +12,6 @@ import {
   compileStack,
   describeCause,
 } from "./inventory.ts";
-import type { StackInventory } from "./inventory.ts";
 import { markFailed } from "./secrets.ts";
 import {
   applyOrderViolations,
@@ -24,8 +21,11 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
-import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { Application } from "@repo/config";
+import type { StackInventory } from "./inventory.ts";
+import type { StackName } from "./stacks.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
 

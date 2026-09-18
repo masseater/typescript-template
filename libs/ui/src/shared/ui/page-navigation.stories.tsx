@@ -1,9 +1,9 @@
-import type { ReactElement } from "react";
-
 import preview from "../../../.storybook/preview";
 import { PageNavigation } from "./page-navigation";
-import type { PageTarget } from "./page-navigation";
 import { PaginationLink } from "./pagination-link";
+
+import type { ReactElement } from "react";
+import type { PageTarget } from "./page-navigation";
 
 function renderLink(target: Readonly<PageTarget>): ReactElement {
   return (

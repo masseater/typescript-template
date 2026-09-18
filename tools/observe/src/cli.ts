@@ -2,9 +2,8 @@
 import { parseArgs } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
-
 import { applicationPorts } from "@repo/config";
+import { Console, Effect, Schema } from "effect";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";

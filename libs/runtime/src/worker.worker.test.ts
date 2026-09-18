@@ -1,17 +1,17 @@
 import { assert, describe, it } from "@effect/vitest";
+import { httpStatus } from "@repo/observability";
+import { recordingSink } from "@repo/observability/testing";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { Effect, ManagedRuntime, Schema } from "effect";
-import type { Layer } from "effect";
 
-import type { Reporting } from "@repo/observability";
-import { httpStatus } from "@repo/observability";
-import { recordingSink } from "@repo/observability/testing";
-
-import type { AppServices } from "./index.ts";
 import { appLayer } from "./index.ts";
 import { wikiLayer, wikiService } from "./wiki.ts";
 import { serveApp } from "./worker.ts";
+
+import type { Reporting } from "@repo/observability";
+import type { Layer } from "effect";
+import type { AppServices } from "./index.ts";
 
 const authSecret = "worker-test-secret-at-least-32-characters";
 const validRoutes = { "/": "home" };

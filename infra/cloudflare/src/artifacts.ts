@@ -5,10 +5,8 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Context, Effect } from "effect";
-
-import type { Application } from "@repo/config";
 import { serverOnlyMarkers } from "@repo/config/vite";
+import { Context, Effect } from "effect";
 
 import {
   assertRealDirectory,
@@ -19,10 +17,12 @@ import {
   jsonSha256,
   sameContent,
 } from "./artifact-io.ts";
-import type { ArtifactFailure } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
 import { archiveSourceMaps } from "./source-maps.ts";
 import { stageFiles } from "./staging.ts";
+
+import type { Application } from "@repo/config";
+import type { ArtifactFailure } from "./artifact-io.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 

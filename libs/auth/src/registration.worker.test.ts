@@ -1,8 +1,7 @@
 import { assert, it } from "@effect/vitest";
+import { getSchemaShape } from "@repo/db/testing";
 import { getSchema } from "better-auth/db";
 import { Effect } from "effect";
-
-import { getSchemaShape } from "@repo/db/testing";
 
 import {
   Fixture,

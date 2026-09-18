@@ -1,13 +1,13 @@
 import { Context, Effect, Layer } from "effect";
 
-import type { Application } from "@repo/config";
-
-import type { OtlpDestination, TelemetryFlusher } from "./otlp.ts";
 import { otlpExport } from "./otlp.ts";
 import { isRoutes } from "./protocol.ts";
-import type { StructuredLogOptions } from "./structured-logs.ts";
 import { serviceLabel, structuredLogs } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
+
+import type { Application } from "@repo/config";
+import type { OtlpDestination, TelemetryFlusher } from "./otlp.ts";
+import type { StructuredLogOptions } from "./structured-logs.ts";
 
 interface TelemetryShape {
   readonly serviceName: Application;
