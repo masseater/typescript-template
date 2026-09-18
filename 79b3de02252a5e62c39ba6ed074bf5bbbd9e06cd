@@ -1,0 +1,6 @@
+Revision history for #364:
+
+rev 2 (content) 2026-09-18 20:42 UTC — レビュー指摘: onFailure を record を返す型にして exit 0 の握りつぶしを型で防ぐ。client-bundle も runCli に寄せ、storybook origin と dev-boundary の loopback も共有値にする
+rev 1 (initial) 2026-09-18 20:42 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":364,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"efefa15f410bc046dce637626779bb9a74246907","timestamp_iso":"2026-09-18T20:42:46Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"efefa15f410bc046dce637626779bb9a74246907","new_sha":"ed6519532f08cb3fc1e791ddcf8e93a87df83f55","timestamp_iso":"2026-09-18T20:42:46Z","reason":"レビュー指摘: onFailure を record を返す型にして exit 0 の握りつぶしを型で防ぐ。client-bundle も runCli に寄せ、storybook origin と dev-boundary の loopback も共有値にする","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/efefa15f410bc046dce637626779bb9a74246907...ed6519532f08cb3fc1e791ddcf8e93a87df83f55"}]} -->
