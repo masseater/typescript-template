@@ -32,13 +32,15 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-workspace.yaml') }}
       - &setup
-        uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+        uses: voidzero-dev/setup-vp@24d870228786dc83ae73482406bdd1e7befaec14 # v1.21.0
         with:
           node-version-file: package.json
           cache: ${{ vars.CI_RUNNER == '' }}
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - &ledger-cli
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install_args: github:gastownhall/beads
+          cache: ${{ vars.CI_RUNNER == '' }}
       - &task-cache-restore
         id: vite-task-cache
         if: vars.CI_RUNNER == ''
@@ -72,6 +74,7 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
+      - *ledger-cli
       - *task-cache-restore
       - *premerge
       - *task-cache-save
