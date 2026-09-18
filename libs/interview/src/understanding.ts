@@ -8,9 +8,9 @@ import {
   fieldKeys,
   readValue,
   readable,
+  type SheetData,
 } from "./sheet.ts";
 
-import type { SheetData } from "./sheet.ts";
 import type { InterviewState } from "./state.ts";
 
 const maximumQuestion = 300;

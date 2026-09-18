@@ -18,13 +18,13 @@ const bindingDisposition = {
 
 type RowAction = PlannedAction["action"] | PlannedResource["action"];
 
-interface PlanRow {
+type PlanRow = {
   readonly action: RowAction;
   readonly bindings: readonly PlannedBinding[];
   readonly id: string;
   readonly props: string;
   readonly type: string;
-}
+};
 
 type PlanReport = {
   readonly rows: readonly Omit<PlanRow, "props">[];
@@ -141,10 +141,10 @@ const planReport = (planned: PlannedStack): PlanReport => {
   };
 };
 
-interface Refusal {
+type Refusal = {
   readonly code: CloudflareFailure["code"];
   readonly id: string;
-}
+};
 
 const refused = (code: CloudflareFailure["code"] | undefined, id: string): readonly Refusal[] => {
   return code === undefined ? [] : [{ code, id }];

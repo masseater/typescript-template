@@ -1,7 +1,5 @@
-import { strongAuthenticationMethods } from "@template/config";
+import { strongAuthenticationMethods, type Application } from "@template/config";
 import { APIError } from "better-auth/api";
-
-import type { Application } from "@template/config";
 
 type EligibleUser = {
   readonly emailVerified: boolean;
@@ -38,14 +36,14 @@ const authenticationMethodFor = (path: string | undefined): AuthenticationMethod
   return (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ?? "password";
 };
 
-const deny = (message: string): never => {
+const deny: (message: string) => never = (message) => {
   throw new APIError("FORBIDDEN", { message });
 };
 
-const assertEligibleUser = <TUser extends EligibleUser>(
+const assertEligibleUser: <TUser extends EligibleUser>(
   user: TUser | undefined,
   audience: Application,
-): asserts user is TUser => {
+) => asserts user is TUser = (user, audience) => {
   if (user?.emailVerified !== true) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }

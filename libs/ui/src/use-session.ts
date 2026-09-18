@@ -2,9 +2,7 @@ import { decodeJson } from "@template/runtime/client";
 import { SessionView as SessionContract } from "@template/runtime/contracts";
 import { useEffect, useState } from "react";
 
-import { errorMessage } from "./protocol";
-
-import type { SessionView } from "./protocol";
+import { errorMessage, type SessionView } from "./protocol";
 
 type SessionSnapshot = {
   readonly error: string | undefined;

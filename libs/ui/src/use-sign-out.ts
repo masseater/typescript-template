@@ -1,8 +1,6 @@
-import { useAction } from "./action";
+import { useAction, type ActionState } from "./action";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-
-import type { ActionState } from "./action";
 
 const useSignOut = (
   destination = "/login",

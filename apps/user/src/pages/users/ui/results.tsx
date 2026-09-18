@@ -1,11 +1,10 @@
-import { PageNavigation, TextLink } from "@template/ui";
+import { PageNavigation, TextLink, type PageTarget } from "@template/ui";
 
 import { MemberCard } from "./member-card.tsx";
 import { MemberPageLink } from "./member-page-link.tsx";
 
 import type { Members } from "#pages/users/api/load-members.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
-import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";
 
 const Results = ({

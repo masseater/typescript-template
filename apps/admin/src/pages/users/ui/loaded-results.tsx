@@ -1,4 +1,4 @@
-import { PageNavigation } from "@template/ui";
+import { PageNavigation, type PageTarget } from "@template/ui";
 
 import { usersPageSize } from "#pages/users/model/users-pagination.ts";
 import { EmptyResults } from "./empty-results.tsx";
@@ -7,7 +7,6 @@ import { UsersTable } from "./users-table.tsx";
 
 import type { ListedUsers } from "#pages/users/model/user-list.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
-import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";
 
 const LoadedResults = ({

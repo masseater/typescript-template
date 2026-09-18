@@ -1,18 +1,15 @@
-import { roles } from "@template/config";
-import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import { roles, type Role } from "@template/config";
+import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import { containsKeyword } from "./contains-keyword.ts";
-import { query } from "./database.ts";
+import { query, type DrizzleDatabase } from "./database.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import { auditEvent, user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
-import type { Role } from "@template/config";
-import type { SQL } from "drizzle-orm";
 import type { DatabaseFailure } from "./database-failure.ts";
-import type { DrizzleDatabase } from "./database.ts";
 
 const MAX_PAGE_SIZE = 100;
 

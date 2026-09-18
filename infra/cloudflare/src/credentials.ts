@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { lstat, open } from "node:fs/promises";
+import { lstat, open, type FileHandle } from "node:fs/promises";
 import path from "node:path";
 
 import { deploymentKeys, secretsFile } from "@template/config/deployment";
@@ -7,15 +7,10 @@ import { Effect, Schema } from "effect";
 
 import { projectName } from "./project.ts";
 
-import type { FileHandle } from "node:fs/promises";
-
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 const KEY_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=/u;
 
-const closeHandle = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  handle: FileHandle,
-): Effect.Effect<void> => {
+const closeHandle = (handle: FileHandle): Effect.Effect<void> => {
   return Effect.tryPromise(async () => handle.close()).pipe(Effect.ignore);
 };
 

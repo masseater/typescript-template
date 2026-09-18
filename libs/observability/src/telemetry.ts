@@ -1,11 +1,10 @@
 import { Context, Effect, Layer } from "effect";
 
 import { isRoutes } from "./protocol.ts";
-import { structuredLogs } from "./structured-logs.ts";
+import { structuredLogs, type StructuredLogOptions } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 
 import type { Application } from "@template/config";
-import type { StructuredLogOptions } from "./structured-logs.ts";
 
 type TelemetryShape = {
   readonly serviceName: Application;

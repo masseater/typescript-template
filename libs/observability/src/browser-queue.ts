@@ -1,7 +1,5 @@
-import { maximumBatchSize } from "./events.ts";
+import { maximumBatchSize, type BrowserEvent } from "./events.ts";
 import { logError } from "./log.ts";
-
-import type { BrowserEvent } from "./events.ts";
 
 type Deliver = (events: readonly BrowserEvent[]) => Promise<void>;
 type EventQueue = {

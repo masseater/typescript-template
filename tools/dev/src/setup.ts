@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { applications } from "@template/config";
 import { Effect } from "effect";
 
-import { failure, fileIo } from "./failure.ts";
+import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
 import {
   credentialsFile,
   lanOrigin,
@@ -13,6 +13,8 @@ import {
   readCredentials,
   refreshBrowserConfig,
   routes,
+  type App,
+  type Credentials,
 } from "./local-environment.ts";
 import {
   isErrorCode,
@@ -20,9 +22,6 @@ import {
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
-
-import type { LocalCommandFailure } from "./failure.ts";
-import type { App, Credentials } from "./local-environment.ts";
 
 type SetupReport = {
   readonly credentialsFile: string;

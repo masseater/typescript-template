@@ -3,11 +3,10 @@ import path from "node:path";
 
 import { Effect } from "effect";
 
-import { fail, io } from "./artifact-io.ts";
+import { fail, io, type ArtifactFailure } from "./artifact-io.ts";
 
 import type { Dirent } from "node:fs";
 import type { Application } from "@template/config";
-import type { ArtifactFailure } from "./artifact-io.ts";
 
 type MapEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
 
@@ -21,10 +20,8 @@ const directoryExists = (source: string): Effect.Effect<boolean, ArtifactFailure
     try: async () => lstat(source),
   }).pipe(
     Effect.matchEffect({
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onFailure: ({ cause }) =>
         isMissing(cause) ? Effect.succeed(false) : fail("artifact_io_failed"),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onSuccess: (information) =>
         information.isDirectory() ? Effect.succeed(true) : fail("source_map_directory_invalid"),
     }),

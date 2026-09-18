@@ -5,9 +5,13 @@ import path from "node:path";
 import { secretsFile } from "@template/config/deployment";
 import { describe, expect, it } from "vite-plus/test";
 
-import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
-
-import type { DeploymentValue, PrefixScan } from "./secrets.ts";
+import {
+  deploymentValues,
+  prefixScan,
+  secretViolations,
+  type DeploymentValue,
+  type PrefixScan,
+} from "./secrets.ts";
 
 const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 

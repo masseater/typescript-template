@@ -1,7 +1,6 @@
-import { origins, propertyName, staticText, variableOf } from "./references.ts";
+import { origins, propertyName, staticText, variableOf, type Resolve } from "./references.ts";
 
 import type { LintContext, Node, NodeOf } from "./lint-context.ts";
-import type { Resolve } from "./references.ts";
 
 type D1Kind = "database" | "session" | "statement" | "orm";
 

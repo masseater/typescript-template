@@ -3,10 +3,9 @@ import path from "node:path";
 
 import { Effect } from "effect";
 
-import { io } from "./artifact-io.ts";
+import { io, type ArtifactFailure } from "./artifact-io.ts";
 
 import type { Dirent } from "node:fs";
-import type { ArtifactFailure } from "./artifact-io.ts";
 
 type Generation = {
   readonly modified: number;

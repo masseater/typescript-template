@@ -1,10 +1,9 @@
 import { workerCompatibility } from "@template/config/worker";
 import { Config, Effect, Schema } from "effect";
 
-import { stackNames } from "./stacks.ts";
+import { stackNames, type StackName } from "./stacks.ts";
 
 import type { WorkerObservability } from "alchemy/Cloudflare";
-import type { StackName } from "./stacks.ts";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([

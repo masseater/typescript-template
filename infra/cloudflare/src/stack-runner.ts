@@ -1,18 +1,21 @@
 import { fileURLToPath } from "node:url";
 
-import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
+import { Progress, Stack as StackRoute, layer, type ProgressEvent } from "alchemy/Alchemist";
 import { Effect } from "effect";
 
-import { ArtifactWrites } from "./artifacts.ts";
+import { ArtifactWrites, type ArtifactMode } from "./artifacts.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { stateStore } from "./deployment-access.ts";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+import {
+  acceptPlan,
+  planConfirmation,
+  planReport,
+  plannedStack,
+  type PlannedStack,
+} from "./plan-confirmation.ts";
 
-import type { ProgressEvent } from "alchemy/Alchemist";
-import type { ArtifactMode } from "./artifacts.ts";
 import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
-import type { PlannedStack } from "./plan-confirmation.ts";
 import type { StackName } from "./stacks.ts";
 
 type Deployment = {

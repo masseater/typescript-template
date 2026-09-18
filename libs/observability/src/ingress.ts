@@ -1,14 +1,12 @@
 import { Effect, Result } from "effect";
 
 import { errorFingerprint } from "./errors.ts";
-import { parseBrowserEvents } from "./events.ts";
+import { parseBrowserEvents, type BrowserEvent } from "./events.ts";
 import { httpStatus } from "./http-status.ts";
-import { readJson, rejectionStatus } from "./request.ts";
+import { readJson, rejectionStatus, type JsonRequest } from "./request.ts";
 import { Telemetry } from "./telemetry.ts";
 
 import type { Application } from "@template/config";
-import type { BrowserEvent } from "./events.ts";
-import type { JsonRequest } from "./request.ts";
 
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
 type LogFields = Readonly<Record<string, string | number | boolean>>;

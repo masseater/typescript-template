@@ -1,11 +1,10 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { cn } from "cn";
-import { use } from "react";
+import { use, type ReactElement } from "react";
 
 import { DropdownMenuClose } from "./dropdown-menu-close";
 import { itemVariants } from "./dropdown-menu-item-variants";
 
-import type { ReactElement } from "react";
 import type { Children } from "./types";
 
 type DropdownMenuLinkItemProps = Children & Readonly<{ render: ReactElement }>;

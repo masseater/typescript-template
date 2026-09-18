@@ -4,13 +4,11 @@ import { Effect } from "effect";
 
 import { deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import { getProfile, query, updateProfile } from "./index.ts";
+import { getProfile, query, updateProfile, type Database } from "./index.ts";
 import { addCredential, addSession, addUser, failureTag, successCount } from "./records-fixture.ts";
 import { account, auditEvent, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 import { TestDatabase } from "./testing.ts";
-
-import type { Database } from "./index.ts";
 
 const page = { limit: 50, offset: 0 };
 

@@ -2,9 +2,8 @@ import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { applications as apps } from "@template/config";
+import { applications as apps, type Application as App } from "@template/config";
 
-import type { Application as App } from "@template/config";
 import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
 
 const forbiddenStatus = 403;

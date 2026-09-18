@@ -1,15 +1,17 @@
-import { Auth } from "@template/auth";
-import { readConfig, sendVerificationEmail } from "@template/config";
+import { Auth, type AuthFailure } from "@template/auth";
+import {
+  readConfig,
+  sendVerificationEmail,
+  type AppConfig,
+  type Application,
+  type ConfigurationInvalid,
+} from "@template/config";
 import { Database } from "@template/db";
-import { Telemetry } from "@template/observability";
+import { Telemetry, type TelemetryInvalid } from "@template/observability";
 import { Effect, Layer } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
-
-import type { AuthFailure } from "@template/auth";
-import type { AppConfig, Application, ConfigurationInvalid } from "@template/config";
-import type { TelemetryInvalid } from "@template/observability";
 
 type AppServices = Auth | Database | AppOrigin | Assets | Telemetry;
 

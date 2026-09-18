@@ -1,9 +1,8 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { DropdownMenuClose } from "./dropdown-menu-close";
 
-import type { ReactElement } from "react";
 import type { Children } from "./types";
 
 const DropdownMenu = ({ children }: Children): ReactElement => {

@@ -12,9 +12,8 @@ import {
   refreshBrowserConfig,
   root,
   run,
+  type App,
 } from "./local-environment.ts";
-
-import type { App } from "./local-environment.ts";
 
 type BrowserReport = {
   readonly event: "local.browser_opened";

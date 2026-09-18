@@ -1,10 +1,8 @@
 import { TextLink } from "@template/ui";
 import { SignUpForm } from "@template/ui/signup";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { CardPage } from "#shared/ui/index.ts";
-
-import type { ReactElement } from "react";
 
 const SignUpPage = (): ReactElement => {
   const [sent, setSent] = useState(false);

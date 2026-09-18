@@ -1,9 +1,13 @@
-import { httpStatus, rejectionStatus, reportFailure } from "@template/observability";
+import {
+  httpStatus,
+  rejectionStatus,
+  reportFailure,
+  type RequestRejected,
+} from "@template/observability";
 import { Cause, Effect, Option, Schema } from "effect";
 
 import { jsonResponse } from "./responses.ts";
 
-import type { RequestRejected } from "@template/observability";
 import type { InputInvalid } from "./input-invalid.ts";
 
 type Tagged = {

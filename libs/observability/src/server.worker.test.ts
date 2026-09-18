@@ -1,11 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, type Layer } from "effect";
 
 import { httpStatus } from "./http-status.ts";
-import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
-
-import type { Layer } from "effect";
-import type { TelemetryInvalid } from "./server.ts";
+import {
+  CurrentRequest,
+  Telemetry,
+  ingestBrowser,
+  observeRequest,
+  type TelemetryInvalid,
+} from "./server.ts";
 
 type RecordedLogs = {
   readonly stderr: unknown[];

@@ -13,13 +13,13 @@ import {
   io,
   jsonSha256,
   sameContent,
+  type ArtifactFailure,
 } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
 import { archiveSourceMaps } from "./source-maps.ts";
 import { stageFiles } from "./staging.ts";
 
 import type { Application } from "@template/config";
-import type { ArtifactFailure } from "./artifact-io.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 

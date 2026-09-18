@@ -1,17 +1,14 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { applications, authenticationMethods, roles } from "@template/config";
-import { schema } from "@template/db";
+import { applications, authenticationMethods, roles, type Application } from "@template/config";
+import { schema, type DrizzleDatabase } from "@template/db";
 import { findUser } from "@template/db/security";
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { Effect } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
 import { createRequestHooks } from "./request-hooks.ts";
 
-import type { Application } from "@template/config";
-import type { DrizzleDatabase } from "@template/db";
-import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
 type AdvancedOptions = NonNullable<BetterAuthOptions["advanced"]>;

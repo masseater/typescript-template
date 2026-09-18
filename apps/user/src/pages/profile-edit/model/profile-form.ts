@@ -1,10 +1,7 @@
 import { errorMessage } from "@template/ui";
-import { useState } from "react";
+import { useState, type SubmitEventHandler } from "react";
 
-import { saveProfile } from "#pages/profile-edit/api/profile.ts";
-
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
-import type { SubmitEventHandler } from "react";
+import { saveProfile, type Profile } from "#pages/profile-edit/api/profile.ts";
 
 type ProfileForm = {
   readonly error: string;

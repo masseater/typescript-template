@@ -3,9 +3,9 @@ import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 declare module "@tanstack/react-router" {
-  type Register = {
+  interface Register {
     router: ReturnType<typeof getRouter>;
-  };
+  }
 }
 
 const getRouter = (): ReturnType<typeof createRouter<typeof routeTree>> => {

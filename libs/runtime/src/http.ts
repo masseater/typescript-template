@@ -1,17 +1,21 @@
-import { httpStatus, readJson } from "@template/observability";
-import { Effect, Exit, Schema } from "effect";
-import { Elysia, status } from "elysia";
+import { httpStatus, readJson, type RequestRejected } from "@template/observability";
+import { Effect, Exit, Schema, type ManagedRuntime } from "effect";
+import { Elysia, status, type AnyElysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 
 import { AppOrigin } from "./app-origin.ts";
-import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
+import {
+  failureResponse,
+  reportedFailure,
+  runtimeUnavailable,
+  type CommonFailure,
+  type Failure,
+  type FailureStatus,
+  type FailureTable,
+  type Tagged,
+} from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
 import { jsonResponse } from "./responses.ts";
-
-import type { RequestRejected } from "@template/observability";
-import type { ManagedRuntime } from "effect";
-import type { AnyElysia } from "elysia";
-import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 
 type Handler<Value, Failures, Requirements> = (
   request: Request,
@@ -28,11 +32,9 @@ type ApiRoutes<Requirements> = {
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ) => ElysiaHandler;
   readonly route: <Value, Encoded, Failures extends Tagged>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
 };
 
@@ -51,7 +53,6 @@ const decodeInput = <Contract extends Decodable>(
 
 const readSearchParams = <Contract extends Decodable>(
   schema: Contract,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ): Effect.Effect<Contract["Type"], InputInvalid> => {
   return decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));
@@ -72,13 +73,11 @@ const createApi = <const Prefix extends string>(prefix: Prefix) => {
 
 type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const elysiaServer = (
   app: AnyElysia,
 ): {
   readonly handlers: Readonly<Record<StartMethod, ElysiaHandler>>;
 } => {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const handle = async (context: ElysiaContext): Promise<Response> => {
     return app.fetch(context.request);
   };
@@ -111,41 +110,29 @@ const unavailableStatus = (): Failed => {
 const respondRaw = <Failures extends Tagged, Requirements>(
   handler: Handler<Response, Failures, Requirements>,
   failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 ): ((request: Request) => Effect.Effect<Response, never, Requirements>) => {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return (request) =>
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     handler(request).pipe(Effect.catchCause((cause) => failureResponse(failures, cause)));
 };
 
 const respondValue = <Value, Encoded, Failures extends Tagged, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   response: Schema.Codec<Value, Encoded>,
   handler: Handler<Value, Failures, Requirements>,
   failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 ): ((request: Request) => Effect.Effect<Encoded | Failed, never, Requirements>) => {
   const encode = Schema.encodeEffect(response);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return (request) =>
     handler(request).pipe(
       Effect.flatMap((value) => Effect.orDie(encode(value))),
-      Effect.catchCause(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus)),
-      ),
+      Effect.catchCause((cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus))),
     );
 };
 
 const apiRoutes = <Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   runtime: ManagedRuntime.ManagedRuntime<Requirements, unknown>,
 ): ApiRoutes<Requirements> => {
   const settle = async <Value>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     context: ElysiaContext,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     program: (request: Request) => Effect.Effect<Value, never, Requirements>,
     unavailable: () => Value,
   ): Promise<Value> => {
@@ -156,18 +143,14 @@ const apiRoutes = <Requirements>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ): ElysiaHandler => {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     return async (context): Promise<Response> =>
       settle(context, respondRaw(handler, failures), unavailableResponse);
   };
   const route = <Value, Encoded, Failures extends Tagged>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ): ((context: ElysiaContext) => Promise<Encoded | Failed>) => {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     return async (context): Promise<Encoded | Failed> =>
       settle(context, respondValue(response, handler, failures), unavailableStatus);
   };
@@ -180,7 +163,6 @@ export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
 const readJsonBody = <Contract extends Decodable>(
   schema: Contract,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ): Effect.Effect<Contract["Type"], RequestRejected | InputInvalid, AppOrigin> => {
   return Effect.gen(function* readJsonBodyProgram() {

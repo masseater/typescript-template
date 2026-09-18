@@ -4,9 +4,7 @@ import { errorMessage } from "@template/ui";
 import { useEffect, useState } from "react";
 
 import { adminClient } from "#shared/api/index.ts";
-import { userListQuery } from "./users-search.ts";
-
-import type { UsersSearch } from "./users-search.ts";
+import { userListQuery, type UsersSearch } from "./users-search.ts";
 
 type ListedUser = {
   readonly email: string;

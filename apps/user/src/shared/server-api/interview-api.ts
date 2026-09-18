@@ -1,14 +1,18 @@
 import { verifySession } from "@template/auth";
-import { openInterview, restartInterview, saveInterview, takeTurn } from "@template/interview";
+import {
+  openInterview,
+  restartInterview,
+  saveInterview,
+  takeTurn,
+  type Interviewer,
+} from "@template/interview";
 import { InterviewView, Utterance } from "@template/interview/contracts";
 import { httpStatus } from "@template/observability";
 import { unavailable } from "@template/runtime/account";
-import { createApi, readJsonBody } from "@template/runtime/http";
+import { createApi, readJsonBody, type ApiRoutes } from "@template/runtime/http";
 import { Effect, Schema } from "effect";
 
-import type { Interviewer } from "@template/interview";
 import type { AppServices } from "@template/runtime";
-import type { ApiRoutes } from "@template/runtime/http";
 
 const Empty = Schema.Struct({});
 const failures = {

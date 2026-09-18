@@ -13,11 +13,10 @@ import {
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import { missingPermissions } from "./deploy-token.ts";
-import { recordedWorkerNames } from "./state-ownership.ts";
+import { recordedWorkerNames, type StateStore } from "./state-ownership.ts";
 
 import type { AccountAccess } from "./account-read.ts";
 import type { SharedConfig } from "./config.ts";
-import type { StateStore } from "./state-ownership.ts";
 
 type Claim = "free" | "owned" | "taken";
 type Presence = "absent" | "present";

@@ -2,12 +2,10 @@ import { getRouteApi } from "@tanstack/react-router";
 import { decodeJson } from "@template/runtime/client";
 import { Page, Status } from "@template/ui";
 import { Schema } from "effect";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
 import { ConsentActions } from "./consent-actions.tsx";
-
-import type { ReactElement } from "react";
 
 const HTTP_UNAUTHORIZED = 401;
 const consentRoute = getRouteApi("/consent");

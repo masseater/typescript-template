@@ -5,9 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect, Schema } from "effect";
 
-import { FAILED_EXIT_CODE, redact } from "./secrets.ts";
-
-import type { Confidential } from "./secrets.ts";
+import { FAILED_EXIT_CODE, redact, type Confidential } from "./secrets.ts";
 
 class AlchemyFailure extends Schema.TaggedError<AlchemyFailure>()("AlchemyFailure", {
   code: Schema.Literal("alchemy_command_failed"),

@@ -3,10 +3,9 @@ import path from "node:path";
 
 import react from "@vitejs/plugin-react";
 
-import { applicationPorts } from "./applications.ts";
+import { applicationPorts, type Application } from "./applications.ts";
 
 import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-import type { Application } from "./applications.ts";
 
 const readDevVars = async (appRoot: string): Promise<string | undefined> => {
   try {

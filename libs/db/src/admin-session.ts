@@ -1,5 +1,5 @@
 import { strongAuthenticationMethods } from "@template/config";
-import { and, eq, exists, gt, inArray } from "drizzle-orm";
+import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 
@@ -7,7 +7,6 @@ import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 
-import type { SQL } from "drizzle-orm";
 import type { DrizzleDatabase } from "./database.ts";
 
 const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId: string) {

@@ -9,9 +9,7 @@ import {
   useToast,
 } from "@template/ui";
 import { ChevronDownIcon } from "lucide-react";
-import { useEffect } from "react";
-
-import type { ReactElement } from "react";
+import { useEffect, type ReactElement } from "react";
 
 const AccountMenu = ({ email }: Readonly<{ email: string }>): ReactElement => {
   const { action, signOut } = useSignOut();

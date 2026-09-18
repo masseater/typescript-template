@@ -1,11 +1,10 @@
-import { ChallengeForm } from "./challenge-form";
+import { ChallengeForm, type ChallengeMode } from "./challenge-form";
 import { Button } from "./shared/ui/button";
 import { useTextInput } from "./use-text-input";
 
 import type { ReactElement } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import type { ChallengeMode } from "./challenge-form";
 
 type ChallengeLoginProps = {
   readonly action: ActionState;

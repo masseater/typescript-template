@@ -1,9 +1,7 @@
-import { reportViolation } from "./lint-context.ts";
-import { destructuredOrigins, origins } from "./references.ts";
+import { reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import { destructuredOrigins, origins, type Origin } from "./references.ts";
 
 import type { ESTree, Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
-import type { Origin } from "./references.ts";
 
 const aliasChecker = (
   context: LintContext,

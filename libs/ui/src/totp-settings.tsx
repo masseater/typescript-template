@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { Status } from "./shared/ui/status";
 import { TotpEnrollment } from "./totp-enrollment";
 import { TotpPasswordForm } from "./totp-password-form";
 
-import type { ReactElement } from "react";
 import type { Enrollment, SettingsContext } from "./mfa-types";
 
 const TotpSettings = ({ context }: Readonly<{ context: SettingsContext }>): ReactElement => {

@@ -1,12 +1,9 @@
-import { Monitor, monitorHandler } from "@template/monitor";
+import { Monitor, monitorHandler, type MonitorBindings, type Notify } from "@template/monitor";
 import { Effect } from "effect";
 
 import { parseErrorMonitorConfig } from "./config.ts";
-import { decideNotifications, formatMessage } from "./decision.ts";
+import { decideNotifications, formatMessage, type SeenFingerprints } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
-
-import type { MonitorBindings, Notify } from "@template/monitor";
-import type { SeenFingerprints } from "./decision.ts";
 
 type Bindings = {
   CLOUDFLARE_ACCOUNT_ID: string;

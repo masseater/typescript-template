@@ -1,17 +1,23 @@
-import { fieldDefinitions, fieldKeys, maximumInterests, readValue } from "./sheet.ts";
-import { understandByRules } from "./understanding.ts";
+import {
+  fieldDefinitions,
+  fieldKeys,
+  maximumInterests,
+  readValue,
+  type FieldName,
+  type ReplyForm,
+  type SheetData,
+} from "./sheet.ts";
+import { understandByRules, type UnderstandingData } from "./understanding.ts";
 
-import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
 import type { InterviewState, MemberUtterance } from "./state.ts";
-import type { UnderstandingData } from "./understanding.ts";
 
 const summaryText =
   "ここまでの内容をまとめました。直したいところがあれば、そのまま教えてください。";
 
-interface Asked {
+type Asked = {
   readonly reply?: ReplyForm;
   readonly text: string;
-}
+};
 
 type Asking = Extract<InterviewState, { readonly phase: "asking" }>;
 type Settled = Exclude<InterviewState, Asking>;

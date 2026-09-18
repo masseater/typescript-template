@@ -4,12 +4,10 @@ import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys, secretsFile } from "@template/config/deployment";
-import { Effect } from "effect";
+import { Effect, type Scope } from "effect";
 
 import { verifySecretsFile } from "./credentials.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
-
-import type { Scope } from "effect";
 
 const OWNER_ONLY_FILE_MODE = 0o600;
 const GROUP_READABLE_FILE_MODE = 0o640;

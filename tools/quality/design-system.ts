@@ -108,7 +108,6 @@ const partsImport = '@import "@template/ui/styles.css"';
 
 const isDirectory = (target: string): boolean => {
   try {
-    // oxlint-disable-next-line node/no-sync
     return statSync(target).isDirectory();
   } catch {
     return false;

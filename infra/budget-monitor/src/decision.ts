@@ -1,9 +1,8 @@
 import { Effect } from "effect";
 
-import { fail } from "./config.ts";
+import { fail, type BudgetConfig } from "./config.ts";
 
 import type { UsageSnapshot } from "./billing.ts";
-import type { BudgetConfig } from "./config.ts";
 
 const EXHAUSTED_LEVEL = 100;
 const WARNING_RATIO = 0.8;
@@ -12,14 +11,14 @@ const NO_ALERT_LEVEL = 0;
 
 const WARNING_LEVEL = 80;
 
-interface BudgetDecision {
+type BudgetDecision = {
   periodStart: string;
   usageUsd: number;
   allowanceUsd: number;
   estimatedTotalJpy: number;
   level: typeof NO_ALERT_LEVEL | typeof WARNING_LEVEL | typeof EXHAUSTED_LEVEL;
   notificationKey: string;
-}
+};
 
 const alertLevel = (ratio: number): BudgetDecision["level"] => {
   if (ratio >= 1) {

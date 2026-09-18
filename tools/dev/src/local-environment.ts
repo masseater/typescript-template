@@ -5,14 +5,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { applicationPorts, applications, loopbackHosts } from "@template/config";
+import { applicationPorts, applications, loopbackHosts, type Application } from "@template/config";
 import { Effect, Schema } from "effect";
 
-import { failure, fileIo } from "./failure.ts";
+import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
-
-import type { Application } from "@template/config";
-import type { LocalCommandFailure } from "./failure.ts";
 
 type App = Application;
 type RouteName = App | "mailpit";

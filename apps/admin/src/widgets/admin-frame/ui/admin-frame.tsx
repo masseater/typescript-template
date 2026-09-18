@@ -1,9 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactElement, type ReactNode, type ReactPortal } from "react";
 
 import { AdminHeader } from "./admin-header.tsx";
 import { AdminNavigation } from "./admin-navigation.tsx";
-
-import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const AdminFrame = ({
   children,

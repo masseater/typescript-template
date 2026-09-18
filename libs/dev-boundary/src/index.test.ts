@@ -2,15 +2,11 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { applications as apps } from "@template/config";
-import { createServer } from "vite-plus";
-import { test as baseTest, describe, expect } from "vite-plus/test";
+import { applications as apps, type Application as App } from "@template/config";
+import { createServer, type HttpServer } from "vite-plus";
+import { test as baseTest, describe, expect, type TestAPI } from "vite-plus/test";
 
 import { devBoundary } from "./index.ts";
-
-import type { Application as App } from "@template/config";
-import type { HttpServer } from "vite-plus";
-import type { TestAPI } from "vite-plus/test";
 
 type DevServer = {
   readonly origin: string;

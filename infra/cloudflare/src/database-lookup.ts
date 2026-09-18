@@ -1,9 +1,7 @@
 import { Effect, Schema } from "effect";
 
-import { endpoint, readList } from "./account-read.ts";
+import { endpoint, readList, type AccountAccess, type Endpoint } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
-
-import type { AccountAccess, Endpoint } from "./account-read.ts";
 
 const DatabaseList = Schema.Struct({
   result: Schema.Array(Schema.Struct({ name: Schema.String, uuid: Schema.String })),

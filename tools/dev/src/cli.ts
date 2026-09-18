@@ -3,13 +3,10 @@ import { Cause, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { browser, browserCommand } from "./browser.ts";
-import { failure } from "./failure.ts";
-import { application } from "./local-environment.ts";
+import { failure, type LocalCommandFailure } from "./failure.ts";
+import { application, type App } from "./local-environment.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
-
-import type { LocalCommandFailure } from "./failure.ts";
-import type { App } from "./local-environment.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure>;
 

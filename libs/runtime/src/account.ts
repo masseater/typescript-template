@@ -1,14 +1,17 @@
-import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
+import {
+  handleAuthRequest,
+  verifyEmailToken,
+  verifySession,
+  type EmailVerificationFailed,
+} from "@template/auth";
 import { checkDatabase } from "@template/db";
 import { Telemetry, httpStatus, ingestBrowser } from "@template/observability";
 import { Effect } from "effect";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
-import { createApi, readJsonBody } from "./http.ts";
+import { createApi, readJsonBody, type ApiRoutes } from "./http.ts";
 
-import type { EmailVerificationFailed } from "@template/auth";
 import type { Failure } from "./failures.ts";
-import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 
 const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;

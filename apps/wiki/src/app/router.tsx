@@ -1,15 +1,13 @@
-import { createRouter } from "@tanstack/react-router";
+import { createRouter, type Router } from "@tanstack/react-router";
 
 import { routeTree } from "./routeTree.gen";
-
-import type { Router } from "@tanstack/react-router";
 
 type WikiRouter = Router<typeof routeTree>;
 
 declare module "@tanstack/react-router" {
-  type Register = {
+  interface Register {
     router: WikiRouter;
-  };
+  }
 }
 
 const getRouter = (): WikiRouter => {

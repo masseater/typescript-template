@@ -1,12 +1,14 @@
-import { httpStatus, observeRequest } from "@template/observability";
-import { Effect, Result } from "effect";
+import {
+  httpStatus,
+  observeRequest,
+  type CurrentRequest,
+  type Telemetry,
+} from "@template/observability";
+import { Effect, Result, type ManagedRuntime } from "effect";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
 import { jsonResponse, secureResponse } from "./responses.ts";
-
-import type { CurrentRequest, Telemetry } from "@template/observability";
-import type { ManagedRuntime } from "effect";
 
 type StartHandler = {
   readonly fetch: (request: Request) => Promise<Response> | Response;
@@ -25,7 +27,6 @@ const unavailableResponse = (): Response => {
 };
 
 type FetchWorker = {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
 };
 

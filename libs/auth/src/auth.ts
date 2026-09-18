@@ -2,10 +2,9 @@ import { Database } from "@template/db";
 import { Context, Effect, Layer } from "effect";
 
 import { AuthFailure } from "./auth-failure.ts";
-import { createAuth } from "./create-auth.ts";
+import { createAuth, type AuthOptions, type BetterAuthInstance } from "./create-auth.ts";
 
 import type { Application } from "@template/config";
-import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
 
 type AuthShape = {
   readonly audience: Application;

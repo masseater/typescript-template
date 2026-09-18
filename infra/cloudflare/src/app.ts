@@ -1,16 +1,18 @@
-import { grants } from "@template/config";
+import { grants, type Application } from "@template/config";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
-import { Effect } from "effect";
+import { Effect, type Redacted } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import {
+  workerCompatibilityOptions,
+  workerObservability,
+  workerSubdomain,
+  type SharedConfig,
+} from "./config.ts";
 import { databaseRef } from "./database.ts";
 import { authSecret, settings } from "./settings.ts";
 
-import type { Application } from "@template/config";
-import type { Redacted } from "effect";
 import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
-import type { SharedConfig } from "./config.ts";
 
 const appEnv = (target: Application, shared: SharedEnv): DeclaredEnv => {
   return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;

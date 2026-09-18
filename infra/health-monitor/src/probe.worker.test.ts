@@ -1,12 +1,9 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http, type HttpResponseResolver } from "msw";
 
-import { probeService } from "./probe.ts";
-
-import type { HttpResponseResolver } from "msw";
-import type { ProbeResult } from "./probe.ts";
+import { probeService, type ProbeResult } from "./probe.ts";
 
 const otherServiceHealth = (): Response => {
   return HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "admin" });

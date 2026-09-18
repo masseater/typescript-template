@@ -1,12 +1,10 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import { Effect, Schema, Struct } from "effect";
 
 import { DatabaseFailure } from "./database-failure.ts";
 import { query } from "./database.ts";
 import { UserRow } from "./identity-schema.ts";
 import { user } from "./schema.ts";
-
-import type { SQL } from "drizzle-orm";
 
 const EmailAddress = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 

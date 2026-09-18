@@ -1,7 +1,12 @@
-import { scopeOf } from "./lint-context.ts";
+import {
+  scopeOf,
+  type DeepReadonly,
+  type LintContext,
+  type Node,
+  type NodeOf,
+} from "./lint-context.ts";
 
 import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
-import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
 
 type Resolve<Result> = (node: Node) => Result;
 

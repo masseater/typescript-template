@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { BackupCodeList } from "./backup-code-list";
 import { CheckboxField } from "./shared/ui/checkbox-field";
@@ -7,7 +7,6 @@ import { FormColumn } from "./shared/ui/form-column";
 import { Heading } from "./shared/ui/heading";
 import { TotpVerifyForm } from "./totp-verify-form";
 
-import type { ReactElement } from "react";
 import type { ActionState } from "./action";
 import type { Enrollment } from "./mfa-types";
 

@@ -1,10 +1,15 @@
-import { d1Property, d1Type, followPath, prefixPath } from "./d1-types.ts";
-import { bindingPath, origins, propertyKey, propertyName, variableOf } from "./references.ts";
+import { d1Property, d1Type, followPath, prefixPath, type D1Reference } from "./d1-types.ts";
+import {
+  bindingPath,
+  origins,
+  propertyKey,
+  propertyName,
+  variableOf,
+  type Resolve,
+} from "./references.ts";
 
 import type { Definition, Reference } from "vite-plus/lint/plugins";
-import type { D1Reference } from "./d1-types.ts";
 import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
-import type { Resolve } from "./references.ts";
 
 type BindingLookup = {
   readonly name: string;

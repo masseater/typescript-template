@@ -1,10 +1,9 @@
 import { HeadContent } from "@tanstack/react-router";
 import { initBrowserTelemetry } from "@template/observability/browser";
-import { useEffect } from "react";
+import { useEffect, type ReactElement } from "react";
 
 import { AppBody } from "./app-body";
 
-import type { ReactElement } from "react";
 import type { Children } from "./shared/ui/types";
 
 const AppShell = ({

@@ -3,8 +3,7 @@ import { createDontReviewItRule } from "../../../../create-rule.ts";
 import type { ESTree } from "@oxlint/plugins";
 
 const isAmbientModule = (node: ESTree.Node): boolean =>
-  (node.type === "TSModuleDeclaration" && (node.declare || node.kind === "global")) ||
-  node.type === "TSGlobalDeclaration";
+  node.type === "TSModuleDeclaration" && (node.declare || node.kind === "global");
 
 const mergesIntoAnAmbientModule = (node: ESTree.Node): boolean => {
   const { parent } = node;

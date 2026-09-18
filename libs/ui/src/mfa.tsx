@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
@@ -7,7 +7,6 @@ import { RecoveryNotice } from "./recovery-notice";
 import { Heading } from "./shared/ui/heading";
 import { TotpSettings } from "./totp-settings";
 
-import type { ReactElement } from "react";
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";
 

@@ -1,10 +1,15 @@
 import { Schema } from "effect";
 
-import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
-import { roles, settledPhases } from "./state.ts";
-
-import type { FieldName, SheetData } from "./sheet.ts";
-import type { InterviewState } from "./state.ts";
+import {
+  FieldKey,
+  Reply,
+  displayValue,
+  fieldDefinitions,
+  fieldKeys,
+  type FieldName,
+  type SheetData,
+} from "./sheet.ts";
+import { roles, settledPhases, type InterviewState } from "./state.ts";
 
 const FieldView = Schema.Struct({
   key: FieldKey,

@@ -1,11 +1,7 @@
 import { assert } from "@effect/vitest";
-import { Effect } from "effect";
-import { HttpResponse, http } from "msw";
-import { setupServer } from "msw/node";
-
-import type { Scope } from "effect";
-import type { HttpResponseResolver } from "msw";
-import type { SetupServer } from "msw/node";
+import { Effect, type Scope } from "effect";
+import { HttpResponse, http, type HttpResponseResolver } from "msw";
+import { setupServer, type SetupServer } from "msw/node";
 
 const mockServer = (
   ...handlers: Parameters<typeof setupServer>

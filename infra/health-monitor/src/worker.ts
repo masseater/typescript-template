@@ -1,12 +1,9 @@
-import { Monitor, monitorHandler } from "@template/monitor";
+import { Monitor, monitorHandler, type MonitorBindings, type Notify } from "@template/monitor";
 import { Effect } from "effect";
 
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
-import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
+import { decideHealthAlerts, formatHealthMessage, type HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
-
-import type { MonitorBindings, Notify } from "@template/monitor";
-import type { HealthState } from "./decision.ts";
 
 type Bindings = {
   USER_ORIGIN: string;

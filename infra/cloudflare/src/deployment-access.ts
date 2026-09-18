@@ -1,13 +1,11 @@
 import { State as StateRoute } from "alchemy/Alchemist";
 import { Config, Effect, Redacted } from "effect";
 
-import { verifiedSecrets } from "./credentials.ts";
-import { withVerifiedSecrets } from "./secrets.ts";
+import { verifiedSecrets, type DeploymentSecrets } from "./credentials.ts";
+import { withVerifiedSecrets, type Confidential } from "./secrets.ts";
 import { settings } from "./settings.ts";
 
 import type { SharedConfig } from "./config.ts";
-import type { DeploymentSecrets } from "./credentials.ts";
-import type { Confidential } from "./secrets.ts";
 
 const apiToken = Config.redacted("CLOUDFLARE_API_TOKEN");
 

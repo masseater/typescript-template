@@ -1,9 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { maximumKeywordLength } from "@template/runtime/contracts";
 import { Button, Field } from "@template/ui";
-import { useState } from "react";
-
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 const SearchFields = ({ keyword }: Readonly<{ keyword: string }>): ReactElement => {
   const [draft, setDraft] = useState(keyword);

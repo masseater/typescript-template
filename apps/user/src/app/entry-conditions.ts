@@ -1,9 +1,7 @@
 import { redirect } from "@tanstack/react-router";
 import { loginPath } from "@template/ui";
 
-import { loadSession } from "#entities/session/index.ts";
-
-import type { Session } from "#entities/session/index.ts";
+import { loadSession, type Session } from "#entities/session/index.ts";
 
 const entrances: ReadonlySet<string> = new Set(["/", "/login", "/signup"]);
 

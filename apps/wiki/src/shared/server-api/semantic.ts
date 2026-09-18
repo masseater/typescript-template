@@ -1,7 +1,5 @@
-import { Embedder } from "@template/runtime/wiki";
+import { Embedder, type EmbeddingFailed } from "@template/runtime/wiki";
 import { Effect } from "effect";
-
-import type { EmbeddingFailed } from "@template/runtime/wiki";
 
 type SemanticDocument = {
   readonly id: string;

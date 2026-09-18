@@ -39,7 +39,7 @@ expect.extend({
 });
 
 declare module "vite-plus/test" {
-  type Assertion<T> = {
+  interface Assertion<T> {
     toHaveParsedFields: (expectedFields: ParsedFields) => Promise<T>;
-  };
+  }
 }

@@ -1,8 +1,7 @@
-import { reportViolation } from "./lint-context.ts";
+import { reportViolation, type LintContext, type Node, type NodeOf } from "./lint-context.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 
 const filename = (context: LintContext): string => {
   return context.filename.replaceAll("\\", "/");

@@ -10,10 +10,9 @@ import { viewOf } from "./contracts.ts";
 import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";
 import { Interviewer } from "./interviewer.ts";
 import { fieldKeys } from "./sheet.ts";
-import { State } from "./state.ts";
+import { State, type InterviewState, type MemberUtterance } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";
 
-import type { InterviewState, MemberUtterance } from "./state.ts";
 import type { UnderstandingFailed } from "./understanding-failed.ts";
 import type { UnderstandingData } from "./understanding.ts";
 

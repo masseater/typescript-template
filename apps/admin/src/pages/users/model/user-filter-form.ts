@@ -1,10 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type SubmitEventHandler } from "react";
 
-import { normalizeUsersSearch } from "./users-search.ts";
-
-import type { SubmitEventHandler } from "react";
-import type { UsersSearch } from "./users-search.ts";
+import { normalizeUsersSearch, type UsersSearch } from "./users-search.ts";
 
 type UserFilterForm = {
   readonly handleClear: () => void;

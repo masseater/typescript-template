@@ -1,10 +1,7 @@
-import { connect, createServer } from "node:net";
+import { connect, createServer, type Server } from "node:net";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Effect, Schema } from "effect";
-
-import type { Server } from "node:net";
-import type { Scope } from "effect";
+import { Cause, Effect, Schema, type Scope } from "effect";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),

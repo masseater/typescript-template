@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { InMemoryService } from "alchemy/State";
+import { InMemoryService, type StateService } from "alchemy/State";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
@@ -9,7 +9,6 @@ import { deployTokenPermissions } from "./deploy-token.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { StateService } from "alchemy/State";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
 
 const config = verificationSettings;

@@ -13,9 +13,7 @@ import { workerCompatibility } from "@template/config/worker";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
 import { devBoundary } from "@template/dev-boundary";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
-import { defineConfig } from "vite-plus";
-
-import type { ConfigEnv, UserConfig } from "vite-plus";
+import { defineConfig, type ConfigEnv, type UserConfig } from "vite-plus";
 
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
   build: { sourcemap: "hidden" },

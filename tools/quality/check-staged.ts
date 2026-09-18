@@ -8,9 +8,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import { secretsFile } from "@template/config/deployment";
 import { Effect, Schema } from "effect";
 
-import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
-
-import type { DeploymentValue } from "./secrets.ts";
+import { deploymentValues, prefixScan, secretViolations, type DeploymentValue } from "./secrets.ts";
 
 const MAX_OUTPUT_BYTES = 33_554_432;
 const FAILED_EXIT_CODE = 1;

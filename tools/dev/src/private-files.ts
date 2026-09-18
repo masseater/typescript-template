@@ -1,11 +1,8 @@
-import { chmod, open, readFile, stat } from "node:fs/promises";
+import { chmod, open, readFile, stat, type FileHandle } from "node:fs/promises";
 
 import { Effect } from "effect";
 
-import { failure, fileIo } from "./failure.ts";
-
-import type { FileHandle } from "node:fs/promises";
-import type { LocalCommandFailure } from "./failure.ts";
+import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
 
 const privateFileMode = 0o600;
 const privateDirectoryMode = 0o700;
@@ -14,10 +11,7 @@ const isErrorCode = (error: unknown, code: string): boolean => {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
 };
 
-const closeFile = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  file: FileHandle,
-): Effect.Effect<void, LocalCommandFailure> => {
+const closeFile = (file: FileHandle): Effect.Effect<void, LocalCommandFailure> => {
   return fileIo(async () => file.close());
 };
 

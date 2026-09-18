@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { applicationPorts, applications } from "@template/config";
 import { Effect } from "effect";
 
-import { fileIo } from "./failure.ts";
+import { fileIo, type LocalCommandFailure } from "./failure.ts";
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import {
   lanOrigin,
@@ -17,11 +17,9 @@ import {
   run,
   running,
   socket,
+  type App,
 } from "./local-environment.ts";
 import { privateFileMode } from "./private-files.ts";
-
-import type { LocalCommandFailure } from "./failure.ts";
-import type { App } from "./local-environment.ts";
 
 type AppStatus = {
   readonly app: App;

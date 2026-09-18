@@ -4,10 +4,8 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { SQLiteDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
 
-import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
+import { BootstrappedAdmin, bootstrapStatement, type EmailAddress } from "./bootstrap-statement.ts";
 import { RemoteFailure, fail } from "./remote-input.ts";
-
-import type { EmailAddress } from "./bootstrap-statement.ts";
 
 type RemoteQuery = {
   readonly params: readonly (string | number | null)[];

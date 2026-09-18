@@ -13,12 +13,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, type Scope } from "effect";
 
 import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 
 import type { Application } from "@template/config";
-import type { Scope } from "effect";
 import type { ArtifactFailure } from "./artifact-io.ts";
 
 type UserBuild = {

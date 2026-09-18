@@ -4,10 +4,8 @@ import { toEffect } from "alchemy/Test/Core";
 import { Effect, Schema } from "effect";
 
 import { repositoryRoot } from "./artifacts.ts";
-import { stackName } from "./stacks.ts";
+import { stackName, type StackName } from "./stacks.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
-
-import type { StackName } from "./stacks.ts";
 
 type ResourceInventory = {
   readonly adopt: boolean;

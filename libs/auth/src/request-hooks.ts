@@ -37,7 +37,6 @@ const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-pass
 const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
 const loopbackHosts: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const currentSessionOf = async (ctx: HookContext): ReturnType<typeof getSessionFromCtx> => {
   const session =
     ctx.context.newSession ?? (await getSessionFromCtx(ctx, { disableCookieCache: true }));
@@ -46,7 +45,6 @@ const currentSessionOf = async (ctx: HookContext): ReturnType<typeof getSessionF
 
 const totpUpgradableMethods = new Set(["password", "password_totp"]);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const markTotpSessionStrong = async ({ audience, ctx, run }: HookScope): Promise<void> => {
   const session = await currentSessionOf(ctx);
   if (!session) {

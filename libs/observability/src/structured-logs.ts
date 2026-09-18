@@ -1,10 +1,8 @@
-import { Logger, References } from "effect";
+import { Logger, References, type Layer } from "effect";
 
-import { consoleSink } from "./log.ts";
+import { consoleSink, type LogSink } from "./log.ts";
 
 import type { Application } from "@template/config";
-import type { Layer } from "effect";
-import type { LogSink } from "./log.ts";
 
 type StructuredLogOptions = {
   readonly serviceName: Application;
