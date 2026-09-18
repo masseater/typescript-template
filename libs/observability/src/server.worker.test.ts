@@ -319,50 +319,50 @@ describe("browser events followed by a failing request", () => {
       "serverFailure",
       { auto: true },
       async ({ failureLines, progressLines, warningLines }) => {
-      const telemetry = Telemetry.layer({
-        log: { error: failureLines, info: progressLines, warn: warningLines },
-        release: "abc123",
-        routes: { "/": "home" },
-        serviceName: "user",
-      });
-      const [failure] = await attemptAsync(async () =>
-        Effect.runPromise(
-          Effect.gen(function* probe() {
-            yield* ingestBrowser(
-              new Request(new URL("/api/telemetry", testOrigin), {
-                body: JSON.stringify([
-                  requestEvent,
-                  {
-                    ...requestEvent,
-                    errorType: "TypeError",
-                    kind: "exception",
-                    locations: "/assets/index-abc.js:1:234",
-                    method: "GET",
-                    name: "browser.error",
-                    status: 0,
-                    value: 1,
-                  },
-                ]),
-                headers: { "content-type": "application/json", origin: "http://localhost" },
-                method: "POST",
-              }),
-            );
-            yield* observeRequest(new Request(testOrigin), () =>
-              Effect.die(
-                new (class extends RangeError {
-                  public override readonly stack =
-                    "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)";
-                })("private@example.test"),
-              ),
-            );
-          }).pipe(
-            Effect.provide(telemetry),
-            Effect.provide(fixedEntropy),
-            Effect.withTracer(fixedSpans),
+        const telemetry = Telemetry.layer({
+          log: { error: failureLines, info: progressLines, warn: warningLines },
+          release: "abc123",
+          routes: { "/": "home" },
+          serviceName: "user",
+        });
+        const [failure] = await attemptAsync(async () =>
+          Effect.runPromise(
+            Effect.gen(function* probe() {
+              yield* ingestBrowser(
+                new Request(new URL("/api/telemetry", testOrigin), {
+                  body: JSON.stringify([
+                    requestEvent,
+                    {
+                      ...requestEvent,
+                      errorType: "TypeError",
+                      kind: "exception",
+                      locations: "/assets/index-abc.js:1:234",
+                      method: "GET",
+                      name: "browser.error",
+                      status: 0,
+                      value: 1,
+                    },
+                  ]),
+                  headers: { "content-type": "application/json", origin: "http://localhost" },
+                  method: "POST",
+                }),
+              );
+              yield* observeRequest(new Request(testOrigin), () =>
+                Effect.die(
+                  new (class extends RangeError {
+                    public override readonly stack =
+                      "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)";
+                  })("private@example.test"),
+                ),
+              );
+            }).pipe(
+              Effect.provide(telemetry),
+              Effect.provide(fixedEntropy),
+              Effect.withTracer(fixedSpans),
+            ),
           ),
-        ),
-      );
-      return failure;
+        );
+        return failure;
       },
     );
 

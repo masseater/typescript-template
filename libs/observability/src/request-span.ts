@@ -16,10 +16,10 @@ type Entropy = {
 };
 
 export const RequestEntropy = Context.Reference<Entropy>("@repo/observability/RequestEntropy", {
-  defaultValue: () => ({
-    epochMilliseconds: () => Date.now(),
-    monotonicMilliseconds: () => performance.now(),
-    requestId: () => crypto.randomUUID(),
+  defaultValue: (): Entropy => ({
+    epochMilliseconds: (): number => Date.now(),
+    monotonicMilliseconds: (): number => performance.now(),
+    requestId: (): string => crypto.randomUUID(),
   }),
 });
 
@@ -113,7 +113,10 @@ const recordRequest = Effect.fn("recordRequest")(function* recordRequest(served:
     status: served.responseStatus,
   };
   yield* annotateSpan(attributes);
-  yield* logAt(statusSeverity(served.responseStatus), "http.server.request", attributes);
+  yield* logAt(statusSeverity(served.responseStatus), {
+    attributes,
+    eventName: "http.server.request",
+  });
 });
 
 const respond = <Requirements>(served: {

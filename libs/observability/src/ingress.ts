@@ -26,16 +26,12 @@ const ingressWindows = Ref.makeUnsafe<
 const unrecorded = (
   recorded: ReadonlySet<string>,
   browserEvents: readonly BrowserEvent[],
-): readonly BrowserEvent[] => {
-  const seen = new Set(recorded);
-  return browserEvents.filter((browserEvent) => {
-    if (seen.has(browserEvent.spanId)) {
-      return false;
-    }
-    seen.add(browserEvent.spanId);
-    return true;
-  });
-};
+): readonly BrowserEvent[] =>
+  browserEvents.filter(
+    (browserEvent, position) =>
+      !recorded.has(browserEvent.spanId) &&
+      browserEvents.findIndex((earlier) => earlier.spanId === browserEvent.spanId) === position,
+  );
 
 const admitUnrecorded = (batch: {
   readonly serviceName: ServiceName;
@@ -110,7 +106,7 @@ const recordBrowserEvent = (recorded: {
     trace_id: browserEvent.traceId,
     ...kindFields(browserEvent),
   };
-  return logAt(eventSeverity(browserEvent), browserEvent.name, attributes);
+  return logAt(eventSeverity(browserEvent), { attributes, eventName: browserEvent.name });
 };
 
 const emptyResponse = (emptyAnswer: {
@@ -151,6 +147,25 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: Ingres
   return browserEvents.success;
 });
 
+const recordAdmitted = Effect.fn("recordAdmitted")(function* recordAdmitted(batch: {
+  readonly serviceName: ServiceName;
+  readonly browserEvents: readonly BrowserEvent[];
+}) {
+  const admitted = yield* admitUnrecorded(batch);
+  if (admitted === undefined) {
+    return emptyResponse({
+      headers: { ...noStore, "retry-after": retryAfterSeconds },
+      status: httpStatus.tooManyRequests,
+    });
+  }
+  yield* Effect.forEach(
+    admitted,
+    (browserEvent) => recordBrowserEvent({ browserEvent, serviceName: batch.serviceName }),
+    { discard: true },
+  );
+  return emptyResponse({ status: httpStatus.accepted });
+});
+
 export const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(
   incoming: IngressRequest,
 ) {
@@ -165,17 +180,5 @@ export const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(
   if (browserEvents instanceof Response) {
     return browserEvents;
   }
-  const admitted = yield* admitUnrecorded({ browserEvents, serviceName });
-  if (admitted === undefined) {
-    return emptyResponse({
-      headers: { ...noStore, "retry-after": retryAfterSeconds },
-      status: httpStatus.tooManyRequests,
-    });
-  }
-  yield* Effect.forEach(
-    admitted,
-    (browserEvent) => recordBrowserEvent({ browserEvent, serviceName }),
-    { discard: true },
-  );
-  return emptyResponse({ status: httpStatus.accepted });
+  return yield* recordAdmitted({ browserEvents, serviceName });
 });

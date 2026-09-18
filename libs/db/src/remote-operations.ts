@@ -4,7 +4,7 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { SQLiteDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
 
-import { BootstrappedAdmin, bootstrapStatement, type EmailAddress } from "./bootstrap-statement.ts";
+import { BootstrappedAdmin, bootstrapStatement, type Email } from "./bootstrap-statement.ts";
 import { remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure, fail, type MigrationStatusTarget } from "./remote-input.ts";
 
@@ -130,7 +130,7 @@ const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigra
 
 const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapDatabase(
   executor: DatabaseExecutor,
-  email: typeof EmailAddress.Type,
+  email: typeof Email.Type,
 ) {
   const migrations = yield* loadRemoteMigrations();
   if ((yield* readHistory(executor, migrations)) !== migrations.length) {

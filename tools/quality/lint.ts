@@ -219,6 +219,10 @@ const lintOptions = {
       },
     },
     {
+      files: ["libs/config/src/cli.ts"],
+      rules: { "no-restricted-properties": LINT_SEVERITY.OFF },
+    },
+    {
       files: ["tools/dont-review-it/src/lint/oxlint/**"],
       rules: {
         "typescript/switch-exhaustiveness-check": [

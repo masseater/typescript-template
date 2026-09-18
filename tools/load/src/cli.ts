@@ -12,7 +12,7 @@ import { Console, Effect, Schema } from "effect";
 
 import { exists, installBinary } from "./binary.ts";
 import {
-  Application,
+  ApplicationName,
   awaitReady,
   clearTraces,
   oneMinuteLoadAverage,
@@ -51,7 +51,7 @@ const profiles = {
 } as const;
 const peak = Effect.succeed("peak" as const);
 const Profile = Schema.Literals(["peak", "smoke"]).pipe(Schema.withDecodingDefaultKey(peak));
-const Arguments = Schema.Struct({ app: Application, profile: Profile });
+const Arguments = Schema.Struct({ app: ApplicationName, profile: Profile });
 const usage = "vp run --filter @repo/load load <user|admin|wiki> [smoke|peak]";
 const rebuild = "vp run --filter @repo/dev setup loopback, then vp run --filter @repo/<app> build";
 const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
@@ -119,7 +119,7 @@ interface Measured {
 }
 
 const prepare = Effect.fn("prepare")(function* prepare(
-  app: typeof Application.Type,
+  app: typeof ApplicationName.Type,
   origin: string,
 ) {
   const scenario = path.join(scenarios, `${app}-journey.ts`);

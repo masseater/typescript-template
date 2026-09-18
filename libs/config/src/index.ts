@@ -1,5 +1,6 @@
 export {
   APPLICATION,
+  ApplicationName,
   AUTHENTICATION_METHOD,
   ROLE,
   applicationOrigins,

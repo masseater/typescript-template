@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { Email, ROLE } from "@repo/config";
 import { sql, type SQL } from "drizzle-orm";
 import { Effect, Schema, Struct } from "effect";
 
@@ -7,14 +7,12 @@ import { query } from "./database.ts";
 import { UserRow } from "./identity-schema.ts";
 import { user } from "./schema.ts";
 
-const EmailAddress = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
-
 const BootstrappedAdmin = Schema.Struct({
   ...Struct.pick(UserRow.fields, ["email", "id"]),
   role: Schema.Literal(ROLE.administrator),
 });
 
-const bootstrapStatement = (email: typeof EmailAddress.Type): SQL => {
+const bootstrapStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
     SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
@@ -29,7 +27,7 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 ) {}
 
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
-  email: typeof EmailAddress.Type,
+  email: typeof Email.Type,
 ) {
   const [promotedRow] = yield* query(async (database) => database.all(bootstrapStatement(email)));
   if (promotedRow === undefined) {
@@ -43,7 +41,7 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 export {
   BootstrapUnavailable,
   BootstrappedAdmin,
-  EmailAddress,
+  Email,
   bootstrapAdmin,
   bootstrapStatement,
 };

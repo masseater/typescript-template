@@ -2,7 +2,6 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 const ENVIRONMENT_FILE_VARIABLE = "TEMPLATE_CLOUDFLARE_ENV_FILE";
-const ENVIRONMENT_FILE_NAME = "cloudflare.env";
 
 const environmentFile = (): string | undefined => {
   const configured = process.env[ENVIRONMENT_FILE_VARIABLE];
@@ -18,6 +17,8 @@ const configurationHome = (project: string): string => {
     project,
   );
 };
+
+const ENVIRONMENT_FILE_NAME = "cloudflare.env";
 
 const secretsFile = (project: string): string => {
   const configured = environmentFile();

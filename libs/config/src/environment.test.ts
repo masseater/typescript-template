@@ -146,7 +146,7 @@ describe("isLocalDevelopmentOrigin", () => {
   describe.for([
     ["https://local"],
     ["https://user.template.local.example.test"],
-    ["https://mac-mini.tail2ee823.ts.net"],
+    ["https://host.tunnel.example.test"],
     ["https://app.example.test"],
   ] as const)("%s", ([origin]) => {
     const it = test.extend("localDevelopment", () => isLocalDevelopmentOrigin(origin));

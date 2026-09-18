@@ -83,6 +83,8 @@ const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never 
   );
 };
 
+const mailpitSendPath = "/api/v1/send";
+
 const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationInvalid> => {
   const url = new URL(origin);
   return url.protocol === "https:" || loopbackHosts.includes(url.hostname)
@@ -90,19 +92,26 @@ const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationI
     : Effect.fail(invalid("HTTPS is required outside localhost"));
 };
 
-const mailpitSendPath = "/api/v1/send";
+const requireOtlpEndpoint = Effect.fn("requireOtlpEndpoint")(
+  function* requireOtlpEndpoint(exported: {
+    readonly OTLP_ENABLED?: string | undefined;
+    readonly OTLP_ENDPOINT?: string | undefined;
+  }) {
+    if (exported.OTLP_ENDPOINT === undefined) {
+      if (exported.OTLP_ENABLED !== undefined) {
+        return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
+      }
+      return;
+    }
+    yield* requireSecureOrigin(exported.OTLP_ENDPOINT);
+  },
+);
 
 const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
   const scalars = yield* decode(Scalars, input);
   yield* requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
-  if (scalars.OTLP_ENDPOINT === undefined) {
-    if (scalars.OTLP_ENABLED !== undefined) {
-      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
-    }
-  } else {
-    yield* requireSecureOrigin(scalars.OTLP_ENDPOINT);
-  }
+  yield* requireOtlpEndpoint(scalars);
   if (scalars.MAILPIT_URL === undefined) {
     return { ...scalars, local };
   }

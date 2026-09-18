@@ -1,10 +1,7 @@
-import { Effect } from "effect";
+import { Effect, type LogLevel } from "effect";
 
-import { annotateLogs } from "./annotations.ts";
+import { annotateLogs, type Attributes } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
-
-import type { LogLevel } from "effect";
-import type { Attributes } from "./annotations.ts";
 
 type Severity = Extract<LogLevel.Severity, "Error" | "Info" | "Warn">;
 
@@ -15,19 +12,25 @@ const refusals: ReadonlySet<number> = new Set([
 ]);
 const firstStatus = 100;
 
-function statusSeverity(status: number | undefined): Severity {
-  if (status === undefined || status < firstStatus || status >= httpStatus.internalServerError) {
+const statusSeverity = (responseStatus: number | undefined): Severity => {
+  if (
+    responseStatus === undefined ||
+    responseStatus < firstStatus ||
+    responseStatus >= httpStatus.internalServerError
+  ) {
     return "Error";
   }
-  if (status < httpStatus.badRequest) {
+  if (responseStatus < httpStatus.badRequest) {
     return "Info";
   }
-  return refusals.has(status) ? "Info" : "Warn";
-}
+  return refusals.has(responseStatus) ? "Info" : "Warn";
+};
 
-function logAt(severity: Severity, event: string, attributes: Attributes): Effect.Effect<void> {
-  return Effect.logWithLevel(severity)(event).pipe(annotateLogs(attributes));
-}
+const logAt = (
+  severity: Severity,
+  logged: { readonly eventName: string; readonly attributes: Attributes },
+): Effect.Effect<void> =>
+  Effect.logWithLevel(severity)(logged.eventName).pipe(annotateLogs(logged.attributes));
 
 export { logAt, statusSeverity };
 export type { Severity };

@@ -32,11 +32,11 @@ const previewDevVars = (appRoot: string): Plugin => {
   };
 };
 
-const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
 ] as const;
+const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
   ...serverOnlyPackages.map((packageName) => `**/libs/${packageName}/src/**`),
   "**/src/**/server-api/**",
@@ -119,15 +119,16 @@ type RunConfig = NonNullable<UserConfig["run"]>;
 type Tasks = NonNullable<RunConfig["tasks"]>;
 
 const lifecycles = ["precommit", "prepush", "premerge"] as const;
-type Lifecycle = (typeof lifecycles)[number];
 
-const lifecycle = (stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks =>
+const lifecycle = (
+  stages: Readonly<Record<(typeof lifecycles)[number], readonly string[]>>,
+): Tasks =>
   Object.fromEntries(
-    lifecycles.map((name, index) => [
-      name,
+    lifecycles.map((stage, index) => [
+      stage,
       {
         command: [],
-        dependsOn: [...lifecycles.slice(Math.max(index - 1, 0), index), ...stages[name]],
+        dependsOn: [...lifecycles.slice(Math.max(index - 1, 0), index), ...stages[stage]],
       },
     ]),
   );

@@ -1590,6 +1590,9 @@ importers:
       '@repo/local':
         specifier: workspace:*
         version: link:../../infra/local
+      '@repo/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112

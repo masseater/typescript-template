@@ -1,7 +1,7 @@
 import { CloudflareId } from "@repo/config";
 import { Effect, Schema } from "effect";
 
-import { EmailAddress } from "./bootstrap-statement.ts";
+import { Email } from "./bootstrap-statement.ts";
 
 const RemoteFailureCode = Schema.Literals([
   "REMOTE_COMMAND_INVALID",
@@ -42,7 +42,7 @@ const RemoteTarget = Schema.Struct({
   accountId: CloudflareId,
   apiToken: Schema.optionalKey(ApiToken),
   databaseId: DatabaseId,
-  email: Schema.optionalKey(EmailAddress),
+  email: Schema.optionalKey(Email),
 });
 
 const MigrationStatusTarget = Schema.Struct({

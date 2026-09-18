@@ -4,8 +4,6 @@ import { RemoteFailure } from "./remote-input.ts";
 
 import type { DatabaseExecutor } from "./remote-operations.ts";
 
-import type { DatabaseExecutor } from "./remote-operations.ts";
-
 const D1_API_TIMEOUT_MS = 30_000;
 const StatementRows = Schema.Struct({
   results: Schema.Array(Schema.Unknown),

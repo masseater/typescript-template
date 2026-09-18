@@ -1,3 +1,5 @@
+import { Schema } from "effect";
+
 /** @canonical-values config.application */
 export const applications = ["user", "admin", "wiki"] as const;
 export const APPLICATION = {
@@ -6,11 +8,13 @@ export const APPLICATION = {
   wiki: applications[2],
 } as const;
 
+export const ApplicationName = Schema.Literals(applications);
+export type Application = (typeof applications)[number];
+export type ServiceName = Application | "commander";
+
 const USER_PORT = 3001;
 const ADMIN_PORT = 3002;
 const WIKI_PORT = 3003;
-export type Application = (typeof applications)[number];
-export type ServiceName = Application | "commander";
 export const applicationPorts: Readonly<Record<Application, number>> = {
   admin: ADMIN_PORT,
   user: USER_PORT,

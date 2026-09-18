@@ -7,7 +7,7 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
+import { ApplicationName, applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { Effect, Schedule, Schema } from "effect";
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
@@ -20,7 +20,6 @@ class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("Env
   ]),
 }) {}
 
-const Application = Schema.Literals(applications);
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;
 const readinessChecks = 120;
@@ -36,7 +35,9 @@ function isMissing(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
 
-function builtVariables(app: typeof Application.Type): Effect.Effect<string, EnvironmentUnusable> {
+function builtVariables(
+  app: typeof ApplicationName.Type,
+): Effect.Effect<string, EnvironmentUnusable> {
   return Effect.tryPromise({
     catch: (error) =>
       new EnvironmentUnusable({ reason: isMissing(error) ? "build_missing" : "file_io_failed" }),
@@ -45,7 +46,7 @@ function builtVariables(app: typeof Application.Type): Effect.Effect<string, Env
 }
 
 const requireLoopbackOrigin = Effect.fn("requireLoopbackOrigin")(function* requireLoopbackOrigin(
-  app: typeof Application.Type,
+  app: typeof ApplicationName.Type,
 ) {
   const origin = applicationOrigins[app];
   const variables = yield* builtVariables(app);
@@ -75,7 +76,7 @@ function isSuccessful(status: number): boolean {
   return status >= firstSuccess && status < firstRedirect;
 }
 
-function awaitReady(app: typeof Application.Type): Effect.Effect<void, EnvironmentUnusable> {
+function awaitReady(app: typeof ApplicationName.Type): Effect.Effect<void, EnvironmentUnusable> {
   return answeredStatus(`${applicationOrigins[app]}${applicationReadyPaths[app]}`, "GET").pipe(
     Effect.flatMap((status) =>
       isSuccessful(status)
@@ -100,7 +101,7 @@ function clearTraces(origin: string): Effect.Effect<void, EnvironmentUnusable> {
 }
 
 export {
-  Application,
+  ApplicationName,
   EnvironmentUnusable,
   awaitReady,
   clearTraces,
