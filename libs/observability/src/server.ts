@@ -1,7 +1,8 @@
 export { CurrentRequest } from "./current-request.ts";
 export { RequestRejected, readJson, rejectionStatus } from "./request.ts";
 export { Telemetry } from "./telemetry.ts";
-export { flushTelemetry } from "./otlp.ts";
+export { flushTelemetry, otlpSignalUrl } from "./otlp.ts";
+export type { TelemetryFlusher } from "./otlp.ts";
 export { TelemetryInvalid } from "./telemetry-invalid.ts";
 export { httpStatus } from "./http-status.ts";
 export { ingestBrowser } from "./ingress.ts";

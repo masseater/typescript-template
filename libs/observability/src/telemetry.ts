@@ -1,8 +1,7 @@
 import { Context, Effect, Layer } from "effect";
+import type { OtlpDestination, TelemetryFlusher } from "./otlp.ts";
 import { serviceLabel, structuredLogs } from "./structured-logs.ts";
 import type { Application } from "@repo/config";
-import type { OtlpDestination } from "./otlp.ts";
-import type { OtlpExporter } from "effect/unstable/observability";
 import type { StructuredLogOptions } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 import { isRoutes } from "./protocol.ts";
@@ -24,7 +23,7 @@ class Telemetry extends Context.Service<Telemetry, TelemetryShape>()(
 ) {
   public static layer(
     options: TelemetryOptions,
-  ): Layer.Layer<OtlpExporter.Flusher | Telemetry, TelemetryInvalid> {
+  ): Layer.Layer<Telemetry | TelemetryFlusher, TelemetryInvalid> {
     const { release, routes, serviceName } = options;
     const labels = new Set([...Object.values(routes), "unmatched"]);
     const service = serviceLabel(serviceName);

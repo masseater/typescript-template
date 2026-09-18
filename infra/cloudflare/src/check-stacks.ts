@@ -14,7 +14,7 @@ import { verificationSettings } from "./verification-fixture.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
 
-const { accountId, budget, mailFrom, origins, otlpAuthorization, otlpEndpoint, prefix } =
+const { accountId, budget, mailFrom, origins, otlp, otlpAuthorization, prefix } =
   verificationSettings;
 
 const sampling = { enabled: true, headSamplingRate: 0.5 };
@@ -53,7 +53,8 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText("EMAIL_FROM", mailFrom),
       "OTLP_AUTHORIZATION:secret_text:text=$TEMPLATE_OTLP_AUTHORIZATION",
-      plainText("OTLP_ENDPOINT", otlpEndpoint),
+      plainText("OTLP_ENABLED", String(otlp.enabled)),
+      plainText("OTLP_ENDPOINT", otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {
@@ -195,10 +196,11 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       adopt: false,
       bindings: [],
       declared: {
+        enabled: otlp.enabled,
         headers: { authorization: otlpAuthorization },
         logpushDataset: "opentelemetry-traces",
         name: traceDestination,
-        url: otlpEndpoint,
+        url: `${otlp.endpoint}/v1/traces`,
       },
       removalPolicy: "destroy",
       type: "Cloudflare.Workers.ObservabilityDestination",

@@ -1,6 +1,7 @@
 import { Config, Effect, Schema } from "effect";
 import type { StackName } from "./stacks.ts";
 import type { WorkerObservability } from "alchemy/Cloudflare";
+import { otlpSignalUrl } from "@repo/observability";
 import { stackNames } from "./stacks.ts";
 import { workerCompatibility } from "@repo/config/worker";
 
@@ -81,7 +82,7 @@ const SharedSettings = Schema.Struct({
   mailFrom: Email,
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
-  otlpEndpoint: Schema.UndefinedOr(HttpsUrl),
+  otlp: Schema.UndefinedOr(Schema.Struct({ enabled: Schema.Boolean, endpoint: HttpsUrl })),
   prefix: Prefix,
   zoneId: Id,
 });
@@ -99,12 +100,20 @@ const workerCompatibilityOptions = {
   date: workerCompatibility.date,
   flags: [...workerCompatibility.flags],
 };
-function traceDestination(
-  config: SharedConfig,
-): { readonly name: string; readonly url: string } | undefined {
-  return config.otlpEndpoint === undefined
+interface TraceDestination {
+  readonly enabled: boolean;
+  readonly name: string;
+  readonly url: string;
+}
+
+function traceDestination(config: SharedConfig): TraceDestination | undefined {
+  return config.otlp === undefined
     ? undefined
-    : { name: `${config.prefix}-traces`, url: config.otlpEndpoint };
+    : {
+        enabled: config.otlp.enabled,
+        name: `${config.prefix}-traces`,
+        url: otlpSignalUrl(config.otlp.endpoint, "traces"),
+      };
 }
 
 function workerObservability(config: SharedConfig): WorkerObservability {
@@ -117,8 +126,7 @@ function workerObservability(config: SharedConfig): WorkerObservability {
     traces: {
       enabled: true,
       headSamplingRate,
-      persist: true,
-      ...(destination === undefined ? {} : { destinations: [destination.name] }),
+      ...(destination === undefined ? {} : { destinations: [destination.name], persist: true }),
     },
   };
 }

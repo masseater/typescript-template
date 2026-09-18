@@ -23,6 +23,7 @@ import { applications } from "@repo/config";
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { randomBytes } from "node:crypto";
+import { receiverOrigin } from "@repo/local";
 
 interface SetupReport {
   readonly credentialsFile: string;
@@ -64,6 +65,7 @@ function appVariables(app: App, credentials: Credentials): Readonly<Record<strin
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
     MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
+    OTLP_ENDPOINT: receiverOrigin("otlp"),
   };
 }
 

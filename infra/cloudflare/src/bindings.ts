@@ -10,6 +10,7 @@ type SharedEnv = Readonly<{
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
+  OTLP_ENABLED?: string;
   OTLP_ENDPOINT?: string;
 }>;
 

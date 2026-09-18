@@ -71,7 +71,9 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
     );
   }
   if (input.command === "exported") {
-    return required(input.traceId).pipe(Effect.flatMap((traceId) => exportedTelemetry(traceId)));
+    return required(input.traceId).pipe(
+      Effect.flatMap((traceId) => exportedTelemetry(traceId, input.minutes)),
+    );
   }
   if (input.command === "trace") {
     return required(input.traceId).pipe(
@@ -106,6 +108,13 @@ const help = Console.log(
   }),
 );
 
+const remediation = {
+  explorer:
+    "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
+  exported:
+    "Start the OTLP receiver with `pnpm --filter @repo/local up` and check that --trace-id and --minutes cover the exported trace.",
+} as const;
+
 const query = Effect.fn("query")(function* query() {
   const input = yield* Schema.decodeUnknownEffect(QueryInput)({
     command: positionals[0],
@@ -136,8 +145,7 @@ NodeRuntime.runMain(
       reportFailed({
         event: "observability.query_failed",
         ok: false,
-        remediation:
-          "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
+        remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
       }),
     ),
   ),

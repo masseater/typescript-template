@@ -1,4 +1,5 @@
 import { Effect, Schema } from "effect";
+import { receiverOrigin } from "@repo/local";
 
 interface ExportedSpan {
   readonly name: string;
@@ -22,12 +23,10 @@ class ReceiverFailure extends Schema.TaggedError<ReceiverFailure>()("ReceiverFai
   reason: Schema.Literals(["query_failed", "response_invalid"]),
 }) {}
 
-const tracesOrigin = "http://127.0.0.1:3200";
-const logsOrigin = "http://127.0.0.1:3100";
 const receiverTimeoutMilliseconds = 15_000;
 const hexRadix = 16;
 const hexByteWidth = 2;
-const logWindowMilliseconds = 3_600_000;
+const millisecondsPerMinute = 60_000;
 const nanosecondsPerMillisecond = 1_000_000;
 
 const Attribute = Schema.Struct({
@@ -46,10 +45,10 @@ const TempoBatch = Schema.Struct({
   scopeSpans: Schema.Array(TempoScope),
 });
 const TempoTrace = Schema.Struct({ batches: Schema.Array(TempoBatch) });
-const LokiValues = Schema.Array(Schema.Array(Schema.String));
+const LokiEntry = Schema.Tuple([Schema.String, Schema.String]);
 const LokiStream = Schema.Struct({
   stream: Schema.Record(Schema.String, Schema.String),
-  values: LokiValues,
+  values: Schema.Array(LokiEntry),
 });
 const LokiStreams = Schema.Struct({ data: Schema.Struct({ result: Schema.Array(LokiStream) }) });
 
@@ -59,8 +58,8 @@ function hexIdentifier(base64: string): string {
   ).join("");
 }
 
-function serviceName(attributes: readonly (typeof Attribute.Type)[]): string {
-  return attributes.find((attribute) => attribute.key === "service.name")?.value.stringValue ?? "";
+function serviceName(attributes: readonly (typeof Attribute.Type)[]): string | undefined {
+  return attributes.find((attribute) => attribute.key === "service.name")?.value.stringValue;
 }
 
 const receiverJson = Effect.fn("receiverJson")(function* receiverJson(url: string) {
@@ -82,16 +81,25 @@ const receiverJson = Effect.fn("receiverJson")(function* receiverJson(url: strin
   });
 });
 
-const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(traceId: string) {
-  const body = yield* receiverJson(new URL(`/api/traces/${traceId}`, tracesOrigin).href);
-  const trace = yield* Schema.decodeUnknownEffect(TempoTrace)(body).pipe(
+function decoded<Decoded extends Schema.Top & { readonly DecodingServices: never }>(
+  schema: Decoded,
+  body: unknown,
+): Effect.Effect<Decoded["Type"], ReceiverFailure> {
+  return Schema.decodeUnknownEffect(schema)(body).pipe(
     Effect.mapError(() => new ReceiverFailure({ reason: "response_invalid" })),
   );
+}
+
+const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(traceId: string) {
+  const body = yield* receiverJson(
+    new URL(`/api/traces/${traceId}`, receiverOrigin("traces")).href,
+  );
+  const trace = yield* decoded(TempoTrace, body);
   return trace.batches.flatMap((batch) =>
     batch.scopeSpans.flatMap((scope) =>
       scope.spans.map((span): ExportedSpan => ({
         name: span.name,
-        service: serviceName(batch.resource.attributes),
+        service: serviceName(batch.resource.attributes) ?? "",
         spanId: hexIdentifier(span.spanId),
         traceId: hexIdentifier(span.traceId),
       })),
@@ -99,20 +107,21 @@ const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(traceId
   );
 });
 
-const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(traceId: string) {
-  const url = new URL("/loki/api/v1/query_range", logsOrigin);
+const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(
+  traceId: string,
+  minutes: number,
+) {
+  const url = new URL("/loki/api/v1/query_range", receiverOrigin("logs"));
   url.searchParams.set("query", `{service_name=~".+"} | trace_id = "${traceId}"`);
   url.searchParams.set(
     "start",
-    String((Date.now() - logWindowMilliseconds) * nanosecondsPerMillisecond),
+    String((Date.now() - minutes * millisecondsPerMinute) * nanosecondsPerMillisecond),
   );
   const body = yield* receiverJson(url.href);
-  const streams = yield* Schema.decodeUnknownEffect(LokiStreams)(body).pipe(
-    Effect.mapError(() => new ReceiverFailure({ reason: "response_invalid" })),
-  );
+  const streams = yield* decoded(LokiStreams, body);
   return streams.data.result.flatMap((entry) =>
-    entry.values.map((value): ExportedLog => ({
-      message: value[1] ?? "",
+    entry.values.map(([, message]): ExportedLog => ({
+      message,
       requestId: entry.stream["request_id"],
       service: entry.stream["service_name"],
       spanId: entry.stream["span_id"],
@@ -123,10 +132,12 @@ const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(traceId: s
 
 const exportedTelemetry = Effect.fn("exportedTelemetry")(function* exportedTelemetry(
   traceId: string,
+  minutes: number,
 ) {
-  const [logs, spans] = yield* Effect.all([exportedLogs(traceId), exportedSpans(traceId)], {
-    concurrency: "unbounded",
-  });
+  const [logs, spans] = yield* Effect.all(
+    [exportedLogs(traceId, minutes), exportedSpans(traceId)],
+    { concurrency: "unbounded" },
+  );
   const telemetry: ExportedTelemetry = { logs, spans };
   return telemetry;
 });

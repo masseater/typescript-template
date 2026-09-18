@@ -1,16 +1,15 @@
 import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
 import { Effect, Layer } from "effect";
+import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 import { readConfig, sendVerificationEmail } from "@repo/config";
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
 import { Auth } from "@repo/auth";
 import type { AuthFailure } from "@repo/auth";
 import { Database } from "@repo/db";
-import type { OtlpExporter } from "effect/unstable/observability";
 import { Telemetry } from "@repo/observability";
-import type { TelemetryInvalid } from "@repo/observability";
 
-type AppServices = Auth | Database | AppOrigin | Assets | OtlpExporter.Flusher | Telemetry;
+type AppServices = AppOrigin | Assets | Auth | Database | Telemetry | TelemetryFlusher;
 
 function configuredAppLayer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -25,7 +24,7 @@ function configuredAppLayer(
     sendVerificationEmail: (message) => sendVerificationEmail(config, message),
   }).pipe(Layer.provideMerge(Database.layer(config.DB)));
   const otlp =
-    config.OTLP_ENDPOINT === undefined
+    config.OTLP_ENDPOINT === undefined || config.OTLP_ENABLED === "false"
       ? undefined
       : { authorization: config.OTLP_AUTHORIZATION, endpoint: config.OTLP_ENDPOINT };
   const telemetry = Telemetry.layer({

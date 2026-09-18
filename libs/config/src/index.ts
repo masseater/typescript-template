@@ -44,6 +44,7 @@ const Scalars = Schema.Struct({
   EMAIL_FROM: Email,
   MAILPIT_URL: Schema.optionalKey(Origin),
   OTLP_AUTHORIZATION: Schema.optionalKey(NonEmpty),
+  OTLP_ENABLED: Schema.optionalKey(Schema.Literals(["false", "true"])),
   OTLP_ENDPOINT: Schema.optionalKey(AbsoluteUrl),
 });
 

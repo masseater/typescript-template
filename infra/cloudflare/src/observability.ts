@@ -16,9 +16,11 @@ const stack = Stack(
     }
     const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
     const traces = yield* Workers.ObservabilityDestination("Traces", {
-      ...destination,
+      enabled: destination.enabled,
       headers: authorization === undefined ? {} : { authorization: Redacted.value(authorization) },
       logpushDataset: "opentelemetry-traces",
+      name: destination.name,
+      url: destination.url,
     });
     return { traceDestination: traces.name };
   }),

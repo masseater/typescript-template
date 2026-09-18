@@ -1,11 +1,10 @@
-import type { CurrentRequest, Telemetry } from "@repo/observability";
+import type { CurrentRequest, Telemetry, TelemetryFlusher } from "@repo/observability";
 import { Effect, Result } from "effect";
 import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
 import { jsonResponse, secureResponse } from "./responses.ts";
 import { Assets } from "./assets.ts";
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import type { ManagedRuntime } from "effect";
-import type { OtlpExporter } from "effect/unstable/observability";
 import { runtimeUnavailable } from "./failures.ts";
 
 interface StartHandler {
@@ -33,7 +32,7 @@ function unavailableResponse(): Response {
 }
 
 function serveWorker<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<OtlpExporter.Flusher | Requirements | Telemetry, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: WorkerRoute<Requirements>,
 ): FetchWorker {
   return {
@@ -63,7 +62,7 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 
 function serveApp<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<
-    Assets | OtlpExporter.Flusher | Requirements | Telemetry,
+    Assets | Requirements | Telemetry | TelemetryFlusher,
     unknown
   >,
   route: AppRoute<Requirements>,

@@ -37,7 +37,9 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       DB: database,
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
-      ...(config.otlpEndpoint === undefined ? {} : { OTLP_ENDPOINT: config.otlpEndpoint }),
+      ...(config.otlp === undefined
+        ? {}
+        : { OTLP_ENABLED: String(config.otlp.enabled), OTLP_ENDPOINT: config.otlp.endpoint }),
       ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
     }),
     main: artifacts.mainModule,

@@ -37,6 +37,15 @@ const budget = Config.all({
   ),
 });
 
+const otlpDestination = Config.all({
+  enabled: Config.boolean("TEMPLATE_OTLP_ENABLED").pipe(Config.withDefault(true)),
+  endpoint: optional(Config.schema(HttpsUrl, "TEMPLATE_OTLP_ENDPOINT")),
+}).pipe(
+  Config.map(({ enabled, endpoint }) =>
+    endpoint === undefined ? undefined : { enabled, endpoint },
+  ),
+);
+
 const settings = Config.all({
   accountId: Config.schema(Id, "CLOUDFLARE_ACCOUNT_ID"),
   budget,
@@ -49,7 +58,7 @@ const settings = Config.all({
     user: Config.schema(Origin, originKeys.user),
     wiki: Config.schema(Origin, originKeys.wiki),
   }),
-  otlpEndpoint: optional(Config.schema(HttpsUrl, "TEMPLATE_OTLP_ENDPOINT")),
+  otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
   zoneId: Config.schema(Id, "CLOUDFLARE_ZONE_ID"),
 }).pipe(Effect.flatMap(checkSharedConfig));

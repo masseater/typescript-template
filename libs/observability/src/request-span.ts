@@ -36,7 +36,9 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
 }
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
-  return Effect.logError("application.error", failureAttributes(cause));
+  return Effect.logError("application.error").pipe(
+    Effect.annotateLogs({ ...failureAttributes(cause) }),
+  );
 }
 
 function incomingParent(headers: Readonly<Pick<Headers, "get">>): Tracer.ExternalSpan | undefined {
@@ -91,9 +93,11 @@ function recordRequest(
       status,
     };
     yield* Effect.annotateCurrentSpan(attributes);
-    yield* status >= httpStatus.internalServerError
-      ? Effect.logError("http.server.request", attributes)
-      : Effect.logInfo("http.server.request", attributes);
+    yield* (
+      status >= httpStatus.internalServerError
+        ? Effect.logError("http.server.request")
+        : Effect.logInfo("http.server.request")
+    ).pipe(Effect.annotateLogs(attributes));
   });
 }
 

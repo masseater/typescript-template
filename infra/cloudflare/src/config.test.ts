@@ -1,9 +1,10 @@
 import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
 import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
 import { assert, it } from "@effect/vitest";
-import { parseDeploymentCommand, workerObservability } from "./config.ts";
+import { parseDeploymentCommand, traceDestination, workerObservability } from "./config.ts";
 import type { AppBindings } from "./bindings.ts";
 import { Effect } from "effect";
+import { otlpSignalUrl } from "@repo/observability";
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -70,9 +71,39 @@ it.effect(
     }),
 );
 
-it.effect("a Worker without an OTLP endpoint declares no trace destination", () =>
+it.effect("a Worker without an OTLP endpoint declares the same traces block as before", () =>
   Effect.sync(() => {
-    assert.deepStrictEqual(workerObservability({ ...settings, otlpEndpoint: undefined }).traces, {
+    assert.deepStrictEqual(workerObservability({ ...settings, otlp: undefined }).traces, {
+      enabled: true,
+      headSamplingRate: settings.observabilitySampling,
+    });
+    assert.isUndefined(traceDestination({ ...settings, otlp: undefined }));
+  }),
+);
+
+it.effect("the destination and the Worker derive their signal URLs from one base URL", () =>
+  Effect.sync(() => {
+    for (const base of [settings.otlp.endpoint, `${settings.otlp.endpoint}/`]) {
+      assert.deepStrictEqual(
+        traceDestination({ ...settings, otlp: { ...settings.otlp, endpoint: base } }),
+        {
+          enabled: true,
+          name: `${settings.prefix}-traces`,
+          url: "https://otlp.example.com/v1/traces",
+        },
+      );
+      assert.strictEqual(otlpSignalUrl(base, "traces"), "https://otlp.example.com/v1/traces");
+      assert.strictEqual(otlpSignalUrl(base, "logs"), "https://otlp.example.com/v1/logs");
+    }
+  }),
+);
+
+it.effect("a disabled OTLP destination keeps the Worker declaration and the resource", () =>
+  Effect.sync(() => {
+    const disabled = { ...settings, otlp: { ...settings.otlp, enabled: false } };
+    assert.deepStrictEqual(traceDestination(disabled)?.enabled, false);
+    assert.deepStrictEqual(workerObservability(disabled).traces, {
+      destinations: [`${settings.prefix}-traces`],
       enabled: true,
       headSamplingRate: settings.observabilitySampling,
       persist: true,

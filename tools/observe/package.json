@@ -10,9 +10,11 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
+    "@repo/local": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:"
+    "@effect/vitest": "catalog:",
+    "msw": "catalog:"
   }
 }
