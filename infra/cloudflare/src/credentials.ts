@@ -9,7 +9,8 @@ import path from "node:path";
 
 import { Effect, Schema } from "effect";
 
-import { deploymentKeys, secretsFile } from "@repo/config/deployment";
+import { secretsFile } from "@repo/config/deployment";
+import { deploymentKeys } from "@repo/config/deployment-keys";
 
 import { projectName } from "./project.ts";
 

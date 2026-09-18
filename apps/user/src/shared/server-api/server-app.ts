@@ -16,9 +16,9 @@ import {
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 
 import { interviewApi } from "./interview-api.ts";
-import { runtime } from "./runtime.ts";
+import { reporting, runtime } from "./runtime.ts";
 
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, reporting);
 const failures = {
   ...unavailable,
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
