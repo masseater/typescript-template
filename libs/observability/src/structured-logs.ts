@@ -8,6 +8,7 @@ import { redactedField } from "./redact.ts";
 interface LogSink {
   readonly error: (line: string) => void;
   readonly info: (line: string) => void;
+  readonly warn: (line: string) => void;
 }
 
 interface StructuredLogOptions {
@@ -16,7 +17,11 @@ interface StructuredLogOptions {
   readonly log?: LogSink;
 }
 
-const failureLevels: ReadonlySet<string> = new Set(["Error", "Fatal", "Warn"]);
+const sinkByLevel: Readonly<Record<string, keyof LogSink>> = {
+  Error: "error",
+  Fatal: "error",
+  Warn: "warn",
+};
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,7 +59,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
       },
       redactedField,
     );
-    sink[failureLevels.has(logLevel) ? "error" : "info"](line);
+    sink[sinkByLevel[logLevel] ?? "info"](line);
   });
   return Logger.layer([logger]);
 }

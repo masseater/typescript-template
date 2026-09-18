@@ -3,6 +3,7 @@ import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
+import { annotateLogs, annotateSpan } from "./annotations.ts";
 import type { OtlpDestination } from "./otlp.ts";
 import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
 
@@ -59,7 +60,7 @@ function observed(
     lines.push(JSON.parse(line));
   }
   const telemetry = Telemetry.layer({
-    log: { error: record, info: record },
+    log: { error: record, info: record, warn: record },
     otlp,
     release: "abc123",
     routes: { "/": "home" },
@@ -146,6 +147,24 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
     assert.containSubset(telemetry.lines, [
       { cause: { AUTH_SECRET: "[redacted]", reason: "invalid token" } },
     ]);
+  }),
+);
+
+const annotated = Effect.gen(function* annotated() {
+  yield* annotateSpan({ "session.cookie": `template-user.session=${leaked}` });
+  yield* Effect.logInfo("interview.started").pipe(
+    annotateLogs({ auth_token: leaked, interview_id: "abc" }),
+  );
+});
+
+it.effect("a secret an annotation or a span attribute carries reaches no destination", () =>
+  Effect.gen(function* program() {
+    const telemetry = yield* observed({ authorization, endpoint }, accepted, annotated);
+    const exported = JSON.stringify([telemetry.logs, telemetry.traces]);
+    assert.notInclude(exported, leaked);
+    assert.include(exported, "[redacted]");
+    assert.include(JSON.stringify(telemetry.logs), '{"key":"interview_id","value":');
+    assert.containSubset(telemetry.lines, [{ auth_token: "[redacted]", interview_id: "abc" }]);
   }),
 );
 

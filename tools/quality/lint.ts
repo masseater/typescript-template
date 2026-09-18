@@ -161,6 +161,7 @@ const lint = {
     "oxc/no-async-await": "off",
     "oxc/no-optional-chaining": "off",
     "oxc/no-rest-spread-properties": "off",
+    "project/annotations": "error",
     "project/boundaries": "error",
     "project/effect-failures": "error",
     "project/effect-stack": "error",

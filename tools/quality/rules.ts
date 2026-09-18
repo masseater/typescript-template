@@ -25,6 +25,7 @@ const mockSources = new Set([
   "bun:test",
 ]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
+const annotationApis = new Set(["annotateCurrentSpan", "annotateLogs", "annotateLogsScoped"]);
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -96,6 +97,17 @@ function memoizationVisitor(context: LintContext): Visitor {
   return originVisitor(context, isManualMemoization);
 }
 
+function isRawAnnotation(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  return source === "effect" && members[0] === "Effect" && annotationApis.has(members[1] ?? "");
+}
+
+function annotationVisitor(context: LintContext): Visitor {
+  return filename(context).endsWith("/libs/observability/src/annotations.ts")
+    ? {}
+    : originVisitor(context, isRawAnnotation);
+}
+
 function workerFetchVisitor(context: LintContext): Visitor {
   if (!runsInWorkerRuntime(filename(context))) {
     return {};
@@ -117,6 +129,12 @@ function workerFetchVisitor(context: LintContext): Visitor {
 export default definePlugin({
   meta: { name: "project" },
   rules: {
+    annotations: {
+      create: annotationVisitor,
+      meta: metadata(
+        "Effect.annotateLogs と Effect.annotateCurrentSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
+      ),
+    },
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(

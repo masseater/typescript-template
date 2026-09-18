@@ -8,6 +8,8 @@ import { parseBrowserEvents } from "./events.ts";
 import { httpStatus } from "./http-status.ts";
 import { readJson, rejectionStatus } from "./request.ts";
 import type { JsonRequest } from "./request.ts";
+import { logAt, statusSeverity } from "./severity.ts";
+import type { Severity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
@@ -91,10 +93,16 @@ function kindFields(event: BrowserEvent): LogFields {
   return {};
 }
 
+function eventSeverity(event: BrowserEvent): Severity {
+  if (event.kind === "exception") {
+    return "error";
+  }
+  return event.kind === "http"
+    ? statusSeverity(event.status === 0 ? undefined : event.status)
+    : "info";
+}
+
 function recordBrowserEvent(serviceName: Application, event: BrowserEvent): Effect.Effect<void> {
-  const failed =
-    event.kind === "exception" ||
-    (event.kind === "http" && (event.status === 0 || event.status >= httpStatus.badRequest));
   const attributes = {
     duration_ms: event.duration,
     "http.route": event.route,
@@ -107,7 +115,7 @@ function recordBrowserEvent(serviceName: Application, event: BrowserEvent): Effe
     trace_id: event.traceId,
     ...kindFields(event),
   };
-  return failed ? Effect.logError(event.name, attributes) : Effect.logInfo(event.name, attributes);
+  return logAt(eventSeverity(event), event.name, attributes);
 }
 
 const readEvents = Effect.fn("readEvents")(function* readEvents(request: IngressRequest) {

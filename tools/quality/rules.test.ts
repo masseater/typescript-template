@@ -66,6 +66,16 @@ const forbiddenCode = [
     'import { Effect } from "effect"; export const run = () => { try { return Effect; } catch { return undefined; } };',
     "effect-failures",
   ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const run = Effect.void.pipe(Effect.annotateLogs({ a: "b" }));',
+    "annotations",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
+    "annotations",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [
@@ -124,6 +134,10 @@ const validBoundaries = [
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@repo/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@repo/db/testing";'],
+  [
+    "libs/observability/src/annotations.ts",
+    'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
+  ],
 ] as const;
 
 const singleReports = [
