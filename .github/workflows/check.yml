@@ -35,23 +35,27 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-      - id: vite-task-cache
+      - &task-cache-restore
+        id: vite-task-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
-      - run: vp run check
+      - &check
+        run: vp run check
       - run: vp test run $TEST_SCOPE
-      - run: vp run build
-      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - &build
+        run: vp run build
+      - &task-cache-save
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
 
-  dependencies:
+  cache:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -59,3 +63,7 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
+      - *task-cache-restore
+      - *check
+      - *build
+      - *task-cache-save
