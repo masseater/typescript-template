@@ -154,11 +154,13 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
 );
 
 const refused = Effect.gen(function* refused() {
-  yield* logAt("Info", "http.client.request", {
-    "http.response.status_code": httpStatus.forbidden,
+  yield* logAt("Info", {
+    attributes: { "http.response.status_code": httpStatus.forbidden },
+    eventName: "http.client.request",
   });
-  yield* logAt("Warn", "http.client.request", {
-    "http.response.status_code": httpStatus.badRequest,
+  yield* logAt("Warn", {
+    attributes: { "http.response.status_code": httpStatus.badRequest },
+    eventName: "http.client.request",
   });
 });
 

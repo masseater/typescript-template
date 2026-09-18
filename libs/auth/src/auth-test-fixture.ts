@@ -1,10 +1,5 @@
 import { APPLICATION, sendVerificationEmail, type Application } from "@repo/config";
-import {
-  EmptyTestDatabase,
-  TestDatabase,
-  bootstrapAdmin,
-  getSchemaShape,
-} from "@repo/db/testing";
+import { EmptyTestDatabase, TestDatabase, bootstrapAdmin, getSchemaShape } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";

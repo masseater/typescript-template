@@ -40,10 +40,10 @@ export const recordingSink = (): RecordedLines & { readonly sink: LogSink } => {
 };
 
 export const recordedLogs = async (
-  logging: (sink: LogSink) => Effect.Effect<void>,
+  logging: (sink: LogSink) => Effect.Effect<unknown, unknown>,
 ): Promise<RecordedLines> => {
   const logs = recordingSink();
-  await Effect.runPromise(logging(logs.sink));
+  await Effect.runPromise(Effect.orDie(logging(logs.sink)));
   return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
 };
 

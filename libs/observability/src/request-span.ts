@@ -99,25 +99,26 @@ const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<R
   );
 };
 
-const recordRequest = Effect.fn("recordRequest")(function* recordRequest(served: {
+const recordRequest = (served: {
   readonly incoming: Readonly<Pick<Request, "method" | "url">>;
   readonly responseStatus: number;
   readonly startedAt: number;
-}) {
-  const telemetry = yield* Telemetry;
-  const entropy = yield* RequestEntropy;
-  const attributes = {
-    duration_ms: entropy.monotonicMilliseconds() - served.startedAt,
-    method: httpMethod(served.incoming.method),
-    route: routeLabel(new URL(served.incoming.url).pathname, telemetry.routes),
-    status: served.responseStatus,
-  };
-  yield* annotateSpan(attributes);
-  yield* logAt(statusSeverity(served.responseStatus), {
-    attributes,
-    eventName: "http.server.request",
+}): Effect.Effect<void, never, Telemetry> =>
+  Effect.gen(function* recordRequestProgram() {
+    const telemetry = yield* Telemetry;
+    const entropy = yield* RequestEntropy;
+    const attributes = {
+      duration_ms: entropy.monotonicMilliseconds() - served.startedAt,
+      method: httpMethod(served.incoming.method),
+      route: routeLabel(new URL(served.incoming.url).pathname, telemetry.routes),
+      status: served.responseStatus,
+    };
+    yield* annotateSpan(attributes);
+    yield* logAt(statusSeverity(served.responseStatus), {
+      attributes,
+      eventName: "http.server.request",
+    });
   });
-});
 
 const respond = <Requirements>(served: {
   readonly incoming: Request;

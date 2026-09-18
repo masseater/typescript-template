@@ -5,7 +5,7 @@ import { RemoteFailure, parseRemoteInput } from "./remote-input.ts";
 
 const d1Target = {
   accountId: "a".repeat(32),
-  databaseId: "92b705e4-7b3b-42a9-9de3-700a33fa609c",
+  databaseId: "11111111-1111-4111-8111-111111111111",
 };
 
 describe("parseRemoteInput", () => {

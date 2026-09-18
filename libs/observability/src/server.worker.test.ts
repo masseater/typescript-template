@@ -1,7 +1,6 @@
 import "@repo/dont-review-it/vitest/parsed-fields";
 import { Effect, Layer } from "effect";
-import { attemptAsync } from "es-toolkit";
-import { describe, expect, test, vi } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import {
   CurrentRequest,
@@ -10,7 +9,7 @@ import {
   ingestBrowser,
   observeRequest,
 } from "./server.ts";
-import { fixedSpans, recordingSink } from "./testing.ts";
+import { fixedSpans, recordedLogs } from "./testing.ts";
 
 const fixedEntropy = Layer.succeed(RequestEntropy, {
   epochMilliseconds: () => 1_800_000_000_000,
@@ -217,20 +216,19 @@ describe("ingestBrowser", () => {
     [429, "stdwarn", "b5b5b5b5b5b5b5b5"],
     [500, "stderr", "b6b6b6b6b6b6b6b6"],
     [0, "stderr", "b7b7b7b7b7b7b7b7"],
-  ] as const)("a browser client span answered with %s", ([status, stream, spanId]) => {
-    const it = test.extend("recordedStreams", async () => {
-      const recorded = recordingSink();
-      await Effect.runPromise(
+  ] as const)("a browser client span answered with %s", ([answeredStatus, stream, spanId]) => {
+    const it = test.extend("recordedStreams", async () =>
+      recordedLogs((sink) =>
         ingestBrowser(
           new Request(new URL("/api/telemetry", testOrigin), {
-            body: JSON.stringify([{ ...requestEvent, spanId, status }]),
+            body: JSON.stringify([{ ...requestEvent, spanId, status: answeredStatus }]),
             headers: { "content-type": "application/json", origin: "http://localhost" },
             method: "POST",
           }),
         ).pipe(
           Effect.provide(
             Telemetry.layer({
-              log: recorded.sink,
+              log: sink,
               release: "test",
               routes: { "/": "home", "/api/telemetry": "telemetry" },
               serviceName: "user",
@@ -238,10 +236,9 @@ describe("ingestBrowser", () => {
           ),
           Effect.provide(fixedEntropy),
           Effect.withTracer(fixedSpans),
+          Effect.asVoid,
         ),
-      );
-      return { stderr: recorded.stderr, stdout: recorded.stdout, stdwarn: recorded.stdwarn };
-    });
+      ));
 
     it(`records the span on ${stream} and leaves the other streams empty`, ({
       recordedStreams,
@@ -264,7 +261,7 @@ describe("ingestBrowser", () => {
             "telemetry.source": "untrusted-browser",
             trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "http.request.method": "POST",
-            "http.response.status_code": status,
+            "http.response.status_code": answeredStatus,
           },
         ],
       });
@@ -272,174 +269,163 @@ describe("ingestBrowser", () => {
   });
 
   describe("the same batch posted twice", () => {
-    const it = test.extend("resentBatch", async () => {
-      const recorded = recordingSink();
-      const resend = (): Promise<Response> =>
-        Effect.runPromise(
-          ingestBrowser(
-            new Request(new URL("/api/telemetry", testOrigin), {
-              body: JSON.stringify([requestEvent]),
-              headers: { "content-type": "application/json", origin: "http://localhost" },
-              method: "POST",
+    const it = test.extend("reportedLogs", async () =>
+      recordedLogs((sink) => {
+        const resend = ingestBrowser(
+          new Request(new URL("/api/telemetry", testOrigin), {
+            body: JSON.stringify([requestEvent]),
+            headers: { "content-type": "application/json", origin: "http://localhost" },
+            method: "POST",
+          }),
+        ).pipe(
+          Effect.provide(
+            Telemetry.layer({
+              log: sink,
+              release: "test",
+              routes: { "/": "home", "/api/telemetry": "telemetry" },
+              serviceName: "user",
             }),
-          ).pipe(
-            Effect.provide(
-              Telemetry.layer({
-                log: recorded.sink,
-                release: "test",
-                routes: { "/": "home", "/api/telemetry": "telemetry" },
-                serviceName: "user",
-              }),
-            ),
-            Effect.provide(fixedEntropy),
-            Effect.withTracer(fixedSpans),
           ),
+          Effect.provide(fixedEntropy),
+          Effect.withTracer(fixedSpans),
         );
-      const accepted = await resend();
-      const resent = await resend();
-      return {
-        accepted: accepted.status,
-        recorded: recorded.stdout.length,
-        resent: resent.status,
-      };
-    });
+        return Effect.andThen(resend, resend);
+      }));
 
-    it("is accepted again and records its events once", ({ resentBatch }) => {
-      expect(resentBatch).toStrictEqual({ accepted: 202, recorded: 1, resent: 202 });
+    it("records the events of the batch once", ({ reportedLogs }) => {
+      expect(reportedLogs).toStrictEqual({
+        stderr: [],
+        stdout: [
+          {
+            event: "http.client.request",
+            release: "test",
+            service: "user-browser",
+            duration_ms: 25,
+            "http.route": "home",
+            measurement_value: 0,
+            request_id: "11111111-1111-4111-8111-111111111111",
+            span_id: "bbbbbbbbbbbbbbbb",
+            start: "2027-01-15T08:00:00.000Z",
+            "telemetry.source": "untrusted-browser",
+            trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "http.request.method": "POST",
+            "http.response.status_code": 201,
+          },
+        ],
+        stdwarn: [],
+      });
     });
   });
 });
 
 describe("browser events followed by a failing request", () => {
-  const it = test
-    .extend("progressLines", () => vi.fn<(line: string) => void>())
-    .extend("failureLines", () => vi.fn<(line: string) => void>())
-    .extend("warningLines", () => vi.fn<(line: string) => void>())
-    .extend(
-      "serverFailure",
-      { auto: true },
-      async ({ failureLines, progressLines, warningLines }) => {
-        const telemetry = Telemetry.layer({
-          log: { error: failureLines, info: progressLines, warn: warningLines },
-          release: "abc123",
-          routes: { "/": "home" },
-          serviceName: "user",
-        });
-        const [failure] = await attemptAsync(async () =>
-          Effect.runPromise(
-            Effect.gen(function* probe() {
-              yield* ingestBrowser(
-                new Request(new URL("/api/telemetry", testOrigin), {
-                  body: JSON.stringify([
-                    requestEvent,
-                    {
-                      ...requestEvent,
-                      errorType: "TypeError",
-                      kind: "exception",
-                      locations: "/assets/index-abc.js:1:234",
-                      method: "GET",
-                      name: "browser.error",
-                      status: 0,
-                      value: 1,
-                    },
-                  ]),
-                  headers: { "content-type": "application/json", origin: "http://localhost" },
-                  method: "POST",
-                }),
-              );
-              yield* observeRequest(new Request(testOrigin), () =>
-                Effect.die(
-                  new (class extends RangeError {
-                    public override readonly stack =
-                      "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)";
-                  })("private@example.test"),
-                ),
-              );
-            }).pipe(
-              Effect.provide(telemetry),
-              Effect.provide(fixedEntropy),
-              Effect.withTracer(fixedSpans),
-            ),
+  const it = test.extend("reportedLogs", async () =>
+    recordedLogs((sink) =>
+      Effect.gen(function* probe() {
+        yield* ingestBrowser(
+          new Request(new URL("/api/telemetry", testOrigin), {
+            body: JSON.stringify([
+              { ...requestEvent, spanId: "c1c1c1c1c1c1c1c1" },
+              {
+                ...requestEvent,
+                errorType: "TypeError",
+                kind: "exception",
+                locations: "/assets/index-abc.js:1:234",
+                method: "GET",
+                name: "browser.error",
+                spanId: "c2c2c2c2c2c2c2c2",
+                status: 0,
+                value: 1,
+              },
+            ]),
+            headers: { "content-type": "application/json", origin: "http://localhost" },
+            method: "POST",
+          }),
+        );
+        yield* observeRequest(new Request(testOrigin), () =>
+          Effect.die(
+            new (class extends RangeError {
+              public override readonly stack =
+                "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)";
+            })("private@example.test"),
           ),
         );
-        return failure;
-      },
-    );
+      }).pipe(
+        Effect.provide(
+          Telemetry.layer({
+            log: sink,
+            release: "abc123",
+            routes: { "/": "home" },
+            serviceName: "user",
+          }),
+        ),
+        Effect.provide(fixedEntropy),
+        Effect.withTracer(fixedSpans),
+        Effect.asVoid,
+      ),
+    ));
 
-  it("logs the request event as a progress line", ({ progressLines }) => {
-    expect(progressLines).toHaveBeenNthCalledWith(
-      1,
-      JSON.stringify({
-        event: "http.client.request",
-        release: "abc123",
-        service: "user-browser",
-        duration_ms: 25,
-        "http.route": "home",
-        measurement_value: 0,
-        request_id: "11111111-1111-4111-8111-111111111111",
-        span_id: "bbbbbbbbbbbbbbbb",
-        start: "2027-01-15T08:00:00.000Z",
-        "telemetry.source": "untrusted-browser",
-        trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "http.request.method": "POST",
-        "http.response.status_code": 201,
-      }),
-    );
-  });
-
-  it("logs the browser exception without its message", ({ failureLines }) => {
-    expect(failureLines).toHaveBeenNthCalledWith(
-      1,
-      JSON.stringify({
-        event: "browser.error",
-        release: "abc123",
-        service: "user-browser",
-        duration_ms: 25,
-        "http.route": "home",
-        measurement_value: 1,
-        request_id: "11111111-1111-4111-8111-111111111111",
-        span_id: "bbbbbbbbbbbbbbbb",
-        start: "2027-01-15T08:00:00.000Z",
-        "telemetry.source": "untrusted-browser",
-        trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "error.fingerprint": "17494eb0",
-        "error.locations": "/assets/index-abc.js:1:234",
-        "error.type": "TypeError",
-      }),
-    );
-  });
-
-  it("logs the server failure without its message", ({ failureLines }) => {
-    expect(failureLines).toHaveBeenNthCalledWith(
-      2,
-      JSON.stringify({
-        event: "application.error",
-        release: "abc123",
-        service: "user-server",
-        request_id: "22222222-2222-4222-8222-222222222222",
-        span_id: "c".repeat(16),
-        trace_id: "c".repeat(32),
-        "error.fingerprint": "ea495fdd",
-        "error.locations": "/assets/app-abc.js:7:11",
-        "error.type": "RangeError",
-      }),
-    );
-  });
-
-  it("logs the failed request as the last line", ({ failureLines }) => {
-    expect(failureLines).toHaveBeenLastCalledWith(
-      JSON.stringify({
-        event: "http.server.request",
-        release: "abc123",
-        service: "user-server",
-        request_id: "22222222-2222-4222-8222-222222222222",
-        span_id: "c".repeat(16),
-        trace_id: "c".repeat(32),
-        duration_ms: 0,
-        method: "GET",
-        route: "home",
-        status: 500,
-      }),
-    );
+  it("keeps the secrets out of every line it writes", ({ reportedLogs }) => {
+    expect(reportedLogs).toStrictEqual({
+      stderr: [
+        {
+          event: "browser.error",
+          release: "abc123",
+          service: "user-browser",
+          duration_ms: 25,
+          "http.route": "home",
+          measurement_value: 1,
+          request_id: "11111111-1111-4111-8111-111111111111",
+          span_id: "c2c2c2c2c2c2c2c2",
+          start: "2027-01-15T08:00:00.000Z",
+          "telemetry.source": "untrusted-browser",
+          trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "error.fingerprint": "17494eb0",
+          "error.locations": "/assets/index-abc.js:1:234",
+          "error.type": "TypeError",
+        },
+        {
+          event: "application.error",
+          release: "abc123",
+          service: "user-server",
+          request_id: "22222222-2222-4222-8222-222222222222",
+          span_id: "c".repeat(16),
+          trace_id: "c".repeat(32),
+          "error.fingerprint": "ea495fdd",
+          "error.locations": "/assets/app-abc.js:7:11",
+          "error.type": "RangeError",
+        },
+        {
+          event: "http.server.request",
+          release: "abc123",
+          service: "user-server",
+          request_id: "22222222-2222-4222-8222-222222222222",
+          span_id: "c".repeat(16),
+          trace_id: "c".repeat(32),
+          duration_ms: 0,
+          method: "GET",
+          route: "home",
+          status: 500,
+        },
+      ],
+      stdout: [
+        {
+          event: "http.client.request",
+          release: "abc123",
+          service: "user-browser",
+          duration_ms: 25,
+          "http.route": "home",
+          measurement_value: 0,
+          request_id: "11111111-1111-4111-8111-111111111111",
+          span_id: "c1c1c1c1c1c1c1c1",
+          start: "2027-01-15T08:00:00.000Z",
+          "telemetry.source": "untrusted-browser",
+          trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "http.request.method": "POST",
+          "http.response.status_code": 201,
+        },
+      ],
+      stdwarn: [],
+    });
   });
 });

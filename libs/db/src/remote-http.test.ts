@@ -16,20 +16,23 @@ const d1Target = {
 
 describe("remoteExecutor", () => {
   describe.for([
-    ["a redirect elsewhere", () => HttpResponse.redirect("https://untrusted.example.test/", 302)],
+    [
+      "a redirect elsewhere",
+      (): Response => HttpResponse.redirect("https://untrusted.example.test/", 302),
+    ],
     [
       "an HTTP error that echoes the token",
-      () => HttpResponse.json({ error: d1Target.apiToken }, { status: 403 }),
+      (): Response => HttpResponse.json({ error: d1Target.apiToken }, { status: 403 }),
     ],
     [
       "a batch in which a statement failed",
-      () =>
+      (): Response =>
         HttpResponse.json({
           result: [{ error: d1Target.apiToken, results: [], success: false }],
           success: true,
         }),
     ],
-    ["a body that is not JSON", () => HttpResponse.text(d1Target.apiToken)],
+    ["a body that is not JSON", (): Response => HttpResponse.text(d1Target.apiToken)],
   ] as const)("a D1 API answering with %s", ([, d1Answer]) => {
     const it = test.extend("queryFailure", async ({}, { onCleanup }) => {
       const d1Api = setupServer(

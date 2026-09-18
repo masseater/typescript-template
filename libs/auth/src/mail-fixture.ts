@@ -47,7 +47,7 @@ const startNetwork = (deliveries: Mailbox["Service"]): ReturnType<typeof setupNe
   return network;
 };
 
-const stopNetwork = (network: ReturnType<typeof setupNetwork>): Effect.Effect<void> => {
+const stopNetwork = (network: Readonly<ReturnType<typeof setupNetwork>>): Effect.Effect<void> => {
   return Effect.sync(() => {
     network.disable();
   });

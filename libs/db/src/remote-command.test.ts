@@ -12,7 +12,7 @@ import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-no
 const d1Target = {
   accountId: "a".repeat(32),
   apiToken: "test-private-token-at-least-20-characters",
-  databaseId: "92b705e4-7b3b-42a9-9de3-700a33fa609c",
+  databaseId: "11111111-1111-4111-8111-111111111111",
 };
 
 const d1Query = `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/query`;

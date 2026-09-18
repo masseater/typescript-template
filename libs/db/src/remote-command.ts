@@ -17,7 +17,10 @@ type PlanReport = {
   readonly remoteStateVerified: false;
 };
 
-const planReport = ({ operation, target }: RemoteInput, migrations: Migrations): PlanReport => {
+const planReport = (
+  { operation, target }: Readonly<RemoteInput>,
+  migrations: Migrations,
+): PlanReport => {
   return {
     databaseId: target.databaseId,
     event: "database.remote_plan",
@@ -29,7 +32,7 @@ const planReport = ({ operation, target }: RemoteInput, migrations: Migrations):
 };
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
-  { operation, target }: RemoteInput,
+  { operation, target }: Readonly<RemoteInput>,
   migrations: Migrations,
 ) {
   if (target.apiToken === undefined) {

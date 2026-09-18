@@ -147,24 +147,25 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: Ingres
   return browserEvents.success;
 });
 
-const recordAdmitted = Effect.fn("recordAdmitted")(function* recordAdmitted(batch: {
+const recordAdmitted = (batch: {
   readonly serviceName: ServiceName;
   readonly browserEvents: readonly BrowserEvent[];
-}) {
-  const admitted = yield* admitUnrecorded(batch);
-  if (admitted === undefined) {
-    return emptyResponse({
-      headers: { ...noStore, "retry-after": retryAfterSeconds },
-      status: httpStatus.tooManyRequests,
-    });
-  }
-  yield* Effect.forEach(
-    admitted,
-    (browserEvent) => recordBrowserEvent({ browserEvent, serviceName: batch.serviceName }),
-    { discard: true },
-  );
-  return emptyResponse({ status: httpStatus.accepted });
-});
+}): Effect.Effect<Response> =>
+  Effect.gen(function* recordAdmittedProgram() {
+    const admitted = yield* admitUnrecorded(batch);
+    if (admitted === undefined) {
+      return emptyResponse({
+        headers: { ...noStore, "retry-after": retryAfterSeconds },
+        status: httpStatus.tooManyRequests,
+      });
+    }
+    yield* Effect.forEach(
+      admitted,
+      (browserEvent) => recordBrowserEvent({ browserEvent, serviceName: batch.serviceName }),
+      { discard: true },
+    );
+    return emptyResponse({ status: httpStatus.accepted });
+  });
 
 export const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(
   incoming: IngressRequest,
