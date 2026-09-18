@@ -51,9 +51,6 @@
     },
     "access": "public"
   },
-  "scripts": {
-    "check": "intent validate"
-  },
   "dependencies": {
     "@repo/lint-rule-authoring": "workspace:*",
     "@repo/repository-checks": "workspace:*",

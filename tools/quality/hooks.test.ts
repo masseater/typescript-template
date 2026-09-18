@@ -80,6 +80,13 @@ function brokenChain(directory: string): string[] {
   });
 }
 
+function scriptedGate(directory: string): string[] {
+  const scripts = new Set(scriptNames(directory));
+  return reachable(directory, [...lifecycles])
+    .filter((name) => scripts.has(name))
+    .map((name) => `${directory}: ${name}`);
+}
+
 function ungated(directory: string): string[] {
   const gate = new Set(reachable(directory, ["premerge"]));
   return [...taskNames(directory), ...scriptNames(directory)]
@@ -162,6 +169,11 @@ describe("lifecycle contents", () => {
   it("the merge gate runs every check, build and verification", () => {
     expect.hasAssertions();
     expect(configuredDirectories.flatMap((directory) => ungated(directory))).toStrictEqual([]);
+  });
+
+  it("runs every gated check as a task so it can be cached", () => {
+    expect.hasAssertions();
+    expect(configuredDirectories.flatMap((directory) => scriptedGate(directory))).toStrictEqual([]);
   });
 
   it("checks staged secrets before a commit", () => {

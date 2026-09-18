@@ -55,11 +55,15 @@ const workspaces = {
   },
   "tools/ai-native": {
     ignoreBinaries: ["mkfifo"],
+    ignoreDependencies: ["@tanstack/intent"],
   },
+  "tools/dont-review-it": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/e2e": {
     entry: ["src/**/*.test.ts"],
     project: ["src/**/*.ts"],
   },
+  "tools/lint-rule-authoring": { ignoreDependencies: ["@tanstack/intent"] },
+  "tools/stop-ai-slop": { ignoreDependencies: ["@tanstack/intent"] },
 };
 
 const cloudflareStacks = [
@@ -77,6 +81,12 @@ const cloudflareStacks = [
   "src/bindings.ts!",
 ];
 
+const application = {
+  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
+  ignoreDependencies: ["cloudflare", "steiger"],
+  project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
+};
+
 const scripts = {
   "infra/budget-monitor": ["src/inspect.ts!"],
   "infra/cloudflare": [
@@ -93,18 +103,12 @@ const scripts = {
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
 
-const application = {
-  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["cloudflare"],
-  project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
-};
-
 const commanderWorkspace = (
   only: (...files: readonly string[]) => string[],
 ): NonNullable<KnipConfiguration["workspaces"]>[string] => {
   return {
     entry: [...application.entry, ...only(...scripts["tools/commander"])],
-    ignoreDependencies: only("playwright"),
+    ignoreDependencies: [...only("playwright"), "steiger"],
     ignoreExportsUsedInFile: { interface: true },
   };
 };
