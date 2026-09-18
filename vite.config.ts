@@ -258,6 +258,13 @@ export default defineConfig({
   },
   test: {
     clearMocks: false,
+    forceRerunTriggers: [
+      "**/package.json",
+      "**/pnpm-lock.yaml",
+      "**/{vitest,vite}.config.*",
+      "**/vitest.*.config.*",
+      "**/.storybook/**",
+    ],
     projects: [
       {
         extends: true,
