@@ -6,7 +6,8 @@ import { generateAuthSecret, replaceDevVars } from "./dev-vars.ts";
 import { documentPaths } from "./documents.ts";
 import { roleApplications } from "./journey-roles.ts";
 import type { JourneyRole } from "./journey-roles.ts";
-import { resetLocalDatabase } from "./local-database.ts";
+import { startIsolatedDatabase } from "./local-database.ts";
+import type { Environment } from "./local-database.ts";
 import { startMailSink } from "./mail.ts";
 import type { MailSink } from "./mail.ts";
 import { freePort, loopbackOrigin } from "./ports.ts";
@@ -24,6 +25,7 @@ interface JourneyEnvironment {
   readonly documents: readonly string[];
   readonly mail: MailSink;
   readonly originOf: (role: JourneyRole) => string;
+  readonly promoteToAdministrator: (email: string) => Promise<void>;
   readonly stop: Disposer;
 }
 
@@ -52,17 +54,14 @@ async function configureApplications(
   );
 }
 
-async function serveApplications(
+function serveApplications(
   collect: Collect,
   configured: readonly ConfiguredApplication[],
-): Promise<void> {
-  await Promise.all(
-    configured.map(async ({ application, port }) => {
-      const server = await startApplication(application, port);
-      collect(async () => server.close());
-    }),
-  );
-  await Promise.all(configured.map(async ({ origin }) => waitUntilReady(origin)));
+  environment: Environment,
+): void {
+  for (const { application, port } of configured) {
+    collect(startApplication(application, port, environment));
+  }
 }
 
 function originFinder(configured: readonly ConfiguredApplication[]): (role: JourneyRole) => string {
@@ -77,15 +76,18 @@ function originFinder(configured: readonly ConfiguredApplication[]): (role: Jour
 }
 
 async function launch(collect: Collect): Promise<Omit<JourneyEnvironment, "stop">> {
-  collect(await resetLocalDatabase());
+  const database = await startIsolatedDatabase();
+  collect(database.remove);
   const mail = await startMailSink();
   collect(mail.stop);
   const configured = await configureApplications(collect, mail.origin);
-  await serveApplications(collect, configured);
+  serveApplications(collect, configured, database.environment);
+  await Promise.all(configured.map(async ({ origin }) => waitUntilReady(origin)));
   return {
     documents: await documentPaths(roleApplications.knowledge),
     mail,
     originOf: originFinder(configured),
+    promoteToAdministrator: database.promoteToAdministrator,
   };
 }
 

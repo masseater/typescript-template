@@ -84,6 +84,9 @@ async function enrollTotp(page: Page, origin: string, account: Account): Promise
 async function signOut(page: Page, origin: string): Promise<void> {
   await page.goto(`${origin}/security`);
   await press(page, signOutButton);
+  await page.waitForURL((url) => !url.pathname.startsWith("/security"), {
+    timeout: appearanceTimeout,
+  });
   await page.goto(`${origin}/login`);
   await readyButton(page, signInButton);
 }

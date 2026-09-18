@@ -4,6 +4,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { newAccount } from "./accounts.ts";
 import type { Account } from "./accounts.ts";
+import { browserHeaders } from "./client-address.ts";
 import { startJourneyEnvironment } from "./environment.ts";
 import type { JourneyEnvironment } from "./environment.ts";
 import {
@@ -16,8 +17,15 @@ import {
   signUp,
 } from "./flows.ts";
 import type { Enrollment } from "./flows.ts";
-import { promoteToAdministrator } from "./local-database.ts";
-import { appearanceTimeout, fill, press, seeAnyHeading, seeHeading, seeText } from "./screens.ts";
+import {
+  appearanceTimeout,
+  fill,
+  press,
+  readyButton,
+  seeAnyHeading,
+  seeHeading,
+  seeText,
+} from "./screens.ts";
 
 interface JourneyFixtures {
   readonly browser: Browser;
@@ -51,7 +59,10 @@ const it = test.extend<JourneyFixtures>({
     { scope: "worker" },
   ],
   page: async ({ browser }, supply): Promise<void> => {
-    const context = await browser.newContext({ locale: "ja-JP" });
+    const context = await browser.newContext({
+      extraHTTPHeaders: browserHeaders(),
+      locale: "ja-JP",
+    });
     await supply(await context.newPage());
     await context.close();
   },
@@ -71,24 +82,27 @@ async function browseMainScreens(step: Step): Promise<void> {
   await seeHeading(page, account.name);
   await page.goto(`${origin}/users`);
   await seeHeading(page, "ユーザーを探す");
+  const home = page.getByRole("link", { exact: true, name: "ホーム" }).first();
+  await home.click();
+  await seeHeading(page, account.name);
 }
 
 async function writeBiography(step: Step, biography: string): Promise<void> {
   const { origin, page } = step;
   await page.goto(`${origin}/settings/profile`);
   await seeHeading(page, "プロフィールの編集");
+  await readyButton(page, "保存");
   await fill(page, "自己紹介", biography);
   await press(page, "保存");
-  const home = page.getByRole("link", { exact: true, name: "ホーム" }).first();
-  await home.click();
+  await page.waitForURL(`${origin}${homePattern}`, { timeout: appearanceTimeout });
   await seeText(page, biography);
 }
 
-async function becomeOperator(step: Step, operatorOrigin: string): Promise<void> {
+async function becomeOperator(environment: JourneyEnvironment, step: Step): Promise<void> {
   const { account, origin, page } = step;
   const enrollment = await enrollTotp(page, origin, account);
-  await promoteToAdministrator(account.email);
-  await signIn(page, operatorOrigin, account);
+  await environment.promoteToAdministrator(account.email);
+  await signIn(page, environment.originOf("operator"), account);
   await answerTotpChallenge(page, enrollment.uri);
 }
 
@@ -132,7 +146,7 @@ describe("アプリ全体の導線", () => {
     const operatorOrigin = environment.originOf("operator");
     const step = { account: newAccount("operator"), origin: environment.originOf("member"), page };
     await register(environment, step);
-    await becomeOperator(step, operatorOrigin);
+    await becomeOperator(environment, step);
     await seeHeading(page, "ユーザー一覧");
     await seeText(page, step.account.email);
     expect(new URL(page.url()).origin).toBe(operatorOrigin);

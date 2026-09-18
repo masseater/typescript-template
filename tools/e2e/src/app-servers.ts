@@ -1,31 +1,57 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-
-import { createServer } from "vite-plus";
+import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { once } from "node:events";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { setTimeout as delay } from "node:timers/promises";
 
 import type { Application } from "@repo/config";
 
+import type { Environment } from "./local-database.ts";
 import { loopback } from "./ports.ts";
-import { applicationRoot } from "./repository.ts";
+import { applicationRoot, packageRoot } from "./repository.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
 const readyTimeout = 300_000;
 const requestTimeout = 120_000;
+const stopTimeout = 30_000;
 const okStatus = 200;
 const healthPath = "/api/health";
+const vitePlus = packageRoot("node_modules/.bin/vp");
 
-type DevServer = Awaited<ReturnType<typeof createServer>>;
+function killGroup(pid: number, signal: "SIGKILL" | "SIGTERM"): boolean {
+  try {
+    process.kill(-pid, signal);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-async function startApplication(application: Application, port: number): Promise<DevServer> {
-  const root = applicationRoot(application);
-  const server = await createServer({
-    configFile: path.join(root, "vite.config.ts"),
-    logLevel: "silent",
-    root,
-    server: { host: loopback, port, strictPort: true },
+function startApplication(
+  application: Application,
+  port: number,
+  environment: Environment,
+): () => Promise<void> {
+  const args = ["dev", "--host", loopback, "--port", String(port), "--strictPort"];
+  const child = spawn(vitePlus, args, {
+    cwd: applicationRoot(application),
+    detached: true,
+    env: environment,
+    stdio: "ignore",
   });
-  await server.listen();
-  return server;
+  child.on("error", () => {
+    child.kill("SIGKILL");
+  });
+  return async () => {
+    const { pid } = child;
+    if (pid === undefined) {
+      return;
+    }
+    killGroup(pid, "SIGTERM");
+    await Promise.race([once(child, "exit"), delay(stopTimeout, undefined, { ref: false })]);
+    killGroup(pid, "SIGKILL");
+  };
 }
 
 async function answered(origin: string): Promise<readonly number[]> {
@@ -53,4 +79,3 @@ async function waitUntilReady(origin: string): Promise<void> {
 }
 
 export { startApplication, waitUntilReady };
-export type { DevServer };

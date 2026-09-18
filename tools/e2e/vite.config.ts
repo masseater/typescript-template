@@ -7,7 +7,7 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
-      "test:e2e": { cache: false, command: "vp test run" },
+      "test:e2e": { cache: false, command: "vp test run", dependsOn: ["@repo/dev#setup"] },
       ...lifecycle({ precommit: [], premerge: ["test:e2e"], prepush: ["check:effect"] }),
     },
   },
