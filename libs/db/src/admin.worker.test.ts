@@ -257,3 +257,121 @@ describe("deleteUser", () => {
     });
   });
 });
+
+const directoryRows = {
+  actor: {
+    createdAt: new Date("2026-09-01"),
+    email: "actor@example.com",
+    emailVerified: true,
+    id: "actor",
+    name: "管理者",
+    role: "admin",
+    twoFactorEnabled: false,
+  },
+  alice: {
+    createdAt: new Date("2026-09-02"),
+    email: "alice@example.com",
+    emailVerified: true,
+    id: "alice",
+    name: "Alice",
+    role: "user",
+    twoFactorEnabled: false,
+  },
+  bob: {
+    createdAt: new Date("2026-09-03"),
+    email: "bob@example.net",
+    emailVerified: false,
+    id: "bob",
+    name: "Bob",
+    role: "user",
+    twoFactorEnabled: false,
+  },
+  sale: {
+    createdAt: new Date("2026-09-04"),
+    email: "sale@example.com",
+    emailVerified: true,
+    id: "sale",
+    name: "50%_off",
+    role: "user",
+    twoFactorEnabled: false,
+  },
+  carol: {
+    createdAt: new Date("2026-09-05"),
+    email: "carol@example.org",
+    emailVerified: true,
+    id: "carol",
+    name: "山田 花子",
+    role: "admin",
+    twoFactorEnabled: false,
+  },
+  dave: {
+    createdAt: new Date("2026-09-06"),
+    email: "dave@example.com",
+    emailVerified: true,
+    id: "dave",
+    name: "Dave",
+    role: "user",
+    twoFactorEnabled: true,
+  },
+} as const;
+
+describe("listUsers over a directory of six users", () => {
+  describe.for([
+    [
+      "the first page of two",
+      { limit: 2, offset: 0 },
+      [directoryRows.dave, directoryRows.carol],
+      6,
+    ],
+    [
+      "the last page of two",
+      { limit: 2, offset: 4 },
+      [directoryRows.alice, directoryRows.actor],
+      6,
+    ],
+    ["the page past the end", { limit: 2, offset: 6 }, [], 6],
+    ["a name in another case", { keyword: "ALI", limit: 50, offset: 0 }, [directoryRows.alice], 1],
+    [
+      "a part of an email",
+      { keyword: "example.net", limit: 50, offset: 0 },
+      [directoryRows.bob],
+      1,
+    ],
+    ["a Japanese name", { keyword: "花子", limit: 50, offset: 0 }, [directoryRows.carol], 1],
+    ["a percent sign", { keyword: "%", limit: 50, offset: 0 }, [directoryRows.sale], 1],
+    ["an underscore", { keyword: "_", limit: 50, offset: 0 }, [directoryRows.sale], 1],
+    ["a backslash", { keyword: "\\", limit: 50, offset: 0 }, [], 0],
+    [
+      "the admin role",
+      { limit: 50, offset: 0, role: "admin" },
+      [directoryRows.carol, directoryRows.actor],
+      2,
+    ],
+    ["unverified email", { emailVerified: false, limit: 50, offset: 0 }, [directoryRows.bob], 1],
+    [
+      "verified users with a matching email on the second page",
+      { emailVerified: true, keyword: "example.com", limit: 1, offset: 1, role: "user" },
+      [directoryRows.sale],
+      3,
+    ],
+  ] as const)("read by %s", ([, page, expectedUsers, expectedTotal]) => {
+    const it = test.extend("userPage", async () =>
+      Effect.runPromise(
+        Effect.gen(function* readDirectory() {
+          yield* query(async (database): Promise<void> => {
+            await database
+              .insert(user)
+              .values(
+                Object.values(directoryRows).map((row) => ({ ...row, updatedAt: row.createdAt })),
+              );
+          });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          return yield* listUsers(sessionId, page);
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("lists the matches newest first and counts only the matches", ({ userPage }) => {
+      expect(userPage).toStrictEqual({ total: expectedTotal, users: expectedUsers });
+    });
+  });
+});

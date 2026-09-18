@@ -10,22 +10,17 @@ import type { RemoteFailure } from "./remote-input.ts";
 
 const miniflareCompatibilityDate = "2026-07-30";
 
-type D1HttpBatchResponse = {
-  readonly result: D1Result[];
-  readonly success: true;
-};
-
 const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
 const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
 const executeD1HttpBatch = async (
   database: D1Database,
-  body: unknown,
-): Promise<D1HttpBatchResponse> => {
-  const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(body);
-  const result = await database.batch(prepareBatch(database, batch));
-  return { result, success: true };
+  requestJson: unknown,
+): Promise<{ readonly result: D1Result[]; readonly success: true }> => {
+  const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(requestJson);
+  const executedStatements = await database.batch(prepareBatch(database, batch));
+  return { result: executedStatements, success: true };
 };
 
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@template/db/TestBinding") {}
@@ -67,6 +62,75 @@ const EmptyTestDatabase = Layer.unwrap(
     return Database.layer(yield* TestBinding);
   }),
 ).pipe(Layer.provideMerge(testBinding));
+
+const NameRows = Schema.Array(Schema.Struct({ name: Schema.String }));
+const PragmaRows = Schema.Array(Schema.Record(Schema.String, Schema.Unknown));
+
+export const databaseObjectNames = Effect.fn("databaseObjectNames")(function* databaseObjectNames(
+  objectType: "table" | "trigger",
+) {
+  const listing = yield* runStatement(
+    "SELECT name FROM sqlite_master WHERE type = ? AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_cf_METADATA', '__drizzle_migrations') ORDER BY name",
+    objectType,
+  );
+  const nameRows = yield* Schema.decodeUnknownEffect(NameRows)(listing.results);
+  return nameRows.map((nameRow) => nameRow.name);
+});
+
+const pragmaRows = Effect.fn("pragmaRows")(function* pragmaRows(inspected: {
+  readonly pragma: string;
+  readonly table: string;
+}) {
+  const listing = yield* runStatement(`PRAGMA ${inspected.pragma}("${inspected.table}")`);
+  return yield* Schema.decodeUnknownEffect(PragmaRows)(listing.results);
+});
+
+const isPrimaryKeyColumn = (column: Readonly<Record<string, unknown>>): boolean => column.pk === 1;
+
+const positionalKeys: ReadonlySet<string> = new Set(["cid", "id", "seq"]);
+
+const comparableRow = (pragmaRow: Readonly<Record<string, unknown>>): string =>
+  JSON.stringify(
+    Object.keys(pragmaRow)
+      .filter(
+        (column) =>
+          !positionalKeys.has(column) && !(column === "notnull" && isPrimaryKeyColumn(pragmaRow)),
+      )
+      .toSorted((left, right) => left.localeCompare(right))
+      .map((column) => [column, pragmaRow[column]]),
+  );
+
+export const primaryKeyNullability = Effect.fn("primaryKeyNullability")(
+  function* primaryKeyNullability() {
+    const tables = yield* databaseObjectNames("table");
+    const flags = yield* Effect.forEach(tables, (table) =>
+      Effect.map(pragmaRows({ pragma: "table_info", table }), (columns) =>
+        columns.filter(isPrimaryKeyColumn).map((column) => column.notnull),
+      ),
+    );
+    return [...new Set(flags.flat())];
+  },
+);
+
+export const describeDatabase = Effect.fn("describeDatabase")(function* describeDatabase() {
+  const tables = yield* databaseObjectNames("table");
+  const tableShapes = yield* Effect.forEach(tables, (table) =>
+    Effect.map(
+      Effect.forEach(["table_info", "index_list", "foreign_key_list"], (pragma) =>
+        Effect.map(pragmaRows({ pragma, table }), (described) =>
+          described.map((pragmaRow) => `${pragma} ${comparableRow(pragmaRow)}`),
+        ),
+      ),
+      (described) => [table, described.flat().toSorted((left, right) => left.localeCompare(right))],
+    ),
+  );
+  return {
+    primaryKeyNotNull: yield* primaryKeyNullability(),
+    shape: Object.fromEntries(tableShapes),
+    tables,
+    triggers: yield* databaseObjectNames("trigger"),
+  };
+});
 
 export { d1Executor } from "./migrate-d1.ts";
 export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, runStatement };
