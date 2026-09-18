@@ -1,14 +1,21 @@
-import { Effect, Predicate, Schema } from "effect";
+import type { StandardSchema } from "effect";
+import { Effect, Predicate, Schema, SchemaIssue } from "effect";
+
 import { CloudflareFailure } from "./config.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const NOT_FOUND_STATUS = 404;
 const MISSING_REASON = `status_${NOT_FOUND_STATUS}`;
+const DECODE_REASON = "decode_failed";
+const UNDECLARED_MEDIA_TYPE = "media_type_undeclared";
+const WHOLE_BODY = "$";
 
 interface AccountAccess {
   readonly accountId: string;
   readonly apiToken: string;
 }
+
+type Unreadable = Readonly<{ unreadable: readonly string[] }>;
 
 const cloudflareEndpoint = Symbol("cloudflareEndpoint");
 
@@ -33,8 +40,50 @@ function endpoint(parts: TemplateStringsArray, ...values: readonly string[]): En
   };
 }
 
-function unreadable(source: Endpoint, reason: string): CloudflareFailure {
-  return new CloudflareFailure({ code: "account_read_unavailable", keys: [source.shape, reason] });
+function unreadable(
+  source: Endpoint,
+  reason: string,
+  detail: readonly string[] = [],
+): CloudflareFailure {
+  return new CloudflareFailure({
+    code: "account_read_unavailable",
+    keys: [source.shape, reason, ...detail],
+  });
+}
+
+function unreadableVerdict(
+  failure: Readonly<{ keys: readonly string[] }>,
+): Effect.Effect<Unreadable> {
+  return Effect.succeed({ unreadable: failure.keys });
+}
+
+function isUnreadable(verdict: unknown): verdict is Unreadable {
+  return Predicate.hasProperty(verdict, "unreadable");
+}
+
+function readVerdict<Value, Verdict>(
+  read: Unreadable | Value,
+  decide: (value: Value) => Verdict,
+): Unreadable | Verdict {
+  return isUnreadable(read) ? read : decide(read);
+}
+
+const issueFormatter = SchemaIssue.makeFormatterStandardSchemaV1({
+  leafHook: (issue) => issue._tag,
+});
+
+function mismatches(failure: StandardSchema.StandardSchemaV1.FailureResult): readonly string[] {
+  return failure.issues.map((issue) => {
+    const path = (issue.path ?? [])
+      .map((key) => (typeof key === "object" ? String(key.key) : String(key)))
+      .join(".");
+    return `${path === "" ? WHOLE_BODY : path}:${issue.message}`;
+  });
+}
+
+function mediaType(response: Response): string {
+  const declared = response.headers.get("content-type")?.split(";", 1)[0]?.trim();
+  return declared === undefined || declared === "" ? UNDECLARED_MEDIA_TYPE : declared;
 }
 
 function requestReason(error: unknown): string {
@@ -90,7 +139,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
     return yield* Effect.fail(unreadable(source, `status_${response.status}`));
   }
   const body = yield* Effect.tryPromise({
-    catch: () => unreadable(source, "decode_failed"),
+    catch: () => unreadable(source, DECODE_REASON, [mediaType(response)]),
     try: async (): Promise<unknown> => response.json(),
   });
   return { body, found: true };
@@ -102,7 +151,9 @@ const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
   body: unknown,
 ) {
   return yield* Schema.decodeUnknownEffect(shape)(body).pipe(
-    Effect.mapError(() => unreadable(source, "decode_failed")),
+    Effect.mapError((error) =>
+      unreadable(source, DECODE_REASON, mismatches(issueFormatter(error.issue))),
+    ),
   );
 });
 
@@ -143,5 +194,63 @@ const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
   return yield* decodeBody(collection.source, shape, reading.body);
 });
 
-export { decodeBody, endpoint, readList, readRequired, readResource, requestReason };
-export type { AccountAccess, Endpoint };
+const FIRST_PAGE = 1;
+
+type Pages = Readonly<{ filter?: Query; pageSize: number; source: Endpoint }>;
+
+const readPage = Effect.fn("readPage")(function* readPage<Shape, Encoded>(
+  access: AccountAccess,
+  asked: Pages & Readonly<{ page: number }>,
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const reading = yield* fetchJson(access.apiToken, asked.source, {
+    ...listedQuery(asked),
+    page: String(asked.page),
+  });
+  if (!reading.found) {
+    return yield* Effect.fail(unreadable(asked.source, MISSING_REASON));
+  }
+  const paged = yield* decodeBody(asked.source, Paged, reading.body);
+  return {
+    rows: paged.result.length,
+    total: paged.result_info?.total_count,
+    value: yield* decodeBody(asked.source, shape, reading.body),
+  } as const;
+});
+
+const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
+  access: AccountAccess,
+  collection: Pages,
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const first = yield* readPage(access, { ...collection, page: FIRST_PAGE }, shape);
+  if (first.total === undefined || first.total <= first.rows) {
+    return [first.value];
+  }
+  const rest = yield* Effect.forEach(
+    Array.from(
+      { length: Math.ceil(first.total / collection.pageSize) - FIRST_PAGE },
+      (_unused, index) => index + FIRST_PAGE + 1,
+    ),
+    (page) => readPage(access, { ...collection, page }, shape),
+  );
+  const gathered = rest.reduce((rows, page) => rows + page.rows, first.rows);
+  if (gathered !== first.total) {
+    return yield* Effect.fail(unreadable(collection.source, "truncated"));
+  }
+  return [first.value, ...rest.map((page) => page.value)];
+});
+
+export {
+  decodeBody,
+  endpoint,
+  isUnreadable,
+  readList,
+  readPages,
+  readRequired,
+  readResource,
+  readVerdict,
+  requestReason,
+  unreadableVerdict,
+};
+export type { AccountAccess, Endpoint, Unreadable };

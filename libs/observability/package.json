@@ -4,15 +4,18 @@
   "type": "module",
   "exports": {
     ".": "./src/server.ts",
-    "./browser": "./src/browser.ts"
+    "./browser": "./src/browser.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@repo/config": "workspace:*",
     "effect": "catalog:",
     "web-vitals": "6.2.2"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@repo/config": "workspace:*"
+    "@msw/cloudflare": "catalog:",
+    "msw": "catalog:"
   }
 }

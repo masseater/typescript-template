@@ -1,22 +1,42 @@
-import { Cause, Console, Effect, Schema } from "effect";
-import { applications, grants } from "@repo/config";
-import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
-import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import type { Application } from "@repo/config";
-import { NodeRuntime } from "@effect/platform-node";
-import type { StackInventory } from "./inventory.ts";
-import type { StackName } from "./stacks.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Console, Effect, Schema } from "effect";
+
+import { applications, grants } from "@repo/config";
+import type { Application } from "@repo/config";
+
+import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
+import {
+  applyVerificationEnvironment,
+  bindsSendEmail,
+  compileStack,
+  describeCause,
+} from "./inventory.ts";
+import type { StackInventory } from "./inventory.ts";
 import { markFailed } from "./secrets.ts";
+import {
+  applyOrderViolations,
+  onboardingStack,
+  sendingStacks,
+  stackDependencies,
+  stackName,
+  stackNames,
+} from "./stacks.ts";
+import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
 
-const { accountId, budget, mailFrom, origins, prefix } = verificationSettings;
+const { accountId, budget, mailFrom, origins, otlp, otlpAuthorization, prefix } =
+  verificationSettings;
 
 const sampling = { enabled: true, headSamplingRate: 0.5 };
+
+const traceDestination = `${prefix}-traces`;
+
+const SENDING_SUBDOMAIN = "Cloudflare.Email.SendingSubdomain";
 
 const sharedWorker = {
   compatibility: { date: "2026-09-16", flags: ["nodejs_compat"] },
@@ -24,7 +44,7 @@ const sharedWorker = {
   observability: {
     ...sampling,
     logs: { ...sampling, invocationLogs: false },
-    traces: sampling,
+    traces: { ...sampling, destinations: [traceDestination], persist: true },
   },
   workersDev: { enabled: false, previewsEnabled: false },
 };
@@ -49,6 +69,9 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText("EMAIL_FROM", mailFrom),
+      "OTLP_AUTHORIZATION:secret_text:text=$TEMPLATE_OTLP_AUTHORIZATION",
+      plainText("OTLP_ENABLED", String(otlp.enabled)),
+      plainText("OTLP_ENDPOINT", otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {
@@ -160,6 +183,15 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       type: "Cloudflare.D1Database",
     },
   }),
+  email: declaredStack("email", {
+    Sending: {
+      adopt: false,
+      bindings: [],
+      declared: { name: "template-verify.example.com", zoneId: verificationSettings.zoneId },
+      removalPolicy: "retain",
+      type: SENDING_SUBDOMAIN,
+    },
+  }),
   "error-monitor": declaredStack("error-monitor", {
     Worker: monitorResource({
       artifact: "infra/error-monitor/dist/index.js",
@@ -185,6 +217,21 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       ],
     }),
   }),
+  observability: declaredStack("observability", {
+    Traces: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        enabled: otlp.enabled,
+        headers: { authorization: otlpAuthorization },
+        logpushDataset: "opentelemetry-traces",
+        name: traceDestination,
+        url: `${otlp.endpoint}/v1/traces`,
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Workers.ObservabilityDestination",
+    },
+  }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
@@ -197,6 +244,28 @@ const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: 
 
 applyVerificationEnvironment();
 
+function onboards(inventory: StackInventory): boolean {
+  return Object.values(inventory.resources).some((resource) => resource.type === SENDING_SUBDOMAIN);
+}
+
+const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
+  verified: readonly Readonly<{ onboards: boolean; sends: boolean }>[],
+) {
+  const onboarding = stackNames.filter((_stack, index) => verified[index]?.onboards === true);
+  const senders = stackNames.filter((_stack, index) => verified[index]?.sends === true);
+  const violations = applyOrderViolations(stackNames);
+  const differs =
+    violations.length > 0 ||
+    !isDeepStrictEqual(onboarding, [onboardingStack]) ||
+    !isDeepStrictEqual(senders.toSorted(), [...sendingStacks].toSorted());
+  if (differs) {
+    yield* Console.error(
+      JSON.stringify({ event: "stacks.roles_differ", onboarding, senders, violations }),
+    );
+  }
+  return differs;
+});
+
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
@@ -206,13 +275,14 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
       JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }),
     );
   }
-  return matches;
+  return { matches, onboards: onboards(inventory), sends: bindsSendEmail(inventory) } as const;
 });
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
-    if (verified.includes(false)) {
+    const differs = yield* rolesDiffer(verified);
+    if (differs || verified.some((entry) => !entry.matches)) {
       yield* markFailed;
       return;
     }

@@ -1,6 +1,7 @@
-import { ActionStatus } from "./action-status";
 import { noop } from "es-toolkit";
+
 import preview from "../.storybook/preview";
+import { ActionStatus } from "./action-status";
 
 const meta = preview.meta({
   args: { action: { blocked: false, error: undefined, pending: false, run: noop } },

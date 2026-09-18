@@ -1,22 +1,17 @@
-import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import { definePlugin } from "vite-plus/lint/plugins";
+
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
+import { layersVisitor } from "./layers.ts";
+import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
-import {
-  nodeRuntimeModules,
-  runsInWorkerRuntime,
-  testRuntimeVisitor,
-  workerRuntimeModules,
-  workerTestSuffix,
-} from "./test-runtime.ts";
 import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-import { definePlugin } from "vite-plus/lint/plugins";
-import { layersVisitor } from "./layers.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
+import { runsInWorkerRuntime } from "./test-runtime.ts";
 
 const mockSources = new Set([
   "vitest",
@@ -125,7 +120,7 @@ export default definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@repo/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。`,
+        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
       ),
     },
     "effect-failures": {
@@ -149,7 +144,7 @@ export default definePlugin({
     "example-values": {
       create: exampleValuesVisitor,
       meta: metadata(
-        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 00000000-0000-0000-0000-000000000000 のような数字だけの合成値にし、secret・token・password・credential の値は小文字と数字とハイフンだけの自己申告な文字列にしてください。`,
+        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 00000000-0000-0000-0000-000000000000 のような数字だけの合成値にし、secret・token・password・credential の値は大文字を含まない自己申告な文字列にしてください。`,
       ),
     },
     layers: {
@@ -174,12 +169,6 @@ export default definePlugin({
       create: testImportGraphVisitor,
       meta: metadata(
         "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
-      ),
-    },
-    "test-runtime": {
-      create: testRuntimeVisitor,
-      meta: metadata(
-        `Worker のランタイムで動くテストは ${workerTestSuffix} という名前にして ${workerRuntimeModules.join(" / ")} を使い、Node でしか動かないテストは ${workerTestSuffix} 以外の名前にして ${nodeRuntimeModules.join(" / ")} を使ってください。名前がテストの実行先を決めるので、両方を 1 つのファイルに混ぜられません。`,
       ),
     },
     "worker-fetch": {

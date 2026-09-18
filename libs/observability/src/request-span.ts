@@ -1,19 +1,13 @@
-import { Cause, Effect } from "effect";
-import { errorAttributes, errorFingerprint } from "./errors.ts";
-import {
-  httpMethod,
-  parentContext,
-  randomHex,
-  routeLabel,
-  spanIdBytes,
-  traceIdBytes,
-} from "./protocol.ts";
+import { Cause, Effect, Tracer } from "effect";
+
 import { CurrentRequest } from "./current-request.ts";
-import type { ErrorAttributes } from "./errors.ts";
 import type { RequestContext } from "./current-request.ts";
-import { Telemetry } from "./telemetry.ts";
+import { errorAttributes, errorFingerprint } from "./errors.ts";
+import type { ErrorAttributes } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
+import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
 import { isRecord } from "./structured-logs.ts";
+import { Telemetry } from "./telemetry.ts";
 
 type RequestHandler<Requirements> = (
   request: Request,
@@ -28,8 +22,7 @@ function failureTag(error: unknown): string | undefined {
   return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
 }
 
-function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
-  const error = Cause.squash(cause);
+function failureAttributesOf(error: unknown): FailureAttributes {
   const attributes = errorAttributes(error);
   const tag = failureTag(error);
   if (tag === undefined) {
@@ -43,17 +36,23 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
 }
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
-  return Effect.logError("application.error", failureAttributes(cause));
+  const attributes = failureAttributesOf(Cause.squash(cause));
+  return Effect.logError("application.error").pipe(Effect.annotateLogs({ ...attributes }));
 }
 
-function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContext {
-  const traceId = parentContext(headers.get("traceparent"))?.traceId ?? randomHex(traceIdBytes);
-  const spanId = randomHex(spanIdBytes);
+function incomingParent(headers: Readonly<Pick<Headers, "get">>): Tracer.ExternalSpan | undefined {
+  const parent = parentContext(headers.get("traceparent"));
+  return parent === undefined
+    ? undefined
+    : Tracer.externalSpan({ spanId: parent.parentSpanId, traceId: parent.traceId });
+}
+
+function requestContext(span: Readonly<Pick<Tracer.Span, "spanId" | "traceId">>): RequestContext {
   return {
     requestId: crypto.randomUUID(),
-    spanId,
-    traceId,
-    traceparent: `00-${traceId}-${spanId}-01`,
+    spanId: span.spanId,
+    traceId: span.traceId,
+    traceparent: `00-${span.traceId}-${span.spanId}-01`,
   };
 }
 
@@ -79,22 +78,27 @@ function failureResponse(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<R
   );
 }
 
-const recordRequest = Effect.fn("recordRequest")(function* recordRequest(
+function recordRequest(
   request: Readonly<Pick<Request, "method" | "url">>,
   status: number,
   start: number,
-) {
-  const telemetry = yield* Telemetry;
-  const attributes = {
-    duration_ms: performance.now() - start,
-    method: httpMethod(request.method),
-    route: routeLabel(new URL(request.url).pathname, telemetry.routes),
-    status,
-  };
-  yield* status >= httpStatus.internalServerError
-    ? Effect.logError("http.server.request", attributes)
-    : Effect.logInfo("http.server.request", attributes);
-});
+): Effect.Effect<void, never, Telemetry> {
+  return Effect.gen(function* recordRequestProgram() {
+    const telemetry = yield* Telemetry;
+    const attributes = {
+      duration_ms: performance.now() - start,
+      method: httpMethod(request.method),
+      route: routeLabel(new URL(request.url).pathname, telemetry.routes),
+      status,
+    };
+    yield* Effect.annotateCurrentSpan(attributes);
+    yield* (
+      status >= httpStatus.internalServerError
+        ? Effect.logError("http.server.request")
+        : Effect.logInfo("http.server.request")
+    ).pipe(Effect.annotateLogs(attributes));
+  });
+}
 
 function respond<Requirements>(
   request: Request,
@@ -109,23 +113,26 @@ function respond<Requirements>(
     );
     yield* recordRequest(request, response.status, start);
     return correlatedResponse(response, context);
-  });
+  }).pipe(
+    Effect.annotateLogs({
+      request_id: context.requestId,
+      span_id: context.spanId,
+      trace_id: context.traceId,
+    }),
+  );
 }
 
 function observeRequest<Requirements>(
   request: Request,
   handler: RequestHandler<Requirements>,
 ): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> {
-  return Effect.suspend(() => {
-    const context = incomingContext(request.headers);
-    return respond(request, context, handler).pipe(
-      Effect.annotateLogs({
-        request_id: context.requestId,
-        span_id: context.spanId,
-        trace_id: context.traceId,
-      }),
-    );
-  });
+  return Effect.orDie(Effect.currentSpan).pipe(
+    Effect.flatMap((span) => respond(request, requestContext(span), handler)),
+    Effect.withSpan("http.server.request", {
+      kind: "server",
+      parent: incomingParent(request.headers),
+    }),
+  );
 }
 
-export { observeRequest, reportFailure };
+export { failureAttributesOf, observeRequest, reportFailure };

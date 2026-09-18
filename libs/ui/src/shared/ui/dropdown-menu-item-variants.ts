@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 
 const itemVariants = cva(
-  "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-base leading-tight outline-none select-none data-disabled:cursor-not-allowed data-disabled:text-disabled-foreground data-highlighted:bg-accent",
+  "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-base leading-tight outline-none select-none data-highlighted:bg-accent data-disabled:cursor-not-allowed data-disabled:text-disabled-foreground",
   {
     defaultVariants: { variant: "default" },
     variants: {

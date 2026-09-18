@@ -1,9 +1,10 @@
-import { Button, Field, SelectField } from "@repo/ui";
-import { roleOptions, verificationOptions } from "#pages/users/model/user-labels.ts";
 import type { ReactElement } from "react";
+
+import { useUserFilterForm } from "#pages/users/model/user-filter-form.ts";
+import { roleOptions, verificationOptions } from "#pages/users/model/user-labels.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import { maximumKeywordLength } from "@repo/runtime/contracts";
-import { useUserFilterForm } from "#pages/users/model/user-filter-form.ts";
+import { Button, Field, SelectField } from "@repo/ui";
 
 function UserFilters({ search }: Readonly<{ search: UsersSearch }>): ReactElement {
   const form = useUserFilterForm(search);

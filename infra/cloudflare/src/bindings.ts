@@ -1,6 +1,7 @@
 import type { AIBinding, Assets, D1, Email, InferEnv } from "alchemy/Cloudflare";
-import type { Application, Capability, CapabilityOf } from "@repo/config";
 import type { Redacted } from "effect";
+
+import type { Application, Capability, CapabilityOf } from "@repo/config";
 
 type SharedEnv = Readonly<{
   APP_ORIGIN: string;
@@ -9,6 +10,9 @@ type SharedEnv = Readonly<{
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;
+  OTLP_AUTHORIZATION?: Redacted.Redacted;
+  OTLP_ENABLED?: string;
+  OTLP_ENDPOINT?: string;
 }>;
 
 interface CapabilityEnv {

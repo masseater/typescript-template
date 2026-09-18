@@ -1,5 +1,6 @@
-import { Card, Heading } from "@repo/ui";
 import type { ReactElement } from "react";
+
+import { Card, Heading } from "@repo/ui";
 
 function Feature({
   description,

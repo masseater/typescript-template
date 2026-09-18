@@ -1,4 +1,5 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
+
 import plugin from "./rules.ts";
 
 type RuleName =
@@ -11,7 +12,6 @@ type RuleName =
   | "no-internal-mocks"
   | "no-manual-memoization"
   | "test-import-graph"
-  | "test-runtime"
   | "worker-fetch";
 
 const ruleNames: readonly RuleName[] = [
@@ -24,7 +24,6 @@ const ruleNames: readonly RuleName[] = [
   "no-internal-mocks",
   "no-manual-memoization",
   "test-import-graph",
-  "test-runtime",
   "worker-fetch",
 ];
 

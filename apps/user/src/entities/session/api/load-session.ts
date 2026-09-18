@@ -1,7 +1,7 @@
 import type { Session } from "#entities/session/model/session.ts";
-import { SessionView } from "@repo/runtime/contracts";
-import { apiDataOrNone } from "@repo/runtime/client";
 import { userClient } from "#shared/api/index.ts";
+import { apiDataOrNone } from "@repo/runtime/client";
+import { SessionView } from "@repo/runtime/contracts";
 
 async function loadSession(): Promise<Session | undefined> {
   const { api } = await userClient();

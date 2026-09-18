@@ -1,13 +1,22 @@
-import { describe, expect, it } from "vite-plus/test";
-import { stackDependencies, stackNames } from "./stacks.ts";
 import { Effect } from "effect";
+import { describe, expect, it } from "vite-plus/test";
+
+import {
+  applyOrderViolations,
+  onboardingStack,
+  sendingStacks,
+  stackDependencies,
+  stackNames,
+} from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
   "./admin.ts",
   "./budget-monitor.ts",
   "./database.ts",
+  "./email.ts",
   "./error-monitor.ts",
   "./health-monitor.ts",
+  "./observability.ts",
   "./tokens.ts",
   "./user.ts",
   "./wiki.ts",
@@ -18,16 +27,27 @@ function defaultExport(module: unknown): unknown {
 }
 
 describe("alchemy stacks", () => {
-  it("every apply unit runs once, after the units whose resources it reads", () => {
+  it("every apply unit runs once, after the units it reads from and after the onboarding", () => {
     expect.hasAssertions();
     expect(new Set(stackNames).size).toBe(stackNames.length);
     expect([...stackNames].toSorted()).toStrictEqual(Object.keys(stackDependencies).toSorted());
-    const violations = stackNames.flatMap((stack) =>
-      stackDependencies[stack].filter(
-        (dependency) => stackNames.indexOf(dependency) >= stackNames.indexOf(stack),
-      ),
+    expect(applyOrderViolations(stackNames)).toStrictEqual([]);
+  });
+
+  it("reports the units an apply order would run before what they need", () => {
+    expect.hasAssertions();
+    const lastOnboarding = [
+      ...stackNames.filter((stack) => stack !== onboardingStack),
+      onboardingStack,
+    ];
+    expect(applyOrderViolations(lastOnboarding).toSorted()).toStrictEqual(
+      [...sendingStacks].toSorted(),
     );
-    expect(violations).toStrictEqual([]);
+    const lastDatabase = [
+      ...stackNames.filter((stack) => stack !== "database"),
+      "database" as const,
+    ];
+    expect(applyOrderViolations(lastDatabase).toSorted()).toStrictEqual(["admin", "user", "wiki"]);
   });
 
   it.for(stackNames)("%s exports the program the CLI runs", async (stack) => {

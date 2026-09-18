@@ -1,10 +1,11 @@
-import { Cause, Console, Effect } from "effect";
-import { browser, browserCommand } from "./browser.ts";
-import { connection, logs, start, status, stop } from "./applications.ts";
-import { failure, reportFailed } from "./failure.ts";
-import type { App } from "./local-environment.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Console, Effect } from "effect";
+
+import { connection, logs, start, status, stop } from "./applications.ts";
+import { browser, browserCommand } from "./browser.ts";
+import { failure, reportFailed } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App } from "./local-environment.ts";
 import { application } from "./local-environment.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
@@ -13,7 +14,7 @@ type Command = Effect.Effect<unknown, LocalCommandFailure>;
 
 const firstUserArgumentIndex = 2;
 
-const globalCommands = new Map<string, () => Command>([
+const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["connect", connection],
   ["setup", setup],
   ["status", status],
@@ -32,21 +33,22 @@ function writeReport(report: unknown): Effect.Effect<void> {
   return report === undefined ? Effect.void : Console.log(JSON.stringify(report));
 }
 
-function selectCommand(action: string, app: string | undefined, args: readonly string[]): Command {
+function selectCommand(action: string, args: readonly string[]): Command {
   const global = globalCommands.get(action);
   if (global !== undefined) {
-    return global();
+    return global(args);
   }
   const scoped = appCommands.get(action);
+  const [app, ...rest] = args;
   return scoped === undefined
     ? Effect.fail(failure("command_unsupported"))
-    : application(app).pipe(Effect.flatMap((name) => scoped(name, args)));
+    : application(app).pipe(Effect.flatMap((name) => scoped(name, rest)));
 }
 
-const [action = "", app, ...args] = process.argv.slice(firstUserArgumentIndex);
+const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
 NodeRuntime.runMain(
-  selectCommand(action, app, args).pipe(
+  selectCommand(action, args).pipe(
     Effect.flatMap(writeReport),
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)

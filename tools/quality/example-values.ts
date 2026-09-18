@@ -1,7 +1,8 @@
+import type { Visitor } from "vite-plus/lint/plugins";
+
 import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
 import { propertyName, staticText } from "./references.ts";
-import type { Visitor } from "vite-plus/lint/plugins";
 
 const fixtureFile = /(?:\.test\.tsx?|-fixture\.ts)$/u;
 const exampleLabels: readonly string[] = [
@@ -18,7 +19,7 @@ const loopbackHost = /^(?:localhost|0\.0\.0\.0|127\.\d+\.\d+\.\d+|\[[0:]+1\])$/u
 const uuidShape = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const syntheticUuid = /^[0-9-]+$/u;
 const secretName = /secret|token|password|credential/iu;
-const exampleSecret = /^[a-z0-9_-]*$/u;
+const exampleSecret = /^[^A-Z]*$/u;
 const webProtocols: ReadonlySet<string> = new Set(["http:", "https:"]);
 
 function isExampleHost(hostname: string): boolean {

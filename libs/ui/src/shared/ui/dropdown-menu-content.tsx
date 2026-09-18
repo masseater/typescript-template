@@ -1,6 +1,7 @@
-import type { Children } from "./types";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import type { ReactElement } from "react";
+
+import type { Children } from "./types";
 
 function DropdownMenuContent({ children }: Children): ReactElement {
   return (

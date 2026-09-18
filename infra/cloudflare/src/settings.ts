@@ -1,6 +1,9 @@
+import { Config, Effect, Option, Redacted } from "effect";
+
 import {
   AuthSecret,
   Email,
+  HttpsUrl,
   Id,
   Nonnegative,
   Origin,
@@ -11,11 +14,15 @@ import {
   checkSharedConfig,
   originKeys,
 } from "./config.ts";
-import { Config, Effect, Redacted } from "effect";
 
 const DEFAULT_JPY_PER_USD = 150;
 const FULL_SAMPLING = 1;
 const DEFAULT_USD = 0;
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function optional<Value>(config: Config.Config<Value>): Config.Config<Value | undefined> {
+  return Config.option(config).pipe(Config.map(Option.getOrUndefined));
+}
 
 const budget = Config.all({
   budgetJpy: Config.schema(Positive, "BUDGET_JPY"),
@@ -31,6 +38,15 @@ const budget = Config.all({
   ),
 });
 
+const otlpDestination = Config.all({
+  enabled: Config.boolean("TEMPLATE_OTLP_ENABLED").pipe(Config.withDefault(true)),
+  endpoint: optional(Config.schema(HttpsUrl, "TEMPLATE_OTLP_ENDPOINT")),
+}).pipe(
+  Config.map(({ enabled, endpoint }) =>
+    endpoint === undefined ? undefined : { enabled, endpoint },
+  ),
+);
+
 const settings = Config.all({
   accountId: Config.schema(Id, "CLOUDFLARE_ACCOUNT_ID"),
   budget,
@@ -43,6 +59,7 @@ const settings = Config.all({
     user: Config.schema(Origin, originKeys.user),
     wiki: Config.schema(Origin, originKeys.wiki),
   }),
+  otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
   zoneId: Config.schema(Id, "CLOUDFLARE_ZONE_ID"),
 }).pipe(Effect.flatMap(checkSharedConfig));
@@ -51,4 +68,6 @@ const authSecret = Config.schema(AuthSecret, "TEMPLATE_AUTH_SECRET").pipe(
   Config.map(Redacted.make),
 );
 
-export { authSecret, settings };
+const otlpAuthorization = optional(Config.redacted("TEMPLATE_OTLP_AUTHORIZATION"));
+
+export { authSecret, otlpAuthorization, settings };

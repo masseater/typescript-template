@@ -1,8 +1,10 @@
+import { treaty } from "@elysiajs/eden";
 import { Result, Schema } from "effect";
 import type { AnyElysia } from "elysia";
-import { ErrorBody } from "./contracts.ts";
+
 import { httpStatus } from "@repo/observability";
-import { treaty } from "@elysiajs/eden";
+
+import { ErrorBody } from "./contracts.ts";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 

@@ -1,6 +1,7 @@
-import { accepts, advance, begin } from "./engine.ts";
 import { describe, expect, it } from "vite-plus/test";
+
 import { viewOf } from "./contracts.ts";
+import { accepts, advance, begin } from "./engine.ts";
 
 describe("reply forms the sheet cannot hold", () => {
   const manyHobbies = ["音楽", "料理", "読書", "映画", "旅行", "登山"];

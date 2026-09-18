@@ -1,8 +1,11 @@
-import { Config, Effect, Schema } from "effect";
-import type { StackName } from "./stacks.ts";
 import type { WorkerObservability } from "alchemy/Cloudflare";
-import { stackNames } from "./stacks.ts";
+import { Config, Effect, Schema } from "effect";
+
 import { workerCompatibility } from "@repo/config/worker";
+import { otlpSignalUrl } from "@repo/observability";
+
+import type { StackName } from "./stacks.ts";
+import { stackNames } from "./stacks.ts";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
@@ -14,11 +17,13 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "database_name_taken",
     "database_output_unavailable",
     "deploy_token_permissions_missing",
+    "mail_from_outside_deployment",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
     "plan_removes_bindings",
     "plan_removes_resources",
     "secrets_store_already_present",
+    "sending_domain_unavailable",
     "state_store_name_taken",
   ]),
   keys: Schema.Array(Schema.String),
@@ -55,6 +60,9 @@ const Origin = Schema.String.check(
     );
   }),
 );
+const HttpsUrl = Schema.String.check(
+  Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
+);
 const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
 const SamplingRate = Schema.Number.check(
   Schema.isFinite(),
@@ -78,6 +86,7 @@ const SharedSettings = Schema.Struct({
   mailFrom: Email,
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
+  otlp: Schema.UndefinedOr(Schema.Struct({ enabled: Schema.Boolean, endpoint: HttpsUrl })),
   prefix: Prefix,
   zoneId: Id,
 });
@@ -95,12 +104,34 @@ const workerCompatibilityOptions = {
   date: workerCompatibility.date,
   flags: [...workerCompatibility.flags],
 };
-function workerObservability(headSamplingRate: number): WorkerObservability {
+interface TraceDestination {
+  readonly enabled: boolean;
+  readonly name: string;
+  readonly url: string;
+}
+
+function traceDestination(config: SharedConfig): TraceDestination | undefined {
+  return config.otlp === undefined
+    ? undefined
+    : {
+        enabled: config.otlp.enabled,
+        name: `${config.prefix}-traces`,
+        url: otlpSignalUrl(config.otlp.endpoint, "traces"),
+      };
+}
+
+function workerObservability(config: SharedConfig): WorkerObservability {
+  const headSamplingRate = config.observabilitySampling;
+  const destination = traceDestination(config);
   return {
     enabled: true,
     headSamplingRate,
     logs: { enabled: true, headSamplingRate, invocationLogs: false },
-    traces: { enabled: true, headSamplingRate },
+    traces: {
+      enabled: true,
+      headSamplingRate,
+      ...(destination === undefined ? {} : { destinations: [destination.name], persist: true }),
+    },
   };
 }
 
@@ -128,6 +159,10 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   );
   return { operation: "plan", stacks } as const;
 });
+
+function sendingDomain(mailFrom: string): string {
+  return mailFrom.slice(mailFrom.indexOf("@") + 1);
+}
 
 function duplicatedOrigins(config: SharedConfig): readonly string[] {
   const origins = [
@@ -157,6 +192,9 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
       "TEMPLATE_RESERVE_USD",
     ]);
   }
+  if (!sendingDomain(config.mailFrom).startsWith(`${config.prefix}.`)) {
+    return yield* fail("mail_from_outside_deployment", ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
+  }
   return config;
 });
 
@@ -169,6 +207,7 @@ export {
   SamplingRate,
   CloudflareFailure,
   Email,
+  HttpsUrl,
   Id,
   Nonnegative,
   Origin,
@@ -179,6 +218,8 @@ export {
   checkSharedConfig,
   originKeys,
   parseDeploymentCommand,
+  sendingDomain,
+  traceDestination,
   workerCompatibilityOptions,
   workerObservability,
   workerSubdomain,

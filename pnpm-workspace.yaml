@@ -23,6 +23,7 @@ allowBuilds:
   msgpackr-extract: false
   "@google/genai": false
   "@openrouter/sdk": false
+  "@swc/core": false
 minimumReleaseAgeExclude:
   - "@cloudflare/vite-plugin@1.54.10"
   - "@cloudflare/workers-types@5.20260916.1"

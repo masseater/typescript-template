@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vite-plus/test";
-import { CheckboxField } from "./checkbox-field";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vite-plus/test";
+
+import { CheckboxField } from "./checkbox-field";
 
 const label = "バックアップコードを保管しました";
 

@@ -1,11 +1,15 @@
-import { Layer, ManagedRuntime } from "effect";
-import { Interviewer } from "@repo/interview";
-import { appLayer } from "@repo/runtime";
 import { env } from "cloudflare:workers";
-import { routes } from "#shared/telemetry/index.ts";
+import { Layer, ManagedRuntime } from "effect";
 
+import { routes } from "#shared/telemetry/index.ts";
+import { Interviewer } from "@repo/interview";
+import type { Reporting } from "@repo/observability";
+import { appLayer } from "@repo/runtime";
+
+const service = "user";
+const reporting: Reporting = { service };
 const runtime = ManagedRuntime.make(
-  Layer.merge(appLayer(env, "user", routes), Interviewer.fromEnvironment(env)),
+  Layer.merge(appLayer(env, service, routes), Interviewer.fromEnvironment(env)),
 );
 
-export { runtime };
+export { reporting, runtime };

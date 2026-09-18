@@ -1,15 +1,17 @@
-import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
 import { Effect, Layer } from "effect";
-import { readConfig, sendVerificationEmail } from "@repo/config";
-import { AppOrigin } from "./app-origin.ts";
-import { Assets } from "./assets.ts";
+
 import { Auth } from "@repo/auth";
 import type { AuthFailure } from "@repo/auth";
+import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
+import { readConfig, sendVerificationEmail } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
-import type { TelemetryInvalid } from "@repo/observability";
+import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 
-type AppServices = Auth | Database | AppOrigin | Assets | Telemetry;
+import { AppOrigin } from "./app-origin.ts";
+import { Assets } from "./assets.ts";
+
+type AppServices = AppOrigin | Assets | Auth | Database | Telemetry | TelemetryFlusher;
 
 function configuredAppLayer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -23,7 +25,16 @@ function configuredAppLayer(
     secret: config.AUTH_SECRET,
     sendVerificationEmail: (message) => sendVerificationEmail(config, message),
   }).pipe(Layer.provideMerge(Database.layer(config.DB)));
-  const telemetry = Telemetry.layer({ release: config.APP_RELEASE, routes, serviceName: audience });
+  const otlp =
+    config.OTLP_ENDPOINT === undefined || config.OTLP_ENABLED === "false"
+      ? undefined
+      : { authorization: config.OTLP_AUTHORIZATION, endpoint: config.OTLP_ENDPOINT };
+  const telemetry = Telemetry.layer({
+    otlp,
+    release: config.APP_RELEASE,
+    routes,
+    serviceName: audience,
+  });
   const services = Layer.mergeAll(
     auth,
     Layer.succeed(AppOrigin, config.APP_ORIGIN),

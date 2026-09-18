@@ -1,6 +1,7 @@
-import { useRef, useState, useSyncExternalStore } from "react";
-import { errorMessage } from "./protocol";
 import { noop } from "es-toolkit";
+import { useRef, useState, useSyncExternalStore } from "react";
+
+import { errorMessage } from "./protocol";
 
 type Task = () => Promise<void>;
 

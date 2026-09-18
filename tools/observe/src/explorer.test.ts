@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { explorerOrigin, requestTelemetry, withEvent } from "./explorer.ts";
 import { Effect } from "effect";
+
+import { explorerOrigin, requestTelemetry, withEvent } from "./explorer.ts";
 
 const loopbackApp = "http://127.0.0.1:3001/";
 const unrelatedMessage = 42;

@@ -1,16 +1,23 @@
-import type { CurrentRequest, Telemetry } from "@repo/observability";
 import { Effect, Result } from "effect";
-import { httpStatus, observeRequest } from "@repo/observability";
-import { jsonResponse, secureResponse } from "./responses.ts";
+import type { Cause, ManagedRuntime } from "effect";
+
+import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
+import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
+
 import { Assets } from "./assets.ts";
-import type { ManagedRuntime } from "effect";
 import { runtimeUnavailable } from "./failures.ts";
+import { jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;
 }
 interface FetchWorker {
-  readonly fetch: (request: Request) => Promise<Response>;
+  readonly fetch: (
+    request: Request,
+    environment: unknown,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    context: ExecutionContext,
+  ) => Promise<Response>;
 }
 type WorkerRoute<Requirements> = (
   request: Request,
@@ -20,19 +27,27 @@ type AppRoute<Requirements> = (
   path: string,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
-function unavailableResponse(): Response {
-  const failure = runtimeUnavailable();
+async function unavailableResponse(
+  cause: Readonly<Cause.Cause<unknown>>,
+  reporting: Reporting,
+): Promise<Response> {
+  const failure = await Effect.runPromise(runtimeUnavailable(cause, reporting));
   return jsonResponse({ error: failure.message }, failure.status);
 }
 
 function serveWorker<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: WorkerRoute<Requirements>,
+  reporting: Reporting,
 ): FetchWorker {
   return {
-    fetch: async (request): Promise<Response> => {
+    fetch: async (request, _environment, context): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      return exit._tag === "Success" ? exit.value : unavailableResponse();
+      if (exit._tag !== "Success") {
+        return unavailableResponse(exit.cause, reporting);
+      }
+      context.waitUntil(runtime.runPromise(flushTelemetry));
+      return exit.value;
     },
   };
 }
@@ -54,19 +69,27 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 }
 
 function serveApp<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<
+    Assets | Requirements | Telemetry | TelemetryFlusher,
+    unknown
+  >,
   route: AppRoute<Requirements>,
+  reporting: Reporting,
 ): FetchWorker {
-  return serveWorker(runtime, (request) => {
-    const path = requestPath(request);
-    if (path === undefined) {
-      return Effect.succeed(new Response(undefined, { status: httpStatus.badRequest }));
-    }
-    if (path.endsWith(".map")) {
-      return Effect.succeed(new Response(undefined, { status: httpStatus.notFound }));
-    }
-    return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
-  });
+  return serveWorker(
+    runtime,
+    (request) => {
+      const path = requestPath(request);
+      if (path === undefined) {
+        return Effect.succeed(new Response(undefined, { status: httpStatus.badRequest }));
+      }
+      if (path.endsWith(".map")) {
+        return Effect.succeed(new Response(undefined, { status: httpStatus.notFound }));
+      }
+      return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
+    },
+    reporting,
+  );
 }
 
 function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {

@@ -1,6 +1,7 @@
-import { UsersPage, normalizeUsersSearch } from "#pages/users/index.ts";
-import type { ReactElement } from "react";
 import { getRouteApi } from "@tanstack/react-router";
+import type { ReactElement } from "react";
+
+import { UsersPage, normalizeUsersSearch } from "#pages/users/index.ts";
 
 const route = getRouteApi("/_member/users/");
 
