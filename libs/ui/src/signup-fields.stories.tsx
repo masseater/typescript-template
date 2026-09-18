@@ -1,7 +1,8 @@
-import { expect, waitFor } from "storybook/test";
-import { SignUpFields } from "./signup-fields";
 import { noop } from "es-toolkit";
+import { expect, waitFor } from "storybook/test";
+
 import preview from "../.storybook/preview";
+import { SignUpFields } from "./signup-fields";
 
 const meta = preview.meta({
   args: {

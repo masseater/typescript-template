@@ -1,5 +1,5 @@
-import type { ReactElement } from "react";
 import { cva } from "class-variance-authority";
+import type { ReactElement } from "react";
 
 const avatarVariants = cva(
   "inline-flex shrink-0 items-center justify-center rounded-full bg-secondary font-bold text-secondary-foreground select-none",

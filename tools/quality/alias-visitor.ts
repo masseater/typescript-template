@@ -1,8 +1,9 @@
 import type { ESTree, Visitor } from "vite-plus/lint/plugins";
+
 import type { LintContext, Node } from "./lint-context.ts";
+import { reportViolation } from "./lint-context.ts";
 import { destructuredOrigins, origins } from "./references.ts";
 import type { Origin } from "./references.ts";
-import { reportViolation } from "./lint-context.ts";
 
 function aliasChecker(
   context: LintContext,

@@ -1,11 +1,12 @@
 import type { ReactElement, SyntheticEvent } from "react";
+
 import type { ActionState } from "./action";
+import { authClient } from "./client";
+import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
 import type { TextInput } from "./use-text-input";
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 import { useTextInput } from "./use-text-input";
 
 interface SignUpFieldsProps {

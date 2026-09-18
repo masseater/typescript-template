@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "observe": "node src/cli.ts",
-    "verify": "node src/verify.ts",
-    "symbolicate": "node src/symbolicate.ts"
+    "symbolicate": "node src/symbolicate.ts",
+    "verify": "node src/verify.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

@@ -1,6 +1,6 @@
-import type { ComponentProps, ReactElement } from "react";
 import { createLink } from "@tanstack/react-router";
 import { cva } from "class-variance-authority";
+import type { ComponentProps, ReactElement } from "react";
 
 const navigationLinkVariants = cva(
   "rounded-md text-foreground no-underline outline-none hover:text-foreground focus-visible:focus-indicator",

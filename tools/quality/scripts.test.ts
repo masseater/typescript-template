@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vite-plus/test";
-import { field, workspaceManifests } from "./dependencies.ts";
-import { scriptViolations, taskViolations } from "./scripts.ts";
 import type { UserConfig } from "vite-plus";
+import { describe, expect, it } from "vite-plus/test";
+
+import { field, workspaceManifests } from "./dependencies.ts";
 import type { WorkspaceManifest } from "./dependencies.ts";
+import { scriptViolations, taskViolations } from "./scripts.ts";
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   return manifests.flatMap(({ manifest }) => {

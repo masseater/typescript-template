@@ -1,8 +1,9 @@
-import { Console, Effect } from "effect";
-import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import type { D1Database } from "@cloudflare/workers-types";
 import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect } from "effect";
 import { getPlatformProxy } from "wrangler";
+
+import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import { migrateD1 } from "./migrate-d1.ts";
 
 const platform = Effect.acquireRelease(

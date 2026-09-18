@@ -1,5 +1,6 @@
-import type { Children } from "./types";
 import type { ReactElement } from "react";
+
+import type { Children } from "./types";
 
 function TableRow({ children }: Children): ReactElement {
   return (

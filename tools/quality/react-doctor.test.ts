@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vite-plus/test";
 import type { ReactDoctorConfig } from "react-doctor/api";
+import { describe, expect, it } from "vite-plus/test";
+
 import { field } from "./dependencies.ts";
 
 const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
