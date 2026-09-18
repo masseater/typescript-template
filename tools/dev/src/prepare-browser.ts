@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, readdir } from "node:fs/promises";
 import { NodeRuntime } from "@effect/platform-node";
@@ -76,8 +76,7 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     yield* prepareAgentBrowser();
     yield* preparePlaywright();
-    // oxlint-disable-next-line no-console
-    console.info(
+    yield* Console.info(
       JSON.stringify({
         event: "local.browser_cli_prepared",
         globalConfigurationChanged: false,
@@ -86,11 +85,13 @@ NodeRuntime.runMain(
     );
   }).pipe(
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "local.browser_cli_prepare_failed" }));
-        process.exitCode = 1;
-      }),
+      Console.error(JSON.stringify({ event: "local.browser_cli_prepare_failed" })).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = 1;
+          }),
+        ),
+      ),
     ),
   ),
   { disableErrorReporting: true },

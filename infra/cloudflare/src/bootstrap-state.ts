@@ -1,9 +1,9 @@
 import { AlchemyFailure, runAlchemy } from "./alchemy-cli.ts";
+import { Console, Effect } from "effect";
 import { OK_EXIT_CODE, reportCause } from "./secrets.ts";
 import { secretsStoreCount, stateStorePresent } from "./account-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
-import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { deploymentAccess } from "./deployment-access.ts";
 
@@ -37,8 +37,9 @@ NodeRuntime.runMain(
       if ((yield* runAlchemy(args, confidential)) !== OK_EXIT_CODE) {
         return yield* Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" }));
       }
-      // oxlint-disable-next-line no-console
-      console.info(JSON.stringify({ adopted: adopting, event: "cloudflare.state_store_ready" }));
+      yield* Console.info(
+        JSON.stringify({ adopted: adopting, event: "cloudflare.state_store_ready" }),
+      );
     }).pipe(
       Effect.catchCause(
         // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
