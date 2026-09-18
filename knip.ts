@@ -39,10 +39,11 @@ const config: KnipConfig = {
         "src/check-stacks.ts!",
         "src/check-account.ts!",
         "src/bindings.ts!",
+        "src/bootstrap-state.ts!",
         "src/database-command.ts!",
       ],
       ignoreExportsUsedInFile: true,
-      project: ["src/**/*.ts!", "!src/verification-fixture.ts!"],
+      project: ["src/**/*.ts!", "!src/account-fixture.ts!"],
     },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],

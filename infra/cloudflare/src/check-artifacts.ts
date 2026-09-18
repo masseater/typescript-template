@@ -1,5 +1,6 @@
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { Effect } from "effect";
+import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -9,7 +10,7 @@ function report(reason: string): Effect.Effect<void> {
   return Effect.sync(() => {
     // oxlint-disable-next-line no-console
     console.error(JSON.stringify({ event: "artifacts.invalid", reason }));
-    process.exitCode = 1;
+    process.exitCode = FAILED_EXIT_CODE;
   });
 }
 

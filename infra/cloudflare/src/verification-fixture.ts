@@ -1,5 +1,5 @@
 const HEX_ID_LENGTH = 32;
-const AUTH_SECRET_LENGTH = 32;
+const verificationAuthSecret = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 
 const verificationSettings = {
   accountId: "a".repeat(HEX_ID_LENGTH),
@@ -28,7 +28,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   CLOUDFLARE_API_TOKEN: "stack-verification-not-a-real-token",
   CLOUDFLARE_ZONE_ID: verificationSettings.zoneId,
   TEMPLATE_ADMIN_ORIGIN: verificationSettings.origins.admin,
-  TEMPLATE_AUTH_SECRET: "v".repeat(AUTH_SECRET_LENGTH),
+  TEMPLATE_AUTH_SECRET: verificationAuthSecret,
   TEMPLATE_FIXED_COST_USD: String(verificationSettings.budget.fixedCostUsd),
   TEMPLATE_JPY_PER_USD: String(verificationSettings.budget.jpyPerUsd),
   TEMPLATE_MAIL_FROM: verificationSettings.mailFrom,
