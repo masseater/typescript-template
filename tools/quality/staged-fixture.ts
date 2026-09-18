@@ -14,11 +14,29 @@ const run = promisify(execFile);
 
 const CONFLICTED_FILE = "conflicted.txt";
 const GIT_VARIABLE = "GIT_";
+const NO_CONFIGURATION = "/dev/null";
+const AUTHORED_AT = "@946684800 +0000";
+const IDENTITY = "quality@example.test";
 
 // oxlint-disable-next-line node/no-process-env
 const environment = process.env;
 
 type Scenario = (root: string) => Promise<void>;
+
+function gitEnvironment(root: string): NodeJS.ProcessEnv {
+  return {
+    GIT_AUTHOR_DATE: AUTHORED_AT,
+    GIT_AUTHOR_EMAIL: IDENTITY,
+    GIT_AUTHOR_NAME: "quality",
+    GIT_COMMITTER_DATE: AUTHORED_AT,
+    GIT_COMMITTER_EMAIL: IDENTITY,
+    GIT_COMMITTER_NAME: "quality",
+    GIT_CONFIG_GLOBAL: NO_CONFIGURATION,
+    GIT_CONFIG_SYSTEM: NO_CONFIGURATION,
+    HOME: root,
+    PATH: environment["PATH"] ?? "",
+  };
+}
 
 function takeGitEnvironment(): Readonly<Record<string, string | undefined>> {
   const inherited = Object.keys(environment).filter((name) => name.startsWith(GIT_VARIABLE));
@@ -30,8 +48,13 @@ function takeGitEnvironment(): Readonly<Record<string, string | undefined>> {
   return taken;
 }
 
+async function output(root: string, args: readonly string[]): Promise<string> {
+  const { stdout } = await run("git", [...args], { cwd: root, env: gitEnvironment(root) });
+  return stdout;
+}
+
 async function git(root: string, ...args: readonly string[]): Promise<void> {
-  await run("git", [...args], { cwd: root });
+  await output(root, args);
 }
 
 async function stage(root: string, filename: string, content: string): Promise<void> {
@@ -46,16 +69,7 @@ async function commit(root: string, content: string): Promise<void> {
 
 async function initialize(root: string): Promise<void> {
   await git(root, "init", "-b", "main");
-  await git(root, "config", "user.email", "quality@example.test");
-  await git(root, "config", "user.name", "quality");
-  await git(root, "config", "commit.gpgsign", "false");
-  await git(root, "config", "core.hooksPath", path.join(root, "absent-hooks"));
   await commit(root, "base\n");
-}
-
-async function unmergedIndex(root: string): Promise<boolean> {
-  const { stdout } = await run("git", ["ls-files", "--unmerged"], { cwd: root });
-  return stdout !== "";
 }
 
 async function conflict(root: string): Promise<void> {
@@ -64,7 +78,7 @@ async function conflict(root: string): Promise<void> {
   await git(root, "checkout", "main");
   await commit(root, "main\n");
   await Promise.allSettled([git(root, "merge", "side")]);
-  if (!(await unmergedIndex(root))) {
+  if ((await output(root, ["ls-files", "--unmerged"])) === "") {
     throw new Error(`git merge resolved ${CONFLICTED_FILE} instead of leaving it unmerged`);
   }
 }

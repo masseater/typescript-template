@@ -10,7 +10,7 @@ import { reportViolation } from "./lint-context.ts";
 import { specifierVisitor } from "./module-specifiers.ts";
 import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-import { testImportGraphVisitor } from "./test-import-graph.ts";
+import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 
 interface RawD1Checks {
@@ -203,6 +203,12 @@ export default definePlugin({
       create: environmentVisitor,
       meta: metadata(
         "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Effect の Schema で検証してください。",
+      ),
+    },
+    "git-environment": {
+      create: gitEnvironmentVisitor,
+      meta: metadata(
+        "テストと fixture から git を起動するときは env を明示してください。継承した GIT_DIR・GIT_INDEX_FILE・GIT_WORK_TREE を持ったままの git init・git config・git add は、一時ディレクトリではなくこのリポジトリの設定と index を書き換えます。",
       ),
     },
     layers: {

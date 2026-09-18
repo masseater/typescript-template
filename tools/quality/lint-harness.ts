@@ -7,6 +7,7 @@ type RuleName =
   | "effect-failures"
   | "effect-stack"
   | "environment-boundary"
+  | "git-environment"
   | "layers"
   | "no-internal-mocks"
   | "no-manual-memoization"
@@ -18,6 +19,7 @@ const ruleNames: readonly RuleName[] = [
   "effect-failures",
   "effect-stack",
   "environment-boundary",
+  "git-environment",
   "layers",
   "no-internal-mocks",
   "no-manual-memoization",
