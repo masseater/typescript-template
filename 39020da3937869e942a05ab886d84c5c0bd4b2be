@@ -1,0 +1,1 @@
+#348 と #359 を取り込み、main 側の process.exitCode の制限と infra の変更を残した。
