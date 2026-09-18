@@ -1,9 +1,11 @@
 const retiredPackages: Readonly<Record<string, string>> = {
   "@pulumi/": "alchemy",
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  "eslint-plugin-react-doctor": "vp run check が実行する react-doctor",
+  "oxlint-plugin-react-doctor": "vp run check が実行する react-doctor",
   pulumi: "alchemy",
   "react-intl": "Paraglide JS",
-  "smarthr-ui": "@template/ui の shadcn/ui (Base UI) 部品",
+  "smarthr-ui": "@repo/ui の shadcn/ui (Base UI) 部品",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
 

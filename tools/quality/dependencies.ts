@@ -69,5 +69,28 @@ function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): 
   );
 }
 
-export { applicationDependencyViolations, field, retiredDependencyViolations, workspaceManifests };
+const rootOnlyPackages: Readonly<Record<string, string>> = {
+  "react-doctor": "ルートの vp run check",
+};
+
+function rootOnlyDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+  return workspaces.flatMap(({ file, manifest }) => {
+    const declared = declaredDependencies(manifest);
+    return Object.entries(rootOnlyPackages)
+      .filter(([dependency]) => declared.includes(dependency))
+      .map(
+        ([dependency, runner]) =>
+          `${file}: ${dependency} はリポジトリ全体の検査なのでルートだけが宣言します。${runner} から実行してください。`,
+      );
+  });
+}
+
+export {
+  applicationDependencyViolations,
+  field,
+  retiredDependencyViolations,
+  rootOnlyDependencyViolations,
+  rootOnlyPackages,
+  workspaceManifests,
+};
 export type { WorkspaceManifest };

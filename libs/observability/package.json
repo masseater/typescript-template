@@ -1,5 +1,5 @@
 {
-  "name": "@template/observability",
+  "name": "@repo/observability",
   "private": true,
   "type": "module",
   "exports": {
@@ -9,7 +9,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@template/config": "workspace:*",
+    "@repo/config": "workspace:*",
     "effect": "catalog:",
     "web-vitals": "6.2.2"
   },

@@ -1,8 +1,11 @@
 import { ManagedRuntime } from "effect";
-import { appLayer } from "@template/runtime";
+import type { Reporting } from "@repo/observability";
+import { appLayer } from "@repo/runtime";
 import { env } from "cloudflare:workers";
 import { routes } from "#shared/telemetry/index.ts";
 
-const runtime = ManagedRuntime.make(appLayer(env, "admin", routes));
+const service = "admin";
+const reporting: Reporting = { service };
+const runtime = ManagedRuntime.make(appLayer(env, service, routes));
 
-export { runtime };
+export { reporting, runtime };

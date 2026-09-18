@@ -8,7 +8,7 @@ import {
   secureResponse,
 } from "./http.ts";
 import { Effect, Layer, ManagedRuntime, Schema } from "effect";
-import { Telemetry, httpStatus } from "@template/observability";
+import { Telemetry, httpStatus } from "@repo/observability";
 import { assert, describe, it } from "@effect/vitest";
 import type { AnyElysia } from "elysia";
 import { ProfileUpdate } from "./contracts.ts";

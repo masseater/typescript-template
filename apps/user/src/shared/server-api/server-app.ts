@@ -6,9 +6,9 @@ import {
   ProfileUpdate,
   ProfileView,
   memberPageSize,
-} from "@template/runtime/contracts";
-import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@template/db";
-import { accountApi, unavailable } from "@template/runtime/account";
+} from "@repo/runtime/contracts";
+import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@repo/db";
+import { accountApi, unavailable } from "@repo/runtime/account";
 import {
   apiRoot,
   apiRoutes,
@@ -16,14 +16,14 @@ import {
   createApi,
   readJsonBody,
   readSearchParams,
-} from "@template/runtime/http";
+} from "@repo/runtime/http";
+import { reporting, runtime } from "./runtime.ts";
 import { Effect } from "effect";
-import { httpStatus } from "@template/observability";
+import { httpStatus } from "@repo/observability";
 import { interviewApi } from "./interview-api.ts";
-import { runtime } from "./runtime.ts";
-import { verifySession } from "@template/auth";
+import { verifySession } from "@repo/auth";
 
-const api = apiRoutes(runtime, { service: "user" });
+const api = apiRoutes(runtime, reporting);
 const failures = {
   ...unavailable,
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },

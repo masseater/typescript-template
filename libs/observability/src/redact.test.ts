@@ -71,3 +71,19 @@ describe("secret redaction boundaries", () => {
     ).toStrictEqual([true, true, true, false, false]);
   });
 });
+
+describe("secrets held by a structured value", () => {
+  it("hides the whole object or array a secret name holds, not just up to its first comma", () => {
+    expect.hasAssertions();
+    const nested = redactSecrets('{"secret":{"x":1,"value":"LEAK"},"reason":"boom"}');
+    const list = redactSecrets('{"tokens":["a","LEAK"],"reason":"boom"}');
+    const empty = redactSecrets('{"tokens":[],"reason":"boom"}');
+    expect([nested, list, empty, JSON.parse(nested), JSON.parse(list)]).toStrictEqual([
+      '{"secret":"[redacted]","reason":"boom"}',
+      '{"tokens":"[redacted]","reason":"boom"}',
+      '{"tokens":"[redacted]","reason":"boom"}',
+      { reason: "boom", secret: "[redacted]" },
+      { reason: "boom", tokens: "[redacted]" },
+    ]);
+  });
+});

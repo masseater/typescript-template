@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { StructuredLogOptions } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 import { isRoutes } from "./protocol.ts";
@@ -16,7 +16,7 @@ interface TelemetryOptions extends StructuredLogOptions {
 }
 
 class Telemetry extends Context.Service<Telemetry, TelemetryShape>()(
-  "@template/observability/Telemetry",
+  "@repo/observability/Telemetry",
 ) {
   public static layer(options: TelemetryOptions): Layer.Layer<Telemetry, TelemetryInvalid> {
     const { release, routes, serviceName } = options;

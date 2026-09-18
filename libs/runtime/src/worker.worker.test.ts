@@ -1,12 +1,13 @@
 import { Effect, ManagedRuntime, Schema } from "effect";
 import { assert, describe, it } from "@effect/vitest";
+import { wikiLayer, wikiService } from "./wiki.ts";
 import type { AppServices } from "./index.ts";
 import type { Layer } from "effect";
-import type { Reporting } from "@template/observability";
+import type { Reporting } from "@repo/observability";
 import { appLayer } from "./index.ts";
 import { env } from "cloudflare:workers";
-import { httpStatus } from "@template/observability";
-import { recordingSink } from "@template/observability/testing";
+import { httpStatus } from "@repo/observability";
+import { recordingSink } from "@repo/observability/testing";
 import { serveApp } from "./worker.ts";
 
 const authSecret = "worker-test-secret-at-least-32-characters";
@@ -75,6 +76,7 @@ describe("a worker whose layer cannot be built", () => {
         assert.lengthOf(logs.stderr, 1);
         const {
           "error.cause": causeSummary,
+          "error.chain": chain,
           "error.fingerprint": fingerprint,
           "error.locations": locations,
           ...reported
@@ -88,8 +90,31 @@ describe("a worker whose layer cannot be built", () => {
         });
         assert.match(fingerprint ?? "", /^[0-9a-f]{8}$/u);
         assert.include(causeSummary ?? "", tag);
+        assert.strictEqual(chain, "");
         assert.notInclude(`${causeSummary}${locations}`, authSecret);
       }),
     );
   }
+});
+
+describe("a wiki worker whose database has not been migrated", () => {
+  it.effect("names the missing table that broke the layer", () =>
+    Effect.gen(function* program() {
+      const logs = recordingSink();
+      const response = yield* Effect.promise(async () =>
+        servedUnavailable(() => wikiLayer(environment({}), validRoutes), {
+          log: logs.sink,
+          service: wikiService,
+        }),
+      );
+      assert.strictEqual(response.status, httpStatus.serviceUnavailable);
+      const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
+      assert.notInclude(error, "oauth_resource");
+      const reported = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(
+        Effect.orDie,
+      );
+      assert.deepInclude(reported, { "error.tag": "AuthFailure", service: "wiki-server" });
+      assert.include(reported["error.chain"] ?? "", "no such table: oauth_resource");
+    }),
+  );
 });

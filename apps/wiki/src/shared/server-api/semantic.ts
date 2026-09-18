@@ -1,6 +1,6 @@
 import { Effect } from "effect";
-import { Embedder } from "@template/runtime/wiki";
-import type { EmbeddingFailed } from "@template/runtime/wiki";
+import { Embedder } from "@repo/runtime/wiki";
+import type { EmbeddingFailed } from "@repo/runtime/wiki";
 
 interface SemanticDocument {
   readonly id: string;
@@ -83,7 +83,8 @@ function exactMatchesFirst(
     return [...keywordPages];
   }
   const exact = keywordPages.filter((url) => textOf(url).toLowerCase().includes(needle));
-  return [...exact, ...keywordPages.filter((url) => !exact.includes(url))];
+  const matched = new Set(exact);
+  return [...exact, ...keywordPages.filter((url) => !matched.has(url))];
 }
 
 function rankPages(

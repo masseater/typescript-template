@@ -6,7 +6,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { layer } from "alchemy/Alchemist";
 import { reportCause } from "./secrets.ts";
-import { runRemoteDatabaseCommand } from "@template/db/remote";
+import { runRemoteDatabaseCommand } from "@repo/db/remote";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";

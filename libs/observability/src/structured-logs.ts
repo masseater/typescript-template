@@ -1,5 +1,5 @@
 import { Console, Logger, References } from "effect";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { Layer } from "effect";
 
 interface LogSink {
@@ -23,6 +23,10 @@ function messageParts(message: unknown): readonly unknown[] {
   return Array.isArray(message) ? message : [message];
 }
 
+function serviceLabel(name: Application): string {
+  return `${name}-server`;
+}
+
 function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
   const logger = Logger.make(({ fiber, logLevel, message }) => {
     const sink = options.log ?? fiber.getRef(Console.Console);
@@ -30,7 +34,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
     const line = JSON.stringify({
       event: typeof event === "string" ? event : "application.log",
       release: options.release,
-      service: `${options.serviceName}-server`,
+      service: serviceLabel(options.serviceName),
       ...fiber.getRef(References.CurrentLogAnnotations),
       ...(isRecord(attributes) ? attributes : {}),
     });
@@ -39,5 +43,5 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
   return Logger.layer([logger]);
 }
 
-export { isRecord, structuredLogs };
+export { isRecord, serviceLabel, structuredLogs };
 export type { LogSink, StructuredLogOptions };

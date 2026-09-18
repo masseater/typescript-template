@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { SecurityPage } from "@template/ui/auth";
+import { SecurityPage } from "@repo/ui/auth";
 import { createFileRoute } from "@tanstack/react-router";
 
 const Route = createFileRoute("/_member/security")({

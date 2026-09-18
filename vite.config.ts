@@ -1,7 +1,7 @@
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { lint } from "./tools/quality/lint.ts";
-import { taskInput } from "@template/config/vite";
+import { taskInput } from "@repo/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -28,15 +28,16 @@ export default defineConfig({
     tasks: {
       build: [
         "vp run -F '!typescript-template' build",
-        "vp run --filter @template/dev private-maps",
-        "vp run --filter @template/infra-cloudflare verify:artifacts",
-        "vp run --filter @template/infra-cloudflare verify:stacks",
+        "vp run --filter @repo/dev private-maps",
+        "vp run --filter @repo/infra-cloudflare verify:artifacts",
+        "vp run --filter @repo/infra-cloudflare verify:stacks",
       ],
       check: {
         command: [
           "vp check",
           "vp run knip",
           "vp run check:client",
+          "vp run check:react",
           "vp run check:staged",
           "vp run check:effect",
           "vp run -F '!typescript-template' --cache check",
@@ -47,6 +48,11 @@ export default defineConfig({
       "check:effect": {
         command: "node tools/quality/effect-diagnostics.ts",
         input: [...taskInput],
+      },
+      "check:react": {
+        command: "node tools/quality/react-doctor.ts",
+        input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+        output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {

@@ -1,9 +1,9 @@
 import { assertEligibleUser, deny } from "./policy.ts";
 import { jwt, twoFactor } from "better-auth/plugins";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
-import { findPasskeyUser } from "@template/db/security";
+import { findPasskeyUser } from "@repo/db/security";
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
 import { wikiScopes } from "./scopes.ts";

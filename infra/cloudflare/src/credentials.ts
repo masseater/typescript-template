@@ -5,11 +5,11 @@ import { lstat, open } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
-import { deploymentKeys } from "@template/config/deployment-keys";
+import { deploymentKeys } from "@repo/config/deployment-keys";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 import { projectName } from "./project.ts";
-import { secretsFile } from "@template/config/deployment";
+import { secretsFile } from "@repo/config/deployment";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 const KEY_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=/u;

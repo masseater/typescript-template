@@ -39,6 +39,32 @@ describe("reporting a runtime that could not be built", () => {
   });
 });
 
+describe("naming the cause that actually broke the layer", () => {
+  it("puts the innermost cause first so a long outer message cannot bury it", async () => {
+    expect.hasAssertions();
+    const root = new Error("D1_ERROR: no such table: oauth_resource: SQLITE_ERROR");
+    const query = new Error(`Failed query: ${"select column, ".repeat(summaryLength)}`, {
+      cause: root,
+    });
+    await expect(reportedLine(query)).resolves.toMatchObject({
+      "error.chain": expect.stringContaining(
+        "Error: D1_ERROR: no such table: oauth_resource: SQLITE_ERROR < Error: Failed query:",
+      ) as unknown,
+    });
+  });
+
+  it("keeps the fields of a plain error that broke the layer outright", async () => {
+    expect.hasAssertions();
+    const logs = recordingSink();
+    const defect = Cause.die(new Error("D1_ERROR: no such table: jwks"));
+    await Effect.runPromise(reportUnavailable(defect, { log: logs.sink, service: "wiki" }));
+    expect(logs.stderr[0]).toMatchObject({
+      "error.chain": "Error: D1_ERROR: no such table: jwks",
+      "error.fields": '{"message":"D1_ERROR: no such table: jwks","name":"Error"}',
+    });
+  });
+});
+
 describe("bounding what a runtime failure report carries", () => {
   it("says so instead of reporting empty fields when the failure cannot be serialized", async () => {
     expect.hasAssertions();

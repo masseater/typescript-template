@@ -1,11 +1,6 @@
 import { Cause, Effect, Option, Schema } from "effect";
-import type { Reporting, RequestRejected } from "@template/observability";
-import {
-  httpStatus,
-  rejectionStatus,
-  reportFailure,
-  reportUnavailable,
-} from "@template/observability";
+import type { Reporting, RequestRejected } from "@repo/observability";
+import { httpStatus, rejectionStatus, reportFailure, reportUnavailable } from "@repo/observability";
 import type { InputInvalid } from "./input-invalid.ts";
 import { jsonResponse } from "./responses.ts";
 

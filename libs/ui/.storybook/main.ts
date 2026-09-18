@@ -1,6 +1,6 @@
 import type { InlineConfig } from "vite-plus";
 import type { StorybookConfig } from "@storybook/react-vite";
-import { reactCompiler } from "@template/config/vite";
+import { reactCompiler } from "@repo/config/vite";
 import tailwindcss from "@tailwindcss/vite";
 
 function withAppTransforms(config: InlineConfig): InlineConfig {

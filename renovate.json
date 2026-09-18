@@ -78,6 +78,11 @@
     {
       "groupName": "local observability services",
       "matchManagers": ["docker-compose"]
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["Mergifyio/mergify-cli"],
+      "versioning": "loose"
     }
   ]
 }

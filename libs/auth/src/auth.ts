@@ -1,8 +1,8 @@
 import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
 import { Context, Effect, Layer } from "effect";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import { AuthFailure } from "./auth-failure.ts";
-import { Database } from "@template/db";
+import { Database } from "@repo/db";
 import { createAuth } from "./create-auth.ts";
 
 interface AuthShape {
@@ -10,7 +10,7 @@ interface AuthShape {
   readonly instance: BetterAuthInstance;
 }
 
-class Auth extends Context.Service<Auth, AuthShape>()("@template/auth/Auth") {
+class Auth extends Context.Service<Auth, AuthShape>()("@repo/auth/Auth") {
   public static layer(options: AuthOptions): Layer.Layer<Auth, AuthFailure, Database> {
     return Layer.effect(
       Auth,
