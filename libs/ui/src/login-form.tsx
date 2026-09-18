@@ -1,15 +1,16 @@
-import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
-import type { AuthenticatedHandler } from "./authenticated-handler";
-import type { ChallengeMode } from "./challenge-form";
 import { ChallengeLogin } from "./challenge-login";
 import { CredentialsForm } from "./credentials-form";
 import { PasskeyLogin } from "./passkey-login";
 import { FormColumn } from "./shared/ui/form-column";
 import { useTextInput } from "./use-text-input";
+
+import type { ReactElement } from "react";
+import type { AuthenticatedHandler } from "./authenticated-handler";
+import type { ChallengeMode } from "./challenge-form";
 
 function goHome(): void {
   globalThis.location.assign("/");

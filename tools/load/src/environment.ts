@@ -7,9 +7,8 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Effect, Schedule, Schema } from "effect";
-
 import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
+import { Effect, Schedule, Schema } from "effect";
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
   reason: Schema.Literals([

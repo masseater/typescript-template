@@ -3,10 +3,10 @@ import { chmod, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises"
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import type { Plugin } from "vite-plus";
-
-import type { Application } from "./applications.ts";
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
+
+import type { Plugin } from "vite-plus";
+import type { Application } from "./applications.ts";
 
 const PRIVATE_FILE_MODE = 0o600;
 const PRIVATE_DIRECTORY_MODE = 0o700;

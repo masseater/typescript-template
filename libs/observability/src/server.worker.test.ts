@@ -1,13 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { Layer } from "effect";
 
 import { httpStatus } from "./http-status.ts";
 import { randomHex, spanIdBytes } from "./protocol.ts";
 import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
+import { recordingSink } from "./testing.ts";
+
+import type { Layer } from "effect";
 import type { TelemetryInvalid } from "./server.ts";
 import type { LogSink } from "./structured-logs.ts";
-import { recordingSink } from "./testing.ts";
 
 interface IngestInit {
   readonly body?: string;

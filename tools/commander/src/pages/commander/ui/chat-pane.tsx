@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
-import type { ChatState } from "#shared/contract/index.ts";
 import { Heading } from "@repo/ui";
 
 import { ChatForm } from "./chat-form.tsx";
 import { ChatLog } from "./chat-log.tsx";
+
+import type { ChatState } from "#shared/contract/index.ts";
+import type { ReactElement } from "react";
 
 function ChatPane({ chat }: Readonly<{ chat: ChatState }>): ReactElement {
   return (

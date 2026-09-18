@@ -1,7 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-
 import { setUserRole } from "@repo/db/admin";
+import { Effect } from "effect";
 
 import {
   Fixture,

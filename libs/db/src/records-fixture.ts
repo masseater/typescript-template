@@ -1,10 +1,6 @@
 import { eq } from "drizzle-orm";
 import { Effect, Exit } from "effect";
 
-import type { Application, Role } from "@repo/config";
-
-import type { DatabaseFailure } from "./database-failure.ts";
-import type { Database } from "./database.ts";
 import { query } from "./database.ts";
 import {
   account,
@@ -15,6 +11,10 @@ import {
   session,
   user,
 } from "./schema.ts";
+
+import type { Application, Role } from "@repo/config";
+import type { DatabaseFailure } from "./database-failure.ts";
+import type { Database } from "./database.ts";
 
 type Records = Effect.Effect<void, DatabaseFailure, Database>;
 

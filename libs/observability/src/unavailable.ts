@@ -1,10 +1,10 @@
 import { Cause, Console, Effect, Result } from "effect";
 
-import type { ServiceName } from "@repo/config";
-
 import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
 import { isRecord, serviceLabel } from "./structured-logs.ts";
+
+import type { ServiceName } from "@repo/config";
 import type { LogSink } from "./structured-logs.ts";
 
 interface Reporting {

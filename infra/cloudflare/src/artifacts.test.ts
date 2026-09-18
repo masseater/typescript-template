@@ -16,14 +16,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
+import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/config/source-maps";
 import { Effect } from "effect";
-import type { Scope } from "effect";
+
+import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 
 import type { Application } from "@repo/config";
-import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/config/source-maps";
-
 import type { ArtifactFailure } from "./artifact-io.ts";
-import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 
 interface UserBuild {
   readonly client: string;

@@ -1,4 +1,3 @@
-import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { definePlugin } from "vite-plus/lint/plugins";
 
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
@@ -6,12 +5,14 @@ import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
-import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
 import { propertyName, staticText } from "./references.ts";
-import type { Origin } from "./references.ts";
 import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
+
+import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
+import type { Origin } from "./references.ts";
 
 const mockSources = new Set([
   "vitest",
@@ -25,6 +26,16 @@ const mockSources = new Set([
   "bun:test",
 ]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
+const sharedWaitApis = new Set(["cached", "cachedInvalidateWithTTL", "cachedWithTTL"]);
+const sharedWaitModules = new Set([
+  "Cache",
+  "ManagedRuntime",
+  "Pool",
+  "RcMap",
+  "RcRef",
+  "Resource",
+  "ScopedCache",
+]);
 const annotationApis = new Set([
   "annotateCurrentSpan",
   "annotateLogs",
@@ -120,6 +131,28 @@ function annotationVisitor(context: LintContext): Visitor {
     : originVisitor(context, isRawAnnotation);
 }
 
+function isCrossRequestState(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  if (source === undefined || !effectModule.test(source)) {
+    return false;
+  }
+  if (source !== "effect") {
+    return sharedWaitApis.has(members[0] ?? "");
+  }
+  return (
+    sharedWaitModules.has(members[0] ?? "") ||
+    (members[0] === "Effect" && sharedWaitApis.has(members[1] ?? ""))
+  );
+}
+
+function crossRequestStateVisitor(context: LintContext): Visitor {
+  const current = filename(context);
+  if (!runsInWorkerRuntime(current) || current.endsWith("/libs/runtime/src/worker-runtime.ts")) {
+    return {};
+  }
+  return originVisitor(context, isCrossRequestState);
+}
+
 function workerFetchVisitor(context: LintContext): Visitor {
   if (!runsInWorkerRuntime(filename(context))) {
     return {};
@@ -151,6 +184,12 @@ export default definePlugin({
       create: boundariesVisitor,
       meta: metadata(
         `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
+      ),
+    },
+    "cross-request-state": {
+      create: crossRequestStateVisitor,
+      meta: metadata(
+        "Worker で動くコードでは ManagedRuntime と Effect.cached 系、Cache・ScopedCache・RcRef・RcMap・Pool・Resource を使えません。どれも未完了の結果を 1 本の fiber や latch にまとめ、後から来たリクエストにそれを待たせます。待たせた継続は作った側のリクエストが終わると捨てられ、応答を返さないまま固まります。libs/runtime の workerRuntime を通してください。",
       ),
     },
     "effect-failures": {

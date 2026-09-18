@@ -1,9 +1,9 @@
-import type { Visitor } from "vite-plus/lint/plugins";
-
 import { aliasChecker, aliasVisitor } from "./alias-visitor.ts";
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { reportViolation } from "./lint-context.ts";
 import { origins, propertyName, staticText } from "./references.ts";
+
+import type { Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import type { Origin } from "./references.ts";
 
 type SourceCheck = (node: Node) => void;

@@ -2,9 +2,10 @@ import { env } from "cloudflare:workers";
 import { Layer } from "effect";
 import { TestClock } from "effect/testing";
 
-import type { AppServices } from "./index.ts";
 import { appLayer } from "./index.ts";
 import { workerRuntime } from "./worker-runtime.ts";
+
+import type { AppServices } from "./index.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
 const fixtureOrigin = "http://localhost:3001";

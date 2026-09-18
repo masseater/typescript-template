@@ -5,9 +5,10 @@ import { HttpResponse, http } from "msw";
 
 import { annotateLogs, annotateSpan } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
-import type { OtlpDestination } from "./otlp.ts";
 import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
 import { logAt } from "./severity.ts";
+
+import type { OtlpDestination } from "./otlp.ts";
 
 interface Observed {
   readonly authorization: readonly string[];

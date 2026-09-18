@@ -1,8 +1,7 @@
+import { nonceOptions } from "@repo/ui/shell";
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
-
-import { nonceOptions } from "@repo/ui/shell";
 
 import { routeTree } from "./routeTree.gen";
 

@@ -1,7 +1,3 @@
-import tailwindcss from "@tailwindcss/vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import { defineConfig } from "vite-plus";
-
 import {
   effectDiagnostics,
   lifecycle,
@@ -10,6 +6,9 @@ import {
   taskInput,
   withoutEnvFileLoader,
 } from "@repo/config/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { defineConfig } from "vite-plus";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({

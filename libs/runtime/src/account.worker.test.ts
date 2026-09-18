@@ -1,10 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { TestClock } from "effect/testing";
-
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
+import { Effect } from "effect";
+import { TestClock } from "effect/testing";
 
 import { sessionApi } from "./account.ts";
 import { fixtureOrigin, testClockRuntime } from "./app-fixture.ts";

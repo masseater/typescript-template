@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
-
 import { Field } from "./shared/ui/field";
+
+import type { ReactElement } from "react";
 import type { TextInput } from "./use-text-input";
 
 const TOTP_LENGTH = 6;

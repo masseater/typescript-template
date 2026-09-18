@@ -1,14 +1,14 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
-import type { BetterAuthOptions } from "better-auth";
+import { findPasskeyUser } from "@repo/db/security";
 import { jwt, twoFactor } from "better-auth/plugins";
 
-import type { Application } from "@repo/config";
-import { findPasskeyUser } from "@repo/db/security";
-
 import { assertEligibleUser, deny } from "./policy.ts";
-import type { Run } from "./runner.ts";
 import { wikiScopes } from "./scopes.ts";
+
+import type { Application } from "@repo/config";
+import type { BetterAuthOptions } from "better-auth";
+import type { Run } from "./runner.ts";
 
 type AuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
 

@@ -1,7 +1,8 @@
-import type { ReactElement } from "react";
+import { TableHead, TableHeader, TableRow } from "@repo/ui";
 
 import { usersTableColumns } from "#pages/users/model/users-table-columns.ts";
-import { TableHead, TableHeader, TableRow } from "@repo/ui";
+
+import type { ReactElement } from "react";
 
 function UsersTableHeader(): ReactElement {
   return (

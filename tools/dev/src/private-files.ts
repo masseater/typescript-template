@@ -1,11 +1,12 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { FileHandle } from "node:fs/promises";
 
 import { Effect } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { FileHandle } from "node:fs/promises";
 import type { LocalCommandFailure } from "./failure.ts";
 
 type FileLocation = Readonly<URL>;

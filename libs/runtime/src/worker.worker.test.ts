@@ -1,18 +1,18 @@
 import { assert, describe, it } from "@effect/vitest";
-import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { Effect, Schema } from "effect";
-import type { Layer } from "effect";
-
 import { cspNonceHeader } from "@repo/config/security";
-import type { Reporting } from "@repo/observability";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { Effect, Schema } from "effect";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
-import type { AppServices } from "./index.ts";
 import { appLayer } from "./index.ts";
 import { wikiLayer, wikiService } from "./wiki.ts";
 import { serveApp, startRoute, workerRuntime } from "./worker.ts";
+
+import type { Reporting } from "@repo/observability";
+import type { Layer } from "effect";
+import type { AppServices } from "./index.ts";
 
 const validRoutes = { "/": "home" };
 const ReportedLog = Schema.Record(Schema.String, Schema.String);

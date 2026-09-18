@@ -1,7 +1,6 @@
+import { markFailed, runCli } from "@repo/config/cli";
 import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
-
-import { markFailed, runCli } from "@repo/config/cli";
 
 import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";

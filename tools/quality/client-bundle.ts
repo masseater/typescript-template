@@ -7,11 +7,10 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Console, Effect } from "effect";
-import { build } from "vite-plus";
-
 import { markFailed, runCli } from "@repo/config/cli";
 import { serverOnlyMarkers } from "@repo/config/vite";
+import { Console, Effect } from "effect";
+import { build } from "vite-plus";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
 import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
+import { configuredLintRules } from "./lint.ts";
 import plugin from "./rules.ts";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
@@ -86,6 +87,26 @@ const forbiddenCode = [
     'import { Effect } from "effect"; export const run = (e: never) => Effect.withLogSpan(e, "x");',
     "annotations",
   ],
+  [
+    "apps/user/src/probe.ts",
+    'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const cache = () => Effect.cachedWithTTL(Effect.void, "1 minute");',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { cachedWithTTL } from "effect/Effect"; export const cache = () => cachedWithTTL;',
+    "cross-request-state",
+  ],
+  [
+    "apps/admin/src/probe.ts",
+    'import { RcMap } from "effect"; export const shared = () => RcMap;',
+    "cross-request-state",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [
@@ -162,7 +183,7 @@ describe("project lint rules on dependency boundaries", () => {
   it("every project rule is tested and enabled", () => {
     expect.hasAssertions();
     expect(Object.keys(plugin.rules).toSorted()).toStrictEqual([...ruleNames].toSorted());
-    expect(field(field(configs["../../vite.config.ts"], "lint"), "rules")).toMatchObject(
+    expect(configuredLintRules).toMatchObject(
       Object.fromEntries(ruleNames.map((rule) => [`project/${rule}`, "error"])),
     );
   });

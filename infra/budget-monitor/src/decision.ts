@@ -1,8 +1,9 @@
 import { Effect } from "effect";
 
+import { fail } from "./config.ts";
+
 import type { UsageSnapshot } from "./billing.ts";
 import type { BudgetConfig } from "./config.ts";
-import { fail } from "./config.ts";
 
 const NO_ALERT_LEVEL = 0;
 const WARNING_LEVEL = 80;

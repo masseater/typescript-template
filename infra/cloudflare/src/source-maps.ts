@@ -1,17 +1,18 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { access, chmod, copyFile, lstat, mkdir, readFile, readdir } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { Effect, Schema } from "effect";
-
-import type { Application } from "@repo/config";
 import { sourceMapDirectories, sourceMapManifest } from "@repo/config/source-maps";
+import { Effect, Schema } from "effect";
 
 import { ArtifactFailure, fail, io } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Dirent } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Application } from "@repo/config";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;

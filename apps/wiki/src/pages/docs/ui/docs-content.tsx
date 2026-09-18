@@ -5,11 +5,11 @@ import {
   DocsTitle,
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents from "fumadocs-ui/mdx";
-import type { ReactElement } from "react";
-
-import type { docs } from "#shared/content/index.ts";
 
 import { Mermaid } from "./mermaid.tsx";
+
+import type { docs } from "#shared/content/index.ts";
+import type { ReactElement } from "react";
 
 const mdxComponents = { ...defaultMdxComponents, Mermaid };
 

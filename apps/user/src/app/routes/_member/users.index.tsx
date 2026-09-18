@@ -6,7 +6,6 @@ import {
   loadMembers,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
-
 import { UsersRoute } from "./-users-route.tsx";
 
 // oxlint-disable-next-line eslint/sort-keys

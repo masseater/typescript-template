@@ -1,11 +1,12 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { Scope } from "effect";
 import { HttpResponse, http } from "msw";
-import type { SetupServer } from "msw/node";
 import { setupServer } from "msw/node";
 
 import { findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
+
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
 const FORBIDDEN_STATUS = 403;

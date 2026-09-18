@@ -6,8 +6,11 @@ import { SQLiteDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import type { EmailAddress } from "./bootstrap-statement.ts";
+import { remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure, fail } from "./remote-input.ts";
+
+import type { EmailAddress } from "./bootstrap-statement.ts";
+import type { MigrationStatusTarget } from "./remote-input.ts";
 
 interface RemoteQuery {
   readonly params: readonly (string | number | null)[];
@@ -38,6 +41,9 @@ const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type 
 
 const MIGRATIONS_TABLE =
   "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric, name text, applied_at TEXT)";
+
+const MIGRATIONS_TABLE_PRESENT =
+  "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'";
 
 const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRemoteMigrations() {
   const migrations = yield* Effect.try({
@@ -106,6 +112,24 @@ const migrateDatabase = Effect.fn("migrateDatabase")(function* migrateDatabase(
   return migrations.length - applied;
 });
 
+const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
+  executor: DatabaseExecutor,
+  migrations: readonly Migration[],
+) {
+  const [recorded] = yield* executor.batch([{ params: [], sql: MIGRATIONS_TABLE_PRESENT }]);
+  if (recorded === undefined) {
+    return yield* fail("REMOTE_RESPONSE_INVALID");
+  }
+  const applied = recorded.length === 0 ? 0 : yield* readHistory(executor, migrations);
+  return { applied, declared: migrations.length, pending: migrations.length - applied } as const;
+});
+
+const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(
+  target: typeof MigrationStatusTarget.Type,
+) {
+  return yield* migrationStatus(remoteExecutor(target), yield* loadRemoteMigrations());
+});
+
 const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapDatabase(
   executor: DatabaseExecutor,
   email: typeof EmailAddress.Type,
@@ -131,7 +155,9 @@ export {
   APPLICATION_TABLES,
   MigrationFiles,
   bootstrapDatabase,
+  MIGRATIONS_TABLE_PRESENT,
   loadRemoteMigrations,
   migrateDatabase,
+  readMigrationStatus,
 };
 export type { DatabaseExecutor, RemoteQuery };

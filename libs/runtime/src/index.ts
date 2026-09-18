@@ -1,17 +1,25 @@
-import { Effect, Layer } from "effect";
-
 import { Auth } from "@repo/auth";
-import type { AuthFailure } from "@repo/auth";
-import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
 import { readConfig, sendVerificationEmail } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
-import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
+import { Effect, Layer } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
+import { DatabaseHealth } from "./database-health.ts";
 
-type AppServices = AppOrigin | Assets | Auth | Database | Telemetry | TelemetryFlusher;
+import type { AuthFailure } from "@repo/auth";
+import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
+import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
+
+type AppServices =
+  | AppOrigin
+  | Assets
+  | Auth
+  | Database
+  | DatabaseHealth
+  | Telemetry
+  | TelemetryFlusher;
 
 function configuredAppLayer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -19,12 +27,13 @@ function configuredAppLayer(
   audience: Application,
   routes: Readonly<Record<string, string>>,
 ): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> {
+  const database = DatabaseHealth.layer.pipe(Layer.provideMerge(Database.layer(config.DB)));
   const auth = Auth.layer({
     audience,
     baseURL: config.APP_ORIGIN,
     secret: config.AUTH_SECRET,
     sendVerificationEmail: (message) => sendVerificationEmail(config, message),
-  }).pipe(Layer.provideMerge(Database.layer(config.DB)));
+  }).pipe(Layer.provideMerge(database));
   const otlp =
     config.OTLP_ENDPOINT === undefined || config.OTLP_ENABLED === "false"
       ? undefined

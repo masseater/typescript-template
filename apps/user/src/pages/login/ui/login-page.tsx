@@ -1,8 +1,9 @@
-import type { ReactElement } from "react";
-
-import { CardPage } from "#shared/ui/index.ts";
 import { TextLink } from "@repo/ui";
 import { LoginForm } from "@repo/ui/auth";
+
+import { CardPage } from "#shared/ui/index.ts";
+
+import type { ReactElement } from "react";
 
 function LoginPage({ destination }: Readonly<{ destination: string }>): ReactElement {
   function enter(): void {
