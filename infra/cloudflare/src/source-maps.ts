@@ -1,17 +1,16 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { access, chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
+import { access, chmod, copyFile, lstat, mkdir, readFile, readdir } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import type { Application } from "@repo/config";
-import { sourceMapDirectories } from "@repo/config/source-maps";
+import { sourceMapDirectories, sourceMapManifest } from "@repo/config/source-maps";
 
-import { fail, io } from "./artifact-io.ts";
-import type { ArtifactFailure } from "./artifact-io.ts";
+import { ArtifactFailure, fail, io } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
@@ -91,15 +90,19 @@ function fileExists(file: string): Effect.Effect<boolean> {
   );
 }
 
+const EmittedMaps = Schema.fromJsonString(Schema.Array(Schema.String).check(Schema.isMinLength(1)));
+
 const requireClientSourceMaps = Effect.fn("requireClientSourceMaps")(
-  function* requireClientSourceMaps(
-    repositoryRoot: string,
-    target: Application,
-    scripts: readonly string[],
-  ) {
+  function* requireClientSourceMaps(repositoryRoot: string, target: Application) {
     const { client } = sourceMapDirectories(repositoryRoot, target);
+    const declared = yield* io(async () =>
+      readFile(sourceMapManifest(repositoryRoot, target), "utf-8"),
+    ).pipe(
+      Effect.flatMap(Schema.decodeUnknownEffect(EmittedMaps)),
+      Effect.mapError(() => new ArtifactFailure({ code: "source_maps_missing" })),
+    );
     const present = yield* Effect.all(
-      scripts.map((script) => fileExists(path.join(client, `${script}.map`))),
+      declared.map((file) => fileExists(path.join(client, file))),
       { concurrency: "unbounded" },
     );
     if (present.includes(false)) {

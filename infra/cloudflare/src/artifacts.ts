@@ -238,13 +238,7 @@ const materialize = Effect.fn("materialize")(function* materialize(
   if (mode === "describe") {
     return;
   }
-  yield* requireClientSourceMaps(
-    place.repository,
-    place.target,
-    artifacts.clientFiles
-      .filter((file) => /\.m?js$/u.test(file))
-      .map((file) => path.relative(output.client, file)),
-  );
+  yield* requireClientSourceMaps(place.repository, place.target);
   yield* Effect.all([
     stageFiles(output.client, artifacts.clientDirectory, artifacts.clientFiles),
     stageFiles(

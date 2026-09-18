@@ -20,7 +20,7 @@ import { Effect } from "effect";
 import type { Scope } from "effect";
 
 import type { Application } from "@repo/config";
-import { sourceMapDirectories } from "@repo/config/source-maps";
+import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/config/source-maps";
 
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
@@ -67,6 +67,7 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
   });
   await writeFiles(sourceMapDirectories(root, "user").client, {
     "app.js.map": "private source map",
+    [SOURCE_MAP_MANIFEST]: JSON.stringify(["app.js.map"]),
   });
   await writeFiles(server, {
     ".dev.vars": "AUTH_SECRET=private",
@@ -145,6 +146,29 @@ it.effect("resolves the upload without writing anything outside a deployment", (
     assert.deepStrictEqual(
       yield* run(async () => readdir(path.dirname(sourceMapDirectories(root, "user").client))),
       ["client"],
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses to publish a build that never recorded what its maps were", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    const kept = sourceMapDirectories(root, "user").client;
+    yield* run(async () => rm(path.join(kept, SOURCE_MAP_MANIFEST)));
+    assert.strictEqual(yield* failureCode(root, "user"), "source_maps_missing");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("publishes a build whose bundler emitted no map for a generated chunk", () =>
+  Effect.gen(function* program() {
+    const { client, root } = yield* userBuild;
+    yield* run(async () =>
+      writeFiles(client, { "rolldown-runtime.js": "export const helper = 1;" }),
+    );
+    const artifacts = yield* load(root, "user");
+    assert.include(
+      artifacts.clientFiles.map((file) => path.basename(file)),
+      "rolldown-runtime.js",
     );
   }).pipe(Effect.scoped),
 );
