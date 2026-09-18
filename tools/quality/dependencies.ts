@@ -24,9 +24,21 @@ const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: true, import: "default" },
 );
 
+function repositoryPath(key: string): string {
+  const resolved = ["tools", "quality"];
+  for (const segment of key.split("/")) {
+    if (segment === "..") {
+      resolved.pop();
+    } else if (segment !== ".") {
+      resolved.push(segment);
+    }
+  }
+  return resolved.join("/");
+}
+
 const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifestModules).map(
   ([key, manifest]: readonly [string, unknown]) => {
-    const file = key.replace(/^(?:\.\.\/)+/u, "");
+    const file = repositoryPath(key);
     const [area = ""] = file.split("/");
     return { area, file, manifest };
   },
