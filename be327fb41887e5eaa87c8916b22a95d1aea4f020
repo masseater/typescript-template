@@ -1,0 +1,1 @@
+CI が落ちた 3 つの不変条件テストを新しい設定の形に合わせ、project/no-internal-mocks と project/test-import-graph を残した。#325 の新しい文言から AGENTS.md と skill を作り直した。
