@@ -1,15 +1,15 @@
-import { Cause, Effect, Schema } from "effect";
+import { Cause, Console, Effect, Schema } from "effect";
 import { applications, grants } from "@template/config";
 import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import type { Application } from "@template/config";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
+import { markFailed } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
@@ -202,8 +202,9 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   const expected = yield* expectedStack(stack);
   const matches = isDeepStrictEqual(inventory, expected);
   if (!matches) {
-    // oxlint-disable-next-line no-console
-    console.error(JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }));
+    yield* Console.error(
+      JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }),
+    );
   }
   return matches;
 });
@@ -212,34 +213,27 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
-      process.exitCode = FAILED_EXIT_CODE;
+      yield* markFailed;
       return;
     }
-    // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
+    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(
-          JSON.stringify({
-            code: failure.code,
-            detail: failure.detail,
-            event: "stacks.invalid",
-            stack: failure.stack,
-          }),
-        );
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(
+        JSON.stringify({
+          code: failure.code,
+          detail: failure.detail,
+          event: "stacks.invalid",
+          stack: failure.stack,
+        }),
+      ).pipe(Effect.andThen(markFailed)),
     ),
-    Effect.catchCause((cause) =>
-      Effect.sync(() => {
-        const detail = describeCause(Cause.squash(cause));
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ detail, event: "stacks.invalid" }));
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
-    ),
+    Effect.catchCause((cause) => {
+      const detail = describeCause(Cause.squash(cause));
+      return Console.error(JSON.stringify({ detail, event: "stacks.invalid" })).pipe(
+        Effect.andThen(markFailed),
+      );
+    }),
   ),
   { disableErrorReporting: true },
 );
