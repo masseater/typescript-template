@@ -1,0 +1,1 @@
+knip: auth の未使用 @effect/vitest を外し、monitor 3 Worker に @repo/observability を依存として足す
