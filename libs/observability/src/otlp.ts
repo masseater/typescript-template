@@ -18,11 +18,7 @@ interface OtlpOptions {
 }
 
 const trailingSlashes = /\/+$/u;
-const flushTelemetry = Effect.flatMap(
-  OtlpExporter.Flusher,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (flusher) => flusher.flush,
-);
+const flushTelemetry = Effect.flatMap(OtlpExporter.Flusher, (flusher) => flusher.flush);
 const transport = Layer.merge(OtlpSerialization.layerJson, FetchHttpClient.layer);
 
 function signalUrl(endpoint: string, signal: string): string {

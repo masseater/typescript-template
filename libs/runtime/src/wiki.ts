@@ -15,7 +15,6 @@ function wikiLayer(
 ): Layer.Layer<WikiServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
   return Layer.unwrap(
     readWikiConfig(env).pipe(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.map((config) => {
         const embedder = Embedder.of({
           available: config.AI !== undefined,

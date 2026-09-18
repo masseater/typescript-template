@@ -39,7 +39,6 @@ function observed(otlp?: OtlpDestination): Effect.Effect<Observed> {
   const seen = { authorization: [] as string[], logs: [] as unknown[], traces: [] as unknown[] };
   const lines: unknown[] = [];
   function collect(signal: "logs" | "traces"): Parameters<typeof http.post>[1] {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     return async ({ request }) => {
       seen.authorization.push(request.headers.get("authorization") ?? "");
       seen[signal].push(await request.json());
@@ -66,7 +65,6 @@ function observed(otlp?: OtlpDestination): Effect.Effect<Observed> {
         yield* flushTelemetry;
         return { ...seen, lines, traceparent: response.headers.get("traceparent") ?? "" };
       }).pipe(Effect.provide(telemetry), Effect.orDie),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();
@@ -76,7 +74,6 @@ function observed(otlp?: OtlpDestination): Effect.Effect<Observed> {
 
 function traceIds(payload: readonly unknown[]): readonly string[] {
   const matches = JSON.stringify(payload).matchAll(exportedTraceIds);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return Array.from(matches, (match) => match.groups?.["traceId"] ?? "");
 }
 

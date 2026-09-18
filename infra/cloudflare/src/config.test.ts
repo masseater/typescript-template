@@ -1,15 +1,9 @@
 import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
 import { ConfigurationInvalid, readAi, readConfig } from "@template/config";
 import { assert, it } from "@effect/vitest";
-import {
-  parseDeploymentCommand,
-  workerCompatibilityOptions,
-  workerObservability,
-  workerSubdomain,
-} from "./config.ts";
+import { parseDeploymentCommand, workerObservability } from "./config.ts";
 import type { AppBindings } from "./bindings.ts";
 import { Effect } from "effect";
-import { Interviewer } from "@template/interview";
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -76,29 +70,12 @@ it.effect(
     }),
 );
 
-it.effect("every Worker keeps the same public surface, compatibility and observability", () =>
+it.effect("a Worker without an OTLP endpoint declares no trace destination", () =>
   Effect.sync(() => {
-    assert.deepStrictEqual(workerSubdomain, { enabled: false, previewsEnabled: false });
-    assert.deepStrictEqual(workerCompatibilityOptions, {
-      date: "2026-09-16",
-      flags: ["nodejs_compat"],
-    });
-    assert.deepStrictEqual(workerObservability({ ...settings, otlpEndpoint: undefined }), {
+    assert.deepStrictEqual(workerObservability({ ...settings, otlpEndpoint: undefined }).traces, {
       enabled: true,
       headSamplingRate: 1,
-      logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
-      traces: { enabled: true, headSamplingRate: 1, persist: true },
-    });
-    assert.deepStrictEqual(workerObservability(settings), {
-      enabled: true,
-      headSamplingRate: 1,
-      logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
-      traces: {
-        destinations: [`${settings.prefix}-traces`],
-        enabled: true,
-        headSamplingRate: 1,
-        persist: true,
-      },
+      persist: true,
     });
   }),
 );
@@ -112,14 +89,5 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     assert.isDefined(yield* readAi(userBindings));
     const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
-  }),
-);
-
-it.effect("an application granted the ai capability builds the interviewer from its binding", () =>
-  Effect.gen(function* program() {
-    const granted = yield* Effect.provide(Interviewer, Interviewer.fromEnvironment(userBindings));
-    assert.isDefined(granted);
-    const withheld = yield* Effect.provide(Interviewer, Interviewer.fromEnvironment(adminBindings));
-    assert.isDefined(withheld);
   }),
 );

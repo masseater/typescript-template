@@ -40,28 +40,23 @@ function classifyDenial(
 type AuthSession = Awaited<ReturnType<BetterAuthInstance["api"]["getSession"]>>;
 
 function authSession(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   headers: Headers,
 ): Effect.Effect<
   AuthSession,
   AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired,
   Auth
 > {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return authPromise(async (instance): Promise<AuthSession> =>
     instance.api.getSession({ headers, query: { disableCookieCache: true } }),
   ).pipe(Effect.mapError(classifyDenial));
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function handleAuthRequest(request: Request): Effect.Effect<Response, AuthFailure, Auth> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return authPromise(async (instance) => instance.handler(request));
 }
 
 const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToken(
   token: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   headers: Headers,
 ) {
   const { instance } = yield* Auth;

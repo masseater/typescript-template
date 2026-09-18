@@ -66,7 +66,6 @@ function serviceName(attributes: readonly (typeof Attribute.Type)[]): string {
 const receiverJson = Effect.fn("receiverJson")(function* receiverJson(url: string) {
   const response = yield* Effect.tryPromise({
     catch: () => new ReceiverFailure({ reason: "query_failed" }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(url, {
         headers: { accept: "application/json" },

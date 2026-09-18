@@ -7,7 +7,6 @@ function ToastViewport(): ReactElement {
   return (
     <ToastPrimitive.Portal>
       <ToastPrimitive.Viewport className="fixed right-4 bottom-4 z-50 flex w-full max-w-toast flex-col gap-2">
-        {/* oxlint-disable-next-line typescript/prefer-readonly-parameter-types */}
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} />
         ))}

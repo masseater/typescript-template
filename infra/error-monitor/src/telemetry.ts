@@ -70,7 +70,6 @@ function queryBody(window: QueryWindow): string {
 function queryTelemetry(window: QueryWindow): Effect.Effect<Response, ErrorMonitorFailure> {
   return Effect.tryPromise({
     catch: failure("telemetry_http_failed"),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(
         `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
