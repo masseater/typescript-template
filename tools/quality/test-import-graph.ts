@@ -126,4 +126,41 @@ function testImportGraphVisitor(context: LintContext): Visitor {
   };
 }
 
-export { testImportGraphVisitor };
+const fixtureOrTestFile = /(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$/u;
+const gitExecutable = /(?:^|\/)git(?:\.exe)?$/u;
+
+function startsGit(context: LintContext, node: NodeOf<"CallExpression">): boolean {
+  const [command] = node.arguments;
+  if (command === undefined || command.type === "SpreadElement") {
+    return false;
+  }
+  const text = staticText(context, command);
+  return text !== undefined && gitExecutable.test(text);
+}
+
+function declaresEnvironment(context: LintContext, node: Node): boolean {
+  return (
+    node.type === "ObjectExpression" &&
+    node.properties.some(
+      (property) => property.type === "Property" && propertyName(context, property) === "env",
+    )
+  );
+}
+
+function gitEnvironmentVisitor(context: LintContext): Visitor {
+  if (!fixtureOrTestFile.test(context.filename.replaceAll("\\", "/"))) {
+    return {};
+  }
+  return {
+    CallExpression(node: Node): void {
+      if (node.type !== "CallExpression" || !startsGit(context, node)) {
+        return;
+      }
+      if (!node.arguments.some((argument) => declaresEnvironment(context, argument))) {
+        reportViolation(context, node);
+      }
+    },
+  };
+}
+
+export { gitEnvironmentVisitor, testImportGraphVisitor };
