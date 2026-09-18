@@ -236,6 +236,11 @@ const lint = {
             name: ["PluginOption", "InlineConfig"],
             package: "@voidzero-dev/vite-plus-core",
           },
+          {
+            from: "package",
+            name: ["Browser", "BrowserContext", "Locator", "Page"],
+            package: "playwright-core",
+          },
           { from: "package", name: ["ReactElement"], package: "react" },
           { from: "package", name: ["ToastObject"], package: "@base-ui/react" },
           { from: "package", name: ["Readable"], package: "node" },
