@@ -1,4 +1,4 @@
-import { Duration, Effect, Layer } from "effect";
+import { Duration, Effect, Layer, Logger } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 import type { HttpClientError, HttpClientResponse } from "effect/unstable/http";
 import {
@@ -9,6 +9,7 @@ import {
 } from "effect/unstable/observability";
 
 import { httpStatus } from "./http-status.ts";
+import { redactedLogger } from "./structured-logs.ts";
 
 interface OtlpDestination {
   readonly endpoint: string;
@@ -66,9 +67,15 @@ function otlpExport(options: OtlpOptions): Layer.Layer<TelemetryFlusher> {
     headers: otlp.authorization === undefined ? undefined : { authorization: otlp.authorization },
     resource: { serviceName: options.service, serviceVersion: options.release },
   };
+  const logs = Effect.map(
+    OtlpLogger.make({ ...shared, url: otlpSignalUrl(otlp.endpoint, "logs") }),
+    redactedLogger,
+  );
   return Layer.mergeAll(
     OtlpTracer.layer({ ...shared, url: otlpSignalUrl(otlp.endpoint, "traces") }),
-    OtlpLogger.layer({ ...shared, url: otlpSignalUrl(otlp.endpoint, "logs") }),
+    Logger.layer([logs], { mergeWithExisting: true }).pipe(
+      Layer.provideMerge(OtlpExporter.layerFlusher),
+    ),
   ).pipe(Layer.provide(transport));
 }
 

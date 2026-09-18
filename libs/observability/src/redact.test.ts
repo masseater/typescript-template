@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { isSecretKey, redactSecrets } from "./redact.ts";
+import { redactSecrets, redactedField } from "./redact.ts";
 
 const secret = "worker-test-secret-at-least-32-characters";
 
@@ -67,9 +67,26 @@ describe("secret redaction boundaries", () => {
     expect.hasAssertions();
     expect(
       ["AUTH_SECRET", "clientSecret", "TEMPLATE_PREFIX", "reason", "query"].map((key) =>
-        isSecretKey(key),
+        redactedField(key, { nested: secret }),
       ),
-    ).toStrictEqual([true, true, true, false, false]);
+    ).toStrictEqual([
+      "[redacted]",
+      "[redacted]",
+      "[redacted]",
+      { nested: secret },
+      { nested: secret },
+    ]);
+  });
+});
+
+describe("the field rule every log line is written through", () => {
+  it("keeps the name and the message of an error a field holds, minus the secret", () => {
+    expect.hasAssertions();
+    expect(
+      JSON.stringify({ cause: new Error(`AUTH_SECRET="${secret}" is rejected`) }, redactedField),
+    ).toBe(
+      String.raw`{"cause":{"message":"AUTH_SECRET=\"[redacted]\" is rejected","name":"Error"}}`,
+    );
   });
 });
 

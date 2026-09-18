@@ -2,7 +2,7 @@ import { Cause, Console, Effect, Result } from "effect";
 
 import type { Application } from "@repo/config";
 
-import { isSecretKey, redactSecrets, redactedValue } from "./redact.ts";
+import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
 import { isRecord, serviceLabel } from "./structured-logs.ts";
 import type { LogSink } from "./structured-logs.ts";
@@ -35,13 +35,8 @@ function bounded(value: string): string {
 }
 
 function loggableField(key: string, value: unknown): unknown {
-  if (isSecretKey(key)) {
-    return redactedValue;
-  }
-  if (value instanceof Error) {
-    return { message: value.message, name: value.name };
-  }
-  return typeof value === "string" ? scanned(value) : value;
+  const field = redactedField(key, value);
+  return typeof field === "string" ? field.slice(0, scanLength) : field;
 }
 
 function errorFields(error: unknown): string {
