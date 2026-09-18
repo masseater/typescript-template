@@ -1,16 +1,23 @@
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite-plus";
 
-import { effectDiagnostics, reactCompiler, taskInput } from "@repo/config/vite";
+import {
+  effectDiagnostics,
+  reactCompiler,
+  startOptions,
+  taskInput,
+  withoutEnvFileLoader,
+} from "@repo/config/vite";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
-  plugins: [tailwindcss(), reactCompiler()],
+  plugins: [tailwindcss(), ...withoutEnvFileLoader(tanstackStart(startOptions)), reactCompiler()],
   run: {
     tasks: {
       ...effectDiagnostics,
       build: { command: "vp build", input: [...taskInput, "!dist"] },
-      start: { cache: false, command: "node src/cli.ts", dependsOn: ["build"] },
+      start: { cache: false, command: "node src/app/cli.ts", dependsOn: ["build"] },
     },
   },
 });

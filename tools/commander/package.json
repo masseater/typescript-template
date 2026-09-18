@@ -6,17 +6,22 @@
     "#*": "./src/*"
   },
   "scripts": {
-    "check": "steiger src/ui --fail-on-warnings"
+    "check": "steiger src --fail-on-warnings"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@tanstack/react-query": "5.103.1",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "catalog:",
     "effect": "catalog:",
     "open": "11.0.4",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "srvx": "1.0.5"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
