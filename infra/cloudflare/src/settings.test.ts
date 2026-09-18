@@ -9,11 +9,7 @@ import { verificationSettings } from "./verification-fixture.ts";
 const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;
 
-function rejects(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  schema: Schema.Codec<unknown, unknown>,
-  value: unknown,
-): Effect.Effect<void> {
+function rejects(schema: Schema.Codec<unknown, unknown>, value: unknown): Effect.Effect<void> {
   return Schema.decodeUnknownEffect(schema)(value).pipe(Effect.flip, Effect.asVoid, Effect.orDie);
 }
 

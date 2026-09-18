@@ -6,7 +6,6 @@ import { itemVariants } from "./dropdown-menu-item-variants";
 
 type DropdownMenuLinkItemProps = Children & Readonly<{ render: ReactElement }>;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function DropdownMenuLinkItem({ children, render }: DropdownMenuLinkItemProps): ReactElement {
   return (
     <MenuPrimitive.LinkItem

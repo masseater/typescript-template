@@ -59,12 +59,9 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
   let removed = 0;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   function strip(options: readonly PluginOption[]): PluginOption[] {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     return options.flatMap((plugin: PluginOption): PluginOption[] => {
       if (Array.isArray(plugin)) {
         return [strip(plugin)];
@@ -101,16 +98,38 @@ function appServer(app: Application): ServerOptions {
   };
 }
 
+const taskInput = [
+  { auto: true },
+  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+] as const;
+
 const appRun = {
-  tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },
+  tasks: { build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
+
+const monitorWorker = {
+  pack: {
+    deps: {
+      alwaysBundle: ["effect", "@template/monitor"],
+      onlyBundle: ["effect", "@template/monitor"],
+    },
+    entry: { index: "src/worker.ts" },
+    format: "esm",
+    outExtensions: (): { js: string } => ({ js: ".js" }),
+    platform: "browser",
+    target: "es2023",
+  },
+  run: { tasks: { build: { command: "vp pack", input: [...taskInput] } } },
+} satisfies UserConfig;
 
 export {
   appRun,
   appServer,
+  monitorWorker,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
   startOptions,
+  taskInput,
   withoutEnvFileLoader,
 };

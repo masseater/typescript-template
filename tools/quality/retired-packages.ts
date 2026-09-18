@@ -61,4 +61,4 @@ function retiredImportPatterns(): RetiredImportPattern[] {
   }));
 }
 
-export { importPatterns, retiredImportPatterns, retiredPackages };
+export { retiredImportPatterns, retiredPackages };

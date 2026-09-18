@@ -35,7 +35,6 @@ type UserListResult = AsyncResult.AsyncResult<ListedUsers, Readonly<{ message: s
 async function fetchUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers> {
   const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
   const listed = users.map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ({ createdAt, email, emailVerified, id, name, role, twoFactorEnabled }) => ({
       email,
       emailVerified,

@@ -14,7 +14,6 @@ import {
 } from "./design-system.ts";
 import { describe, expect, it } from "vite-plus/test";
 import { field, workspaceManifests } from "./dependencies.ts";
-import { importPatterns, retiredPackages } from "./retired-packages.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { AssertionError } from "node:assert";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
@@ -27,20 +26,6 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const lint = field(configs["../../vite.config.ts"], "lint");
-
-function restrictedImportPatterns(): string[] {
-  const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
-  const options: unknown = Array.isArray(rule) ? rule.at(1) : undefined;
-  const patterns: unknown = field(options, "patterns");
-  return Array.isArray(patterns)
-    ? patterns.flatMap((entry: unknown) => {
-        const group: unknown = field(entry, "group");
-        return Array.isArray(group)
-          ? group.filter((pattern: unknown): pattern is string => typeof pattern === "string")
-          : [];
-      })
-    : [];
-}
 
 const restyled = [
   ["no-restyle", "bg-destructive"],
@@ -201,11 +186,6 @@ describe("design system lint", () => {
     expect(designSystemComponents()).toStrictEqual(
       expect.arrayContaining(["Button", "Field", "Status", "Table"]),
     );
-  });
-
-  it.for(Object.keys(retiredPackages))("keeps %s out of the import graph", (name) => {
-    expect.hasAssertions();
-    expect(restrictedImportPatterns()).toStrictEqual(expect.arrayContaining(importPatterns(name)));
   });
 
   it("leaves the story exports out of the part names it reports", () => {

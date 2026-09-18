@@ -28,16 +28,8 @@ NodeRuntime.runMain(
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,
-      Effect.catchCause(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (cause) => reportCause(EVENT, cause, confidential),
-      ),
+      Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );
-  }).pipe(
-    Effect.catchCause(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause(EVENT, cause),
-    ),
-  ),
+  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
   { disableErrorReporting: true },
 );

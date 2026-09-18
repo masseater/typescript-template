@@ -1,7 +1,8 @@
 import { applications } from "@template/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
-import { retiredImportPatterns } from "./tools/quality/retired-packages.ts";
+import { lint } from "./tools/quality/lint.ts";
+import { taskInput } from "@template/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -22,208 +23,7 @@ export default defineConfig({
       "**/dist/**",
     ],
   },
-  lint: {
-    categories: {
-      correctness: "error",
-      nursery: "error",
-      pedantic: "error",
-      perf: "error",
-      restriction: "error",
-      style: "error",
-      suspicious: "error",
-    },
-    ignorePatterns: [
-      "**/mockServiceWorker.js",
-      "**/routeTree.gen.ts",
-      "**/dist/**",
-      "**/node_modules/**",
-      ".local/**",
-      ".local-agents/**",
-      "**/.wrangler/**",
-    ],
-    jsPlugins: [
-      "./tools/quality/rules.ts",
-      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
-      "@shadcn/lint",
-    ],
-    options: {
-      denyWarnings: true,
-      reportUnusedDisableDirectives: "error",
-      respectEslintDisableDirectives: false,
-      typeAware: true,
-      typeCheck: true,
-    },
-    overrides: [
-      {
-        files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts", "libs/runtime/src/account.ts"],
-        rules: {
-          "typescript/explicit-function-return-type": "off",
-          "typescript/explicit-module-boundary-types": "off",
-        },
-      },
-      {
-        files: ["libs/ui/src/shared/ui/**"],
-        rules: {
-          "react/forbid-component-props": ["error", { forbid: ["style"] }],
-          "shadcn/no-restyle": "off",
-        },
-      },
-      {
-        files: ["infra/cloudflare/src/**"],
-        rules: {
-          "eslint/new-cap": [
-            "error",
-            {
-              capIsNewExceptionPattern:
-                "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers)\\.",
-              capIsNewExceptions: ["DurableObject", "Stack", "Worker"],
-            },
-          ],
-        },
-      },
-      {
-        files: ["**/*.test.ts", "**/*-fixture.ts"],
-        plugins: ["vitest"],
-        rules: {
-          "no-empty-pattern": ["error", { allowObjectPatternsAsParameters: true }],
-          "vitest/no-importing-vitest-globals": "off",
-          "vitest/no-standalone-expect": [
-            "error",
-            { additionalTestBlockFunctions: ["it", "it.for", "test", "test.for"] },
-          ],
-          "vitest/prefer-to-be-falsy": "off",
-          "vitest/prefer-to-be-truthy": "off",
-          "vitest/require-test-timeout": "off",
-          "vitest/valid-expect": ["error", { maxArgs: 2 }],
-        },
-      },
-      {
-        files: [
-          "libs/ui/src/shared/ui/table.stories.tsx",
-          "libs/ui/src/shared/ui/table-cell.stories.tsx",
-          "libs/ui/src/shared/ui/table-head.stories.tsx",
-        ],
-        rules: { "react/jsx-max-depth": "off" },
-      },
-      {
-        files: ["**/*.stories.tsx"],
-        rules: {
-          "import/group-exports": "off",
-          "import/no-relative-parent-imports": "off",
-          "typescript/prefer-readonly-parameter-types": "off",
-        },
-      },
-    ],
-    plugins: [
-      "eslint",
-      "typescript",
-      "unicorn",
-      "oxc",
-      "react",
-      "jsx-a11y",
-      "import",
-      "promise",
-      "node",
-      "jsdoc",
-    ],
-    rules: {
-      "eslint/func-style": ["error", "declaration"],
-      "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." }],
-      "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
-      "eslint/no-magic-numbers": [
-        "error",
-        {
-          ignore: [0, 1, -1],
-          ignoreArrayIndexes: true,
-          ignoreDefaultValues: true,
-          ignoreEnums: true,
-          ignoreNumericLiteralTypes: true,
-          ignoreTypeIndexes: true,
-        },
-      ],
-      "eslint/no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              message:
-                "better-auth/react は nanostores の状態を持ち込みます。better-auth/client を使い、状態は Effect Atom で持ってください。",
-              name: "better-auth/react",
-            },
-          ],
-          patterns: retiredImportPatterns(),
-        },
-      ],
-      "eslint/no-ternary": "off",
-      "eslint/no-undef": "off",
-      "eslint/no-undefined": "off",
-      "eslint/no-underscore-dangle": ["error", { allow: ["_tag"] }],
-      "eslint/no-void": ["error", { allowAsStatement: true }],
-      "eslint/one-var": ["error", "never"],
-      "eslint/require-await": "off",
-      "import/no-cycle": "error",
-      "import/no-named-export": "off",
-      "import/prefer-default-export": "off",
-      "node/no-top-level-await": "off",
-      "oxc/no-async-await": "off",
-      "oxc/no-optional-chaining": "off",
-      "oxc/no-rest-spread-properties": "off",
-      "project/atom-state": "error",
-      "project/boundaries": "error",
-      "project/effect-failures": "error",
-      "project/effect-stack": "error",
-      "project/environment-boundary": "error",
-      "project/layers": "error",
-      "project/no-internal-mocks": "error",
-      "project/no-manual-memoization": "error",
-      "project/test-import-graph": "error",
-      "project/test-runtime": "error",
-      "project/worker-fetch": "error",
-      "react/exhaustive-deps": "error",
-      "react/forbid-component-props": "error",
-      "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
-      "react/jsx-no-literals": "off",
-      "react/jsx-props-no-spreading": "error",
-      "react/only-export-components": ["error", { allowExportNames: ["Route"] }],
-      "react/react-in-jsx-scope": "off",
-      "react/rules-of-hooks": "error",
-      "shadcn/no-arbitrary-values": "error",
-      "shadcn/no-raw-colors": "error",
-      "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
-      "shadcn/no-unknown-classes": "error",
-      "typescript/consistent-return": "off",
-      "typescript/explicit-function-return-type": [
-        "error",
-        { allowedNames: ["createApi", "createAuth"] },
-      ],
-      "typescript/explicit-module-boundary-types": [
-        "error",
-        { allowedNames: ["createApi", "createAuth"] },
-      ],
-      "typescript/no-explicit-any": "error",
-      "typescript/no-floating-promises": "error",
-      "typescript/no-misused-promises": "error",
-      "typescript/no-unsafe-argument": "error",
-      "typescript/no-unsafe-assignment": "error",
-      "typescript/no-unsafe-call": "error",
-      "typescript/no-unsafe-member-access": "error",
-      "typescript/no-unsafe-return": "error",
-      "typescript/only-throw-error": [
-        "error",
-        {
-          allow: [
-            { from: "package", name: "NotFoundError", package: "@tanstack/router-core" },
-            { from: "package", name: "Redirect", package: "@tanstack/router-core" },
-          ],
-        },
-      ],
-      "typescript/require-await": "off",
-      "unicorn/no-array-method-this-argument": "off",
-      "unicorn/text-encoding-identifier-case": ["error", { withDash: true }],
-      "unicorn/throw-new-error": "off",
-      "vite-plus/prefer-vite-plus-imports": "error",
-    },
-  },
+  lint,
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
@@ -241,7 +41,7 @@ export default defineConfig({
           "vp run check:effect",
           "vp run -F '!typescript-template' check",
         ],
-        input: [{ auto: true }, "!node_modules/.modules.yaml"],
+        input: [...taskInput],
       },
       "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
@@ -249,13 +49,24 @@ export default defineConfig({
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
-        input: [{ auto: true }, "!node_modules/.cache/**"],
+        input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
     },
   },
   test: {
     clearMocks: false,
+    forceRerunTriggers: [
+      "**/package.json",
+      "**/tsconfig*.json",
+      "pnpm-lock.yaml",
+      "**/{vitest,vite}.config.*",
+      "**/vitest.*.config.*",
+      "libs/ui/.storybook/**",
+      "libs/db/migrations/**",
+      "libs/config/src/worker.ts",
+      "tools/quality/test-runtime.ts",
+    ].map((pattern) => `${import.meta.dirname}/${pattern}`),
     projects: [
       {
         extends: true,
