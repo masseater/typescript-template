@@ -48,6 +48,7 @@ interface ApiRoutes<Requirements> {
 }
 
 const missingMessage = "見つかりませんでした。";
+const eventStreamType = "text/event-stream";
 const unreadBody = { unread: true } as const;
 
 function decodeInput<Contract extends Decodable>(
@@ -95,10 +96,15 @@ function elysiaServer(app: AnyElysia): {
     return app.fetch(context.request);
   }
   async function handleHead(context: ElysiaContext): Promise<Response> {
-    const response = await app.fetch(new Request(context.request, { method: "GET" }));
-    const body = await response.arrayBuffer();
+    const { headers: asked, url } = context.request;
+    const response = await app.fetch(new Request(url, { headers: asked, method: "GET" }));
     const headers = new Headers(response.headers);
-    headers.set("content-length", String(body.byteLength));
+    if (headers.get("content-type")?.startsWith(eventStreamType) === true) {
+      void response.body?.cancel();
+    } else {
+      const body = await response.arrayBuffer();
+      headers.set("content-length", String(body.byteLength));
+    }
     return new Response(undefined, {
       headers,
       status: response.status,
@@ -203,7 +209,11 @@ function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tag
     handler(request).pipe(
       Effect.flatMap((values) =>
         Stream.toAsyncIterableEffect(
-          Stream.mapEffect(values, (value) => Effect.orDie(encode(value))),
+          Stream.mapEffect(values, (value) => Effect.orDie(encode(value))).pipe(
+            Stream.catchCause((cause) =>
+              Stream.drain(Stream.fromEffect(reportedFailure(failures, cause))),
+            ),
+          ),
         ),
       ),
       Effect.map((events) => new EventFeed(events)),

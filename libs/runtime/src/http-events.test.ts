@@ -4,7 +4,7 @@ import { Deferred, Effect, Layer, ManagedRuntime, Queue, Schema, Stream } from "
 import { Telemetry, httpStatus } from "@repo/observability";
 
 import { apiServerClient } from "./client.ts";
-import { AppOrigin, apiRoutes, createApi, readSearchParams } from "./http.ts";
+import { AppOrigin, apiRoutes, createApi, elysiaServer, readSearchParams } from "./http.ts";
 
 const origin = "http://localhost:3001";
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
@@ -90,9 +90,34 @@ describe("an event stream route", () => {
       assert.isTrue(yield* Deferred.await(released));
     }),
   );
+
+  it.effect("ends the stream instead of throwing when the source dies after it opened", () =>
+    Effect.gen(function* program() {
+      const ticks = Stream.make(tick(1)).pipe(Stream.concat(Stream.die("source died")));
+      const reader = frames(yield* open(ticks));
+      assert.strictEqual(yield* nextFrame(reader), 'event: tick\ndata: {"count":"1"}\n\n');
+      assert.isUndefined(yield* nextFrame(reader));
+    }),
+  );
 });
 
 describe("an event stream route seen by its callers", () => {
+  it.effect("answers HEAD with the stream's headers without waiting for the stream to end", () =>
+    Effect.gen(function* program() {
+      const silentAfterFirst = Stream.make(tick(1)).pipe(Stream.concat(Stream.never));
+      const ticks = api.events(Tick, () => Effect.succeed(silentAfterFirst), {});
+      const { handlers } = elysiaServer(createApi("/api").get("/events", ticks));
+      const { HEAD: head } = handlers;
+      const request = new Request(`${origin}/api/events`, { method: "HEAD" });
+      const response = yield* Effect.promise(async () => head({ request }));
+      const text = yield* Effect.promise(async () => response.text());
+      assert.deepStrictEqual(
+        [response.status, response.headers.get("content-type"), text],
+        [httpStatus.ok, "text/event-stream", ""],
+      );
+    }),
+  );
+
   it.effect("answers a failure before the stream opens as an ordinary json failure", () =>
     Effect.gen(function* program() {
       const ticks = api.events(
