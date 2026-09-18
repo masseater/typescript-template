@@ -1,18 +1,29 @@
-import { BooleanText, Role, UserKeyword } from "@template/runtime/contracts";
-import { laterPage, searchNormalizer, searchText } from "@template/ui";
-import { Schema } from "effect";
-import { usersPageSize } from "#users-pagination.ts";
+import {
+  BooleanText,
+  Role,
+  SearchKeyword,
+  absentSearchKey,
+  laterPage,
+} from "@template/runtime/contracts";
+import { Option, Schema } from "effect";
+import { maximumUsersPage, usersPageSize } from "#users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);
 
-const normalizeUsersSearch = searchNormalizer({
-  keyword: searchText(UserKeyword),
-  page: laterPage(),
-  role: Schema.decodeUnknownOption(Role),
-  verified: Schema.decodeUnknownOption(Verified),
+const UsersSearchParams = Schema.Struct({
+  keyword: Schema.optionalKey(SearchKeyword).pipe(Schema.catchDecoding(absentSearchKey)),
+  page: Schema.optionalKey(laterPage(maximumUsersPage)).pipe(Schema.catchDecoding(absentSearchKey)),
+  role: Schema.optionalKey(Role).pipe(Schema.catchDecoding(absentSearchKey)),
+  verified: Schema.optionalKey(Verified).pipe(Schema.catchDecoding(absentSearchKey)),
 });
 
-type UsersSearch = ReturnType<typeof normalizeUsersSearch>;
+type UsersSearch = typeof UsersSearchParams.Type;
+
+const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
+
+function normalizeUsersSearch(raw: unknown): UsersSearch {
+  return Option.getOrElse(decodeUsersSearch(raw), () => ({}));
+}
 
 function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
   return {
