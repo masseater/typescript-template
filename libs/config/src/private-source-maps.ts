@@ -1,9 +1,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, mkdir, realpath, rename, rm } from "node:fs/promises";
+import { chmod, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { sourceMapDirectories } from "./source-maps.ts";
+import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
 
 import type { Plugin } from "vite-plus";
 import type { Application } from "./applications.ts";
@@ -21,6 +21,16 @@ async function moveMap(source: string, target: string): Promise<void> {
   }
   await rename(source, target);
   await chmod(target, PRIVATE_FILE_MODE);
+}
+
+async function recordEmitted(destination: string, maps: readonly string[]): Promise<void> {
+  await writeFile(
+    path.join(destination, SOURCE_MAP_MANIFEST),
+    `${JSON.stringify(maps.toSorted())}\n`,
+    {
+      mode: PRIVATE_FILE_MODE,
+    },
+  );
 }
 
 function privateSourceMaps(app: Application): Plugin {
@@ -42,6 +52,7 @@ function privateSourceMaps(app: Application): Plugin {
       await Promise.all(
         maps.map(async (file) => moveMap(path.join(outDir, file), path.join(destination, file))),
       );
+      await recordEmitted(destination, maps);
       this.info(
         JSON.stringify({ audience: app, event: "build.source_maps_private", moved: maps.length }),
       );
