@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
+import { Cause, Console, Effect, Option, Schema } from "effect";
 
 import { secretsFile } from "@repo/config/deployment";
 
@@ -51,6 +51,16 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
   return { failures, scan };
 });
 
+const markFailed = Effect.sync(() => {
+  process.exitCode = FAILED_EXIT_CODE;
+});
+
+function reportUnchecked(detail: Readonly<Record<string, unknown>>): Effect.Effect<void> {
+  return Console.error(
+    JSON.stringify({ event: "quality.staged_secrets_failed", ok: false, ...detail }),
+  ).pipe(Effect.andThen(markFailed));
+}
+
 NodeRuntime.runMain(
   scanStaged().pipe(
     Effect.flatMap(({ failures, scan }) =>
@@ -61,25 +71,18 @@ NodeRuntime.runMain(
           ok: failures.length === 0,
           prefixScan: scan,
         }),
-      ).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            if (failures.length > 0) {
-              process.exitCode = FAILED_EXIT_CODE;
-            }
-          }),
-        ),
-      ),
+      ).pipe(Effect.andThen(failures.length > 0 ? markFailed : Effect.void)),
     ),
-    Effect.catchCause(() =>
-      Console.error(JSON.stringify({ event: "quality.staged_secrets_failed", ok: false })).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = FAILED_EXIT_CODE;
-          }),
-        ),
-      ),
-    ),
+    Effect.catchCause((cause) => {
+      const failure = Option.getOrUndefined(Cause.findErrorOption(cause));
+      const defect: unknown = Cause.squash(cause);
+      return reportUnchecked(
+        failure?.report ?? {
+          error: defect instanceof Error ? defect.name : typeof defect,
+          reason: "unexpected",
+        },
+      );
+    }),
   ),
   { disableErrorReporting: true },
 );
