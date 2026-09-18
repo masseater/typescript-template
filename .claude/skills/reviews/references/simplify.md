@@ -18,5 +18,5 @@ description: このプロジェクトにおいて、複雑化したコードを�
   ライフサイクルの外で手動実行を前提とする独自スクリプトを作成しないこと。アプリの起動時や終了時、ビルド時など、ライフサイクルに自然に実行される形にすること。
 - 関数・クラスの引数として呼び出すためだけの型・インターフェースを定義しないこと。
 - 引数を軽く整形して一部のオブジェクトだけを抜き出したような、無駄な関数を定義しないこと。
-- "vp run check:client", "vp run check:layers" のように個別の検査を列挙して呼ばないこと。呼び出し側は vp run check だけを呼び、個別の検査は各 check タスクの command 配列からのみ呼ぶこと。
+- "vp run check:client", "vp run check:layers" のように個別の検査を列挙して呼ばないこと。呼び出し側は `vp run -r precommit` / `vp run -r prepush` / `vp run -r premerge` だけを呼び、個別の検査は各 workspace の `vite.config.ts` で `lifecycle()` の依存としてのみ宣言すること。
 - node で直接ファイルを実行することは避けること。vp のタスクランナーに乗っかって実行すること。
