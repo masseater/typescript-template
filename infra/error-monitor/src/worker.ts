@@ -1,5 +1,5 @@
-import { Monitor, monitorHandler } from "@template/monitor";
-import type { MonitorBindings, Notify } from "@template/monitor";
+import { Monitor, monitorHandler } from "@repo/monitor";
+import type { MonitorBindings, Notify } from "@repo/monitor";
 import { decideNotifications, formatMessage } from "./decision.ts";
 import { Effect } from "effect";
 import type { SeenFingerprints } from "./decision.ts";

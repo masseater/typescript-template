@@ -4,7 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Icon,
-} from "@template/ui";
+} from "@repo/ui";
 import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
 import { EllipsisIcon } from "lucide-react";
 import type { ListedUser } from "#pages/users/model/user-list.ts";

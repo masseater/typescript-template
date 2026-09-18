@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
   Icon,
   useSignOut,
-} from "@template/ui";
+} from "@repo/ui";
 import { ChevronDownIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";

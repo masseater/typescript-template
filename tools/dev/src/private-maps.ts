@@ -4,7 +4,7 @@ import { chmod, mkdir, readdir, realpath, rename } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules

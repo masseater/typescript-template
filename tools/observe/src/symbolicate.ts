@@ -1,6 +1,6 @@
 import { Console, Effect, Schema } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -33,7 +33,7 @@ const help = Console.info(
   JSON.stringify({
     locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
     readOnly: true,
-    usage: `vp run --filter @template/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
+    usage: `vp run --filter @repo/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
   }),
 );
 

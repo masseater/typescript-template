@@ -1,4 +1,4 @@
-import { Button, Page, Status } from "@template/ui";
+import { Button, Page, Status } from "@repo/ui";
 import type { ReactElement } from "react";
 import { useRouter } from "@tanstack/react-router";
 

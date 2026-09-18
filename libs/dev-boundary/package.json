@@ -1,5 +1,5 @@
 {
-  "name": "@template/dev-boundary",
+  "name": "@repo/dev-boundary",
   "private": true,
   "type": "module",
   "exports": {
@@ -7,7 +7,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@template/config": "workspace:*"
+    "@repo/config": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

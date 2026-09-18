@@ -14,7 +14,7 @@ import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
 import { Effect } from "effect";
 import { getSchema } from "better-auth/db";
-import { getSchemaShape } from "@template/db/testing";
+import { getSchemaShape } from "@repo/db/testing";
 import { mailbox } from "./mail-fixture.ts";
 
 const verifyEmailOf = Effect.fn("verifyEmailOf")(function* verifyEmailOf(email: string) {
