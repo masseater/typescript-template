@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-import { effectDiagnostics } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle } from "@repo/config/vite";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
@@ -12,6 +12,7 @@ export default defineConfig({
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
+      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect", "check"] }),
     },
   },
 });

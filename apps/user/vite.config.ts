@@ -8,6 +8,7 @@ import {
   appRun,
   appServer,
   previewDevVars,
+  privateSourceMaps,
   reactCompiler,
   startOptions,
   withoutEnvFileLoader,
@@ -21,6 +22,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
   build: { sourcemap: "hidden" },
   plugins: [
     previewDevVars(import.meta.dirname),
+    privateSourceMaps("user"),
     devBoundary("user"),
     cloudflare({
       config: {

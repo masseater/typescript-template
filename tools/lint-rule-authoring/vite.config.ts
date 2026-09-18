@@ -1,10 +1,15 @@
 import { fileURLToPath } from "node:url";
 
-import { effectRun } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle } from "@repo/config/vite";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: effectRun,
+  run: {
+    tasks: {
+      ...effectDiagnostics,
+      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect", "check"] }),
+    },
+  },
   test: {
     experimental: {
       openTelemetry: {

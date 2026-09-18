@@ -82,7 +82,7 @@ function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): 
 }
 
 const rootOnlyPackages: Readonly<Record<string, string>> = {
-  "react-doctor": "ルートの vp run check",
+  "react-doctor": "ルートの vp run check:react",
 };
 
 function rootOnlyDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
