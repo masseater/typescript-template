@@ -1,6 +1,6 @@
 import { noop } from "es-toolkit";
 
-import preview from "../.storybook/preview";
+import preview from "../storybook/preview";
 import { ChallengeLogin } from "./challenge-login";
 
 const meta = preview.meta({

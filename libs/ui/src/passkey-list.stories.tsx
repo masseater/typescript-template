@@ -1,6 +1,6 @@
 import { noop } from "es-toolkit";
 
-import preview from "../.storybook/preview";
+import preview from "../storybook/preview";
 import { PasskeyList } from "./passkey-list";
 
 const meta = preview.meta({

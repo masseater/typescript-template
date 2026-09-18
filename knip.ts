@@ -40,7 +40,7 @@ const workspaces = {
     project: ["src/**/*.ts!", "!src/*-fixture.ts!"],
   },
   "libs/ui": {
-    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
+    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", "storybook/*.ts", "!src/**/*.stories.tsx!"],
   },
   "tools/ai-native": {
     ignoreBinaries: ["mkfifo"],

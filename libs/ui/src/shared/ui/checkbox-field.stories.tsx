@@ -1,7 +1,7 @@
 import { noop } from "es-toolkit";
 import { expect, fn, userEvent } from "storybook/test";
 
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { CheckboxField } from "./checkbox-field";
 
 const meta = preview.meta({

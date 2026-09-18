@@ -1,4 +1,4 @@
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { NavigationLink } from "./navigation-link";
 
 const meta = preview.meta({

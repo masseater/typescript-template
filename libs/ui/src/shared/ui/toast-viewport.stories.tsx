@@ -1,7 +1,7 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { Button } from "./button";
 import { ToastViewport } from "./toast-viewport";
 import { useToast } from "./use-toast";
