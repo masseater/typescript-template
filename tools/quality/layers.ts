@@ -1,8 +1,9 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
+import { applications } from "@template/config";
 import { reportViolation } from "./lint-context.ts";
 
-const layeredApps: readonly string[] = ["user"];
+const layeredApps: readonly string[] = applications;
 const layers: ReadonlySet<string> = new Set([
   "app",
   "pages",
@@ -32,4 +33,4 @@ function layersVisitor(context: LintContext): Visitor {
   };
 }
 
-export { layeredApps, layersVisitor };
+export { layersVisitor };

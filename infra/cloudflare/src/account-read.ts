@@ -1,40 +1,85 @@
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 import { CloudflareFailure } from "./config.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const NOT_FOUND_STATUS = 404;
-const PAGE_SIZE = 1000;
+const MISSING_REASON = `status_${NOT_FOUND_STATUS}`;
 
 interface AccountAccess {
   readonly accountId: string;
   readonly apiToken: string;
 }
 
-type Query = Readonly<Record<string, string>>;
+const cloudflareEndpoint = Symbol("cloudflareEndpoint");
 
+type Query = Readonly<Record<string, string>>;
+type Endpoint = Readonly<{ marker: typeof cloudflareEndpoint; path: string; shape: string }>;
+type Collection = Readonly<{ filter?: Query; pageSize?: number; source: Endpoint }>;
+
+const PageInfo = Schema.Struct({
+  per_page: Schema.optional(Schema.Number),
+  total_count: Schema.optional(Schema.Number),
+});
 const Paged = Schema.Struct({
   result: Schema.Array(Schema.Unknown),
-  result_info: Schema.optional(Schema.Struct({ total_count: Schema.Number })),
+  result_info: Schema.optional(Schema.NullOr(PageInfo)),
 });
 
-function unreadable(): CloudflareFailure {
-  return new CloudflareFailure({ code: "account_read_unavailable", keys: [] });
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function endpoint(parts: TemplateStringsArray, ...values: readonly string[]): Endpoint {
+  return {
+    marker: cloudflareEndpoint,
+    path: String.raw(parts, ...values),
+    shape: parts.join("{}"),
+  };
+}
+
+function unreadable(source: Endpoint, reason: string): CloudflareFailure {
+  return new CloudflareFailure({ code: "account_read_unavailable", keys: [source.shape, reason] });
+}
+
+function requestReason(error: unknown): string {
+  return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
+    ? "timeout"
+    : "request_failed";
+}
+
+function listedQuery(collection: Collection): Query {
+  return collection.pageSize === undefined
+    ? { ...collection.filter }
+    : { ...collection.filter, per_page: String(collection.pageSize) };
+}
+
+function overflowed(
+  rows: number,
+  info:
+    | Readonly<{ per_page?: number | undefined; total_count?: number | undefined }>
+    | null
+    | undefined,
+  collection: Collection,
+): boolean {
+  const counted = info?.total_count;
+  if (counted !== undefined && (counted <= rows || collection.filter === undefined)) {
+    return counted > rows;
+  }
+  const page = info?.per_page ?? collection.pageSize;
+  return page !== undefined && page > 0 && rows >= page;
 }
 
 const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
   apiToken: string,
-  path: string,
+  source: Endpoint,
   query: Query,
 ) {
-  const endpoint = new URL(`https://api.cloudflare.com/client/v4/${path}`);
+  const url = new URL(`https://api.cloudflare.com/client/v4/${source.path}`);
   for (const [name, value] of Object.entries(query)) {
-    endpoint.searchParams.set(name, value);
+    url.searchParams.set(name, value);
   }
   const response = yield* Effect.tryPromise({
-    catch: unreadable,
+    catch: (error) => unreadable(source, requestReason(error)),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
-      fetch(endpoint, {
+      fetch(url, {
         headers: { authorization: `Bearer ${apiToken}` },
         redirect: "error",
         signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
@@ -44,53 +89,65 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
     return { body: undefined, found: false };
   }
   if (!response.ok) {
-    return yield* Effect.fail(unreadable());
+    return yield* Effect.fail(unreadable(source, `status_${response.status}`));
   }
   const body = yield* Effect.tryPromise({
-    catch: unreadable,
+    catch: () => unreadable(source, "decode_failed"),
     try: async (): Promise<unknown> => response.json(),
   });
   return { body, found: true };
 });
 
 const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
+  source: Endpoint,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
   body: unknown,
 ) {
-  return yield* Schema.decodeUnknownEffect(shape)(body).pipe(Effect.mapError(unreadable));
+  return yield* Schema.decodeUnknownEffect(shape)(body).pipe(
+    Effect.mapError(() => unreadable(source, "decode_failed")),
+  );
 });
 
 const readResource = Effect.fn("readResource")(function* readResource<Shape, Encoded>(
   access: AccountAccess,
-  path: string,
+  source: Endpoint,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
 ) {
-  const reading = yield* fetchJson(access.apiToken, path, {});
-  return reading.found ? yield* decodeBody(shape, reading.body) : undefined;
+  const reading = yield* fetchJson(access.apiToken, source, {});
+  return reading.found ? yield* decodeBody(source, shape, reading.body) : undefined;
+});
+
+const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Encoded>(
+  access: AccountAccess,
+  source: Endpoint,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const found = yield* readResource(access, source, shape);
+  if (found === undefined) {
+    return yield* Effect.fail(unreadable(source, MISSING_REASON));
+  }
+  return found;
 });
 
 const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
   access: AccountAccess,
-  collection: Readonly<{ path: string; query?: Query }>,
+  collection: Collection,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
 ) {
-  const reading = yield* fetchJson(access.apiToken, collection.path, {
-    ...collection.query,
-    per_page: String(PAGE_SIZE),
-  });
+  const reading = yield* fetchJson(access.apiToken, collection.source, listedQuery(collection));
   if (!reading.found) {
-    return yield* Effect.fail(unreadable());
+    return yield* Effect.fail(unreadable(collection.source, MISSING_REASON));
   }
-  const paged = yield* decodeBody(Paged, reading.body);
-  const total = paged.result_info?.total_count;
-  if (total !== undefined && total !== paged.result.length) {
-    return yield* Effect.fail(unreadable());
+  const paged = yield* decodeBody(collection.source, Paged, reading.body);
+  if (overflowed(paged.result.length, paged.result_info, collection)) {
+    return yield* Effect.fail(unreadable(collection.source, "truncated"));
   }
-  return yield* decodeBody(shape, reading.body);
+  return yield* decodeBody(collection.source, shape, reading.body);
 });
 
-export { decodeBody, readList, readResource, unreadable };
-export type { AccountAccess };
+export { decodeBody, endpoint, readList, readRequired, readResource, requestReason };
+export type { AccountAccess, Endpoint };
