@@ -1,3 +1,5 @@
+import { Config, Effect, Option, Redacted } from "effect";
+
 import {
   AuthSecret,
   Email,
@@ -12,7 +14,6 @@ import {
   checkSharedConfig,
   originKeys,
 } from "./config.ts";
-import { Config, Effect, Option, Redacted } from "effect";
 
 const DEFAULT_JPY_PER_USD = 150;
 const FULL_SAMPLING = 1;

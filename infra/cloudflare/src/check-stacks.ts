@@ -1,15 +1,18 @@
-import { Cause, Console, Effect, Schema } from "effect";
-import { applications, grants } from "@repo/config";
-import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
-import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import type { Application } from "@repo/config";
-import { NodeRuntime } from "@effect/platform-node";
-import type { StackInventory } from "./inventory.ts";
-import type { StackName } from "./stacks.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Console, Effect, Schema } from "effect";
+
+import { applications, grants } from "@repo/config";
+import type { Application } from "@repo/config";
+
+import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
+import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
+import type { StackInventory } from "./inventory.ts";
 import { markFailed } from "./secrets.ts";
+import { stackDependencies, stackName, stackNames } from "./stacks.ts";
+import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 type ResourceInventory = StackInventory["resources"][string];

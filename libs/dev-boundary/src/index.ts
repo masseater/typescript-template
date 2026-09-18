@@ -1,12 +1,14 @@
-import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
-import type { Application as App } from "@repo/config";
-import { applications as apps } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { realpath } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { realpath } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
+
+import type { Application as App } from "@repo/config";
+import { applications as apps } from "@repo/config";
 
 interface BoundaryRoots {
   readonly app: App;

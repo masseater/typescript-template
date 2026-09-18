@@ -1,9 +1,10 @@
+import { NodeRuntime } from "@effect/platform-node";
+import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
+
 import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { markFailed, reportCause } from "./secrets.ts";
-import { NodeRuntime } from "@effect/platform-node";
-import { layer } from "alchemy/Alchemist";
 
 const EVENT = "account.rejected";
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
-import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
+
 import { field } from "./dependencies.ts";
+import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
 import plugin from "./rules.ts";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {

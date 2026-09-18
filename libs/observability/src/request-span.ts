@@ -1,12 +1,13 @@
 import { Cause, Effect, Tracer } from "effect";
-import { errorAttributes, errorFingerprint } from "./errors.ts";
-import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
+
 import { CurrentRequest } from "./current-request.ts";
-import type { ErrorAttributes } from "./errors.ts";
 import type { RequestContext } from "./current-request.ts";
-import { Telemetry } from "./telemetry.ts";
+import { errorAttributes, errorFingerprint } from "./errors.ts";
+import type { ErrorAttributes } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
+import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
 import { isRecord } from "./structured-logs.ts";
+import { Telemetry } from "./telemetry.ts";
 
 type RequestHandler<Requirements> = (
   request: Request,

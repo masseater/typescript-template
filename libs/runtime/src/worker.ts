@@ -1,11 +1,12 @@
-import type { CurrentRequest, Telemetry, TelemetryFlusher } from "@repo/observability";
 import { Effect, Result } from "effect";
-import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
-import { jsonResponse, secureResponse } from "./responses.ts";
-import { Assets } from "./assets.ts";
-import type { ExecutionContext } from "@cloudflare/workers-types";
 import type { ManagedRuntime } from "effect";
+
+import type { CurrentRequest, Telemetry, TelemetryFlusher } from "@repo/observability";
+import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
+
+import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
+import { jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;

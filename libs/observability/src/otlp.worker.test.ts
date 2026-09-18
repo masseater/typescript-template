@@ -1,9 +1,10 @@
-import { HttpResponse, http } from "msw";
-import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import type { OtlpDestination } from "./otlp.ts";
 import { setupNetwork } from "@msw/cloudflare";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import type { OtlpDestination } from "./otlp.ts";
+import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
 
 interface Observed {
   readonly authorization: readonly string[];

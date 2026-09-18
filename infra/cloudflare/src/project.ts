@@ -1,8 +1,9 @@
-import { Effect, Schema } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { Effect, Schema } from "effect";
 
 const Name = Schema.String.check(Schema.isMinLength(1));
 const Manifest = Schema.fromJsonString(Schema.Struct({ name: Name }));

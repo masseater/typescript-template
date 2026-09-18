@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vite-plus/test";
+
 import {
   applicationDependencyViolations,
   retiredDependencyViolations,
@@ -5,7 +7,6 @@ import {
   rootOnlyPackages,
   workspaceManifests,
 } from "./dependencies.ts";
-import { describe, expect, it } from "vite-plus/test";
 import { retiredPackages } from "./retired-packages.ts";
 
 describe("application package boundaries", () => {

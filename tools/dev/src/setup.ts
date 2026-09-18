@@ -1,3 +1,17 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { randomBytes } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { mkdir, stat } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { applications } from "@repo/config";
+import { receiverOrigin } from "@repo/local";
+
+import { failure, fileIo } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
 import type { App, Credentials } from "./local-environment.ts";
 import {
   credentialsFile,
@@ -7,23 +21,12 @@ import {
   refreshBrowserConfig,
   routes,
 } from "./local-environment.ts";
-import { failure, fileIo } from "./failure.ts";
 import {
   isErrorCode,
   privateDirectoryMode,
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, stat } from "node:fs/promises";
-import { Effect } from "effect";
-import type { LocalCommandFailure } from "./failure.ts";
-import { applications } from "@repo/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { randomBytes } from "node:crypto";
-import { receiverOrigin } from "@repo/local";
 
 interface SetupReport {
   readonly credentialsFile: string;

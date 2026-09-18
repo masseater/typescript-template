@@ -7,6 +7,7 @@ import {
   OtlpSerialization,
   OtlpTracer,
 } from "effect/unstable/observability";
+
 import { httpStatus } from "./http-status.ts";
 
 interface OtlpDestination {

@@ -1,13 +1,16 @@
-import type { DeploymentValue, PrefixScan } from "./secrets.ts";
-import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
-import { describe, expect, it } from "vite-plus/test";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { secretsFile } from "@repo/config/deployment";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import { describe, expect, it } from "vite-plus/test";
+
+import { secretsFile } from "@repo/config/deployment";
+
+import type { DeploymentValue, PrefixScan } from "./secrets.ts";
+import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
 
 const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 

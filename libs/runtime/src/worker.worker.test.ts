@@ -1,10 +1,12 @@
+import { assert, it } from "@effect/vitest";
+import { setupNetwork } from "@msw/cloudflare";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { Effect, Layer, ManagedRuntime } from "effect";
 import { HttpResponse, http } from "msw";
-import { assert, it } from "@effect/vitest";
-import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+
 import { Telemetry } from "@repo/observability";
+
 import { serveWorker } from "./worker.ts";
-import { setupNetwork } from "@msw/cloudflare";
 
 interface Exported {
   readonly logs: readonly unknown[];

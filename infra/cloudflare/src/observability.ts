@@ -1,9 +1,10 @@
-import { Effect, Redacted } from "effect";
-import { otlpAuthorization, settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
 import { Stack } from "alchemy";
 import { Workers } from "alchemy/Cloudflare";
+import { Effect, Redacted } from "effect";
+
 import { traceDestination } from "./config.ts";
+import { otlpAuthorization, settings } from "./settings.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 
 const stack = Stack(
   stackName("observability"),

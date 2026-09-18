@@ -1,9 +1,11 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { exportedTelemetry } from "./exported.ts";
-import { receiverOrigin } from "@repo/local";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
+
+import { receiverOrigin } from "@repo/local";
+
+import { exportedTelemetry } from "./exported.ts";
 
 const traceId = "4eb48993cedc4e7ba84e2c7f87eeb940";
 const spanId = "99da669e5163438a";

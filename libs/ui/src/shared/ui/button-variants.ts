@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 
 const buttonVariants = cva(
-  "box-border inline-flex w-fit cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border text-center font-bold whitespace-nowrap no-underline transition-colors outline-none select-none focus-visible:focus-indicator disabled:cursor-not-allowed",
+  "box-border inline-flex w-fit shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md border text-center font-bold whitespace-nowrap no-underline transition-colors outline-none select-none focus-visible:focus-indicator disabled:cursor-not-allowed",
   {
     defaultVariants: { size: "medium", variant: "secondary" },
     variants: {

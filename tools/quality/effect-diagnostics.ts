@@ -1,11 +1,12 @@
-import { Console, Effect } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { access, readdir } from "node:fs/promises";
-import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
+import { access, readdir } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect } from "effect";
 
 interface Diagnosis {
   readonly ok: boolean;

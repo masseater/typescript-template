@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 import { Effect } from "effect";
+
+import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
   ADMIN_ORIGIN: "https://admin.example.com",

@@ -1,13 +1,15 @@
-import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
 import { Effect, Layer } from "effect";
-import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
-import { readConfig, sendVerificationEmail } from "@repo/config";
-import { AppOrigin } from "./app-origin.ts";
-import { Assets } from "./assets.ts";
+
 import { Auth } from "@repo/auth";
 import type { AuthFailure } from "@repo/auth";
+import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
+import { readConfig, sendVerificationEmail } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
+import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
+
+import { AppOrigin } from "./app-origin.ts";
+import { Assets } from "./assets.ts";
 
 type AppServices = AppOrigin | Assets | Auth | Database | Telemetry | TelemetryFlusher;
 
