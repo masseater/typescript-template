@@ -1,0 +1,1 @@
+Align package.json with post-rename main; keep observability tip exports/dont-review-it without unused knip deps.
