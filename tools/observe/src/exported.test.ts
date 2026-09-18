@@ -80,9 +80,9 @@ it.effect("exported telemetry pairs the receiver's span and log for one trace", 
     assert.deepStrictEqual(telemetry.logs, [
       { message: "http.server.request", requestId, service: "user-server", spanId, traceId },
     ]);
+    assert.lengthOf(queried, 1);
     const start =
-      Number(new URL(queried[0] ?? "http://127.0.0.1/").searchParams.get("start")) /
-      nanosecondsPerMillisecond;
+      Number(new URL(String(queried[0])).searchParams.get("start")) / nanosecondsPerMillisecond;
     assert.isAtLeast(start, before - minutes * millisecondsPerMinute);
     assert.isAtMost(start, Date.now() - minutes * millisecondsPerMinute);
   }),

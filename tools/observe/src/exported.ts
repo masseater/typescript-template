@@ -4,7 +4,7 @@ import { receiverOrigin } from "@repo/local";
 
 interface ExportedSpan {
   readonly name: string;
-  readonly service: string;
+  readonly service: string | undefined;
   readonly spanId: string;
   readonly traceId: string;
 }
@@ -25,8 +25,6 @@ class ReceiverFailure extends Schema.TaggedError<ReceiverFailure>()("ReceiverFai
 }) {}
 
 const receiverTimeoutMilliseconds = 15_000;
-const hexRadix = 16;
-const hexByteWidth = 2;
 const millisecondsPerMinute = 60_000;
 const nanosecondsPerMillisecond = 1_000_000;
 
@@ -54,9 +52,7 @@ const LokiStream = Schema.Struct({
 const LokiStreams = Schema.Struct({ data: Schema.Struct({ result: Schema.Array(LokiStream) }) });
 
 function hexIdentifier(base64: string): string {
-  return Array.from(atob(base64), (character) =>
-    (character.codePointAt(0) ?? 0).toString(hexRadix).padStart(hexByteWidth, "0"),
-  ).join("");
+  return Buffer.from(base64, "base64").toString("hex");
 }
 
 function serviceName(attributes: readonly (typeof Attribute.Type)[]): string | undefined {
@@ -100,7 +96,7 @@ const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(traceId
     batch.scopeSpans.flatMap((scope) =>
       scope.spans.map((span): ExportedSpan => ({
         name: span.name,
-        service: serviceName(batch.resource.attributes) ?? "",
+        service: serviceName(batch.resource.attributes),
         spanId: hexIdentifier(span.spanId),
         traceId: hexIdentifier(span.traceId),
       })),
