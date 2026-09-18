@@ -65,6 +65,14 @@ const assertDatabaseMigrated = Effect.fn("assertDatabaseMigrated")(function* ass
         }),
     ),
   );
+  if (status.state === "unrecorded") {
+    return yield* Effect.fail(
+      new CloudflareFailure({
+        code: "database_migration_history_missing",
+        keys: [String(status.declared)],
+      }),
+    );
+  }
   if (status.pending > 0) {
     return yield* Effect.fail(
       new CloudflareFailure({
