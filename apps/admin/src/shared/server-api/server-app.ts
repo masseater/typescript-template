@@ -62,7 +62,11 @@ const app = createApi(apiRoot)
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
           const change = yield* readJsonBody(RoleChange, request);
-          return yield* setUserRole(session.id, change.id, change.role);
+          return yield* setUserRole({
+            role: change.role,
+            sessionId: session.id,
+            targetId: change.id,
+          });
         }),
       failures,
     ),

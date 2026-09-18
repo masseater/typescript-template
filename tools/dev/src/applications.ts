@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { applicationPorts, applications } from "@template/config";
+import { privateFileMode } from "@template/config/private-files";
 import { Effect } from "effect";
 
 import { fileIo, type LocalCommandFailure } from "./failure.ts";
@@ -19,7 +20,6 @@ import {
   socket,
   type App,
 } from "./local-environment.ts";
-import { privateFileMode } from "./private-files.ts";
 
 interface AppStatus {
   readonly app: App;

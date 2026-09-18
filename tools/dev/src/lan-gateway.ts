@@ -2,11 +2,11 @@ import { createHash, createPublicKey } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
+import { privateDirectoryMode } from "@template/config/private-files";
 import { Effect } from "effect";
 
 import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
 import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
-import { privateDirectoryMode } from "./private-files.ts";
 
 const proxyPort = 1355;
 const proxyStartTimeoutMilliseconds = 60_000;

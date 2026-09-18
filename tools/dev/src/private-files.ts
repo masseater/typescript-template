@@ -1,11 +1,10 @@
 import { chmod, open, readFile, stat, type FileHandle } from "node:fs/promises";
 
+import { privateFileMode } from "@template/config/private-files";
 import { Effect } from "effect";
 
 import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
 
-const privateFileMode = 0o600;
-const privateDirectoryMode = 0o700;
 const groupAndOtherPermissions = 0o077;
 
 const isErrorCode = (error: unknown, code: string): boolean => {
@@ -67,11 +66,4 @@ const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFil
   yield* assertOwnerOnly(location);
 });
 
-export {
-  assertOwnerOnly,
-  isErrorCode,
-  privateDirectoryMode,
-  privateFileMode,
-  replacePrivateFile,
-  writePrivateFile,
-};
+export { assertOwnerOnly, isErrorCode, replacePrivateFile, writePrivateFile };

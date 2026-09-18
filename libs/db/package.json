@@ -20,6 +20,7 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
+    "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "miniflare": "4.20260730.0",

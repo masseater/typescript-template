@@ -1,4 +1,7 @@
 export {
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
   applicationPorts,
   applications,
   authenticationMethods,
@@ -15,6 +18,7 @@ export type {
   Role,
   StrongAuthenticationMethod,
 } from "./applications.ts";
+export { CloudflareId } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 export { sendVerificationEmail } from "./email.ts";

@@ -51,7 +51,8 @@ const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRem
   );
   if (
     migrations.some(
-      (item, index) => index > 0 && item.folderMillis <= (migrations[index - 1]?.folderMillis ?? 0),
+      (migration, index) =>
+        index > 0 && migration.folderMillis <= (migrations[index - 1]?.folderMillis ?? 0),
     )
   ) {
     return yield* fail("REMOTE_MIGRATIONS_INVALID");
@@ -63,16 +64,17 @@ const readHistory = Effect.fn("readHistory")(function* readHistory(
   executor: DatabaseExecutor,
   migrations: readonly Migration[],
 ) {
-  const [rows] = yield* executor.batch([
+  const [historyRows] = yield* executor.batch([
     { params: [], sql: "SELECT hash, name FROM __drizzle_migrations ORDER BY id" },
   ]);
-  const history = yield* Schema.decodeUnknownEffect(History)(rows).pipe(
+  const history = yield* Schema.decodeUnknownEffect(History)(historyRows).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISMATCH" })),
   );
   if (
     history.some(
-      (item, index) =>
-        item.hash !== migrations.at(index)?.hash || item.name !== migrations.at(index)?.name,
+      (appliedMigration, index) =>
+        appliedMigration.hash !== migrations.at(index)?.hash ||
+        appliedMigration.name !== migrations.at(index)?.name,
     )
   ) {
     return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
@@ -114,14 +116,14 @@ const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapData
     return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
   }
   const compiled = new SQLiteDialect().sqlToQuery(bootstrapStatement(email));
-  const params = yield* Schema.decodeUnknownEffect(StatementParams)(compiled.params).pipe(
+  const statementParams = yield* Schema.decodeUnknownEffect(StatementParams)(compiled.params).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" })),
   );
-  const [rows] = yield* executor.batch([{ params, sql: compiled.sql }]);
-  if (rows?.length !== 1) {
+  const [promotedRows] = yield* executor.batch([{ params: statementParams, sql: compiled.sql }]);
+  if (promotedRows?.length !== 1) {
     return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
   }
-  yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(rows[0]).pipe(
+  yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(promotedRows[0]).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
   );
 });

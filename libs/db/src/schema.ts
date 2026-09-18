@@ -23,7 +23,7 @@ const account = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     idToken: text("id_token"),
-    password: text("password"),
+    password: text(),
     providerId: text("provider_id").notNull(),
     refreshToken: text("refresh_token"),
     refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
@@ -106,10 +106,15 @@ const rateLimit = sqliteTable(
   (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
 );
 
+/** @canonical-values db.audit-action */
+export const auditActions = ["role_changed", "user_deleted"] as const;
+export type AuditAction = (typeof auditActions)[number];
+export const AUDIT_ACTION = { roleChanged: auditActions[0], userDeleted: auditActions[1] } as const;
+
 const auditEvent = sqliteTable(
   "audit_event",
   {
-    action: text("action", { enum: ["role_changed", "user_deleted"] }).notNull(),
+    action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),

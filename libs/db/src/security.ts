@@ -1,3 +1,4 @@
+import { ROLE, type Application, type StrongAuthenticationMethod } from "@template/config";
 import { and, count, eq, gt } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
@@ -12,15 +13,13 @@ import {
   verification,
 } from "./schema.ts";
 
-import type { Application, StrongAuthenticationMethod } from "@template/config";
+export class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 
-class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
-
-const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
+export const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
   function* hasVerificationAudience(identifier: string, audience: Application) {
-    const now = new Date();
+    const checkedAt = new Date();
 
-    const [record] = yield* query((database) =>
+    const [pendingVerification] = yield* query((database) =>
       database
         .select({ id: verification.id })
         .from(verification)
@@ -28,28 +27,28 @@ const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
           and(
             eq(verification.identifier, identifier),
             eq(verification.audience, audience),
-            gt(verification.expiresAt, now),
+            gt(verification.expiresAt, checkedAt),
           ),
         )
         .limit(1),
     );
-    return record !== undefined;
+    return pendingVerification !== undefined;
   },
 );
 
-const findUser = Effect.fn("findUser")(function* findUser(userId: string) {
-  const [record] = yield* query((database) =>
+export const findUser = Effect.fn("findUser")(function* findUser(userId: string) {
+  const [foundUser] = yield* query((database) =>
     database.select().from(user).where(eq(user.id, userId)).limit(1),
   );
 
-  return record ?? null;
+  return foundUser ?? null;
 });
 
-const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
+export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
   credentialId: string,
   audience: Application,
 ) {
-  const [record] = yield* query((database) =>
+  const [passkeyOwner] = yield* query((database) =>
     database
       .select({ user })
       .from(passkey)
@@ -58,14 +57,14 @@ const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
       .limit(1),
   );
 
-  return record?.user ?? null;
+  return passkeyOwner?.user ?? null;
 });
 
-const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFactor(
+export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFactor(
   userId: string,
   audience: Application,
 ) {
-  const [keys] = yield* query((database) =>
+  const [passkeyCount] = yield* query((database) =>
     database
       .select({ count: count() })
       .from(passkey)
@@ -79,16 +78,16 @@ const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFa
       .where(and(eq(twoFactor.userId, userId), eq(twoFactor.verified, true)))
       .limit(1),
   );
-  return (keys?.count ?? 0) > 0 || totp !== undefined;
+  return (passkeyCount?.count ?? 0) > 0 || totp !== undefined;
 });
 
-const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionSecurity(
+export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionSecurity(
   sessionId: string,
   audience: Application,
 ) {
-  const now = new Date();
+  const checkedAt = new Date();
 
-  const [record] = yield* query((database) =>
+  const [liveSession] = yield* query((database) =>
     database
       .select({ session, user })
       .from(session)
@@ -98,33 +97,36 @@ const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionS
           eq(session.id, sessionId),
           eq(session.audience, audience),
           eq(session.securityVersion, user.securityVersion),
-          gt(session.expiresAt, now),
+          gt(session.expiresAt, checkedAt),
         ),
       )
       .limit(1),
   );
 
-  return record ?? null;
+  return liveSession ?? null;
 });
 
-const markSessionStrong = Effect.fn("markSessionStrong")(function* markSessionStrong(
-  sessionId: string,
-  audience: Application,
-  method: StrongAuthenticationMethod,
-) {
-  const [updated] = yield* query((database) =>
-    database
-      .update(session)
-      .set({ authenticatedAt: new Date(), authenticationMethod: method })
-      .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
-      .returning({ id: session.id }),
-  );
-  if (!updated) {
-    return yield* new SessionRevoked();
-  }
-});
+export const markSessionStrong = Effect.fn("markSessionStrong")(
+  function* markSessionStrong(strengthened: {
+    readonly sessionId: string;
+    readonly audience: Application;
+    readonly method: StrongAuthenticationMethod;
+  }) {
+    const { audience, method, sessionId } = strengthened;
+    const [strongSession] = yield* query((database) =>
+      database
+        .update(session)
+        .set({ authenticatedAt: new Date(), authenticationMethod: method })
+        .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
+        .returning({ id: session.id }),
+    );
+    if (!strongSession) {
+      return yield* new SessionRevoked();
+    }
+  },
+);
 
-const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserSessions(
+export const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserSessions(
   userId: string,
 ) {
   yield* query(async (database): Promise<void> => {
@@ -136,26 +138,16 @@ const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserS
   });
 });
 
-const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
-  const [record] = yield* query((database) =>
+export const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
+  const [wikiReader] = yield* query((database) =>
     database
       .select({ id: user.id })
       .from(user)
-      .where(and(eq(user.id, userId), eq(user.role, "admin"), eq(user.emailVerified, true)))
+      .where(
+        and(eq(user.id, userId), eq(user.role, ROLE.administrator), eq(user.emailVerified, true)),
+      )
       .limit(1),
   );
 
-  return record ?? null;
+  return wikiReader ?? null;
 });
-
-export {
-  SessionRevoked,
-  findPasskeyUser,
-  findUser,
-  findWikiReader,
-  getSessionSecurity,
-  hasEnrolledFactor,
-  hasVerificationAudience,
-  markSessionStrong,
-  revokeUserSessions,
-};

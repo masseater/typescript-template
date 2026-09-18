@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
+import { privateDirectoryMode, privateFileMode } from "@template/config/private-files";
 import { Console, Effect, Schema } from "effect";
 
 import { reportFailed } from "./failure.ts";
@@ -26,9 +27,6 @@ interface MapMove {
   readonly source: string;
 }
 
-const PRIVATE_FILE_MODE = 0o600;
-const PRIVATE_DIRECTORY_MODE = 0o700;
-
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
 const fileIo = <Value>(
@@ -47,12 +45,12 @@ const fail = (reason: PrivateMapsFailure["reason"]): Effect.Effect<never, Privat
 const moveMap = Effect.fn("moveMap")(function* moveMap(file: string, move: MapMove) {
   const target = path.join(move.destination, path.relative(move.source, file));
   const directory = path.dirname(target);
-  yield* fileIo(async () => mkdir(directory, { mode: PRIVATE_DIRECTORY_MODE, recursive: true }));
+  yield* fileIo(async () => mkdir(directory, { mode: privateDirectoryMode, recursive: true }));
   if ((yield* fileIo(async () => realpath(directory))) !== directory) {
     return yield* fail("private_directory_alias_forbidden");
   }
   yield* fileIo(async () => rename(file, target));
-  yield* fileIo(async () => chmod(target, PRIVATE_FILE_MODE));
+  yield* fileIo(async () => chmod(target, privateFileMode));
   return 1;
 });
 

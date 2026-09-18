@@ -1,9 +1,8 @@
-import { Email } from "@template/config";
+import { CloudflareId, Email } from "@template/config";
 import { Config, Effect, Redacted } from "effect";
 
 import {
   AuthSecret,
-  Id,
   Nonnegative,
   Origin,
   Positive,
@@ -34,7 +33,7 @@ const budget = Config.all({
 });
 
 const settings = Config.all({
-  accountId: Config.schema(Id, "CLOUDFLARE_ACCOUNT_ID"),
+  accountId: Config.schema(CloudflareId, "CLOUDFLARE_ACCOUNT_ID"),
   budget,
   mailFrom: Config.schema(Email, "TEMPLATE_MAIL_FROM"),
   observabilitySampling: Config.schema(SamplingRate, "TEMPLATE_OBSERVABILITY_SAMPLING").pipe(
@@ -46,7 +45,7 @@ const settings = Config.all({
     wiki: Config.schema(Origin, originKeys.wiki),
   }),
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
-  zoneId: Config.schema(Id, "CLOUDFLARE_ZONE_ID"),
+  zoneId: Config.schema(CloudflareId, "CLOUDFLARE_ZONE_ID"),
 }).pipe(Effect.flatMap(checkSharedConfig));
 
 const authSecret = Config.schema(AuthSecret, "TEMPLATE_AUTH_SECRET").pipe(

@@ -1,3 +1,4 @@
+import { AUTHENTICATION_METHOD, type Application } from "@template/config";
 import {
   getSessionSecurity,
   hasEnrolledFactor,
@@ -9,7 +10,6 @@ import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/a
 
 import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
 
-import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
@@ -52,7 +52,13 @@ const markTotpSessionStrong = async ({ audience, ctx, run }: HookScope): Promise
   }
   const current = await run(getSessionSecurity(session.session.id, audience));
   if (current && totpUpgradableMethods.has(current.session.authenticationMethod)) {
-    await run(markSessionStrong(current.session.id, audience, "password_totp"));
+    await run(
+      markSessionStrong({
+        audience,
+        method: AUTHENTICATION_METHOD.passwordTotp,
+        sessionId: current.session.id,
+      }),
+    );
   }
 };
 

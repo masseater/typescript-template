@@ -2,7 +2,7 @@ import { Effect, Predicate, Schema } from "effect";
 
 import { CloudflareFailure } from "./config.ts";
 
-const REQUEST_TIMEOUT_MS = 30_000;
+const ACCOUNT_API_TIMEOUT_MS = 30_000;
 const NOT_FOUND_STATUS = 404;
 const MISSING_REASON = `status_${NOT_FOUND_STATUS}`;
 
@@ -82,7 +82,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
       fetch(url, {
         headers: { authorization: `Bearer ${apiToken}` },
         redirect: "error",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+        signal: AbortSignal.any([signal, AbortSignal.timeout(ACCOUNT_API_TIMEOUT_MS)]),
       }),
   });
   if (response.status === NOT_FOUND_STATUS) {

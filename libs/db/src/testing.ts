@@ -57,4 +57,12 @@ const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
 
 export { bootstrapAdmin } from "./bootstrap-statement.ts";
+export {
+  addCredential,
+  addOAuthGrant,
+  addSession,
+  addUser,
+  oauthGrantCounts,
+  recordedAt,
+} from "./records-fixture.ts";
 export { EmptyTestDatabase, TestDatabase, getSchemaShape, runStatement };

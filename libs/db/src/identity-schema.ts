@@ -1,10 +1,23 @@
-import { applications, authenticationMethods, roles } from "@template/config";
+import {
+  AUTHENTICATION_METHOD,
+  ROLE,
+  applications,
+  authenticationMethods,
+  roles,
+} from "@template/config";
+import { getAuthTables } from "better-auth/db";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/effect-schema";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+const { session: sessionModel, user: userModel } = getAuthTables({});
+
+if (userModel === undefined || sessionModel === undefined) {
+  throw new Error("better-auth defines no user or session model");
+}
+
 const user = sqliteTable(
-  "user",
+  userModel.modelName,
   {
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     email: text("email").notNull(),
@@ -13,7 +26,7 @@ const user = sqliteTable(
     image: text("image"),
     name: text("name").notNull(),
     profile: text("profile").notNull().default(""),
-    role: text("role", { enum: roles }).notNull().default("user"),
+    role: text("role", { enum: roles }).notNull().default(ROLE.member),
     securityVersion: integer("security_version").notNull().default(0),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
@@ -26,13 +39,13 @@ const user = sqliteTable(
 );
 
 const session = sqliteTable(
-  "session",
+  sessionModel.modelName,
   {
     audience: text("audience", { enum: applications }).notNull(),
     authenticatedAt: integer("authenticated_at", { mode: "timestamp_ms" }),
     authenticationMethod: text("authentication_method", { enum: authenticationMethods })
       .notNull()
-      .default("password"),
+      .default(AUTHENTICATION_METHOD.password),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),

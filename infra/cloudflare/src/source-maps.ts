@@ -1,6 +1,7 @@
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 
+import { privateDirectoryMode, privateFileMode } from "@template/config/private-files";
 import { Effect } from "effect";
 
 import { fail, io, type ArtifactFailure } from "./artifact-io.ts";
@@ -28,19 +29,15 @@ const directoryExists = (source: string): Effect.Effect<boolean, ArtifactFailure
   );
 };
 
-const OWNER_ONLY_DIRECTORY_MODE = 0o700;
-
-const OWNER_ONLY_FILE_MODE = 0o600;
-
 const copyMap = (
   from: string,
   destination: string,
   to: string,
 ): Effect.Effect<number, ArtifactFailure> => {
   return io(async () => {
-    await mkdir(destination, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
+    await mkdir(destination, { mode: privateDirectoryMode, recursive: true });
     await copyFile(from, to);
-    await chmod(to, OWNER_ONLY_FILE_MODE);
+    await chmod(to, privateFileMode);
     return 1;
   });
 };

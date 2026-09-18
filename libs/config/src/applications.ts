@@ -1,5 +1,11 @@
+/** @canonical-values config.application */
 export const applications = ["user", "admin", "wiki"] as const;
 export type Application = (typeof applications)[number];
+export const APPLICATION = {
+  user: applications[0],
+  admin: applications[1],
+  wiki: applications[2],
+} as const;
 
 const USER_PORT = 3001;
 const ADMIN_PORT = 3002;
@@ -25,15 +31,28 @@ export const grants = (app: Application, capability: Capability): boolean => {
   return granted.includes(capability);
 };
 
+/** @canonical-values config.role */
 export const roles = ["user", "admin"] as const;
 export type Role = (typeof roles)[number];
+export const ROLE = { member: roles[0], administrator: roles[1] } as const;
+
+/** @canonical-values config.strong-authentication-method */
 export const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
 export type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
+
+/** @canonical-values config.authentication-method */
 export const authenticationMethods = [
   "password",
   ...strongAuthenticationMethods,
   "recovery",
 ] as const;
+export const AUTHENTICATION_METHOD = {
+  password: authenticationMethods[0],
+  passwordTotp: authenticationMethods[1],
+  passkey: authenticationMethods[2],
+  recovery: authenticationMethods[3],
+} as const;
+
 export const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
 
 const STORYBOOK_PORT = 3051;

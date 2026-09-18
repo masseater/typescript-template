@@ -4,12 +4,12 @@ import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys, secretsFile } from "@template/config/deployment";
+import { privateFileMode } from "@template/config/private-files";
 import { Effect, type Scope } from "effect";
 
 import { verifySecretsFile } from "./credentials.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
 
-const OWNER_ONLY_FILE_MODE = 0o600;
 const GROUP_READABLE_FILE_MODE = 0o640;
 
 const complete = deploymentKeys
@@ -35,7 +35,7 @@ it.effect("accepts an owner-only file that declares every deployment input", () 
   Effect.gen(function* program() {
     const directory = yield* temporaryDirectory();
     const filename = path.join(directory, "cloudflare.env");
-    yield* writeSecrets(filename, complete, OWNER_ONLY_FILE_MODE);
+    yield* writeSecrets(filename, complete, privateFileMode);
     const verified = yield* verifySecretsFile(filename);
     assert.strictEqual(verified.filename, filename);
     assert.include(verified.contents, "TEMPLATE_PREFIX=");
@@ -46,7 +46,7 @@ it.effect("names the inputs the file is missing", () =>
   Effect.gen(function* program() {
     const directory = yield* temporaryDirectory();
     const filename = path.join(directory, "cloudflare.env");
-    yield* writeSecrets(filename, "CLOUDFLARE_API_TOKEN=token\n", OWNER_ONLY_FILE_MODE);
+    yield* writeSecrets(filename, "CLOUDFLARE_API_TOKEN=token\n", privateFileMode);
     const failure = yield* verifySecretsFile(filename).pipe(Effect.flip);
     assert.strictEqual(failure.code, "secrets_file_incomplete");
     assert.deepStrictEqual(
@@ -71,7 +71,7 @@ it.effect("refuses a file reached through a symbolic link", () =>
     const directory = yield* temporaryDirectory();
     const real = path.join(directory, "real.env");
     const link = path.join(directory, "cloudflare.env");
-    yield* writeSecrets(real, complete, OWNER_ONLY_FILE_MODE);
+    yield* writeSecrets(real, complete, privateFileMode);
     yield* Effect.promise(async () => symlink(real, link));
     const failure = yield* verifySecretsFile(link).pipe(Effect.flip);
     assert.strictEqual(failure.code, "secrets_file_symlink_forbidden");
@@ -84,7 +84,7 @@ it.effect("refuses a directory reached through a symbolic link", () =>
     const real = path.join(directory, "real");
     const link = path.join(directory, "linked");
     yield* Effect.promise(async () => mkdir(real));
-    yield* writeSecrets(path.join(real, "cloudflare.env"), complete, OWNER_ONLY_FILE_MODE);
+    yield* writeSecrets(path.join(real, "cloudflare.env"), complete, privateFileMode);
     yield* Effect.promise(async () => symlink(real, link));
     const failure = yield* verifySecretsFile(path.join(link, "cloudflare.env")).pipe(Effect.flip);
     assert.strictEqual(failure.code, "secrets_file_symlink_forbidden");

@@ -1,10 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { privateDirectoryMode, privateFileMode } from "@template/config/private-files";
 import { workerCompatibility } from "@template/config/worker";
-
-const OWNER_ONLY_DIRECTORY_MODE = 0o700;
-const OWNER_ONLY_FILE_MODE = 0o600;
 
 const localDatabase = {
   binding: "DB",
@@ -16,7 +14,7 @@ const localDatabasePersistence = path.join(import.meta.dirname, "../../../.local
 const localDatabaseStore = path.join(localDatabasePersistence, "v3");
 
 const writeLocalDatabaseConfig = async (): Promise<string> => {
-  await mkdir(localDatabasePersistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
+  await mkdir(localDatabasePersistence, { mode: privateDirectoryMode, recursive: true });
   const file = path.join(localDatabasePersistence, "wrangler.generated.json");
   const config = {
     compatibility_date: workerCompatibility.date,
@@ -24,7 +22,7 @@ const writeLocalDatabaseConfig = async (): Promise<string> => {
     d1_databases: [localDatabase],
     name: "template-local-database",
   };
-  await writeFile(file, `${JSON.stringify(config)}\n`, { mode: OWNER_ONLY_FILE_MODE });
+  await writeFile(file, `${JSON.stringify(config)}\n`, { mode: privateFileMode });
   return file;
 };
 

@@ -6,10 +6,11 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { applicationPorts, applications, loopbackHosts, type Application } from "@template/config";
+import { privateDirectoryMode } from "@template/config/private-files";
 import { Effect, Schema } from "effect";
 
 import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
-import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
+import { assertOwnerOnly, replacePrivateFile } from "./private-files.ts";
 
 type App = Application;
 type RouteName = App | "mailpit";

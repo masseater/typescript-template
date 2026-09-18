@@ -4,13 +4,13 @@ import { RemoteFailure } from "./remote-input.ts";
 
 import type { DatabaseExecutor } from "./remote-operations.ts";
 
-const REQUEST_TIMEOUT_MS = 30_000;
-const StatementResult = Schema.Struct({
+const D1_API_TIMEOUT_MS = 30_000;
+const StatementRows = Schema.Struct({
   results: Schema.Array(Schema.Unknown),
   success: Schema.Literal(true),
 });
 const QueryResponse = Schema.Struct({
-  result: Schema.Array(StatementResult),
+  result: Schema.Array(StatementRows),
   success: Schema.Literal(true),
 });
 
@@ -31,7 +31,7 @@ const remoteExecutor = ({
   return {
     batch: (queries) =>
       Effect.gen(function* batch() {
-        const response = yield* Effect.tryPromise({
+        const d1Response = yield* Effect.tryPromise({
           catch: queryFailed,
 
           try: async (signal) =>
@@ -40,23 +40,23 @@ const remoteExecutor = ({
               headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
               method: "POST",
               redirect: "error",
-              signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+              signal: AbortSignal.any([signal, AbortSignal.timeout(D1_API_TIMEOUT_MS)]),
             }),
         });
-        if (!response.ok) {
+        if (!d1Response.ok) {
           return yield* queryFailed();
         }
-        const body = yield* Effect.tryPromise({
+        const responseJson = yield* Effect.tryPromise({
           catch: queryFailed,
-          try: async (): Promise<unknown> => response.json(),
+          try: async (): Promise<unknown> => d1Response.json(),
         });
-        const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(body).pipe(
+        const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(responseJson).pipe(
           Effect.mapError(queryFailed),
         );
         if (decoded.result.length !== queries.length) {
           return yield* queryFailed();
         }
-        return decoded.result.map((item) => item.results);
+        return decoded.result.map((statementRows) => statementRows.results);
       }),
   };
 };

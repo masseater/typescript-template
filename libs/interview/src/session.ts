@@ -32,7 +32,7 @@ const replace = Effect.fn("interview.replace")(function* replace(
   content: { readonly savedSheet?: unknown; readonly state: InterviewState },
 ) {
   const state = yield* Effect.orDie(encodeState(content.state));
-  yield* storeInterview(userId, version, { ...content, state });
+  yield* storeInterview({ ...content, state, userId, version });
   return viewOf(content.state);
 });
 

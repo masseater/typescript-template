@@ -23,7 +23,9 @@ const d1Executor = (database: D1Database): DatabaseExecutor => {
       Effect.tryPromise({
         catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
         try: async () => database.batch(prepareBatch(database, queries)),
-      }).pipe(Effect.map((results) => results.map((item) => item.results))),
+      }).pipe(
+        Effect.map((results) => results.map((executedStatement) => executedStatement.results)),
+      ),
   };
 };
 

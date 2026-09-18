@@ -21,7 +21,7 @@ const planReport = ({ operation, target }: RemoteInput, migrations: Migrations):
   return {
     databaseId: target.databaseId,
     event: "database.remote_plan",
-    migrations: migrations.map((item) => ({ hash: item.hash, name: item.name })),
+    migrations: migrations.map((migration) => ({ hash: migration.hash, name: migration.name })),
     ok: true,
     operation,
     remoteStateVerified: false,
@@ -53,12 +53,13 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
 });
 
 const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
-  function* runRemoteDatabaseCommand(args: readonly string[], input: unknown) {
-    const parsed = yield* parseRemoteInput(args, input);
+  function* runRemoteDatabaseCommand(commandArguments: readonly string[], input: unknown) {
+    const remoteInput = yield* parseRemoteInput(commandArguments, input);
     const migrations = yield* loadRemoteMigrations();
-    const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> = parsed.execute
-      ? yield* executeRemote(parsed, migrations)
-      : planReport(parsed, migrations);
+    const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> =
+      remoteInput.execute
+        ? yield* executeRemote(remoteInput, migrations)
+        : planReport(remoteInput, migrations);
     return report;
   },
 );

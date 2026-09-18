@@ -1,4 +1,4 @@
-import { Email } from "@template/config";
+import { CloudflareId, Email } from "@template/config";
 import { workerCompatibility } from "@template/config/worker";
 import { Config, Effect, Schema } from "effect";
 
@@ -39,7 +39,6 @@ const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 
-const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
@@ -68,7 +67,7 @@ const AuthSecret = Schema.String.check(
 );
 
 const SharedSettings = Schema.Struct({
-  accountId: Id,
+  accountId: CloudflareId,
   budget: Schema.Struct({
     budgetJpy: Positive,
     fixedCostUsd: Nonnegative,
@@ -80,7 +79,7 @@ const SharedSettings = Schema.Struct({
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
   prefix: Prefix,
-  zoneId: Id,
+  zoneId: CloudflareId,
 });
 
 type SharedConfig = typeof SharedSettings.Type;
@@ -169,7 +168,6 @@ export {
   CONFIRMATION_LENGTH,
   SamplingRate,
   CloudflareFailure,
-  Id,
   Nonnegative,
   Origin,
   Positive,
