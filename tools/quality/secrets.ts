@@ -43,33 +43,57 @@ const contentRules: Readonly<Record<string, RegExp>> = {
   "private-key": /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/u,
 };
 
-const WORD_BOUNDED_KEYS: ReadonlySet<string> = new Set(["TEMPLATE_PREFIX"]);
+const PREFIX_KEY = "TEMPLATE_PREFIX";
 const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/gu;
 
-function wordBounded(value: string): RegExp {
-  return new RegExp(
-    `(?<![0-9A-Za-z])${value.replaceAll(REGEXP_METACHARACTERS, String.raw`\$&`)}(?![0-9A-Za-z])`,
-    "u",
-  );
+type PrefixScan = "separated" | "word";
+
+function quoted(value: string): string {
+  return value.replaceAll(REGEXP_METACHARACTERS, String.raw`\$&`);
 }
 
-function leaks(content: string, { key, value }: DeploymentValue): boolean {
-  return WORD_BOUNDED_KEYS.has(key) ? wordBounded(value).test(content) : content.includes(value);
+function wordPattern(value: string): RegExp {
+  return new RegExp(`(?<![0-9A-Za-z])${quoted(value)}(?![0-9A-Za-z])`, "u");
+}
+
+function separatedPattern(value: string): RegExp {
+  return new RegExp(`(?<![0-9A-Za-z_-])${quoted(value)}(?=[-/])`, "u");
+}
+
+function prefixPattern(value: string, scan: PrefixScan): RegExp {
+  return scan === "word" ? wordPattern(value) : separatedPattern(value);
+}
+
+function leaks(content: string, { key, value }: DeploymentValue, scan: PrefixScan): boolean {
+  return key === PREFIX_KEY ? prefixPattern(value, scan).test(content) : content.includes(value);
+}
+
+function prefixScan(
+  environmentValues: readonly DeploymentValue[],
+  contents: readonly string[],
+): PrefixScan {
+  const prefix = environmentValues.find((entry) => entry.key === PREFIX_KEY)?.value;
+  if (prefix === undefined) {
+    return "word";
+  }
+  const pattern = wordPattern(prefix);
+  return contents.some((content) => pattern.test(content)) ? "separated" : "word";
 }
 
 function secretViolations(
-  filename: string,
-  content: string,
+  staged: Readonly<{ content: string; filename: string }>,
   environmentValues: readonly DeploymentValue[] = [],
+  scan: PrefixScan = "separated",
 ): string[] {
+  const { content, filename } = staged;
   return [
     ...(privateFile(filename) ? ["private-file"] : []),
     ...Object.keys(contentRules).filter((rule) => contentRules[rule]?.test(content) === true),
     ...environmentValues.flatMap((entry) =>
-      leaks(content, entry) ? [`deployment-value:${entry.key}`] : [],
+      leaks(content, entry, scan) ? [`deployment-value:${entry.key}`] : [],
     ),
   ];
 }
 
-export { deploymentValues, secretViolations };
-export type { DeploymentValue };
+export { deploymentValues, prefixScan, secretViolations };
+export type { DeploymentValue, PrefixScan };

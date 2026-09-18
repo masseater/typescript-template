@@ -62,7 +62,10 @@ function describeCause(
     return { code: "unknown_failure" };
   }
   const described = describeFailure(defect, confidential);
-  return "code" in described ? { ...described, defect: true } : { code: "defect", ...described };
+  const counted = cause.reasons.length > 1 ? { reasons: cause.reasons.length } : {};
+  return "code" in described
+    ? { ...described, ...counted, defect: true }
+    : { code: "defect", ...counted, ...described };
 }
 
 function reportCause(
@@ -78,5 +81,13 @@ function reportCause(
   });
 }
 
-export { OK_EXIT_CODE, describeCause, describeFailure, redact, reportCause, withVerifiedSecrets };
+export {
+  FAILED_EXIT_CODE,
+  OK_EXIT_CODE,
+  describeCause,
+  describeFailure,
+  redact,
+  reportCause,
+  withVerifiedSecrets,
+};
 export type { Confidential };

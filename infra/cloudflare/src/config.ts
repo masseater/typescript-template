@@ -33,6 +33,7 @@ function fail(
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
+const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 
@@ -62,6 +63,7 @@ const SamplingRate = Schema.Number.check(
 const AuthSecret = Schema.String.check(
   Schema.isMinLength(MIN_AUTH_SECRET_LENGTH),
   Schema.makeFilter((value: string) => value.trim() === value),
+  Schema.makeFilter((value: string) => new Set(value).size >= MIN_AUTH_SECRET_VARIETY),
 );
 
 const SharedSettings = Schema.Struct({

@@ -41,7 +41,7 @@ const config: KnipConfig = {
         "src/database-command.ts!",
       ],
       ignoreExportsUsedInFile: true,
-      project: ["src/**/*.ts!"],
+      project: ["src/**/*.ts!", "!src/account-fixture.ts!"],
     },
     "infra/error-monitor": {
       entry: ["src/worker.ts!"],

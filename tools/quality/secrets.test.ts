@@ -1,15 +1,15 @@
-import { deploymentValues, secretViolations } from "./secrets.ts";
+import type { DeploymentValue, PrefixScan } from "./secrets.ts";
+import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
 import { describe, expect, it } from "vite-plus/test";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import type { DeploymentValue } from "./secrets.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 import { secretsFile } from "@template/config/deployment";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 
-const unusablePrefix = "NOT_A_DEPLOYABLE_PREFIX";
+const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 
 async function readDeploymentValues(filename: string): Promise<DeploymentValue[]> {
   try {
@@ -59,6 +59,16 @@ async function withConfigurationHome(run: (home: string) => Promise<void>): Prom
 
 const awsAccessKeyBodyLength = 16;
 const githubTokenMinimumBodyLength = 36;
+const source = "infra/cloudflare/src/app.ts";
+const prefixValues = deploymentValues(`TEMPLATE_PREFIX="${unusablePrefix}"\n`);
+
+function violations(
+  staged: Readonly<{ content: string; filename: string }>,
+  values: readonly DeploymentValue[] = prefixValues,
+  scan: PrefixScan = "separated",
+): string[] {
+  return secretViolations(staged, values, scan);
+}
 
 describe("staged secret detection", () => {
   it.for([
@@ -67,51 +77,59 @@ describe("staged secret detection", () => {
     "apps/admin/.dev.vars.preview",
     ".local/runtime.json",
     ".local-agents/credentials.json",
-  ])("rejects staging private configuration: %s", (file) => {
+  ])("rejects staging private configuration: %s", (filename) => {
     expect.assertions(1);
-    expect(secretViolations(file, "example")).toContain("private-file");
+    expect(violations({ content: "example", filename }, [])).toContain("private-file");
   });
 
   it("permits a public template and detects credential material", () => {
     expect.hasAssertions();
-    expect(secretViolations(".env.example", "APP_ORIGIN=https://example.test")).toStrictEqual([]);
-    expect(
-      secretViolations("source.ts", ["-----BEGIN ", "OPENSSH PRIVATE KEY-----"].join("")),
-    ).toStrictEqual(["private-key"]);
-    expect(
-      secretViolations("source.ts", `AKIA${"A".repeat(awsAccessKeyBodyLength)}`),
-    ).toStrictEqual(["aws-access-key"]);
-    expect(
-      secretViolations("source.ts", `ghp_${"a".repeat(githubTokenMinimumBodyLength)}`),
-    ).toStrictEqual(["github-token"]);
+    const material = [
+      [".env.example", "APP_ORIGIN=https://example.test", []],
+      ["source.ts", ["-----BEGIN ", "OPENSSH PRIVATE KEY-----"].join(""), ["private-key"]],
+      ["source.ts", `AKIA${"A".repeat(awsAccessKeyBodyLength)}`, ["aws-access-key"]],
+      ["source.ts", `ghp_${"a".repeat(githubTokenMinimumBodyLength)}`, ["github-token"]],
+    ] as const;
+    for (const [filename, content, expected] of material) {
+      expect(violations({ content, filename }, [])).toStrictEqual(expected);
+    }
   });
 });
 
-describe("short deployment prefixes", () => {
-  const values = deploymentValues('TEMPLATE_PREFIX="acme"\n');
-
+describe("deployment prefixes written into the tree", () => {
   it.for([
-    "const name = 'acme';",
-    'const db = "acme-db";',
-    "export const worker = `acme-user`;",
-    "# acme",
-    "run --stage acme",
-    "https://acme.example.com",
-  ])("detects the prefix written into the tree: %s", (content) => {
+    `const db = "${unusablePrefix}-db";`,
+    `export const worker = "${unusablePrefix}-user";`,
+    `const origin = "https://${unusablePrefix}-app.example.com";`,
+    `Cannot adopt resource 'template-user/${unusablePrefix}/Worker'`,
+    `--stage ${unusablePrefix}-x`,
+  ])("detects a name or path built from the prefix: %s", (content) => {
     expect.assertions(1);
-    expect(secretViolations("infra/cloudflare/src/app.ts", content, values)).toStrictEqual([
+    expect(violations({ content, filename: source })).toStrictEqual([
       "deployment-value:TEMPLATE_PREFIX",
     ]);
   });
 
   it.for([
-    "const placement = 1;",
-    "export const acmecorp = 2;",
-    "import { acmeish } from './x';",
-    "const x = 'bacme';",
-  ])("does not fire on a longer word that merely contains it: %s", (content) => {
+    `const placement = "${unusablePrefix}corp";`,
+    `import { x } from "./${unusablePrefix}ish";`,
+    `const y = "b${unusablePrefix}";`,
+    `describe("${unusablePrefix}", () => {});`,
+    `const file = "${unusablePrefix}.ts";`,
+    `const nested = "other-${unusablePrefix}-thing";`,
+  ])("leaves an ordinary word that merely contains it alone: %s", (content) => {
     expect.assertions(1);
-    expect(secretViolations("infra/cloudflare/src/app.ts", content, values)).toStrictEqual([]);
+    expect(violations({ content, filename: source })).toStrictEqual([]);
+  });
+
+  it("detects the bare word too when the tree never uses it as one", () => {
+    expect.hasAssertions();
+    expect(prefixScan(prefixValues, ["nothing related here"])).toBe("word");
+    expect(prefixScan(prefixValues, [`a ${unusablePrefix} word`])).toBe("separated");
+    const bare = `describe("${unusablePrefix}", () => {});`;
+    expect(violations({ content: bare, filename: source }, prefixValues, "word")).toStrictEqual([
+      "deployment-value:TEMPLATE_PREFIX",
+    ]);
   });
 });
 
@@ -135,10 +153,10 @@ describe("deployment value leaks", () => {
       { key: "TEMPLATE_USER_ORIGIN", value: "https://app.deployment.example" },
     ]);
     expect(
-      secretViolations("infra/cloudflare/src/app.ts", `const p = '${unusablePrefix}';`, values),
+      violations({ content: `const p = "${unusablePrefix}-db";`, filename: source }, values),
     ).toStrictEqual(["deployment-value:TEMPLATE_PREFIX"]);
     expect(
-      secretViolations("infra/cloudflare/src/app.ts", "const p = config.prefix;", values),
+      violations({ content: "const p = config.prefix;", filename: source }, values),
     ).toStrictEqual([]);
   });
 });

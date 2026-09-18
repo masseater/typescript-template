@@ -1,9 +1,9 @@
+import { FAILED_EXIT_CODE, reportCause } from "./secrets.ts";
 import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { layer } from "alchemy/Alchemist";
-import { reportCause } from "./secrets.ts";
 
 const EVENT = "account.rejected";
 
@@ -23,7 +23,7 @@ NodeRuntime.runMain(
         }),
       );
       if (refused.length > 0) {
-        process.exitCode = 1;
+        process.exitCode = FAILED_EXIT_CODE;
       }
     }).pipe(
       Effect.provide(layer()),

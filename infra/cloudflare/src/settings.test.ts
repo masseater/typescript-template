@@ -1,13 +1,12 @@
+import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 import { Effect, Redacted, Schema } from "effect";
-import { Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
 import { assert, it } from "@effect/vitest";
 import { authSecret } from "./settings.ts";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-const AUTH_SECRET_LENGTH = 32;
-const accepted = "x".repeat(AUTH_SECRET_LENGTH);
+const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;
 
 function rejects(
@@ -45,6 +44,18 @@ it.effect("a rejected deployment input names its key without repeating its value
     assert.notInclude(described, "too-short");
   }),
 );
+
+const weakSecrets = [
+  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "abababababababababababababababab",
+  "                                        ",
+];
+
+for (const weak of weakSecrets) {
+  it.effect(`rejects a low-variety auth secret of length ${weak.length}`, () =>
+    rejects(AuthSecret, weak),
+  );
+}
 
 it.effect("the accepted secret stays redacted", () =>
   Effect.gen(function* program() {

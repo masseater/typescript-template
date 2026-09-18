@@ -3,6 +3,7 @@ import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
+import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
@@ -202,7 +203,7 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
-      process.exitCode = 1;
+      process.exitCode = FAILED_EXIT_CODE;
     }
   }).pipe(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -212,14 +213,14 @@ NodeRuntime.runMain(
         console.error(
           JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
         );
-        process.exitCode = 1;
+        process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
     Effect.catchCause(() =>
       Effect.sync(() => {
         // oxlint-disable-next-line no-console
         console.error(JSON.stringify({ event: "stacks.invalid" }));
-        process.exitCode = 1;
+        process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
   ),

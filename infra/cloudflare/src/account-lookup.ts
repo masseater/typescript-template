@@ -1,68 +1,73 @@
 import { Effect, Schema } from "effect";
-import { readDecoded, readJson } from "./account-read.ts";
+import { readList, readResource, unreadable } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 
-const Listing = Schema.Struct({
-  result: Schema.Array(Schema.Struct({ name: Schema.String })),
-});
+const Script = Schema.Struct({ result: Schema.Struct({ id: Schema.String }) });
+const Scripts = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
 const Stores = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
 const Domains = Schema.Struct({
-  result: Schema.Array(Schema.Struct({ hostname: Schema.String })),
+  result: Schema.Array(Schema.Struct({ hostname: Schema.String, service: Schema.String })),
 });
+const Records = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
 const Subdomain = Schema.Struct({
   result: Schema.Struct({ subdomain: Schema.optional(Schema.String) }),
 });
 const VerifiedToken = Schema.Struct({ result: Schema.Struct({ id: Schema.String }) });
-const PermissionGroup = Schema.Struct({ name: Schema.String });
-const Policy = Schema.Struct({ permission_groups: Schema.Array(PermissionGroup) });
+const Group = Schema.Struct({
+  id: Schema.optional(Schema.String),
+  name: Schema.optional(Schema.String),
+});
+const Policy = Schema.Struct({ permission_groups: Schema.Array(Group) });
 const TokenDetail = Schema.Struct({ result: Schema.Struct({ policies: Schema.Array(Policy) }) });
 
 const stateStorePresent = Effect.fn("stateStorePresent")(function* stateStorePresent(
   access: AccountAccess,
 ) {
-  const reading = yield* readJson(
-    access.apiToken,
+  const found = yield* readResource(
+    access,
     `accounts/${access.accountId}/workers/scripts/${STATE_STORE_SCRIPT_NAME}`,
+    Script,
   );
-  return reading.found;
+  return found !== undefined;
 });
 
 const secretsStoreCount = Effect.fn("secretsStoreCount")(function* secretsStoreCount(
   access: AccountAccess,
 ) {
-  const stores = yield* readDecoded(
+  const listed = yield* readList(
     access,
-    `accounts/${access.accountId}/secrets_store/stores`,
+    { path: `accounts/${access.accountId}/secrets_store/stores` },
     Stores,
   );
-  return stores === undefined ? 0 : stores.result.length;
+  return listed.result.length;
 });
 
 const workerNames = Effect.fn("workerNames")(function* workerNames(access: AccountAccess) {
-  const listed = yield* readDecoded(
+  const listed = yield* readList(
     access,
-    `accounts/${access.accountId}/workers/scripts`,
-    Listing,
+    { path: `accounts/${access.accountId}/workers/scripts` },
+    Scripts,
   );
-  return listed === undefined ? [] : listed.result.map((script) => script.name);
+  return listed.result.map((script) => script.id);
 });
 
-const attachedHostnames = Effect.fn("attachedHostnames")(function* attachedHostnames(
+const attachedService = Effect.fn("attachedService")(function* attachedService(
   access: AccountAccess,
+  hostname: string,
 ) {
-  const listed = yield* readDecoded(
+  const listed = yield* readList(
     access,
-    `accounts/${access.accountId}/workers/domains`,
+    { path: `accounts/${access.accountId}/workers/domains`, query: { hostname } },
     Domains,
   );
-  return listed === undefined ? [] : listed.result.map((domain) => domain.hostname);
+  return listed.result.find((domain) => domain.hostname === hostname)?.service;
 });
 
 const workersSubdomain = Effect.fn("workersSubdomain")(function* workersSubdomain(
   access: AccountAccess,
 ) {
-  const found = yield* readDecoded(
+  const found = yield* readResource(
     access,
     `accounts/${access.accountId}/workers/subdomain`,
     Subdomain,
@@ -73,34 +78,40 @@ const workersSubdomain = Effect.fn("workersSubdomain")(function* workersSubdomai
 const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
   access: AccountAccess,
   zoneId: string,
+  hostname: string,
 ) {
-  const listed = yield* readDecoded(access, `zones/${zoneId}/dns_records`, Listing);
-  return listed === undefined ? [] : listed.result.map((record) => record.name);
+  const listed = yield* readList(
+    access,
+    { path: `zones/${zoneId}/dns_records`, query: { name: hostname } },
+    Records,
+  );
+  return listed.result.map((record) => record.name);
 });
 
 const grantedPermissions = Effect.fn("grantedPermissions")(function* grantedPermissions(
   access: AccountAccess,
 ) {
-  const verified = yield* readDecoded(
+  const verified = yield* readResource(
     access,
     `accounts/${access.accountId}/tokens/verify`,
     VerifiedToken,
   );
   if (verified === undefined) {
-    return;
+    return yield* Effect.fail(unreadable());
   }
-  const detail = yield* readDecoded(
+  const detail = yield* readResource(
     access,
     `accounts/${access.accountId}/tokens/${verified.result.id}`,
     TokenDetail,
   );
-  return detail?.result.policies.flatMap((policy) =>
-    policy.permission_groups.map((group) => group.name),
-  );
+  if (detail === undefined) {
+    return yield* Effect.fail(unreadable());
+  }
+  return detail.result.policies.flatMap((policy) => policy.permission_groups);
 });
 
 export {
-  attachedHostnames,
+  attachedService,
   dnsRecordNames,
   grantedPermissions,
   secretsStoreCount,

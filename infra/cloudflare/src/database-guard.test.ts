@@ -4,11 +4,9 @@ import { describeCause, describeFailure } from "./secrets.ts";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect } from "effect";
 import { InMemoryService } from "alchemy/State";
-import type { Scope } from "effect";
-import type { SetupServer } from "msw/node";
 import type { StateService } from "alchemy/State";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
-import { setupServer } from "msw/node";
+import { mockServer } from "./account-fixture.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -18,24 +16,6 @@ const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.account
 const databaseName = `${target.prefix}-db`;
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 const otherDatabaseId = "11111111-2222-3333-4444-555555555555";
-
-function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> {
-  return Effect.acquireRelease(
-    Effect.sync(() => {
-      const server = setupServer(...handlers);
-      server.listen({ onUnhandledRequest: "error" });
-      return server;
-    }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (server) =>
-      Effect.sync(() => {
-        server.close();
-      }),
-  );
-}
 
 function storedDatabase(uuid: string): CreatedResourceState {
   return {

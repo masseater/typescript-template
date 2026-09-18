@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
-import { decodeBody, readJson } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
+import { readList } from "./account-read.ts";
 
 const DatabaseList = Schema.Struct({
   result: Schema.Array(Schema.Struct({ name: Schema.String, uuid: Schema.String })),
@@ -20,10 +20,11 @@ const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
   access: AccountAccess,
   name: string,
 ) {
-  const reading = yield* readJson(access.apiToken, `accounts/${access.accountId}/d1/database`, {
-    name,
-  }).pipe(Effect.mapError(unavailable));
-  const listed = yield* decodeBody(DatabaseList, reading.body).pipe(Effect.mapError(unavailable));
+  const listed = yield* readList(
+    access,
+    { path: `accounts/${access.accountId}/d1/database`, query: { name } },
+    DatabaseList,
+  ).pipe(Effect.mapError(unavailable));
   const matches = listed.result.filter((database) => database.name === name);
   if (matches.length > 1) {
     return yield* Effect.fail(unavailable());

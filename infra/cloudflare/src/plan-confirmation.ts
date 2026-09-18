@@ -1,5 +1,6 @@
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
 import { Effect, Redacted } from "effect";
+import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
 import type { Plan } from "alchemy/Plan";
 import type { Stack as StackRoute } from "alchemy/Alchemist";
@@ -50,6 +51,30 @@ function digest(value: unknown): string {
     .slice(0, CONFIRMATION_LENGTH);
 }
 
+const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "stack", "stage"];
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
+  const node: unknown = Reflect.get(value, ExprSymbol);
+  if (typeof node !== "object" || node === null) {
+    return { kind: "expression" };
+  }
+  const nested = new Set([...seen, value, node]);
+  const source: unknown = Reflect.get(node, "src");
+  const logicalId: unknown =
+    typeof source === "object" && source !== null ? Reflect.get(source, "LogicalId") : undefined;
+  return {
+    ...Object.fromEntries(
+      EXPRESSION_FIELDS.flatMap((field) => {
+        const found: unknown = Reflect.get(node, field);
+        // oxlint-disable-next-line typescript/no-use-before-define
+        return found === undefined ? [] : [[field, stable(found, nested)] as const];
+      }),
+    ),
+    ...(typeof logicalId === "string" ? { logicalId } : {}),
+  };
+}
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
   const nested = new Set([...seen, value]);
@@ -71,6 +96,9 @@ function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
 function stable(value: unknown, seen: ReadonlySet<unknown>): unknown {
   if (Redacted.isRedacted(value)) {
     return { redacted: digest(String(Redacted.value(value))) };
+  }
+  if (isOutputExpr(value)) {
+    return seen.has(value) ? "<cycle>" : stableExpression(value, seen);
   }
   if (typeof value === "function" || typeof value === "bigint") {
     return String(value);
@@ -158,20 +186,34 @@ function refusedRows(planned: PlannedStack): readonly Refusal[] {
   ];
 }
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function resourceProps(nodes: Plan["resources"]): readonly (readonly [string, unknown])[] {
+  return Object.entries(nodes).map(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
+      [fqn, node.action === "noop" ? undefined : node.props] as const,
+  );
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unknown])[] {
+  return Object.entries(nodes).map(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    ([fqn, node]: readonly [string, Plan["actions"][string]]) =>
+      [fqn, node.action === "run" ? node.input : undefined] as const,
+  );
+}
+
 function plannedStack(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "native" | "resources" | "stack">,
 ): PlannedStack {
-  const nodes: Plan["resources"] = snapshot.native.resources;
   return {
     actions: snapshot.actions,
-    props: Object.fromEntries(
-      Object.entries(nodes).map(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
-          [fqn, node.action === "noop" ? undefined : node.props] as const,
-      ),
-    ),
+    props: Object.fromEntries([
+      ...resourceProps(snapshot.native.resources),
+      ...actionInputs(snapshot.native.actions),
+    ]),
     resources: snapshot.resources,
     stack: snapshot.stack,
   };

@@ -1,14 +1,16 @@
 import { Effect, Redacted } from "effect";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
-import { acceptPlan, planConfirmation, planReport } from "./plan-confirmation.ts";
+import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import { assert, it } from "@effect/vitest";
 import { CONFIRMATION_LENGTH } from "./config.ts";
+import type { Plan } from "alchemy/Plan";
 import type { PlannedStack } from "./plan-confirmation.ts";
+import { ResourceExpr } from "alchemy/Output";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const { accountId } = verificationSettings;
 const otherAccountId = verificationSettings.zoneId;
-const stack = { name: "template-user", stage: "acme" };
+const stack = { name: "template-user", stage: "NOT-A-DEPLOYABLE-PREFIX" };
 
 function fqn(logicalId: string): string {
   return `${stack.name}/${stack.stage}/${logicalId}`;
@@ -32,6 +34,16 @@ function action(kind: PlannedAction["action"], logicalId: string): PlannedAction
   return { action: kind, actionType: "Cloudflare.Migration", fqn: fqn(logicalId), logicalId };
 }
 
+function nativePlan(shape: Readonly<Record<string, unknown>>): Plan {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return shape as unknown as Plan;
+}
+
+function expression(logicalId: string): unknown {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return new ResourceExpr({ LogicalId: logicalId, Type: "Cloudflare.Test" } as never);
+}
+
 function planned(
   resources: readonly PlannedResource[],
   props: Readonly<Record<string, unknown>> = {},
@@ -43,7 +55,7 @@ function planned(
 const workerProps = {
   domain: { name: "user.example.com", zoneId: verificationSettings.zoneId },
   env: { AUTH_SECRET: Redacted.make("first-secret-value") },
-  name: "acme-user",
+  name: "NOT-A-DEPLOYABLE-PREFIX-user",
 };
 
 const created = planned(
@@ -159,5 +171,67 @@ it.effect("refuses a plan that removes, replaces, adopts or drops a binding", ()
       assert.strictEqual(failure.code, code);
       assert.isAbove(failure.keys.length, 0);
     }
+  }),
+);
+
+it.effect("describes an unresolved same-stack reference instead of coercing it to a string", () =>
+  Effect.sync(() => {
+    const reference = expression("Bucket");
+    const other = expression("Queue");
+    const withReference = withProps({ ...workerProps, env: { STORE: reference } });
+    assert.match(token(withReference), new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u"));
+    assert.strictEqual(
+      token(withReference),
+      token(withProps({ ...workerProps, env: { STORE: reference } })),
+    );
+    assert.notStrictEqual(
+      token(withProps({ ...workerProps, env: { STORE: other } })),
+      token(withReference),
+      "a reference to another resource must not match",
+    );
+  }),
+);
+
+it.effect("carries the resource props and the action input the engine planned", () =>
+  Effect.sync(() => {
+    const native = nativePlan({
+      actions: {
+        [fqn("Migrate")]: { action: "run", input: { statements: 3 } },
+      },
+      resources: {
+        [fqn("Worker")]: { action: "create", props: workerProps },
+        [fqn("Email")]: { action: "noop" },
+      },
+    });
+    const built = plannedStack({
+      actions: [action("run", "Migrate")],
+      native,
+      resources: created.resources,
+      stack,
+    });
+    assert.deepStrictEqual(built.props[fqn("Worker")], workerProps);
+    assert.deepStrictEqual(built.props[fqn("Migrate")], { statements: 3 });
+    assert.isUndefined(built.props[fqn("Email")]);
+    const changed = plannedStack({
+      actions: [action("run", "Migrate")],
+      native: nativePlan({
+        ...native,
+        actions: { [fqn("Migrate")]: { action: "run", input: { statements: 4 } } },
+      }),
+      resources: created.resources,
+      stack,
+    });
+    assert.notStrictEqual(token(changed), token(built), "a changed action input must not match");
+  }),
+);
+
+it.effect("refuses a resource the plan deletes outright", () =>
+  Effect.gen(function* program() {
+    const removal = planned([resource("delete", "Worker")]);
+    const failure = yield* acceptPlan(removal, {
+      accountId,
+      confirmation: token(removal),
+    }).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "plan_removes_resources");
   }),
 );
