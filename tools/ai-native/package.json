@@ -1,0 +1,80 @@
+{
+  "name": "@repo/ai-native",
+  "version": "0.0.0",
+  "description": "Command wrappers that keep parallel heavy commands within the host's capacity and their output out of the caller's context window.",
+  "keywords": [
+    "tanstack-intent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/masseater/typescript-template.git",
+    "directory": "tools/ai-native"
+  },
+  "bin": {
+    "spool": "./src/spool/cli.ts",
+    "throttle": "./src/throttle/cli.ts",
+    "unabridged": "./src/unabridged/cli.ts"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./telemetry": "./src/telemetry/telemetry.ts",
+    "./vitest-sdk": "./src/telemetry/vitest-sdk.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "bin": {
+      "spool": "./dist/spool/cli.mjs",
+      "throttle": "./dist/throttle/cli.mjs",
+      "unabridged": "./dist/unabridged/cli.mjs"
+    },
+    "exports": {
+      "./telemetry": {
+        "types": "./dist/telemetry/telemetry.d.mts",
+        "default": "./dist/telemetry/telemetry.mjs"
+      },
+      "./vitest-sdk": {
+        "types": "./dist/telemetry/vitest-sdk.d.mts",
+        "default": "./dist/telemetry/vitest-sdk.mjs"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "check": "intent validate"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/api-logs": "0.221.0",
+    "@opentelemetry/context-async-hooks": "2.10.0",
+    "@opentelemetry/core": "catalog:",
+    "@opentelemetry/exporter-logs-otlp-http": "0.221.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
+    "@opentelemetry/propagator-env-carrier": "0.221.0",
+    "@opentelemetry/resources": "2.10.0",
+    "@opentelemetry/sdk-logs": "0.221.0",
+    "@opentelemetry/sdk-metrics": "catalog:",
+    "@opentelemetry/sdk-trace": "2.10.0",
+    "@opentelemetry/semantic-conventions": "1.43.0",
+    "cc-hooks-ts": "2.1.220",
+    "es-toolkit": "catalog:",
+    "fs-native-extensions": "1.5.0",
+    "shell-quote": "1.10.0"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@tanstack/intent": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

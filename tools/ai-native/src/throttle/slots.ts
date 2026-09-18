@@ -1,0 +1,129 @@
+import { randomBytes } from "node:crypto";
+import {
+  closeSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
+
+import { tryLock, unlock } from "fs-native-extensions";
+
+import { tryAcquireFileLock } from "./acquire-file-lock.ts";
+import { failedWithCode, failureSpelling } from "./failure-codes.ts";
+
+const markerPath = (slotDir: string, index: number): string => join(slotDir, `slot-${index}`);
+
+const lockPath = (marker: string): string => `${marker}.lock`;
+
+const waitersDir = (slotDir: string): string => join(slotDir, "waiters");
+
+const slotIndexes = (limit: number): number[] => [...Array(limit).keys()];
+
+export const ensureSlots = (slotDir: string, limit: number): void => {
+  mkdirSync(waitersDir(slotDir), { recursive: true });
+  for (const index of slotIndexes(limit)) {
+    const marker = markerPath(slotDir, index);
+    writeFileSync(marker, "", { flag: "a" });
+    writeFileSync(lockPath(marker), "", { flag: "a" });
+  }
+};
+
+export type SlotHold = { release: () => Promise<void> };
+
+const lockUnlessHeld = (marker: string): SlotHold | null => {
+  return tryAcquireFileLock({
+    path: lockPath(marker),
+    open: (path) => openSync(path, "r+"),
+    tryLock,
+    unlock,
+    close: closeSync,
+    recordGeneration: () => {
+      writeFileSync(marker, randomBytes(16).toString("hex"));
+    },
+  });
+};
+
+export type AcquireConfiguration = {
+  slotDir: string;
+  limit: number;
+};
+
+const firstFreeSlot = (configuration: AcquireConfiguration): SlotHold | null => {
+  for (const index of slotIndexes(configuration.limit)) {
+    const acquired = lockUnlessHeld(markerPath(configuration.slotDir, index));
+    if (acquired !== null) return acquired;
+  }
+  return null;
+};
+
+export const tryAcquireAny = (configuration: AcquireConfiguration): Promise<SlotHold | null> =>
+  new Promise((resolve) => {
+    resolve(firstFreeSlot(configuration));
+  });
+
+const generationIdentity = (marker: string): string => {
+  try {
+    return readFileSync(marker, "utf8") || "unused";
+  } catch (unreadableGeneration) {
+    return `unreadable:${failureSpelling(unreadableGeneration)}`;
+  }
+};
+
+export const slotStateFingerprint = (slotDir: string, limit: number): string =>
+  slotIndexes(limit)
+    .map((index) => generationIdentity(markerPath(slotDir, index)))
+    .join(",");
+
+export const enqueueWaiter = (slotDir: string): string => {
+  const spelled = [
+    String(Date.now()).padStart(13, "0"),
+    String(process.pid),
+    randomBytes(4).toString("hex"),
+  ].join("-");
+  const entryPath = join(waitersDir(slotDir), spelled);
+  writeFileSync(entryPath, `${process.pid}\n`);
+  return entryPath;
+};
+
+export const removeWaiter = (entryPath: string): void => {
+  rmSync(entryPath, { force: true, recursive: true });
+};
+
+const OWNED_BY_ANOTHER_USER_CODES: ReadonlySet<string> = new Set(["EPERM"]);
+
+const isAlive = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (failure) {
+    return failedWithCode(failure, OWNED_BY_ANOTHER_USER_CODES);
+  }
+};
+
+const UNREADABLE_ENTRY_CODES: ReadonlySet<string> = new Set(["ENOENT", "ENOTDIR", "EISDIR"]);
+
+const recordedPid = (entryPath: string): number | null => {
+  try {
+    const written = readFileSync(entryPath, "utf8").trim();
+    return /^[0-9]+$/.test(written) ? Number(written) : null;
+  } catch (unreadableEntry) {
+    if (failedWithCode(unreadableEntry, UNREADABLE_ENTRY_CODES)) return null;
+    throw unreadableEntry;
+  }
+};
+
+const survives = (entryPath: string): boolean => {
+  const pid = recordedPid(entryPath);
+  if (pid !== null && isAlive(pid)) return true;
+  removeWaiter(entryPath);
+  return false;
+};
+
+export const sweepWaiters = (slotDir: string): string[] =>
+  readdirSync(waitersDir(slotDir))
+    .toSorted()
+    .filter((spelled) => survives(join(waitersDir(slotDir), spelled)));

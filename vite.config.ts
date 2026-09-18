@@ -3,7 +3,7 @@ import { defaultExclude } from "vite-plus/test/config";
 
 import { taskInput } from "@repo/config/vite";
 
-import { generatedFiles, lint } from "./tools/quality/lint.ts";
+import { generatedFiles, importedToolPatterns, lint } from "./tools/quality/lint.ts";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -15,7 +15,7 @@ function textModule(code: string, id: string): string | undefined {
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   fmt: {
-    ignorePatterns: generatedFiles,
+    ignorePatterns: [...generatedFiles, ...importedToolPatterns],
     sortImports: { internalPattern: ["@repo/"], newlinesBetween: true },
     sortPackageJson: { sortScripts: true },
     sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
@@ -97,6 +97,11 @@ export default defineConfig({
       },
       "./tools/quality/vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
+      "./tools/ai-native",
+      "./tools/dont-review-it",
+      "./tools/lint-rule-authoring",
+      "./tools/repository-checks",
+      "./tools/stop-ai-slop",
     ],
     restoreMocks: false,
     testTimeout: 30_000,
