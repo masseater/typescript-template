@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vite-plus/test";
-
 import { lifecycles } from "@repo/config/vite";
+import { describe, expect, it } from "vite-plus/test";
 
 import {
   commands,
@@ -28,7 +27,11 @@ const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
 );
 
 const gatedTask = /^(?:build|check|verify)(?::|$)/u;
-const runOnDemand = new Set(["infra/cloudflare: verify:account", "tools/observe: verify"]);
+const runOnDemand = new Set([
+  "infra/cloudflare: verify:account",
+  "tools/observe: verify",
+  ".: check:repository",
+]);
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 
 const hookStages = Object.entries(hooks).map(

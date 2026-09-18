@@ -1,12 +1,12 @@
-import type { D1Database } from "@cloudflare/workers-types";
+import { reportFailed, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
-
-import { reportFailed, runCli } from "@repo/config/cli";
 
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
 import { Database } from "./database.ts";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>

@@ -1,11 +1,10 @@
-import type { ReactElement } from "react";
-
-import type { UserListState } from "#pages/users/model/user-list.ts";
-import type { UsersSearch } from "#pages/users/model/users-search.ts";
-
 import { FailedResults } from "./failed-results.tsx";
 import { LoadedResults } from "./loaded-results.tsx";
 import { UsersTable } from "./users-table.tsx";
+
+import type { UserListState } from "#pages/users/model/user-list.ts";
+import type { UsersSearch } from "#pages/users/model/users-search.ts";
+import type { ReactElement } from "react";
 
 function UserResults({
   onReload,

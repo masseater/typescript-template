@@ -1,6 +1,5 @@
 import { defineConfig } from "react-doctor/api";
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   categories: {
     Accessibility: "error",

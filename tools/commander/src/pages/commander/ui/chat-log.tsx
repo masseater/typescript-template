@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
-import type { ChatState } from "#shared/contract/index.ts";
 import { Status } from "@repo/ui";
 
 import { ChatEntry } from "./chat-entry.tsx";
 import { QueuedMessage } from "./queued-message.tsx";
+
+import type { ChatState } from "#shared/contract/index.ts";
+import type { ReactElement } from "react";
 
 function ChatLog({ chat }: Readonly<{ chat: ChatState }>): ReactElement {
   return (

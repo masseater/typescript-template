@@ -1,9 +1,10 @@
-import { Schema } from "effect";
-import type { ReactElement } from "react";
-
-import { serviceName } from "#shared/config/index.ts";
 import { decodeJson } from "@repo/runtime/client";
 import { LoginPage } from "@repo/ui/auth";
+import { Schema } from "effect";
+
+import { serviceName } from "#shared/config/index.ts";
+
+import type { ReactElement } from "react";
 
 const HTTP_FORBIDDEN = 403;
 const Redirect = Schema.Struct({ url: Schema.String });

@@ -1,13 +1,13 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Cause, Console, Effect, Option } from "effect";
-
 import { markFailed, runCli } from "@repo/config/cli";
+import { Cause, Console, Effect, Option } from "effect";
 
 import { deploymentCredentials } from "./credentials.ts";
 import { prefixScan, secretViolations } from "./secrets.ts";
 import { stagedFiles } from "./staged.ts";
+
 import type { StagedFile } from "./staged.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));

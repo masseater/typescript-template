@@ -1,11 +1,11 @@
+import { Field, FormColumn, Page, Status, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import type { ReactElement } from "react";
+
+import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { ProfileEditor } from "./profile-editor.tsx";
 
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
-import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
-import { Field, FormColumn, Page, Status, useToast } from "@repo/ui";
-
-import { ProfileEditor } from "./profile-editor.tsx";
+import type { ReactElement } from "react";
 
 function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElement {
   const navigate = useNavigate();

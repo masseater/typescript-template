@@ -1,11 +1,12 @@
 import { assert, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
-import type { Scope } from "effect";
 import { HttpResponse, delay, http } from "msw";
-import type { SetupServer } from "msw/node";
 import { setupServer } from "msw/node";
 
 import { endpoint, readList, requestReason } from "./account-read.ts";
+
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
 const PAGE_SIZE = 20;

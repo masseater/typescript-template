@@ -1,6 +1,5 @@
-import { Console, Effect } from "effect";
-
 import { runCli } from "@repo/config/cli";
+import { Console, Effect } from "effect";
 
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";

@@ -1,7 +1,7 @@
-import type { ReactElement } from "react";
-
 import { Field } from "./shared/ui/field";
 import { TotpField } from "./totp-field";
+
+import type { ReactElement } from "react";
 import type { TextInput } from "./use-text-input";
 
 function ChallengeCodeField({

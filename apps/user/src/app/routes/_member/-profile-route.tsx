@@ -1,7 +1,8 @@
 import { getRouteApi } from "@tanstack/react-router";
-import type { ReactElement } from "react";
 
 import { ProfilePage } from "#pages/profile/index.ts";
+
+import type { ReactElement } from "react";
 
 const route = getRouteApi("/_member/users/$id");
 

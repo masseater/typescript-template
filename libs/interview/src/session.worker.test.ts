@@ -1,9 +1,8 @@
 import { assert, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
-import { TestClock } from "effect/testing";
-
 import { findInterview } from "@repo/db/interview";
 import { TestDatabase, runStatement } from "@repo/db/testing";
+import { Effect, Layer } from "effect";
+import { TestClock } from "effect/testing";
 
 import { Interviewer } from "./interviewer.ts";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";

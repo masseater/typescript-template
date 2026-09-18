@@ -1,7 +1,7 @@
-import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
-
-import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
 import { scopeOf } from "./lint-context.ts";
+
+import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
+import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
 
 type Origin = readonly string[];
 type Resolve<Result> = (node: Node) => Result;

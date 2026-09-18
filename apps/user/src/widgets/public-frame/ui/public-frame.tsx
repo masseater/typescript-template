@@ -1,6 +1,6 @@
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-
 import { PublicHeader } from "./public-header.tsx";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function PublicFrame({
   children,

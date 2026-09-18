@@ -1,7 +1,8 @@
-import type { Ai } from "@cloudflare/workers-types";
 import { Context, Effect, Schema } from "effect";
 
 import { EmbeddingFailed } from "./embedding-failed.ts";
+
+import type { Ai } from "@cloudflare/workers-types";
 
 interface EmbedderShape {
   readonly available: boolean;

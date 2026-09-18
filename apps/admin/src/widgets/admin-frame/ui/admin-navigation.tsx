@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
-
 import { AdminNavigationItem } from "./admin-navigation-item.tsx";
+
+import type { ReactElement } from "react";
 
 const items = [
   { label: "ユーザー一覧", to: "/" },

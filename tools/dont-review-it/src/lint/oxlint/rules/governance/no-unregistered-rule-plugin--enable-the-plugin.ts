@@ -37,6 +37,45 @@ const namedRulesIn = (rules: ESTree.ObjectExpression): readonly NamedRule[] =>
     return [{ property, plugin: ruleName.slice(0, ruleName.indexOf(PLUGIN_SEPARATOR)), ruleName }];
   });
 
+const LINT_CONFIGURATION_MODULES = ["oxlint", "vite-plus", "dont-review-it"];
+
+const namesALintConfigurationModule = (specifier: string): boolean =>
+  LINT_CONFIGURATION_MODULES.some(
+    (named) =>
+      specifier === named || specifier.startsWith(`${named}/`) || specifier.endsWith(`/${named}`),
+  );
+
+const foreignConfigurationBuildersIn = (program: ESTree.Program): ReadonlySet<string> =>
+  new Set(
+    program.body.flatMap((statement) =>
+      statement.type === "ImportDeclaration" &&
+      typeof statement.source.value === "string" &&
+      !namesALintConfigurationModule(statement.source.value)
+        ? statement.specifiers.map((specifier) => specifier.local.name)
+        : [],
+    ),
+  );
+
+const calleeRootNameOf = (callee: ESTree.Node): string | null => {
+  if (callee.type === "Identifier") return callee.name;
+  return callee.type === "MemberExpression" ? calleeRootNameOf(callee.object) : null;
+};
+
+const isBuiltByAForeignTool = (
+  rules: ESTree.ObjectExpression,
+  foreignBuilders: ReadonlySet<string>,
+): boolean => {
+  const enclosing = (node: ESTree.Node | null | undefined): boolean => {
+    if (node === null || node === undefined) return false;
+    if (node.type === "CallExpression") {
+      const rootName = calleeRootNameOf(node.callee);
+      return rootName !== null && foreignBuilders.has(rootName);
+    }
+    return enclosing(node.parent);
+  };
+  return enclosing(rules.parent);
+};
+
 const ruleBlocksIn = (program: ESTree.Program): readonly ESTree.ObjectExpression[] => [
   ...nodesOfType(program, "ObjectExpression").flatMap((holder) => {
     const rules = ruleBlockObjectOf(holder);
@@ -83,7 +122,12 @@ export const noUnregisteredRulePlugin = createDontReviewItRule({
           ]),
         ]);
 
-        for (const named of ruleBlocksIn(program).flatMap(namedRulesIn)) {
+        const foreignBuilders = foreignConfigurationBuildersIn(program);
+        const configuredBlocks = ruleBlocksIn(program).filter(
+          (rules) => !isBuiltByAForeignTool(rules, foreignBuilders),
+        );
+
+        for (const named of configuredBlocks.flatMap(namedRulesIn)) {
           if (enabledPlugins.has(named.plugin)) continue;
           inspection.report({
             node: named.property,

@@ -1,10 +1,11 @@
-import type { ReactElement } from "react";
 import { expect, screen, userEvent } from "storybook/test";
 
 import preview from "../../../.storybook/preview";
 import { Button } from "./button";
 import { ToastProvider } from "./toast-provider";
 import { useToast } from "./use-toast";
+
+import type { ReactElement } from "react";
 
 function ToastTrigger(): ReactElement {
   const toast = useToast();

@@ -1,18 +1,19 @@
-import type { StateService } from "alchemy/State";
 import { Effect } from "effect";
 
-import type { AccountAccess } from "./account-read.ts";
-import type { SharedConfig } from "./config.ts";
 import { assertDatabaseMigrated, assertDatabaseUnclaimed } from "./database-guard.ts";
 import { assertSendingDomainUnclaimed } from "./email-guard.ts";
 import { assertTraceDestinationApplied } from "./observability-guard.ts";
-import type { StackName } from "./stacks.ts";
 import {
   applicationStacks,
   onboardingStack,
   stackDependencies,
   traceDestinationStack,
 } from "./stacks.ts";
+
+import type { StateService } from "alchemy/State";
+import type { AccountAccess } from "./account-read.ts";
+import type { SharedConfig } from "./config.ts";
+import type { StackName } from "./stacks.ts";
 
 const assertStackReady = Effect.fn("assertStackReady")(function* assertStackReady<
   Failure,

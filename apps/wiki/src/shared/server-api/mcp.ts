@@ -1,14 +1,14 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
-import type { Context } from "effect";
+import { authorizeMcpRequest } from "@repo/auth/mcp";
+import { AppOrigin, secureResponse } from "@repo/runtime/http";
 import { Effect } from "effect";
 import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
 
 import { source } from "#shared/content/index.ts";
-import { authorizeMcpRequest } from "@repo/auth/mcp";
-import { AppOrigin, secureResponse } from "@repo/runtime/http";
-import type { WikiServices } from "@repo/runtime/wiki";
-
 import { searchServer, wikiLlms } from "./search.ts";
+
+import type { WikiServices } from "@repo/runtime/wiki";
+import type { Context } from "effect";
 
 const mcpVersion = "1.0.0";
 

@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vite-plus/test";
-
 import { maximumKeywordLength, maximumMemberPage } from "@repo/runtime/contracts";
+import { describe, expect, it } from "vite-plus/test";
 
 import { normalizeUsersSearch } from "./users-search.ts";
 

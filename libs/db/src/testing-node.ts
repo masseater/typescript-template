@@ -1,10 +1,11 @@
-import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import { Context, Effect, Layer, Schema } from "effect";
 import { Miniflare } from "miniflare";
 
 import { Database } from "./database.ts";
 import { localDatabase } from "./local.ts";
 import { prepareBatch } from "./migrate-d1.ts";
+
+import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import type { RemoteFailure } from "./remote-input.ts";
 
 const miniflareCompatibilityDate = "2026-07-30";

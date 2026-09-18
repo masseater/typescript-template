@@ -1,8 +1,7 @@
 import { setupNetwork } from "@msw/cloudflare";
+import { mailpitOrigin } from "@repo/config";
 import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
-
-import { mailpitOrigin } from "@repo/config";
 
 const HTTP_BAD_REQUEST = 400;
 const mailConfig = { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: mailpitOrigin };

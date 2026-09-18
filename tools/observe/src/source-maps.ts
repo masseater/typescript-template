@@ -1,16 +1,16 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { SourceMap } from "node:module";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { sourceMapDirectories } from "@repo/config/source-maps";
 import { Effect, Schema } from "effect";
 
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Dirent } from "node:fs";
 import type { Application } from "@repo/config";
-import { sourceMapDirectories } from "@repo/config/source-maps";
 
 type App = Application;
 type Runtime = "client" | "server";

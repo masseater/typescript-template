@@ -1,14 +1,14 @@
 import { NodeServices } from "@effect/platform-node";
 import { assert, it } from "@effect/vitest";
 import { Effect, FileSystem, Schema } from "effect";
-import type { Scope } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-
-import type { Task } from "#shared/contract/index.ts";
 
 import { bd } from "./bd.ts";
 import { childEnvironment } from "./child-environment.ts";
 import { addComment, createLedger, locate, snapshot } from "./tasks.ts";
+
+import type { Task } from "#shared/contract/index.ts";
+import type { Scope } from "effect";
 
 const Created = Schema.Struct({ id: Schema.String });
 const Comments = Schema.Array(Schema.Struct({ created_at: Schema.String, id: Schema.String }));

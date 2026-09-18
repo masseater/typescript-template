@@ -1,11 +1,11 @@
-import { useState } from "react";
-
-import { adminClient } from "#shared/api/index.ts";
 import { apiData } from "@repo/runtime/client";
 import { RoleChanged, UserDeleted } from "@repo/runtime/contracts";
 import { errorMessage, useToast } from "@repo/ui";
+import { useState } from "react";
 
+import { adminClient } from "#shared/api/index.ts";
 import { nextRoles } from "./user-labels.ts";
+
 import type { ListedUser } from "./user-list.ts";
 
 type RowOperation = "delete" | "role";

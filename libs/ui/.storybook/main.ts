@@ -1,8 +1,8 @@
-import type { StorybookConfig } from "@storybook/react-vite";
-import tailwindcss from "@tailwindcss/vite";
-import type { InlineConfig } from "vite-plus";
-
 import { reactCompiler } from "@repo/config/vite";
+import tailwindcss from "@tailwindcss/vite";
+
+import type { StorybookConfig } from "@storybook/react-vite";
+import type { InlineConfig } from "vite-plus";
 
 function withAppTransforms(config: InlineConfig): InlineConfig {
   return { ...config, plugins: [...(config.plugins ?? []), tailwindcss(), reactCompiler()] };

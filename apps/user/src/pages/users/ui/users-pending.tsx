@@ -1,8 +1,8 @@
-import type { ReactElement } from "react";
-
 import { Status } from "@repo/ui";
 
 import { UsersBody } from "./users-body.tsx";
+
+import type { ReactElement } from "react";
 
 const placeholders = ["first", "second", "third", "fourth", "fifth", "sixth"] as const;
 
