@@ -92,5 +92,58 @@ const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
   return yield* decodeBody(shape, reading.body);
 });
 
-export { decodeBody, readList, readResource, unreadable };
+const FIRST_PAGE = 1;
+
+const readPage = Effect.fn("readPage")(function* readPage<Shape, Encoded>(
+  access: AccountAccess,
+  collection: Readonly<{ page: number; pageSize: number; path: string; query?: Query }>,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const reading = yield* fetchJson(access.apiToken, collection.path, {
+    ...collection.query,
+    page: String(collection.page),
+    per_page: String(collection.pageSize),
+  });
+  if (!reading.found) {
+    return yield* Effect.fail(unreadable());
+  }
+  const paged = yield* decodeBody(Paged, reading.body);
+  return {
+    rows: paged.result.length,
+    total: paged.result_info?.total_count,
+    value: yield* decodeBody(shape, reading.body),
+  };
+});
+
+const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
+  access: AccountAccess,
+  collection: Readonly<{ pageSize: number; path: string; query?: Query }>,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const first = yield* readPage(access, { ...collection, page: FIRST_PAGE }, shape);
+  if (first.total === undefined || first.total <= first.rows) {
+    return [first.value];
+  }
+  const rest = yield* Effect.forEach(
+    Array.from(
+      { length: Math.ceil(first.total / collection.pageSize) - FIRST_PAGE },
+      (_unused, index) => index + FIRST_PAGE + 1,
+    ),
+    (page) => readPage(access, { ...collection, page }, shape),
+  );
+  const gathered = rest.reduce(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (rows, page) => rows + page.rows,
+    first.rows,
+  );
+  if (gathered !== first.total) {
+    return yield* Effect.fail(unreadable());
+  }
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return [first.value, ...rest.map((page) => page.value)];
+});
+
+export { decodeBody, readList, readPages, readResource, unreadable };
 export type { AccountAccess };

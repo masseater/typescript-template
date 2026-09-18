@@ -7,6 +7,7 @@ import {
   verifiedAddresses,
   workerNames,
   workersSubdomain,
+  zoneName,
 } from "./account-lookup.ts";
 import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
@@ -37,7 +38,7 @@ function hostnames(config: SharedConfig): readonly string[] {
 
 function sendingRecordNames(config: SharedConfig): readonly string[] {
   const domain = sendingDomain(config.mailFrom);
-  return [`cf-bounce.${domain}`, `cf-bounce._domainkey.${domain}`];
+  return [`cf-bounce.${domain}`, `cf-bounce._domainkey.${domain}`, `_dmarc.${domain}`];
 }
 
 function presence(found: boolean): Presence {
@@ -106,14 +107,31 @@ const dnsVerdict = Effect.fn("dnsVerdict")(function* dnsVerdict(
   return found.flat().length > 0 ? ("taken" as const) : ("free" as const);
 });
 
-const alertVerdict = Effect.fn("alertVerdict")(function* alertVerdict(
+const senderVerdict = Effect.fn("senderVerdict")(function* senderVerdict(
+  access: AccountAccess,
+  config: SharedConfig,
+) {
+  const zone = yield* zoneName(access, config.zoneId);
+  const domain = sendingDomain(config.mailFrom);
+  if (domain === zone) {
+    return "zone_apex" as const;
+  }
+  return domain.endsWith(`.${zone}`) ? ("dedicated" as const) : ("outside_zone" as const);
+});
+
+const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVerdict(
   access: AccountAccess,
   recipients: readonly string[],
 ) {
-  const verified = new Set(yield* verifiedAddresses(access));
-  return recipients.every((recipient) => verified.has(recipient))
-    ? ("verified" as const)
-    : ("unverified" as const);
+  return yield* verifiedAddresses(access).pipe(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    Effect.map((addresses) =>
+      recipients.every((recipient) => addresses.includes(recipient))
+        ? ("free" as const)
+        : ("counted" as const),
+    ),
+    Effect.catchTag("CloudflareFailure", () => Effect.succeed("unreadable" as const)),
+  );
 });
 
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
@@ -136,12 +154,13 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
     Effect.catchCause(() => Effect.succeed<readonly string[]>([])),
   );
   return {
-    alertAddresses: yield* alertVerdict(access, config.budget.recipients),
+    alertQuota: yield* alertQuotaVerdict(access, config.budget.recipients),
     database: yield* databaseVerdict(access, config, store),
     deployToken: yield* tokenVerdict(access),
     dnsRecords: yield* dnsVerdict(access, config.zoneId, hostnames(config)),
     emailSending: yield* dnsVerdict(access, config.zoneId, sendingRecordNames(config)),
     secretsStore: presence((yield* secretsStoreCount(access)) > 0),
+    senderDomain: yield* senderVerdict(access, config),
     stateStore: presence(yield* stateStorePresent(access)),
     workerDomains: yield* domainVerdict(access, config, recorded),
     workerNames: yield* workerVerdict(access, declaredNames(config.prefix), recorded),
@@ -161,6 +180,7 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
   ] as const;
   return [
     ...claimed.filter((name) => inspection[name] === "taken"),
+    ...(inspection.senderDomain === "dedicated" ? [] : ["senderDomain"]),
     ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
     ...(inspection.deployToken.length > 0 ? ["deployToken"] : []),
   ];

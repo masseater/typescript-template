@@ -1,7 +1,9 @@
 import { Effect, Schema } from "effect";
-import { readList, readResource, unreadable } from "./account-read.ts";
+import { readList, readPages, readResource, unreadable } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
+
+const ADDRESS_PAGE_SIZE = 50;
 
 const Script = Schema.Struct({ result: Schema.Struct({ id: Schema.String }) });
 const Scripts = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
@@ -10,11 +12,10 @@ const Domains = Schema.Struct({
   result: Schema.Array(Schema.Struct({ hostname: Schema.String, service: Schema.String })),
 });
 const Records = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
-const Address = Schema.Struct({
-  email: Schema.String,
-  verified: Schema.optional(Schema.Unknown),
-});
+const Nullable = Schema.optional(Schema.Union([Schema.String, Schema.Null]));
+const Address = Schema.Struct({ email: Nullable, verified: Nullable });
 const Addresses = Schema.Struct({ result: Schema.Array(Address) });
+const Zone = Schema.Struct({ result: Schema.Struct({ name: Schema.String }) });
 const Subdomain = Schema.Struct({
   result: Schema.Struct({ subdomain: Schema.optional(Schema.String) }),
 });
@@ -96,14 +97,29 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
 const verifiedAddresses = Effect.fn("verifiedAddresses")(function* verifiedAddresses(
   access: AccountAccess,
 ) {
-  const listed = yield* readList(
+  const pages = yield* readPages(
     access,
-    { path: `accounts/${access.accountId}/email/routing/addresses` },
+    {
+      pageSize: ADDRESS_PAGE_SIZE,
+      path: `accounts/${access.accountId}/email/routing/addresses`,
+    },
     Addresses,
   );
-  return listed.result.flatMap((address) =>
-    typeof address.verified === "string" ? [address.email] : [],
+  return pages.flatMap((page) =>
+    page.result.flatMap((address) =>
+      typeof address.verified === "string" && typeof address.email === "string"
+        ? [address.email]
+        : [],
+    ),
   );
+});
+
+const zoneName = Effect.fn("zoneName")(function* zoneName(access: AccountAccess, zoneId: string) {
+  const found = yield* readResource(access, `zones/${zoneId}`, Zone);
+  if (found === undefined) {
+    return yield* Effect.fail(unreadable());
+  }
+  return found.result.name;
 });
 
 const grantedPermissions = Effect.fn("grantedPermissions")(function* grantedPermissions(
@@ -137,4 +153,5 @@ export {
   verifiedAddresses,
   workerNames,
   workersSubdomain,
+  zoneName,
 };

@@ -8,6 +8,7 @@ import {
   verifiedAddresses,
   workerNames,
   workersSubdomain,
+  zoneName,
 } from "./account-lookup.ts";
 import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
 import { Effect } from "effect";
@@ -21,6 +22,7 @@ const access = {
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
+const ADDRESS_PAGE_LIMIT = 50;
 const tokenId = "0123456789abcdef0123456789abcdef";
 const granted = deployTokenPermissions.map((required) => ({ name: required.satisfiedBy[0].name }));
 const withoutRoutes = granted.filter(
@@ -102,6 +104,7 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / Email Routing Addresses / Read",
       "Zone / Workers Routes / Edit",
       "Zone / DNS / Read",
+      "Zone / Zone Settings / Edit",
     ]);
     assert.deepStrictEqual(missingPermissions([{ name: "DNS Read" }]).toSorted(), [
       "Account / API Tokens / Edit",
@@ -114,6 +117,7 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / Workers Observability / Write",
       "Account / Workers Scripts / Edit",
       "Zone / Workers Routes / Edit",
+      "Zone / Zone Settings / Edit",
     ]);
   }),
 );
@@ -133,16 +137,61 @@ it.effect("refuses a page that does not carry every row Cloudflare counted", () 
 it.effect("reads only the destination addresses Cloudflare has dated as verified", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(
-        `${account}/email/routing/addresses`,
-        () =>
-          new HttpResponse(
-            '{"result":[{"email":"alerts@example.com","verified":"2026-01-01T00:00:00Z"},{"email":"pending@example.com","verified":null}]}',
-            { headers: { "content-type": "application/json" } },
-          ),
-      ),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      http.get(`${account}/email/routing/addresses`, ({ request }) => {
+        const asked = new URL(request.url).searchParams;
+        assert.strictEqual(asked.get("per_page"), String(ADDRESS_PAGE_LIMIT));
+        assert.strictEqual(asked.get("page"), "1");
+        return new HttpResponse(
+          '{"result":[{"email":"alerts@example.com","verified":"2026-01-01T00:00:00Z"},{"email":"pending@example.com","verified":null},{"email":null,"verified":null}],"result_info":{"total_count":3}}',
+          { headers: { "content-type": "application/json" } },
+        );
+      }),
     );
     assert.deepStrictEqual(yield* verifiedAddresses(access), ["alerts@example.com"]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("asks for every page Cloudflare counted rather than the first one", () =>
+  Effect.gen(function* program() {
+    const rows = Array.from({ length: ADDRESS_PAGE_LIMIT + 1 }, (_unused, index) => ({
+      email: `alerts-${index}@example.com`,
+      verified: "2026-01-01T00:00:00Z",
+    }));
+    yield* mockServer(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      http.get(`${account}/email/routing/addresses`, ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get("page"));
+        return HttpResponse.json({
+          result: rows.slice((page - 1) * ADDRESS_PAGE_LIMIT, page * ADDRESS_PAGE_LIMIT),
+          result_info: { total_count: rows.length },
+        });
+      }),
+    );
+    assert.lengthOf(yield* verifiedAddresses(access), rows.length);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses an address list whose pages do not add up to what Cloudflare counted", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${account}/email/routing/addresses`, () =>
+        HttpResponse.json({ result: [], result_info: { total_count: 2 } }),
+      ),
+    );
+    const failure = yield* verifiedAddresses(access).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "account_read_unavailable");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reads the zone by id so the sender's domain can be told from the apex", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`, () =>
+        HttpResponse.json({ result: { name: "example.com" } }),
+      ),
+    );
+    assert.strictEqual(yield* zoneName(access, verificationSettings.zoneId), "example.com");
   }).pipe(Effect.scoped),
 );
 
@@ -199,6 +248,7 @@ it.effect("names the deploy token permissions the account token does not carry",
         { name: "DNS Write" },
         { name: "Email Sending Write" },
         { name: "Email Routing Addresses Write" },
+        { name: "Zone Settings Write" },
       ]),
       [],
       "a token holding only the write groups already satisfies the read requirements",

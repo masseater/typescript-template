@@ -1,5 +1,12 @@
+import {
+  applyOrderViolations,
+  onboardingStack,
+  sendingStacks,
+  stackDependencies,
+  stackName,
+  stackNames,
+} from "./stacks.ts";
 import { describe, expect, it } from "vite-plus/test";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { Effect } from "effect";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
@@ -19,16 +26,27 @@ function defaultExport(module: unknown): unknown {
 }
 
 describe("alchemy stacks", () => {
-  it("every apply unit runs once, after the units whose resources it reads", () => {
+  it("every apply unit runs once, after the units it reads from and after the onboarding", () => {
     expect.hasAssertions();
     expect(new Set(stackNames).size).toBe(stackNames.length);
     expect([...stackNames].toSorted()).toStrictEqual(Object.keys(stackDependencies).toSorted());
-    const violations = stackNames.flatMap((stack) =>
-      stackDependencies[stack].filter(
-        (dependency) => stackNames.indexOf(dependency) >= stackNames.indexOf(stack),
-      ),
+    expect(applyOrderViolations(stackNames)).toStrictEqual([]);
+  });
+
+  it("reports the units an apply order would run before what they need", () => {
+    expect.hasAssertions();
+    const lastOnboarding = [
+      ...stackNames.filter((stack) => stack !== onboardingStack),
+      onboardingStack,
+    ];
+    expect(applyOrderViolations(lastOnboarding).toSorted()).toStrictEqual(
+      [...sendingStacks].toSorted(),
     );
-    expect(violations).toStrictEqual([]);
+    const lastDatabase = [
+      ...stackNames.filter((stack) => stack !== "database"),
+      "database" as const,
+    ];
+    expect(applyOrderViolations(lastDatabase).toSorted()).toStrictEqual(["admin", "user", "wiki"]);
   });
 
   it("the apply units and the stack programs on disk are the same set", () => {

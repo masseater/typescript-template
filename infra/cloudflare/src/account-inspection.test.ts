@@ -15,6 +15,8 @@ const access = { accountId: config.accountId, apiToken: "inspection-test-not-a-r
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const zone = `https://api.cloudflare.com/client/v4/zones/${config.zoneId}`;
 const NOT_FOUND_STATUS = 404;
+const FORBIDDEN_STATUS = 403;
+const sending = "send.example.com";
 const tokenId = "0123456789abcdef0123456789abcdef";
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
@@ -92,54 +94,79 @@ const tokenHandlers = [
   ),
 ];
 
+const ADDRESS_PAGE_LIMIT = 50;
+const INVALID_PAGE_SIZE_STATUS = 400;
+const FIRST_PAGE = 1;
+
+function addressPage(
+  addresses: readonly { readonly email: string; readonly verified?: string }[],
+  url: string,
+): Response {
+  const asked = new URL(url).searchParams;
+  const size = Number(asked.get("per_page"));
+  if (size > ADDRESS_PAGE_LIMIT) {
+    return HttpResponse.json({ success: false }, { status: INVALID_PAGE_SIZE_STATUS });
+  }
+  const page = Number(asked.get("page") ?? String(FIRST_PAGE));
+  return HttpResponse.json({
+    result: addresses.slice((page - FIRST_PAGE) * size, page * size),
+    result_info: { total_count: addresses.length },
+  });
+}
+
+function dnsPage(records: readonly string[], url: string): Response {
+  const name = new URL(url).searchParams.get("name");
+  return HttpResponse.json({
+    result: records.filter((record) => record === name).map((record) => ({ name: record })),
+  });
+}
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function accountHandlers(options: {
   readonly token?: readonly ReturnType<typeof http.get>[];
   readonly addresses?: readonly { readonly email: string; readonly verified?: string }[];
-  readonly databases: readonly { readonly name: string; readonly uuid: string }[];
-  readonly domains: readonly { readonly hostname: string; readonly service: string }[];
-  readonly records: readonly string[];
-  readonly scripts: readonly string[];
-  readonly stores: number;
+  readonly databases?: readonly { readonly name: string; readonly uuid: string }[];
+  readonly domains?: readonly { readonly hostname: string; readonly service: string }[];
+  readonly records?: readonly string[];
+  readonly scripts?: readonly string[];
+  readonly stores?: number;
+  readonly zoneName?: string;
 }): Parameters<typeof mockServer> {
   return [
     ...(options.token ?? tokenHandlers),
     http.get(`${account}/d1/database`, () =>
-      HttpResponse.json({ result: options.databases, success: true }),
+      HttpResponse.json({ result: options.databases ?? [], success: true }),
     ),
     http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
       HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
     ),
     http.get(`${account}/secrets_store/stores`, () =>
-      HttpResponse.json({ result: Array.from({ length: options.stores }, () => ({ id: "s" })) }),
+      HttpResponse.json({
+        result: Array.from({ length: options.stores ?? 0 }, () => ({ id: "s" })),
+      }),
     ),
     http.get(`${account}/workers/scripts`, () =>
-      HttpResponse.json({ result: options.scripts.map((id) => ({ id })) }),
+      HttpResponse.json({ result: (options.scripts ?? []).map((id) => ({ id })) }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     http.get(`${account}/workers/domains`, ({ request }) => {
       const hostname = new URL(request.url).searchParams.get("hostname");
       return HttpResponse.json({
-        result: options.domains.filter((domain) => domain.hostname === hostname),
+        result: (options.domains ?? []).filter((domain) => domain.hostname === hostname),
       });
     }),
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
-    http.get(`${account}/email/routing/addresses`, () =>
-      HttpResponse.json({ result: options.addresses ?? [] }),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    http.get(`${account}/email/routing/addresses`, ({ request }) =>
+      addressPage(options.addresses ?? [], request.url),
+    ),
+    http.get(zone, () =>
+      HttpResponse.json({ result: { name: options.zoneName ?? "example.com" } }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    http.get(`${zone}/dns_records`, ({ request }) => {
-      const name = new URL(request.url).searchParams.get("name");
-      return HttpResponse.json({
-        result: options.records
-          .filter((record) => record === name)
-          .map((record) => ({
-            name: record,
-          })),
-      });
-    }),
+    http.get(`${zone}/dns_records`, ({ request }) => dnsPage(options.records ?? [], request.url)),
   ];
 }
 
@@ -161,45 +188,50 @@ it.effect("clears an account that holds nothing this deployment claims", () =>
     assert.deepStrictEqual(inspection.workerDomains, "free");
     assert.deepStrictEqual(inspection.deployToken, []);
     assert.strictEqual(inspection.emailSending, "free");
-    assert.strictEqual(inspection.alertAddresses, "unverified");
+    assert.strictEqual(inspection.senderDomain, "dedicated");
+    assert.strictEqual(inspection.alertQuota, "counted");
   }).pipe(Effect.scoped),
 );
 
-it.effect("blocks the sending domain another project already onboarded", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      ...accountHandlers({
-        addresses: config.budget.recipients.map((email) => ({
-          email,
-          verified: "2026-01-01T00:00:00Z",
-        })),
-        databases: [],
-        domains: [],
-        records: ["cf-bounce.example.com"],
-        scripts: [],
-        stores: 0,
-      }),
-    );
-    const inspection = yield* inspectAccount(access, config, emptyState());
-    assert.deepStrictEqual(blocked(inspection), ["emailSending"]);
-    assert.strictEqual(inspection.alertAddresses, "verified");
-  }).pipe(Effect.scoped),
+it.effect("blocks a sending domain carrying any record Email Service manages", () =>
+  Effect.forEach(
+    [`cf-bounce.${sending}`, `cf-bounce._domainkey.${sending}`, `_dmarc.${sending}`],
+    (record) =>
+      Effect.gen(function* program() {
+        yield* mockServer(...accountHandlers({ records: [record] }));
+        const inspection = yield* inspectAccount(access, config, emptyState());
+        assert.deepStrictEqual(blocked(inspection), ["emailSending"]);
+      }).pipe(Effect.scoped),
+  ),
 );
 
-it.effect("reports an alert recipient that has not answered its verification email", () =>
+it.effect("blocks a sender address that is not a dedicated subdomain of the zone", () =>
+  Effect.forEach(
+    [
+      { verdict: "zone_apex", zoneName: sending },
+      { verdict: "outside_zone", zoneName: "elsewhere.example" },
+    ],
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (asked) =>
+      Effect.gen(function* program() {
+        yield* mockServer(...accountHandlers({ zoneName: asked.zoneName }));
+        const inspection = yield* inspectAccount(access, config, emptyState());
+        assert.strictEqual(inspection.senderDomain, asked.verdict);
+        assert.deepStrictEqual(blocked(inspection), ["senderDomain"]);
+      }).pipe(Effect.scoped),
+  ),
+);
+
+it.effect("keeps reading the account when the destination addresses cannot be read", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      ...accountHandlers({
-        addresses: config.budget.recipients.map((email) => ({ email })),
-        databases: [],
-        domains: [],
-        records: [],
-        scripts: [],
-        stores: 0,
-      }),
+      http.get(`${account}/email/routing/addresses`, () =>
+        HttpResponse.json({ success: false }, { status: FORBIDDEN_STATUS }),
+      ),
+      ...accountHandlers({}),
     );
     const inspection = yield* inspectAccount(access, config, emptyState());
-    assert.strictEqual(inspection.alertAddresses, "unverified");
+    assert.strictEqual(inspection.alertQuota, "unreadable");
     assert.deepStrictEqual(blocked(inspection), []);
   }).pipe(Effect.scoped),
 );

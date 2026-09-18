@@ -10,11 +10,10 @@ const stack = Stack(
   stackOptions,
   Effect.gen(function* email() {
     const config = yield* Effect.orDie(settings);
-    const sending = yield* Email.SendingSubdomain("Sending", {
+    yield* Email.SendingSubdomain("Sending", {
       name: sendingDomain(config.mailFrom),
       zoneId: config.zoneId,
     }).pipe(RemovalPolicy.retain());
-    return { sendingEnabled: sending.enabled, sendingName: sending.name };
   }),
 );
 

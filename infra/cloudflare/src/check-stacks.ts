@@ -1,11 +1,18 @@
-import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import {
+  applyOrderViolations,
+  onboardingStack,
+  sendingStacks,
+  stackDependencies,
+  stackName,
+  stackNames,
+} from "./stacks.ts";
+import { applyVerificationEnvironment, bindsSendEmail, compileStack } from "./inventory.ts";
 import {
   sendingDomain,
   workerCompatibilityOptions,
   workerObservability,
   workerSubdomain,
 } from "./config.ts";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
 import { FAILED_EXIT_CODE } from "./secrets.ts";
@@ -20,7 +27,6 @@ import { workerModuleGlobs } from "./artifacts.ts";
 const { accountId, origins, prefix } = verificationSettings;
 
 const SENDING_SUBDOMAIN = "Cloudflare.Email.SendingSubdomain";
-const SEND_EMAIL = "send_email";
 
 const providerAddedBindings = [
   "ALCHEMY_CLOUDFLARE_ACCOUNT_ID",
@@ -208,20 +214,6 @@ function onboards(inventory: StackInventory): boolean {
   return Object.values(inventory.resources).some((resource) => resource.type === SENDING_SUBDOMAIN);
 }
 
-function sends(inventory: StackInventory): boolean {
-  return Object.values(inventory.resources).some((resource) =>
-    resource.bindings.some((binding) => binding.split(":")[1] === SEND_EMAIL),
-  );
-}
-
-function onboardedBeforeSending(inventories: readonly StackInventory[]): boolean {
-  const onboarding = inventories.findIndex((inventory) => onboards(inventory));
-  return (
-    onboarding !== -1 &&
-    inventories.every((inventory, index) => !sends(inventory) || index > onboarding)
-  );
-}
-
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
@@ -237,16 +229,30 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   if (!matches) {
     process.exitCode = FAILED_EXIT_CODE;
   }
-  return inventory;
+  return { onboards: onboards(inventory), sends: bindsSendEmail(inventory) };
 });
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const inventories = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
-    const ordered = onboardedBeforeSending(inventories);
+    const roles = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
+    const onboarding = stackNames.filter((_stack, index) => roles[index]?.onboards === true);
+    const senders = stackNames.filter((_stack, index) => roles[index]?.sends === true);
+    const violations = applyOrderViolations(stackNames);
+    const declared =
+      violations.length === 0 &&
+      canonical(onboarding) === canonical([onboardingStack]) &&
+      canonical(senders.toSorted()) === canonical([...sendingStacks].toSorted());
     // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ event: "stacks.ordered", sendersAfterOnboarding: ordered }));
-    if (!ordered) {
+    console.log(
+      JSON.stringify({
+        declaration: declared ? "matches" : "differs",
+        event: "stacks.roles",
+        onboarding,
+        senders,
+        violations,
+      }),
+    );
+    if (!declared) {
       process.exitCode = FAILED_EXIT_CODE;
     }
   }).pipe(

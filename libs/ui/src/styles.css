@@ -21,6 +21,7 @@
   --link-darken: #005ea1;
   --danger: #e01e5a;
   --danger-darken: #ca1b51;
+  --danger-darkest: #b41848;
   --warning-yellow: #ffcc17;
   --warning-yellow-darken: #fcc500;
   --green: #0f7f85;
@@ -51,8 +52,8 @@
   --muted-foreground: var(--grey-65);
   --accent: var(--grey-6);
   --accent-foreground: var(--grey-100);
-  --destructive: var(--danger);
-  --destructive-hover: var(--danger-darken);
+  --destructive: var(--danger-darken);
+  --destructive-hover: var(--danger-darkest);
   --destructive-foreground: var(--white);
   --warning: var(--warning-yellow);
   --warning-hover: var(--warning-yellow-darken);
@@ -104,6 +105,13 @@
   --color-ring: var(--ring);
   --color-overlay: var(--overlay);
   --color-scrim: var(--scrim);
+
+  --container-*: initial;
+  --container-column: 28rem;
+  --container-page: 48rem;
+  --container-search: 36rem;
+  --container-toast: 24rem;
+  --container-wide: 64rem;
 
   --radius-*: initial;
   --radius-sm: 4px;

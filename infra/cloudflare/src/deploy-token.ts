@@ -52,6 +52,10 @@ const routingAddressesRead = {
   id: "5272e56105d04b5897466995b9bd4643",
   name: "Email Routing Addresses Read",
 } as const;
+const zoneSettingsWrite = {
+  id: "3030687196b94b638145a3953da2b699",
+  name: "Zone Settings Write",
+} as const;
 
 const deployTokenPermissions = [
   {
@@ -101,6 +105,11 @@ const deployTokenPermissions = [
     scope: "zone",
   },
   { dashboard: "Zone / DNS / Read", satisfiedBy: [dnsRead, dnsWrite], scope: "zone" },
+  {
+    dashboard: "Zone / Zone Settings / Edit",
+    satisfiedBy: [zoneSettingsWrite],
+    scope: "zone",
+  },
 ] as const satisfies readonly RequiredPermission[];
 
 function missingPermissions(granted: readonly PermissionGroup[]): readonly string[] {

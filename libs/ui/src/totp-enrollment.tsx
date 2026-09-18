@@ -1,7 +1,10 @@
-import { CheckboxField, Field, FormColumn, Heading } from "./shared/ui";
 import type { ActionState } from "./action";
 import { BackupCodeList } from "./backup-code-list";
+import { CheckboxField } from "./shared/ui/checkbox-field";
 import type { Enrollment } from "./mfa-types";
+import { Field } from "./shared/ui/field";
+import { FormColumn } from "./shared/ui/form-column";
+import { Heading } from "./shared/ui/heading";
 import type { ReactElement } from "react";
 import { TotpVerifyForm } from "./totp-verify-form";
 import { useState } from "react";

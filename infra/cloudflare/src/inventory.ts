@@ -108,6 +108,14 @@ function describeBinding(entry: typeof BindingEntry.Type): string {
   ].join(":");
 }
 
+const SEND_EMAIL = "send_email";
+
+function bindsSendEmail(inventory: StackInventory): boolean {
+  return Object.values(inventory.resources).some((resource) =>
+    resource.bindings.some((binding) => binding.split(":")[1] === SEND_EMAIL),
+  );
+}
+
 function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
   return Object.fromEntries(
     declaredProperties.flatMap((property) =>
@@ -204,5 +212,5 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
   return inventoryOf(shape);
 });
 
-export { applyVerificationEnvironment, compileStack };
+export { applyVerificationEnvironment, bindsSendEmail, compileStack };
 export type { StackInventory };

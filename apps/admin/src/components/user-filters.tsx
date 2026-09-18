@@ -1,4 +1,4 @@
-import { Button, Field, SelectField } from "@template/ui/ui";
+import { Button, Field, SelectField } from "@template/ui";
 import { roleOptions, verificationOptions } from "#user-labels.ts";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#users-search.ts";

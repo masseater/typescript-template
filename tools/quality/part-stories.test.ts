@@ -9,7 +9,7 @@ import { field } from "./dependencies.ts";
 import { partsDirectory } from "./design-system.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/.storybook/preview.ts",
+  "../../libs/ui/.storybook/preview.tsx",
   { eager: true, import: "default" },
 );
 
@@ -35,23 +35,10 @@ function storybookProjects(): unknown[] {
 }
 
 const acceptedA11yViolations = [
-  { file: "libs/ui/src/action-status.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/email-verification.stories.tsx", rule: "color-contrast", story: "Expired" },
-  { file: "libs/ui/src/login-form.stories.tsx", rule: "color-contrast", story: "Rejected" },
-  { file: "libs/ui/src/passkey-list.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/passkey-settings.stories.tsx", rule: "color-contrast", story: "Failed" },
-  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "Missing" },
-  { file: "libs/ui/src/shared/ui/field.stories.tsx", rule: "color-contrast", story: "TooShort" },
-  { file: "libs/ui/src/shared/ui/status.stories.tsx", rule: "color-contrast", story: "Error" },
   {
     file: "libs/ui/src/shared/ui/toast-item.stories.tsx",
     rule: "aria-hidden-focus",
     story: "Failure",
-  },
-  {
-    file: "libs/ui/src/signup-fields.stories.tsx",
-    rule: "color-contrast",
-    story: "RejectsShortPassword",
   },
 ];
 
@@ -78,7 +65,7 @@ describe("part stories", () => {
 
   it("fails a story on an accessibility violation", () => {
     expect.hasAssertions();
-    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.ts"]);
+    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.tsx"]);
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 

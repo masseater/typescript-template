@@ -3,7 +3,9 @@ import type { ReactElement, ReactNode, ReactPortal } from "react";
 function ProfileBody({
   children,
 }: Readonly<{ children: Readonly<Exclude<ReactNode, ReactPortal>> }>): ReactElement {
-  return <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">{children}</main>;
+  return (
+    <main className="mx-auto flex w-full max-w-page flex-col gap-6 px-4 py-8">{children}</main>
+  );
 }
 
 export { ProfileBody };

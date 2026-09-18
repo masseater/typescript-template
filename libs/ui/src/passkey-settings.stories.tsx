@@ -58,7 +58,6 @@ export const Failed = meta.story({
       ),
     );
   },
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("alert")).toBeInTheDocument();
   },
