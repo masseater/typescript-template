@@ -5,9 +5,12 @@ import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
 import { describeFailure } from "./secrets.ts";
 import { authSecret, settings as deploymentSettings } from "./settings.ts";
-import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
+import {
+  verificationAuthSecret,
+  verificationEnvironment,
+  verificationSettings,
+} from "./verification-fixture.ts";
 
-const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;
 
 function environment(
@@ -29,7 +32,7 @@ for (const origin of [
   "https://admin.example.com/path",
   "https://admin.example.com/",
   "https://admin.example.com?x=1",
-  "https://app.team.workers.dev",
+  "https://app.example.workers.dev",
   "not-a-url",
 ]) {
   it.effect(`rejects unsafe origin ${origin}`, () => rejects(Origin, origin));
@@ -69,10 +72,10 @@ it.effect("the accepted secret stays redacted", () =>
     const secret = yield* Effect.provideService(
       authSecret,
       ConfigProvider,
-      fromDotEnvContents(`TEMPLATE_AUTH_SECRET=${accepted}\n`),
+      fromDotEnvContents(`TEMPLATE_AUTH_SECRET=${verificationAuthSecret}\n`),
     );
     assert.isTrue(Redacted.isRedacted(secret));
-    assert.strictEqual(Redacted.value(secret), accepted);
+    assert.strictEqual(Redacted.value(secret), verificationAuthSecret);
   }),
 );
 
