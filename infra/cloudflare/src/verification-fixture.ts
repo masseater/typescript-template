@@ -1,5 +1,5 @@
 const HEX_ID_LENGTH = 32;
-const verificationAuthSecret = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
+const verificationAuthSecret = "verification-test-secret-0123456789abcdef";
 
 const verificationSettings = {
   accountId: "a".repeat(HEX_ID_LENGTH),
@@ -44,4 +44,4 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   TEMPLATE_WIKI_ORIGIN: verificationSettings.origins.wiki,
 };
 
-export { verificationEnvironment, verificationSettings };
+export { verificationAuthSecret, verificationEnvironment, verificationSettings };
