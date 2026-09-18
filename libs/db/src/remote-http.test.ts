@@ -35,7 +35,6 @@ function mockServer(
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (server) =>
       Effect.sync(() => {
         server.close();
@@ -43,12 +42,8 @@ function mockServer(
   );
 }
 
-function d1Endpoint(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  binding: D1Database,
-): Effect.Effect<SetupServer, never, Scope.Scope> {
+function d1Endpoint(binding: D1Database): Effect.Effect<SetupServer, never, Scope.Scope> {
   return mockServer(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     http.post(endpoint, async ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${target.apiToken}`) {
         return HttpResponse.json({ error: "unauthorized" }, { status: UNAUTHORIZED_STATUS });
@@ -59,7 +54,6 @@ function d1Endpoint(
 }
 
 function insertVerifiedUser(): Effect.Effect<void, unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),
@@ -128,7 +122,6 @@ it.effect("remote bootstrap promotes the verified user through the HTTP batch co
       event: "database.remote_admin_bootstrapped",
       ok: true,
     });
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     const [first] = yield* query(async (database) => database.select().from(user));
     assert.strictEqual(first?.role, "admin");
     assert.strictEqual(first?.securityVersion, 1);
