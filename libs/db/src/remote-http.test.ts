@@ -21,7 +21,7 @@ const UNAUTHORIZED_STATUS = 401;
 const target = {
   accountId: "a".repeat(HEX_ID_LENGTH),
   apiToken: "test-private-token-at-least-20-characters",
-  databaseId: "92b705e4-7b3b-42a9-9de3-700a33fa609c",
+  databaseId: "22222222-2222-4222-8222-222222222222",
 };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database/${target.databaseId}/query`;
 const execute = ["--execute", "--confirm-database", target.databaseId];

@@ -1,0 +1,60 @@
+import type { Context, RuleMeta } from "@oxlint/plugins";
+
+const REGISTERED_PACKAGES = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      packageName: { type: "string" },
+      reason: { type: "string", minLength: 1 },
+    },
+    additionalProperties: false,
+  },
+} as const;
+
+export const PACKAGE_SURFACE_SCHEMA: NonNullable<RuleMeta["schema"]> = [
+  {
+    type: "object",
+    properties: {
+      runnablePackages: REGISTERED_PACKAGES,
+      importablePackages: REGISTERED_PACKAGES,
+      exceptions: REGISTERED_PACKAGES,
+    },
+    additionalProperties: false,
+  },
+];
+
+type SurfaceRegistration = {
+  readonly packageName?: string;
+  readonly reason?: string;
+};
+
+type PackageSurfaceOptions = {
+  readonly runnablePackages?: readonly SurfaceRegistration[];
+  readonly importablePackages?: readonly SurfaceRegistration[];
+  readonly exceptions?: readonly SurfaceRegistration[];
+};
+
+const optionsOf = (ruleOptions: Context["options"]): PackageSurfaceOptions =>
+  (ruleOptions[0] ?? {}) as PackageSurfaceOptions;
+
+const namesIn = (registrations: readonly SurfaceRegistration[]): ReadonlySet<string> =>
+  new Set(
+    registrations.flatMap((registration) => {
+      const { packageName } = registration;
+      return packageName === undefined || packageName === "" ? [] : [packageName];
+    }),
+  );
+
+export const runnablePackagesFrom = (ruleOptions: Context["options"]): ReadonlySet<string> =>
+  namesIn(optionsOf(ruleOptions).runnablePackages ?? []);
+
+export const importablePackagesFrom = (ruleOptions: Context["options"]): ReadonlySet<string> =>
+  namesIn(optionsOf(ruleOptions).importablePackages ?? []);
+
+export const exemptPackagesFrom = (ruleOptions: Context["options"]): ReadonlySet<string> =>
+  namesIn(
+    (optionsOf(ruleOptions).exceptions ?? []).filter(
+      (registration) => (registration.reason ?? "").trim() !== "",
+    ),
+  );
