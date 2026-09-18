@@ -1,7 +1,8 @@
-import type { MouseEventHandler, ReactElement } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import type { Children } from "./types";
+import type { MouseEventHandler, ReactElement } from "react";
+
 import { buttonVariants } from "./button-variants";
+import type { Children } from "./types";
 
 function Button({
   "aria-label": ariaLabel,

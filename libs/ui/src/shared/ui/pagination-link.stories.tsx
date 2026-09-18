@@ -1,5 +1,5 @@
-import { PaginationLink } from "./pagination-link";
 import preview from "../../../.storybook/preview";
+import { PaginationLink } from "./pagination-link";
 
 const meta = preview.meta({
   args: { children: "2", current: false, to: "/" },

@@ -1,14 +1,13 @@
-import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 import type { Layer } from "effect";
-import type { TelemetryInvalid } from "./server.ts";
-import { httpStatus } from "./http-status.ts";
 
-interface RecordedLogs {
-  readonly stderr: unknown[];
-  readonly stdout: unknown[];
-}
+import { httpStatus } from "./http-status.ts";
+import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
+import type { TelemetryInvalid } from "./server.ts";
+import type { LogSink } from "./structured-logs.ts";
+import { recordingSink } from "./testing.ts";
+
 interface IngestInit {
   readonly body?: string;
   readonly headers?: Readonly<Record<string, string>>;
@@ -28,19 +27,9 @@ const telemetry = Telemetry.layer({
   serviceName: "user",
 });
 
-function recordedTelemetry(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  logs: RecordedLogs,
-): Layer.Layer<Telemetry, TelemetryInvalid> {
+function recordedTelemetry(log: LogSink): Layer.Layer<Telemetry, TelemetryInvalid> {
   return Telemetry.layer({
-    log: {
-      error: (line) => {
-        logs.stderr.push(JSON.parse(line));
-      },
-      info: (line) => {
-        logs.stdout.push(JSON.parse(line));
-      },
-    },
+    log,
     release: "abc123",
     routes: { "/": "home" },
     serviceName: "user",
@@ -187,8 +176,8 @@ describe("browser ingress", () => {
 describe("structured log lines", () => {
   it.effect("browser events and server errors become structured log lines", () =>
     Effect.gen(function* program() {
-      const logs: RecordedLogs = { stderr: [], stdout: [] };
-      const status = yield* runProbe().pipe(Effect.provide(recordedTelemetry(logs)));
+      const logs = recordingSink();
+      const status = yield* runProbe().pipe(Effect.provide(recordedTelemetry(logs.sink)));
       assert.strictEqual(status, httpStatus.accepted);
       assert.lengthOf(logs.stdout, 1);
       assert.containSubset(logs.stdout, [

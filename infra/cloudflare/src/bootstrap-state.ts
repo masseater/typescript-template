@@ -1,11 +1,14 @@
-import { AlchemyFailure, runAlchemy } from "./alchemy-cli.ts";
-import { Console, Effect } from "effect";
-import { OK_EXIT_CODE, reportCause } from "./secrets.ts";
-import { secretsStoreCount, stateStorePresent } from "./account-lookup.ts";
-import type { AccountAccess } from "./account-read.ts";
-import { CloudflareFailure } from "./config.ts";
 import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect } from "effect";
+
+import { secretsStoreCount, workerNames } from "./account-lookup.ts";
+import type { AccountAccess } from "./account-read.ts";
+import { AlchemyFailure, runAlchemy } from "./alchemy-cli.ts";
+import type { AlchemyCommand } from "./alchemy-cli.ts";
+import { CloudflareFailure } from "./config.ts";
+import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 import { deploymentAccess } from "./deployment-access.ts";
+import { OK_EXIT_CODE, reportCause } from "./secrets.ts";
 
 const ADOPT_FLAG = "--adopt-account-state";
 const EVENT = "cloudflare.state_store_rejected";
@@ -13,7 +16,7 @@ const EVENT = "cloudflare.state_store_rejected";
 const assertAccountUnused = Effect.fn("assertAccountUnused")(function* assertAccountUnused(
   access: AccountAccess,
 ) {
-  if (yield* stateStorePresent(access)) {
+  if ((yield* workerNames(access)).includes(STATE_STORE_SCRIPT_NAME)) {
     return yield* Effect.fail(
       new CloudflareFailure({ code: "state_store_name_taken", keys: [ADOPT_FLAG] }),
     );
@@ -33,7 +36,13 @@ NodeRuntime.runMain(
       if (!adopting) {
         yield* assertAccountUnused(access);
       }
-      const args = ["provider", "cloudflare", "bootstrap", "--env-file", secrets.filename];
+      const args: AlchemyCommand = [
+        "provider",
+        "cloudflare",
+        "bootstrap",
+        "--env-file",
+        secrets.filename,
+      ];
       if ((yield* runAlchemy(args, confidential)) !== OK_EXIT_CODE) {
         return yield* Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" }));
       }

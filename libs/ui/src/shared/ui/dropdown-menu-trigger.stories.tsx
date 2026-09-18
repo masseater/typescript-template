@@ -1,7 +1,8 @@
+import type { ReactElement } from "react";
+
+import preview from "../../../.storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
 import { DropdownMenuTrigger } from "./dropdown-menu-trigger";
-import type { ReactElement } from "react";
-import preview from "../../../.storybook/preview";
 
 const meta = preview.meta({
   args: { "aria-label": "利用者の操作", children: "操作" },

@@ -1,5 +1,5 @@
-import { Button } from "./button";
 import preview from "../../../.storybook/preview";
+import { Button } from "./button";
 
 const meta = preview.meta({ component: Button });
 

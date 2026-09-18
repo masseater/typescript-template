@@ -1,13 +1,14 @@
-import { ActionStatus } from "./action-status";
-import { Heading } from "./shared/ui/heading";
-import { PasskeySettings } from "./passkey-settings";
 import type { ReactElement } from "react";
-import { RecoveryNotice } from "./recovery-notice";
-import type { SessionView } from "./protocol";
-import type { SettingsContext } from "./mfa-types";
-import { TotpSettings } from "./totp-settings";
-import { useAction } from "./action";
 import { useState } from "react";
+
+import { useAction } from "./action";
+import { ActionStatus } from "./action-status";
+import type { SettingsContext } from "./mfa-types";
+import { PasskeySettings } from "./passkey-settings";
+import type { SessionView } from "./protocol";
+import { RecoveryNotice } from "./recovery-notice";
+import { Heading } from "./shared/ui/heading";
+import { TotpSettings } from "./totp-settings";
 
 function readRecovery(): string | undefined {
   if (!("location" in globalThis)) {

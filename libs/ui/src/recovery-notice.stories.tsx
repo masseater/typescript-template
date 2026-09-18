@@ -1,5 +1,5 @@
-import { RecoveryNotice } from "./recovery-notice";
 import preview from "../.storybook/preview";
+import { RecoveryNotice } from "./recovery-notice";
 
 const meta = preview.meta({ component: RecoveryNotice });
 

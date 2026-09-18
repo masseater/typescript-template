@@ -1,5 +1,6 @@
-import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";
 import { Schema } from "effect";
+
+import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";
 
 const maximumUtterance = 500;
 

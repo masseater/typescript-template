@@ -1,32 +1,23 @@
-import { Console, Effect, Schema } from "effect";
-import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
-import type { DeploymentValue } from "./secrets.ts";
-import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+
 import { secretsFile } from "@repo/config/deployment";
 
-const MAX_OUTPUT_BYTES = 33_554_432;
+import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
+import type { DeploymentValue } from "./secrets.ts";
+import { stagedFiles } from "./staged.ts";
+import type { StagedFile } from "./staged.ts";
+
 const FAILED_EXIT_CODE = 1;
 
-// oxlint-disable-next-line typescript/strict-void-return
-const run = promisify(execFile);
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const options = { cwd: root, maxBuffer: MAX_OUTPUT_BYTES };
-
-function git(args: readonly string[]): Effect.Effect<string, unknown> {
-  return Effect.tryPromise(async () => run("git", [...args], options)).pipe(
-    Effect.map(({ stdout }) => stdout),
-  );
-}
 
 const Manifest = Schema.fromJsonString(Schema.Struct({ name: Schema.String }));
 
@@ -46,22 +37,14 @@ const environmentValues = read(path.join(root, "package.json")).pipe(
   Effect.orElseSucceed((): readonly DeploymentValue[] => []),
 );
 
-function stagedFile(
-  filename: string,
-): Effect.Effect<{ content: string; filename: string }, unknown> {
-  return git(["show", `:${filename}`]).pipe(Effect.map((content) => ({ content, filename })));
-}
-
 const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
   const values = yield* environmentValues;
-  const listed = yield* git(["ls-files", "--cached", "-z"]);
-  const files = listed.split("\0").filter(Boolean);
-  const staged = yield* Effect.all(files.map((file) => stagedFile(file)));
+  const staged = yield* stagedFiles(root);
   const scan = prefixScan(
     values,
-    staged.map((entry: Readonly<{ content: string }>) => entry.content),
+    staged.map((entry: StagedFile) => entry.content),
   );
-  const failures = staged.flatMap((entry: Readonly<{ content: string; filename: string }>) => {
+  const failures = staged.flatMap((entry: StagedFile) => {
     const rules = secretViolations(entry, values, scan);
     return rules.length > 0 ? [{ file: entry.filename, rules }] : [];
   });

@@ -1,9 +1,10 @@
-import { expect, screen, userEvent } from "storybook/test";
-import { Button } from "./button";
-import type { ReactElement } from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
-import { ToastViewport } from "./toast-viewport";
+import type { ReactElement } from "react";
+import { expect, screen, userEvent } from "storybook/test";
+
 import preview from "../../../.storybook/preview";
+import { Button } from "./button";
+import { ToastViewport } from "./toast-viewport";
 import { useToast } from "./use-toast";
 
 function ShowToasts(): ReactElement {

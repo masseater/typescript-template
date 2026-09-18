@@ -1,28 +1,30 @@
-import { Effect, Schema } from "effect";
-import { applicationPorts, applications, loopbackHosts } from "@repo/config";
-import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-import { failure, fileIo } from "./failure.ts";
-import type { Application } from "@repo/config";
-import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
+import { promisify } from "node:util";
+
+import { Effect, Schema } from "effect";
+
+import { applicationPorts, applications, loopbackHosts, mailpitPort } from "@repo/config";
+import type { Application } from "@repo/config";
+
+import { failure, fileIo } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 
 type App = Application;
 type RouteName = App | "mailpit";
 
 const ROOT_HASH_LENGTH = 12;
 const AUTH_SECRET_MINIMUM_LENGTH = 32;
-const MAILPIT_PORT = 8025;
 
 // oxlint-disable-next-line typescript/strict-void-return
 const execFileAsync = promisify(execFile);
@@ -37,9 +39,8 @@ const AppName = Schema.Literals(applications);
 const CredentialsFile = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(AUTH_SECRET_MINIMUM_LENGTH)),
 });
-const routes = { ...applicationPorts, mailpit: MAILPIT_PORT };
+const routes = { ...applicationPorts, mailpit: mailpitPort };
 const routeNames = [...applications, "mailpit"] as const;
-const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 
 type Credentials = typeof CredentialsFile.Type;
 
@@ -123,7 +124,6 @@ export {
   local,
   logFileUrl,
   readCredentials,
-  readyPaths,
   refreshBrowserConfig,
   root,
   routeNames,

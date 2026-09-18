@@ -1,11 +1,13 @@
-import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-import type { Application } from "./applications.ts";
-import { applicationPorts } from "./applications.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import react from "@vitejs/plugin-react";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import react from "@vitejs/plugin-react";
+import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
+
+import type { Application } from "./applications.ts";
+import { applicationPorts } from "./applications.ts";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
@@ -32,15 +34,18 @@ function previewDevVars(appRoot: string): Plugin {
   };
 }
 
+const serverOnlyPackages = ["auth", "db", "runtime"] as const;
+const clientReachableModules = [
+  "libs/runtime/src/client.ts",
+  "libs/runtime/src/contracts.ts",
+] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  "**/libs/auth/src/**",
-  "**/libs/db/src/**",
-  "**/libs/runtime/src/**",
+  ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
   "**/node_modules/**",
-  "**/libs/runtime/src/{client,contracts}.ts",
+  ...clientReachableModules.map((file) => `**/${file}`),
 ];
 const startOptions = {
   importProtection: { client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles } },
@@ -103,16 +108,33 @@ const taskInput = [
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
 ] as const;
 
+const effectDiagnostics = {
+  "check:effect": {
+    command:
+      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+    input: [...taskInput],
+  },
+} satisfies NonNullable<UserConfig["run"]>["tasks"];
+
+const effectRun = { tasks: { ...effectDiagnostics } } satisfies UserConfig["run"];
+
 const appRun = {
-  tasks: { build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] } },
+  tasks: {
+    ...effectDiagnostics,
+    build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
+  },
 } satisfies UserConfig["run"];
 
 export {
   appRun,
   appServer,
+  clientReachableModules,
+  effectDiagnostics,
+  effectRun,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
+  serverOnlyPackages,
   startOptions,
   taskInput,
   withoutEnvFileLoader,

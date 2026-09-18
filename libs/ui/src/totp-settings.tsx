@@ -1,9 +1,10 @@
-import type { Enrollment, SettingsContext } from "./mfa-types";
 import type { ReactElement } from "react";
+import { useState } from "react";
+
+import type { Enrollment, SettingsContext } from "./mfa-types";
 import { Status } from "./shared/ui/status";
 import { TotpEnrollment } from "./totp-enrollment";
 import { TotpPasswordForm } from "./totp-password-form";
-import { useState } from "react";
 
 function TotpSettings({ context }: Readonly<{ context: SettingsContext }>): ReactElement {
   const [enrollment, setEnrollment] = useState<Enrollment>();

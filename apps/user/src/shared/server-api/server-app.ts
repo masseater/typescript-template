@@ -1,3 +1,9 @@
+import { Effect } from "effect";
+
+import { verifySession } from "@repo/auth";
+import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@repo/db";
+import { httpStatus } from "@repo/observability";
+import { accountApi, unavailable } from "@repo/runtime/account";
 import {
   MemberList,
   MemberListQuery,
@@ -7,29 +13,18 @@ import {
   ProfileView,
   memberPageSize,
 } from "@repo/runtime/contracts";
-import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@repo/db";
-import { accountApi, unavailable } from "@repo/runtime/account";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@repo/runtime/http";
-import { Effect } from "effect";
-import { httpStatus } from "@repo/observability";
-import { interviewApi } from "./interview-api.ts";
-import { runtime } from "./runtime.ts";
-import { verifySession } from "@repo/auth";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 
-const api = apiRoutes(runtime);
+import { interviewApi } from "./interview-api.ts";
+import { reporting, runtime } from "./runtime.ts";
+
+const api = apiRoutes(runtime, reporting);
 const failures = {
   ...unavailable,
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-const app = createApi(apiRoot)
+const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(interviewApi(api))
   .get(
@@ -89,7 +84,5 @@ const app = createApi(apiRoot)
       failures,
     ),
   );
-
-const userApi = compileApi(app);
 
 export { userApi };

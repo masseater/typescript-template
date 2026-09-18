@@ -1,13 +1,15 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createHash, createPublicKey } from "node:crypto";
-import { failure, fileIo } from "./failure.ts";
-import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, readFile } from "node:fs/promises";
-import { Effect } from "effect";
-import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { failure, fileIo } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
 import { privateDirectoryMode } from "./private-files.ts";
 
 const proxyPort = 1355;

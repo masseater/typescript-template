@@ -1,6 +1,7 @@
-import type { ComponentProps, ReactElement } from "react";
-import { buttonVariants } from "./button-variants";
 import { createLink } from "@tanstack/react-router";
+import type { ComponentProps, ReactElement } from "react";
+
+import { buttonVariants } from "./button-variants";
 
 type ButtonAnchorProps = Readonly<
   ComponentProps<"a"> & {

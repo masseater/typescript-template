@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
     "precommit": "vp run check",
+    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
     "prepush": "vp run check && vp test run --changed origin/main && vp run build"
   },
   "devDependencies": {
@@ -15,7 +15,9 @@
     "@repo/db": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@shadcn/lint": "catalog:",
+    "@swc/core": "1.16.2",
     "@types/node": "catalog:",
+    "dependency-cruiser": "18.3.1",
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "5.20260917.0-alpha",

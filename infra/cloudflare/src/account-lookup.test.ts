@@ -1,17 +1,21 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import {
   attachedService,
   dnsRecordNames,
   grantedPermissions,
   secretsStoreCount,
-  stateStorePresent,
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
-import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
-import { Effect } from "effect";
+import {
+  STATE_STORE_SCRIPT_NAME,
+  deployTokenPermissions,
+  missingPermissions,
+} from "./deploy-token.ts";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -34,9 +38,6 @@ const withoutRoutes = granted.filter(
 it.effect("reads an untouched account as free of the names this deployment claims", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
-        HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
-      ),
       pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
         HttpResponse.json({
           result: [],
@@ -61,7 +62,6 @@ it.effect("reads an untouched account as free of the names this deployment claim
         HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
       ),
     );
-    assert.isFalse(yield* stateStorePresent(access));
     assert.strictEqual(yield* secretsStoreCount(access), 0);
     assert.deepStrictEqual(yield* workerNames(access), []);
     assert.isUndefined(yield* attachedService(access, hostname));
@@ -123,15 +123,40 @@ it.effect("refuses rows that do not carry the fields the read declares", () =>
       ),
     );
     const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
-    assert.deepStrictEqual(failure.keys, ["accounts/{}/secrets_store/stores", "decode_failed"]);
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/secrets_store/stores",
+      "decode_failed",
+      "result.0.id:MissingKey",
+    ]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("names the media type when a read is answered with something other than JSON", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(
+        `${account}/workers/scripts`,
+        () =>
+          new HttpResponse("--boundary\r\ncontent-disposition: form-data\r\n", {
+            headers: { "content-type": "multipart/form-data; boundary=boundary" },
+          }),
+      ),
+    );
+    const failure = yield* workerNames(access).pipe(Effect.flip);
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/workers/scripts",
+      "decode_failed",
+      "multipart/form-data",
+    ]);
   }).pipe(Effect.scoped),
 );
 
 it.effect("reports an account another project already bootstrapped", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
-        HttpResponse.json({ result: { id: "alchemy-state-store" } }),
+      unpagedCollection(`${account}/workers/scripts`, () =>
+        // oxlint-disable-next-line unicorn/no-null
+        HttpResponse.json({ result: [{ id: STATE_STORE_SCRIPT_NAME }], result_info: null }),
       ),
       pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
         HttpResponse.json({
@@ -140,7 +165,7 @@ it.effect("reports an account another project already bootstrapped", () =>
         }),
       ),
     );
-    assert.isTrue(yield* stateStorePresent(access));
+    assert.deepStrictEqual(yield* workerNames(access), [STATE_STORE_SCRIPT_NAME]);
     assert.strictEqual(yield* secretsStoreCount(access), 1);
   }).pipe(Effect.scoped),
 );
@@ -188,18 +213,24 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / API Tokens / Read",
       "Account / Billing / Read",
       "Account / Workers Observability / Write",
+      "Account / Email Sending / Write",
+      "Account / Email Routing Addresses / Read",
       "Zone / Workers Routes / Edit",
       "Zone / DNS / Read",
+      "Zone / Zone Settings / Edit",
     ]);
     assert.deepStrictEqual(missingPermissions([{ name: "DNS Read" }]).toSorted(), [
       "Account / API Tokens / Edit",
       "Account / API Tokens / Read",
       "Account / Billing / Read",
       "Account / D1 / Edit",
+      "Account / Email Routing Addresses / Read",
+      "Account / Email Sending / Write",
       "Account / Secrets Store / Edit",
       "Account / Workers Observability / Write",
       "Account / Workers Scripts / Edit",
       "Zone / Workers Routes / Edit",
+      "Zone / Zone Settings / Edit",
     ]);
   }),
 );
@@ -246,6 +277,9 @@ it.effect("names the deploy token permissions the account token does not carry",
         { name: "Workers Observability Write" },
         { name: "Workers Routes Write" },
         { name: "DNS Write" },
+        { name: "Email Sending Write" },
+        { name: "Email Routing Addresses Write" },
+        { name: "Zone Settings Write" },
       ]),
       [],
       "a token holding only the write groups already satisfies the read requirements",

@@ -1,12 +1,21 @@
-import { applicationPorts, applications } from "@repo/config";
-import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
+
+import type { LocalCommandFailure } from "./failure.ts";
+import { fileIo } from "./failure.ts";
+import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import {
   lanOrigin,
   logFileUrl,
   readCredentials,
-  readyPaths,
   root,
   routeNames,
   run,
@@ -14,13 +23,6 @@ import {
   socket,
 } from "./local-environment.ts";
 import type { App } from "./local-environment.ts";
-import { Effect } from "effect";
-import type { LocalCommandFailure } from "./failure.ts";
-import { fileIo } from "./failure.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
 import { privateFileMode } from "./private-files.ts";
 
 interface AppStatus {
@@ -41,7 +43,7 @@ const statusTimeoutMilliseconds = 3000;
 
 function httpStatus(app: App): Effect.Effect<number | null> {
   return Effect.tryPromise(async (signal) =>
-    fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
+    fetch(`http://127.0.0.1:${applicationPorts[app]}${applicationReadyPaths[app]}`, {
       redirect: "manual",
       signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
     }),

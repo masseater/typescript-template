@@ -6,10 +6,17 @@ const application = {
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
+const load = {
+  entry: ["scenarios/*.ts!"],
+  ignoreDependencies: ["k6"],
+  project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
+};
+const loadCommands = ["src/cli.ts!"];
+
 const workspaces = {
   ".": {
     entry: ["doctor.config.ts"],
-    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
+    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "@swc/core"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
   },
   "infra/error-monitor": {
@@ -33,6 +40,9 @@ const workspaces = {
     ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
   },
+  "libs/runtime": {
+    ignoreDependencies: ["cloudflare"],
+  },
   "libs/ui": {
     project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
   },
@@ -40,6 +50,7 @@ const workspaces = {
 
 const cloudflareStacks = [
   "src/database.ts!",
+  "src/email.ts!",
   "src/tokens.ts!",
   "src/budget-monitor.ts!",
   "src/error-monitor.ts!",
@@ -90,7 +101,7 @@ function config({
       "infra/cloudflare": {
         entry: [...cloudflareStacks, ...productionOnly(...scripts["infra/cloudflare"])],
         ignoreExportsUsedInFile: true,
-        project: ["src/**/*.ts!", "!src/account-fixture.ts!"],
+        project: ["src/**/*.ts!", "!src/account-fixture.ts!", "!src/inspection-fixture.ts!"],
       },
       "infra/local": {
         entry: productionOnly(...scripts["infra/local"]),
@@ -106,6 +117,7 @@ function config({
         ignoreDependencies: ["playwright"],
         project: ["src/**/*.ts!"],
       },
+      "tools/load": { ...load, entry: [...load.entry, ...productionOnly(...loadCommands)] },
       "tools/observe": {
         entry: productionOnly(...scripts["tools/observe"]),
         project: ["src/**/*.ts!"],

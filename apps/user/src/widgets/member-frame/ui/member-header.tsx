@@ -1,9 +1,11 @@
-import { AccountMenu } from "./account-menu.tsx";
-import { MemberNavigation } from "./member-navigation.tsx";
-import { NavigationLink } from "@repo/ui";
 import type { ReactElement } from "react";
+
 import type { Session } from "#entities/session/index.ts";
 import { serviceName } from "#shared/config/index.ts";
+import { NavigationLink } from "@repo/ui";
+
+import { AccountMenu } from "./account-menu.tsx";
+import { MemberNavigation } from "./member-navigation.tsx";
 
 function MemberHeader({ user }: Readonly<{ user: Session["user"] }>): ReactElement {
   return (

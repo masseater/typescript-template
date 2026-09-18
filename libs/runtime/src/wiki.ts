@@ -1,11 +1,15 @@
 import { Effect, Layer } from "effect";
-import { Embedder, embedWith } from "./embedder.ts";
-import type { AppServices } from "./index.ts";
+
 import type { AuthFailure } from "@repo/auth";
 import type { ConfigurationInvalid } from "@repo/config";
-import type { TelemetryInvalid } from "@repo/observability";
-import { configuredAppLayer } from "./index.ts";
 import { readWikiConfig } from "@repo/config";
+import type { TelemetryInvalid } from "@repo/observability";
+
+import { Embedder, embedWith } from "./embedder.ts";
+import type { AppServices } from "./index.ts";
+import { configuredAppLayer } from "./index.ts";
+
+const wikiService = "wiki";
 
 type WikiServices = AppServices | Embedder;
 
@@ -22,7 +26,7 @@ function wikiLayer(
         });
         return Layer.merge(
           Layer.succeed(Embedder, embedder),
-          configuredAppLayer(config, "wiki", routes),
+          configuredAppLayer(config, wikiService, routes),
         );
       }),
     ),
@@ -31,5 +35,5 @@ function wikiLayer(
 
 export { Embedder } from "./embedder.ts";
 export { EmbeddingFailed } from "./embedding-failed.ts";
-export { wikiLayer };
+export { wikiLayer, wikiService };
 export type { WikiServices };

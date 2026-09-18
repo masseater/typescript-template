@@ -1,12 +1,14 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readdir, rm, stat } from "node:fs/promises";
-import type { ArtifactFailure } from "./artifact-io.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
-import { Effect } from "effect";
-import { io } from "./artifact-io.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { readdir, rm, stat } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { Effect } from "effect";
+
+import type { ArtifactFailure } from "./artifact-io.ts";
+import { io } from "./artifact-io.ts";
 
 type GenerationEntry = Readonly<Pick<Dirent, "isDirectory" | "name">>;
 
