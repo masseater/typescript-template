@@ -71,7 +71,7 @@ function scannable(contents: string): Effect.Effect<DeploymentCredentials, Crede
     : Effect.succeed({ source: "file", values });
 }
 
-const neverCreated: DeploymentCredentials = { source: "absent", values: [] };
+const absent: DeploymentCredentials = { source: "absent", values: [] };
 
 function readCredentials(
   filename: string,
@@ -87,7 +87,7 @@ function readCredentials(
         failure.reason === "credentials-unreadable" &&
         failure.code === NOT_FOUND &&
         !secretsFileConfigured(),
-      () => Effect.succeed(neverCreated),
+      () => Effect.succeed(absent),
     ),
   );
 }

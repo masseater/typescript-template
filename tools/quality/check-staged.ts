@@ -52,13 +52,14 @@ NodeRuntime.runMain(
     ),
     Effect.catchCause((cause) => {
       const failure = Option.getOrUndefined(Cause.findErrorOption(cause));
+      if (failure !== undefined) {
+        return reportUnchecked(failure.report);
+      }
       const defect: unknown = Cause.squash(cause);
-      return reportUnchecked(
-        failure?.report ?? {
-          error: defect instanceof Error ? defect.name : typeof defect,
-          reason: "unexpected",
-        },
-      );
+      return reportUnchecked({
+        error: defect instanceof Error ? defect.name : typeof defect,
+        reason: "unexpected",
+      });
     }),
   ),
   { disableErrorReporting: true },
