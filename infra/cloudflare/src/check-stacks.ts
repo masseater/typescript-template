@@ -1,6 +1,11 @@
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import {
+  traceDestination,
+  workerCompatibilityOptions,
+  workerObservability,
+  workerSubdomain,
+} from "./config.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
 import { FAILED_EXIT_CODE } from "./secrets.ts";
@@ -25,7 +30,10 @@ const providerAddedBindings = [
 
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
-  observability: workerObservability(verificationSettings.observabilitySampling),
+  observability: workerObservability(
+    verificationSettings.observabilitySampling,
+    traceDestination(verificationSettings)?.name,
+  ),
   workersDev: workerSubdomain,
 };
 
@@ -39,6 +47,8 @@ function applicationResource(app: Application): unknown {
       "DB:d1",
       `EMAIL:send_email:${verificationSettings.mailFrom}`,
       "EMAIL_FROM:plain_text",
+      "OTLP_AUTHORIZATION:secret_text",
+      "OTLP_ENDPOINT:plain_text",
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {
@@ -157,6 +167,18 @@ const expected: Readonly<Record<StackName, unknown>> = {
       name: "health",
       variables: ["ADMIN_ORIGIN:plain_text", "USER_ORIGIN:plain_text", "WIKI_ORIGIN:plain_text"],
     }),
+  }),
+  observability: declaredStack("observability", {
+    Traces: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        logpushDataset: "opentelemetry-traces",
+        name: traceDestination(verificationSettings)?.name,
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Workers.ObservabilityDestination",
+    },
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),

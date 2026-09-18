@@ -1,8 +1,13 @@
 import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
-import { authSecret, settings } from "./settings.ts";
+import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import {
+  traceDestination,
+  workerCompatibilityOptions,
+  workerObservability,
+  workerSubdomain,
+} from "./config.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
 import type { Redacted } from "effect";
@@ -20,6 +25,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
 ) {
   const config: SharedConfig = yield* Effect.orDie(settings);
   const secret: Redacted.Redacted = yield* authSecret;
+  const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
@@ -36,10 +42,15 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       DB: database,
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
+      ...(config.otlpEndpoint === undefined ? {} : { OTLP_ENDPOINT: config.otlpEndpoint }),
+      ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
     }),
     main: artifacts.mainModule,
     name: `${config.prefix}-${target}`,
-    observability: workerObservability(config.observabilitySampling),
+    observability: workerObservability(
+      config.observabilitySampling,
+      traceDestination(config)?.name,
+    ),
     rules: [{ globs: workerModuleGlobs }],
     workersDev: workerSubdomain,
   });

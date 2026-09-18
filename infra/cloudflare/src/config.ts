@@ -55,6 +55,9 @@ const Origin = Schema.String.check(
     );
   }),
 );
+const HttpsUrl = Schema.String.check(
+  Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
+);
 const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
 const SamplingRate = Schema.Number.check(
   Schema.isFinite(),
@@ -78,6 +81,7 @@ const SharedSettings = Schema.Struct({
   mailFrom: Email,
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
+  otlpEndpoint: Schema.UndefinedOr(HttpsUrl),
   prefix: Prefix,
   zoneId: Id,
 });
@@ -95,12 +99,25 @@ const workerCompatibilityOptions = {
   date: workerCompatibility.date,
   flags: [...workerCompatibility.flags],
 };
-function workerObservability(headSamplingRate: number): WorkerObservability {
+function traceDestination(
+  config: SharedConfig,
+): { readonly name: string; readonly url: string } | undefined {
+  return config.otlpEndpoint === undefined
+    ? undefined
+    : { name: `${config.prefix}-traces`, url: config.otlpEndpoint };
+}
+
+function workerObservability(headSamplingRate: number, destination?: string): WorkerObservability {
   return {
     enabled: true,
     headSamplingRate,
     logs: { enabled: true, headSamplingRate, invocationLogs: false },
-    traces: { enabled: true, headSamplingRate },
+    traces: {
+      enabled: true,
+      headSamplingRate,
+      persist: true,
+      ...(destination === undefined ? {} : { destinations: [destination] }),
+    },
   };
 }
 
@@ -169,6 +186,7 @@ export {
   SamplingRate,
   CloudflareFailure,
   Email,
+  HttpsUrl,
   Id,
   Nonnegative,
   Origin,
@@ -179,6 +197,7 @@ export {
   checkSharedConfig,
   originKeys,
   parseDeploymentCommand,
+  traceDestination,
   workerCompatibilityOptions,
   workerObservability,
   workerSubdomain,

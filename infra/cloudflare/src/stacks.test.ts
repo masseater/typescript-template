@@ -8,6 +8,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
   "./database.ts",
   "./error-monitor.ts",
   "./health-monitor.ts",
+  "./observability.ts",
   "./tokens.ts",
   "./user.ts",
   "./wiki.ts",

@@ -8,6 +8,7 @@ const stackDependencies = {
   database: [],
   "error-monitor": ["tokens"],
   "health-monitor": [],
+  observability: [],
   tokens: [],
   user: application,
   wiki: application,
@@ -18,6 +19,7 @@ type StackName = keyof typeof stackDependencies;
 
 const stackNames = [
   "database",
+  "observability",
   "tokens",
   "budget-monitor",
   "error-monitor",

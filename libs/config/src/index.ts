@@ -23,6 +23,7 @@ const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u
 const localRelease = Effect.succeed("local");
 const withRelease = Release.pipe(Schema.withDecodingDefaultKey(localRelease));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
+const NonEmpty = Schema.String.check(Schema.isMinLength(1));
 
 function bindingWith<Binding>(
   name: string,
@@ -43,6 +44,8 @@ const Scalars = Schema.Struct({
   AUTH_SECRET: AuthSecret,
   EMAIL_FROM: Email,
   MAILPIT_URL: Schema.optionalKey(Origin),
+  OTLP_AUTHORIZATION: Schema.optionalKey(NonEmpty),
+  OTLP_ENDPOINT: Schema.optionalKey(AbsoluteUrl),
 });
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);
@@ -95,6 +98,9 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
     (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
   ) {
     return yield* invalid("Mailpit is restricted to local development");
+  }
+  if (scalars.OTLP_ENDPOINT !== undefined) {
+    yield* requireSecureOrigin(new URL(scalars.OTLP_ENDPOINT).origin);
   }
   return { ...scalars, local };
 });

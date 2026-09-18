@@ -48,6 +48,7 @@ const declaredProperties = [
   "compatibility",
   "crons",
   "domain",
+  "logpushDataset",
   "main",
   "name",
   "observability",

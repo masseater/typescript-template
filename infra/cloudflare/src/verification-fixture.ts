@@ -1,5 +1,6 @@
 const HEX_ID_LENGTH = 32;
 const verificationAuthSecret = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
+const verificationOtlpAuthorization = "Bearer stack-verification-not-a-real-token";
 
 const verificationSettings = {
   accountId: "a".repeat(HEX_ID_LENGTH),
@@ -17,6 +18,7 @@ const verificationSettings = {
     user: "https://user.example.com",
     wiki: "https://wiki.example.com",
   },
+  otlpEndpoint: "https://otlp.example.com/v1/traces",
   prefix: "template-verify",
   zoneId: "b".repeat(HEX_ID_LENGTH),
 };
@@ -33,10 +35,12 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   TEMPLATE_JPY_PER_USD: String(verificationSettings.budget.jpyPerUsd),
   TEMPLATE_MAIL_FROM: verificationSettings.mailFrom,
   TEMPLATE_OBSERVABILITY_SAMPLING: String(verificationSettings.observabilitySampling),
+  TEMPLATE_OTLP_AUTHORIZATION: verificationOtlpAuthorization,
+  TEMPLATE_OTLP_ENDPOINT: verificationSettings.otlpEndpoint,
   TEMPLATE_PREFIX: verificationSettings.prefix,
   TEMPLATE_RESERVE_USD: String(verificationSettings.budget.reserveUsd),
   TEMPLATE_USER_ORIGIN: verificationSettings.origins.user,
   TEMPLATE_WIKI_ORIGIN: verificationSettings.origins.wiki,
 };
 
-export { verificationEnvironment, verificationSettings };
+export { verificationEnvironment, verificationOtlpAuthorization, verificationSettings };

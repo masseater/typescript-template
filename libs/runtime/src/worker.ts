@@ -4,16 +4,31 @@ import { httpStatus, observeRequest } from "@template/observability";
 import { jsonResponse, secureResponse } from "./responses.ts";
 import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
+import { OtlpExporter } from "effect/unstable/observability";
 import { runtimeUnavailable } from "./failures.ts";
 
 interface StartHandler {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response> | Response;
 }
-interface FetchWorker {
+interface RequestLifetime {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly fetch: (request: Request) => Promise<Response>;
+  readonly waitUntil: (work: Promise<unknown>) => void;
 }
+interface FetchWorker {
+  readonly fetch: (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    request: Request,
+    environment?: unknown,
+    lifetime?: RequestLifetime,
+  ) => Promise<Response>;
+}
+
+const flushTelemetry = Effect.flatMap(
+  OtlpExporter.Flusher,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (flusher) => flusher.flush,
+);
 type WorkerRoute<Requirements> = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
@@ -31,13 +46,14 @@ function unavailableResponse(): Response {
 
 function serveWorker<Requirements>(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<OtlpExporter.Flusher | Requirements | Telemetry, unknown>,
   route: WorkerRoute<Requirements>,
 ): FetchWorker {
   return {
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    fetch: async (request): Promise<Response> => {
+    fetch: async (request, _environment, lifetime): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
+      lifetime?.waitUntil(runtime.runPromise(flushTelemetry));
       return exit._tag === "Success" ? exit.value : unavailableResponse();
     },
   };
@@ -63,7 +79,10 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 
 function serveApp<Requirements>(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<
+    Assets | OtlpExporter.Flusher | Requirements | Telemetry,
+    unknown
+  >,
   route: AppRoute<Requirements>,
 ): FetchWorker {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

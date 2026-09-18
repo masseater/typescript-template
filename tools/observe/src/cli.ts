@@ -2,6 +2,7 @@ import { Effect, Schema } from "effect";
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { applicationPorts } from "@template/config";
+import { exportedTelemetry } from "./exported.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
@@ -9,7 +10,7 @@ class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
 }) {}
 
-const commands = ["logs", "traces", "trace", "request"] as const;
+const commands = ["logs", "traces", "trace", "request", "exported"] as const;
 const minutesPerDay = 1440;
 const maxQueryLimit = 500;
 const millisecondsPerMinute = 60_000;
@@ -69,6 +70,9 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
       Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
     );
   }
+  if (input.command === "exported") {
+    return required(input.traceId).pipe(Effect.flatMap((traceId) => exportedTelemetry(traceId)));
+  }
   if (input.command === "trace") {
     return required(input.traceId).pipe(
       Effect.flatMap((traceId) =>
@@ -96,7 +100,10 @@ const help = Effect.sync(() => {
       commands,
       flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
       readOnly: true,
-      source: "Cloudflare Local Explorer of the running app",
+      sources: {
+        default: "Cloudflare Local Explorer of the running app",
+        exported: "OTLP receiver of infra/local",
+      },
     })}\n`,
   );
 });

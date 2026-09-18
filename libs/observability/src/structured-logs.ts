@@ -20,6 +20,10 @@ function messageParts(message: unknown): readonly unknown[] {
   return Array.isArray(message) ? message : [message];
 }
 
+function serviceLabel(serviceName: Application): string {
+  return `${serviceName}-server`;
+}
+
 function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
   const sink = options.log ?? consoleSink;
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -28,7 +32,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
     const line = JSON.stringify({
       event: typeof event === "string" ? event : "application.log",
       release: options.release,
-      service: `${options.serviceName}-server`,
+      service: serviceLabel(options.serviceName),
       ...fiber.getRef(References.CurrentLogAnnotations),
       ...(isRecord(attributes) ? attributes : {}),
     });
@@ -37,5 +41,5 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
   return Logger.layer([logger]);
 }
 
-export { isRecord, structuredLogs };
+export { isRecord, serviceLabel, structuredLogs };
 export type { StructuredLogOptions };

@@ -6,10 +6,11 @@ import { Assets } from "./assets.ts";
 import { Auth } from "@template/auth";
 import type { AuthFailure } from "@template/auth";
 import { Database } from "@template/db";
+import type { OtlpExporter } from "effect/unstable/observability";
 import { Telemetry } from "@template/observability";
 import type { TelemetryInvalid } from "@template/observability";
 
-type AppServices = Auth | Database | AppOrigin | Assets | Telemetry;
+type AppServices = Auth | Database | AppOrigin | Assets | OtlpExporter.Flusher | Telemetry;
 
 function configuredAppLayer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -23,7 +24,16 @@ function configuredAppLayer(
     secret: config.AUTH_SECRET,
     sendVerificationEmail: (message) => sendVerificationEmail(config, message),
   }).pipe(Layer.provideMerge(Database.layer(config.DB)));
-  const telemetry = Telemetry.layer({ release: config.APP_RELEASE, routes, serviceName: audience });
+  const otlp =
+    config.OTLP_ENDPOINT === undefined
+      ? undefined
+      : { authorization: config.OTLP_AUTHORIZATION, endpoint: config.OTLP_ENDPOINT };
+  const telemetry = Telemetry.layer({
+    otlp,
+    release: config.APP_RELEASE,
+    routes,
+    serviceName: audience,
+  });
   const services = Layer.mergeAll(
     auth,
     Layer.succeed(AppOrigin, config.APP_ORIGIN),
