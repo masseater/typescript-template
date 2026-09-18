@@ -1,11 +1,14 @@
 import { InMemoryService } from "alchemy/State";
 import type { StateService } from "alchemy/State";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
-import type { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
+
+import { MIGRATIONS_TABLE_PRESENT, loadRemoteMigrations } from "@repo/db/migrations";
 
 import { pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import type { mockServer } from "./account-fixture.ts";
+import { databaseName } from "./database-lookup.ts";
 import { deployTokenPermissions } from "./deploy-token.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
@@ -157,6 +160,33 @@ function addressPage(addresses: readonly Address[], url: string): Response {
   });
 }
 
+async function migrationRows(applied: number): Promise<readonly unknown[]> {
+  const migrations = await Effect.runPromise(loadRemoteMigrations());
+  return migrations
+    .slice(0, applied)
+    .map((migration) => ({ hash: migration.hash, name: migration.name }));
+}
+
+function batchResult(results: readonly unknown[]): Response {
+  return HttpResponse.json({ result: [{ results, success: true }], success: true });
+}
+
+const Batch = Schema.Struct({ batch: Schema.Array(Schema.Struct({ sql: Schema.String })) });
+
+function migrationQuery(applied: number): ReturnType<typeof http.post> {
+  return http.post(`${account}/d1/database/${databaseId}/query`, async ({ request }) => {
+    const sent = await Effect.runPromise(
+      Schema.decodeUnknownEffect(Batch)(await request.json()).pipe(Effect.orDie),
+    );
+    if (sent.batch.some((query) => query.sql === MIGRATIONS_TABLE_PRESENT)) {
+      return batchResult(applied === 0 ? [] : [{ name: "__drizzle_migrations" }]);
+    }
+    return batchResult(await migrationRows(applied));
+  });
+}
+
+const deployedDatabases = [{ name: databaseName(config.prefix), uuid: databaseId }];
+
 interface AccountState {
   readonly token?: readonly ReturnType<typeof http.get>[];
   readonly addresses?: readonly Address[];
@@ -218,9 +248,11 @@ export {
   accountHandlers,
   config,
   databaseId,
+  deployedDatabases,
   deployedState,
   emptyState,
   hosts,
+  migrationQuery,
   sending,
   sendingRecords,
   unverifiableToken,
