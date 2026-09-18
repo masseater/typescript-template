@@ -1,6 +1,7 @@
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import { Effect, Exit, Schema } from "effect";
 import { Elysia, status } from "elysia";
+import type { RouteDetail, RouteSpec } from "./openapi.ts";
 import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { hidden, routeDetail } from "./openapi.ts";
 import { httpStatus, readJson } from "@template/observability";
@@ -11,7 +12,6 @@ import type { Decodable } from "./contracts.ts";
 import { InputInvalid } from "./input-invalid.ts";
 import type { ManagedRuntime } from "effect";
 import type { RequestRejected } from "@template/observability";
-import type { RouteDetail } from "./openapi.ts";
 import { jsonResponse } from "./responses.ts";
 
 type Handler<Value, Failures, Requirements> = (
@@ -23,13 +23,6 @@ type InputHandler<Input, Value, Failures, Requirements> = (
   request: Request,
   input: Input,
 ) => Effect.Effect<Value, Failures, Requirements>;
-type RouteSpec<Input extends Decodable, Value, Encoded> = {
-  readonly response: Schema.Codec<Value, Encoded>;
-} & (
-  | { readonly body: Input; readonly query?: never }
-  | { readonly body?: never; readonly query: Input }
-  | { readonly body?: never; readonly query?: never }
-);
 interface ElysiaContext {
   readonly request: Request;
 }
@@ -169,8 +162,9 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
     );
 }
 
-function withInput<Input extends Decodable, Value, Failures, Requirements>(
-  spec: { readonly body?: Input; readonly query?: Input },
+function withInput<Input extends Decodable, Value, Encoded, Failures, Requirements>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  spec: RouteSpec<Input, Value, Encoded>,
   handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
 ): Handler<Value, Failures | RequestRejected | InputInvalid, Requirements | AppOrigin> {
   const { body, query } = spec;
@@ -229,7 +223,7 @@ function apiRoutes<Requirements>(
     return [
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       async (context): Promise<Encoded | Failed> => settle(context, program, unavailableStatus),
-      routeDetail(spec, spec.response),
+      routeDetail(spec, failures),
     ];
   }
   return { raw, route };

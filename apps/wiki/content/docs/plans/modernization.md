@@ -145,7 +145,11 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | ★5     | knip                                    | 使われていない export や依存を検出します           | 導入済み                                                                              |
 | ★4     | Effect の OTLP 出力                     | Effect のスパンとログを OpenTelemetry で送ります   | 未着手                                                                                |
 | ★4     | Renovate と pnpm の `minimumReleaseAge` | 依存を更新し、公開直後のパッケージは取り込みません | 導入済み                                                                              |
-| ★3     | Scalar                                  | OpenAPI から API ドキュメントの画面を作ります      | 未着手                                                                                |
+| ★3     | Scalar                                  | OpenAPI から API ドキュメントの画面を作ります      | 導入済み                                                                              |
 | ★3     | dependency-cruiser                      | steiger で表せない import の制約を検出します       | 未着手                                                                                |
 | ★3     | k6                                      | 負荷試験を行います                                 | 未着手                                                                                |
 | ★2     | Stryker                                 | ミューテーションテストで、テストの検出力を測ります | 未着手                                                                                |
+
+Scalar の画面は各アプリの `/api/docs` にあり、描く OpenAPI の document は Effect Schema の contract から導出します。
+Elysia が OpenAPI を組み立てるときに読むのは route に付けた TypeBox のスキーマですが、このリポジトリは検証も encode も Effect Schema の contract で行うため、そのままでは経路の一覧だけが出て request と response の形が空になります。TypeBox で書き直すと同じ契約が 2 か所に分かれるので、`Schema.toJsonSchemaDocument` が出す encode 後の JSON Schema を route の `detail` に渡し、contract を唯一の正本のままにしています。route の宣言は query か body の contract を response の contract と並べて受け取り、復号した値を handler に渡すので、contract を書く場所は route の宣言 1 か所です。
+Scalar のバンドルはアプリ自身の静的ファイルとして配ります。Elysia の openapi plugin が既定で書き出すのは jsdelivr の URL で、セッションの cookie を持つ origin で版を固定しない第三者のコードが動くことになり、このリポジトリの手元のブラウザ設定もそのドメインを塞いでいます。

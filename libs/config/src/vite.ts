@@ -2,6 +2,8 @@ import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus"
 import { applicationPorts, scalarReferencePath } from "./applications.ts";
 import type { Application } from "./applications.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
+import type { ServerResponse } from "node:http";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
@@ -40,16 +42,12 @@ const scalarReferenceSource = path.join(
   "browser/standalone.js",
 );
 
-interface ScriptResponse {
-  readonly end: (body: string) => void;
-  readonly setHeader: (name: string, value: string) => void;
-}
-
 async function readScalarReference(): Promise<string> {
   return readFile(scalarReferenceSource, "utf-8");
 }
 
-async function writeScalarReference(response: ScriptResponse): Promise<void> {
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function writeScalarReference(response: ServerResponse): Promise<void> {
   const source = await readScalarReference();
   response.setHeader("content-type", "text/javascript");
   response.end(source);

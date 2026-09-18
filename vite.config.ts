@@ -55,12 +55,7 @@ export default defineConfig({
     },
     overrides: [
       {
-        files: [
-          "apps/*/src/**/api.ts",
-          "apps/*/src/**/*-api.ts",
-          "libs/runtime/src/account.ts",
-          "libs/runtime/src/openapi.ts",
-        ],
+        files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts", "libs/runtime/src/account.ts"],
         rules: {
           "typescript/explicit-function-return-type": "off",
           "typescript/explicit-module-boundary-types": "off",
@@ -201,11 +196,11 @@ export default defineConfig({
       "typescript/consistent-return": "off",
       "typescript/explicit-function-return-type": [
         "error",
-        { allowedNames: ["createApi", "createAuth"] },
+        { allowedNames: ["apiDocs", "createApi", "createAuth"] },
       ],
       "typescript/explicit-module-boundary-types": [
         "error",
-        { allowedNames: ["createApi", "createAuth"] },
+        { allowedNames: ["apiDocs", "createApi", "createAuth"] },
       ],
       "typescript/no-explicit-any": "error",
       "typescript/no-floating-promises": "error",

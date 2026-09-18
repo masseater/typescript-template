@@ -30,7 +30,7 @@ const app = compileApi(
         { query: MemberListQuery, response: MemberList },
         // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         (_request, query) => Effect.succeed({ ...members, total: query.page }),
-        {},
+        { MemberGone: { message: "見つかりません。", status: httpStatus.conflict } },
       ),
     )
     .patch(
@@ -141,6 +141,21 @@ describe("the api reference document", () => {
       assert.strictEqual(reply.status, httpStatus.ok);
       assert.isTrue(accepts(schema, body));
       assert.isFalse(accepts(schema, { ...members, pageSize: 1 }));
+    }),
+  );
+
+  it.effect("lists the statuses the route's failure table can answer with", () =>
+    Effect.gen(function* program() {
+      const document = yield* documented();
+      const listing = yield* operation(document, "/api/members", "get");
+      assert.deepStrictEqual(Object.keys(listing.responses).toSorted(), [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "500",
+      ]);
     }),
   );
 

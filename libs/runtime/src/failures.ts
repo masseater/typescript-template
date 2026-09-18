@@ -65,6 +65,14 @@ const commonFailures: FailureTable<CommonFailure> = {
   SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized },
 };
 
+function declaredStatuses(table: object): readonly FailureStatus[] {
+  const declared = Object.values({ ...commonFailures, ...table }).flatMap((entry: unknown) =>
+    isFailure(entry) ? [entry.status] : [],
+  );
+  const statuses = new Set([...declared, httpStatus.internalServerError]);
+  return [...statuses].toSorted((left, right) => left - right);
+}
+
 function toFailure(table: object, error: unknown): Failure | undefined {
   if (!isTagged(error)) {
     return undefined;
@@ -107,5 +115,5 @@ function runtimeUnavailable(): Failure {
   return { message: unexpectedMessage, status: httpStatus.serviceUnavailable };
 }
 
-export { failureResponse, reportedFailure, runtimeUnavailable };
+export { declaredStatuses, failureResponse, reportedFailure, runtimeUnavailable };
 export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };
