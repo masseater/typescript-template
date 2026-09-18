@@ -1,15 +1,18 @@
-import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-import { deploymentKeys, secretsFile } from "@repo/config/deployment";
-import { Effect } from "effect";
-import type { Scope } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-import { verificationEnvironment } from "./verification-fixture.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+
+import { deploymentKeys, secretsFile } from "@repo/config/deployment";
+
 import { verifySecretsFile } from "./credentials.ts";
+import { verificationEnvironment } from "./verification-fixture.ts";
 
 const OWNER_ONLY_FILE_MODE = 0o600;
 const GROUP_READABLE_FILE_MODE = 0o640;

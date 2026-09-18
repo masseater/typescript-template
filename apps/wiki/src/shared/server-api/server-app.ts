@@ -1,11 +1,13 @@
-import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
-import { sessionApi, unavailable } from "@repo/runtime/account";
 import { Effect } from "effect";
-import type { WikiServices } from "@repo/runtime/wiki";
+
 import { handleAuthRequest } from "@repo/auth";
+import { sessionApi, unavailable } from "@repo/runtime/account";
+import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
+import type { WikiServices } from "@repo/runtime/wiki";
+
+import { serveMcp } from "./mcp.ts";
 import { runtime } from "./runtime.ts";
 import { searchWiki } from "./search.ts";
-import { serveMcp } from "./mcp.ts";
 
 const maximumQueryLength = 200;
 const api = apiRoutes(runtime);

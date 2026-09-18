@@ -1,6 +1,8 @@
-import { apiRoot, createApi } from "./http.ts";
 import { describe, expect, it } from "vite-plus/test";
+
 import { httpStatus } from "@repo/observability";
+
+import { apiRoot, createApi } from "./http.ts";
 
 const app = createApi(apiRoot).get("/probe", () => ({ probed: true }));
 const generateCode: (body: string) => unknown = globalThis.Function;

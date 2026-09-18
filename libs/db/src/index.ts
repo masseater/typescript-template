@@ -1,8 +1,9 @@
-import { Effect } from "effect";
-import { UserNotFound } from "./user-not-found.ts";
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+
 import { query } from "./database.ts";
 import { user } from "./schema.ts";
+import { UserNotFound } from "./user-not-found.ts";
 
 const profileColumns = {
   email: user.email,

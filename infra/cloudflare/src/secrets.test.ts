@@ -1,7 +1,8 @@
-import { Cause, Effect } from "effect";
 import { assert, it } from "@effect/vitest";
-import { describeCause, redact } from "./secrets.ts";
+import { Cause, Effect } from "effect";
+
 import { CloudflareFailure } from "./config.ts";
+import { describeCause, redact } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const confidential = [

@@ -1,7 +1,8 @@
-import { createAuthClient } from "better-auth/react";
 import { passkeyClient } from "@better-auth/passkey/client";
-import { requirePasskeyUV } from "./protocol";
 import { twoFactorClient } from "better-auth/client/plugins";
+import { createAuthClient } from "better-auth/react";
+
+import { requirePasskeyUV } from "./protocol";
 
 const authClient = createAuthClient({
   basePath: "/api/auth",

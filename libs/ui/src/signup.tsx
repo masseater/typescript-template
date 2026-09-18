@@ -1,8 +1,9 @@
+import type { ReactElement } from "react";
+
+import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
 import { FormColumn } from "./shared/ui/form-column";
-import type { ReactElement } from "react";
 import { SignUpFields } from "./signup-fields";
-import { useAction } from "./action";
 
 function SignUpForm({ onSent }: Readonly<{ onSent: () => void }>): ReactElement {
   const action = useAction();

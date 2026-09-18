@@ -1,11 +1,12 @@
-import { addUser, failureTag } from "./records-fixture.ts";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { TestDatabase } from "./testing.ts";
 import { eq } from "drizzle-orm";
-import { getMember } from "./members.ts";
+import { Effect } from "effect";
+
 import { query } from "./database.ts";
+import { getMember } from "./members.ts";
+import { addUser, failureTag } from "./records-fixture.ts";
 import { user } from "./schema.ts";
+import { TestDatabase } from "./testing.ts";
 
 function describeMember(
   id: string,

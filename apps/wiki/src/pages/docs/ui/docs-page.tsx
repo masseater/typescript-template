@@ -1,10 +1,12 @@
 import { getRouteApi, notFound } from "@tanstack/react-router";
-import { DocsContent } from "./docs-content.tsx";
+import { useFumadocsLoader } from "fumadocs-core/source/client";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { ReactElement } from "react";
-import { docs } from "#shared/content/index.ts";
+
 import { serviceName } from "#shared/config/index.ts";
-import { useFumadocsLoader } from "fumadocs-core/source/client";
+import { docs } from "#shared/content/index.ts";
+
+import { DocsContent } from "./docs-content.tsx";
 
 const route = getRouteApi("/$");
 const nav = { title: serviceName };

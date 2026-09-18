@@ -1,8 +1,10 @@
-import { Effect, Schema } from "effect";
-import { apiData, apiServerClient } from "./client.ts";
 import { assert, describe, it } from "@effect/vitest";
-import { createApi } from "./http.ts";
+import { Effect, Schema } from "effect";
+
 import { httpStatus } from "@repo/observability";
+
+import { apiData, apiServerClient } from "./client.ts";
+import { createApi } from "./http.ts";
 
 const View = Schema.Struct({ id: Schema.String });
 const app = createApi("/api").get("/view", () => ({ id: "visible" }));

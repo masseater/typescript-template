@@ -1,5 +1,5 @@
-import type { ComponentProps, ReactElement } from "react";
 import { createLink } from "@tanstack/react-router";
+import type { ComponentProps, ReactElement } from "react";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function TextAnchor({ children, ...anchor }: Readonly<ComponentProps<"a">>): ReactElement {

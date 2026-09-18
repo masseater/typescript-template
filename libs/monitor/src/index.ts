@@ -1,4 +1,5 @@
 import { Console, Effect, Exit, Schema, SchemaGetter } from "effect";
+
 import { MonitorFailure } from "./failure.ts";
 
 interface Alert {

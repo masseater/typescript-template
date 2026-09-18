@@ -1,5 +1,5 @@
-import { NavigationLink } from "./navigation-link";
 import preview from "../../../.storybook/preview";
+import { NavigationLink } from "./navigation-link";
 
 const meta = preview.meta({
   args: { children: "ホーム", to: "/", variant: "item" },
