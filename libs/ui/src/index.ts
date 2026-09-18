@@ -39,3 +39,4 @@ export { fieldError, formColumnClassName, formValidator } from "./form";
 export type { TextFieldApi } from "./form";
 export { FormTextField } from "./form-text-field";
 export { loginPath, redirectTarget } from "./login-redirect";
+export { useHydrated } from "./hydrated";

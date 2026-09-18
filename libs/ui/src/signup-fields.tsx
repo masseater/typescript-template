@@ -1,11 +1,11 @@
 import type { ReactElement, SyntheticEvent } from "react";
-import { SignUp, maximumNameLength } from "./auth-input";
 import type { ActionState } from "./action";
 import { Button } from "./shared/ui/button";
 import { EmailField } from "./email-field";
-import { FormTextField } from "./form-text-field";
+import { NameField } from "./name-field";
 import { PasswordField } from "./password-field";
 import type { Registration } from "./sign-up";
+import { SignUp } from "./auth-input";
 import type { TextFieldApi } from "./form";
 import { formColumnClassName } from "./form";
 import { signUp } from "./sign-up";
@@ -34,14 +34,7 @@ function SignUpFields({
     <form onSubmit={submit} noValidate aria-busy={action.pending} className={formColumnClassName}>
       <form.Field name="name">
         {(field: TextFieldApi): ReactElement => (
-          <FormTextField
-            field={field}
-            label="ユーザー名"
-            name="name"
-            autoComplete="name"
-            required
-            maxLength={maximumNameLength}
-          />
+          <NameField field={field} label="ユーザー名" name="name" autoComplete="name" />
         )}
       </form.Field>
       <form.Field name="email">

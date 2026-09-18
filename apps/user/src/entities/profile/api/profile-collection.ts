@@ -1,5 +1,4 @@
-import { apiData, apiDataOrNone } from "@template/runtime/client";
-import type { DbClient } from "@tanstack/react-db";
+import { absent, apiData, apiDataOrNone } from "@template/runtime/client";
 import type { Profile } from "#entities/profile/model/profile.ts";
 import { ProfileView } from "@template/runtime/contracts";
 import type { QueryClient } from "@tanstack/react-query";
@@ -12,34 +11,34 @@ interface ProfileUpdates {
   readonly transaction: Readonly<{ mutations: readonly Readonly<{ modified: Profile }>[] }>;
 }
 
-const profileKey = ["profile"];
-
 async function loadProfile(): Promise<Profile[]> {
   const { api } = await userClient();
-  const profile = apiDataOrNone(ProfileView, await api.profile.get());
+  const profile = apiDataOrNone(ProfileView, await api.profile.get(), absent.notFound);
   return profile === undefined ? [] : [profile];
 }
 
-async function saveProfile(profile: Profile): Promise<void> {
+async function saveProfile({ transaction }: ProfileUpdates): Promise<void> {
   const { api } = await userClient();
-  apiData(ProfileView, await api.profile.patch({ name: profile.name, profile: profile.profile }));
+  await Promise.all(
+    transaction.mutations.map(async ({ modified }) =>
+      apiData(
+        ProfileView,
+        await api.profile.patch({ name: modified.name, profile: modified.profile }),
+      ),
+    ),
+  );
 }
 
-async function saveUpdates({ transaction }: ProfileUpdates): Promise<{ refetch: boolean }> {
-  await Promise.all(transaction.mutations.map(async ({ modified }) => saveProfile(modified)));
-  return { refetch: false };
-}
+const profileQuery = { queryFn: loadProfile, queryKey: ["profile"] };
 
-const profileOptions = queryOptions({ queryFn: loadProfile, queryKey: profileKey });
+const profileOptions = queryOptions(profileQuery);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-const profileCollection = collectionOptions("profile", (client: DbClient) =>
+const profileCollection = collectionOptions("profile", (client) =>
   queryCollectionOptions({
+    ...profileQuery,
     getKey: (row: Readonly<Profile>): string => row.id,
-    onUpdate: saveUpdates,
+    onUpdate: saveProfile,
     queryClient: client.requireDependency<QueryClient>("queryClient"),
-    queryFn: loadProfile,
-    queryKey: profileKey,
   }),
 );
 

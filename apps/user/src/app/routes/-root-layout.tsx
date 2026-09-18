@@ -1,5 +1,6 @@
-import { AppDevtools, AppShell } from "@template/ui/shell";
 import { Outlet, getRouteApi } from "@tanstack/react-router";
+import { AppDevtools } from "#app/devtools.tsx";
+import { AppShell } from "@template/ui/shell";
 import { DbProvider } from "@tanstack/react-db";
 import type { ReactElement } from "react";
 import { routes } from "#shared/telemetry/index.ts";

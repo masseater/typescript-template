@@ -1,4 +1,4 @@
-import { maximumPasswordLength, minimumPasswordLength } from "./auth-input";
+import { maximumPasswordLength, minimumPasswordLength } from "@template/config";
 import { FormTextField } from "./form-text-field";
 import type { ReactElement } from "react";
 import type { TextFieldApi } from "./form";

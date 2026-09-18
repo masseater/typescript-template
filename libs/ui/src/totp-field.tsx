@@ -1,9 +1,7 @@
+import { totpInputPattern, totpLength } from "./auth-input";
 import { FormTextField } from "./form-text-field";
 import type { ReactElement } from "react";
 import type { TextFieldApi } from "./form";
-import { totpLength } from "./auth-input";
-
-const totpPattern = "[0-9]{6}";
 
 function TotpField({ field }: Readonly<{ field: TextFieldApi }>): ReactElement {
   return (
@@ -13,7 +11,7 @@ function TotpField({ field }: Readonly<{ field: TextFieldApi }>): ReactElement {
       name="totp"
       inputMode="numeric"
       autoComplete="one-time-code"
-      pattern={totpPattern}
+      pattern={totpInputPattern}
       minLength={totpLength}
       maxLength={totpLength}
       required

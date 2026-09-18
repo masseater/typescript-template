@@ -4,14 +4,11 @@ import type { ReactElement } from "react";
 import type { RouterContext } from "#app/router-context.ts";
 import { enterPublicFrame } from "#app/entry-conditions.ts";
 
-interface RouteArguments {
-  readonly context: RouterContext;
-  readonly location: Readonly<{ pathname: string }>;
-}
-
 const Route = createFileRoute("/_public")({
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  beforeLoad: async ({ context, location }: RouteArguments) =>
+  beforeLoad: async ({
+    context,
+    location,
+  }: Readonly<{ context: RouterContext; location: Readonly<{ pathname: string }> }>) =>
     enterPublicFrame(context.queryClient, location.pathname),
   component: (): ReactElement => (
     <PublicFrame>

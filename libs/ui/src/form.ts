@@ -6,7 +6,7 @@ type Validator = Parameters<typeof Schema.toStandardSchemaV1>[0];
 interface TextFieldApi {
   readonly handleChange: (value: string) => void;
   readonly state: Readonly<{
-    meta: Readonly<{ errors: readonly unknown[] }>;
+    meta: Readonly<{ errors: readonly (Readonly<{ message: string }> | undefined)[] }>;
     value: string;
   }>;
 }
@@ -22,22 +22,15 @@ const leafMessages: Readonly<Record<SchemaIssue.Leaf["_tag"], string>> = {
   UnexpectedKey: "入力内容を確認してください。",
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function leafHook(issue: SchemaIssue.Leaf): string {
-  return leafMessages[issue._tag];
-}
-
 function formValidator<Contract extends Validator>(
   schema: Contract,
 ): ReturnType<typeof Schema.toStandardSchemaV1<Contract>> {
-  return Schema.toStandardSchemaV1(schema, { leafHook });
+  return Schema.toStandardSchemaV1(schema, { leafHook: (issue) => leafMessages[issue._tag] });
 }
 
-function fieldError(errors: readonly unknown[]): string | undefined {
+function fieldError(errors: TextFieldApi["state"]["meta"]["errors"]): string | undefined {
   const [issue] = errors;
-  return issue !== null && typeof issue === "object" && "message" in issue
-    ? String(issue.message)
-    : undefined;
+  return issue?.message;
 }
 
 export { fieldError, formColumnClassName, formValidator };

@@ -1,17 +1,16 @@
 import { Option, Schema } from "effect";
-import { UserKeyword } from "@template/runtime/contracts";
+import { SearchKeyword, absentSearchKey } from "@template/runtime/contracts";
 
-interface UsersSearch {
-  readonly keyword?: string;
-}
+const UsersSearchParams = Schema.Struct({
+  keyword: Schema.optionalKey(SearchKeyword).pipe(Schema.catchDecoding(absentSearchKey)),
+});
 
-const Scalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean]);
+type UsersSearch = typeof UsersSearchParams.Type;
 
-function normalizeUsersSearch(raw: Readonly<Record<string, unknown>>): UsersSearch {
-  const keyword = Schema.decodeUnknownOption(Scalar)(raw["keyword"]).pipe(
-    Option.flatMap((value) => Schema.decodeUnknownOption(UserKeyword)(String(value))),
-  );
-  return Option.isSome(keyword) ? { keyword: keyword.value } : {};
+const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
+
+function normalizeUsersSearch(raw: unknown): UsersSearch {
+  return Option.getOrElse(decodeUsersSearch(raw), () => ({}));
 }
 
 export { normalizeUsersSearch };

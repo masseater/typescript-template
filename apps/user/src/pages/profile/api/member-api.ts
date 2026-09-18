@@ -1,5 +1,5 @@
 import { absent, apiDataOrNone } from "@template/runtime/client";
-import type { Member } from "#pages/profile/model/member.ts";
+import type { Member } from "#entities/member/index.ts";
 import { MemberView } from "@template/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
 import { queryOptions } from "@tanstack/react-query";

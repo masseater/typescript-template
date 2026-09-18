@@ -126,6 +126,8 @@ export {
   authenticationMethods,
   grants,
   loopbackHosts,
+  maximumPasswordLength,
+  minimumPasswordLength,
   roles,
   storybookPort,
   strongAuthenticationMethods,

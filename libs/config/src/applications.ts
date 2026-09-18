@@ -30,6 +30,8 @@ type Role = (typeof roles)[number];
 const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
 type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
 const authenticationMethods = ["password", ...strongAuthenticationMethods, "recovery"] as const;
+const minimumPasswordLength = 12;
+const maximumPasswordLength = 128;
 const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
 const storybookPort = STORYBOOK_PORT;
 
@@ -39,6 +41,8 @@ export {
   authenticationMethods,
   grants,
   loopbackHosts,
+  maximumPasswordLength,
+  minimumPasswordLength,
   roles,
   storybookPort,
   strongAuthenticationMethods,

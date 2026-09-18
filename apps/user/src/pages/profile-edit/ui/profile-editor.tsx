@@ -11,15 +11,17 @@ import { ProfileActions } from "./profile-actions.tsx";
 import { ProfileBiography } from "./profile-biography.tsx";
 import type { ReactElement } from "react";
 import type { TextFieldApi } from "@template/ui";
-import { profileCollection } from "#entities/profile/index.ts";
-import { useDbClient } from "@tanstack/react-db";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 
+interface ProfileEditorProps {
+  readonly onSave: (name: string, profile: string) => Promise<void>;
+  readonly profile: Profile;
+}
+
 const ProfileInput = formValidator(ProfileUpdate);
 
-function ProfileEditor({ profile }: Readonly<{ profile: Profile }>): ReactElement {
-  const collection = useDbClient().collection(profileCollection);
+function ProfileEditor({ onSave, profile }: ProfileEditorProps): ReactElement {
   const navigate = useNavigate();
   const notify = useToast();
   const form = useForm({
@@ -27,13 +29,10 @@ function ProfileEditor({ profile }: Readonly<{ profile: Profile }>): ReactElemen
     onSubmit: async ({
       value,
     }: Readonly<{ value: Readonly<{ name: string; profile: string }> }>): Promise<void> => {
-      const saved = collection.update(profile.id, (draft) => {
-        draft.name = value.name.trim();
-        draft.profile = value.profile;
-      });
+      const saved = onSave(value.name.trim(), value.profile);
       await navigate({ params: { id: profile.id }, to: "/users/$id" });
       try {
-        await saved.isPersisted.promise;
+        await saved;
         notify("success", "プロフィールを保存しました。");
       } catch (error) {
         notify("error", errorMessage(error));

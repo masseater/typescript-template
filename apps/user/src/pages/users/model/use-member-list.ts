@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
-import type { Member } from "#pages/users/api/members-api.ts";
+import type { Member } from "#entities/member/index.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import type { VirtualItem } from "@tanstack/react-virtual";
 import { membersOptions } from "#pages/users/api/members-api.ts";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
+interface MemberRow {
+  readonly item: Readonly<VirtualItem>;
+  readonly member: Member;
+  readonly offset: number;
+}
+
 interface MemberList {
-  readonly items: readonly Readonly<VirtualItem>[];
   readonly listHeight: number;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly listRef: (node: HTMLElement | null) => void;
   readonly loading: boolean;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly measure: (node: Element | null) => void;
-  readonly members: readonly Member[];
-  readonly scrollMargin: number;
+  readonly rows: readonly MemberRow[];
+  readonly shown: number;
   readonly total: number;
 }
 
@@ -46,22 +49,24 @@ function useMemberList(search: UsersSearch): MemberList {
       void fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, reached]);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   function listRef(node: HTMLElement | null): void {
     if (node !== null && scrollMargin === 0) {
       setScrollMargin(node.offsetTop);
     }
   }
   return {
-    items,
     listHeight: virtualizer.getTotalSize(),
     listRef,
     loading: isFetchingNextPage,
     measure: virtualizer.measureElement,
-    members,
-    scrollMargin,
-    total: data.pages[0]?.total ?? 0,
+    rows: items.flatMap((item) => {
+      const member = members[item.index];
+      return member === undefined ? [] : [{ item, member, offset: item.start - scrollMargin }];
+    }),
+    shown: members.length,
+    total: data.pages.flatMap((page) => [page.total])[0] ?? members.length,
   };
 }
 
 export { useMemberList };
+export type { MemberRow };

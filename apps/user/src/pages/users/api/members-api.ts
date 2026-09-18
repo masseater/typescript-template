@@ -6,7 +6,6 @@ import { nextMemberPage } from "#pages/users/model/member-pages.ts";
 import { userClient } from "#shared/api/index.ts";
 
 type Members = typeof MemberList.Type;
-type Member = Members["members"][number];
 
 async function loadMembers(keyword: string | undefined, page: number): Promise<Members> {
   const { api } = await userClient();
@@ -26,4 +25,3 @@ function membersOptions(search: UsersSearch) {
 }
 
 export { membersOptions };
-export type { Member };

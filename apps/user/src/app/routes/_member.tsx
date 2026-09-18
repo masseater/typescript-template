@@ -4,18 +4,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { enterMemberFrame } from "#app/entry-conditions.ts";
 import { profileOptions } from "#entities/profile/index.ts";
 
-interface RouteArguments {
-  readonly context: RouterContext;
-  readonly location: Readonly<{ href: string }>;
-}
-
 const Route = createFileRoute("/_member")({
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  beforeLoad: async ({ context, location }: RouteArguments) =>
+  beforeLoad: async ({
+    context,
+    location,
+  }: Readonly<{ context: RouterContext; location: Readonly<{ href: string }> }>) =>
     enterMemberFrame(context.queryClient, location.href),
   component: MemberLayout,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  loader: async ({ context }: Pick<RouteArguments, "context">): Promise<void> => {
+  loader: async ({ context }: Readonly<{ context: RouterContext }>): Promise<void> => {
     await context.queryClient.query(profileOptions);
   },
 });

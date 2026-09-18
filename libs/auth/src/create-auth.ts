@@ -1,4 +1,9 @@
-import { applications, authenticationMethods, roles } from "@template/config";
+import {
+  applications,
+  authenticationMethods,
+  minimumPasswordLength,
+  roles,
+} from "@template/config";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
 import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
@@ -28,7 +33,6 @@ type EmailVerificationOptions = NonNullable<BetterAuthOptions["emailVerification
 type LoggerOptions = NonNullable<BetterAuthOptions["logger"]>;
 type SessionOptions = NonNullable<BetterAuthOptions["session"]>;
 
-const MIN_PASSWORD_LENGTH = 12;
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const SECONDS_PER_MINUTE = 60;
@@ -144,7 +148,7 @@ function createEmailAndPassword(audience: Application): EmailAndPasswordOptions 
   return {
     disableSignUp: audience !== "user",
     enabled: true,
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    minPasswordLength: minimumPasswordLength,
     requireEmailVerification: true,
   };
 }

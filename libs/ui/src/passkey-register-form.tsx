@@ -1,8 +1,8 @@
-import { PasskeyName, maximumNameLength } from "./auth-input";
 import type { ReactElement, SyntheticEvent } from "react";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
-import { FormTextField } from "./form-text-field";
+import { NameField } from "./name-field";
+import { PasskeyName } from "./auth-input";
 import type { SettingsContext } from "./mfa-types";
 import type { TextFieldApi } from "./form";
 import { authClient } from "./client";
@@ -40,13 +40,7 @@ function PasskeyRegisterForm({
     <form onSubmit={submit} noValidate className={formColumnClassName}>
       <form.Field name="name">
         {(field: TextFieldApi): ReactElement => (
-          <FormTextField
-            field={field}
-            label="パスキーの名前"
-            name="passkey-name"
-            required
-            maxLength={maximumNameLength}
-          />
+          <NameField field={field} label="パスキーの名前" name="passkey-name" />
         )}
       </form.Field>
       <Button type="submit" disabled={action.blocked || recoveringAdmin}>

@@ -1,9 +1,9 @@
 import { Suspense, lazy } from "react";
 import type { ReactElement } from "react";
-import { useHydrated } from "./hydrated";
+import { useHydrated } from "@template/ui";
 
 async function loadPanel(): Promise<{ default: () => ReactElement }> {
-  const panel = await import("./devtools-panel");
+  const panel = await import("#app/devtools-panel.tsx");
   return { default: panel.DevtoolsPanel };
 }
 

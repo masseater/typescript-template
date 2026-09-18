@@ -6,7 +6,6 @@ import { sessionOptions } from "#entities/session/index.ts";
 
 const entrances: ReadonlySet<string> = new Set(["/", "/login", "/signup"]);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function enterPublicFrame(queryClient: QueryClient, pathname: string): Promise<void> {
   if (!entrances.has(pathname)) {
     return;
@@ -18,7 +17,6 @@ async function enterPublicFrame(queryClient: QueryClient, pathname: string): Pro
 }
 
 async function enterMemberFrame(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   queryClient: QueryClient,
   href: string,
 ): Promise<{ session: Session }> {

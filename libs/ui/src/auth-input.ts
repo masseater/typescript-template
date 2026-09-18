@@ -1,11 +1,11 @@
+import { maximumPasswordLength, minimumPasswordLength } from "@template/config";
 import { Schema } from "effect";
 import { formValidator } from "./form";
+import { maximumNameLength } from "@template/runtime/contracts";
 
-const minimumPasswordLength = 12;
-const maximumPasswordLength = 128;
-const maximumNameLength = 100;
 const totpLength = 6;
-const totpPattern = /^\d{6}$/u;
+const totpPattern = new RegExp(`^\\d{${totpLength}}$`, "u");
+const totpInputPattern = `[0-9]{${totpLength}}`;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 const isEmail = Schema.isPattern(emailPattern, {
@@ -56,8 +56,6 @@ export {
   SignIn,
   SignUp,
   TotpCode,
-  maximumNameLength,
-  maximumPasswordLength,
-  minimumPasswordLength,
+  totpInputPattern,
   totpLength,
 };
