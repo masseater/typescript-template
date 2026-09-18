@@ -7,6 +7,8 @@ import {
   readList,
   readPages,
   readRequired,
+  readVerdict,
+  unreadableState,
   unreadableVerdict,
 } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
@@ -87,9 +89,11 @@ const onboardingVerdict = Effect.fn("onboardingVerdict")(function* onboardingVer
     return "free" as const;
   }
   const recorded = yield* recordedSendingDomains(store, config.prefix, config.zoneId).pipe(
-    Effect.catchCause(() => Effect.succeed<readonly string[]>([])),
+    Effect.catchCause(unreadableState),
   );
-  return recorded.includes(domain) ? ("owned" as const) : ("taken" as const);
+  return readVerdict(recorded, (names) =>
+    names.includes(domain) ? ("owned" as const) : ("taken" as const),
+  );
 });
 
 const senderVerdict = Effect.fn("senderVerdict")(function* senderVerdict(
