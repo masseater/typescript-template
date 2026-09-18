@@ -1,54 +1,133 @@
-import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
 import { deleteUser, setUserRole } from "./admin.ts";
-import { addOAuthGrant, addSession, addUser, oauthGrantCounts } from "./records-fixture.ts";
 import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
-import { TestDatabase } from "./testing.ts";
+import { addOAuthGrant, addSession, addUser, oauthGrantCounts, runTest } from "./testing.ts";
 
-const noGrants = { access: 0, consent: 0, refresh: 0 };
+describe("findWikiReader", () => {
+  describe("a verified administrator", () => {
+    const it = test.extend("wikiReader", async () =>
+      runTest(
+        Effect.gen(function* findAdministrator() {
+          yield* addUser({ role: "admin", userId: "reader" });
+          return yield* findWikiReader("reader");
+        }),
+      ));
 
-it.effect("role change revokes wiki reading and every OAuth grant of the user", () =>
-  Effect.gen(function* program() {
-    yield* addUser("actor", "admin");
-    yield* addUser("reader", "admin");
-    const actor = yield* addSession("actor", "admin");
-    yield* addOAuthGrant("reader");
-    assert.deepStrictEqual(yield* findWikiReader("reader"), { id: "reader" });
-    yield* setUserRole(actor, "reader", "user");
-    assert.isNull(yield* findWikiReader("reader"));
-    assert.deepStrictEqual(yield* oauthGrantCounts("reader"), noGrants);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+    it("reads the wiki", ({ wikiReader }) => {
+      expect(wikiReader).toStrictEqual({ id: "reader" });
+    });
+  });
 
-it.effect("revoking sessions also revokes OAuth tokens but keeps consent", () =>
-  Effect.gen(function* program() {
-    yield* addUser("reader", "admin");
-    const wiki = yield* addSession("reader", "wiki");
-    yield* addOAuthGrant("reader");
-    yield* revokeUserSessions("reader");
-    assert.isNull(yield* getSessionSecurity(wiki, "wiki"));
-    assert.deepStrictEqual(yield* oauthGrantCounts("reader"), { ...noGrants, consent: 1 });
-  }).pipe(Effect.provide(TestDatabase)),
-);
+  describe.for([
+    ["a member", { userId: "member" }, "member"],
+    [
+      "an unverified administrator",
+      { emailVerified: false, role: "admin", userId: "unverified" },
+      "unverified",
+    ],
+    ["a user who does not exist", undefined, "missing"],
+  ] as const)("%s", ([, addedUser, readerId]) => {
+    const it = test.extend("wikiReader", async () =>
+      runTest(
+        Effect.gen(function* findOther() {
+          if (addedUser !== undefined) yield* addUser(addedUser);
+          return yield* findWikiReader(readerId);
+        }),
+      ));
 
-it.effect("deleting a user removes OAuth grants", () =>
-  Effect.gen(function* program() {
-    yield* addUser("actor", "admin");
-    yield* addUser("reader");
-    const actor = yield* addSession("actor", "admin");
-    yield* addOAuthGrant("reader");
-    yield* deleteUser(actor, "reader");
-    assert.deepStrictEqual(yield* oauthGrantCounts("reader"), noGrants);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+    it("does not read the wiki", ({ wikiReader }) => {
+      expect(wikiReader).toBe(null);
+    });
+  });
 
-it.effect("wiki reading requires a verified administrator", () =>
-  Effect.gen(function* program() {
-    yield* addUser("member");
-    yield* addUser("unverified", "admin", false);
-    assert.isNull(yield* findWikiReader("member"));
-    assert.isNull(yield* findWikiReader("unverified"));
-    assert.isNull(yield* findWikiReader("missing"));
-  }).pipe(Effect.provide(TestDatabase)),
-);
+  describe("an administrator demoted to member", () => {
+    const it = test.extend("wikiReader", async () =>
+      runTest(
+        Effect.gen(function* demoteReader() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ role: "admin", userId: "reader" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          yield* setUserRole({ role: "user", sessionId, targetId: "reader" });
+          return yield* findWikiReader("reader");
+        }),
+      ));
+
+    it("stops reading the wiki", ({ wikiReader }) => {
+      expect(wikiReader).toBe(null);
+    });
+  });
+});
+
+describe("OAuth grants", () => {
+  describe("of an administrator demoted to member", () => {
+    const it = test.extend("grantCounts", async () =>
+      runTest(
+        Effect.gen(function* demoteGrantee() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ role: "admin", userId: "reader" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          yield* addOAuthGrant("reader");
+          yield* setUserRole({ role: "user", sessionId, targetId: "reader" });
+          return yield* oauthGrantCounts("reader");
+        }),
+      ));
+
+    it("are all revoked", ({ grantCounts }) => {
+      expect(grantCounts).toStrictEqual({ access: 0, consent: 0, refresh: 0 });
+    });
+  });
+
+  describe("of a user whose sessions were revoked", () => {
+    const it = test.extend("grantCounts", async () =>
+      runTest(
+        Effect.gen(function* revokeGrantee() {
+          yield* addUser({ role: "admin", userId: "reader" });
+          yield* addOAuthGrant("reader");
+          yield* revokeUserSessions("reader");
+          return yield* oauthGrantCounts("reader");
+        }),
+      ));
+
+    it("lose their tokens but keep the consent", ({ grantCounts }) => {
+      expect(grantCounts).toStrictEqual({ access: 0, consent: 1, refresh: 0 });
+    });
+  });
+
+  describe("of a deleted user", () => {
+    const it = test.extend("grantCounts", async () =>
+      runTest(
+        Effect.gen(function* deleteGrantee() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ userId: "reader" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          yield* addOAuthGrant("reader");
+          yield* deleteUser(sessionId, "reader");
+          return yield* oauthGrantCounts("reader");
+        }),
+      ));
+
+    it("are all removed", ({ grantCounts }) => {
+      expect(grantCounts).toStrictEqual({ access: 0, consent: 0, refresh: 0 });
+    });
+  });
+});
+
+describe("revokeUserSessions", () => {
+  describe("a wiki session of the revoked user", () => {
+    const it = test.extend("revokedSession", async () =>
+      runTest(
+        Effect.gen(function* revokeWiki() {
+          yield* addUser({ role: "admin", userId: "reader" });
+          const sessionId = yield* addSession({ audience: "wiki", userId: "reader" });
+          yield* revokeUserSessions("reader");
+          return yield* getSessionSecurity(sessionId, "wiki");
+        }),
+      ));
+
+    it("is no longer live", ({ revokedSession }) => {
+      expect(revokedSession).toBe(null);
+    });
+  });
+});

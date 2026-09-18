@@ -1,32 +1,89 @@
-import type { LogSink } from "./structured-logs.ts";
+import { Effect, Option, Ref, Tracer } from "effect";
 
-interface RecordedLogs {
-  readonly sink: LogSink;
-  readonly stderr: readonly unknown[];
-  readonly stdout: readonly unknown[];
-  readonly stdwarn: readonly unknown[];
-}
+import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
+import { isRecord, type LogSink } from "./structured-logs.ts";
 
-function recordingSink(): RecordedLogs {
-  const stderr: unknown[] = [];
-  const stdout: unknown[] = [];
-  const stdwarn: unknown[] = [];
+import type { BrowserEvent } from "./events.ts";
+
+const parsedLine = (line: string): Readonly<Record<string, unknown>> => {
+  const decoded: unknown = JSON.parse(line);
+  if (!isRecord(decoded)) {
+    return { "log.unparsed": line };
+  }
+  return decoded;
+};
+
+type RecordedLines = {
+  readonly stderr: readonly Readonly<Record<string, unknown>>[];
+  readonly stdout: readonly Readonly<Record<string, unknown>>[];
+  readonly stdwarn: readonly Readonly<Record<string, unknown>>[];
+};
+
+export const recordingSink = (): RecordedLines & { readonly sink: LogSink } => {
+  const lines = Ref.makeUnsafe<RecordedLines>({ stderr: [], stdout: [], stdwarn: [] });
+  const recordInto =
+    (stream: keyof RecordedLines) =>
+    (line: string): void => {
+      Effect.runSync(
+        Ref.update(lines, (earlier) => ({
+          ...earlier,
+          [stream]: [...earlier[stream], parsedLine(line)],
+        })),
+      );
+    };
   return {
-    sink: {
-      error: (line) => {
-        stderr.push(JSON.parse(line));
-      },
-      info: (line) => {
-        stdout.push(JSON.parse(line));
-      },
-      warn: (line) => {
-        stdwarn.push(JSON.parse(line));
-      },
+    sink: { error: recordInto("stderr"), info: recordInto("stdout"), warn: recordInto("stdwarn") },
+    get stderr(): RecordedLines["stderr"] {
+      return Ref.getUnsafe(lines).stderr;
     },
-    stderr,
-    stdout,
-    stdwarn,
+    get stdout(): RecordedLines["stdout"] {
+      return Ref.getUnsafe(lines).stdout;
+    },
+    get stdwarn(): RecordedLines["stdwarn"] {
+      return Ref.getUnsafe(lines).stdwarn;
+    },
   };
+};
+
+export const recordedLogs = async (
+  logging: (sink: LogSink) => Effect.Effect<unknown, unknown>,
+): Promise<RecordedLines> => {
+  const logs = recordingSink();
+  await Effect.runPromise(Effect.orDie(logging(logs.sink)));
+  return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
+};
+
+export const recordedDeliveries = async (delivery: {
+  readonly refuse?: boolean;
+  readonly exercise: (driver: {
+    readonly queue: EventQueue;
+    readonly flush: () => Promise<void>;
+  }) => Promise<void>;
+}): Promise<readonly (readonly BrowserEvent[])[]> => {
+  const batches = Ref.makeUnsafe<readonly (readonly BrowserEvent[])[]>([]);
+  const queue = makeEventQueue(async (batch) => {
+    Effect.runSync(Ref.update(batches, (earlier) => [...earlier, batch]));
+    return delivery.refuse === true
+      ? Promise.reject(new Error("delivery refused"))
+      : Promise.resolve();
+  });
+  await delivery.exercise({
+    flush: async () =>
+      Effect.runPromise(Effect.ignore(Effect.tryPromise(async () => queue.flush()))),
+    queue,
+  });
+  return Ref.getUnsafe(batches);
+};
+
+const fixedSpanId = "c".repeat(16);
+const fixedTraceId = "c".repeat(32);
+
+class FixedSpan extends Tracer.NativeSpan {
+  public override readonly spanId: string = fixedSpanId;
+  public override readonly traceId: string =
+    Option.getOrUndefined(this.parent)?.traceId ?? fixedTraceId;
 }
 
-export { recordingSink };
+export const fixedSpans: Tracer.Tracer = Tracer.make({
+  span: (spanOptions) => new FixedSpan(spanOptions),
+});

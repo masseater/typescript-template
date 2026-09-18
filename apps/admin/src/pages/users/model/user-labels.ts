@@ -1,13 +1,14 @@
+import { ROLE } from "@repo/config";
 import { Role } from "@repo/runtime/contracts";
 
 const roleLabels: Readonly<Record<typeof Role.Type, string>> = {
-  admin: "管理者",
-  user: "一般ユーザー",
+  [ROLE.administrator]: "管理者",
+  [ROLE.member]: "一般ユーザー",
 };
 
 const nextRoles: Readonly<Record<typeof Role.Type, typeof Role.Type>> = {
-  admin: "user",
-  user: "admin",
+  [ROLE.administrator]: ROLE.member,
+  [ROLE.member]: ROLE.administrator,
 };
 
 const verificationLabels = { false: "未確認", true: "確認済み" } as const;

@@ -36,9 +36,14 @@ const ACCOUNT_DATABASE_COUNT = 5;
 const tokenId = "a".repeat(32);
 const databaseId = "22222222-2222-4222-8222-222222222222";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
-const workers = ["user", "admin", "wiki", "budget", "errors", "health"].map(
-  (suffix) => `${config.prefix}-${suffix}`,
-);
+const workers = [
+  APPLICATION.user,
+  APPLICATION.admin,
+  APPLICATION.wiki,
+  "budget",
+  "errors",
+  "health",
+].map((suffix) => `${config.prefix}-${suffix}`);
 
 function row(resourceType: string, attr: Readonly<Record<string, string>>): CreatedResourceState {
   return {
@@ -57,9 +62,9 @@ function row(resourceType: string, attr: Readonly<Record<string, string>>): Crea
 }
 
 const deployedUnits = [
-  ["user", "user"],
-  ["admin", "admin"],
-  ["wiki", "wiki"],
+  [APPLICATION.user, APPLICATION.user],
+  [APPLICATION.admin, APPLICATION.admin],
+  [APPLICATION.wiki, APPLICATION.wiki],
   ["budget-monitor", "budget"],
   ["error-monitor", "errors"],
   ["health-monitor", "health"],

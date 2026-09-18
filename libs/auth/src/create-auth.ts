@@ -1,89 +1,38 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { applications, authenticationMethods, roles } from "@repo/config";
-import { schema } from "@repo/db";
+import {
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  applications,
+  authenticationMethods,
+  roles,
+  type Application,
+} from "@repo/config";
+import { schema, type DrizzleDatabase } from "@repo/db";
 import { claimMailSlot, findUser } from "@repo/db/security";
-import { logAt } from "@repo/observability";
-import { betterAuth } from "better-auth";
+import { logAt, logCause } from "@repo/observability";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
-import { Effect } from "effect";
+import { Effect, Cause } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
-import { sendExistingAccountNotice, sendVerificationEmail } from "./email.ts";
+import { sendExistingAccountNotice, sendVerificationEmail, type MailSettings } from "./email.ts";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
 import { createRequestHooks } from "./request-hooks.ts";
 
-import type { Application } from "@repo/config";
-import type { DrizzleDatabase } from "@repo/db";
-import type { BetterAuthOptions } from "better-auth";
-import type { MailSettings } from "./email.ts";
+import type { GenerateId } from "./auth-identifiers.ts";
 import type { Run } from "./runner.ts";
 
-interface AuthOptions {
-  readonly baseURL: string;
-  readonly secret: string;
-  readonly audience: Application;
-  readonly mail: MailSettings;
-}
-
-type AdvancedOptions = NonNullable<BetterAuthOptions["advanced"]>;
-type EmailAndPasswordOptions = NonNullable<BetterAuthOptions["emailAndPassword"]>;
-type DatabaseHooks = NonNullable<BetterAuthOptions["databaseHooks"]>;
-type EmailVerificationOptions = NonNullable<BetterAuthOptions["emailVerification"]>;
-type LoggerOptions = NonNullable<BetterAuthOptions["logger"]>;
-type SessionOptions = NonNullable<BetterAuthOptions["session"]>;
-
-const MIN_PASSWORD_LENGTH = 12;
-const RATE_LIMIT_MAX = 60;
-const RATE_LIMIT_WINDOW_SECONDS = 60;
-const SECONDS_PER_MINUTE = 60;
-const MINUTES_PER_HOUR = 60;
-const HOURS_PER_DAY = 24;
-const ADMIN_SESSION_HOURS = 8;
-const USER_SESSION_DAYS = 7;
-const FRESH_SESSION_MINUTES = 5;
-const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
-const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
-const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
-const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
-const EXISTING_ACCOUNT_NOTICE_MINUTES = 10;
-const MILLISECONDS_PER_SECOND = 1000;
-const EXISTING_ACCOUNT_NOTICE_MILLISECONDS =
-  EXISTING_ACCOUNT_NOTICE_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
-
-function verificationLink(origin: string, token: string): string {
-  const link = new URL("/verify-email", origin);
-  link.hash = new URLSearchParams({ token }).toString();
-  return link.href;
-}
-
-const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExistingAccount(
-  options: AuthOptions,
-  origin: string,
-  user: Readonly<{ email: string; emailVerified: boolean }>,
-) {
-  const until = new Date(Date.now() + EXISTING_ACCOUNT_NOTICE_MILLISECONDS);
-  const identifier = `existing-account-notice:${user.email}`;
-  if (!(yield* claimMailSlot(identifier, options.audience, until))) {
-    yield* logAt("Warn", "authentication.existing_account_notice_throttled");
-    return;
-  }
-  if (user.emailVerified) {
-    yield* sendExistingAccountNotice(options.mail, user.email, new URL("/login", origin).href);
-    return;
-  }
-  const token = yield* Effect.promise(async () =>
-    createEmailVerificationToken(options.secret, user.email),
-  );
-  yield* sendVerificationEmail(options.mail, user.email, verificationLink(origin, token));
-});
-
-function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
+const createDatabaseHooks = (
+  run: Run,
+  audience: Application,
+): NonNullable<BetterAuthOptions["databaseHooks"]> => {
   return {
     session: {
       create: {
         before: async (
           candidate: Readonly<Record<string, unknown> & { userId: string }>,
-          ctx: Readonly<{ path: string }> | null,
+          hookContext: Readonly<{ path: string }> | null,
         ) => {
           const user = (await run(findUser(candidate.userId))) ?? undefined;
           assertEligibleUser(user, audience);
@@ -92,7 +41,7 @@ function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
               ...candidate,
               audience,
               authenticatedAt: new Date(),
-              authenticationMethod: authenticationMethodFor(ctx?.path),
+              authenticationMethod: authenticationMethodFor(hookContext?.path),
               securityVersion: user.securityVersion,
             },
           };
@@ -101,59 +50,130 @@ function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
     },
     user: {
       create: {
-        before: async (user: Readonly<Record<string, unknown>>) => ({
-          data: { ...user, role: "user", securityVersion: 0 },
-        }),
+        before: (createdUser: Readonly<Record<string, unknown>>) =>
+          Promise.resolve({ data: { ...createdUser, role: ROLE.member, securityVersion: 0 } }),
       },
     },
   };
-}
+};
 
-function createEmailVerification(
-  options: AuthOptions,
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+const ADMIN_SESSION_HOURS = 8;
+const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
+const HOURS_PER_DAY = 24;
+const USER_SESSION_DAYS = 7;
+const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
+const FRESH_SESSION_MINUTES = 5;
+const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
+const EXISTING_ACCOUNT_NOTICE_MINUTES = 10;
+const MILLISECONDS_PER_SECOND = 1000;
+const EXISTING_ACCOUNT_NOTICE_MILLISECONDS =
+  EXISTING_ACCOUNT_NOTICE_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+
+const verificationLink = (origin: string, token: string): string => {
+  return new URL(`/verify-email#${new URLSearchParams({ token }).toString()}`, origin).href;
+};
+
+export type AuthOptions = {
+  readonly baseURL: string;
+  readonly secret: string;
+  readonly audience: Application;
+  readonly mail: MailSettings;
+};
+
+const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExistingAccount({
+  authOptions,
+  origin,
+  user,
+}: {
+  readonly authOptions: AuthOptions;
+  readonly origin: string;
+  readonly user: Readonly<{ email: string; emailVerified: boolean }>;
+}) {
+  const until = new Date(Date.now() + EXISTING_ACCOUNT_NOTICE_MILLISECONDS);
+  const identifier = `existing-account-notice:${user.email}`;
+  if (!(yield* claimMailSlot({ audience: authOptions.audience, identifier, until }))) {
+    yield* logAt("Warn", { eventName: "authentication.existing_account_notice_throttled" });
+    return;
+  }
+  if (user.emailVerified) {
+    yield* sendExistingAccountNotice(authOptions.mail, {
+      email: user.email,
+      url: new URL("/login", origin).href,
+    });
+    return;
+  }
+  const token = yield* Effect.promise(async () =>
+    createEmailVerificationToken(authOptions.secret, user.email),
+  );
+  yield* sendVerificationEmail(authOptions.mail, {
+    email: user.email,
+    url: verificationLink(origin, token),
+  });
+});
+
+const createEmailVerification = (
+  authOptions: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
-): EmailVerificationOptions {
+): NonNullable<BetterAuthOptions["emailVerification"]> => {
   return {
     autoSignInAfterVerification: false,
-    sendOnSignIn: options.audience !== "wiki",
+    sendOnSignIn: authOptions.audience !== APPLICATION.wiki,
     sendOnSignUp: true,
     sendVerificationEmail: async ({
       user,
       token,
     }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
-      await run(sendVerificationEmail(options.mail, user.email, verificationLink(origin, token)));
-    },
-  };
-}
-
-function createLogger(run: Run): LoggerOptions {
-  return {
-    level: "warn",
-    log: (level, _message, ...details: readonly unknown[]) => {
-      const cause = details.find((detail) => detail instanceof Error);
-      void run(
-        level === "error"
-          ? logAt("Error", "authentication.failed", {
-              ...(cause === undefined
-                ? {}
-                : { "error.message": cause.message, "error.type": cause.name }),
-            })
-          : logAt(level === "warn" ? "Warn" : "Info", "authentication.diagnostic", { level }),
+      await run(
+        sendVerificationEmail(authOptions.mail, {
+          email: user.email,
+          url: verificationLink(origin, token),
+        }),
       );
     },
   };
-}
+};
 
-function createAdvancedOptions(audience: Application, origin: string): AdvancedOptions {
+const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {
+  return {
+    level: "warn",
+    log: (level, _description, ...details: readonly unknown[]) => {
+      const cause = details.find((detail) => detail instanceof Error);
+      void run(
+        level === "error"
+          ? cause === undefined
+            ? logAt("Error", { eventName: "authentication.failed" })
+            : logCause({ cause: Cause.fail(cause), eventName: "authentication.failed" })
+          : logAt(level === "warn" ? "Warn" : "Info", {
+              attributes: { level },
+              eventName: "authentication.diagnostic",
+            }),
+      );
+    },
+  };
+};
+
+const createAdvancedOptions = ({
+  audience,
+  generateId,
+  origin,
+}: {
+  readonly audience: Application;
+  readonly generateId: GenerateId;
+  readonly origin: string;
+}): NonNullable<BetterAuthOptions["advanced"]> => {
   return {
     cookiePrefix: `template-${audience}`,
     crossSubDomainCookies: { enabled: false },
+    database: { generateId },
     ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     useSecureCookies: origin.startsWith("https:"),
   };
-}
+};
 
-function createSessionOptions(audience: Application): SessionOptions {
+const createSessionOptions = (audience: Application): NonNullable<BetterAuthOptions["session"]> => {
   return {
     additionalFields: {
       audience: {
@@ -164,7 +184,7 @@ function createSessionOptions(audience: Application): SessionOptions {
       },
       authenticatedAt: { input: false, required: false, type: "date" },
       authenticationMethod: {
-        defaultValue: "password",
+        defaultValue: AUTHENTICATION_METHOD.password,
         input: false,
         required: true,
         type: [...authenticationMethods],
@@ -172,39 +192,54 @@ function createSessionOptions(audience: Application): SessionOptions {
       securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
     },
     cookieCache: { enabled: false },
-    expiresIn: audience === "user" ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
+    expiresIn: audience === APPLICATION.user ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
     freshAge: FRESH_SESSION_SECONDS,
   };
-}
+};
 
-function createEmailAndPassword(
-  options: AuthOptions,
+const MIN_PASSWORD_LENGTH = 12;
+
+const createEmailAndPassword = (
+  authOptions: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
-): EmailAndPasswordOptions {
+): NonNullable<BetterAuthOptions["emailAndPassword"]> => {
   return {
-    disableSignUp: options.audience !== "user",
+    disableSignUp: authOptions.audience !== APPLICATION.user,
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
     onExistingUserSignUp: async ({
       user,
     }: Readonly<{ user: Readonly<{ email: string; emailVerified: boolean }> }>) => {
-      await run(mailExistingAccount(options, origin, user));
+      await run(mailExistingAccount({ authOptions, origin, user }));
     },
     requireEmailVerification: true,
   };
-}
+};
 
-function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
-  const { audience } = options;
-  const { origin } = new URL(options.baseURL);
+const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+export const createAuth = ({
+  authOptions,
+  database,
+  generateId,
+  run,
+}: {
+  readonly authOptions: AuthOptions;
+  readonly database: DrizzleDatabase;
+  readonly generateId: GenerateId;
+  readonly run: Run;
+}) => {
+  const { audience } = authOptions;
+  const { origin } = new URL(authOptions.baseURL);
   return betterAuth({
-    advanced: createAdvancedOptions(audience, origin),
+    advanced: createAdvancedOptions({ audience, generateId, origin }),
     appName: "TypeScript Template",
-    baseURL: options.baseURL,
+    baseURL: authOptions.baseURL,
     database: drizzleAdapter(database, { provider: "sqlite", schema, transaction: false }),
     databaseHooks: createDatabaseHooks(run, audience),
-    emailAndPassword: createEmailAndPassword(options, { origin, run }),
-    emailVerification: createEmailVerification(options, { origin, run }),
+    emailAndPassword: createEmailAndPassword(authOptions, { origin, run }),
+    emailVerification: createEmailVerification(authOptions, { origin, run }),
     hooks: createRequestHooks(run, audience),
     logger: createLogger(run),
     plugins: authPlugins({ audience, origin, run }),
@@ -214,20 +249,17 @@ function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
       storage: "database",
       window: RATE_LIMIT_WINDOW_SECONDS,
     },
-    secret: options.secret,
+    secret: authOptions.secret,
     session: createSessionOptions(audience),
     trustedOrigins: [origin],
     user: {
       additionalFields: {
-        role: { defaultValue: "user", input: false, required: true, type: [...roles] },
+        role: { defaultValue: ROLE.member, input: false, required: true, type: [...roles] },
         securityVersion: { defaultValue: 0, input: false, required: true, type: "number" },
       },
       deleteUser: { enabled: false },
     },
   });
-}
+};
 
-type BetterAuthInstance = ReturnType<typeof createAuth>;
-
-export { createAuth };
-export type { AuthOptions, BetterAuthInstance };
+export type BetterAuthInstance = ReturnType<typeof createAuth>;

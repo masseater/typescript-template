@@ -12,7 +12,6 @@ import { schema } from "./schema.ts";
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;
@@ -23,13 +22,13 @@ declare global {
 
 const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
-function getSchemaShape(): Record<string, string[]> {
+const getSchemaShape = function getSchemaShape(): Record<string, string[]> {
   return Object.fromEntries(
     Object.entries(schema).map(([name, table]) => [name, Object.keys(getColumns(table))]),
   );
-}
+};
 
-function runStatement(
+const runStatement = function runStatement(
   sql: string,
   ...params: readonly (string | number)[]
 ): Effect.Effect<D1Result, DatabaseFailure> {
@@ -40,22 +39,32 @@ function runStatement(
         .bind(...params)
         .run(),
   });
-}
+};
 
-function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
-  return Layer.unwrap(
-    Effect.gen(function* database() {
-      yield* Effect.promise(async () => reset());
-      if (migrated) {
-        yield* migrateDatabase(d1Executor(env.DB), yield* migrations(env.TEST_MIGRATIONS));
-      }
-      return Database.layer(env.DB);
-    }),
+const testDatabase = function testDatabase(migrated: boolean): Layer.Layer<Database> {
+  return Layer.orDie(
+    Layer.unwrap(
+      Effect.gen(function* database() {
+        yield* Effect.promise(async () => reset());
+        if (migrated) {
+          yield* migrateDatabase(d1Executor(env.DB), yield* migrations(env.TEST_MIGRATIONS));
+        }
+        return Database.layer(env.DB);
+      }),
+    ),
   );
-}
+};
 
 const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
+
+const runTest = <A, E, R>(
+  program: Effect.Effect<A, E, R>,
+  options: { readonly layer?: Layer.Layer<R> } = {},
+): Promise<A> =>
+  Effect.runPromise(
+    Effect.orDie(program.pipe(Effect.provide(options.layer ?? (TestDatabase as Layer.Layer<R>)))),
+  );
 
 function capturePrepares<Requirements>(
   run: Effect.Effect<void, unknown, Requirements>,
@@ -81,4 +90,12 @@ function capturePrepares<Requirements>(
 }
 
 export { bootstrapAdmin } from "./bootstrap-statement.ts";
-export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement };
+export {
+  addCredential,
+  addOAuthGrant,
+  addSession,
+  addUser,
+  oauthGrantCounts,
+  recordedAt,
+} from "./records-fixture.ts";
+export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement, runTest };

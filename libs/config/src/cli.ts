@@ -4,26 +4,22 @@ import { Cause, Console, Effect } from "effect";
 const failedExitCode = 1;
 const firstUserArgumentIndex = 2;
 
-function exitWith(code: number): Effect.Effect<void> {
-  return Effect.sync(() => {
+const exitWith = (code: number): Effect.Effect<void> =>
+  Effect.sync(() => {
     process.exitCode = code;
   });
-}
 
 const markFailed = exitWith(failedExitCode);
 
-function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
-  return Console.error(JSON.stringify(record)).pipe(Effect.andThen(markFailed));
-}
+const reportFailed = (reported: Readonly<Record<string, unknown>>): Effect.Effect<void> =>
+  Console.error(JSON.stringify(reported)).pipe(Effect.andThen(markFailed));
 
-type FailureReport<Failure> =
-  | Readonly<Record<string, unknown>>
-  | ((cause: Cause.Cause<Failure>) => Readonly<Record<string, unknown>>);
-
-function runCli<Failure>(
+const runCli = <Failure>(
   program: Effect.Effect<unknown, Failure>,
-  onFailure: FailureReport<Failure>,
-): void {
+  onFailure:
+    | Readonly<Record<string, unknown>>
+    | ((cause: Cause.Cause<Failure>) => Readonly<Record<string, unknown>>),
+): void => {
   NodeRuntime.runMain(
     program.pipe(
       Effect.catchCause((cause) =>
@@ -34,6 +30,6 @@ function runCli<Failure>(
     ),
     { disableErrorReporting: true },
   );
-}
+};
 
 export { exitWith, firstUserArgumentIndex, markFailed, reportFailed, runCli };

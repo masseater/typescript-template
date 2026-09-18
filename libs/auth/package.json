@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mcp": "./src/mcp.ts"
+    "./mcp": "./src/mcp.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -20,8 +21,6 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
-    "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",

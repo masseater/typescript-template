@@ -23,7 +23,7 @@ const memberColumns = {
   socialLinks: user.socialLinks,
 };
 
-function shown({
+const shown = function shown({
   createdAt,
   ...member
 }: Readonly<{
@@ -34,7 +34,7 @@ function shown({
   socialLinks: readonly string[];
 }>): Member {
   return { ...member, joined: createdAt.toISOString().slice(0, monthLength) };
-}
+};
 
 const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, memberId: string) {
   const visible = or(eq(user.emailVerified, true), eq(user.id, viewerId));

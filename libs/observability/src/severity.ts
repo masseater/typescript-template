@@ -1,12 +1,7 @@
-import { Cause, Effect } from "effect";
+import { Cause, Effect, type LogLevel } from "effect";
 
-import { annotateLogs } from "./annotations.ts";
+import { annotateLogs, type Attributes } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
-
-import type { LogLevel } from "effect";
-import type { Attributes } from "./annotations.ts";
-
-type Severity = Extract<LogLevel.Severity, "Error" | "Info" | "Warn">;
 
 const refusals: ReadonlySet<number> = new Set([
   httpStatus.unauthorized,
@@ -15,31 +10,38 @@ const refusals: ReadonlySet<number> = new Set([
 ]);
 const firstStatus = 100;
 
-function statusSeverity(status: number | undefined): Severity {
-  if (status === undefined || status < firstStatus || status >= httpStatus.internalServerError) {
+type Severity = Extract<LogLevel.Severity, "Error" | "Info" | "Warn">;
+
+const statusSeverity = (responseStatus: number | undefined): Severity => {
+  if (
+    responseStatus === undefined ||
+    responseStatus < firstStatus ||
+    responseStatus >= httpStatus.internalServerError
+  ) {
     return "Error";
   }
-  if (status < httpStatus.badRequest) {
+  if (responseStatus < httpStatus.badRequest) {
     return "Info";
   }
-  return refusals.has(status) ? "Info" : "Warn";
-}
+  return refusals.has(responseStatus) ? "Info" : "Warn";
+};
 
-function logAt(
-  severity: Severity,
-  event: string,
-  attributes: Attributes = {},
-): Effect.Effect<void> {
-  return Effect.logWithLevel(severity)(event).pipe(annotateLogs(attributes));
-}
+type Logged = {
+  readonly eventName: string;
+  readonly attributes?: Attributes;
+};
 
-function logCause(
-  event: string,
-  cause: Readonly<Cause.Cause<unknown>>,
-  attributes: Attributes = {},
-): Effect.Effect<void> {
-  return Effect.logWithLevel("Error")(event, cause).pipe(annotateLogs(attributes));
-}
+const logAt = (severity: Severity, logged: Logged): Effect.Effect<void> =>
+  Effect.logWithLevel(severity)(logged.eventName).pipe(annotateLogs(logged.attributes ?? {}));
+
+const logCause = (logged: {
+  readonly eventName: string;
+  readonly cause: Readonly<Cause.Cause<unknown>>;
+  readonly attributes?: Attributes;
+}): Effect.Effect<void> =>
+  Effect.logWithLevel("Error")(logged.eventName, logged.cause).pipe(
+    annotateLogs(logged.attributes ?? {}),
+  );
 
 export { logAt, logCause, statusSeverity };
 export type { Severity };

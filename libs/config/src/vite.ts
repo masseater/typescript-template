@@ -1,16 +1,13 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import react from "@vitejs/plugin-react";
 
-import { applicationPorts, loopbackAddress } from "./applications.ts";
+import { applicationPorts, loopbackAddress, type Application } from "./applications.ts";
 
 import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-import type { Application } from "./applications.ts";
 
-async function readDevVars(appRoot: string): Promise<string | undefined> {
+const readDevVars = async (appRoot: string): Promise<string | undefined> => {
   try {
     return await readFile(path.join(appRoot, ".dev.vars"), "utf-8");
   } catch (error: unknown) {
@@ -19,9 +16,9 @@ async function readDevVars(appRoot: string): Promise<string | undefined> {
     }
     throw error;
   }
-}
+};
 
-function previewDevVars(appRoot: string): Plugin {
+const previewDevVars = (appRoot: string): Plugin => {
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
@@ -33,20 +30,20 @@ function previewDevVars(appRoot: string): Plugin {
     },
     name: "template-preview-dev-vars",
   };
-}
+};
 
-const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
 ] as const;
+const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
+  ...serverOnlyPackages.map((packageName) => `**/libs/${packageName}/src/**`),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
   "**/node_modules/**",
-  ...clientReachableModules.map((file) => `**/${file}`),
+  ...clientReachableModules.map((module) => `**/${module}`),
 ];
 const startOptions = {
   importProtection: { client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles } },
@@ -65,44 +62,45 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
-  let removed = 0;
-  function strip(options: readonly PluginOption[]): PluginOption[] {
-    return options.flatMap((plugin: PluginOption): PluginOption[] => {
-      if (Array.isArray(plugin)) {
-        return [strip(plugin)];
-      }
-      if (
-        typeof plugin === "object" &&
-        plugin !== null &&
-        "name" in plugin &&
-        plugin.name === envFileLoader
-      ) {
-        removed += 1;
-        return [];
-      }
-      return [plugin];
-    });
-  }
-  const kept = strip(plugins);
-  if (removed === 0) {
+const isEnvFileLoader = (plugin: PluginOption): boolean =>
+  typeof plugin === "object" &&
+  plugin !== null &&
+  !Array.isArray(plugin) &&
+  "name" in plugin &&
+  plugin.name === envFileLoader;
+
+const containsEnvFileLoader = (plugins: readonly PluginOption[]): boolean =>
+  plugins.some((plugin) =>
+    Array.isArray(plugin) ? containsEnvFileLoader(plugin) : isEnvFileLoader(plugin),
+  );
+
+const strip = (plugins: readonly PluginOption[]): PluginOption[] =>
+  plugins.flatMap((plugin: PluginOption): PluginOption[] => {
+    if (Array.isArray(plugin)) {
+      return [strip(plugin)];
+    }
+    return isEnvFileLoader(plugin) ? [] : [plugin];
+  });
+
+const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
+  if (!containsEnvFileLoader(plugins)) {
     throw new Error(`${envFileLoader} plugin not found`);
   }
-  return kept;
-}
+  return strip(plugins);
+};
 
-function reactCompiler(): PluginOption[] {
+const reactCompiler = (): PluginOption[] => {
   return react({ compiler: { logDiagnostics: true } });
-}
+};
 
-function appServer(app: Application): ServerOptions {
+const appServer = (app: Application): ServerOptions => {
   return {
     allowedHosts: [".local"],
     host: loopbackAddress,
     port: applicationPorts[app],
     strictPort: true,
   };
-}
+};
 
 const generatedDirectories = [
   "node_modules",
@@ -120,40 +118,17 @@ const taskInput = [
   { base: "workspace", pattern: "!**/node_modules/.bin/**" },
 ] as const;
 
-function withoutGenerated(...directories: readonly string[]): string[] {
+const withoutGenerated = function withoutGenerated(...directories: readonly string[]): string[] {
   return directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
-}
+};
 
 const withoutLocalState = [
   { base: "workspace", pattern: "!.local" },
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
-const effectDiagnostics = {
-  "check:effect": {
-    command:
-      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    input: [...taskInput],
-  },
-} satisfies NonNullable<UserConfig["run"]>["tasks"];
-
 type RunConfig = NonNullable<UserConfig["run"]>;
 type Tasks = NonNullable<RunConfig["tasks"]>;
-
-const lifecycles = ["precommit", "prepush", "premerge"] as const;
-type Lifecycle = (typeof lifecycles)[number];
-
-function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
-  return Object.fromEntries(
-    lifecycles.map((name, index) => [
-      name,
-      {
-        command: [],
-        dependsOn: [...lifecycles.slice(Math.max(index - 1, 0), index), ...stages[name]],
-      },
-    ]),
-  );
-}
 
 const testRun = {
   test: {
@@ -176,6 +151,29 @@ const sliceBoundaries = {
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
+
+const effectDiagnostics = {
+  "check:effect": {
+    command:
+      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+    input: [...taskInput],
+  },
+} satisfies NonNullable<UserConfig["run"]>["tasks"];
+
+const lifecycles = ["precommit", "prepush", "premerge"] as const;
+
+const lifecycle = (
+  stages: Readonly<Record<(typeof lifecycles)[number], readonly string[]>>,
+): Tasks =>
+  Object.fromEntries(
+    lifecycles.map((stage, index) => [
+      stage,
+      {
+        command: [],
+        dependsOn: [...lifecycles.slice(Math.max(index - 1, 0), index), ...stages[stage]],
+      },
+    ]),
+  );
 
 const effectRun = {
   tasks: {

@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import { Status } from "@repo/ui";
 
 import type { ChatNotice, ChatState } from "#shared/contract/index.ts";
@@ -15,7 +16,7 @@ const notices: Readonly<Record<ChatNotice, string>> = {
 const calm: ReadonlySet<ChatNotice> = new Set(["stopped", "woken"]);
 
 function ChatEntry({ body }: Readonly<{ body: Body }>): ReactElement {
-  if (body.kind === "user") {
+  if (body.kind === APPLICATION.user) {
     return (
       <p className="ml-8 self-end rounded-lg bg-primary px-3 py-2 whitespace-pre-wrap text-primary-foreground">
         {body.text}
