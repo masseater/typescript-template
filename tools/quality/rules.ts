@@ -207,13 +207,13 @@ export default definePlugin({
     "atom-state": {
       create: atomStateVisitor,
       meta: metadata(
-        "UI の状態は Effect Atom (effect/unstable/reactivity と @effect/atom-react) で持ってください。useState・useReducer・useSyncExternalStore・useRef・createRef・useActionState・useOptimistic・useTransition・useFormStatus・createContext・useContext・use・クラスコンポーネントは、別名や分割代入も含めて使えません。Effect Atom の使い方も揃えます。コンポーネントごとの状態は @template/ui の localState で、利用者の操作で走る非同期処理は useAction で持ち、値から決まる状態はその値を鍵にした Atom.family で持ってください (ScopedAtom の make・useAtomInitialValues・HydrationBoundary・RegistryContext は使えません)。非同期の取得は Atom.make(Effect) の AsyncResult を分岐して描画してください (useAtomSuspense は使えません)。URL の状態は Atom.searchParam ではなく TanStack Router の search に置いてください。DOM への参照は ref コールバックで受けてください。",
+        "UI の状態は Effect Atom (effect/unstable/reactivity と @effect/atom-react) で持ってください。useState・useReducer・useSyncExternalStore・useRef・createRef・useActionState・useOptimistic・useTransition・useFormStatus・createContext・useContext・use・クラスコンポーネントは、別名や分割代入も含めて使えません。Effect Atom の使い方も揃えます。コンポーネントごとの状態は @template/ui の localState で、利用者の操作で走る非同期処理は useAction で持ち、値から決まる状態はその値を鍵にした Atom.family で持ってください (ScopedAtom の make・useAtomInitialValues・HydrationBoundary・RegistryContext は使えません)。ブラウザ内の非同期の計算は Atom.make(Effect) の AsyncResult を分岐して描画してください (useAtomSuspense は使えません)。サーバーのデータは Effect Atom ではなく TanStack Query で持ちます。@template/ui の serverQuery に Effect を渡して定義して useServerQuery で読み、書き込みの後は useRefresh でキーを無効化してください。fetch・api セグメント・client モジュールに触れる値は Atom.make・Atom.readable・Atom.writable で包めず、useAtomRefresh・Atom.refresh・Atom.refreshOnWindowFocus・Atom.makeRefreshOnSignal・Atom.withReactivity・Atom.runtime・AtomHttpApi・AtomRpc・Reactivity・Hydration も使えません。URL の状態は Atom.searchParam ではなく TanStack Router の search に置いてください。DOM への参照は ref コールバックで受けてください。",
       ),
     },
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。`,
+        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。TanStack Query のパッケージは libs/ui/src/server-query.ts と Storybook の設定だけが参照でき、ほかは @template/ui の serverQuery・useServerQuery・useRefresh を使ってください。`,
       ),
     },
     "effect-failures": {

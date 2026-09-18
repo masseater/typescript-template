@@ -1,5 +1,6 @@
 // oxlint-disable-next-line import/no-unassigned-import
 import "@template/ui/styles.css";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { RegistryProvider } from "@effect/atom-react";
@@ -11,12 +12,15 @@ import vitest from "@storybook/addon-vitest";
 const router = createRouter({ routeTree: createRootRoute() });
 
 function withProviders(Story: () => ReactElement): ReactElement {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
-    <RegistryProvider>
-      <RouterContextProvider router={router}>
-        <Story />
-      </RouterContextProvider>
-    </RegistryProvider>
+    <QueryClientProvider client={queryClient}>
+      <RegistryProvider>
+        <RouterContextProvider router={router}>
+          <Story />
+        </RouterContextProvider>
+      </RegistryProvider>
+    </QueryClientProvider>
   );
 }
 

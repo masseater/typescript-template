@@ -182,7 +182,16 @@ function wikiImportsDatabase({ location }: Importer, target: ImportTarget): bool
   );
 }
 
+function bypassesServerQuery({ current }: Importer, target: ImportTarget): boolean {
+  return (
+    /^@tanstack\/(?:react-query|query-core|react-router-ssr-query|router-ssr-query-core)(?:\/|$)/u.test(
+      target.clean,
+    ) && !/\/libs\/ui\/(?:src\/server-query\.ts|\.storybook\/[^/]+)$/u.test(current)
+  );
+}
+
 const importRules: readonly ImportRule[] = [
+  bypassesServerQuery,
   crossesApplication,
   escapesPackage,
   reachesDeploymentConfig,

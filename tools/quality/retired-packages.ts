@@ -4,9 +4,11 @@ interface RetiredImportPattern {
 }
 
 const atomState = "Effect Atom (effect/unstable/reactivity と @effect/atom-react)";
+const serverState = "TanStack Query (@template/ui の serverQuery と useServerQuery)";
 
 const retiredPackages: Readonly<Record<string, string>> = {
   "@ai-sdk/react": atomState,
+  "@apollo/client": serverState,
   "@effect-atom/": atomState,
   "@legendapp/state": atomState,
   "@nanostores/": atomState,
@@ -16,13 +18,13 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "@tanstack/ai-react": atomState,
   "@tanstack/db": atomState,
   "@tanstack/form-core": atomState,
-  "@tanstack/query-core": atomState,
   "@tanstack/react-db": atomState,
   "@tanstack/react-form": atomState,
-  "@tanstack/react-query": atomState,
   "@tanstack/react-store": atomState,
   "@tanstack/store": atomState,
+  "@trpc/": serverState,
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  "@urql/": serverState,
   "@xstate/": atomState,
   effector: atomState,
   "effector-react": atomState,
@@ -36,12 +38,16 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "react-final-form": atomState,
   "react-hook-form": atomState,
   "react-intl": "Paraglide JS",
+  "react-query": serverState,
   "react-redux": atomState,
+  "react-relay": serverState,
   recoil: atomState,
   redux: atomState,
+  "relay-runtime": serverState,
   "smarthr-ui": "@template/ui の shadcn/ui (Base UI) 部品",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
-  swr: atomState,
+  swr: serverState,
+  urql: serverState,
   valtio: atomState,
   xstate: atomState,
   zustand: atomState,

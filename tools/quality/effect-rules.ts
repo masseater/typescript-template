@@ -2,6 +2,7 @@ import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
+import { holdsServerData, isServerCacheApi } from "./atom-server-data.ts";
 import { originVisitor } from "./alias-visitor.ts";
 import { reportViolation } from "./lint-context.ts";
 
@@ -176,7 +177,11 @@ function isForbiddenState(origin: Origin): boolean {
 }
 
 function atomStateVisitor(context: LintContext): Visitor {
-  return originVisitor(context, isForbiddenState);
+  return originVisitor(
+    context,
+    (origin) => isForbiddenState(origin) || isServerCacheApi(origin),
+    (node) => holdsServerData(context, node),
+  );
 }
 
 export { atomStateVisitor, effectFailuresVisitor, effectStackVisitor };

@@ -1,11 +1,9 @@
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import type { AsyncResult } from "effect/unstable/reactivity";
-import { Atom } from "effect/unstable/reactivity";
+import { request, serverQuery, useRefresh, useServerQuery } from "@template/ui";
+import type { ServerQuery, ServerQueryResult } from "@template/ui";
 import { UserList } from "@template/runtime/contracts";
 import type { UsersSearch } from "./users-search.ts";
 import { adminClient } from "#shared/api/index.ts";
 import { apiData } from "@template/runtime/client";
-import { request } from "@template/ui";
 import { userListQuery } from "./users-search.ts";
 
 const registeredDate = new Intl.DateTimeFormat("ja-JP", {
@@ -30,7 +28,9 @@ interface ListedUsers {
   readonly users: readonly ListedUser[];
 }
 
-type UserListResult = AsyncResult.AsyncResult<ListedUsers, Readonly<{ message: string }>>;
+type UserListResult = ServerQueryResult<ListedUsers>;
+
+const userListKey = ["admin-users"];
 
 async function fetchUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers> {
   const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
@@ -48,15 +48,20 @@ async function fetchUsers(query: Readonly<Record<string, string>>): Promise<List
   return { total, users: listed };
 }
 
-const userListAtom = Atom.family((query: Readonly<Record<string, string>>) =>
-  Atom.make(request(async () => fetchUsers(query))).pipe(Atom.withServerValueInitial),
-);
+function usersQuery(query: Readonly<Record<string, string>>): ServerQuery<ListedUsers> {
+  return serverQuery([...userListKey, query], request(async () => fetchUsers(query)));
+}
 
 function useUserList(
   search: UsersSearch,
 ): Readonly<{ reload: () => void; result: UserListResult }> {
-  const atom = userListAtom(userListQuery(search));
-  return { reload: useAtomRefresh(atom), result: useAtomValue(atom) };
+  const refresh = useRefresh();
+  return {
+    reload: () => {
+      refresh(userListKey);
+    },
+    result: useServerQuery(usersQuery(userListQuery(search))),
+  };
 }
 
 export { useUserList };

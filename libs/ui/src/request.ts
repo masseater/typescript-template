@@ -31,3 +31,4 @@ function resultError(
 }
 
 export { failureMessage, request, resultError };
+export type { RequestFailed };

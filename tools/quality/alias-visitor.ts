@@ -1,5 +1,5 @@
 import type { ESTree, Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { destructuredOrigins, origins } from "./references.ts";
 import type { Origin } from "./references.ts";
 import { reportViolation } from "./lint-context.ts";
@@ -52,16 +52,25 @@ function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean
   };
 }
 
-function originVisitor(context: LintContext, matches: (origin: Origin) => boolean): Visitor {
+function originVisitor(
+  context: LintContext,
+  matches: (origin: Origin) => boolean,
+  forbidsCall: (node: NodeOf<"CallExpression">) => boolean = () => false,
+): Visitor {
   return {
     ...aliasVisitor(context, matches),
     CallExpression(node: Node): void {
+      if (node.type !== "CallExpression") {
+        return;
+      }
       if (
-        node.type === "CallExpression" &&
         node.callee.type !== "MemberExpression" &&
         origins(context, node.callee).some((origin) => matches(origin))
       ) {
         reportViolation(context, node.callee);
+      }
+      if (forbidsCall(node)) {
+        reportViolation(context, node);
       }
     },
   };

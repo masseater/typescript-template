@@ -38,4 +38,6 @@ export { errorMessage } from "./protocol";
 export { localState } from "./local-state";
 export { useAction } from "./action";
 export { failureMessage, request, resultError } from "./request";
+export { serverQuery, useRefresh, useServerQuery } from "./server-query";
+export type { ServerQuery, ServerQueryResult } from "./server-query";
 export { loginPath, redirectTarget } from "./login-redirect";

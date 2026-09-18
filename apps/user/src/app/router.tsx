@@ -1,5 +1,6 @@
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { withServerQueries } from "@template/ui/shell";
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -8,12 +9,14 @@ declare module "@tanstack/react-router" {
 }
 
 function getRouter(): ReturnType<typeof createRouter<typeof routeTree>> {
-  return createRouter({
-    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
-    defaultPreloadStaleTime: 0,
-    routeTree,
-    scrollRestoration: true,
-  });
+  return withServerQueries(
+    createRouter({
+      defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
+      defaultPreloadStaleTime: 0,
+      routeTree,
+      scrollRestoration: true,
+    }),
+  );
 }
 
 export { getRouter };

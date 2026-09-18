@@ -1,10 +1,9 @@
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
-import { request, resultError } from "./request";
+import { serverQuery, useServerQuery } from "./server-query";
 import { Option } from "effect";
 import { SessionView as SessionContract } from "@template/runtime/contracts";
 import type { SessionView } from "./protocol";
 import { decodeJson } from "@template/runtime/client";
-import { useAtomValue } from "@effect/atom-react";
+import { request } from "./request";
 
 interface SessionState {
   readonly error: string | undefined;
@@ -14,26 +13,26 @@ interface SessionState {
 
 const HTTP_UNAUTHORIZED = 401;
 
-async function fetchSession(): Promise<SessionView | undefined> {
+async function fetchSession(): Promise<Option.Option<SessionView>> {
   const response = await fetch("/api/session", { cache: "no-store", credentials: "same-origin" });
   if (response.status === HTTP_UNAUTHORIZED) {
-    return undefined;
+    return Option.none();
   }
   if (!response.ok) {
     throw new Error(`セッションの取得に失敗しました（HTTP ${response.status}）。`);
   }
   const body: unknown = await response.json();
-  return decodeJson(SessionContract, body);
+  return Option.some(decodeJson(SessionContract, body));
 }
 
-const sessionAtom = Atom.make(request(fetchSession)).pipe(Atom.withServerValueInitial);
+const sessionQuery = serverQuery(["session"], request(fetchSession));
 
 function useSession(): SessionState {
-  const result = useAtomValue(sessionAtom);
+  const result = useServerQuery(sessionQuery);
   return {
-    error: resultError(result),
-    loading: AsyncResult.isInitial(result),
-    session: Option.getOrUndefined(AsyncResult.value(result)),
+    error: result.status === "failure" ? result.message : undefined,
+    loading: result.status === "pending",
+    session: result.status === "success" ? Option.getOrUndefined(result.value) : undefined,
   };
 }
 
