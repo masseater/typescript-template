@@ -1,6 +1,6 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
 
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
@@ -20,11 +20,13 @@ const platform = Effect.acquireRelease(
 );
 
 function report(error: string): Effect.Effect<void> {
-  return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
-    console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false }));
-    process.exitCode = 1;
-  });
+  return Console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false })).pipe(
+    Effect.andThen(
+      Effect.sync(() => {
+        process.exitCode = 1;
+      }),
+    ),
+  );
 }
 
 NodeRuntime.runMain(
@@ -32,8 +34,7 @@ NodeRuntime.runMain(
     const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
     const { env } = yield* platform;
     const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
-    // oxlint-disable-next-line no-console
-    console.log(
+    yield* Console.log(
       JSON.stringify({
         action: "admin_bootstrap",
         role: administrator.role,

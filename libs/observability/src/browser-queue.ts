@@ -1,6 +1,5 @@
 import type { BrowserEvent } from "./events.ts";
 import { maximumBatchSize } from "./events.ts";
-import { logError } from "./log.ts";
 
 type Deliver = (events: readonly BrowserEvent[]) => Promise<void>;
 interface EventQueue {
@@ -12,8 +11,13 @@ interface EventQueue {
 
 const maximumPendingEvents = 128;
 
+function logError(event: string): void {
+  // oxlint-disable-next-line no-console
+  console.error(JSON.stringify({ event }));
+}
+
 function reportFailure(): void {
-  logError({ event: "browser.telemetry_export_failed" });
+  logError("browser.telemetry_export_failed");
 }
 
 async function settle(delivery: Readonly<Promise<void>>): Promise<void> {
@@ -43,7 +47,7 @@ class BrowserEventQueue implements EventQueue {
       return;
     }
     if (this.pending.length >= maximumPendingEvents) {
-      logError({ event: "browser.telemetry_queue_full" });
+      logError("browser.telemetry_queue_full");
       return;
     }
     this.pending.push(event);

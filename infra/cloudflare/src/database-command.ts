@@ -1,6 +1,6 @@
 import { NodeRuntime } from "@effect/platform-node";
 import { layer } from "alchemy/Alchemist";
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 
 import { runRemoteDatabaseCommand } from "@template/db/remote";
 
@@ -48,8 +48,7 @@ NodeRuntime.runMain(
         databaseId,
         ...(email === "" ? {} : { email }),
       });
-      // oxlint-disable-next-line no-console
-      console.info(JSON.stringify(result));
+      yield* Console.info(JSON.stringify(result));
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,

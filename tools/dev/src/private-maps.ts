@@ -8,9 +8,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 
 import { applications } from "@template/config";
+
+import { reportFailed } from "./failure.ts";
 
 class PrivateMapsFailure extends Schema.TaggedError<PrivateMapsFailure>()("PrivateMapsFailure", {
   reason: Schema.Literals([
@@ -91,23 +93,16 @@ function moveApplicationMaps(application: string): Effect.Effect<void, PrivateMa
   const destination = path.join(root, ".local", "source-maps", application, "client");
   return moveMaps(source, { destination, source }).pipe(
     Effect.flatMap((moved) =>
-      Effect.sync(() => {
-        process.stdout.write(
-          `${JSON.stringify({ audience: application, event: "build.source_maps_private", moved })}\n`,
-        );
-      }),
+      Console.log(
+        JSON.stringify({ audience: application, event: "build.source_maps_private", moved }),
+      ),
     ),
   );
 }
 
 NodeRuntime.runMain(
   Effect.forEach(applications, moveApplicationMaps, { discard: true }).pipe(
-    Effect.catchCause(() =>
-      Effect.sync(() => {
-        process.stderr.write(`${JSON.stringify({ event: "build.source_maps_private_failed" })}\n`);
-        process.exitCode = 1;
-      }),
-    ),
+    Effect.catchCause(() => reportFailed({ event: "build.source_maps_private_failed" })),
   ),
   { disableErrorReporting: true },
 );

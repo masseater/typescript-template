@@ -2,11 +2,12 @@
 import { parseArgs } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Effect, Schema } from "effect";
+import { Cause, Console, Effect, Schema } from "effect";
 
 import { applications } from "@template/config";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
+import { reportFailed } from "./failure.ts";
 
 interface Verified {
   readonly logs: number;
@@ -129,24 +130,15 @@ const verify = Effect.fn("verify")(function* verify() {
 
 NodeRuntime.runMain(
   verify().pipe(
-    Effect.flatMap((report) =>
-      Effect.sync(() => {
-        process.stdout.write(`${JSON.stringify(report)}\n`);
-      }),
-    ),
+    Effect.flatMap((report) => Console.log(JSON.stringify(report))),
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
-        : Effect.sync(() => {
-            process.stderr.write(
-              `${JSON.stringify({
-                event: "observability.verification_failed",
-                ok: false,
-                remediation:
-                  "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
-              })}\n`,
-            );
-            process.exitCode = 1;
+        : reportFailed({
+            event: "observability.verification_failed",
+            ok: false,
+            remediation:
+              "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
           }),
     ),
   ),

@@ -1,5 +1,5 @@
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 
 import type { Application } from "@template/config";
 import { grants } from "@template/config";
@@ -9,7 +9,7 @@ import { workerCompatibilityOptions, workerObservability, workerSubdomain } from
 import { databaseName } from "./database-lookup.ts";
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
 import type { StackInventory } from "./inventory.ts";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
+import { markFailed } from "./secrets.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
@@ -181,8 +181,7 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
   if (!matches) {
-    // oxlint-disable-next-line no-console
-    console.error(
+    yield* Console.error(
       JSON.stringify({
         actual: inventory,
         event: "stacks.differs",
@@ -198,27 +197,18 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
-      process.exitCode = FAILED_EXIT_CODE;
+      yield* markFailed;
       return;
     }
-    // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
+    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(
-          JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
-        );
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(
+        JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
+      ).pipe(Effect.andThen(markFailed)),
     ),
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "stacks.invalid" }));
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(JSON.stringify({ event: "stacks.invalid" })).pipe(Effect.andThen(markFailed)),
     ),
   ),
   { disableErrorReporting: true },

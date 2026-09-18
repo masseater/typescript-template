@@ -10,7 +10,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
+
+import { reportFailed } from "./failure.ts";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
   "PrepareBrowserFailure",
@@ -77,22 +79,13 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     yield* prepareAgentBrowser();
     yield* preparePlaywright();
-    // oxlint-disable-next-line no-console
-    console.info(
+    yield* Console.info(
       JSON.stringify({
         event: "local.browser_cli_prepared",
         globalConfigurationChanged: false,
         playwrightBrowser: PLAYWRIGHT_BROWSER,
       }),
     );
-  }).pipe(
-    Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "local.browser_cli_prepare_failed" }));
-        process.exitCode = 1;
-      }),
-    ),
-  ),
+  }).pipe(Effect.catchCause(() => reportFailed({ event: "local.browser_cli_prepare_failed" }))),
   { disableErrorReporting: true },
 );

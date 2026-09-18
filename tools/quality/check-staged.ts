@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 
 import { secretsFile } from "@template/config/deployment";
 
@@ -74,22 +74,31 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
 NodeRuntime.runMain(
   scanStaged().pipe(
     Effect.flatMap(({ failures, scan }) =>
-      Effect.sync(() => {
-        process.stdout.write(
-          `${JSON.stringify({ event: "quality.staged_secrets", failures, ok: failures.length === 0, prefixScan: scan })}\n`,
-        );
-        if (failures.length > 0) {
-          process.exitCode = FAILED_EXIT_CODE;
-        }
-      }),
+      Console.log(
+        JSON.stringify({
+          event: "quality.staged_secrets",
+          failures,
+          ok: failures.length === 0,
+          prefixScan: scan,
+        }),
+      ).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            if (failures.length > 0) {
+              process.exitCode = FAILED_EXIT_CODE;
+            }
+          }),
+        ),
+      ),
     ),
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({ event: "quality.staged_secrets_failed", ok: false })}\n`,
-        );
-        process.exitCode = 1;
-      }),
+      Console.error(JSON.stringify({ event: "quality.staged_secrets_failed", ok: false })).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = FAILED_EXIT_CODE;
+          }),
+        ),
+      ),
     ),
   ),
   { disableErrorReporting: true },

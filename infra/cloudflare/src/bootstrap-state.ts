@@ -1,5 +1,5 @@
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 
 import { secretsStoreCount, stateStorePresent } from "./account-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
@@ -38,8 +38,9 @@ NodeRuntime.runMain(
       if ((yield* runAlchemy(args, confidential)) !== OK_EXIT_CODE) {
         return yield* Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" }));
       }
-      // oxlint-disable-next-line no-console
-      console.info(JSON.stringify({ adopted: adopting, event: "cloudflare.state_store_ready" }));
+      yield* Console.info(
+        JSON.stringify({ adopted: adopting, event: "cloudflare.state_store_ready" }),
+      );
     }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)));
   }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
   { disableErrorReporting: true },

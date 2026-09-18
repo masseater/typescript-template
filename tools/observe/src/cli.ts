@@ -2,11 +2,12 @@
 import { parseArgs } from "node:util";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 
 import { applicationPorts } from "@template/config";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
+import { reportFailed } from "./failure.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
@@ -92,16 +93,14 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
   return queryLogs(app, input, since);
 }
 
-const help = Effect.sync(() => {
-  process.stdout.write(
-    `${JSON.stringify({
-      commands,
-      flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
-      readOnly: true,
-      source: "Cloudflare Local Explorer of the running app",
-    })}\n`,
-  );
-});
+const help = Console.log(
+  JSON.stringify({
+    commands,
+    flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
+    readOnly: true,
+    source: "Cloudflare Local Explorer of the running app",
+  }),
+);
 
 const query = Effect.fn("query")(function* query() {
   const input = yield* Schema.decodeUnknownEffect(QueryInput)({
@@ -116,8 +115,13 @@ const query = Effect.fn("query")(function* query() {
     return yield* argumentsInvalid();
   }
   const data = yield* runQuery(values.app, input);
-  process.stdout.write(
-    `${JSON.stringify({ command: input.command, data, observedAt: new Date().toISOString(), ok: true })}\n`,
+  yield* Console.log(
+    JSON.stringify({
+      command: input.command,
+      data,
+      observedAt: new Date().toISOString(),
+      ok: true,
+    }),
   );
   return data;
 });
@@ -125,16 +129,11 @@ const query = Effect.fn("query")(function* query() {
 NodeRuntime.runMain(
   (values.help ? help : query()).pipe(
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({
-            event: "observability.query_failed",
-            ok: false,
-            remediation:
-              "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
-          })}\n`,
-        );
-        process.exitCode = 1;
+      reportFailed({
+        event: "observability.query_failed",
+        ok: false,
+        remediation:
+          "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
       }),
     ),
   ),

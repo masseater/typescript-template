@@ -1,10 +1,10 @@
 import { NodeRuntime } from "@effect/platform-node";
 import { layer } from "alchemy/Alchemist";
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 
 import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
-import { FAILED_EXIT_CODE, reportCause } from "./secrets.ts";
+import { markFailed, reportCause } from "./secrets.ts";
 
 const EVENT = "account.rejected";
 
@@ -14,8 +14,7 @@ NodeRuntime.runMain(
     yield* Effect.gen(function* inspected() {
       const inspection = yield* inspectAccount(access, config, stateStore(secrets));
       const refused = blocked(inspection);
-      // oxlint-disable-next-line no-console
-      console.log(
+      yield* Console.log(
         JSON.stringify({
           blocked: refused,
           checks: inspection,
@@ -24,7 +23,7 @@ NodeRuntime.runMain(
         }),
       );
       if (refused.length > 0) {
-        process.exitCode = FAILED_EXIT_CODE;
+        yield* markFailed;
       }
     }).pipe(
       Effect.provide(layer()),

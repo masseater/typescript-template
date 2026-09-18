@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
 import type { ProgressEvent } from "alchemy/Alchemist";
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 
 import type { ArtifactMode } from "./artifacts.ts";
 import { ArtifactWrites } from "./artifacts.ts";
@@ -24,10 +24,7 @@ interface Deployment {
 const alchemist = layer();
 
 function write(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
-  return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
-    console.info(JSON.stringify(record));
-  });
+  return Console.info(JSON.stringify(record));
 }
 
 function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effect<void> {
