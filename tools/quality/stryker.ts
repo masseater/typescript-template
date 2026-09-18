@@ -1,7 +1,8 @@
 const configuration = {
   coverageAnalysis: "perTest",
+  dryRunTimeoutMinutes: 20,
   htmlReporter: { fileName: ".local/stryker-report.html" },
-  ignorePatterns: ["**/tsconfig*.json"],
+  ignorePatterns: ["**/tsconfig*.json", ".local-agents", ".local/**"],
   ignoreStatic: true,
   mutate: [
     "libs/config/src/index.ts",
