@@ -16,7 +16,7 @@ jobs:
   check:
     if: github.event_name == 'pull_request'
     name: ${{ startsWith(github.head_ref, 'mergify/merge-queue/') && 'merge-queue' || 'check' }}
-    runs-on: ubuntu-latest
+    runs-on: &runner ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
     timeout-minutes: 15
     env:
       TEST_SCOPE: ${{ !startsWith(github.head_ref, 'mergify/merge-queue/') && '--changed HEAD^1' || '' }}
@@ -28,7 +28,7 @@ jobs:
       - &browser-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/ms-playwright
+          path: ${{ runner.os == 'macOS' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-workspace.yaml') }}
       - &setup
         uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
@@ -57,7 +57,7 @@ jobs:
 
   cache:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: *runner
     timeout-minutes: 15
     steps:
       - *checkout
