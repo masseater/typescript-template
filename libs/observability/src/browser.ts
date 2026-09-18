@@ -14,6 +14,7 @@ import type { BrowserEvent } from "./events.ts";
 import { BrowserEventQueue } from "./browser-queue.ts";
 import type { EventQueue } from "./browser-queue.ts";
 import type { Metric } from "web-vitals";
+import { captureObservers } from "./browser-observers.ts";
 import { errorAttributes } from "./errors.ts";
 import { maximumMeasurement } from "./events.ts";
 
@@ -200,7 +201,7 @@ function listen(recorder: Recorder): () => void {
   };
 }
 
-function observeVitals(recorder: Recorder): void {
+function observeVitals(recorder: Recorder): () => void {
   function recordVital(metric: Readonly<Pick<Metric, "name" | "value">>): void {
     const value = Math.min(Math.max(metric.value, 0), maximumMeasurement);
     recorder.queue.enqueue({
@@ -213,11 +214,13 @@ function observeVitals(recorder: Recorder): void {
       recorder.queue.flushInBackground();
     }
   }
+  const stopCapturing = captureObservers();
   onCLS(recordVital, { reportAllChanges: true });
   onFCP(recordVital);
   onINP(recordVital, { reportAllChanges: true });
   onLCP(recordVital, { reportAllChanges: true });
   onTTFB(recordVital);
+  return stopCapturing;
 }
 
 function assertRoutes(routes: Readonly<Record<string, string>>): void {
@@ -244,7 +247,7 @@ function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetr
   };
   const restoreFetch = patchFetch({ endpoint, queue, routes, send });
   const stopListening = listen(recorder);
-  observeVitals(recorder);
+  const stopObservingVitals = observeVitals(recorder);
   const interval = globalThis.setInterval(() => {
     queue.flushInBackground();
   }, flushIntervalMilliseconds);
@@ -254,6 +257,7 @@ function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetr
       globalThis.clearInterval(interval);
       restoreFetch();
       stopListening();
+      stopObservingVitals();
       queue.flushInBackground();
     },
     flush: async () => {
