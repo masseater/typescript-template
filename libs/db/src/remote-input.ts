@@ -44,6 +44,12 @@ const RemoteTarget = Schema.Struct({
   email: Schema.optionalKey(EmailAddress),
 });
 
+const MigrationStatusTarget = Schema.Struct({
+  accountId: AccountId,
+  apiToken: ApiToken,
+  databaseId: DatabaseId,
+});
+
 const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRemoteInput(
   args: readonly string[],
   input: unknown,
@@ -76,4 +82,4 @@ const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRemoteInpu
   return { execute: mode === "--execute", operation, target };
 });
 
-export { RemoteFailure, RemoteTarget, fail, parseRemoteInput };
+export { MigrationStatusTarget, RemoteFailure, fail, parseRemoteInput };

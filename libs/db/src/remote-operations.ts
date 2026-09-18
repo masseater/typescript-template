@@ -7,6 +7,8 @@ import { Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
 import type { EmailAddress } from "./bootstrap-statement.ts";
+import { remoteExecutor } from "./remote-http.ts";
+import type { MigrationStatusTarget } from "./remote-input.ts";
 import { RemoteFailure, fail } from "./remote-input.ts";
 
 interface RemoteQuery {
@@ -114,8 +116,17 @@ const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
   migrations: readonly Migration[],
 ) {
   const [recorded] = yield* executor.batch([{ params: [], sql: MIGRATIONS_TABLE_PRESENT }]);
-  const applied = recorded?.length === 0 ? 0 : yield* readHistory(executor, migrations);
+  if (recorded === undefined) {
+    return yield* fail("REMOTE_RESPONSE_INVALID");
+  }
+  const applied = recorded.length === 0 ? 0 : yield* readHistory(executor, migrations);
   return { applied, declared: migrations.length, pending: migrations.length - applied } as const;
+});
+
+const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(
+  target: typeof MigrationStatusTarget.Type,
+) {
+  return yield* migrationStatus(remoteExecutor(target), yield* loadRemoteMigrations());
 });
 
 const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapDatabase(
@@ -143,8 +154,9 @@ export {
   APPLICATION_TABLES,
   MigrationFiles,
   bootstrapDatabase,
+  MIGRATIONS_TABLE_PRESENT,
   loadRemoteMigrations,
   migrateDatabase,
-  migrationStatus,
+  readMigrationStatus,
 };
 export type { DatabaseExecutor, RemoteQuery };

@@ -1,4 +1,3 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 import type { Scope } from "effect";
@@ -8,8 +7,9 @@ import { setupServer } from "msw/node";
 
 import type { Database } from "./database.ts";
 import { query } from "./database.ts";
-import { readRemoteMigrationStatus, runRemoteDatabaseCommand } from "./remote-command.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { remoteExecutor } from "./remote-http.ts";
+import { readMigrationStatus } from "./remote-operations.ts";
 import { user } from "./schema.ts";
 import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
 
@@ -43,7 +43,9 @@ function mockServer(
   );
 }
 
-function d1Endpoint(binding: D1Database): Effect.Effect<SetupServer, never, Scope.Scope> {
+function d1Endpoint(
+  binding: Effect.Success<typeof TestBinding>,
+): Effect.Effect<SetupServer, never, Scope.Scope> {
   return mockServer(
     http.post(endpoint, async ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${target.apiToken}`) {
@@ -112,11 +114,11 @@ it.effect("remote migrations use the official HTTP batch contract with real D1 e
 it.effect("reports an empty database as having every declared migration left to apply", () =>
   Effect.gen(function* program() {
     yield* d1Endpoint(yield* TestBinding);
-    const before = yield* readRemoteMigrationStatus(target);
+    const before = yield* readMigrationStatus(target);
     assert.strictEqual(before.applied, 0);
     assert.strictEqual(before.pending, before.declared);
     yield* runRemoteDatabaseCommand(["migrate", ...execute], target);
-    const after = yield* readRemoteMigrationStatus(target);
+    const after = yield* readMigrationStatus(target);
     assert.strictEqual(after.pending, 0);
     assert.strictEqual(after.applied, before.declared);
     assert.notInclude(JSON.stringify(after), target.apiToken);

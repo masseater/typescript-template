@@ -62,7 +62,6 @@ function appLayer(
   );
 }
 
-export { DatabaseHealth } from "./database-health.ts";
 export { isolateRuntime } from "./isolate.ts";
 export { appLayer, configuredAppLayer };
 export type { AppServices };

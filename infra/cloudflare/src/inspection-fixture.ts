@@ -4,10 +4,11 @@ import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
-import { loadRemoteMigrations } from "@repo/db/migrations";
+import { MIGRATIONS_TABLE_PRESENT, loadRemoteMigrations } from "@repo/db/migrations";
 
 import { pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import type { mockServer } from "./account-fixture.ts";
+import { databaseName } from "./database-lookup.ts";
 import { deployTokenPermissions } from "./deploy-token.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
@@ -159,8 +160,6 @@ function addressPage(addresses: readonly Address[], url: string): Response {
   });
 }
 
-const MIGRATIONS_TABLE_NAME = "__drizzle_migrations";
-
 async function migrationRows(applied: number): Promise<readonly unknown[]> {
   const migrations = await Effect.runPromise(loadRemoteMigrations());
   return migrations
@@ -181,15 +180,14 @@ function migrationQuery(applied: number): ReturnType<typeof http.post> {
     const sent = await Effect.runPromise(
       Schema.decodeUnknownEffect(Batch)(await request.json()).pipe(Effect.orDie),
     );
-    const asksForTheTable = sent.batch.some((query) => query.sql.includes("sqlite_master"));
-    if (asksForTheTable) {
-      return batchResult(applied === 0 ? [] : [{ name: MIGRATIONS_TABLE_NAME }]);
+    if (sent.batch.some((query) => query.sql === MIGRATIONS_TABLE_PRESENT)) {
+      return batchResult(applied === 0 ? [] : [{ name: "__drizzle_migrations" }]);
     }
     return batchResult(await migrationRows(applied));
   });
 }
 
-const deployedDatabases = [{ name: `${config.prefix}-db`, uuid: databaseId }];
+const deployedDatabases = [{ name: databaseName(config.prefix), uuid: databaseId }];
 
 interface AccountState {
   readonly token?: readonly ReturnType<typeof http.get>[];

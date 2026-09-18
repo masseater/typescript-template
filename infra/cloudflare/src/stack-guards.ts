@@ -25,14 +25,14 @@ const assertStackReady = Effect.fn("assertStackReady")(function* assertStackRead
   if (stack === "database") {
     yield* assertDatabaseUnclaimed(deployment.access, deployment.config, store);
   }
-  if (applicationStacks.some((application) => application === stack)) {
-    yield* assertDatabaseMigrated(deployment.access, deployment.config);
-  }
   if (stack === onboardingStack) {
     yield* assertSendingDomainUnclaimed(deployment.access, deployment.config, store);
   }
   if (stackDependencies(stack).includes(traceDestinationStack)) {
     yield* assertTraceDestinationApplied(deployment.config, store);
+  }
+  if (applicationStacks.includes(stack)) {
+    yield* assertDatabaseMigrated(deployment.access, deployment.config);
   }
 });
 

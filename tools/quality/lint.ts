@@ -221,7 +221,7 @@ const lint = {
           },
           {
             from: "package",
-            name: ["Codec", "Duration", "Effect", "Exit", "Layer"],
+            name: ["Closeable", "Codec", "Duration", "Effect", "Exit", "Layer", "Scope"],
             package: "effect",
           },
           {

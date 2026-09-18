@@ -26,6 +26,16 @@ const mockSources = new Set([
 ]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
 const sharedWaitApis = new Set(["cached", "cachedInvalidateWithTTL", "cachedWithTTL"]);
+const sharedWaitModules = new Set([
+  "Cache",
+  "ManagedRuntime",
+  "Pool",
+  "RcMap",
+  "RcRef",
+  "Resource",
+  "ScopedCache",
+]);
+const effectSources = new Set(["effect", "effect/Effect"]);
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -99,11 +109,14 @@ function memoizationVisitor(context: LintContext): Visitor {
 
 function isCrossRequestState(origin: Origin): boolean {
   const [source, ...members] = origin;
+  if (source === "effect/Effect") {
+    return sharedWaitApis.has(members[0] ?? "");
+  }
   if (source !== "effect") {
-    return false;
+    return effectSources.has(source ?? "") && sharedWaitApis.has(members[0] ?? "");
   }
   return (
-    members[0] === "ManagedRuntime" ||
+    sharedWaitModules.has(members[0] ?? "") ||
     (members[0] === "Effect" && sharedWaitApis.has(members[1] ?? ""))
   );
 }

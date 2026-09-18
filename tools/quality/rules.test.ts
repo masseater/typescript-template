@@ -81,6 +81,16 @@ const forbiddenCode = [
     'import { Effect as Fx } from "effect"; const { cached } = Fx; export const cache = () => cached(Fx.void);',
     "cross-request-state",
   ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { cachedWithTTL } from "effect/Effect"; export const cache = () => cachedWithTTL;',
+    "cross-request-state",
+  ],
+  [
+    "apps/admin/src/probe.ts",
+    'import { RcMap } from "effect"; export const shared = () => RcMap;',
+    "cross-request-state",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [

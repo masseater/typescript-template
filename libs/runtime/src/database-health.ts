@@ -24,4 +24,4 @@ class DatabaseHealth extends Context.Service<DatabaseHealth, DatabaseHealthShape
   );
 }
 
-export { DatabaseHealth, healthCacheWindow };
+export { DatabaseHealth };

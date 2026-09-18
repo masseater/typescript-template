@@ -1,11 +1,14 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
 
 import { loadRemoteMigrations } from "@repo/db/migrations";
 
 import { mockServer } from "./account-fixture.ts";
 import {
+  FORBIDDEN_STATUS,
   access,
+  account,
   accountHandlers,
   config,
   databaseId,
@@ -76,6 +79,24 @@ it.effect("refuses an application before the unit that declares its trace destin
         keys: [traceDestinationStack],
       });
       yield* assertStackReady(stack, deployment, deployedState());
+    }).pipe(Effect.scoped),
+  ),
+);
+
+it.effect("names the read as the reason when the migration history cannot be read", () =>
+  Effect.forEach(applications, (stack) =>
+    Effect.gen(function* program() {
+      yield* mockServer(
+        ...accountHandlers({ databases: deployedDatabases }),
+        http.post(`${account}/d1/database/${databaseId}/query`, () =>
+          HttpResponse.json({ error: "forbidden" }, { status: FORBIDDEN_STATUS }),
+        ),
+      );
+      const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
+      assert.deepStrictEqual(describeFailure(failure, []), {
+        code: "database_migration_status_unreadable",
+        keys: ["REMOTE_QUERY_FAILED"],
+      });
     }).pipe(Effect.scoped),
   ),
 );

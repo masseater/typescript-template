@@ -1,5 +1,6 @@
 import { providers, state } from "alchemy/Cloudflare";
 
+import { applications } from "@repo/config";
 import type { Application } from "@repo/config";
 
 import { monitorStacks } from "./monitors.ts";
@@ -48,7 +49,7 @@ const stackNames = [
   "wiki",
 ] as const satisfies readonly StackName[];
 
-const applicationStacks = ["user", "admin", "wiki"] as const satisfies readonly StackName[];
+const applicationStacks: readonly StackName[] = applications;
 
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [

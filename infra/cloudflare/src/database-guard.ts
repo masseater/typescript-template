@@ -1,7 +1,7 @@
 import type { StateService } from "alchemy/State";
 import { Effect } from "effect";
 
-import { readRemoteMigrationStatus } from "@repo/db/remote";
+import { readMigrationStatus } from "@repo/db/migrations";
 
 import type { AccountAccess } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
@@ -52,14 +52,17 @@ const assertDatabaseMigrated = Effect.fn("assertDatabaseMigrated")(function* ass
   target: DeploymentTarget,
 ) {
   const databaseId = yield* lookupDatabaseId(access, databaseName(target.prefix));
-  const status = yield* readRemoteMigrationStatus({
+  const status = yield* readMigrationStatus({
     accountId: access.accountId,
     apiToken: access.apiToken,
     databaseId,
   }).pipe(
     Effect.mapError(
       (failure) =>
-        new CloudflareFailure({ code: "database_migrations_pending", keys: [failure.code] }),
+        new CloudflareFailure({
+          code: "database_migration_status_unreadable",
+          keys: [failure.code],
+        }),
     ),
   );
   if (status.pending > 0) {
