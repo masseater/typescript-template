@@ -6,6 +6,13 @@ const application = {
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
+const load = {
+  entry: ["scenarios/*.ts!"],
+  ignoreDependencies: ["k6"],
+  project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
+};
+const loadCommands = ["src/cli.ts!"];
+
 const workspaces = {
   ".": {
     entry: ["doctor.config.ts"],
@@ -32,6 +39,9 @@ const workspaces = {
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
+  },
+  "libs/runtime": {
+    ignoreDependencies: ["cloudflare"],
   },
   "libs/ui": {
     project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
@@ -107,6 +117,7 @@ function config({
         ignoreDependencies: ["playwright"],
         project: ["src/**/*.ts!"],
       },
+      "tools/load": { ...load, entry: [...load.entry, ...productionOnly(...loadCommands)] },
       "tools/observe": {
         entry: productionOnly(...scripts["tools/observe"]),
         project: ["src/**/*.ts!"],
