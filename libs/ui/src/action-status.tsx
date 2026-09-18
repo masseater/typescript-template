@@ -1,6 +1,6 @@
 import type { ActionState } from "./action";
 import type { ReactElement } from "react";
-import { Status } from "./index";
+import { Status } from "./shared/ui/status";
 
 interface ActionStatusProps {
   readonly action: ActionState;

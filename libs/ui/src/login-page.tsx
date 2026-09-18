@@ -1,6 +1,6 @@
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import { LoginForm } from "./login-form";
-import { Page } from "./index";
+import { Page } from "./shared/ui/page";
 import type { ReactElement } from "react";
 
 function LoginPage({

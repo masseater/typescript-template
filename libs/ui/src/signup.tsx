@@ -1,5 +1,5 @@
 import { ActionStatus } from "./action-status";
-import { FormColumn } from "./index";
+import { FormColumn } from "./shared/ui/form-column";
 import type { ReactElement } from "react";
 import { SignUpFields } from "./signup-fields";
 import { useAction } from "./action";

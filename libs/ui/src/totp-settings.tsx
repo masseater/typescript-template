@@ -1,6 +1,6 @@
 import type { Enrollment, SettingsContext } from "./mfa-types";
 import type { ReactElement } from "react";
-import { Status } from "./index";
+import { Status } from "./shared/ui/status";
 import { TotpEnrollment } from "./totp-enrollment";
 import { TotpPasswordForm } from "./totp-password-form";
 import { useState } from "react";

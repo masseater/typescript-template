@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
-import { Status } from "./index";
+import { Status } from "./shared/ui/status";
 
 async function verifyEmailToken(): Promise<boolean> {
   const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");

@@ -1,8 +1,9 @@
-import { Button, FormColumn } from "./index";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
+import { Button } from "./shared/ui/button";
 import { ChallengeCodeField } from "./challenge-code-field";
+import { FormColumn } from "./shared/ui/form-column";
 import type { TextInput } from "./use-text-input";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";

@@ -1,10 +1,10 @@
-import { FormColumn, Separator } from "./index";
 import { ActionStatus } from "./action-status";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 import { ChallengeLogin } from "./challenge-login";
 import type { ChallengeMode } from "./challenge-form";
 import { CredentialsForm } from "./credentials-form";
-import { PasskeyLoginButton } from "./passkey-login-button";
+import { FormColumn } from "./shared/ui/form-column";
+import { PasskeyLogin } from "./passkey-login";
 import type { ReactElement } from "react";
 import { useAction } from "./action";
 import { useState } from "react";
@@ -37,8 +37,7 @@ function LoginForm({
             onChallenge={setChallenge}
             password={password}
           />
-          <Separator label="または" />
-          <PasskeyLoginButton action={action} onAuthenticated={onAuthenticated} />
+          <PasskeyLogin action={action} onAuthenticated={onAuthenticated} />
         </>
       ) : (
         <ChallengeLogin

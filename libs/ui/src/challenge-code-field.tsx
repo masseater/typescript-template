@@ -1,4 +1,4 @@
-import { Field } from "./index";
+import { Field } from "./shared/ui/field";
 import type { ReactElement } from "react";
 import type { TextInput } from "./use-text-input";
 import { TotpField } from "./totp-field";

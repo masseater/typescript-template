@@ -1,11 +1,12 @@
 import { requireSecureContext, requireSuccess } from "./protocol";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./index";
+import { Button } from "./shared/ui/button";
 import type { ReactElement } from "react";
+import { Separator } from "./shared/ui/separator";
 import { authClient } from "./client";
 
-function PasskeyLoginButton({
+function PasskeyLogin({
   action,
   onAuthenticated,
 }: Readonly<{ action: ActionState; onAuthenticated: AuthenticatedHandler }>): ReactElement {
@@ -17,10 +18,13 @@ function PasskeyLoginButton({
     });
   }
   return (
-    <Button type="button" disabled={action.blocked} onClick={signIn}>
-      パスキーでログイン
-    </Button>
+    <>
+      <Separator label="または" />
+      <Button type="button" disabled={action.blocked} onClick={signIn}>
+        パスキーでログイン
+      </Button>
+    </>
   );
 }
 
-export { PasskeyLoginButton };
+export { PasskeyLogin };
