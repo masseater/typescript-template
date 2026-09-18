@@ -80,9 +80,20 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+  "tools/commander": ["src/app/cli.ts!"],
   "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
+
+function commanderWorkspace(
+  only: (...files: readonly string[]) => string[],
+): NonNullable<KnipConfiguration["workspaces"]>[string] {
+  return {
+    entry: [...application.entry, ...only(...scripts["tools/commander"])],
+    ignoreDependencies: [],
+    ignoreExportsUsedInFile: { interface: true },
+  };
+}
 
 function config({
   production = false,
@@ -120,6 +131,7 @@ function config({
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
       },
+      "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
         ignoreDependencies: ["playwright"],
