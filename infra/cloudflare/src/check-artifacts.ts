@@ -1,6 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-
 import { NodeRuntime } from "@effect/platform-node";
 import { Effect } from "effect";
 
@@ -20,18 +17,10 @@ function report(reason: string): Effect.Effect<void> {
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     for (const target of applications) {
-      const artifacts = yield* loadArtifacts(repositoryRoot, target);
-      // oxlint-disable-next-line no-console
-      console.log(
-        JSON.stringify({
-          event: "artifacts.verified",
-          mainModule: path.relative(repositoryRoot, artifacts.mainModule),
-          modules: artifacts.modules.length,
-          release: artifacts.release,
-          target,
-        }),
-      );
+      yield* loadArtifacts(repositoryRoot, target);
     }
+    // oxlint-disable-next-line no-console
+    console.log(JSON.stringify({ event: "artifacts.verified", targets: applications.length }));
   }).pipe(
     Effect.catchTag("ArtifactFailure", (failure) => report(failure.code)),
     Effect.catchCause(() => report("artifact_check_failed")),

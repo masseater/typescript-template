@@ -1,7 +1,7 @@
 import { Stage, inMemoryState } from "alchemy";
 import { providers } from "alchemy/Cloudflare";
 import { toEffect } from "alchemy/Test/Core";
-import { Effect, Schema } from "effect";
+import { Effect, References, Schema } from "effect";
 
 import { repositoryRoot } from "./artifacts.ts";
 import type { StackName } from "./stacks.ts";
@@ -191,7 +191,7 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
         toEffect(Effect.provideService(program, Stage, verificationSettings.prefix), {
           providers: providers(),
           state: inMemoryState(),
-        }),
+        }).pipe(Effect.provideService(References.MinimumLogLevel, "Warn")),
       ),
   });
   const shape = yield* Schema.decodeUnknownEffect(CompiledShape)(compiled).pipe(
