@@ -1,5 +1,5 @@
 import { Console, Logger, References } from "effect";
-import type { Layer } from "effect";
+import type { Layer, LogLevel } from "effect";
 
 import type { ServiceName } from "@repo/config";
 
@@ -8,6 +8,7 @@ import { redactedField } from "./redact.ts";
 interface LogSink {
   readonly error: (line: string) => void;
   readonly info: (line: string) => void;
+  readonly warn: (line: string) => void;
 }
 
 interface StructuredLogOptions {
@@ -16,7 +17,16 @@ interface StructuredLogOptions {
   readonly log?: LogSink;
 }
 
-const failureLevels: ReadonlySet<string> = new Set(["Error", "Fatal", "Warn"]);
+const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
+  All: "info",
+  Debug: "info",
+  Error: "error",
+  Fatal: "error",
+  Info: "info",
+  None: "info",
+  Trace: "info",
+  Warn: "warn",
+};
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,7 +64,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
       },
       redactedField,
     );
-    sink[failureLevels.has(logLevel) ? "error" : "info"](line);
+    sink[sinkByLevel[logLevel]](line);
   });
   return Logger.layer([logger]);
 }

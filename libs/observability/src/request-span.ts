@@ -1,11 +1,13 @@
 import { Cause, Effect, Tracer } from "effect";
 
+import { annotateLogs, annotateSpan } from "./annotations.ts";
 import { CurrentRequest } from "./current-request.ts";
 import type { RequestContext } from "./current-request.ts";
 import { errorAttributes, errorFingerprint } from "./errors.ts";
 import type { ErrorAttributes } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
+import { logAt, statusSeverity } from "./severity.ts";
 import { isRecord } from "./structured-logs.ts";
 import { Telemetry } from "./telemetry.ts";
 
@@ -37,7 +39,7 @@ function failureAttributesOf(error: unknown): FailureAttributes {
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
   const attributes = failureAttributesOf(Cause.squash(cause));
-  return Effect.logError("application.error").pipe(Effect.annotateLogs({ ...attributes }));
+  return Effect.logError("application.error").pipe(annotateLogs({ ...attributes }));
 }
 
 function incomingParent(headers: Readonly<Pick<Headers, "get">>): Tracer.ExternalSpan | undefined {
@@ -91,12 +93,8 @@ function recordRequest(
       route: routeLabel(new URL(request.url).pathname, telemetry.routes),
       status,
     };
-    yield* Effect.annotateCurrentSpan(attributes);
-    yield* (
-      status >= httpStatus.internalServerError
-        ? Effect.logError("http.server.request")
-        : Effect.logInfo("http.server.request")
-    ).pipe(Effect.annotateLogs(attributes));
+    yield* annotateSpan(attributes);
+    yield* logAt(statusSeverity(status), "http.server.request", attributes);
   });
 }
 
@@ -114,7 +112,7 @@ function respond<Requirements>(
     yield* recordRequest(request, response.status, start);
     return correlatedResponse(response, context);
   }).pipe(
-    Effect.annotateLogs({
+    annotateLogs({
       request_id: context.requestId,
       span_id: context.spanId,
       trace_id: context.traceId,

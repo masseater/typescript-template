@@ -103,7 +103,9 @@ function createLogger(run: Run): LoggerOptions {
       void run(
         level === "error"
           ? Effect.logError("authentication.failed", { cause })
-          : Effect.logWarning("authentication.diagnostic", { level }),
+          : Effect.logWithLevel(level === "warn" ? "Warn" : "Info")("authentication.diagnostic", {
+              level,
+            }),
       );
     },
   };

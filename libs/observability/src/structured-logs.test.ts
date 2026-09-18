@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { annotateLogs } from "./annotations.ts";
 import { Telemetry } from "./telemetry.ts";
 import { recordingSink } from "./testing.ts";
 
@@ -57,8 +58,8 @@ it.effect("keeps the error that broke the model readable while hiding the secret
         reason: "model_failed",
       }),
     );
-    assert.notInclude(JSON.stringify(logs.stderr), leaked);
-    assert.deepStrictEqual(logs.stderr, [
+    assert.notInclude(JSON.stringify(logs.stdwarn), leaked);
+    assert.deepStrictEqual(logs.stdwarn, [
       {
         cause: {
           message: "D1_ERROR: no such table: jwks (AUTH_SECRET=[redacted])",
@@ -77,7 +78,7 @@ it.effect("hides a secret an annotation carries, not only the attributes of the 
   Effect.gen(function* program() {
     const logs = yield* recorded(
       Effect.logInfo("http.server.request", { route: "home", status: 200 }).pipe(
-        Effect.annotateLogs({ cookie: `template-user.session=${leaked}`, request_id: "abc" }),
+        annotateLogs({ cookie: `template-user.session=${leaked}`, request_id: "abc" }),
       ),
     );
     assert.notInclude(JSON.stringify(logs.stdout), leaked);
