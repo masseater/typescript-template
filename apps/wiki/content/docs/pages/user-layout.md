@@ -1,9 +1,11 @@
 ---
 title: 利用者アプリのレイアウト
-description: 利用者アプリの全ページが共有する枠と、ページ間の遷移
+description: 利用者アプリの全ページが共有する枠と、ページの一覧、ページ間の遷移
 ---
 
-利用者アプリのページは、誰でも開ける公開の枠と、ログインした利用者だけが使う会員の枠のどちらか 1 つに入る。
+この文書は、目指す画面の構成を書いている。いまの会員の枠は画面の上端にヘッダーとナビゲーションを置く形で、この文書の形になるのは [#332](https://github.com/masseater/typescript-template/issues/332) からである。各ページがいまあるかどうかは、表の「状態」の列が示す。
+
+利用者アプリのページは、誰でも開ける公開の枠、登録の直後に通る登録の枠、ログインした利用者だけが使う会員の枠のどれか 1 つに入る。
 
 ## 公開の枠
 
@@ -15,72 +17,162 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 - 本体
   - LP は画面幅いっぱいを使う
   - それ以外は 1 つの作業だけを中央のカードに置く
+- フッター
+  - 利用規約・プライバシーポリシー・お問い合わせへのリンクを置く
 
-| ページ               | パス            |
-| -------------------- | --------------- |
-| LP                   | `/`             |
-| 新規登録             | `/signup`       |
-| ログイン             | `/login`        |
-| メールアドレスの確認 | `/verify-email` |
+| ページ                           | パス            | 状態                                                                |
+| -------------------------------- | --------------- | ------------------------------------------------------------------- |
+| LP                               | `/`             | いまある                                                            |
+| 新規登録                         | `/signup`       | いまある                                                            |
+| ログイン                         | `/login`        | いまある                                                            |
+| メールアドレスの確認             | `/verify-email` | いまある                                                            |
+| お問い合わせ（会員でない人向け） | `/contact`      | [#338](https://github.com/masseater/typescript-template/issues/338) |
+| 利用規約                         | `/terms`        | [#299](https://github.com/masseater/typescript-template/issues/299) |
+| プライバシーポリシー             | `/privacy`      | [#299](https://github.com/masseater/typescript-template/issues/299) |
+
+## 登録の枠
+
+メールアドレスの確認を済ませた後の、初めてのログインで通る。ナビゲーションを持たず、1 つの作業だけを中央に置き、どこまで進んだかを上に示す。
+
+| ページ                     | パス                 | 状態                                                                                            |
+| -------------------------- | -------------------- | ----------------------------------------------------------------------------------------------- |
+| 規約への同意               | `/welcome/agreement` | [#333](https://github.com/masseater/typescript-template/issues/333)                             |
+| プロフィールの作り方を選ぶ | `/welcome`           | [#333](https://github.com/masseater/typescript-template/issues/333)                             |
+| 基本項目の入力             | `/welcome/profile`   | [#333](https://github.com/masseater/typescript-template/issues/333)                             |
+| AI インタビュー            | `/welcome/interview` | いまは `/interview`。[#333](https://github.com/masseater/typescript-template/issues/333) で移す |
+
+- プロフィールの作り方は、「自分で入力する」か「AI にインタビューしてもらう」かを選ぶ
+- AI インタビューはいつでもスキップでき、スキップしたら空のプロフィールのままホームへ進む
+- 登録の途中でやめた利用者は、次にログインしたとき、終えていない段階から続ける
 
 ## 会員の枠
 
-画面の上端にヘッダー、その下に本体を置く。
+ナビゲーションを 1 か所だけに置き、中身は中央の 1 列に出す。
 
-- ヘッダー
-  - 左にサービス名を置き、自分のホームへのリンクにする
-  - 中央にナビゲーションを置き、いま表示しているページの項目を選択状態にする
-  - 右にログイン中の利用者の名前を置き、開くとプロフィールの編集・認証設定・ログアウトを選べる
-  - 画面幅が狭いときはナビゲーションを閉じておき、メニューボタンで開く
-- 本体
-  - 先頭にページの見出しを置く
-  - 操作の結果は本体の上に重ねる通知で知らせ、見出しや一覧の位置を動かさない
+- 画面幅が狭いとき
+  - 下端にタブを置く
+  - 上端の左に自分のアイコン、中央にページの見出しを置く
+- 画面幅が広いとき
+  - 左に細い列を置き、上にサービス名、下に自分のアイコンを置く
+  - 本体は中央の 1 列に置く
+- タブと左の列には同じ項目を並べ、いま表示しているページの項目を選択状態にする
+- 有料の項目は無料の利用者にも見せて「有料」の印を付け、押したら有料の案内へ移る
+- メッセージと通知の項目には、未読の件数を出す
+- 自分のアイコンを押すと、自分のプロフィール・設定・お問い合わせ・ログアウトのメニューが開く
+- 操作の結果は本体の上に重ねる通知で知らせ、見出しや一覧の位置を動かさない
 
-| ページ             | パス                | ナビゲーションの項目 |
-| ------------------ | ------------------- | -------------------- |
-| プロフィール       | `/users/{id}`       | ホーム（自分の id）  |
-| ユーザー一覧       | `/users`            | ユーザーを探す       |
-| AI インタビュー    | `/interview`        | AI インタビュー      |
-| プロフィールの編集 | `/settings/profile` | なし                 |
-| 認証設定           | `/security`         | なし                 |
+| タブと左の列の項目 | 開くページ       | 有料 |
+| ------------------ | ---------------- | ---- |
+| ホーム             | `/home`          |      |
+| 探す               | `/search`        | 有料 |
+| 掲示板             | `/board`         |      |
+| メッセージ         | `/messages`      |      |
+| 通知               | `/notifications` |      |
 
-自分のホームは、自分の id を持つプロフィールのページである。
+| ページ                                 | パス                        | 入り方                             | 状態                                                                                                                                                             |
+| -------------------------------------- | --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ホーム（フォローしている利用者の動き） | `/home`                     | タブ                               | [#334](https://github.com/masseater/typescript-template/issues/334)。いまのホームは自分のプロフィール                                                            |
+| 探す                                   | `/search`                   | タブ                               | いまは `/users`（ユーザー一覧）。[#305](https://github.com/masseater/typescript-template/issues/305) で移す                                                      |
+| 有料の案内と契約                       | `/upgrade`                  | 有料の項目                         | [#304](https://github.com/masseater/typescript-template/issues/304)                                                                                              |
+| 掲示板                                 | `/board`                    | タブ                               | [#309](https://github.com/masseater/typescript-template/issues/309)                                                                                              |
+| スレッド                               | `/board/{id}`               | 掲示板・通知                       | [#309](https://github.com/masseater/typescript-template/issues/309)                                                                                              |
+| メッセージ（1 対 1 とグループ）        | `/messages`                 | タブ                               | [#306](https://github.com/masseater/typescript-template/issues/306)                                                                                              |
+| 会話                                   | `/messages/{id}`            | メッセージ・プロフィール・通知     | [#306](https://github.com/masseater/typescript-template/issues/306)                                                                                              |
+| グループの情報と参加                   | `/groups/{id}`              | 会話・招待のリンク                 | [#308](https://github.com/masseater/typescript-template/issues/308)                                                                                              |
+| 通知                                   | `/notifications`            | タブ                               | [#310](https://github.com/masseater/typescript-template/issues/310)                                                                                              |
+| プロフィール                           | `/users/{id}`               | ホーム・探す・共有されたリンク     | いまある。共有は [#335](https://github.com/masseater/typescript-template/issues/335)、SNS は [#336](https://github.com/masseater/typescript-template/issues/336) |
+| お問い合わせ                           | `/support`・`/support/{id}` | アイコンのメニュー・設定           | [#311](https://github.com/masseater/typescript-template/issues/311)                                                                                              |
+| 規約の再同意                           | `/agreement`                | 規約の改定の後、ほかのページより先 | [#299](https://github.com/masseater/typescript-template/issues/299)                                                                                              |
+
+## 設定
+
+設定は会員の枠の中にあり、自分のアイコンのメニューの「設定」から開く。一覧から項目ごとのページへ移る。
+
+- 「プランと解約」と「退会」は、一覧にほかの項目と同じ見た目で並べ、「その他」や「詳細設定」の奥に置かない
+- 解約は、契約したときと同じ手数で終える。引き止めのページを挟まない
+- 確認のダイアログには何が起きるかだけを書き、解約・退会のボタンもほかの操作と同じ大きさと色の濃さにする
+- 通知・AI に許す操作・検索への掲載は、既定を「オフ」「許可しない」にする
+
+| 項目            | パス                      | 状態                                                                                                                                     |
+| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 設定の一覧      | `/settings`               | [#337](https://github.com/masseater/typescript-template/issues/337)                                                                      |
+| プロフィール    | `/settings/profile`       | いまある                                                                                                                                 |
+| 通知            | `/settings/notifications` | [#310](https://github.com/masseater/typescript-template/issues/310)                                                                      |
+| セキュリティ    | `/settings/security`      | いまは `/security`（認証設定）。[#337](https://github.com/masseater/typescript-template/issues/337) で移す                               |
+| AI インタビュー | `/settings/interview`     | [#333](https://github.com/masseater/typescript-template/issues/333)                                                                      |
+| AI と API       | `/settings/ai`            | [#312](https://github.com/masseater/typescript-template/issues/312)・[#313](https://github.com/masseater/typescript-template/issues/313) |
+| プランと解約    | `/settings/plan`          | [#304](https://github.com/masseater/typescript-template/issues/304)                                                                      |
+| 退会            | `/settings/leave`         | [#300](https://github.com/masseater/typescript-template/issues/300)                                                                      |
 
 ## 枠へ入る条件
 
 ```mermaid
 flowchart TD
-  open["ページを開く"] --> frame{"会員の枠のページ"}
-  frame -- はい --> signedIn{"ログインしている"}
-  signedIn -- はい --> show["ページを表示する"]
-  signedIn -- いいえ --> login["/login?redirect=開こうとしたパス"]
-  login -- ログインに成功 --> open
-  frame -- いいえ --> entrance{"LP・新規登録・ログインのどれか"}
-  entrance -- いいえ --> show
+  open["ページを開く"] --> frame{"どの枠のページか"}
+  frame -- 公開の枠 --> entrance{"LP・新規登録・ログインのどれか"}
+  entrance -- いいえ --> show["ページを表示する"]
   entrance -- はい --> already{"ログインしている"}
   already -- いいえ --> show
-  already -- はい --> home["自分のホーム"]
+  already -- はい --> home["/home"]
+  frame -- "登録の枠・会員の枠" --> signedIn{"ログインしている"}
+  signedIn -- いいえ --> login["/login?redirect=開こうとしたパス"]
+  login -- ログインに成功 --> open
+  signedIn -- はい --> onboarded{"登録の段階を終えている"}
+  onboarded -- いいえ --> welcome["終えていない段階のページ"]
+  onboarded -- はい --> agreed{"最新の規約に同意している"}
+  agreed -- いいえ --> agreement["/agreement"]
+  agreed -- はい --> show
 ```
 
-- `redirect` に置けるのは利用者アプリ内のパスだけで、それ以外の値は自分のホームとして扱う
+- `redirect` に置けるのは利用者アプリ内のパスだけで、それ以外の値はホームとして扱う
 - ログアウトしたら LP へ移る
 
 ## 遷移図
+
+入口から登録まで。
 
 ```mermaid
 flowchart TD
   lp["/ LP"] --> signup["/signup"]
   lp --> login["/login"]
+  lp --> contact["/contact"]
   signup <--> login
   signup -- 確認メールのリンク --> verify["/verify-email"]
-  verify -- 成功 --> login
-  login -- ログインに成功 --> home["/users/自分の id"]
-  home <-- ナビゲーション --> users["/users"]
-  users -- カードを選ぶ --> profile["/users/他の利用者の id"]
-  home -- 編集する --> edit["/settings/profile"]
-  edit -- "保存・やめる" --> home
-  home -- 名前のメニュー --> security["/security"]
-  home -- ログアウト --> lp
+  verify -- 成功 --> agree["/welcome/agreement"]
+  agree --> choose{"/welcome"}
+  choose -- 自分で入力する --> basic["/welcome/profile"]
+  choose -- AI にインタビューしてもらう --> interview["/welcome/interview"]
+  basic --> home["/home"]
+  interview -- "保存・スキップ" --> home
+  login -- 登録の途中 --> agree
+  login -- 登録を終えている --> home
 ```
 
-`redirect` を持ってログインしたときは、自分のホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。
+ログインした後。
+
+```mermaid
+flowchart TD
+  nav(["タブ・左の列"]) --> home["/home"]
+  nav --> search["/search"]
+  nav --> board["/board"]
+  nav --> messages["/messages"]
+  nav --> notifications["/notifications"]
+  search -- 無料の利用者 --> upgrade["/upgrade"]
+  home --> profile["/users/{id}"]
+  search --> profile
+  board --> thread["/board/{id}"]
+  thread --> profile
+  profile -- メッセージを送る --> conversation["/messages/{id}"]
+  profile -- 無料の利用者が最初のメッセージを送る --> upgrade
+  messages --> conversation
+  conversation --> group["/groups/{id}"]
+  notifications --> conversation
+  notifications --> thread
+  notifications --> profile
+  menu(["自分のアイコンのメニュー"]) --> me["/users/自分の id"]
+  menu --> settings["/settings"]
+  menu --> support["/support"]
+  menu -- ログアウト --> lp["/ LP"]
+```
+
+`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。いまあるページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。
