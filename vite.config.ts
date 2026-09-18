@@ -30,7 +30,7 @@ export default defineConfig({
         "vp run --filter @repo/infra-cloudflare verify:artifacts",
         "vp run --filter @repo/infra-cloudflare verify:stacks",
       ],
-      check: ["vp run precommit", "vp run prepush"],
+      check: ["vp run precommit", "vp run prepush", "vp run check:dev"],
       "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
       "check:dev": {
         command: "node tools/quality/dev-start.ts",
@@ -68,7 +68,6 @@ export default defineConfig({
         "vp run check:imports",
         "vp run check:react",
         "vp run check:effect",
-        "vp run check:dev",
         "vp run -F '!typescript-template' --cache check",
       ],
     },
