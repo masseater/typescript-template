@@ -54,6 +54,7 @@ export default defineConfig({
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
+      "tasks:sync": { cache: false, command: "node tools/quality/sync-tasks.ts" },
     },
   },
   test: {
