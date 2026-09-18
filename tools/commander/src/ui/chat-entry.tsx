@@ -1,5 +1,6 @@
-import type { ChatNotice, ChatState } from "#contract.ts";
 import type { ReactElement } from "react";
+
+import type { ChatNotice, ChatState } from "#contract.ts";
 import { Status } from "@repo/ui";
 
 type Body = ChatState["entries"][number]["body"];

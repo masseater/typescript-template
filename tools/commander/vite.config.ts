@@ -1,6 +1,7 @@
-import { reactCompiler, taskInput } from "@repo/config/vite";
-import { defineConfig } from "vite-plus";
 import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite-plus";
+
+import { reactCompiler, taskInput } from "@repo/config/vite";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({

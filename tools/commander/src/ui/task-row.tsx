@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+
 import type { Task } from "#contract.ts";
 
 function TaskRow({

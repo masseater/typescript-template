@@ -1,3 +1,8 @@
+import { NodeServices } from "@effect/platform-node";
+import { Console, Effect, Layer, ManagedRuntime, PubSub, Schema, Stream } from "effect";
+
+import type { RequestRejected } from "@repo/observability";
+import { httpStatus } from "@repo/observability";
 import {
   AppOrigin,
   apiRoutes,
@@ -6,18 +11,15 @@ import {
   jsonResponse,
   readJsonBody,
 } from "@repo/runtime/http";
-import { Console, Effect, Layer, ManagedRuntime, PubSub, Schema, Stream } from "effect";
 import type { Failure, InputInvalid } from "@repo/runtime/http";
-import { bundledAssets, commanderPrompt } from "./prompt.ts";
+
 import type { BdFailure } from "./bd.ts";
 import type { BoardEvent } from "./board.ts";
-import type { ChatChange } from "./contract.ts";
-import { NodeServices } from "@effect/platform-node";
-import type { RequestRejected } from "@repo/observability";
-import { TextInput } from "./contract.ts";
-import { httpStatus } from "@repo/observability";
 import { makeBoard } from "./board.ts";
 import { makeChat } from "./chat.ts";
+import type { ChatChange } from "./contract.ts";
+import { TextInput } from "./contract.ts";
+import { bundledAssets, commanderPrompt } from "./prompt.ts";
 
 interface AppOptions {
   readonly directory: string;

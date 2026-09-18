@@ -1,9 +1,11 @@
+import type { ReactElement } from "react";
+
+import { Status } from "@repo/ui";
+
 import { ChatPane } from "./chat-pane.tsx";
 import { LedgerMissing } from "./ledger-missing.tsx";
-import type { ReactElement } from "react";
-import { Status } from "@repo/ui";
-import { TaskSide } from "./task-side.tsx";
 import { useView } from "./store.ts";
+import { TaskSide } from "./task-side.tsx";
 
 function App(): ReactElement {
   const view = useView();

@@ -1,6 +1,8 @@
-import type { AppState } from "#contract.ts";
 import type { ReactElement } from "react";
+
+import type { AppState } from "#contract.ts";
 import { Status } from "@repo/ui";
+
 import { TaskPane } from "./task-pane.tsx";
 
 type App = typeof AppState.Type;

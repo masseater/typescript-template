@@ -1,9 +1,10 @@
 import { Effect, Ref, Semaphore } from "effect";
+import type { Scope } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+
+import type { BdFailure } from "./bd.ts";
 import type { LedgerState, Snapshot } from "./contract.ts";
 import { addComment, createLedger, locate, snapshot } from "./tasks.ts";
-import type { BdFailure } from "./bd.ts";
-import type { ChildProcessSpawner } from "effect/unstable/process";
-import type { Scope } from "effect";
 import type { Threads } from "./tasks.ts";
 
 type Spawner = ChildProcessSpawner.ChildProcessSpawner;

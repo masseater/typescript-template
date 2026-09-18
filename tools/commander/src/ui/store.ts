@@ -1,6 +1,7 @@
-import { AppState, ChatEvent, LedgerState, Snapshot, applyChat } from "#contract.ts";
 import { Option, Schema } from "effect";
 import { useSyncExternalStore } from "react";
+
+import { AppState, ChatEvent, LedgerState, Snapshot, applyChat } from "#contract.ts";
 
 type App = typeof AppState.Type;
 type View =

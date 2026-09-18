@@ -1,8 +1,9 @@
-import { Effect, FileSystem, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import os from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { Effect, FileSystem, Schema } from "effect";
 
 class PromptFailure extends Schema.TaggedError<PromptFailure>()("PromptFailure", {
   cause: Schema.optionalKey(Schema.Defect()),

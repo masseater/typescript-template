@@ -1,16 +1,18 @@
-import { Console, Effect, Schema } from "effect";
-import { HttpEffect, HttpServer, HttpServerRequest, HttpStaticServer } from "effect/unstable/http";
-import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createServer } from "node:http";
-import { makeApp } from "./server.ts";
-import open from "open";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { parseArgs } from "node:util";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
+
+import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+import { HttpEffect, HttpServer, HttpServerRequest, HttpStaticServer } from "effect/unstable/http";
+import open from "open";
+
 import { reportFailed } from "./failure.ts";
 import { resolveProject } from "./project.ts";
+import { makeApp } from "./server.ts";
 
 const host = "127.0.0.1";
 const port = 3090;

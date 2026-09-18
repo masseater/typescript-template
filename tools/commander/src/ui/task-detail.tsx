@@ -1,7 +1,9 @@
-import { Heading, Status } from "@repo/ui";
-import { CommentForm } from "./comment-form.tsx";
 import type { ReactElement } from "react";
+
 import type { Task } from "#contract.ts";
+import { Heading, Status } from "@repo/ui";
+
+import { CommentForm } from "./comment-form.tsx";
 import { TaskThread } from "./task-thread.tsx";
 
 function TaskDetail({ task }: Readonly<{ task: typeof Task.Type }>): ReactElement {

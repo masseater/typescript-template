@@ -1,6 +1,8 @@
-import { App } from "./app.tsx";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+
+import { App } from "./app.tsx";
+
 import styles from "./styles.css?url";
 
 const root = document.querySelector("#root");

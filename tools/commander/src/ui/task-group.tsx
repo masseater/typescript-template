@@ -1,6 +1,8 @@
-import { Heading } from "@repo/ui";
 import type { ReactElement } from "react";
+
 import type { Task } from "#contract.ts";
+import { Heading } from "@repo/ui";
+
 import { TaskRow } from "./task-row.tsx";
 
 type TaskView = typeof Task.Type;

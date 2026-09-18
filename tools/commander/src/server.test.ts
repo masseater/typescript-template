@@ -1,11 +1,12 @@
-import { AppState, ChatEvent } from "./contract.ts";
-import { Deferred, Effect, Fiber, FileSystem, Option, Schedule, Schema, Stream } from "effect";
-import { assert, it } from "@effect/vitest";
 import { NodeServices } from "@effect/platform-node";
+import { assert, it } from "@effect/vitest";
+import { Deferred, Effect, Fiber, FileSystem, Option, Schedule, Schema, Stream } from "effect";
 import type { Scope } from "effect";
+
+import { AppState, ChatEvent } from "./contract.ts";
 import { bundledAssets } from "./prompt.ts";
-import { createLedger } from "./tasks.ts";
 import { makeApp } from "./server.ts";
+import { createLedger } from "./tasks.ts";
 
 const origin = "http://127.0.0.1:3090";
 const executableMode = 0o755;

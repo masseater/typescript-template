@@ -1,11 +1,12 @@
-import { Effect, FileSystem, Option, Schema, Stream } from "effect";
-import { assert, it } from "@effect/vitest";
-import { AppState } from "./contract.ts";
 import { NodeServices } from "@effect/platform-node";
+import { assert, it } from "@effect/vitest";
+import { Effect, FileSystem, Option, Schema, Stream } from "effect";
 import type { Scope } from "effect";
+
 import { bd } from "./bd.ts";
-import { createLedger } from "./tasks.ts";
+import { AppState } from "./contract.ts";
 import { makeApp } from "./server.ts";
+import { createLedger } from "./tasks.ts";
 
 const origin = "http://127.0.0.1:3090";
 const timeout = 120_000;

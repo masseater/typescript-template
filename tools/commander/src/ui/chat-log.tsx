@@ -1,7 +1,9 @@
-import { ChatEntry } from "./chat-entry.tsx";
-import type { ChatState } from "#contract.ts";
 import type { ReactElement } from "react";
+
+import type { ChatState } from "#contract.ts";
 import { Status } from "@repo/ui";
+
+import { ChatEntry } from "./chat-entry.tsx";
 
 function ChatLog({ chat }: Readonly<{ chat: ChatState }>): ReactElement {
   return (

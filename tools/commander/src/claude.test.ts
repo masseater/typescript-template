@@ -1,6 +1,7 @@
-import { Effect, FileSystem, Stream } from "effect";
-import { assert, it } from "@effect/vitest";
 import { NodeServices } from "@effect/platform-node";
+import { assert, it } from "@effect/vitest";
+import { Effect, FileSystem, Stream } from "effect";
+
 import { runTurn } from "./claude.ts";
 
 const executableMode = 0o755;

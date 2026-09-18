@@ -1,13 +1,15 @@
-import type { ChatChange, ChatNotice, ChatState } from "./contract.ts";
-import { ChatEntry, applyChat } from "./contract.ts";
-import { Effect, Exit, Fiber, FileSystem, Option, Queue, Ref, Schema, Stream } from "effect";
-import { ChatFailure } from "./chat-failure.ts";
-import type { ChildProcessSpawner } from "effect/unstable/process";
-import type { CommanderEvent } from "./claude.ts";
-import type { CommanderPrompt } from "./prompt.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { Effect, Exit, Fiber, FileSystem, Option, Queue, Ref, Schema, Stream } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+
+import { ChatFailure } from "./chat-failure.ts";
+import type { CommanderEvent } from "./claude.ts";
 import { runTurn } from "./claude.ts";
+import type { ChatChange, ChatNotice, ChatState } from "./contract.ts";
+import { ChatEntry, applyChat } from "./contract.ts";
+import type { CommanderPrompt } from "./prompt.ts";
 
 type Spawner = ChildProcessSpawner.ChildProcessSpawner;
 

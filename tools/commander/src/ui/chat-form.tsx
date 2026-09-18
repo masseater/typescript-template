@@ -1,5 +1,7 @@
-import { Button, Status } from "@repo/ui";
 import type { ReactElement } from "react";
+
+import { Button, Status } from "@repo/ui";
+
 import { useChatForm } from "./use-chat-form.ts";
 
 function ChatForm({ busy }: Readonly<{ busy: boolean }>): ReactElement {
