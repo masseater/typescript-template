@@ -1,7 +1,7 @@
 import { Effect, Result } from "effect";
-import type { ManagedRuntime } from "effect";
+import type { Cause, ManagedRuntime } from "effect";
 
-import type { CurrentRequest, Telemetry } from "@repo/observability";
+import type { CurrentRequest, Reporting, Telemetry } from "@repo/observability";
 import { httpStatus, observeRequest } from "@repo/observability";
 
 import { Assets } from "./assets.ts";
@@ -22,19 +22,23 @@ type AppRoute<Requirements> = (
   path: string,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
-function unavailableResponse(): Response {
-  const failure = runtimeUnavailable();
+async function unavailableResponse(
+  cause: Readonly<Cause.Cause<unknown>>,
+  reporting: Reporting,
+): Promise<Response> {
+  const failure = await Effect.runPromise(runtimeUnavailable(cause, reporting));
   return jsonResponse({ error: failure.message }, failure.status);
 }
 
 function serveWorker<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
   route: WorkerRoute<Requirements>,
+  reporting: Reporting,
 ): FetchWorker {
   return {
     fetch: async (request): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      return exit._tag === "Success" ? exit.value : unavailableResponse();
+      return exit._tag === "Success" ? exit.value : unavailableResponse(exit.cause, reporting);
     },
   };
 }
@@ -58,17 +62,22 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 function serveApp<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
   route: AppRoute<Requirements>,
+  reporting: Reporting,
 ): FetchWorker {
-  return serveWorker(runtime, (request) => {
-    const path = requestPath(request);
-    if (path === undefined) {
-      return Effect.succeed(new Response(undefined, { status: httpStatus.badRequest }));
-    }
-    if (path.endsWith(".map")) {
-      return Effect.succeed(new Response(undefined, { status: httpStatus.notFound }));
-    }
-    return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
-  });
+  return serveWorker(
+    runtime,
+    (request) => {
+      const path = requestPath(request);
+      if (path === undefined) {
+        return Effect.succeed(new Response(undefined, { status: httpStatus.badRequest }));
+      }
+      if (path.endsWith(".map")) {
+        return Effect.succeed(new Response(undefined, { status: httpStatus.notFound }));
+      }
+      return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
+    },
+    reporting,
+  );
 }
 
 function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {

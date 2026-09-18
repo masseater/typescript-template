@@ -19,7 +19,7 @@ const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
 const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
 const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
-const databaseTesting = String.raw`^libs/db/src/testing[^/]*\.ts$`;
+const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
 const deploymentConfig = String.raw`^libs/config/src/deployment\.ts$`;
 const serverOnlyModule = String.raw`^libs/(?:${serverOnlyPackages.join("|")})/src/`;
@@ -90,11 +90,11 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "テスト用の DB 構築です。テストとフィクスチャからだけ使い、アプリの実装へ持ち込まないでください。",
+        "テスト専用の入口です。テストとフィクスチャからだけ使い、アプリの実装へ持ち込まないでください。",
       from: { path: "^(?:apps|libs|infra|tools)/", pathNot: testModule },
-      name: "no-database-testing-outside-tests",
+      name: "no-testing-entry-outside-tests",
       severity: "error",
-      to: { path: databaseTesting },
+      to: { path: testingEntry },
     },
     {
       comment:

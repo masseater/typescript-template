@@ -1023,6 +1023,9 @@ importers:
 
   libs/observability:
     dependencies:
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1033,9 +1036,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../config
 
   libs/runtime:
     dependencies:

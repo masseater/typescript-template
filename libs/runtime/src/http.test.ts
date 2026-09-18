@@ -23,7 +23,7 @@ const jsonHeaders = { "content-type": "application/json", origin };
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
 const runtime = ManagedRuntime.make(context);
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, { service: "user" });
 
 function mutation(headers: Readonly<Record<string, string>>, body: string): Request {
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
