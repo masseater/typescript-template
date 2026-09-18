@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { mailpitPort } from "@repo/config";
+import { reportFailed } from "@repo/config/cli";
 import { memberPageSize } from "@repo/runtime/contracts";
 
 import { exists, installBinary } from "./binary.ts";
@@ -17,6 +17,7 @@ import {
   Application,
   awaitReady,
   clearTraces,
+  mailpitOrigin,
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
   targetOrigin,
@@ -104,7 +105,7 @@ function scenarioEnvironment(
 ): Readonly<Record<string, string>> {
   return {
     ...profiles[profile],
-    LOAD_MAILPIT_ORIGIN: `http://127.0.0.1:${mailpitPort}`,
+    LOAD_MAILPIT_ORIGIN: mailpitOrigin,
     LOAD_MEMBER_PAGE_SIZE: String(memberPageSize),
     LOAD_TARGET_ORIGIN: origin,
   };
@@ -177,12 +178,7 @@ function announceFailure(failure: Failure): Effect.Effect<void> {
       : {}),
     ...(remediation === undefined ? {} : { remediation }),
   };
-  return Effect.gen(function* reportFailure() {
-    yield* Console.error(
-      JSON.stringify({ event: "load.run_failed", ok: false, reason: failure.reason, ...details }),
-    );
-    process.exitCode = 1;
-  });
+  return reportFailed({ event: "load.run_failed", ok: false, reason: failure.reason, ...details });
 }
 
 const firstUserArgumentIndex = 2;

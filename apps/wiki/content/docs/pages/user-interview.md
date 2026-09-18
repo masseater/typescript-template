@@ -3,7 +3,15 @@ title: 利用者アプリの AI インタビュー
 description: AI との会話から、利用者の自己紹介シートを整形して保存するページ
 ---
 
-パス: `/interview`。[会員の枠](/pages/user-layout#会員の枠) に入る。
+パスは 2 つある。
+
+- `/welcome/interview`: [登録の枠](/pages/user-layout#登録の枠) に入り、登録の直後にプロフィールを作るときに使う
+- `/settings/interview`: [設定](/pages/user-layout#設定) に入り、登録を終えた後にやり直すときに使う
+
+登録の枠で開いたときだけ、次の 2 つが加わる。
+
+- 上端に「インタビューをスキップ」を置き、押すとシートを保存せずにホーム（`/home`）へ移る
+- 「この内容で保存」に成功したら、ホームへ移る
 
 AI が質問を重ね、利用者の発話から自己紹介シートの項目を埋める。利用者は、AI が出した回答欄を使っても、回答欄を使わずに文章で答えてもよい。どちらも同じ 1 つの発話として扱う。
 
@@ -85,12 +93,14 @@ AI が質問を重ね、利用者の発話から自己紹介シートの項目�
 
 ```mermaid
 flowchart TD
-  open["/interview を開く"] --> asking["質問"]
+  open["/welcome/interview・/settings/interview を開く"] --> asking["質問"]
+  asking -- "インタビューをスキップ（登録の枠）" --> home["/home"]
   asking -- "回答欄・文章で答える" --> asking
   asking -- スキップ --> asking
   asking -- "ここで終える・未回答が無くなった" --> summary["まとめ"]
   summary -- 文章で直す --> summary
   summary -- この内容で保存 --> saved["保存済み"]
+  saved -- 登録の枠 --> home
   saved -- 文章で直す --> summary
   saved -- 最初からやり直す --> asking
 ```

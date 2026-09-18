@@ -1,19 +1,22 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
+import { access, chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect } from "effect";
 
 import type { Application } from "@repo/config";
+import { sourceMapDirectories } from "@repo/config/source-maps";
 
 import { fail, io } from "./artifact-io.ts";
 import type { ArtifactFailure } from "./artifact-io.ts";
+import { retainGenerations } from "./retention.ts";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
+const ARCHIVED_RELEASES_KEPT = 5;
 
 type MapEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
 
@@ -82,15 +85,38 @@ function copyMaps(source: string, destination: string): Effect.Effect<number, Ar
   );
 }
 
+function fileExists(file: string): Effect.Effect<boolean> {
+  return Effect.tryPromise(async () => access(file)).pipe(
+    Effect.match({ onFailure: () => false, onSuccess: () => true }),
+  );
+}
+
+const requireClientSourceMaps = Effect.fn("requireClientSourceMaps")(
+  function* requireClientSourceMaps(
+    repositoryRoot: string,
+    target: Application,
+    scripts: readonly string[],
+  ) {
+    const { client } = sourceMapDirectories(repositoryRoot, target);
+    const present = yield* Effect.all(
+      scripts.map((script) => fileExists(path.join(client, `${script}.map`))),
+      { concurrency: "unbounded" },
+    );
+    if (present.includes(false)) {
+      return yield* fail("source_maps_missing");
+    }
+  },
+);
+
 const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSourceMaps(
   repositoryRoot: string,
   target: Application,
   release: string,
 ) {
-  const privateMaps = path.join(repositoryRoot, ".local", "source-maps", target);
-  const destination = path.join(privateMaps, "releases", release);
+  const directories = sourceMapDirectories(repositoryRoot, target);
+  const destination = path.join(directories.releases, release);
   return {
-    client: yield* copyMaps(path.join(privateMaps, "client"), path.join(destination, "client")),
+    client: yield* copyMaps(directories.client, path.join(destination, "client")),
     server: yield* copyMaps(
       path.join(repositoryRoot, "apps", target, "dist", "server"),
       path.join(destination, "server"),
@@ -98,4 +124,16 @@ const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSource
   };
 });
 
-export { archiveSourceMaps };
+function retainArchivedSourceMaps(
+  repositoryRoot: string,
+  target: Application,
+  release: string,
+): Effect.Effect<void, ArtifactFailure> {
+  return retainGenerations(
+    sourceMapDirectories(repositoryRoot, target).releases,
+    release,
+    ARCHIVED_RELEASES_KEPT,
+  );
+}
+
+export { archiveSourceMaps, requireClientSourceMaps, retainArchivedSourceMaps };

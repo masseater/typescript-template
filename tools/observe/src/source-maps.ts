@@ -10,6 +10,7 @@ import path from "node:path";
 import { Effect, Schema } from "effect";
 
 import type { Application } from "@repo/config";
+import { sourceMapDirectories } from "@repo/config/source-maps";
 
 type App = Application;
 type Runtime = "client" | "server";
@@ -218,11 +219,7 @@ const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolica
     return invalidLocation;
   }
   const releaseDirectory = path.join(
-    request.repositoryRoot,
-    ".local",
-    "source-maps",
-    request.app,
-    "releases",
+    sourceMapDirectories(request.repositoryRoot, request.app).releases,
     request.release,
   );
   const match = yield* findCandidate(releaseDirectory, parsed);
