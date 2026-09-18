@@ -20,9 +20,9 @@ import {
   applyOrderViolations,
   onboardingStack,
   sendingStacks,
-  stackDependencies,
   stackName,
   stackNames,
+  stackReferences,
 } from "./stacks.ts";
 import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
@@ -144,7 +144,7 @@ function declaredStack(
   resources: Readonly<Record<string, ResourceInventory>>,
 ): StackInventory {
   return {
-    dependencies: stackDependencies[stack].map((dependency) => stackName(dependency)).toSorted(),
+    dependencies: stackReferences[stack].map((reference) => stackName(reference)).toSorted(),
     name: stackName(stack),
     resources,
   };

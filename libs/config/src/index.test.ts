@@ -68,6 +68,23 @@ it.effect("requires HTTPS for non-local origins", () =>
   }),
 );
 
+it.effect("rejects an OTLP switch that has no endpoint to switch", () =>
+  Effect.gen(function* program() {
+    for (const enabled of ["true", "false"]) {
+      assert.strictEqual(
+        yield* reason({ ...local, OTLP_ENABLED: enabled }),
+        "OTLP_ENABLED needs OTLP_ENDPOINT",
+      );
+    }
+    assert.strictEqual(
+      (yield* readEnvironment({ ...local, OTLP_ENABLED: "true", OTLP_ENDPOINT: local.MAILPIT_URL }))
+        .OTLP_ENABLED,
+      "true",
+    );
+    assert.isUndefined((yield* readEnvironment(local)).OTLP_ENABLED);
+  }),
+);
+
 it.effect("rejects weak session secrets and pathful application origins", () =>
   Effect.gen(function* program() {
     assert.include(yield* reason({ ...local, AUTH_SECRET: "weak" }), "32");
