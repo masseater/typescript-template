@@ -1,5 +1,7 @@
+import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
+
+import type { Application } from "@template/config";
 import {
   getSessionSecurity,
   hasEnrolledFactor,
@@ -7,8 +9,8 @@ import {
   markSessionStrong,
   revokeUserSessions,
 } from "@template/db/security";
-import type { Application } from "@template/config";
-import type { BetterAuthOptions } from "better-auth";
+
+import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
 import type { Run } from "./runner.ts";
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];

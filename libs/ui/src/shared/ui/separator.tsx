@@ -1,5 +1,5 @@
-import type { ReactElement } from "react";
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
+import type { ReactElement } from "react";
 
 function Separator({ label }: Readonly<{ label: string }>): ReactElement {
   return (

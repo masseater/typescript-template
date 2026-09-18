@@ -1,5 +1,6 @@
-import { BrowserClient, origins } from "./browser-client.ts";
+import { assert } from "@effect/vitest";
 import { Effect, Schema } from "effect";
+
 import {
   Fixture,
   HTTP_CREATED,
@@ -12,7 +13,7 @@ import {
   signInAs,
 } from "./auth-test-fixture.ts";
 import { Auth } from "./auth.ts";
-import { assert } from "@effect/vitest";
+import { BrowserClient, origins } from "./browser-client.ts";
 import { authorizeMcpRequest } from "./mcp.ts";
 
 interface AuthorizationFlow {

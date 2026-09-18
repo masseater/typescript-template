@@ -1,7 +1,8 @@
-import type { InlineConfig } from "vite-plus";
 import type { StorybookConfig } from "@storybook/react-vite";
-import { reactCompiler } from "@template/config/vite";
 import tailwindcss from "@tailwindcss/vite";
+import type { InlineConfig } from "vite-plus";
+
+import { reactCompiler } from "@template/config/vite";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function withAppTransforms(config: InlineConfig): InlineConfig {

@@ -1,11 +1,13 @@
-import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { Effect, Schema } from "effect";
-import { RemoteFailure, fail } from "./remote-input.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { URL, fileURLToPath } from "node:url";
-import type { EmailAddress } from "./bootstrap-statement.ts";
-import { SQLiteDialect } from "drizzle-orm/sqlite-core";
+
 import { readMigrationFiles } from "drizzle-orm/migrator";
+import { SQLiteDialect } from "drizzle-orm/sqlite-core";
+import { Effect, Schema } from "effect";
+
+import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
+import type { EmailAddress } from "./bootstrap-statement.ts";
+import { RemoteFailure, fail } from "./remote-input.ts";
 
 interface RemoteQuery {
   readonly params: readonly (string | number | null)[];

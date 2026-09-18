@@ -1,7 +1,8 @@
+import { notFound } from "@tanstack/react-router";
+
+import { userClient } from "#shared/api/index.ts";
 import { absent, apiData, apiDataOrNone } from "@template/runtime/client";
 import { ProfileView } from "@template/runtime/contracts";
-import { notFound } from "@tanstack/react-router";
-import { userClient } from "#shared/api/index.ts";
 
 type Profile = typeof ProfileView.Type;
 

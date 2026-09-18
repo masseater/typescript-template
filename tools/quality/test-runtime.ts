@@ -1,6 +1,7 @@
+import type { Visitor } from "vite-plus/lint/plugins";
+
 import type { LintContext, Node } from "./lint-context.ts";
 import { importVisitor, reportViolation } from "./lint-context.ts";
-import type { Visitor } from "vite-plus/lint/plugins";
 import { staticText } from "./references.ts";
 
 const workerTestSuffix = ".worker.test.ts";

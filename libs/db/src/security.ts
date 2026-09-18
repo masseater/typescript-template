@@ -1,6 +1,9 @@
-import type { Application, StrongAuthenticationMethod } from "@template/config";
-import { Effect, Schema } from "effect";
 import { and, count, eq, gt } from "drizzle-orm";
+import { Effect, Schema } from "effect";
+
+import type { Application, StrongAuthenticationMethod } from "@template/config";
+
+import { query } from "./database.ts";
 import {
   oauthAccessToken,
   oauthRefreshToken,
@@ -10,7 +13,6 @@ import {
   user,
   verification,
 } from "./schema.ts";
-import { query } from "./database.ts";
 
 class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 

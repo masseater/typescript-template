@@ -1,11 +1,13 @@
 import { Effect, Layer } from "effect";
-import { Embedder, embedWith } from "./embedder.ts";
-import type { AppServices } from "./index.ts";
+
 import type { AuthFailure } from "@template/auth";
 import type { ConfigurationInvalid } from "@template/config";
-import type { TelemetryInvalid } from "@template/observability";
-import { configuredAppLayer } from "./index.ts";
 import { readWikiConfig } from "@template/config";
+import type { TelemetryInvalid } from "@template/observability";
+
+import { Embedder, embedWith } from "./embedder.ts";
+import type { AppServices } from "./index.ts";
+import { configuredAppLayer } from "./index.ts";
 
 type WikiServices = AppServices | Embedder;
 

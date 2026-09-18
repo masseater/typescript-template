@@ -1,8 +1,9 @@
-import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { evaluateBudget } from "./decision.ts";
+import { Effect } from "effect";
+
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
+import { evaluateBudget } from "./decision.ts";
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {

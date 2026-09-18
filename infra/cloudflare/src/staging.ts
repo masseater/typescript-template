@@ -1,11 +1,13 @@
-import { assertRealDirectory, fail, files, io, sameContent } from "./artifact-io.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { copyFile, lstat, mkdir } from "node:fs/promises";
-import { Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
+import { copyFile, lstat, mkdir } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { Effect } from "effect";
+
+import { assertRealDirectory, fail, files, io, sameContent } from "./artifact-io.ts";
 
 const assertExistingStagedCopy = Effect.fn("assertExistingStagedCopy")(
   function* assertExistingStagedCopy(source: string, destination: string) {

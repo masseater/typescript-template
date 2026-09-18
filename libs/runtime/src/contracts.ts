@@ -1,4 +1,5 @@
 import { Effect, Option, Schema, SchemaGetter } from "effect";
+
 import { applications, roles } from "@template/config";
 
 const maximumIdentifierLength = 256;

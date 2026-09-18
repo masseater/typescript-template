@@ -1,3 +1,10 @@
+import { assert, describe, it } from "@effect/vitest";
+import { Effect, Layer, ManagedRuntime, Schema } from "effect";
+import type { AnyElysia } from "elysia";
+
+import { Telemetry, httpStatus } from "@template/observability";
+
+import { ProfileUpdate } from "./contracts.ts";
 import {
   AppOrigin,
   apiRoutes,
@@ -7,11 +14,6 @@ import {
   readJsonBody,
   secureResponse,
 } from "./http.ts";
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
-import { Telemetry, httpStatus } from "@template/observability";
-import { assert, describe, it } from "@effect/vitest";
-import type { AnyElysia } from "elysia";
-import { ProfileUpdate } from "./contracts.ts";
 import { startRoute } from "./worker.ts";
 
 const origin = "http://localhost:3001";

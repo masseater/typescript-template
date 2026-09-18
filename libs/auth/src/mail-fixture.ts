@@ -1,6 +1,6 @@
+import { setupNetwork } from "@msw/cloudflare";
 import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
-import { setupNetwork } from "@msw/cloudflare";
 
 const HTTP_BAD_REQUEST = 400;
 const mailConfig = { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: "http://127.0.0.1:8025" };

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { maximumKeywordLength, maximumMemberPage } from "@template/runtime/contracts";
+
 import { normalizeUsersSearch } from "./users-search.ts";
 
 describe("member list search in the URL", () => {

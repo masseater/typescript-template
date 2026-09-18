@@ -1,5 +1,3 @@
-import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
-import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import {
   mkdir,
@@ -12,14 +10,19 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import type { Application } from "@template/config";
-import type { ArtifactFailure } from "./artifact-io.ts";
-import { Effect } from "effect";
-import type { Scope } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+
+import type { Application } from "@template/config";
+
+import type { ArtifactFailure } from "./artifact-io.ts";
+import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
 
 interface UserBuild {
   readonly client: string;

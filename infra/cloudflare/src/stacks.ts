@@ -1,4 +1,5 @@
 import { providers, state } from "alchemy/Cloudflare";
+
 import type { Application } from "@template/config";
 
 const application = ["database"] as const;

@@ -1,8 +1,9 @@
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import type { SubmitEventHandler } from "react";
-import { errorMessage } from "@template/ui";
-import { saveProfile } from "#pages/profile-edit/api/profile.ts";
 import { useState } from "react";
+
+import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import { saveProfile } from "#pages/profile-edit/api/profile.ts";
+import { errorMessage } from "@template/ui";
 
 interface ProfileForm {
   readonly error: string;

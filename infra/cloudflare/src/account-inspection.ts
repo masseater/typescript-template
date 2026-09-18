@@ -1,3 +1,7 @@
+import { Effect } from "effect";
+
+import { applications } from "@template/config";
+
 import {
   attachedService,
   dnsRecordNames,
@@ -7,14 +11,12 @@ import {
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
-import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
-import type { StateStore } from "./state-ownership.ts";
-import { applications } from "@template/config";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import { missingPermissions } from "./deploy-token.ts";
+import type { StateStore } from "./state-ownership.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
 
 type Claim = "free" | "owned" | "taken";

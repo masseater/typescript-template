@@ -1,10 +1,13 @@
-import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import { Effect } from "effect";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
-import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect } from "effect";
+
+import { applications } from "@template/config";
+
+import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
+import { FAILED_EXIT_CODE } from "./secrets.ts";
 
 function report(reason: string): Effect.Effect<void> {
   return Effect.sync(() => {

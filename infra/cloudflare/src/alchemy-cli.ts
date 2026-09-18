@@ -1,14 +1,16 @@
-import { Effect, Schema } from "effect";
-import { FAILED_EXIT_CODE, redact } from "./secrets.ts";
-import type { Confidential } from "./secrets.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { Readable } from "node:stream";
+import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createInterface } from "node:readline";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { Readable } from "node:stream";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+import { Effect, Schema } from "effect";
+
+import { FAILED_EXIT_CODE, redact } from "./secrets.ts";
+import type { Confidential } from "./secrets.ts";
 
 class AlchemyFailure extends Schema.TaggedError<AlchemyFailure>()("AlchemyFailure", {
   code: Schema.Literal("alchemy_command_failed"),

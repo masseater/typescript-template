@@ -1,4 +1,5 @@
 import { Effect, Result, Schema } from "effect";
+
 import { loopbackHosts } from "@template/config";
 
 type Row = Record<string, unknown>;

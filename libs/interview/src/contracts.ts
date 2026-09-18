@@ -1,8 +1,9 @@
+import { Schema } from "effect";
+
 import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
 import type { FieldName, SheetData } from "./sheet.ts";
 import { roles, settledPhases } from "./state.ts";
 import type { InterviewState } from "./state.ts";
-import { Schema } from "effect";
 
 const FieldView = Schema.Struct({
   key: FieldKey,

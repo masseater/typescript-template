@@ -1,10 +1,12 @@
-import type { CurrentRequest, Telemetry } from "@template/observability";
 import { Effect, Result } from "effect";
-import { httpStatus, observeRequest } from "@template/observability";
-import { jsonResponse, secureResponse } from "./responses.ts";
-import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
+
+import type { CurrentRequest, Telemetry } from "@template/observability";
+import { httpStatus, observeRequest } from "@template/observability";
+
+import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
+import { jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

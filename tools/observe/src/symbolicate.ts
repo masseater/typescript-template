@@ -1,10 +1,13 @@
-import { Effect, Schema } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Schema } from "effect";
+
+import { applications } from "@template/config";
+
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {

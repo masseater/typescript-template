@@ -1,3 +1,11 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { AssertionError } from "node:assert";
+
+import { plugin } from "@shadcn/lint";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
+import { describe, expect, it } from "vite-plus/test";
+
+import { field, workspaceManifests } from "./dependencies.ts";
 import {
   appStylesheetViolations,
   coverageViolations,
@@ -12,13 +20,7 @@ import {
   tokenViolations,
   untouchedTokens,
 } from "./design-system.ts";
-import { describe, expect, it } from "vite-plus/test";
-import { field, workspaceManifests } from "./dependencies.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { AssertionError } from "node:assert";
-import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { hoverViolations } from "./hover-colors.ts";
-import { plugin } from "@shadcn/lint";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
   eager: true,

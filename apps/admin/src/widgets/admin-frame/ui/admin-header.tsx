@@ -1,8 +1,10 @@
-import { Icon, NavigationLink } from "@template/ui";
-import { AccountMenu } from "./account-menu.tsx";
 import { MenuIcon } from "lucide-react";
 import type { ReactElement } from "react";
+
 import { serviceName } from "#shared/config/index.ts";
+import { Icon, NavigationLink } from "@template/ui";
+
+import { AccountMenu } from "./account-menu.tsx";
 
 function AdminHeader({
   email,

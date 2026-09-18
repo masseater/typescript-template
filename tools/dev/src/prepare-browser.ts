@@ -1,15 +1,16 @@
-import { Effect, Schema } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, readdir } from "node:fs/promises";
-import { NodeRuntime } from "@effect/platform-node";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createRequire } from "node:module";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { chmod, readdir } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { createRequire } from "node:module";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Schema } from "effect";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
   "PrepareBrowserFailure",

@@ -1,6 +1,7 @@
-import type { ComponentProps, ReactElement } from "react";
-import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
+import type { ComponentProps, ReactElement } from "react";
+
+import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 
 const validationMessages: readonly (readonly [keyof ValidityState, string])[] = [
   ["valueMissing", "入力してください。"],

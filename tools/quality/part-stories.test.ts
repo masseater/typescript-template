@@ -1,12 +1,13 @@
+import { describe, expect, it } from "vite-plus/test";
+
+import { field } from "./dependencies.ts";
+import { partsDirectory } from "./design-system.ts";
 import {
   a11yRelaxations,
   storybookEndpointViolations,
   storylessParts,
   vendoredWorkerViolations,
 } from "./part-stories.ts";
-import { describe, expect, it } from "vite-plus/test";
-import { field } from "./dependencies.ts";
-import { partsDirectory } from "./design-system.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../libs/ui/.storybook/preview.tsx",

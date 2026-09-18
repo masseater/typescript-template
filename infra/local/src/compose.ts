@@ -1,13 +1,14 @@
-import { Effect, Schema } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { access } from "node:fs/promises";
+import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { access } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Schema } from "effect";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 

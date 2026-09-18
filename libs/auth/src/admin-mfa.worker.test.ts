@@ -1,3 +1,6 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
 import {
   Fixture,
   HTTP_FORBIDDEN,
@@ -12,9 +15,7 @@ import {
   signInAs,
   withAuth,
 } from "./auth-test-fixture.ts";
-import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
-import { Effect } from "effect";
 
 const email = "admin@example.com";
 const totpUriPattern = /^otpauth:\/\/totp\//u;

@@ -1,3 +1,9 @@
+import { assert, it } from "@effect/vitest";
+import { getSchema } from "better-auth/db";
+import { Effect } from "effect";
+
+import { getSchemaShape } from "@template/db/testing";
+
 import {
   Fixture,
   HTTP_FORBIDDEN,
@@ -10,11 +16,7 @@ import {
   signIn,
   withAuth,
 } from "./auth-test-fixture.ts";
-import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
-import { Effect } from "effect";
-import { getSchema } from "better-auth/db";
-import { getSchemaShape } from "@template/db/testing";
 import { mailbox } from "./mail-fixture.ts";
 
 const verifyEmailOf = Effect.fn("verifyEmailOf")(function* verifyEmailOf(email: string) {

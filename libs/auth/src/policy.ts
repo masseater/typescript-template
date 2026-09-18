@@ -1,4 +1,5 @@
 import { APIError } from "better-auth/api";
+
 import type { Application } from "@template/config";
 import { strongAuthenticationMethods } from "@template/config";
 

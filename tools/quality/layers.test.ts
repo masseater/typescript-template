@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { reported } from "./lint-harness.ts";
 
 const source = "export const value = 1;\n";

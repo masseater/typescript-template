@@ -1,8 +1,9 @@
-import { stackName, stackOptions } from "./stacks.ts";
+import { Stack } from "alchemy";
 import { ApiToken } from "alchemy/Cloudflare";
 import { Effect } from "effect";
-import { Stack } from "alchemy";
+
 import { settings } from "./settings.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 
 const accountTokens = {
   BillingRead: { permission: "Billing Read", slug: "billing-read" },

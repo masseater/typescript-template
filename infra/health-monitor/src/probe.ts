@@ -1,4 +1,5 @@
 import { Effect, Option, Schema } from "effect";
+
 import type { Application as HealthService } from "@template/config";
 
 interface HealthTarget {

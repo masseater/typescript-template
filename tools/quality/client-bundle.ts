@@ -1,13 +1,15 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
-import { build } from "vite-plus";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { serverOnlyMarkers } from "@template/config/vite";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { build } from "vite-plus";
+
+import { serverOnlyMarkers } from "@template/config/vite";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");

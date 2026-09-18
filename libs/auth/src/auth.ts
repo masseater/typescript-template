@@ -1,8 +1,10 @@
-import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
 import { Context, Effect, Layer } from "effect";
+
 import type { Application } from "@template/config";
-import { AuthFailure } from "./auth-failure.ts";
 import { Database } from "@template/db";
+
+import { AuthFailure } from "./auth-failure.ts";
+import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
 import { createAuth } from "./create-auth.ts";
 
 interface AuthShape {

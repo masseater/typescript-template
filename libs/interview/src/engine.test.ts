@@ -1,6 +1,7 @@
-import { accepts, advance, begin, save } from "./engine.ts";
 import { assert, describe, expect, it } from "vite-plus/test";
+
 import { viewOf } from "./contracts.ts";
+import { accepts, advance, begin, save } from "./engine.ts";
 
 const NICKNAME_LIMIT = 30;
 const OCCUPATION_INDEX = 1;

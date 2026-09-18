@@ -1,16 +1,18 @@
-import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import type { Application } from "@template/config";
-import { Effect } from "effect";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import type { StackInventory } from "./inventory.ts";
-import type { StackName } from "./stacks.ts";
-import { databaseName } from "./database-lookup.ts";
+import { Effect } from "effect";
+
+import type { Application } from "@template/config";
 import { grants } from "@template/config";
-import { verificationSettings } from "./verification-fixture.ts";
+
 import { workerModuleGlobs } from "./artifacts.ts";
+import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import { databaseName } from "./database-lookup.ts";
+import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import type { StackInventory } from "./inventory.ts";
+import { FAILED_EXIT_CODE } from "./secrets.ts";
+import { stackDependencies, stackName, stackNames } from "./stacks.ts";
+import type { StackName } from "./stacks.ts";
+import { verificationSettings } from "./verification-fixture.ts";
 
 const { accountId, origins, prefix } = verificationSettings;
 

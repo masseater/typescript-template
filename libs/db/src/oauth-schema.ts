@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+
 import { session, user } from "./identity-schema.ts";
 
 const jwks = sqliteTable("jwks", {

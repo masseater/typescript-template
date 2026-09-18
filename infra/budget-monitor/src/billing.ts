@@ -1,5 +1,6 @@
-import { BudgetFailure, fail } from "./config.ts";
 import { Effect, Schema } from "effect";
+
+import { BudgetFailure, fail } from "./config.ts";
 
 const MILLISECONDS_PER_HOUR = 3_600_000;
 const FUTURE_CHARGE_TOLERANCE_HOURS = 24;

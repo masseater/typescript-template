@@ -1,10 +1,11 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { Interviewer } from "./interviewer.ts";
-import type { Scope } from "effect";
-import { begin } from "./engine.ts";
 import { setupNetwork } from "@msw/cloudflare";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { begin } from "./engine.ts";
+import { Interviewer } from "./interviewer.ts";
 
 type Network = ReturnType<typeof setupNetwork>;
 

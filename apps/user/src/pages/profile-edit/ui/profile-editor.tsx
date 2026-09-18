@@ -1,8 +1,10 @@
-import { Field, FormColumn } from "@template/ui";
-import { maximumNameLength, maximumProfileLength } from "@template/runtime/contracts";
-import { ProfileActions } from "./profile-actions.tsx";
-import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
+
+import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { maximumNameLength, maximumProfileLength } from "@template/runtime/contracts";
+import { Field, FormColumn } from "@template/ui";
+
+import { ProfileActions } from "./profile-actions.tsx";
 
 function ProfileEditor({
   form,

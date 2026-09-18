@@ -1,7 +1,8 @@
-import { Context, Effect, Layer } from "effect";
 import type { D1Database } from "@cloudflare/workers-types";
-import { DatabaseFailure } from "./database-failure.ts";
 import { drizzle } from "drizzle-orm/d1";
+import { Context, Effect, Layer } from "effect";
+
+import { DatabaseFailure } from "./database-failure.ts";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function connect(binding: D1Database): ReturnType<typeof drizzle> {

@@ -1,9 +1,12 @@
-import { Effect, Schema } from "effect";
-import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
-import { NodeRuntime } from "@effect/platform-node";
-import { applicationPorts } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Schema } from "effect";
+
+import { applicationPorts } from "@template/config";
+
+import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),

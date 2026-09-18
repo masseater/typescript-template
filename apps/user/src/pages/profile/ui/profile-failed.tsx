@@ -1,6 +1,7 @@
-import { Button, Page, Status } from "@template/ui";
-import type { ReactElement } from "react";
 import { useRouter } from "@tanstack/react-router";
+import type { ReactElement } from "react";
+
+import { Button, Page, Status } from "@template/ui";
 
 function ProfileFailed(): ReactElement {
   const router = useRouter();

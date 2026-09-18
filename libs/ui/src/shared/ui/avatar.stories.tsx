@@ -1,5 +1,5 @@
-import { Avatar } from "./avatar";
 import preview from "../../../.storybook/preview";
+import { Avatar } from "./avatar";
 
 const meta = preview.meta({ args: { name: "山田 太郎" }, component: Avatar });
 

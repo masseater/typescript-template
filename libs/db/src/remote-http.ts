@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
-import type { DatabaseExecutor } from "./remote-operations.ts";
+
 import { RemoteFailure } from "./remote-input.ts";
+import type { DatabaseExecutor } from "./remote-operations.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const StatementResult = Schema.Struct({

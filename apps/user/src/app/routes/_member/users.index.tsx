@@ -1,10 +1,12 @@
+import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+
 import {
   UsersFailed,
   UsersPending,
   loadMembers,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
-import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+
 import { UsersRoute } from "./-users-route.tsx";
 
 type RawSearch = Readonly<Record<string, unknown>>;

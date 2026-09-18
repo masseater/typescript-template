@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vite-plus/test";
 import type { UserConfig } from "vite-plus";
+import { describe, expect, it } from "vite-plus/test";
+
 import { field } from "./dependencies.ts";
 
 const manifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {

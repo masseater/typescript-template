@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vite-plus/test";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { Effect } from "effect";
+import { describe, expect, it } from "vite-plus/test";
+
+import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
   "./admin.ts",

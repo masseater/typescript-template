@@ -1,8 +1,10 @@
+import { Effect } from "effect";
+
 import { Monitor, monitorHandler } from "@template/monitor";
 import type { MonitorBindings, Notify } from "@template/monitor";
-import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
+
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
-import { Effect } from "effect";
+import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 import type { HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
 

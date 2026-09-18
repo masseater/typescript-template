@@ -1,8 +1,9 @@
 import type { D1Database, D1PreparedStatement } from "@cloudflare/workers-types";
+import { Effect } from "effect";
+
+import { RemoteFailure } from "./remote-input.ts";
 import type { DatabaseExecutor, RemoteQuery } from "./remote-operations.ts";
 import { loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
-import { Effect } from "effect";
-import { RemoteFailure } from "./remote-input.ts";
 
 function prepareBatch(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

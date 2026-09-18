@@ -1,10 +1,16 @@
-import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import { definePlugin } from "vite-plus/lint/plugins";
+
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
-import { importVisitor, reportViolation } from "./lint-context.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
+import { layersVisitor } from "./layers.ts";
+import type { LintContext, Node } from "./lint-context.ts";
+import { importVisitor, reportViolation } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
+import type { Origin } from "./references.ts";
+import { testImportGraphVisitor } from "./test-import-graph.ts";
 import {
   nodeRuntimeModules,
   runsInWorkerRuntime,
@@ -12,11 +18,6 @@ import {
   workerRuntimeModules,
   workerTestSuffix,
 } from "./test-runtime.ts";
-import { origins, propertyName, staticText } from "./references.ts";
-import type { Origin } from "./references.ts";
-import { definePlugin } from "vite-plus/lint/plugins";
-import { layersVisitor } from "./layers.ts";
-import { testImportGraphVisitor } from "./test-import-graph.ts";
 
 interface RawD1Checks {
   readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;

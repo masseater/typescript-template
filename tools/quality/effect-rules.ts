@@ -1,7 +1,8 @@
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
-import { origins, propertyName, staticText } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
+
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { reportViolation } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
 
 const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
 

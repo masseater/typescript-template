@@ -1,9 +1,11 @@
+import { Effect } from "effect";
+
 import { Monitor, monitorHandler } from "@template/monitor";
 import type { MonitorBindings, Notify } from "@template/monitor";
-import { evaluateBudget, shouldNotify } from "./decision.ts";
-import { Effect } from "effect";
+
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
+import { evaluateBudget, shouldNotify } from "./decision.ts";
 
 interface Bindings extends MonitorBindings {
   CLOUDFLARE_ACCOUNT_ID: string;

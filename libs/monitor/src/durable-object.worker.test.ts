@@ -1,8 +1,9 @@
-import type { Outcome, SentMail } from "./monitor-fixture.ts";
-import { describe, expect, it } from "vite-plus/test";
-import handler, { probeAlert, probeEvent, probeFailure } from "./monitor-fixture.ts";
 import { listDurableObjectIds, reset, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
+import { describe, expect, it } from "vite-plus/test";
+
+import type { Outcome, SentMail } from "./monitor-fixture.ts";
+import handler, { probeAlert, probeEvent, probeFailure } from "./monitor-fixture.ts";
 
 const isoDayLength = "0000-00-00".length;
 const checkFailed = 500;

@@ -1,9 +1,30 @@
-import { applications } from "@template/config";
-import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { defaultExclude } from "vite-plus/test/config";
+
+import { applications } from "@template/config";
+
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
+
+const ignoredPaths = [
+  "**/mockServiceWorker.js",
+  "**/routeTree.gen.ts",
+  "**/dist/**",
+  ".local/**",
+  ".local-agents/**",
+  "**/.wrangler/**",
+];
+
+const linkComponents = [
+  "ButtonLink",
+  "CardLink",
+  "DropdownMenuLinkItem",
+  "Link",
+  "NavigationLink",
+  "PaginationLink",
+  "TextLink",
+];
 
 function textModule(code: string, id: string): string | undefined {
   return textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
@@ -12,14 +33,10 @@ function textModule(code: string, id: string): string | undefined {
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   fmt: {
-    ignorePatterns: [
-      "**/mockServiceWorker.js",
-      "**/routeTree.gen.ts",
-      ".local/**",
-      ".local-agents/**",
-      "**/.wrangler/**",
-      "**/dist/**",
-    ],
+    ignorePatterns: ignoredPaths,
+    sortImports: { internalPattern: ["@template/"], newlinesBetween: true },
+    sortPackageJson: { sortScripts: true },
+    sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
   },
   lint: {
     categories: {
@@ -31,15 +48,7 @@ export default defineConfig({
       style: "error",
       suspicious: "error",
     },
-    ignorePatterns: [
-      "**/mockServiceWorker.js",
-      "**/routeTree.gen.ts",
-      "**/dist/**",
-      "**/node_modules/**",
-      ".local/**",
-      ".local-agents/**",
-      "**/.wrangler/**",
-    ],
+    ignorePatterns: [...ignoredPaths, "**/node_modules/**"],
     jsPlugins: [
       "./tools/quality/rules.ts",
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
@@ -127,6 +136,7 @@ export default defineConfig({
     ],
     rules: {
       "eslint/func-style": ["error", "declaration"],
+      "eslint/max-lines": ["error", { max: 500 }],
       "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." }],
       "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
       "eslint/no-magic-numbers": [
@@ -163,6 +173,7 @@ export default defineConfig({
       "eslint/no-void": ["error", { allowAsStatement: true }],
       "eslint/one-var": ["error", "never"],
       "eslint/require-await": "off",
+      "eslint/sort-imports": ["error", { ignoreDeclarationSort: true }],
       "import/no-cycle": "error",
       "import/no-named-export": "off",
       "import/prefer-default-export": "off",
@@ -223,6 +234,18 @@ export default defineConfig({
       "unicorn/text-encoding-identifier-case": ["error", { withDash: true }],
       "unicorn/throw-new-error": "off",
       "vite-plus/prefer-vite-plus-imports": "error",
+    },
+    settings: {
+      "jsx-a11y": {
+        attributes: { href: ["href", "to"] },
+        components: {
+          ...Object.fromEntries(linkComponents.map((name) => [name, "a"])),
+          Button: "button",
+          Heading: "h2",
+        },
+        polymorphicPropName: "as",
+      },
+      react: { linkComponents: linkComponents.map((name) => ({ attribute: "to", name })) },
     },
   },
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],

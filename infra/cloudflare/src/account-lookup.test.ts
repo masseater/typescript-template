@@ -1,5 +1,8 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import {
   attachedService,
   dnsRecordNames,
@@ -10,8 +13,6 @@ import {
   workersSubdomain,
 } from "./account-lookup.ts";
 import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
-import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
-import { Effect } from "effect";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 

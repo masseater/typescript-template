@@ -1,5 +1,6 @@
-import { Card, Heading } from "@template/ui";
 import type { ReactElement } from "react";
+
+import { Card, Heading } from "@template/ui";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function Feature({

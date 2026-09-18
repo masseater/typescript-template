@@ -1,8 +1,9 @@
-import { Effect, Schema } from "effect";
 import { State, readState } from "alchemy/State";
+import type { StateService } from "alchemy/State";
+import { Effect, Schema } from "effect";
+
 import { stackName, stackNames } from "./stacks.ts";
 import type { StackName } from "./stacks.ts";
-import type { StateService } from "alchemy/State";
 
 type StateStore<Failure = never, Requirements = never> = Effect.Effect<
   StateService,

@@ -1,9 +1,10 @@
-import { Clock, Effect } from "effect";
 import { and, eq, sql } from "drizzle-orm";
+import { Clock, Effect } from "effect";
+
+import { query } from "./database.ts";
 import { InterviewConflict } from "./interview-conflict.ts";
 import { InterviewLimitReached } from "./interview-limit-reached.ts";
 import { interview } from "./schema.ts";
-import { query } from "./database.ts";
 
 const dayLength = 10;
 

@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+
 import { TextLink } from "@template/ui";
 
 function Biography({ own, text }: Readonly<{ own: boolean; text: string }>): ReactElement {

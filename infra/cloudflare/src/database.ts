@@ -1,9 +1,10 @@
 import { RemovalPolicy, Stack } from "alchemy";
-import { stackName, stackOptions } from "./stacks.ts";
 import { D1 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
+
 import { databaseName } from "./database-lookup.ts";
 import { settings } from "./settings.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 
 const databaseResource = "Database";
 

@@ -1,9 +1,11 @@
 import { HeadContent, Scripts } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { WikiProvider } from "./-wiki-provider.tsx";
-import { initBrowserTelemetry } from "@template/observability/browser";
-import { routes } from "#shared/telemetry/index.ts";
 import { useEffect } from "react";
+
+import { routes } from "#shared/telemetry/index.ts";
+import { initBrowserTelemetry } from "@template/observability/browser";
+
+import { WikiProvider } from "./-wiki-provider.tsx";
 
 function useBrowserTelemetry(): void {
   useEffect(() => {

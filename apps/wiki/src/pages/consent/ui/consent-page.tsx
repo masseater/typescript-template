@@ -1,11 +1,13 @@
-import { Page, Status } from "@template/ui";
-import { useEffect, useState } from "react";
-import { ConsentActions } from "./consent-actions.tsx";
-import type { ReactElement } from "react";
-import { Schema } from "effect";
-import { decodeJson } from "@template/runtime/client";
 import { getRouteApi } from "@tanstack/react-router";
+import { Schema } from "effect";
+import { useEffect, useState } from "react";
+import type { ReactElement } from "react";
+
 import { serviceName } from "#shared/config/index.ts";
+import { decodeJson } from "@template/runtime/client";
+import { Page, Status } from "@template/ui";
+
+import { ConsentActions } from "./consent-actions.tsx";
 
 const HTTP_UNAUTHORIZED = 401;
 const consentRoute = getRouteApi("/consent");

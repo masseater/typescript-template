@@ -2,6 +2,7 @@
 import { readFileSync, statSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
 import { project } from "@shadcn/lint";
 
 const designSystemProbe = "apps/user/src/app/routes/probe.tsx";

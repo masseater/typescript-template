@@ -1,9 +1,9 @@
-import { HttpResponse, http } from "msw";
-import { Effect } from "effect";
-import type { HttpResponseResolver } from "msw";
-import type { Scope } from "effect";
-import type { SetupServer } from "msw/node";
 import { assert } from "@effect/vitest";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+import { HttpResponse, http } from "msw";
+import type { HttpResponseResolver } from "msw";
+import type { SetupServer } from "msw/node";
 import { setupServer } from "msw/node";
 
 const INVALID_PAGE_SIZE_STATUS = 400;

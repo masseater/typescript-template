@@ -1,16 +1,19 @@
-import { test as baseTest, describe, expect } from "vite-plus/test";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
-import type { Application as App } from "@template/config";
-import type { HttpServer } from "vite-plus";
-import type { TestAPI } from "vite-plus/test";
-import { applications as apps } from "@template/config";
-import { createServer } from "vite-plus";
-import { devBoundary } from "./index.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import type { HttpServer } from "vite-plus";
+import { createServer } from "vite-plus";
+import { test as baseTest, describe, expect } from "vite-plus/test";
+import type { TestAPI } from "vite-plus/test";
+
+import type { Application as App } from "@template/config";
+import { applications as apps } from "@template/config";
+
+import { devBoundary } from "./index.ts";
 
 interface DevServer {
   readonly origin: string;

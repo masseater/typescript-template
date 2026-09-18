@@ -1,6 +1,7 @@
 import type { AIBinding, Assets, D1, Email, InferEnv } from "alchemy/Cloudflare";
-import type { Application, Capability, CapabilityOf } from "@template/config";
 import type { Redacted } from "effect";
+
+import type { Application, Capability, CapabilityOf } from "@template/config";
 
 type SharedEnv = Readonly<{
   APP_ORIGIN: string;
