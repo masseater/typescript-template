@@ -28,6 +28,14 @@ describe("dont-review-it/no-single-use-local-type--inline-at-the-use-site", () =
         code: "export type Draft = { readonly title: string };\nexport const read = (draft: Draft) => draft.title;",
       },
       {
+        name: "a type exported through a type export list is left to the module that imports it",
+        code: "type Draft = { readonly title: string };\nexport type { Draft };",
+      },
+      {
+        name: "a type exported through an inline type specifier is left to the module that imports it",
+        code: "type Draft = { readonly title: string };\nexport { type Draft };",
+      },
+      {
         name: "an interface two declarations agree on passes",
         code: "interface Draft {\n  readonly title: string;\n}\nconst read = (draft: Draft): Draft => draft;",
       },
@@ -57,6 +65,11 @@ describe("dont-review-it/no-single-use-local-type--inline-at-the-use-site", () =
         name: "a type nothing refers to is reported",
         documented: true,
         code: "type Draft = { readonly title: string };\nexport const read = () => 1;",
+        errors: [{ messageId: "singleUseLocalType" }],
+      },
+      {
+        name: "a type re-exported from another module under the same name is still reported here",
+        code: 'type Draft = { readonly title: string };\nexport type { Draft } from "./draft.ts";',
         errors: [{ messageId: "singleUseLocalType" }],
       },
       {

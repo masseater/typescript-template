@@ -3,7 +3,10 @@ import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 const HTTP_BAD_REQUEST = 400;
-const mailConfig = { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: "http://127.0.0.1:8025" };
+const mailConfig = {
+  EMAIL_FROM: "no-reply@example.test",
+  MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
+};
 const MailpitMessage = Schema.Struct({
   From: Schema.Struct({ Email: Schema.String }),
   Subject: Schema.String,
@@ -35,7 +38,7 @@ const mailServer = Layer.effectDiscard(
       mailbox.clear();
       const network = setupNetwork();
       network.configure({ onUnhandledFrame: "error" });
-      network.use(http.post(`${mailConfig.MAILPIT_URL}/api/v1/send`, receiveMail));
+      network.use(http.post(mailConfig.MAILPIT_SEND_URL, receiveMail));
       network.enable();
       return network;
     }),

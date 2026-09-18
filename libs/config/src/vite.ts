@@ -59,31 +59,31 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
-  let removed = 0;
+const isEnvFileLoader = (plugin: PluginOption): boolean =>
+  typeof plugin === "object" &&
+  plugin !== null &&
+  !Array.isArray(plugin) &&
+  "name" in plugin &&
+  plugin.name === envFileLoader;
 
-  const strip = (options: readonly PluginOption[]): PluginOption[] => {
-    return options.flatMap((plugin: PluginOption): PluginOption[] => {
-      if (Array.isArray(plugin)) {
-        return [strip(plugin)];
-      }
-      if (
-        typeof plugin === "object" &&
-        plugin !== null &&
-        "name" in plugin &&
-        plugin.name === envFileLoader
-      ) {
-        removed += 1;
-        return [];
-      }
-      return [plugin];
-    });
-  };
-  const kept = strip(plugins);
-  if (removed === 0) {
+const containsEnvFileLoader = (plugins: readonly PluginOption[]): boolean =>
+  plugins.some((plugin) =>
+    Array.isArray(plugin) ? containsEnvFileLoader(plugin) : isEnvFileLoader(plugin),
+  );
+
+const strip = (plugins: readonly PluginOption[]): PluginOption[] =>
+  plugins.flatMap((plugin: PluginOption): PluginOption[] => {
+    if (Array.isArray(plugin)) {
+      return [strip(plugin)];
+    }
+    return isEnvFileLoader(plugin) ? [] : [plugin];
+  });
+
+const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
+  if (!containsEnvFileLoader(plugins)) {
     throw new Error(`${envFileLoader} plugin not found`);
   }
-  return kept;
+  return strip(plugins);
 };
 
 const reactCompiler = (): PluginOption[] => {
@@ -111,8 +111,8 @@ const appRun = {
 const monitorWorker = {
   pack: {
     deps: {
-      alwaysBundle: ["effect", "@template/monitor"],
-      onlyBundle: ["effect", "@template/monitor"],
+      alwaysBundle: ["effect", "@template/config", "@template/monitor"],
+      onlyBundle: ["effect", "@template/config", "@template/monitor"],
     },
     entry: { index: "src/worker.ts" },
     format: "esm",

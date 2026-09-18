@@ -1,3 +1,4 @@
+import { Email } from "@template/config";
 import { workerCompatibility } from "@template/config/worker";
 import { Config, Effect, Schema } from "effect";
 
@@ -41,7 +42,6 @@ const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u
 const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
-const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
 const Origin = Schema.String.check(
   Schema.makeFilter((value: string) => URL.canParse(value)),
@@ -169,7 +169,6 @@ export {
   CONFIRMATION_LENGTH,
   SamplingRate,
   CloudflareFailure,
-  Email,
   Id,
   Nonnegative,
   Origin,

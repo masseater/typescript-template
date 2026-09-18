@@ -36,6 +36,15 @@ export const noSingleUseLocalType = createDontReviewItRule({
             node.expression.type === "Identifier" ? [node.expression.name] : [],
           ),
         ];
+        const exportedNames = new Set(
+          program.body.flatMap((statement) =>
+            statement.type === "ExportNamedDeclaration" && statement.source === null
+              ? statement.specifiers.flatMap((specifier) =>
+                  specifier.local.type === "Identifier" ? [specifier.local.name] : [],
+                )
+              : [],
+          ),
+        );
         const declaredNodeByName = new Map(
           program.body
             .flatMap((statement) =>
@@ -48,6 +57,7 @@ export const noSingleUseLocalType = createDontReviewItRule({
         );
 
         for (const [declaredTypeName, declaration] of declaredNodeByName) {
+          if (exportedNames.has(declaredTypeName)) continue;
           const referenceCount = referencedNames.filter(
             (referenced) => referenced === declaredTypeName,
           ).length;

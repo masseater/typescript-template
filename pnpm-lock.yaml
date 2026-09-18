@@ -990,6 +990,9 @@ importers:
 
   libs/monitor:
     dependencies:
+      '@template/config':
+        specifier: workspace:*
+        version: link:../config
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112

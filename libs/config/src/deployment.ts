@@ -26,7 +26,7 @@ const deploymentKeys = [
 ] as const;
 
 const privateDeploymentKeys: readonly string[] = deploymentKeys.filter(
-  (key) => !budgetKeys.some((budget) => budget === key),
+  (deploymentKey) => !budgetKeys.some((budget) => budget === deploymentKey),
 );
 
 const configurationHome = (project: string): string => {

@@ -1,3 +1,4 @@
+import { Email } from "@template/config";
 import { Effect, Exit, Schema, SchemaGetter } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
@@ -31,7 +32,6 @@ const ISO_DATE_LENGTH = 10;
 const NOT_FOUND_STATUS = 404;
 const CHECK_FAILED_STATUS = 500;
 
-const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, MAX_ALERT_RECIPIENTS));
 const splitRecipients = SchemaGetter.transform((value: string) => value.split(","));
 const joinRecipients = SchemaGetter.transform((value: readonly string[]) => value.join(","));
