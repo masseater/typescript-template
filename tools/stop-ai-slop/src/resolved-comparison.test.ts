@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -12,8 +12,7 @@ import type { GitHubRequest } from "./github-comparison.ts";
 describe("resolvedComparison", () => {
   describe("a checkout that holds the integration branch", () => {
     const it = test.extend("integrationBranchComparison", async ({}, { onCleanup }) => {
-      const repositoryRoot = join(tmpdir(), "stop-ai-slop-resolved-comparison-integration");
-      rmSync(repositoryRoot, { recursive: true, force: true });
+      const repositoryRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-integration-"));
       mkdirSync(join(repositoryRoot, "src"), { recursive: true });
       onCleanup(() => {
         rmSync(repositoryRoot, { recursive: true, force: true });
@@ -45,14 +44,20 @@ describe("resolvedComparison", () => {
       git(["add", "--all"]);
       git(["commit", "--quiet", "--message", "snapshot"]);
 
-      return resolvedComparison(repositoryRoot, { repository: undefined, request: null });
+      return {
+        comparison: await resolvedComparison(repositoryRoot, {
+          repository: undefined,
+          request: null,
+        }),
+        repositoryRoot,
+      };
     });
 
     it("reads the local repository when it holds the integration branch", ({
       integrationBranchComparison,
     }) => {
-      expect(integrationBranchComparison).toStrictEqual({
-        repositoryRoot: join(tmpdir(), "stop-ai-slop-resolved-comparison-integration"),
+      expect(integrationBranchComparison.comparison).toStrictEqual({
+        repositoryRoot: integrationBranchComparison.repositoryRoot,
         baseRevision: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
         headRevision: "HEAD",
         files: [
@@ -73,8 +78,7 @@ describe("resolvedComparison", () => {
   describe("a checkout with a merge in progress", () => {
     const it = test
       .extend("mergeInProgressComparison", async ({}, { onCleanup }) => {
-        const repositoryRoot = join(tmpdir(), "stop-ai-slop-resolved-comparison-merge-in-progress");
-        rmSync(repositoryRoot, { recursive: true, force: true });
+        const repositoryRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-merge-in-progress-"));
         mkdirSync(join(repositoryRoot, "src"), { recursive: true });
         onCleanup(() => {
           rmSync(repositoryRoot, { recursive: true, force: true });
@@ -113,14 +117,16 @@ describe("resolvedComparison", () => {
         writeFileSync(join(repositoryRoot, "src/repaired.ts"), "export const repaired = true;\n");
         git(["add", "src/repaired.ts"]);
 
-        return resolvedComparison(repositoryRoot, { repository: undefined, request: null });
+        return {
+          comparison: await resolvedComparison(repositoryRoot, {
+            repository: undefined,
+            request: null,
+          }),
+          repositoryRoot,
+        };
       })
       .extend("mergeInProgressFeatureTip", async ({}, { onCleanup }) => {
-        const repositoryRoot = join(
-          tmpdir(),
-          "stop-ai-slop-resolved-comparison-merge-in-progress-feature",
-        );
-        rmSync(repositoryRoot, { recursive: true, force: true });
+        const repositoryRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-merge-in-progress-feature-"));
         mkdirSync(join(repositoryRoot, "src"), { recursive: true });
         onCleanup(() => {
           rmSync(repositoryRoot, { recursive: true, force: true });
@@ -163,8 +169,8 @@ describe("resolvedComparison", () => {
       });
 
     it("reads the resolved index while a merge is in progress", ({ mergeInProgressComparison }) => {
-      expect(mergeInProgressComparison).toStrictEqual({
-        repositoryRoot: join(tmpdir(), "stop-ai-slop-resolved-comparison-merge-in-progress"),
+      expect(mergeInProgressComparison.comparison).toStrictEqual({
+        repositoryRoot: mergeInProgressComparison.repositoryRoot,
         baseRevision: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
         headRevision: "2efaee1d31f0187056e65c845e898a617d530942",
         files: [
@@ -200,8 +206,7 @@ describe("resolvedComparison", () => {
   describe("a checkout that holds only the merge of a pull request", () => {
     const it = test
       .extend("pullRequestComparison", async ({}, { onCleanup }) => {
-        const repositoryRoot = join(tmpdir(), "stop-ai-slop-resolved-comparison-merge");
-        rmSync(repositoryRoot, { recursive: true, force: true });
+        const repositoryRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-merge-"));
         mkdirSync(join(repositoryRoot, "src"), { recursive: true });
         onCleanup(() => {
           rmSync(repositoryRoot, { recursive: true, force: true });
@@ -250,14 +255,16 @@ describe("resolvedComparison", () => {
           files: [],
         }));
 
-        return resolvedComparison(repositoryRoot, {
-          repository: "owner/name",
-          request: compare,
-        });
+        return {
+          comparison: await resolvedComparison(repositoryRoot, {
+            repository: "owner/name",
+            request: compare,
+          }),
+          repositoryRoot,
+        };
       })
       .extend("pullRequestCompareCall", async ({}, { onCleanup }) => {
-        const repositoryRoot = join(tmpdir(), "stop-ai-slop-resolved-comparison-merge-call");
-        rmSync(repositoryRoot, { recursive: true, force: true });
+        const repositoryRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-merge-call-"));
         mkdirSync(join(repositoryRoot, "src"), { recursive: true });
         onCleanup(() => {
           rmSync(repositoryRoot, { recursive: true, force: true });
@@ -316,8 +323,8 @@ describe("resolvedComparison", () => {
     it("reads the pull request through the API when the checkout holds only its merge", ({
       pullRequestComparison,
     }) => {
-      expect(pullRequestComparison).toStrictEqual({
-        repositoryRoot: join(tmpdir(), "stop-ai-slop-resolved-comparison-merge"),
+      expect(pullRequestComparison.comparison).toStrictEqual({
+        repositoryRoot: pullRequestComparison.repositoryRoot,
         baseRevision: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
         headRevision: "d8fde84998100e7b6119bddff27a36a2e20e9ad6",
         files: [],
@@ -335,8 +342,7 @@ describe("resolvedComparison", () => {
 
   describe("a checkout that holds neither the integration branch nor a merge", () => {
     const it = test.extend("guessworkRefusal", async ({}, { onCleanup }) => {
-      const repositoryRoot = join(tmpdir(), "stop-ai-slop-resolved-comparison-orphan");
-      rmSync(repositoryRoot, { recursive: true, force: true });
+      const repositoryRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-orphan-"));
       mkdirSync(join(repositoryRoot, "src"), { recursive: true });
       onCleanup(() => {
         rmSync(repositoryRoot, { recursive: true, force: true });

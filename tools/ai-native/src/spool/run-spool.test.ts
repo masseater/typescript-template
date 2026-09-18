@@ -3,6 +3,7 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -41,7 +42,7 @@ const SEAM_SUFFIX = "cafe0123";
 
 const SEAMED_LOG_NAME = "20260811T120000Z-node--e-cafe0123.log";
 
-const TEST_ROOT = join(tmpdir(), "run-spool-test");
+const TEST_ROOT = mkdtempSync(join(tmpdir(), "run-spool-test-"));
 
 const SILENT_SCRIPT = "";
 
