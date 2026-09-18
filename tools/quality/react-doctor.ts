@@ -54,7 +54,7 @@ function scan(args: readonly string[]): Effect.Effect<Scan> {
       new Promise<Scan>((resolve) => {
         execFile(
           executable,
-          args,
+          [...args, "--no-score"],
           { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
           (failure, stdout, stderr) => {
             resolve({ failed: failure !== null, stderr, stdout });
@@ -83,9 +83,21 @@ function skippedOf(entry: typeof Project.Type): string[] {
   ];
 }
 
+const unclassifiedRules = Effect.fn("unclassifiedRules")(function* unclassifiedRules(listed: Scan) {
+  if (listed.failed && listed.stderr !== "") {
+    yield* Console.error(listed.stderr);
+  }
+  const rules = yield* Schema.decodeUnknownEffect(Rules)(listed.stdout).pipe(
+    Effect.tapError(() => Console.error(listed.stderr)),
+  );
+  return rules
+    .filter((rule) => rule.source === "default" || rule.severity === "warn")
+    .map((rule) => `${rule.key} ${rule.source} ${rule.severity}`);
+});
+
 const inspect = Effect.fn("inspect")(function* inspect() {
   const [{ failed, stderr, stdout }, listed] = yield* Effect.all(
-    [scan(["--json", "--no-score"]), scan(["rules", "list", "--json"])],
+    [scan(["--json"]), scan(["rules", "list", "--json"])],
     { concurrency: "unbounded" },
   );
   if (failed && stderr !== "") {
@@ -94,12 +106,7 @@ const inspect = Effect.fn("inspect")(function* inspect() {
   const report = yield* Schema.decodeUnknownEffect(Report)(stdout).pipe(
     Effect.tapError(() => Console.error(stdout)),
   );
-  const rules = yield* Schema.decodeUnknownEffect(Rules)(listed.stdout).pipe(
-    Effect.tapError(() => Console.error(listed.stderr)),
-  );
-  const unclassified = rules
-    .filter((rule) => rule.source === "default" || rule.severity === "warn")
-    .map((rule) => `${rule.key} ${rule.source} ${rule.severity}`);
+  const unclassified = yield* unclassifiedRules(listed);
   const findings = report.projects.flatMap((entry) => findingsOf(entry));
   const skipped = [
     ...report.projects.flatMap((entry) => skippedOf(entry)),

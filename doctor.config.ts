@@ -2,7 +2,6 @@ import { defineConfig } from "react-doctor/api";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
-  blocking: "warning",
   categories: {
     Accessibility: "error",
     Bugs: "error",
@@ -234,5 +233,4 @@ export default defineConfig({
   },
   share: false,
   supplyChain: { minScore: 80 },
-  surfaces: { ciFailure: { includeFileContexts: ["story", "test"], includeTags: ["design"] } },
 });
