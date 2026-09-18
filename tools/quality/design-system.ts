@@ -226,6 +226,7 @@ export {
   indexedComponents,
   coverageViolations,
   designSystemComponents,
+  declarations,
   designSystemProbe,
   linkViolations,
   partsDirectory,

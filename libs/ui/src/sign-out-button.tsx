@@ -1,5 +1,5 @@
 import { ActionStatus } from "./action-status";
-import { Button } from "./shared/ui";
+import { Button } from "./shared/ui/button";
 import type { ReactElement } from "react";
 import { useSignOut } from "./use-sign-out";
 

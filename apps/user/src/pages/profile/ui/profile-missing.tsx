@@ -1,5 +1,4 @@
-import { Link } from "@tanstack/react-router";
-import { Page } from "@template/ui/ui";
+import { Page, TextLink } from "@template/ui";
 import type { ReactElement } from "react";
 
 function ProfileMissing(): ReactElement {
@@ -8,7 +7,7 @@ function ProfileMissing(): ReactElement {
       <p className="text-base leading-normal">
         この利用者のプロフィールは表示できません。アドレスが正しいかを確かめてください。
       </p>
-      <Link to="/users">ユーザーを探す</Link>
+      <TextLink to="/users">ユーザーを探す</TextLink>
     </Page>
   );
 }

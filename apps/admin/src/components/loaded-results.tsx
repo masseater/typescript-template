@@ -1,7 +1,9 @@
 import { EmptyResults } from "#components/empty-results.tsx";
 import type { ListedUsers } from "#user-list.ts";
-import { PageNavigation } from "#components/page-navigation.tsx";
+import { PageNavigation } from "@template/ui";
+import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";
+import { UserPageLink } from "#components/user-page-link.tsx";
 import type { UsersSearch } from "#users-search.ts";
 import { UsersTable } from "#components/users-table.tsx";
 import { usersPageSize } from "#users-pagination.ts";
@@ -12,6 +14,9 @@ function LoadedResults({
   search,
 }: Readonly<{ list: ListedUsers; onReload: () => void; search: UsersSearch }>): ReactElement {
   const page = search.page ?? 1;
+  function pageLink(target: PageTarget): ReactElement {
+    return <UserPageLink search={search} target={target} />;
+  }
   if (list.users.length === 0) {
     return <EmptyResults beyondLastPage={list.total > 0} search={search} />;
   }
@@ -23,7 +28,11 @@ function LoadedResults({
         {`${list.total} 件中 ${first}〜${last} 件`}
       </p>
       <UsersTable users={list.users} onChanged={onReload} />
-      <PageNavigation current={page} last={Math.ceil(list.total / usersPageSize)} search={search} />
+      <PageNavigation
+        current={page}
+        last={Math.ceil(list.total / usersPageSize)}
+        renderLink={pageLink}
+      />
     </>
   );
 }

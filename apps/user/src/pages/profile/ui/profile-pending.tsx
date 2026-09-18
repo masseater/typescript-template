@@ -1,6 +1,6 @@
 import { ProfileBody } from "./profile-body.tsx";
 import type { ReactElement } from "react";
-import { Status } from "@template/ui/ui";
+import { Status } from "@template/ui";
 
 function ProfilePending(): ReactElement {
   return (

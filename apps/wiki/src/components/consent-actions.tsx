@@ -1,4 +1,4 @@
-import { Button, FormColumn } from "@template/ui/ui";
+import { Button, FormColumn } from "@template/ui";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
 import { decodeJson } from "@template/runtime/client";

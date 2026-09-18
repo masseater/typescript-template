@@ -1,4 +1,4 @@
-import { Status, TableCell, TableRow } from "@template/ui/ui";
+import { Status, TableCell, TableRow } from "@template/ui";
 import type { ReactElement } from "react";
 
 function LoadingRow({ columnCount }: Readonly<{ columnCount: number }>): ReactElement {

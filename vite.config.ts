@@ -67,17 +67,6 @@ export default defineConfig({
         },
       },
       {
-        files: [
-          "apps/admin/src/components/account-menu.tsx",
-          "apps/admin/src/components/admin-header.tsx",
-          "apps/admin/src/components/admin-navigation-item.tsx",
-          "apps/admin/src/components/empty-results.tsx",
-          "apps/admin/src/components/page-link.tsx",
-          "apps/admin/src/components/row-action-menu.tsx",
-        ],
-        rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
-      },
-      {
         files: ["infra/cloudflare/src/**"],
         rules: {
           "eslint/new-cap": [
@@ -155,7 +144,7 @@ export default defineConfig({
         {
           paths: [
             {
-              message: "@template/ui/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
               name: "smarthr-ui",
             },
             {
@@ -250,12 +239,14 @@ export default defineConfig({
           "vp run check:layers",
           "vp run check:staged",
           "vp run check:effect",
+          "vp run check:migrations",
         ],
         input: [{ auto: true }, "!node_modules/.modules.yaml"],
       },
       "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
       "check:layers": "steiger apps/user/src --fail-on-warnings",
+      "check:migrations": "vp -C libs/db exec drizzle-kit check",
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
