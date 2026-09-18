@@ -37,12 +37,31 @@ const workspaceScripts: Readonly<Record<string, Readonly<Record<string, unknown>
   ),
 };
 
-const workspaceTasks: Readonly<Record<string, Tasks>> = Object.fromEntries(
-  Object.entries(configModules).map(([file, config]) => {
-    const resolved = typeof config === "function" ? config(serveEnv) : config;
-    return [directoryOf(file), resolved.run?.tasks ?? {}];
+const workspaceNames: Readonly<Record<string, string>> = Object.fromEntries(
+  workspaceManifests.flatMap(({ file, manifest }) => {
+    const name = field(manifest, "name");
+    return typeof name === "string" ? [[file.replace(/\/package\.json$/u, ""), name]] : [];
   }),
 );
+
+const workspaceConfigs: Readonly<Record<string, UserConfig>> = Object.fromEntries(
+  Object.entries(configModules).map(([file, config]) => [
+    directoryOf(file),
+    typeof config === "function" ? config(serveEnv) : config,
+  ]),
+);
+
+const workspaceTasks: Readonly<Record<string, Tasks>> = Object.fromEntries(
+  Object.entries(workspaceConfigs).map(([directory, config]) => [
+    directory,
+    config.run?.tasks ?? {},
+  ]),
+);
+
+const testProjectDirectories: readonly string[] = (workspaceConfigs["."]?.test?.projects ?? [])
+  .filter((project): project is string => typeof project === "string" && !project.endsWith(".ts"))
+  .map((project) => project.replace(/^\.\//u, ""))
+  .toSorted();
 
 const workspaceDirectories: readonly string[] = Object.keys(workspaceScripts).toSorted();
 const configuredDirectories: readonly string[] = Object.keys(workspaceTasks).toSorted();
@@ -92,6 +111,8 @@ export {
   reachable,
   scriptNames,
   taskNames,
+  testProjectDirectories,
   workspaceDirectories,
+  workspaceNames,
   workspaceTasks,
 };
