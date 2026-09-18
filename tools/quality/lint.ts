@@ -248,7 +248,7 @@ const lint = {
           },
           { from: "package", name: ["ReactElement"], package: "react" },
           { from: "package", name: ["ToastObject"], package: "@base-ui/react" },
-          { from: "package", name: ["Readable"], package: "node" },
+          { from: "package", name: ["ChildProcess", "Readable"], package: "node" },
         ],
         ignoreInferredTypes: true,
         treatMethodsAsReadonly: true,

@@ -1,81 +1,97 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { once } from "node:events";
+import { open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { setTimeout as delay } from "node:timers/promises";
+import path from "node:path";
 
 import type { Application } from "@repo/config";
 
+import { healthy, logTail } from "./app-health.ts";
 import type { Environment } from "./local-database.ts";
-import { loopback } from "./ports.ts";
+import { loopback, loopbackOrigin } from "./ports.ts";
+import { stopGroup } from "./process-group.ts";
 import { applicationRoot, packageRoot } from "./repository.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
 const readyTimeout = 300_000;
-const requestTimeout = 120_000;
-const stopTimeout = 30_000;
-const okStatus = 200;
-const healthPath = "/api/health";
+const startAttempts = 3;
 const vitePlus = packageRoot("node_modules/.bin/vp");
 
-function killGroup(pid: number, signal: "SIGKILL" | "SIGTERM"): boolean {
+interface ApplicationServer {
+  readonly application: Application;
+  readonly environment: Environment;
+  readonly logDirectory: string;
+  readonly port: number;
+}
+
+interface RunningApplication {
+  readonly stop: () => Promise<void>;
+  readonly waitUntilReady: () => Promise<void>;
+}
+
+interface ServedApplication {
+  readonly stop: () => Promise<void>;
+}
+
+async function reachHealth(alive: () => boolean, origin: string, log: string): Promise<void> {
   try {
-    process.kill(-pid, signal);
-    return true;
-  } catch {
-    return false;
+    await until(
+      async () => {
+        if (!alive()) {
+          throw new Error("E2E_APPLICATION_STOPPED");
+        }
+        return (await healthy(origin)) || undefined;
+      },
+      deadlineIn(readyTimeout),
+      "E2E_APPLICATION_NOT_READY",
+    );
+  } catch (error) {
+    throw new Error(`E2E_APPLICATION_UNAVAILABLE ${await logTail(log)}`, { cause: error });
   }
 }
 
-function startApplication(
-  application: Application,
-  port: number,
-  environment: Environment,
-): () => Promise<void> {
+async function startApplication(server: ApplicationServer): Promise<RunningApplication> {
+  const { application, environment, logDirectory, port } = server;
+  const log = path.join(logDirectory, `${application}.log`);
+  const handle = await open(log, "a");
+  const origin = loopbackOrigin(port);
   const args = ["dev", "--host", loopback, "--port", String(port), "--strictPort"];
   const child = spawn(vitePlus, args, {
     cwd: applicationRoot(application),
     detached: true,
     env: environment,
-    stdio: "ignore",
+    stdio: ["ignore", handle.fd, handle.fd],
   });
   child.on("error", () => {
     child.kill("SIGKILL");
   });
-  return async () => {
-    const { pid } = child;
-    if (pid === undefined) {
-      return;
-    }
-    killGroup(pid, "SIGTERM");
-    await Promise.race([once(child, "exit"), delay(stopTimeout, undefined, { ref: false })]);
-    killGroup(pid, "SIGKILL");
+  return {
+    stop: async () => {
+      await stopGroup(child);
+      await handle.close();
+    },
+    waitUntilReady: async () =>
+      reachHealth(() => child.exitCode === null && child.signalCode === null, origin, log),
   };
 }
 
-async function answered(origin: string): Promise<readonly number[]> {
+async function serveApplication(
+  server: ApplicationServer,
+  attempt = 1,
+): Promise<ServedApplication> {
+  const running = await startApplication(server);
   try {
-    const response = await fetch(new URL(healthPath, origin), {
-      redirect: "manual",
-      signal: AbortSignal.timeout(requestTimeout),
-    });
-    await response.body?.cancel();
-    return [response.status];
-  } catch {
-    return [];
+    await running.waitUntilReady();
+    return running;
+  } catch (error) {
+    await running.stop();
+    if (attempt >= startAttempts) {
+      throw error;
+    }
+    return serveApplication(server, attempt + 1);
   }
 }
 
-async function waitUntilReady(origin: string): Promise<void> {
-  await until(
-    async () => {
-      const statuses = await answered(origin);
-      return statuses.includes(okStatus) || undefined;
-    },
-    deadlineIn(readyTimeout),
-    "E2E_APPLICATION_NOT_READY",
-  );
-}
-
-export { startApplication, waitUntilReady };
+export { serveApplication };
+export type { ApplicationServer, ServedApplication };

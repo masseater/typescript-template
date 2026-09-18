@@ -1456,9 +1456,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@repo/db':
-        specifier: workspace:*
-        version: link:../../libs/db
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1

@@ -62,4 +62,3 @@ async function replaceDevVars(
 }
 
 export { generateAuthSecret, replaceDevVars };
-export type { DevVars };

@@ -10,5 +10,5 @@ const roleApplications = {
   operator: "admin",
 } as const satisfies Readonly<Record<JourneyRole, Application>>;
 
-export { journeyRoles, roleApplications };
+export { roleApplications };
 export type { JourneyRole };

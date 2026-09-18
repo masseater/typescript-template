@@ -1,13 +1,13 @@
 import { applications } from "@repo/config";
 import type { Application } from "@repo/config";
 
-import { startApplication, waitUntilReady } from "./app-servers.ts";
+import { serveApplication } from "./app-servers.ts";
 import { generateAuthSecret, replaceDevVars } from "./dev-vars.ts";
 import { documentPaths } from "./documents.ts";
 import { roleApplications } from "./journey-roles.ts";
 import type { JourneyRole } from "./journey-roles.ts";
 import { startIsolatedDatabase } from "./local-database.ts";
-import type { Environment } from "./local-database.ts";
+import type { IsolatedDatabase } from "./local-database.ts";
 import { startMailSink } from "./mail.ts";
 import type { MailSink } from "./mail.ts";
 import { freePort, loopbackOrigin } from "./ports.ts";
@@ -54,13 +54,22 @@ async function configureApplications(
   );
 }
 
-function serveApplications(
+async function serveApplications(
   collect: Collect,
   configured: readonly ConfiguredApplication[],
-  environment: Environment,
-): void {
-  for (const { application, port } of configured) {
-    collect(startApplication(application, port, environment));
+  database: IsolatedDatabase,
+): Promise<void> {
+  const served = await Promise.allSettled(
+    configured.map(async ({ application, port }) => {
+      const { environment } = database;
+      const options = { application, environment, logDirectory: database.directory, port };
+      const running = await serveApplication(options);
+      collect(running.stop);
+    }),
+  );
+  const failure = served.find((result) => result.status === "rejected");
+  if (failure !== undefined) {
+    throw failure.reason;
   }
 }
 
@@ -81,8 +90,7 @@ async function launch(collect: Collect): Promise<Omit<JourneyEnvironment, "stop"
   const mail = await startMailSink();
   collect(mail.stop);
   const configured = await configureApplications(collect, mail.origin);
-  serveApplications(collect, configured, database.environment);
-  await Promise.all(configured.map(async ({ origin }) => waitUntilReady(origin)));
+  await serveApplications(collect, configured, database);
   return {
     documents: await documentPaths(roleApplications.knowledge),
     mail,

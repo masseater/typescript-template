@@ -92,4 +92,4 @@ async function signOut(page: Page, origin: string): Promise<void> {
 }
 
 export { answerTotpChallenge, confirmEmail, enrollTotp, homePattern, signIn, signOut, signUp };
-export type { Delivery, Enrollment };
+export type { Enrollment };

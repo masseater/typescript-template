@@ -11,11 +11,12 @@ import { promisify } from "node:util";
 
 import { localDatabaseVariable } from "@repo/config/local-database-path";
 
-import { packageRoot } from "./repository.ts";
+import { packageRoot, repositoryRoot } from "./repository.ts";
 
 // oxlint-disable-next-line typescript/strict-void-return
 const run = promisify(execFile);
-const database = packageRoot("libs/db");
+const vitePlus = packageRoot("node_modules/.bin/vp");
+const databasePackage = "@repo/db";
 const prefix = "template-e2e-";
 
 type Environment = Readonly<Record<string, string | undefined>>;
@@ -31,13 +32,16 @@ async function startIsolatedDatabase(): Promise<IsolatedDatabase> {
   const directory = await mkdtemp(path.join(tmpdir(), prefix));
   // oxlint-disable-next-line node/no-process-env
   const environment = { ...process.env, [localDatabaseVariable]: directory };
-  await run(process.execPath, ["src/migrate-local.ts"], { cwd: database, env: environment });
+  await run(vitePlus, ["run", "--filter", databasePackage, "db:migrate:local"], {
+    cwd: repositoryRoot,
+    env: environment,
+  });
   return {
     directory,
     environment,
     promoteToAdministrator: async (email: string) => {
-      await run(process.execPath, ["src/bootstrap-local.ts", email], {
-        cwd: database,
+      await run(vitePlus, ["run", "--filter", databasePackage, "db:bootstrap:local", email], {
+        cwd: repositoryRoot,
         env: environment,
       });
     },
