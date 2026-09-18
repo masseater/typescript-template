@@ -40,4 +40,10 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   );
 });
 
-export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement };
+export {
+  BootstrapUnavailable,
+  BootstrappedAdmin,
+  EmailAddress,
+  bootstrapAdmin,
+  bootstrapStatement,
+};

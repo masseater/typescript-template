@@ -27,14 +27,14 @@ class TestBinding extends Context.Service<TestBinding, D1Database>()("@template/
 
 const runStatement = (
   sql: string,
-  ...params: readonly (string | number)[]
+  ...statementParameters: readonly (string | number)[]
 ): Effect.Effect<D1Result, unknown, TestBinding> => {
   return Effect.gen(function* statement() {
     const database = yield* TestBinding;
     return yield* Effect.tryPromise(async () =>
       database
         .prepare(sql)
-        .bind(...params)
+        .bind(...statementParameters)
         .run(),
     );
   });
@@ -100,30 +100,40 @@ const comparableRow = (pragmaRow: Readonly<Record<string, unknown>>): string =>
       .map((column) => [column, pragmaRow[column]]),
   );
 
+const primaryKeyFlagsOf = Effect.fn("primaryKeyFlagsOf")(function* primaryKeyFlagsOf(
+  table: string,
+) {
+  const columns = yield* pragmaRows({ pragma: "table_info", table });
+  return columns.filter(isPrimaryKeyColumn).map((column) => column.notnull);
+});
+
 export const primaryKeyNullability = Effect.fn("primaryKeyNullability")(
   function* primaryKeyNullability() {
     const tables = yield* databaseObjectNames("table");
-    const flags = yield* Effect.forEach(tables, (table) =>
-      Effect.map(pragmaRows({ pragma: "table_info", table }), (columns) =>
-        columns.filter(isPrimaryKeyColumn).map((column) => column.notnull),
-      ),
-    );
-    return [...new Set(flags.flat())];
+    const primaryKeyFlags = yield* Effect.forEach(tables, primaryKeyFlagsOf);
+    return [...new Set(primaryKeyFlags.flat())];
   },
 );
 
+const describedRows = Effect.fn("describedRows")(function* describedRows(inspected: {
+  readonly pragma: string;
+  readonly table: string;
+}) {
+  const inspectedRows = yield* pragmaRows(inspected);
+  return inspectedRows.map((pragmaRow) => `${inspected.pragma} ${comparableRow(pragmaRow)}`);
+});
+
+const describeTable = Effect.fn("describeTable")(function* describeTable(table: string) {
+  const described = yield* Effect.forEach(
+    ["table_info", "index_list", "foreign_key_list"],
+    (pragma) => describedRows({ pragma, table }),
+  );
+  return [table, described.flat().toSorted((left, right) => left.localeCompare(right))] as const;
+});
+
 export const describeDatabase = Effect.fn("describeDatabase")(function* describeDatabase() {
   const tables = yield* databaseObjectNames("table");
-  const tableShapes = yield* Effect.forEach(tables, (table) =>
-    Effect.map(
-      Effect.forEach(["table_info", "index_list", "foreign_key_list"], (pragma) =>
-        Effect.map(pragmaRows({ pragma, table }), (described) =>
-          described.map((pragmaRow) => `${pragma} ${comparableRow(pragmaRow)}`),
-        ),
-      ),
-      (described) => [table, described.flat().toSorted((left, right) => left.localeCompare(right))],
-    ),
-  );
+  const tableShapes = yield* Effect.forEach(tables, describeTable);
   return {
     primaryKeyNotNull: yield* primaryKeyNullability(),
     shape: Object.fromEntries(tableShapes),

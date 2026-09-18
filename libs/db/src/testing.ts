@@ -24,19 +24,19 @@ const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
 const getSchemaShape = (): Record<string, string[]> => {
   return Object.fromEntries(
-    Object.entries(schema).map(([name, table]) => [name, Object.keys(getColumns(table))]),
+    Object.entries(schema).map(([tableName, table]) => [tableName, Object.keys(getColumns(table))]),
   );
 };
 
 const runStatement = (
   sql: string,
-  ...params: readonly (string | number)[]
+  ...statementParameters: readonly (string | number)[]
 ): Effect.Effect<D1Result, DatabaseFailure> => {
   return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
     try: async () =>
       env.DB.prepare(sql)
-        .bind(...params)
+        .bind(...statementParameters)
         .run(),
   });
 };

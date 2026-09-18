@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { migrateD1 } from "./migrate-d1.ts";
+import { loadRemoteMigrations } from "./remote-operations.ts";
 import { schema } from "./schema.ts";
 import {
   EmptyTestDatabase,
@@ -93,10 +94,11 @@ describe("the applied migrations", () => {
 describe("the models", () => {
   describe("compared with the latest migration snapshot", () => {
     const it = test.extend("pendingStatements", async () => {
-      const latest = Object.keys(snapshots)
-        .toSorted((left, right) => left.localeCompare(right))
-        .at(-1);
-      const applied = latest === undefined ? undefined : snapshots[latest];
+      const latestMigration = (await Effect.runPromise(loadRemoteMigrations())).at(-1);
+      const applied =
+        latestMigration === undefined
+          ? undefined
+          : snapshots[`../migrations/${latestMigration.name}/snapshot.json`];
       return applied === undefined
         ? ["no migration snapshot found"]
         : generateMigration(applied, await generateDrizzleJson(schema));

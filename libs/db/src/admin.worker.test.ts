@@ -359,11 +359,12 @@ describe("listUsers over a directory of six users", () => {
       Effect.runPromise(
         Effect.gen(function* readDirectory() {
           yield* query(async (database): Promise<void> => {
-            await database
-              .insert(user)
-              .values(
-                Object.values(directoryRows).map((row) => ({ ...row, updatedAt: row.createdAt })),
-              );
+            await database.insert(user).values(
+              Object.values(directoryRows).map((directoryRow) => ({
+                ...directoryRow,
+                updatedAt: directoryRow.createdAt,
+              })),
+            );
           });
           const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
           return yield* listUsers(sessionId, page);
