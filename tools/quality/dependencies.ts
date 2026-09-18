@@ -74,14 +74,15 @@ const rootOnlyPackages: Readonly<Record<string, string>> = {
 };
 
 function rootOnlyDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
-  return workspaces.flatMap(({ file, manifest }) =>
-    declaredDependencies(manifest)
-      .filter((dependency) => dependency in rootOnlyPackages)
+  return workspaces.flatMap(({ file, manifest }) => {
+    const declared = declaredDependencies(manifest);
+    return Object.entries(rootOnlyPackages)
+      .filter(([dependency]) => declared.includes(dependency))
       .map(
-        (dependency) =>
-          `${file}: ${dependency} はリポジトリ全体の検査なのでルートだけが宣言します。${rootOnlyPackages[dependency] ?? ""} から実行してください。`,
-      ),
-  );
+        ([dependency, runner]) =>
+          `${file}: ${dependency} はリポジトリ全体の検査なのでルートだけが宣言します。${runner} から実行してください。`,
+      );
+  });
 }
 
 export {

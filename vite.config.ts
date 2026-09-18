@@ -46,7 +46,10 @@ export default defineConfig({
       },
       "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
-      "check:react": { cache: false, command: "node tools/quality/react-doctor.ts" },
+      "check:react": {
+        command: "node tools/quality/react-doctor.ts",
+        input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+      },
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],

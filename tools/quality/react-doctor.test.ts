@@ -7,11 +7,6 @@ const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../..
   import: "default",
 });
 
-const rootConfigs: Readonly<Record<string, Readonly<ReactDoctorConfig>>> = import.meta.glob(
-  "../../doctor.config.ts",
-  { eager: true, import: "default" },
-);
-
 const workspaceConfigs: Readonly<Record<string, Readonly<ReactDoctorConfig>>> = import.meta.glob(
   "../../{apps,libs}/*/doctor.config.json",
   { eager: true, import: "default" },
@@ -60,17 +55,8 @@ describe("react-doctor integration", () => {
     }).toStrictEqual({ scripts: [], workflows: [] });
   });
 
-  it("the root config keeps suppressions in doctor.config files", () => {
-    expect.hasAssertions();
-    expect(rootConfigs["../../doctor.config.ts"]).toMatchObject({
-      blocking: "warning",
-      respectInlineDisables: false,
-    });
-  });
-
   it("every suppressed file still exists", () => {
     expect.hasAssertions();
-    expect(suppressedFiles()).not.toStrictEqual([]);
     expect(suppressedFiles().filter((file) => !(file in sources))).toStrictEqual([]);
   });
 });

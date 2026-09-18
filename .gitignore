@@ -3,7 +3,6 @@ dist/
 .output/
 .wrangler/
 .tanstack/
-.react-doctor/
 .vite/
 .local-agents/
 .local/
