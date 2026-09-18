@@ -1,7 +1,9 @@
 import { Effect, Schema } from "effect";
-import { readList, readResource, unreadable } from "./account-read.ts";
+import { endpoint, readList, readResource, unreadable } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
+
+const SECRETS_STORE_PAGE_SIZE = 100;
 
 const Script = Schema.Struct({ result: Schema.Struct({ id: Schema.String }) });
 const Scripts = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
@@ -26,7 +28,7 @@ const stateStorePresent = Effect.fn("stateStorePresent")(function* stateStorePre
 ) {
   const found = yield* readResource(
     access,
-    `accounts/${access.accountId}/workers/scripts/${STATE_STORE_SCRIPT_NAME}`,
+    endpoint`accounts/${access.accountId}/workers/scripts/${STATE_STORE_SCRIPT_NAME}`,
     Script,
   );
   return found !== undefined;
@@ -37,7 +39,10 @@ const secretsStoreCount = Effect.fn("secretsStoreCount")(function* secretsStoreC
 ) {
   const listed = yield* readList(
     access,
-    { path: `accounts/${access.accountId}/secrets_store/stores` },
+    {
+      query: { per_page: String(SECRETS_STORE_PAGE_SIZE) },
+      source: endpoint`accounts/${access.accountId}/secrets_store/stores`,
+    },
     Stores,
   );
   return listed.result.length;
@@ -46,7 +51,7 @@ const secretsStoreCount = Effect.fn("secretsStoreCount")(function* secretsStoreC
 const workerNames = Effect.fn("workerNames")(function* workerNames(access: AccountAccess) {
   const listed = yield* readList(
     access,
-    { path: `accounts/${access.accountId}/workers/scripts` },
+    { source: endpoint`accounts/${access.accountId}/workers/scripts` },
     Scripts,
   );
   return listed.result.map((script) => script.id);
@@ -58,7 +63,7 @@ const attachedService = Effect.fn("attachedService")(function* attachedService(
 ) {
   const listed = yield* readList(
     access,
-    { path: `accounts/${access.accountId}/workers/domains`, query: { hostname } },
+    { query: { hostname }, source: endpoint`accounts/${access.accountId}/workers/domains` },
     Domains,
   );
   return listed.result.find((domain) => domain.hostname === hostname)?.service;
@@ -69,7 +74,7 @@ const workersSubdomain = Effect.fn("workersSubdomain")(function* workersSubdomai
 ) {
   const found = yield* readResource(
     access,
-    `accounts/${access.accountId}/workers/subdomain`,
+    endpoint`accounts/${access.accountId}/workers/subdomain`,
     Subdomain,
   );
   return found?.result.subdomain;
@@ -82,7 +87,7 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
 ) {
   const listed = yield* readList(
     access,
-    { path: `zones/${zoneId}/dns_records`, query: { name: hostname } },
+    { query: { name: hostname }, source: endpoint`zones/${zoneId}/dns_records` },
     Records,
   );
   return listed.result.map((record) => record.name);
@@ -91,21 +96,15 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
 const grantedPermissions = Effect.fn("grantedPermissions")(function* grantedPermissions(
   access: AccountAccess,
 ) {
-  const verified = yield* readResource(
-    access,
-    `accounts/${access.accountId}/tokens/verify`,
-    VerifiedToken,
-  );
+  const verification = endpoint`accounts/${access.accountId}/tokens/verify`;
+  const verified = yield* readResource(access, verification, VerifiedToken);
   if (verified === undefined) {
-    return yield* Effect.fail(unreadable());
+    return yield* Effect.fail(unreadable(verification, "status_404"));
   }
-  const detail = yield* readResource(
-    access,
-    `accounts/${access.accountId}/tokens/${verified.result.id}`,
-    TokenDetail,
-  );
+  const token = endpoint`accounts/${access.accountId}/tokens/${verified.result.id}`;
+  const detail = yield* readResource(access, token, TokenDetail);
   if (detail === undefined) {
-    return yield* Effect.fail(unreadable());
+    return yield* Effect.fail(unreadable(token, "status_404"));
   }
   return detail.result.policies.flatMap((policy) => policy.permission_groups);
 });

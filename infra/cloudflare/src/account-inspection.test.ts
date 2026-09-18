@@ -1,12 +1,12 @@
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { blocked, inspectAccount } from "./account-inspection.ts";
+import { mockServer, pageLimits, pagedCollection, unpaginated } from "./account-fixture.ts";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect } from "effect";
 import { InMemoryService } from "alchemy/State";
 import type { StateService } from "alchemy/State";
 import { deployTokenPermissions } from "./deploy-token.ts";
-import { mockServer } from "./account-fixture.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -103,20 +103,20 @@ function accountHandlers(options: {
 }): Parameters<typeof mockServer> {
   return [
     ...(options.token ?? tokenHandlers),
-    http.get(`${account}/d1/database`, () =>
+    pagedCollection(`${account}/d1/database`, pageLimits.d1Database, () =>
       HttpResponse.json({ result: options.databases, success: true }),
     ),
     http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
       HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
     ),
-    http.get(`${account}/secrets_store/stores`, () =>
+    pagedCollection(`${account}/secrets_store/stores`, pageLimits.secretsStores, () =>
       HttpResponse.json({ result: Array.from({ length: options.stores }, () => ({ id: "s" })) }),
     ),
-    http.get(`${account}/workers/scripts`, () =>
-      HttpResponse.json({ result: options.scripts.map((id) => ({ id })) }),
+    pagedCollection(`${account}/workers/scripts`, pageLimits.workersScripts, () =>
+      unpaginated(options.scripts.map((id) => ({ id }))),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    http.get(`${account}/workers/domains`, ({ request }) => {
+    pagedCollection(`${account}/workers/domains`, pageLimits.workersDomains, ({ request }) => {
       const hostname = new URL(request.url).searchParams.get("hostname");
       return HttpResponse.json({
         result: options.domains.filter((domain) => domain.hostname === hostname),
@@ -126,7 +126,7 @@ function accountHandlers(options: {
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    http.get(`${zone}/dns_records`, ({ request }) => {
+    pagedCollection(`${zone}/dns_records`, pageLimits.dnsRecords, ({ request }) => {
       const name = new URL(request.url).searchParams.get("name");
       return HttpResponse.json({
         result: options.records

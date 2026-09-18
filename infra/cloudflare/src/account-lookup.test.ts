@@ -2,6 +2,7 @@ import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import {
   attachedService,
+  dnsRecordNames,
   grantedPermissions,
   secretsStoreCount,
   stateStorePresent,
@@ -9,8 +10,9 @@ import {
   workersSubdomain,
 } from "./account-lookup.ts";
 import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
+import { mockServer, pageLimits, pagedCollection, unpaginated } from "./account-fixture.ts";
 import { Effect } from "effect";
-import { mockServer } from "./account-fixture.ts";
+import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const access = {
@@ -18,6 +20,8 @@ const access = {
   apiToken: "lookup-test-not-a-real-token",
 };
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
+const zone = `https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`;
+const { hostname } = new URL(verificationSettings.origins.user);
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
 const tokenId = "0123456789abcdef0123456789abcdef";
@@ -32,9 +36,18 @@ it.effect("reads an untouched account as free of the names this deployment claim
       http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
         HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
       ),
-      http.get(`${account}/secrets_store/stores`, () => HttpResponse.json({ result: [] })),
-      http.get(`${account}/workers/scripts`, () => HttpResponse.json({ result: [] })),
-      http.get(`${account}/workers/domains`, () => HttpResponse.json({ result: [] })),
+      pagedCollection(`${account}/secrets_store/stores`, pageLimits.secretsStores, () =>
+        HttpResponse.json({ result: [] }),
+      ),
+      pagedCollection(`${account}/workers/scripts`, pageLimits.workersScripts, () =>
+        unpaginated([]),
+      ),
+      pagedCollection(`${account}/workers/domains`, pageLimits.workersDomains, () =>
+        HttpResponse.json({ result: [] }),
+      ),
+      pagedCollection(`${zone}/dns_records`, pageLimits.dnsRecords, () =>
+        HttpResponse.json({ result: [] }),
+      ),
       http.get(`${account}/workers/subdomain`, () =>
         HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
       ),
@@ -42,8 +55,40 @@ it.effect("reads an untouched account as free of the names this deployment claim
     assert.isFalse(yield* stateStorePresent(access));
     assert.strictEqual(yield* secretsStoreCount(access), 0);
     assert.deepStrictEqual(yield* workerNames(access), []);
-    assert.isUndefined(yield* attachedService(access, "user.example.com"));
+    assert.isUndefined(yield* attachedService(access, hostname));
+    assert.deepStrictEqual(
+      yield* dnsRecordNames(access, verificationSettings.zoneId, hostname),
+      [],
+    );
     assert.strictEqual(yield* workersSubdomain(access), "example-subdomain");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("names the read that failed and why, without naming the zone or the hostname", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${zone}/dns_records`, () =>
+        HttpResponse.json({ success: false }, { status: FORBIDDEN_STATUS }),
+      ),
+    );
+    const failure = yield* dnsRecordNames(access, verificationSettings.zoneId, hostname).pipe(
+      Effect.flip,
+    );
+    assert.deepStrictEqual(failure.keys, ["zones/{}/dns_records", `status_${FORBIDDEN_STATUS}`]);
+    const printed = JSON.stringify(describeFailure(failure, []));
+    for (const value of [access.accountId, verificationSettings.zoneId, hostname]) {
+      assert.notInclude(printed, value);
+    }
+  }).pipe(Effect.scoped),
+);
+
+it.effect("separates a body it cannot decode from a page it did not receive in full", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${account}/secrets_store/stores`, () => HttpResponse.json({ result: [{}] })),
+    );
+    const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/secrets_store/stores", "decode_failed"]);
   }).pipe(Effect.scoped),
 );
 
@@ -71,6 +116,10 @@ it.effect("refuses a collection it cannot reach instead of reading it as empty",
     );
     const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/secrets_store/stores",
+      `status_${NOT_FOUND_STATUS}`,
+    ]);
   }).pipe(Effect.scoped),
 );
 
@@ -83,6 +132,10 @@ it.effect("refuses a collection the token is not allowed to see", () =>
     );
     const failure = yield* workerNames(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/workers/scripts",
+      `status_${FORBIDDEN_STATUS}`,
+    ]);
   }).pipe(Effect.scoped),
 );
 
@@ -122,6 +175,7 @@ it.effect("refuses a page that does not carry every row Cloudflare counted", () 
     );
     const failure = yield* workerNames(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/workers/scripts", "truncated"]);
   }).pipe(Effect.scoped),
 );
 
@@ -130,13 +184,11 @@ it.effect("asks for the worker a single hostname is attached to", () =>
     yield* mockServer(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(`${account}/workers/domains`, ({ request }) => {
-        assert.strictEqual(new URL(request.url).searchParams.get("hostname"), "user.example.com");
-        return HttpResponse.json({
-          result: [{ hostname: "user.example.com", service: "other-user" }],
-        });
+        assert.strictEqual(new URL(request.url).searchParams.get("hostname"), hostname);
+        return HttpResponse.json({ result: [{ hostname, service: "other-user" }] });
       }),
     );
-    assert.strictEqual(yield* attachedService(access, "user.example.com"), "other-user");
+    assert.strictEqual(yield* attachedService(access, hostname), "other-user");
   }).pipe(Effect.scoped),
 );
 

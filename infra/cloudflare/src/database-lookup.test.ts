@@ -1,10 +1,8 @@
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
+import { mockServer, pageLimits, pagedCollection } from "./account-fixture.ts";
 import { Effect } from "effect";
-import type { Scope } from "effect";
-import type { SetupServer } from "msw/node";
-import { setupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
 const FORBIDDEN_STATUS = 403;
@@ -17,29 +15,11 @@ const target = { ...access, name: "template-db" };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database`;
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 
-function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> {
-  return Effect.acquireRelease(
-    Effect.sync(() => {
-      const server = setupServer(...handlers);
-      server.listen({ onUnhandledRequest: "error" });
-      return server;
-    }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (server) =>
-      Effect.sync(() => {
-        server.close();
-      }),
-  );
-}
-
 it.effect("resolves the database the stack owns by its declared name", () =>
   Effect.gen(function* program() {
     yield* mockServer(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      http.get(endpoint, ({ request }) => {
+      pagedCollection(endpoint, pageLimits.d1Database, ({ request }) => {
         assert.strictEqual(new URL(request.url).searchParams.get("name"), target.name);
         assert.strictEqual(request.headers.get("authorization"), `Bearer ${target.apiToken}`);
         return HttpResponse.json({
@@ -57,7 +37,11 @@ it.effect("resolves the database the stack owns by its declared name", () =>
 
 it.effect("reports an unused name so a first deploy is not silently adopted", () =>
   Effect.gen(function* program() {
-    yield* mockServer(http.get(endpoint, () => HttpResponse.json({ result: [], success: true })));
+    yield* mockServer(
+      pagedCollection(endpoint, pageLimits.d1Database, () =>
+        HttpResponse.json({ result: [], success: true }),
+      ),
+    );
     assert.isUndefined(yield* findDatabaseId(access, target.name));
   }).pipe(Effect.scoped),
 );
@@ -65,7 +49,7 @@ it.effect("reports an unused name so a first deploy is not silently adopted", ()
 it.effect("reports a name already taken by an unrelated database", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(endpoint, () =>
+      pagedCollection(endpoint, pageLimits.d1Database, () =>
         HttpResponse.json({ result: [{ name: target.name, uuid: databaseId }], success: true }),
       ),
     );
@@ -75,7 +59,11 @@ it.effect("reports a name already taken by an unrelated database", () =>
 
 it.effect("refuses to guess when the account exposes no matching database", () =>
   Effect.gen(function* program() {
-    yield* mockServer(http.get(endpoint, () => HttpResponse.json({ result: [], success: true })));
+    yield* mockServer(
+      pagedCollection(endpoint, pageLimits.d1Database, () =>
+        HttpResponse.json({ result: [], success: true }),
+      ),
+    );
     const failure = yield* lookupDatabaseId(access, target.name).pipe(Effect.flip);
     assert.strictEqual(failure.code, "database_output_unavailable");
   }).pipe(Effect.scoped),
@@ -88,5 +76,6 @@ it.effect("reports a refused token instead of continuing", () =>
     );
     const failure = yield* lookupDatabaseId(access, target.name).pipe(Effect.flip);
     assert.strictEqual(failure.code, "database_output_unavailable");
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/d1/database", `status_${FORBIDDEN_STATUS}`]);
   }).pipe(Effect.scoped),
 );
