@@ -17,6 +17,7 @@ const stackReferences = {
   tokens: [],
   user: application,
   wiki: application,
+  zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<Record<Application, typeof application>> &
   Readonly<Record<MonitorStack, readonly string[]>>;
@@ -36,6 +37,7 @@ function stackDependencies(stack: StackName): readonly StackName[] {
 }
 
 const stackNames = [
+  "zone",
   "email",
   "database",
   "observability",

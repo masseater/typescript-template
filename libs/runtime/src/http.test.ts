@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, ManagedRuntime, Schema } from "effect";
 import type { AnyElysia } from "elysia";
 
+import { cspNonceHeader, strictTransportSecurity } from "@repo/config/security";
 import { Telemetry, httpStatus } from "@repo/observability";
 
 import { ProfileUpdate } from "./contracts.ts";
@@ -16,6 +17,7 @@ import {
 import { startRoute } from "./worker.ts";
 
 const origin = "http://localhost:3001";
+const secureOrigin = "https://user.example.test";
 const oversizedBody = 16_385;
 const repeatedPrivateText = 10;
 const created = 201;
@@ -44,6 +46,50 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
 
 async function callApi(app: AnyElysia, request: Request): Promise<Response> {
   return Effect.runPromise(servedThroughStart(app)(request));
+}
+
+function servedDocument(
+  request: Request,
+): Effect.Effect<{ readonly headers: Headers; readonly rendered: string | undefined }> {
+  const route = startRoute({
+    fetch: (rendered: Request): Response =>
+      new Response("<!DOCTYPE html>", {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
+        },
+      }),
+  });
+  return route(request).pipe(
+    Effect.map((response) => ({
+      headers: response.headers,
+      rendered: response.headers.get("x-rendered-nonce") ?? undefined,
+    })),
+  );
+}
+
+function policyDirectives(policy: string | null): readonly string[] {
+  return (policy ?? "").split("; ");
+}
+
+function handedNonce(policy: string | null): string | undefined {
+  return /'nonce-(?<nonce>[^']+)'/u.exec(policy ?? "")?.groups?.["nonce"];
+}
+
+function documentDirectives(nonce: string | undefined): readonly string[] {
+  return [
+    "default-src 'none'",
+    `script-src 'nonce-${nonce}' 'strict-dynamic'`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "manifest-src 'self'",
+    "form-action 'self'",
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+  ];
 }
 
 const rejections = [
@@ -198,7 +244,10 @@ describe("api methods behind a start server route", () => {
 describe("secure responses", () => {
   it.effect("keep status and body while preventing cached private responses", () =>
     Effect.gen(function* program() {
-      const response = secureResponse(Response.json({ ready: true }, { status: created }));
+      const response = secureResponse(
+        new Request(origin),
+        Response.json({ ready: true }, { status: created }),
+      );
       assert.strictEqual(response.status, created);
       assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), { ready: true });
       assert.deepStrictEqual(
@@ -206,6 +255,71 @@ describe("secure responses", () => {
         ["no-store", "no-referrer"],
       );
       assert.strictEqual(response.headers.get("x-frame-options"), "DENY");
+    }),
+  );
+
+  it.effect("forbid every resource an api response has no use for", () =>
+    Effect.sync(() => {
+      const response = secureResponse(new Request(origin), Response.json({ ready: true }));
+      assert.strictEqual(
+        response.headers.get("content-security-policy"),
+        "default-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'",
+      );
+    }),
+  );
+
+  it.effect("demand https for a year once the request itself arrived over https", () =>
+    Effect.sync(() => {
+      const secure = secureResponse(new Request(secureOrigin), Response.json({}));
+      const plain = secureResponse(new Request(origin), Response.json({}));
+      assert.strictEqual(secure.headers.get("strict-transport-security"), strictTransportSecurity);
+      assert.isNull(plain.headers.get("strict-transport-security"));
+    }),
+  );
+});
+
+describe("documents behind a start server route", () => {
+  it.effect("name the nonce the renderer was handed and nothing weaker", () =>
+    Effect.gen(function* program() {
+      const { headers } = yield* servedDocument(new Request(origin));
+      const nonce = handedNonce(headers.get("content-security-policy"));
+      assert.match(nonce ?? "", /^[\w+/]{22}==$/u);
+      assert.deepStrictEqual(
+        policyDirectives(headers.get("content-security-policy")),
+        documentDirectives(nonce),
+      );
+    }),
+  );
+
+  it.effect("hand the renderer the very nonce the policy names", () =>
+    Effect.gen(function* program() {
+      const { headers, rendered } = yield* servedDocument(new Request(origin));
+      assert.strictEqual(rendered, handedNonce(headers.get("content-security-policy")));
+    }),
+  );
+
+  it.effect("draw a fresh nonce for every document", () =>
+    Effect.gen(function* program() {
+      const first = yield* servedDocument(new Request(origin));
+      const second = yield* servedDocument(new Request(origin));
+      assert.notStrictEqual(first.rendered, second.rendered);
+    }),
+  );
+
+  it.effect("never let a caller supply the nonce the policy will name", () =>
+    Effect.gen(function* program() {
+      const forged = "Zm9yZ2VkLW5vbmNlLTAwMA==";
+      const { headers } = yield* servedDocument(
+        new Request(origin, { headers: { [cspNonceHeader]: forged } }),
+      );
+      assert.notInclude(headers.get("content-security-policy") ?? "", forged);
+    }),
+  );
+
+  it.effect("demand https for a year once the document arrived over https", () =>
+    Effect.gen(function* program() {
+      const { headers } = yield* servedDocument(new Request(secureOrigin));
+      assert.strictEqual(headers.get("strict-transport-security"), strictTransportSecurity);
     }),
   );
 });
