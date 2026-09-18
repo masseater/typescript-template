@@ -1,5 +1,11 @@
 import { clientReachableModules, serverOnlyPackages } from "@repo/config/vite";
-import { nodeRuntimePackages, workerRuntimeModules, workerTestSuffix } from "./test-runtime.ts";
+import {
+  nodeRuntimePackages,
+  testPattern,
+  workerRuntimeModules,
+  workerTestPattern,
+  workerTestSuffix,
+} from "./test-runtime.ts";
 import type { IConfiguration } from "dependency-cruiser";
 
 function anyOf(values: readonly string[]): string {
@@ -8,8 +14,6 @@ function anyOf(values: readonly string[]): string {
 
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
-const specModule = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
-const workerTestModule = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
 const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
 const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
@@ -112,7 +116,7 @@ const configuration: IConfiguration = {
       from: { pathNot: testModule },
       name: "no-production-to-test",
       severity: "error",
-      to: { path: specModule },
+      to: { path: testPattern },
     },
     {
       comment:
@@ -147,21 +151,21 @@ const configuration: IConfiguration = {
     },
     {
       comment: `Worker のランタイムを掴むテストは ${workerTestSuffix} という名前にしてください。名前が実行先を決めるので、${workerRuntimeModules.join(" / ")} へ経路のどこかで到達するテストは Node のプールでは動きません。`,
-      from: { path: specModule, pathNot: workerTestModule },
+      from: { path: testPattern, pathNot: workerTestPattern },
       name: "no-worker-runtime-in-node-test",
       severity: "error",
       to: { path: workerRuntimeModule, reachable: true },
     },
     {
       comment: `${workerTestSuffix} のテストは Worker のプールで動きます。Node の組み込みモジュールは、経路の途中のモジュールも含めて掴めません。`,
-      from: { path: workerTestModule },
+      from: { path: workerTestPattern },
       name: "no-node-builtin-in-worker-test",
       severity: "error",
       to: { dependencyTypes: ["core"] },
     },
     {
       comment: `${workerTestSuffix} のテストは Worker のプールで動きます。${nodeRuntimePackages.join(" / ")} は Node でしか動かないので、経路の途中のモジュールも含めて掴めません。`,
-      from: { path: workerTestModule },
+      from: { path: workerTestPattern },
       name: "no-node-runtime-package-in-worker-test",
       severity: "error",
       to: { path: nodeRuntimePackage, reachable: true },

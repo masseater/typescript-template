@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Fixture } from "./dependency-cruiser-fixture.ts";
+import type { ICruiseResult } from "dependency-cruiser";
 import configuration from "./dependency-cruiser.ts";
 import { createFixture } from "./dependency-cruiser-fixture.ts";
 import { cruise } from "dependency-cruiser";
@@ -24,15 +25,33 @@ function reportedRules(
   return [...reported].toSorted();
 }
 
+async function cruiseModules(
+  directories: readonly string[],
+  baseDir?: string,
+): Promise<ICruiseResult> {
+  const { output } = await cruise(
+    [...directories],
+    {
+      ...configuration.options,
+      ...(baseDir === undefined ? {} : { baseDir }),
+      ruleSet: { forbidden },
+      validate: true,
+    },
+    configuration.options?.enhancedResolveOptions,
+  );
+  if (typeof output === "string") {
+    throw new TypeError(
+      "dependency-cruiser reported a formatted string instead of a cruise result",
+    );
+  }
+  return output;
+}
+
 async function violatedRules(files: Fixture): Promise<readonly string[]> {
   const root = await createFixture(files);
   try {
-    const { output } = await cruise(
-      ["apps", "libs", "tools"],
-      { ...configuration.options, baseDir: root, ruleSet: { forbidden }, validate: true },
-      configuration.options?.enhancedResolveOptions,
-    );
-    return typeof output === "string" ? [] : reportedRules(output.summary.violations);
+    const { summary } = await cruiseModules(["apps", "libs", "tools"], root);
+    return reportedRules(summary.violations);
   } finally {
     await rm(root, { force: true, recursive: true });
   }
@@ -44,10 +63,7 @@ const detected: readonly Case[] = [
     "no-unresolvable",
     { "apps/user/src/index.ts": 'export type { Row } from "@repo/db/src/schema";\n' },
   ],
-  [
-    "no-unresolvable",
-    { "apps/user/src/index.ts": 'export type * from "@repo/db/src/schema";\n' },
-  ],
+  ["no-unresolvable", { "apps/user/src/index.ts": 'export type * from "@repo/db/src/schema";\n' }],
   ["no-unresolvable", { "apps/user/src/index.ts": 'import "cloudflare:workerz";\n' }],
   ["no-app-to-app", { "apps/user/src/index.ts": 'export * from "@repo/admin";\n' }],
   ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@repo/user";\n' }],
@@ -94,19 +110,13 @@ const detected: readonly Case[] = [
       "libs/auth/src/index.ts": 'export * from "./helper.test.ts";\n',
     },
   ],
-  [
-    "no-signup-outside-user",
-    { "apps/admin/src/index.ts": 'export * from "@repo/ui/signup";\n' },
-  ],
+  ["no-signup-outside-user", { "apps/admin/src/index.ts": 'export * from "@repo/ui/signup";\n' }],
   [
     "no-signup-outside-user",
     { "apps/admin/src/index.ts": 'export type { Props } from "@repo/ui/signup";\n' },
   ],
   ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@repo/db";\n' }],
-  [
-    "no-wiki-to-database",
-    { "apps/wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' },
-  ],
+  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' }],
   [
     "no-deployment-config-in-shipped-code",
     { "apps/user/src/index.ts": 'export * from "@repo/config/deployment";\n' },
@@ -206,10 +216,7 @@ const accepted: readonly Case[] = [
       "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
     },
   ],
-  [
-    "no-signup-outside-user",
-    { "apps/user/src/index.ts": 'export * from "@repo/ui/signup";\n' },
-  ],
+  ["no-signup-outside-user", { "apps/user/src/index.ts": 'export * from "@repo/ui/signup";\n' }],
   ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@repo/db/local";\n' }],
   [
     "no-browser-to-server",
@@ -244,21 +251,14 @@ interface RepositoryCruise {
 }
 
 async function cruiseRepository(): Promise<RepositoryCruise> {
-  const { output } = await cruise(
-    ["apps", "libs", "infra", "tools"],
-    { ...configuration.options, ruleSet: { forbidden }, validate: true },
-    configuration.options?.enhancedResolveOptions,
-  );
-  if (typeof output === "string") {
-    return { scanned: [], violations: [] };
-  }
+  const { modules, summary } = await cruiseModules(["apps", "libs", "infra", "tools"]);
   const sources = new Set<string>();
-  for (const module of output.modules) {
+  for (const module of modules) {
     sources.add(module.source);
   }
   return {
     scanned: scannedModules.filter((module) => sources.has(module)),
-    violations: reportedRules(output.summary.violations),
+    violations: reportedRules(summary.violations),
   };
 }
 

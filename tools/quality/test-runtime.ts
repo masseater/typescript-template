@@ -1,7 +1,9 @@
 const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
-const workerTestFile = /\.worker\.test\.[cm]?[jt]sx?$/u;
-const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
+const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
+const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
+const workerTestFile = new RegExp(workerTestPattern, "u");
+const testFile = new RegExp(testPattern, "u");
 const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 const browserOrNodeOnly =
   /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/(?:remote|testing-node)[^/]*\.ts$/u;
@@ -25,7 +27,9 @@ function runsInWorkerRuntime(current: string): boolean {
 export {
   nodeRuntimePackages,
   runsInWorkerRuntime,
+  testPattern,
   workerRuntimeModules,
+  workerTestPattern,
   workerTestSuffix,
   workerTests,
 };
