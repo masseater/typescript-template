@@ -15,7 +15,7 @@ import {
 import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
 import { Effect } from "effect";
-import { setUserRole } from "@template/db/admin";
+import { setUserRole } from "@repo/db/admin";
 
 const adminEmail = "admin@example.com";
 

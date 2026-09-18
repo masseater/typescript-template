@@ -1,5 +1,5 @@
 {
-  "name": "@template/monitor",
+  "name": "@repo/monitor",
   "private": true,
   "type": "module",
   "exports": {

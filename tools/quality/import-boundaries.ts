@@ -52,7 +52,7 @@ function importTargetOf(importer: Importer, source: string): ImportTarget {
   const target = /\/(?<area>apps|libs|tools|infra)\/(?<owner>[^/]+)(?:\/|$)/u.exec(
     resolved,
   )?.groups;
-  const namedApp = /^@template\/(?<app>user|admin|wiki)(?:\/|$)/u.exec(clean)?.groups?.["app"];
+  const namedApp = /^@repo\/(?<app>user|admin|wiki)(?:\/|$)/u.exec(clean)?.groups?.["app"];
   return {
     app: target?.["area"] === "apps" ? target["owner"] : namedApp,
     area: target?.["area"],
@@ -104,7 +104,7 @@ function escapesPackage({ location }: Importer, target: ImportTarget): boolean {
 function reachesDeploymentConfig(importer: Importer, target: ImportTarget): boolean {
   const { location } = importer;
   return (
-    (/^@template\/config\/deployment$/u.test(target.clean) ||
+    (/^@repo\/config\/deployment$/u.test(target.clean) ||
       /\/libs\/config\/src\/deployment(?:\.[cm]?ts)?$/u.test(target.resolved)) &&
     (location?.area === "apps" || location?.area === "libs")
   );
@@ -119,7 +119,7 @@ function reachesTools({ location }: Importer, target: ImportTarget): boolean {
 
 function leaksDatabaseAdmin(importer: Importer, target: ImportTarget): boolean {
   const importsAdmin =
-    /^@template\/db\/(?:src\/)?admin(?:[/.]|$)/u.test(target.clean) ||
+    /^@repo\/db\/(?:src\/)?admin(?:[/.]|$)/u.test(target.clean) ||
     /\/libs\/db\/(?:src\/)?admin(?:[/.]|$)/u.test(target.resolved);
   const { location } = importer;
   return (
@@ -132,7 +132,7 @@ function leaksDatabaseAdmin(importer: Importer, target: ImportTarget): boolean {
 
 function leaksDatabaseOperations(importer: Importer, target: ImportTarget): boolean {
   const importsOperations =
-    /^@template\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|migrat[^/]*|testing[^/]*)(?:[/.]|$)/u.test(
+    /^@repo\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|migrat[^/]*|testing[^/]*)(?:[/.]|$)/u.test(
       target.clean,
     ) ||
     /\/libs\/db\/(?:src\/)?(?:remote[^/]*|bootstrap[^/]*|migrat[^/]*|testing[^/]*)(?:[/.]|$)/u.test(
@@ -159,17 +159,17 @@ function usesRawDriver(importer: Importer, target: ImportTarget): boolean {
 function importsTestCode(importer: Importer, target: ImportTarget): boolean {
   return (
     !importer.isTest &&
-    /(?:\.(?:test|spec)(?:\.[cm]?[jt]sx?)?$|^@template\/db\/testing$)/u.test(target.clean)
+    /(?:\.(?:test|spec)(?:\.[cm]?[jt]sx?)?$|^@repo\/db\/testing$)/u.test(target.clean)
   );
 }
 
 function reachesPackageSource(_importer: Importer, target: ImportTarget): boolean {
-  return /^@template\/[^/]+\/src(?:\/|$)/u.test(target.clean);
+  return /^@repo\/[^/]+\/src(?:\/|$)/u.test(target.clean);
 }
 
 function privilegedAppImportsSignup({ location }: Importer, target: ImportTarget): boolean {
   return (
-    location?.area === "apps" && location.owner !== "user" && target.clean === "@template/ui/signup"
+    location?.area === "apps" && location.owner !== "user" && target.clean === "@repo/ui/signup"
   );
 }
 
@@ -177,7 +177,7 @@ function wikiImportsDatabase({ location }: Importer, target: ImportTarget): bool
   return (
     location?.area === "apps" &&
     location.owner === "wiki" &&
-    ((/^@template\/db(?:\/|$)/u.test(target.clean) && target.clean !== "@template/db/local") ||
+    ((/^@repo\/db(?:\/|$)/u.test(target.clean) && target.clean !== "@repo/db/local") ||
       /\/libs\/db(?:\/|$)/u.test(target.resolved))
   );
 }

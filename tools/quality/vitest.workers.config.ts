@@ -2,12 +2,12 @@ import { Effect } from "effect";
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { defineProject } from "vite-plus/test/config";
 import { kCurrentWorker } from "miniflare";
-import { loadRemoteMigrations } from "@template/db/migrations";
-import { localDatabase } from "@template/db/local";
-import { monitorBinding } from "@template/monitor";
+import { loadRemoteMigrations } from "@repo/db/migrations";
+import { localDatabase } from "@repo/db/local";
+import { monitorBinding } from "@repo/monitor";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { workerCompatibility } from "@template/config/worker";
+import { workerCompatibility } from "@repo/config/worker";
 import { workerTests } from "./test-runtime.ts";
 
 const root = path.join(import.meta.dirname, "../..");
