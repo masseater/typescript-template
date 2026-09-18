@@ -71,6 +71,11 @@ function words(command: string): readonly (readonly string[])[] {
 
 const packageManagers = new Set(["pnpm", "pnpx", "npm", "npx", "yarn", "yarnpkg", "bun", "bunx"]);
 const launchers = new Set(["exec", "command", "env", "corepack"]);
+const destructiveBinaries = new Set(["alchemy"]);
+
+function binaryName(word: string): string {
+  return word.replace(/^.*\//u, "").replace(/\.cmd$/u, "");
+}
 
 function callsPackageManager(tokens: readonly string[]): boolean {
   const command = tokens.find(
@@ -79,15 +84,27 @@ function callsPackageManager(tokens: readonly string[]): boolean {
   if (command === undefined) {
     return false;
   }
-  return packageManagers.has(command.replace(/^.*\//u, "").replace(/\.cmd$/u, ""));
+  return packageManagers.has(binaryName(command));
+}
+
+function callsDestructiveBinary(tokens: readonly string[]): boolean {
+  return tokens.some((word) => destructiveBinaries.has(binaryName(word)));
 }
 
 function commandViolations(name: string, command: string): string[] {
-  return words(command).some((tokens) => callsPackageManager(tokens))
-    ? [
-        `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
-      ]
-    : [];
+  const segments = words(command);
+  return [
+    ...(segments.some((tokens) => callsPackageManager(tokens))
+      ? [
+          `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
+        ]
+      : []),
+    ...(segments.some((tokens) => callsDestructiveBinary(tokens))
+      ? [
+          `${name}: alchemy の CLI は unsafe nuke と destroy でアカウント全体を消せるため直接呼べません。infra/cloudflare の src/cli.ts と src/bootstrap-state.ts から実行してください: ${command}`,
+        ]
+      : []),
+  ];
 }
 
 function scriptViolations(manifest: unknown): string[] {

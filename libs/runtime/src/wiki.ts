@@ -9,6 +9,8 @@ import { Embedder, embedWith } from "./embedder.ts";
 import type { AppServices } from "./index.ts";
 import { configuredAppLayer } from "./index.ts";
 
+const wikiService = "wiki";
+
 type WikiServices = AppServices | Embedder;
 
 function wikiLayer(
@@ -24,7 +26,7 @@ function wikiLayer(
         });
         return Layer.merge(
           Layer.succeed(Embedder, embedder),
-          configuredAppLayer(config, "wiki", routes),
+          configuredAppLayer(config, wikiService, routes),
         );
       }),
     ),
@@ -33,5 +35,5 @@ function wikiLayer(
 
 export { Embedder } from "./embedder.ts";
 export { EmbeddingFailed } from "./embedding-failed.ts";
-export { wikiLayer };
+export { wikiLayer, wikiService };
 export type { WikiServices };
