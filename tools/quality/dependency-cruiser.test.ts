@@ -108,6 +108,47 @@ const detected: readonly Case[] = [
     { "apps/wiki/src/index.ts": 'export type { Db } from "@template/db";\n' },
   ],
   [
+    "no-deployment-config-in-shipped-code",
+    { "apps/user/src/index.ts": 'export * from "@template/config/deployment";\n' },
+  ],
+  [
+    "no-deployment-config-in-shipped-code",
+    { "libs/config/src/index.ts": 'export * from "./deployment.ts";\n' },
+  ],
+  [
+    "no-deployment-config-in-shipped-code",
+    {
+      "libs/auth/src/index.ts": 'export * from "./settings.ts";\n',
+      "libs/auth/src/settings.ts": 'export * from "@template/config/deployment";\n',
+    },
+  ],
+  [
+    "no-worker-runtime-in-node-test",
+    { "libs/auth/src/session.test.ts": 'export * from "cloudflare:test";\n' },
+  ],
+  [
+    "no-worker-runtime-in-node-test",
+    {
+      "libs/auth/src/binding.ts": 'export * from "cloudflare:workers";\n',
+      "libs/auth/src/session.test.ts": 'export * from "./binding.ts";\n',
+    },
+  ],
+  [
+    "no-node-builtin-in-worker-test",
+    { "libs/auth/src/session.worker.test.ts": 'export * from "node:fs/promises";\n' },
+  ],
+  [
+    "no-node-runtime-package-in-worker-test",
+    { "libs/auth/src/session.worker.test.ts": 'export * from "miniflare";\n' },
+  ],
+  [
+    "no-node-runtime-package-in-worker-test",
+    {
+      "libs/auth/src/harness.ts": 'export * from "miniflare";\n',
+      "libs/auth/src/session.worker.test.ts": 'export * from "./harness.ts";\n',
+    },
+  ],
+  [
     "no-browser-to-server",
     {
       "libs/runtime/src/index.ts": 'export * from "@template/db";\n',
@@ -176,6 +217,22 @@ const accepted: readonly Case[] = [
       "libs/runtime/src/index.ts": 'export * from "@template/db";\n',
       "libs/ui/src/index.ts": 'export * from "@template/runtime/contracts";\n',
     },
+  ],
+  [
+    "no-deployment-config-in-shipped-code",
+    { "tools/dev/src/index.ts": 'export * from "@template/config/deployment";\n' },
+  ],
+  [
+    "no-worker-runtime-in-node-test",
+    { "libs/auth/src/session.worker.test.ts": 'export * from "cloudflare:test";\n' },
+  ],
+  [
+    "no-node-builtin-in-worker-test",
+    { "libs/auth/src/session.test.ts": 'export * from "node:fs/promises";\n' },
+  ],
+  [
+    "no-node-runtime-package-in-worker-test",
+    { "libs/auth/src/session.test.ts": 'export * from "miniflare";\n' },
   ],
 ];
 

@@ -1,5 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["vite-plus/client", "node"] },
+  "compilerOptions": {
+    "types": [
+      "vite-plus/client",
+      "node",
+      "@cloudflare/workers-types",
+      "@cloudflare/vitest-plugin/types"
+    ]
+  },
   "include": ["src/**/*.ts", "drizzle.config.ts"]
 }

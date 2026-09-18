@@ -13,6 +13,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "apps/user": { ".": "./src/index.ts" },
   "apps/wiki": { ".": "./src/index.ts" },
   "libs/auth": { ".": "./src/index.ts" },
+  "libs/config": { ".": "./src/index.ts", "./deployment": "./src/deployment.ts" },
   "libs/db": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
@@ -25,7 +26,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "tools/dev": { ".": "./src/index.ts" },
 };
 const developmentDependencies: Readonly<Record<string, readonly string[]>> = { "libs/ui": ["msw"] };
-const installedPackages = ["drizzle-orm", "msw"];
+const installedPackages = ["drizzle-orm", "miniflare", "msw"];
 
 async function write(root: string, file: string, code: string): Promise<void> {
   const target = path.join(root, file);

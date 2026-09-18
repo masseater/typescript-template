@@ -5,11 +5,11 @@ import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
 import { reportViolation } from "./lint-context.ts";
-import { specifierChecks } from "./module-specifiers.ts";
+import { runsInWorkerRuntime } from "./test-runtime.ts";
+import { specifierVisitor } from "./module-specifiers.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
 
 interface RawD1Checks {
@@ -66,7 +66,7 @@ function isEnvironment(origin: Origin): boolean {
   );
 }
 
-const rawD1Adapters = ["migrate-d1", "testing"] as const;
+const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
 const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
 
@@ -86,46 +86,11 @@ function rawD1Checks(context: LintContext): RawD1Checks {
   };
 }
 
-function importVisitor(specifiers: ReturnType<typeof specifierChecks>): Visitor {
-  return {
-    ExportAllDeclaration(node: Node): void {
-      if (node.type === "ExportAllDeclaration") {
-        specifiers.source(node.source);
-      }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type === "ExportNamedDeclaration" && node.source) {
-        specifiers.source(node.source);
-      }
-    },
-    ImportDeclaration(node: Node): void {
-      if (node.type === "ImportDeclaration") {
-        specifiers.source(node.source);
-      }
-    },
-    ImportExpression(node: Node): void {
-      if (node.type === "ImportExpression") {
-        specifiers.source(node.source);
-      }
-    },
-    TSExternalModuleReference(node: Node): void {
-      if (node.type === "TSExternalModuleReference") {
-        specifiers.commonJs(node);
-      }
-    },
-    TSImportType(node: Node): void {
-      if (node.type === "TSImportType") {
-        specifiers.source(node.source);
-      }
-    },
-  };
-}
-
 function boundariesVisitor(context: LintContext): Visitor {
-  const specifiers = specifierChecks(context);
+  const specifiers = specifierVisitor(context);
   const checks = rawD1Checks(context);
   return {
-    ...importVisitor(specifiers),
+    ...specifiers.visitor,
     AssignmentExpression(node: Node): void {
       if (node.type === "AssignmentExpression") {
         checks.destructuring(node, node.left, node.right);
@@ -195,13 +160,7 @@ function memoizationVisitor(context: LintContext): Visitor {
 }
 
 function workerFetchVisitor(context: LintContext): Visitor {
-  const current = filename(context);
-  if (
-    !/\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u.test(current) ||
-    /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(
-      current,
-    )
-  ) {
+  if (!runsInWorkerRuntime(filename(context))) {
     return {};
   }
   return {

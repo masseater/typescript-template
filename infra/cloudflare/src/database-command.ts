@@ -1,15 +1,15 @@
-import { Config, Effect, Redacted } from "effect";
-import { reportCause, withVerifiedSecrets } from "./secrets.ts";
+import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
+import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { CloudflareFailure } from "./config.ts";
+import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { lookupDatabaseId } from "./database-lookup.ts";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { layer } from "alchemy/Alchemist";
+import { reportCause } from "./secrets.ts";
 import { runRemoteDatabaseCommand } from "@template/db/remote";
-import { settings } from "./settings.ts";
-import { verifiedSecrets } from "./credentials.ts";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
-
-const apiToken = Config.redacted("CLOUDFLARE_API_TOKEN");
+const EVENT = "cloudflare.database_command_rejected";
 
 function inputInvalid(): CloudflareFailure {
   return new CloudflareFailure({ code: "database_input_invalid", keys: [] });
@@ -36,27 +36,31 @@ const readBootstrapEmail = Effect.tryPromise({
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     const args = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
-    const secrets = yield* verifiedSecrets();
-    const config = yield* withVerifiedSecrets(secrets, settings);
-    const token = Redacted.value(yield* withVerifiedSecrets(secrets, apiToken));
-    const databaseId = yield* lookupDatabaseId({
-      accountId: config.accountId,
-      apiToken: token,
-      name: `${config.prefix}-db`,
-    });
-    const email = args[0] === "bootstrap" ? yield* readBootstrapEmail : "";
-    const result = yield* runRemoteDatabaseCommand(args, {
-      accountId: config.accountId,
-      apiToken: token,
-      databaseId,
-      ...(email === "" ? {} : { email }),
-    });
-    // oxlint-disable-next-line no-console
-    console.info(JSON.stringify(result));
+    const { access, confidential, config, secrets } = yield* deploymentAccess();
+    yield* Effect.gen(function* owned() {
+      yield* assertDatabaseUnclaimed(access, config, stateStore(secrets));
+      const databaseId = yield* lookupDatabaseId(access, databaseName(config.prefix));
+      const email = args[0] === "bootstrap" ? yield* readBootstrapEmail : "";
+      const result = yield* runRemoteDatabaseCommand(args, {
+        accountId: access.accountId,
+        apiToken: access.apiToken,
+        databaseId,
+        ...(email === "" ? {} : { email }),
+      });
+      // oxlint-disable-next-line no-console
+      console.info(JSON.stringify(result));
+    }).pipe(
+      Effect.provide(layer()),
+      Effect.scoped,
+      Effect.catchCause(
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        (cause) => reportCause(EVENT, cause, confidential),
+      ),
+    );
   }).pipe(
     Effect.catchCause(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause("cloudflare.database_command_rejected", cause),
+      (cause) => reportCause(EVENT, cause),
     ),
   ),
   { disableErrorReporting: true },

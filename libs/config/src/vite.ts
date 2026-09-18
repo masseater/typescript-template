@@ -32,15 +32,18 @@ function previewDevVars(appRoot: string): Plugin {
   };
 }
 
+const serverOnlyPackages = ["auth", "db", "runtime"] as const;
+const clientReachableModules = [
+  "libs/runtime/src/client.ts",
+  "libs/runtime/src/contracts.ts",
+] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  "**/libs/auth/src/**",
-  "**/libs/db/src/**",
-  "**/libs/runtime/src/**",
+  ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
   "**/node_modules/**",
-  "**/libs/runtime/src/{client,contracts}.ts",
+  ...clientReachableModules.map((file) => `**/${file}`),
 ];
 const importProtection = {
   client: { excludeFiles: clientReachableFiles, files: serverOnlyFiles },
@@ -102,9 +105,11 @@ const appRun = {
 export {
   appRun,
   appServer,
+  clientReachableModules,
   importProtection,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
+  serverOnlyPackages,
   withoutEnvFileLoader,
 };

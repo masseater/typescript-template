@@ -1,4 +1,5 @@
 import { Config, Effect, Schema } from "effect";
+import type { StackName } from "./stacks.ts";
 import type { WorkerObservability } from "alchemy/Cloudflare";
 import { stackNames } from "./stacks.ts";
 import { workerCompatibility } from "@template/config/worker";
@@ -6,10 +7,19 @@ import { workerCompatibility } from "@template/config/worker";
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
     "deployment_command_invalid",
+    "account_read_unavailable",
     "app_origins_must_differ",
     "budget_has_no_usage_allowance",
     "database_input_invalid",
+    "database_name_taken",
     "database_output_unavailable",
+    "deploy_token_permissions_missing",
+    "plan_adopts_existing_resources",
+    "plan_confirmation_mismatch",
+    "plan_removes_bindings",
+    "plan_removes_resources",
+    "secrets_store_already_present",
+    "state_store_name_taken",
   ]),
   keys: Schema.Array(Schema.String),
 }) {}
@@ -23,6 +33,9 @@ function fail(
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
+const MIN_AUTH_SECRET_VARIETY = 16;
+const CONFIRMATION_LENGTH = 16;
+const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 
 const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
@@ -50,6 +63,7 @@ const SamplingRate = Schema.Number.check(
 const AuthSecret = Schema.String.check(
   Schema.isMinLength(MIN_AUTH_SECRET_LENGTH),
   Schema.makeFilter((value: string) => value.trim() === value),
+  Schema.makeFilter((value: string) => new Set(value).size >= MIN_AUTH_SECRET_VARIETY),
 );
 
 const SharedSettings = Schema.Struct({
@@ -90,23 +104,29 @@ function workerObservability(headSamplingRate: number): WorkerObservability {
   };
 }
 
-const DeploymentCommand = Schema.Tuple([
-  Schema.Literals(["plan", "deploy"]),
-  Schema.Literals(["all", ...stackNames]),
+const PlanCommand = Schema.Tuple([Schema.Literal("plan"), Schema.Literals(["all", ...stackNames])]);
+const DeployCommand = Schema.Tuple([
+  Schema.Literal("deploy"),
+  Schema.Literals(stackNames),
+  Schema.Literal("--confirm-plan"),
+  Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN)),
 ]);
+const DeploymentCommand = Schema.Union([PlanCommand, DeployCommand]);
 
 const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* parseDeploymentCommand(
   args: readonly string[],
 ) {
-  const [operation, target] = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
+  const parsed = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
     Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid", keys: [] })),
   );
-  return {
-    operation,
-    targets: stackNames
-      .filter((stack) => target === "all" || stack === target)
-      .map((stack) => ({ stack })),
-  };
+  if (parsed[0] === "deploy") {
+    return { confirmation: parsed[3], operation: "deploy", stack: parsed[1] } as const;
+  }
+  const [, target] = parsed;
+  const stacks: readonly StackName[] = stackNames.filter(
+    (stack) => target === "all" || stack === target,
+  );
+  return { operation: "plan", stacks } as const;
 });
 
 function duplicatedOrigins(config: SharedConfig): readonly string[] {
@@ -140,8 +160,12 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
   return config;
 });
 
+type DeploymentRequest = Effect.Success<ReturnType<typeof parseDeploymentCommand>>;
+type DeploymentTarget = Pick<SharedConfig, "accountId" | "prefix">;
+
 export {
   AuthSecret,
+  CONFIRMATION_LENGTH,
   SamplingRate,
   CloudflareFailure,
   Email,
@@ -159,4 +183,4 @@ export {
   workerObservability,
   workerSubdomain,
 };
-export type { SharedConfig };
+export type { DeploymentRequest, DeploymentTarget, SharedConfig };

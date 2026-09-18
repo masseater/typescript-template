@@ -1,4 +1,6 @@
+import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
@@ -270,6 +272,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          exclude: [...defaultExclude, workerTests],
           include: [
             "libs/**/*.test.ts",
             "apps/**/*.test.ts",
@@ -280,6 +283,7 @@ export default defineConfig({
           name: "node",
         },
       },
+      "./tools/quality/vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
     ],
     restoreMocks: false,

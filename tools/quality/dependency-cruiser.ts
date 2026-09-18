@@ -1,15 +1,25 @@
+import { clientReachableModules, serverOnlyPackages } from "@template/config/vite";
+import { nodeRuntimePackages, workerRuntimeModules, workerTestSuffix } from "./test-runtime.ts";
 import type { IConfiguration } from "dependency-cruiser";
+
+function anyOf(values: readonly string[]): string {
+  return values.map((value) => value.replaceAll(".", String.raw`\.`)).join("|");
+}
 
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const specModule = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
+const workerTestModule = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
-const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap)[^/]*\.ts$`;
-const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrate|testing)[^/]*\.ts$|.*${testModule})`;
-const databaseTesting = String.raw`^libs/db/src/testing\.ts$`;
+const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
+const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
+const databaseTesting = String.raw`^libs/db/src/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
-const serverOnlyModule = String.raw`^libs/(?:auth|db|runtime)/src/`;
-const clientReachableModule = String.raw`^libs/runtime/src/(?:client|contracts)\.ts$`;
+const deploymentConfig = String.raw`^libs/config/src/deployment\.ts$`;
+const serverOnlyModule = String.raw`^libs/(?:${serverOnlyPackages.join("|")})/src/`;
+const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`;
+const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
+const workerRuntimeModule = String.raw`^(?:${anyOf(workerRuntimeModules)})$`;
 
 const configuration: IConfiguration = {
   forbidden: [
@@ -19,7 +29,7 @@ const configuration: IConfiguration = {
       from: {},
       name: "no-unresolvable",
       severity: "error",
-      to: { couldNotResolve: true, pathNot: "^cloudflare:workers$" },
+      to: { couldNotResolve: true, pathNot: workerRuntimeModule },
     },
     {
       comment:
@@ -126,6 +136,35 @@ const configuration: IConfiguration = {
       name: "no-browser-to-server",
       severity: "error",
       to: { path: serverOnlyModule, pathNot: clientReachableModule, reachable: true },
+    },
+    {
+      comment:
+        "@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
+      from: { path: "^(?:apps|libs)/" },
+      name: "no-deployment-config-in-shipped-code",
+      severity: "error",
+      to: { path: deploymentConfig, reachable: true },
+    },
+    {
+      comment: `Worker のランタイムを掴むテストは ${workerTestSuffix} という名前にしてください。名前が実行先を決めるので、${workerRuntimeModules.join(" / ")} へ経路のどこかで到達するテストは Node のプールでは動きません。`,
+      from: { path: specModule, pathNot: workerTestModule },
+      name: "no-worker-runtime-in-node-test",
+      severity: "error",
+      to: { path: workerRuntimeModule, reachable: true },
+    },
+    {
+      comment: `${workerTestSuffix} のテストは Worker のプールで動きます。Node の組み込みモジュールは、経路の途中のモジュールも含めて掴めません。`,
+      from: { path: workerTestModule },
+      name: "no-node-builtin-in-worker-test",
+      severity: "error",
+      to: { dependencyTypes: ["core"] },
+    },
+    {
+      comment: `${workerTestSuffix} のテストは Worker のプールで動きます。${nodeRuntimePackages.join(" / ")} は Node でしか動かないので、経路の途中のモジュールも含めて掴めません。`,
+      from: { path: workerTestModule },
+      name: "no-node-runtime-package-in-worker-test",
+      severity: "error",
+      to: { path: nodeRuntimePackage, reachable: true },
     },
   ],
   options: {
