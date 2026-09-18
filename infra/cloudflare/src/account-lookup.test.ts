@@ -8,11 +8,14 @@ import {
   dnsRecordNames,
   grantedPermissions,
   secretsStoreCount,
-  stateStorePresent,
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
+import {
+  STATE_STORE_SCRIPT_NAME,
+  deployTokenPermissions,
+  missingPermissions,
+} from "./deploy-token.ts";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -35,9 +38,6 @@ const withoutRoutes = granted.filter(
 it.effect("reads an untouched account as free of the names this deployment claims", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
-        HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
-      ),
       pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
         HttpResponse.json({
           result: [],
@@ -62,7 +62,6 @@ it.effect("reads an untouched account as free of the names this deployment claim
         HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
       ),
     );
-    assert.isFalse(yield* stateStorePresent(access));
     assert.strictEqual(yield* secretsStoreCount(access), 0);
     assert.deepStrictEqual(yield* workerNames(access), []);
     assert.isUndefined(yield* attachedService(access, hostname));
@@ -124,15 +123,40 @@ it.effect("refuses rows that do not carry the fields the read declares", () =>
       ),
     );
     const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
-    assert.deepStrictEqual(failure.keys, ["accounts/{}/secrets_store/stores", "decode_failed"]);
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/secrets_store/stores",
+      "decode_failed",
+      "result.0.id:MissingKey",
+    ]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("names the media type when a read is answered with something other than JSON", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(
+        `${account}/workers/scripts`,
+        () =>
+          new HttpResponse("--boundary\r\ncontent-disposition: form-data\r\n", {
+            headers: { "content-type": "multipart/form-data; boundary=boundary" },
+          }),
+      ),
+    );
+    const failure = yield* workerNames(access).pipe(Effect.flip);
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/workers/scripts",
+      "decode_failed",
+      "multipart/form-data",
+    ]);
   }).pipe(Effect.scoped),
 );
 
 it.effect("reports an account another project already bootstrapped", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
-        HttpResponse.json({ result: { id: "alchemy-state-store" } }),
+      unpagedCollection(`${account}/workers/scripts`, () =>
+        // oxlint-disable-next-line unicorn/no-null
+        HttpResponse.json({ result: [{ id: STATE_STORE_SCRIPT_NAME }], result_info: null }),
       ),
       pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
         HttpResponse.json({
@@ -141,7 +165,7 @@ it.effect("reports an account another project already bootstrapped", () =>
         }),
       ),
     );
-    assert.isTrue(yield* stateStorePresent(access));
+    assert.deepStrictEqual(yield* workerNames(access), [STATE_STORE_SCRIPT_NAME]);
     assert.strictEqual(yield* secretsStoreCount(access), 1);
   }).pipe(Effect.scoped),
 );
