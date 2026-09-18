@@ -6,8 +6,12 @@ import type { StateService } from "alchemy/State";
 
 const StoredDatabase = Schema.Struct({ attr: Schema.Struct({ databaseId: Schema.String }) });
 const StoredWorker = Schema.Struct({ attr: Schema.Struct({ workerName: Schema.String }) });
+const StoredSending = Schema.Struct({
+  attr: Schema.Struct({ name: Schema.String, zoneId: Schema.String }),
+});
 const isStoredDatabase = Schema.is(StoredDatabase);
 const isStoredWorker = Schema.is(StoredWorker);
+const isStoredSending = Schema.is(StoredSending);
 
 const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, Requirements>(
   store: Effect.Effect<StateService, Failure, Requirements>,
@@ -41,4 +45,14 @@ const recordedWorkerNames = Effect.fn("recordedWorkerNames")(function* recordedW
   return rows.flatMap((row) => (isStoredWorker(row) ? [row.attr.workerName] : []));
 });
 
-export { recordedDatabaseIds, recordedWorkerNames };
+const recordedSendingDomains = Effect.fn("recordedSendingDomains")(function* recordedSendingDomains<
+  Failure,
+  Requirements,
+>(store: Effect.Effect<StateService, Failure, Requirements>, prefix: string, zoneId: string) {
+  const rows = yield* recordedRows(store, prefix, ["email"]);
+  return rows.flatMap((row) =>
+    isStoredSending(row) && row.attr.zoneId === zoneId ? [row.attr.name] : [],
+  );
+});
+
+export { recordedDatabaseIds, recordedSendingDomains, recordedWorkerNames };

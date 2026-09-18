@@ -14,6 +14,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "database_name_taken",
     "database_output_unavailable",
     "deploy_token_permissions_missing",
+    "mail_from_outside_deployment",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
     "plan_removes_bindings",
@@ -160,6 +161,9 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
       "TEMPLATE_FIXED_COST_USD",
       "TEMPLATE_RESERVE_USD",
     ]);
+  }
+  if (!sendingDomain(config.mailFrom).startsWith(`${config.prefix}.`)) {
+    return yield* fail("mail_from_outside_deployment", ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
   }
   return config;
 });

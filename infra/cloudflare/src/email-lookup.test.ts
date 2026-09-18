@@ -62,19 +62,22 @@ it.effect("refuses an address list whose pages do not add up to what Cloudflare 
   }).pipe(Effect.scoped),
 );
 
-it.effect("tells a dedicated sending subdomain from the zone apex and from another zone", () =>
-  Effect.forEach(
-    [
-      { name: "example.com", verdict: "dedicated" },
-      { name: "send.example.com", verdict: "zone_apex" },
-      { name: "elsewhere.example", verdict: "outside_zone" },
-    ] as const,
-    (asked) =>
-      Effect.gen(function* program() {
-        yield* mockServer(
-          http.get(zone, () => HttpResponse.json({ result: { name: asked.name } })),
-        );
-        assert.strictEqual(yield* senderVerdict(access, verificationSettings), asked.verdict);
-      }).pipe(Effect.scoped),
-  ),
+it.effect(
+  "tells the deployment's own subdomain from the apex, a deeper name and another zone",
+  () =>
+    Effect.forEach(
+      [
+        { name: "example.com", verdict: "dedicated" },
+        { name: `${verificationSettings.prefix}.example.com`, verdict: "zone_apex" },
+        { name: "com", verdict: "nested_subdomain" },
+        { name: "elsewhere.example", verdict: "outside_zone" },
+      ] as const,
+      (asked) =>
+        Effect.gen(function* program() {
+          yield* mockServer(
+            http.get(zone, () => HttpResponse.json({ result: { name: asked.name } })),
+          );
+          assert.strictEqual(yield* senderVerdict(access, verificationSettings), asked.verdict);
+        }).pipe(Effect.scoped),
+    ),
 );

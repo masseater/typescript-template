@@ -89,3 +89,24 @@ it.effect("refuses a budget exhausted by fixed fees and names the keys", () =>
     assert.include([...failure.keys], "BUDGET_JPY");
   }),
 );
+
+it.effect("refuses a sender address outside the subdomain named by the prefix", () =>
+  Effect.forEach(
+    ["mail@example.com", "mail@send.example.com", `mail@${settings.prefix}x.example.com`],
+    (mailFrom) =>
+      Effect.gen(function* program() {
+        const config = yield* Schema.decodeUnknownEffect(SharedSettings)({ ...settings, mailFrom });
+        const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
+        assert.strictEqual(failure.code, "mail_from_outside_deployment");
+        assert.deepStrictEqual([...failure.keys], ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
+        assert.notInclude(JSON.stringify(failure), mailFrom);
+      }),
+  ),
+);
+
+it.effect("accepts a sender address on the subdomain named by the prefix", () =>
+  Effect.gen(function* program() {
+    const config = yield* Schema.decodeUnknownEffect(SharedSettings)(settings);
+    assert.strictEqual((yield* checkSharedConfig(config)).mailFrom, settings.mailFrom);
+  }),
+);

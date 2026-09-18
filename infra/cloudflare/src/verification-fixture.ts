@@ -10,7 +10,7 @@ const verificationSettings = {
     recipients: ["billing@example.com"],
     reserveUsd: 2,
   },
-  mailFrom: "mail@send.example.com",
+  mailFrom: "mail@template-verify.example.com",
   observabilitySampling: 1,
   origins: {
     admin: "https://admin.example.com",
