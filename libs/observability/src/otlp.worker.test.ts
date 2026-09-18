@@ -1,205 +1,239 @@
-import { assert, it } from "@effect/vitest";
-import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
-import { HttpResponse, http } from "msw";
+import { HttpResponse } from "msw";
+import { describe, expect, test } from "vite-plus/test";
 
 import { annotateLogs, annotateSpan } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
-import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
+import { authorization, endpoint, otlpExportSummary } from "./otlp-fixture.ts";
 import { logAt } from "./severity.ts";
 
-import type { OtlpDestination } from "./otlp.ts";
-
-interface Observed {
-  readonly authorization: readonly string[];
-  readonly lines: readonly unknown[];
-  readonly logs: readonly unknown[];
-  readonly traceparent: string;
-  readonly traces: readonly unknown[];
-}
-
-const endpoint = "https://otlp.example.test";
-const authorization = "Bearer otlp-test-token";
 const leaked = "otlp-test-value-at-least-32-characters-long";
-const noContent = 204;
 const rejected = 404;
-const exportedTraceIds = /"traceId":"(?<traceId>[0-9a-f]{32})"/gu;
-const traceparentTraceId = /^00-(?<traceId>[0-9a-f]{32})-[0-9a-f]{16}-01$/u;
-const traceIdPattern = /^[0-9a-f]{32}$/u;
+const requestLine = {
+  duration_ms: 0,
+  event: "http.server.request",
+  method: "GET",
+  release: "abc123",
+  request_id: "22222222-2222-4222-8222-222222222222",
+  route: "home",
+  service: "user-server",
+  span_id: "<span>",
+  status: 204,
+  trace_id: "<request>",
+};
+const requestAttributeKeys = [
+  "duration_ms",
+  "fiberId",
+  "method",
+  "request_id",
+  "route",
+  "service.name",
+  "service.version",
+  "span_id",
+  "status",
+  "trace_id",
+];
 
-const listening: { current?: ReturnType<typeof setupNetwork> } = {};
+describe("a request observed against a configured OTLP endpoint", () => {
+  const it = test.extend("exportSummary", async () =>
+    otlpExportSummary({ otlp: { authorization, endpoint } }));
 
-function network(): ReturnType<typeof setupNetwork> {
-  const { current } = listening;
-  if (current !== undefined) {
-    return current;
-  }
-  const started = setupNetwork();
-  started.configure({ onUnhandledFrame: "error" });
-  started.enable();
-  listening.current = started;
-  return started;
-}
-
-function accepted(): Response {
-  return HttpResponse.json({});
-}
-
-function observed(
-  otlp?: OtlpDestination,
-  responding: () => Response = accepted,
-  alongside: Effect.Effect<void> = Effect.void,
-): Effect.Effect<Observed> {
-  const seen = { authorization: [] as string[], logs: [] as unknown[], traces: [] as unknown[] };
-  const lines: unknown[] = [];
-  function collect(signal: "logs" | "traces"): Parameters<typeof http.post>[1] {
-    return async ({ request }) => {
-      seen.authorization.push(request.headers.get("authorization") ?? "");
-      seen[signal].push(await request.json());
-      return responding();
-    };
-  }
-  function record(line: string): void {
-    lines.push(JSON.parse(line));
-  }
-  const telemetry = Telemetry.layer({
-    log: { error: record, info: record, warn: record },
-    otlp,
-    release: "abc123",
-    routes: { "/": "home" },
-    serviceName: "user",
+  it("carries one trace id through the spans, the logs and the answer", ({ exportSummary }) => {
+    expect(exportSummary).toStrictEqual({
+      authorizations: [authorization],
+      exportsCarryRedaction: false,
+      exportsCarrySecret: false,
+      logAttributeKeys: requestAttributeKeys,
+      logBodies: ["http.server.request"],
+      logTraceIds: ["<request>"],
+      requestTraceId: "<request>",
+      severityTexts: ["Info"],
+      signalCounts: [1, 1],
+      structuredLines: [requestLine],
+      traceTraceIds: ["<request>"],
+    });
   });
-  return Effect.acquireUseRelease(
-    Effect.sync(() => {
-      network().use(
-        http.post(`${endpoint}/v1/traces`, collect("traces")),
-        http.post(`${endpoint}/v1/logs`, collect("logs")),
-      );
-    }),
-    () =>
-      Effect.gen(function* observedProgram() {
-        const response = yield* observeRequest(new Request("http://localhost/"), () =>
-          Effect.succeed(new Response(undefined, { status: noContent })),
-        );
-        yield* alongside;
-        yield* flushTelemetry;
-        return { ...seen, lines, traceparent: response.headers.get("traceparent") ?? "" };
-      }).pipe(Effect.provide(telemetry), Effect.orDie),
-    () =>
-      Effect.sync(() => {
-        network().resetHandlers();
-      }),
-  );
-}
+});
 
-function traceIds(payload: readonly unknown[]): readonly string[] {
-  const matches = JSON.stringify(payload).matchAll(exportedTraceIds);
-  return Array.from(matches, (match) => match.groups?.["traceId"] ?? "");
-}
+describe("a request observed without an OTLP destination", () => {
+  const it = test.extend("exportSummary", async () => otlpExportSummary({}));
 
-function assertLogAttributes(logs: readonly unknown[]): void {
-  const record = JSON.stringify(logs);
-  for (const attribute of ["duration_ms", "request_id", "route", "status"]) {
-    assert.include(record, `{"key":"${attribute}","value":`);
-  }
-  assert.include(record, '"body":{"stringValue":"http.server.request"}');
-}
+  it("leaves the structured log line as the only record", ({ exportSummary }) => {
+    expect(exportSummary).toStrictEqual({
+      authorizations: [],
+      exportsCarryRedaction: false,
+      exportsCarrySecret: false,
+      logAttributeKeys: [],
+      logBodies: [],
+      logTraceIds: [],
+      requestTraceId: "<request>",
+      severityTexts: [],
+      signalCounts: [0, 0],
+      structuredLines: [requestLine],
+      traceTraceIds: [],
+    });
+  });
+});
 
-function requestTraceId(traceparent: string): string {
-  return traceparentTraceId.exec(traceparent)?.groups?.["traceId"] ?? "";
-}
-
-it.effect("spans, logs and the response share one trace id at the OTLP endpoint", () =>
-  Effect.gen(function* program() {
-    const telemetry = yield* observed({ authorization, endpoint });
-    const traceId = requestTraceId(telemetry.traceparent);
-    assert.match(traceId, traceIdPattern);
-    assert.deepStrictEqual(traceIds(telemetry.traces), [traceId]);
-    assert.deepStrictEqual(traceIds(telemetry.logs), [traceId]);
-    assert.containSubset(telemetry.lines, [
-      { event: "http.server.request", service: "user-server", trace_id: traceId },
-    ]);
-    assert.deepStrictEqual(new Set(telemetry.authorization), new Set([authorization]));
-    assertLogAttributes(telemetry.logs);
-  }),
-);
-
-it.effect("no OTLP destination leaves the structured log line as the only record", () =>
-  Effect.gen(function* program() {
-    const telemetry = yield* observed();
-    assert.deepStrictEqual([telemetry.logs.length, telemetry.traces.length], [0, 0]);
-    assert.containSubset(telemetry.lines, [
-      { event: "http.server.request", trace_id: requestTraceId(telemetry.traceparent) },
-    ]);
-  }),
-);
-
-it.effect("a secret an attribute carries reaches neither the endpoint nor the log line", () =>
-  Effect.gen(function* program() {
-    const telemetry = yield* observed(
-      { authorization, endpoint },
-      accepted,
-      Effect.logError("authentication.failed", {
+describe("a secret an attribute carries", () => {
+  const it = test.extend("exportSummary", async () =>
+    otlpExportSummary({
+      alongside: Effect.logError("authentication.failed", {
         cause: { AUTH_SECRET: leaked, reason: "invalid token" },
       }),
-    );
-    const exported = JSON.stringify(telemetry.logs);
-    assert.notInclude(exported, leaked);
-    assert.include(exported, "authentication.failed");
-    assert.include(exported, "[redacted]");
-    assert.containSubset(telemetry.lines, [
-      { cause: { AUTH_SECRET: "[redacted]", reason: "invalid token" } },
-    ]);
-  }),
-);
+      otlp: { authorization, endpoint },
+      secret: leaked,
+    }));
 
-const refused = Effect.gen(function* refused() {
-  yield* logAt("Info", {
-    attributes: { "http.response.status_code": httpStatus.forbidden },
-    eventName: "http.client.request",
-  });
-  yield* logAt("Warn", {
-    attributes: { "http.response.status_code": httpStatus.badRequest },
-    eventName: "http.client.request",
+  it("reaches neither the endpoint nor the log line", ({ exportSummary }) => {
+    expect(exportSummary).toStrictEqual({
+      authorizations: [authorization],
+      exportsCarryRedaction: true,
+      exportsCarrySecret: false,
+      logAttributeKeys: requestAttributeKeys,
+      logBodies: ["http.server.request"],
+      logTraceIds: ["<request>"],
+      requestTraceId: "<request>",
+      severityTexts: ["Error", "Info"],
+      signalCounts: [1, 1],
+      structuredLines: [
+        requestLine,
+        {
+          cause: { AUTH_SECRET: "[redacted]", reason: "invalid token" },
+          event: "authentication.failed",
+          release: "abc123",
+          service: "user-server",
+        },
+      ],
+      traceTraceIds: ["<request>"],
+    });
   });
 });
 
-const annotated = Effect.gen(function* annotated() {
-  yield* annotateSpan({ "session.cookie": `template-user.session=${leaked}` });
-  yield* Effect.logInfo("interview.started").pipe(
-    annotateLogs({ auth_token: leaked, interview_id: "abc" }),
-  );
+describe("a secret an annotation or a span attribute carries", () => {
+  const it = test.extend("exportSummary", async () =>
+    otlpExportSummary({
+      alongside: Effect.gen(function* annotated() {
+        yield* annotateSpan({ "session.cookie": `template-user.session=${leaked}` });
+        yield* Effect.logInfo("interview.started").pipe(
+          annotateLogs({ auth_token: leaked, interview_id: "abc" }),
+        );
+      }),
+      otlp: { authorization, endpoint },
+      secret: leaked,
+    }));
+
+  it("reaches no destination", ({ exportSummary }) => {
+    expect(exportSummary).toStrictEqual({
+      authorizations: [authorization],
+      exportsCarryRedaction: true,
+      exportsCarrySecret: false,
+      logAttributeKeys: ["auth_token", "interview_id", ...requestAttributeKeys].toSorted(),
+      logBodies: ["http.server.request", "interview.started"],
+      logTraceIds: ["<request>"],
+      requestTraceId: "<request>",
+      severityTexts: ["Info"],
+      signalCounts: [1, 1],
+      structuredLines: [
+        requestLine,
+        {
+          auth_token: "[redacted]",
+          event: "interview.started",
+          interview_id: "abc",
+          release: "abc123",
+          service: "user-server",
+        },
+      ],
+      traceTraceIds: ["<request>"],
+    });
+  });
 });
 
-it.effect("a secret an annotation or a span attribute carries reaches no destination", () =>
-  Effect.gen(function* program() {
-    const telemetry = yield* observed({ authorization, endpoint }, accepted, annotated);
-    const exported = JSON.stringify([telemetry.logs, telemetry.traces]);
-    assert.notInclude(exported, leaked);
-    assert.include(exported, "[redacted]");
-    assert.include(JSON.stringify(telemetry.logs), '{"key":"interview_id","value":');
-    assert.containSubset(telemetry.lines, [{ auth_token: "[redacted]", interview_id: "abc" }]);
-  }),
-);
+describe("client spans answered with a refusal and a bad request", () => {
+  const it = test.extend("exportSummary", async () =>
+    otlpExportSummary({
+      alongside: Effect.gen(function* refused() {
+        yield* logAt("Info", {
+          attributes: { "http.response.status_code": httpStatus.forbidden },
+          eventName: "http.client.request",
+        });
+        yield* logAt("Warn", {
+          attributes: { "http.response.status_code": httpStatus.badRequest },
+          eventName: "http.client.request",
+        });
+      }),
+      otlp: { authorization, endpoint },
+    }));
 
-it.effect("the endpoint receives the severity the status code asks for", () =>
-  Effect.gen(function* program() {
-    const telemetry = yield* observed({ authorization, endpoint }, accepted, refused);
-    const record = JSON.stringify(telemetry.logs);
-    assert.include(record, '"severityText":"Info"');
-    assert.include(record, '"severityText":"Warn"');
-    assert.notInclude(record, '"severityText":"Error"');
-  }),
-);
+  it("reach the endpoint with the severity the status code asks for", ({ exportSummary }) => {
+    expect(exportSummary).toStrictEqual({
+      authorizations: [authorization],
+      exportsCarryRedaction: false,
+      exportsCarrySecret: false,
+      logAttributeKeys: ["http.response.status_code", ...requestAttributeKeys].toSorted(),
+      logBodies: ["http.client.request", "http.server.request"],
+      logTraceIds: ["<request>"],
+      requestTraceId: "<request>",
+      severityTexts: ["Info", "Warn"],
+      signalCounts: [1, 1],
+      structuredLines: [
+        requestLine,
+        {
+          event: "http.client.request",
+          "http.response.status_code": httpStatus.forbidden,
+          release: "abc123",
+          service: "user-server",
+        },
+        {
+          event: "http.client.request",
+          "http.response.status_code": httpStatus.badRequest,
+          release: "abc123",
+          service: "user-server",
+        },
+      ],
+      traceTraceIds: ["<request>"],
+    });
+  });
+});
 
-it.effect("a receiver that rejects the export leaves a warning in the structured log", () =>
-  Effect.gen(function* program() {
-    const telemetry = yield* observed(
-      { endpoint },
-      () => new HttpResponse(undefined, { status: rejected }),
-    );
-    assert.containSubset(telemetry.lines, [
-      { event: "otlp.export_failed", "otlp.status": rejected },
-    ]);
-  }),
-);
+describe("a receiver that rejects the export", () => {
+  const it = test.extend("exportSummary", async () =>
+    otlpExportSummary({
+      otlp: { endpoint },
+      respond: () => new HttpResponse(undefined, { status: rejected }),
+    }));
+
+  it("leaves a warning in the structured log", ({ exportSummary }) => {
+    expect(exportSummary).toStrictEqual({
+      authorizations: [""],
+      exportsCarryRedaction: false,
+      exportsCarrySecret: false,
+      logAttributeKeys: requestAttributeKeys,
+      logBodies: ["http.server.request"],
+      logTraceIds: ["<request>"],
+      requestTraceId: "<request>",
+      severityTexts: ["Info"],
+      signalCounts: [1, 1],
+      structuredLines: [
+        requestLine,
+        {
+          event: "otlp.export_failed",
+          module: "OtlpTracer",
+          "otlp.status": rejected,
+          package: "@effect/opentelemetry",
+          release: "abc123",
+          service: "user-server",
+        },
+        {
+          event: "otlp.export_failed",
+          module: "OtlpLogger",
+          "otlp.status": rejected,
+          package: "@effect/opentelemetry",
+          release: "abc123",
+          service: "user-server",
+        },
+      ],
+      traceTraceIds: ["<request>"],
+    });
+  });
+});
