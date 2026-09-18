@@ -1,11 +1,7 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const application = {
-  entry: [
-    "src/app/{router,server,start}.{ts,tsx}!",
-    "src/app/routes/**/*.{ts,tsx}!",
-    "steiger.config.ts",
-  ],
+  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
   ignoreDependencies: ["cloudflare"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };

@@ -54,12 +54,10 @@ const deployedUnits = [
 ] as const;
 
 function emptyState(): Effect.Effect<StateService> {
-  // oxlint-disable-next-line new-cap
   return InMemoryService({});
 }
 
 function deployedState(): Effect.Effect<StateService> {
-  // oxlint-disable-next-line new-cap
   return InMemoryService({
     [stackName("database")]: {
       [config.prefix]: { Database: row("Cloudflare.D1Database", { databaseId }) },

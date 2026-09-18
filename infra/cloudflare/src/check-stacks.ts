@@ -1,3 +1,4 @@
+import { Console, Effect } from "effect";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -14,13 +15,12 @@ import {
   workerSubdomain,
 } from "./config.ts";
 import type { Application } from "@template/config";
-import { Effect } from "effect";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 import { databaseName } from "./database-lookup.ts";
 import { grants } from "@template/config";
+import { markFailed } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 import { workerModuleGlobs } from "./artifacts.ts";
 
@@ -205,9 +205,9 @@ function onboards(inventory: StackInventory): boolean {
   return Object.values(inventory.resources).some((resource) => resource.type === SENDING_SUBDOMAIN);
 }
 
-function rolesDiffer(
+const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
   verified: readonly Readonly<{ onboards: boolean; sends: boolean }>[],
-): boolean {
+) {
   const onboarding = stackNames.filter((_stack, index) => verified[index]?.onboards === true);
   const senders = stackNames.filter((_stack, index) => verified[index]?.sends === true);
   const violations = applyOrderViolations(stackNames);
@@ -216,20 +216,18 @@ function rolesDiffer(
     canonical(onboarding) !== canonical([onboardingStack]) ||
     canonical(senders.toSorted()) !== canonical([...sendingStacks].toSorted());
   if (differs) {
-    // oxlint-disable-next-line no-console
-    console.error(
+    yield* Console.error(
       JSON.stringify({ event: "stacks.roles_differ", onboarding, senders, violations }),
     );
   }
   return differs;
-}
+});
 
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
   if (!matches) {
-    // oxlint-disable-next-line no-console
-    console.error(
+    yield* Console.error(
       JSON.stringify({
         actual: inventory,
         event: "stacks.differs",
@@ -244,28 +242,20 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
-    if (rolesDiffer(verified) || verified.some((entry) => !entry.matches)) {
-      process.exitCode = FAILED_EXIT_CODE;
+    const differs = yield* rolesDiffer(verified);
+    if (differs || verified.some((entry) => !entry.matches)) {
+      yield* markFailed;
       return;
     }
-    // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
+    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(
-          JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
-        );
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(
+        JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
+      ).pipe(Effect.andThen(markFailed)),
     ),
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "stacks.invalid" }));
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(JSON.stringify({ event: "stacks.invalid" })).pipe(Effect.andThen(markFailed)),
     ),
   ),
   { disableErrorReporting: true },
