@@ -1,0 +1,1 @@
+keep @repo/config in app dependencies only (drop unused devDependency)
