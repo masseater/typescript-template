@@ -5,9 +5,9 @@ import { getRouteApi } from "@tanstack/react-router";
 const route = getRouteApi("/_member/users/$id");
 
 function ProfileRoute(): ReactElement {
-  const member = route.useLoaderData();
+  const { id } = route.useParams();
   const { session } = route.useRouteContext();
-  return <ProfilePage member={member} own={member.id === session.user.id} />;
+  return <ProfilePage id={id} own={id === session.user.id} />;
 }
 
 export { ProfileRoute };

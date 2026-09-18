@@ -2,6 +2,7 @@ import { absent, apiDataOrNone } from "@template/runtime/client";
 import type { Member } from "#pages/profile/model/member.ts";
 import { MemberView } from "@template/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
+import { queryOptions } from "@tanstack/react-query";
 import { userClient } from "#shared/api/index.ts";
 
 async function loadMember(id: string): Promise<Member> {
@@ -17,4 +18,8 @@ async function loadMember(id: string): Promise<Member> {
   return member;
 }
 
-export { loadMember };
+function memberOptions(id: string) {
+  return queryOptions({ queryFn: async () => loadMember(id), queryKey: ["member", id] });
+}
+
+export { memberOptions };

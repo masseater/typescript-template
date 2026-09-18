@@ -1,16 +1,12 @@
-import { AppShell, appHead } from "@template/ui/shell";
-import { Outlet, createRootRoute } from "@tanstack/react-router";
-import type { ReactElement } from "react";
-import { routes } from "#shared/telemetry/index.ts";
+import { RootLayout } from "./-root-layout.tsx";
+import type { RouterContext } from "#app/router-context.ts";
+import { appHead } from "@template/ui/shell";
+import { createRootRouteWithContext } from "@tanstack/react-router";
 import { serviceName } from "#shared/config/index.ts";
 import styles from "#app/styles.css?url";
 
-const Route = createRootRoute({
-  component: (): ReactElement => (
-    <AppShell routes={routes}>
-      <Outlet />
-    </AppShell>
-  ),
+const Route = createRootRouteWithContext<RouterContext>()({
+  component: RootLayout,
   head: () => appHead(serviceName, styles),
 });
 

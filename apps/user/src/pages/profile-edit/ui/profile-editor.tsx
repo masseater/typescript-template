@@ -1,37 +1,67 @@
-import { Field, FormColumn } from "@template/ui";
-import { maximumNameLength, maximumProfileLength } from "@template/runtime/contracts";
+import {
+  FormTextField,
+  errorMessage,
+  formColumnClassName,
+  formValidator,
+  useToast,
+} from "@template/ui";
+import { ProfileUpdate, maximumNameLength } from "@template/runtime/contracts";
+import type { Profile } from "#entities/profile/index.ts";
 import { ProfileActions } from "./profile-actions.tsx";
-import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { ProfileBiography } from "./profile-biography.tsx";
 import type { ReactElement } from "react";
+import type { TextFieldApi } from "@template/ui";
+import { profileCollection } from "#entities/profile/index.ts";
+import { useDbClient } from "@tanstack/react-db";
+import { useForm } from "@tanstack/react-form";
+import { useNavigate } from "@tanstack/react-router";
 
-function ProfileEditor({
-  form,
-  homeId,
-}: Readonly<{ form: ProfileForm; homeId: string }>): ReactElement {
+const ProfileInput = formValidator(ProfileUpdate);
+
+function ProfileEditor({ profile }: Readonly<{ profile: Profile }>): ReactElement {
+  const collection = useDbClient().collection(profileCollection);
+  const navigate = useNavigate();
+  const notify = useToast();
+  const form = useForm({
+    defaultValues: { name: profile.name, profile: profile.profile },
+    onSubmit: async ({
+      value,
+    }: Readonly<{ value: Readonly<{ name: string; profile: string }> }>): Promise<void> => {
+      const saved = collection.update(profile.id, (draft) => {
+        draft.name = value.name.trim();
+        draft.profile = value.profile;
+      });
+      await navigate({ params: { id: profile.id }, to: "/users/$id" });
+      try {
+        await saved.isPersisted.promise;
+        notify("success", "プロフィールを保存しました。");
+      } catch (error) {
+        notify("error", errorMessage(error));
+      }
+    },
+    validators: { onSubmit: ProfileInput },
+  });
+  function submit(event: Readonly<{ preventDefault: () => void }>): void {
+    event.preventDefault();
+    void form.handleSubmit();
+  }
   return (
-    <form onSubmit={form.handleSubmit} aria-busy={form.pending}>
-      <FormColumn>
-        <Field
-          label="ユーザー名"
-          name="name"
-          required
-          maxLength={maximumNameLength}
-          value={form.name}
-          onValueChange={form.handleNameChange}
-        />
-        <Field
-          multiline
-          label="自己紹介"
-          name="profile"
-          maxLength={maximumProfileLength}
-          value={form.profile}
-          onValueChange={form.handleProfileChange}
-        />
-        <p className="text-sm leading-normal text-muted-foreground">
-          残り {maximumProfileLength - form.profile.length} 文字
-        </p>
-        <ProfileActions homeId={homeId} pending={form.pending} />
-      </FormColumn>
+    <form onSubmit={submit} noValidate className={formColumnClassName}>
+      <form.Field name="name">
+        {(field: TextFieldApi): ReactElement => (
+          <FormTextField
+            field={field}
+            label="ユーザー名"
+            name="name"
+            required
+            maxLength={maximumNameLength}
+          />
+        )}
+      </form.Field>
+      <form.Field name="profile">
+        {(field: TextFieldApi): ReactElement => <ProfileBiography field={field} />}
+      </form.Field>
+      <ProfileActions homeId={profile.id} />
     </form>
   );
 }
