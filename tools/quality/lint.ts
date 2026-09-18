@@ -54,7 +54,7 @@ const lint = {
           {
             capIsNewExceptionPattern:
               "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers)\\.",
-            capIsNewExceptions: ["DurableObject", "Stack", "Worker"],
+            capIsNewExceptions: ["DurableObject", "InMemoryService", "Stack", "Worker"],
           },
         ],
       },
@@ -117,6 +117,14 @@ const lint = {
         ignoreNumericLiteralTypes: true,
         ignoreTypeIndexes: true,
       },
+    ],
+    "eslint/no-restricted-properties": [
+      "error",
+      ...["stdout", "stderr"].map((property) => ({
+        message: "effect の Console で出力してください。",
+        object: "process",
+        property,
+      })),
     ],
     "eslint/no-ternary": "off",
     "eslint/no-undef": "off",

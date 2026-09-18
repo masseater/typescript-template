@@ -64,7 +64,7 @@ function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): 
       const replacement = retiredDependency(dependency);
       return replacement === undefined
         ? []
-        : [`${file}: ${dependency} は置き換え済みです。${replacement} を使ってください。`];
+        : [`${file}: ${dependency} は置き換え済みです。${replacement}を使ってください。`];
     }),
   );
 }

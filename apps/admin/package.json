@@ -7,6 +7,7 @@
     "#*": "./src/*"
   },
   "scripts": {
+    "check": "steiger src --fail-on-warnings",
     "dev": "vp dev",
     "preview": "vp preview"
   },
@@ -36,6 +37,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "jiti": "2.7.0",
+    "steiger": "0.6.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",

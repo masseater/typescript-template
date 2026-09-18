@@ -8,7 +8,6 @@ const application = {
 
 const workspaces = {
   ".": {
-    entry: ["steiger.config.js"],
     ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
   },
