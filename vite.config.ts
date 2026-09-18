@@ -260,11 +260,15 @@ export default defineConfig({
     clearMocks: false,
     forceRerunTriggers: [
       "**/package.json",
-      "**/pnpm-lock.yaml",
+      "**/tsconfig*.json",
+      "pnpm-lock.yaml",
       "**/{vitest,vite}.config.*",
       "**/vitest.*.config.*",
-      "**/.storybook/**",
-    ],
+      "libs/ui/.storybook/**",
+      "libs/db/migrations/**",
+      "libs/config/src/worker.ts",
+      "tools/quality/test-runtime.ts",
+    ].map((pattern) => `${import.meta.dirname}/${pattern}`),
     projects: [
       {
         extends: true,
