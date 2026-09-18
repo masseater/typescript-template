@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
+import { loopbackAddress } from "@repo/config";
+
 import { failure, fileIo } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
@@ -38,7 +40,7 @@ const browserLaunchArguments = Effect.fn("browserLaunchArguments")(
       .digest("base64");
     return [
       "--args",
-      `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local 127.0.0.1`,
+      `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local ${loopbackAddress}`,
     ];
   },
 );

@@ -68,16 +68,25 @@ function describeCause(
     : { code: "defect", ...counted, ...described };
 }
 
-function reportCause(
+function causeRecord(
   event: string,
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[] = [],
+): Readonly<Record<string, unknown>> {
+  return { event, ...describeCause(cause, confidential) };
+}
+
+function reportCause(
+  event: string,
+  cause: Cause.Cause<unknown>,
+  confidential: readonly Confidential[],
 ): Effect.Effect<void> {
-  return reportFailed({ event, ...describeCause(cause, confidential) });
+  return reportFailed(causeRecord(event, cause, confidential));
 }
 
 export {
   FAILED_EXIT_CODE,
+  causeRecord,
   OK_EXIT_CODE,
   describeCause,
   describeFailure,

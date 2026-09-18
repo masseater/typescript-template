@@ -3,10 +3,9 @@ import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { markFailed } from "@repo/config/cli";
+import { markFailed, runCli } from "@repo/config/cli";
 
 interface Scan {
   readonly failed: boolean;
@@ -130,7 +129,7 @@ const inspect = Effect.fn("inspect")(function* inspect() {
   };
 });
 
-NodeRuntime.runMain(
+runCli(
   inspect().pipe(
     Effect.flatMap((result) =>
       Console.log(JSON.stringify({ event: "quality.react_doctor", ...result })).pipe(
@@ -138,4 +137,5 @@ NodeRuntime.runMain(
       ),
     ),
   ),
+  { event: "quality.react_doctor_failed", ok: false },
 );

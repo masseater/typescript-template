@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
-import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
+import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import { fileIo } from "./failure.ts";
@@ -43,7 +43,7 @@ const statusTimeoutMilliseconds = 3000;
 
 function httpStatus(app: App): Effect.Effect<number | null> {
   return Effect.tryPromise(async (signal) =>
-    fetch(`http://127.0.0.1:${applicationPorts[app]}${applicationReadyPaths[app]}`, {
+    fetch(`${applicationOrigins[app]}${applicationReadyPaths[app]}`, {
       redirect: "manual",
       signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
     }),

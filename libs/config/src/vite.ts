@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
 import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
 
 import type { Application } from "./applications.ts";
-import { applicationPorts } from "./applications.ts";
+import { applicationPorts, loopbackAddress } from "./applications.ts";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
@@ -97,7 +97,7 @@ function reactCompiler(): PluginOption[] {
 function appServer(app: Application): ServerOptions {
   return {
     allowedHosts: [".local"],
-    host: "127.0.0.1",
+    host: loopbackAddress,
     port: applicationPorts[app],
     strictPort: true,
   };

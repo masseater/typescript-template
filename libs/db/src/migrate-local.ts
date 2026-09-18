@@ -1,9 +1,8 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
 import { getPlatformProxy } from "wrangler";
 
-import { reportFailed } from "@repo/config/cli";
+import { reportFailed, runCli } from "@repo/config/cli";
 
 import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import { migrateD1 } from "./migrate-d1.ts";
@@ -20,19 +19,18 @@ const platform = Effect.acquireRelease(
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
-function report(error: string): Effect.Effect<void> {
-  return reportFailed({ action: "local_migration", error, success: false });
+function failed(error: string): Readonly<Record<string, unknown>> {
+  return { action: "local_migration", error, success: false };
 }
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const { env } = yield* platform;
     const applied = yield* migrateD1(env.DB);
     yield* Console.log(JSON.stringify({ action: "local_migration", applied, success: true }));
   }).pipe(
     Effect.scoped,
-    Effect.catchTag("RemoteFailure", (failure) => report(failure.code)),
-    Effect.catchCause(() => report("LOCAL_MIGRATION_FAILED")),
+    Effect.catchTag("RemoteFailure", (failure) => reportFailed(failed(failure.code))),
   ),
-  { disableErrorReporting: true },
+  failed("LOCAL_MIGRATION_FAILED"),
 );
