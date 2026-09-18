@@ -20,6 +20,7 @@ import { Effect } from "effect";
 import type { Scope } from "effect";
 
 import type { Application } from "@repo/config";
+import { sourceMapDirectories } from "@repo/config/source-maps";
 
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
@@ -63,6 +64,9 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
     "app.js": "export const publicValue = 1;",
     "app.js.map": "private source map",
     "styles.css": "body{color:red}",
+  });
+  await writeFiles(sourceMapDirectories(root, "user").client, {
+    "app.js.map": "private source map",
   });
   await writeFiles(server, {
     ".dev.vars": "AUTH_SECRET=private",
@@ -139,9 +143,31 @@ it.effect("resolves the upload without writing anything outside a deployment", (
       [],
     );
     assert.deepStrictEqual(
-      yield* run(async () => readdir(path.join(root, ".local")).catch(() => [])),
+      yield* run(async () => readdir(path.dirname(sourceMapDirectories(root, "user").client))),
+      ["client"],
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses to publish a build whose client source maps were never kept", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    const kept = sourceMapDirectories(root, "user").client;
+    yield* run(async () => rm(path.join(kept, "app.js.map")));
+    assert.strictEqual(yield* failureCode(root, "user"), "source_maps_missing");
+    assert.deepStrictEqual(
+      yield* run(async () => readdir(path.join(root, "infra")).catch(() => [])),
       [],
     );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("describes a build without its private source maps", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    yield* run(async () => rm(path.join(root, ".local"), { force: true, recursive: true }));
+    const artifacts = yield* loadArtifacts(root, "user");
+    assert.include(artifacts.clientDirectory, artifacts.uploaded);
   }).pipe(Effect.scoped),
 );
 

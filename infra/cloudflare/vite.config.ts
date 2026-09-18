@@ -9,11 +9,23 @@ function builds(units: readonly string[]): string[] {
   return units.map((unit) => `@repo/${unit}#build`);
 }
 
+const stackBuilds = builds([...applications, ...monitorStacks]);
+
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      deploy: {
+        cache: false,
+        command: "node src/cli.ts deploy",
+        dependsOn: stackBuilds,
+      },
+      preview: {
+        cache: false,
+        command: "node src/cli.ts plan",
+        dependsOn: stackBuilds,
+      },
       "verify:artifacts": {
         command: "node src/check-artifacts.ts",
         dependsOn: builds(applications),
@@ -21,7 +33,7 @@ export default defineConfig({
       },
       "verify:stacks": {
         command: "node src/check-stacks.ts",
-        dependsOn: builds([...applications, ...monitorStacks]),
+        dependsOn: stackBuilds,
         input: [...taskInput],
       },
       ...lifecycle({

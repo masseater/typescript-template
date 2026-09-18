@@ -26,6 +26,7 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
     "artifact_staging_link_forbidden",
     "artifact_staging_contaminated",
     "source_map_directory_invalid",
+    "source_maps_missing",
     "source_map_symlink_forbidden",
     "budget_worker_artifact_empty",
     "error_worker_artifact_empty",

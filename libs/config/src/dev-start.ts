@@ -7,6 +7,7 @@ import { Cause, Console, Effect, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
 
 import { applicationReadyPaths, applications } from "./applications.ts";
+import { reportFailed } from "./cli.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,
@@ -73,16 +74,8 @@ function report(
   app: string,
   record: Readonly<{ ok: boolean; reasons?: readonly string[] }>,
 ): Effect.Effect<void> {
-  const line = JSON.stringify({ app, event: "quality.dev_start", ...record });
-  return record.ok
-    ? Console.log(line)
-    : Console.error(line).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      );
+  const line = { app, event: "quality.dev_start", ...record };
+  return record.ok ? Console.log(JSON.stringify(line)) : reportFailed(line);
 }
 
 const program = Effect.gen(function* program() {
