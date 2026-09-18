@@ -45,6 +45,11 @@ jobs:
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
+      - &task-cache-reuse
+        if: vars.CI_RUNNER != ''
+        run: |
+          mkdir -p ~/.cache/vite-task-cache node_modules/.vite/task-cache
+          cp -a ~/.cache/vite-task-cache/. node_modules/.vite/task-cache/
       - &check
         run: vp run check
       - run: vp test run $TEST_SCOPE
@@ -69,3 +74,8 @@ jobs:
       - *check
       - *build
       - *task-cache-save
+      - if: vars.CI_RUNNER != ''
+        run: |
+          rm -rf ~/.cache/vite-task-cache
+          mkdir -p ~/.cache
+          cp -a node_modules/.vite/task-cache ~/.cache/vite-task-cache
