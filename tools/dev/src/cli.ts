@@ -4,6 +4,7 @@ import { runCli } from "@repo/config/cli";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { browser, browserCommand } from "./browser.ts";
+import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
@@ -16,6 +17,7 @@ type Command = Effect.Effect<unknown, LocalCommandFailure>;
 const firstUserArgumentIndex = 2;
 
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
+  ["ci-runner", ciRunner],
   ["connect", connection],
   ["setup", setup],
   ["status", status],
