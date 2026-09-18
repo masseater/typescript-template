@@ -12,21 +12,27 @@ import vitest from "@storybook/addon-vitest";
 const router = createRouter({ routeTree: createRootRoute() });
 
 function withProviders(Story: () => ReactElement): ReactElement {
+  return (
+    <RegistryProvider>
+      <RouterContextProvider router={router}>
+        <Story />
+      </RouterContextProvider>
+    </RegistryProvider>
+  );
+}
+
+function withQueryClient(Story: () => ReactElement): ReactElement {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
     <QueryClientProvider client={queryClient}>
-      <RegistryProvider>
-        <RouterContextProvider router={router}>
-          <Story />
-        </RouterContextProvider>
-      </RegistryProvider>
+      <Story />
     </QueryClientProvider>
   );
 }
 
 const preview = definePreview({
   addons: [a11y(), vitest(), msw()],
-  decorators: [withProviders],
+  decorators: [withProviders, withQueryClient],
   parameters: { a11y: { test: "error" }, layout: "padded" },
   tags: ["test"],
 });

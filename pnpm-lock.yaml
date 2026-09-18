@@ -197,15 +197,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: 4.3.3
       version: 4.3.3
-    '@tanstack/react-query':
-      specifier: 5.103.1
-      version: 5.103.1
     '@tanstack/react-router':
       specifier: 1.170.36
       version: 1.170.36
-    '@tanstack/react-router-ssr-query':
-      specifier: 1.167.3
-      version: 1.167.3
     '@tanstack/react-start':
       specifier: 1.168.54
       version: 1.168.54
@@ -1051,13 +1045,13 @@ importers:
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.3.0)(scheduler@0.28.0)
       '@tanstack/react-query':
-        specifier: 'catalog:'
+        specifier: 5.103.1
         version: 5.103.1(react@19.3.0)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-router-ssr-query':
-        specifier: 'catalog:'
+        specifier: 1.167.3
         version: 1.167.3(@tanstack/query-core@5.103.1)(@tanstack/react-query@5.103.1(react@19.3.0))(@tanstack/react-router@1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.30)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@template/observability':
         specifier: workspace:*

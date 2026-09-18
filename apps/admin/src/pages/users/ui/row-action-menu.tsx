@@ -7,7 +7,7 @@ import {
 } from "@template/ui";
 import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
 import { EllipsisIcon } from "lucide-react";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ListedUser } from "#pages/users/api/list-users.ts";
 import type { ReactElement } from "react";
 
 function RowActionMenu({

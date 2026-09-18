@@ -6,7 +6,7 @@ import { FormColumn } from "./shared/ui/form-column";
 import { PasskeyLogin } from "./passkey-login";
 import type { ReactElement } from "react";
 import { useAction } from "./action";
-import { useLoginState } from "./login-state";
+import { useLoginState } from "./use-login-state";
 
 function goHome(): void {
   globalThis.location.assign("/");

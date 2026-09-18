@@ -11,7 +11,7 @@ interface PasskeyListProps {
 }
 
 function PasskeyList({ action, listError, passkeys }: PasskeyListProps): ReactElement {
-  if (listError !== undefined && listError !== "") {
+  if (listError !== undefined) {
     return <Status variant="error">{listError}</Status>;
   }
   if (passkeys === undefined) {

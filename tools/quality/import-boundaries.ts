@@ -1,5 +1,6 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+import { retiredImport } from "./retired-packages.ts";
 
 interface PackageLocation {
   readonly area: string;
@@ -173,6 +174,10 @@ function privilegedAppImportsSignup({ location }: Importer, target: ImportTarget
   );
 }
 
+function importsRetired(_importer: Importer, target: ImportTarget): boolean {
+  return retiredImport(target.clean) !== undefined;
+}
+
 function wikiImportsDatabase({ location }: Importer, target: ImportTarget): boolean {
   return (
     location?.area === "apps" &&
@@ -203,6 +208,7 @@ const importRules: readonly ImportRule[] = [
   reachesPackageSource,
   privilegedAppImportsSignup,
   wikiImportsDatabase,
+  importsRetired,
 ];
 
 function isForbiddenImport(importer: Importer, source: string): boolean {

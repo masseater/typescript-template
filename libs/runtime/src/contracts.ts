@@ -136,8 +136,13 @@ const HealthView = Schema.Struct({
   service: Schema.Literals(applications),
 });
 
+const OAuthClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
+
+const ConsentRedirect = Schema.Struct({ url: Schema.String });
+
 export {
   BooleanText,
+  ConsentRedirect,
   EmailVerificationRequest,
   EmailVerified,
   ErrorBody,
@@ -146,6 +151,7 @@ export {
   MemberListQuery,
   MemberQuery,
   MemberView,
+  OAuthClientView,
   ProfileUpdate,
   ProfileView,
   Role,

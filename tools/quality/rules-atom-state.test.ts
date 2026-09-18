@@ -23,14 +23,9 @@ const unmanagedState = [
     'import * as React from "react"; const { useRef } = React; export const fn = () => useRef(null);',
   ],
   [
-    "context",
+    "create-ref",
     "libs/ui/src/probe.ts",
-    'import { createContext } from "react"; export const Scope = createContext(0);',
-  ],
-  [
-    "use",
-    "libs/ui/src/probe.ts",
-    'import { use } from "react"; export const read = (value: Promise<number>) => use(value);',
+    'import { createRef } from "react"; export const r = createRef();',
   ],
   [
     "class-component",
@@ -38,9 +33,24 @@ const unmanagedState = [
     'import { Component } from "react"; export class Panel extends Component {}',
   ],
   [
+    "pure-component",
+    "libs/ui/src/probe.ts",
+    'import { PureComponent } from "react"; export class Panel extends PureComponent {}',
+  ],
+  [
+    "action-state",
+    "libs/ui/src/probe.ts",
+    'import { useActionState } from "react"; export const fn = () => useActionState(async () => 0, 0);',
+  ],
+  [
     "form-status",
     "libs/ui/src/probe.ts",
     'import { useFormStatus } from "react-dom"; export const fn = () => useFormStatus();',
+  ],
+  [
+    "form-state",
+    "libs/ui/src/probe.ts",
+    'import { useFormState } from "react-dom"; export const fn = useFormState;',
   ],
   [
     "scoped-atom",
@@ -58,19 +68,51 @@ const unmanagedState = [
     'import * as AtomReact from "@effect/atom-react"; export const seed = AtomReact.useAtomInitialValues;',
   ],
   [
+    "hydration-boundary",
+    "libs/ui/src/probe.ts",
+    'import { HydrationBoundary } from "@effect/atom-react"; export const Boundary = HydrationBoundary;',
+  ],
+  [
+    "registry-context",
+    "libs/ui/src/probe.ts",
+    'import { RegistryContext } from "@effect/atom-react"; export const Registry = RegistryContext;',
+  ],
+  [
+    "atom-ref",
+    "libs/ui/src/probe.ts",
+    'import { AtomRef } from "effect/unstable/reactivity"; export const ref = AtomRef.make(0);',
+  ],
+  [
+    "atom-ref-hook",
+    "libs/ui/src/probe.ts",
+    'import { useAtomRef } from "@effect/atom-react"; export const read = useAtomRef;',
+  ],
+  [
     "search-param",
     "apps/user/src/probe.ts",
     'import { Atom } from "effect/unstable/reactivity"; export const keyword = Atom.searchParam("keyword");',
   ],
+  ["named-reexport", "libs/ui/src/probe.ts", 'export { useState as useLocal } from "react";'],
+  ["star-reexport", "libs/ui/src/probe.ts", 'export * from "react";'],
+] as const;
+
+const allowedCode = [
   [
-    "search-param-module",
-    "apps/user/src/probe.ts",
-    'import * as Atom from "effect/unstable/reactivity/Atom"; export const keyword = Atom.searchParam("keyword");',
+    "component-state",
+    'import { useAtom } from "@effect/atom-react"; import { Atom } from "effect/unstable/reactivity"; import { useId } from "react"; const openAtom = Atom.family((_key: string) => Atom.make(false)); export const useOpen = () => useAtom(openAtom(useId()));',
+  ],
+  [
+    "context",
+    'import { createContext, use } from "react"; const Theme = createContext("light"); export const useTheme = () => use(Theme);',
+  ],
+  [
+    "transition",
+    'import { useOptimistic, useTransition } from "react"; export const useSaving = () => [useTransition(), useOptimistic(0)];',
   ],
 ] as const;
 
 describe("atom-state", () => {
-  it.for(unmanagedState)("rejects state outside Effect Atom: %s", ([_label, name, code]) => {
+  it.for(unmanagedState)("rejects client state outside Effect Atom: %s", ([_label, name, code]) => {
     expect.hasAssertions();
     expect(reported("atom-state", name, code)).toBe(true);
   });
@@ -86,13 +128,8 @@ describe("atom-state", () => {
     ).toBe(1);
   });
 
-  it("allows component state held in an Effect Atom", () => {
+  it.for(allowedCode)("allows %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(
-      reportedRules(
-        "libs/ui/src/probe.ts",
-        'import { useAtom } from "@effect/atom-react"; import { Atom } from "effect/unstable/reactivity"; import { useId } from "react"; const openAtom = Atom.family((_key: string) => Atom.make(false)); export const useOpen = () => useAtom(openAtom(useId()));',
-      ),
-    ).toStrictEqual([]);
+    expect(reportedRules("libs/ui/src/probe.ts", code)).toStrictEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { TableCell, TableRow } from "@template/ui";
 import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ListedUser } from "#pages/users/api/list-users.ts";
 import type { ReactElement } from "react";
 import { UserRowActions } from "./user-row-actions.tsx";
 

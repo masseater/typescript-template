@@ -1,5 +1,5 @@
 import { EmptyResults } from "./empty-results.tsx";
-import type { ListedUsers } from "#pages/users/model/user-list.ts";
+import type { ListedUsers } from "#pages/users/api/list-users.ts";
 import { PageNavigation } from "@template/ui";
 import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";

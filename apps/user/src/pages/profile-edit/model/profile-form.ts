@@ -11,7 +11,7 @@ interface ProfileFields {
 }
 
 interface ProfileForm extends ProfileFields {
-  readonly error: string;
+  readonly error: string | undefined;
   readonly handleNameChange: (value: string) => void;
   readonly handleProfileChange: (value: string) => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
@@ -40,7 +40,7 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
   }
   return {
     ...fields,
-    error: action.error ?? "",
+    error: action.error,
     handleNameChange,
     handleProfileChange,
     handleSubmit,

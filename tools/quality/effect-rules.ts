@@ -1,38 +1,10 @@
 import type { LintContext, Node, NodeOf } from "./lint-context.ts";
+import { holdsServerData, isServerCacheApi } from "./atom-server-data.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
-import { holdsServerData, isServerCacheApi } from "./atom-server-data.ts";
 import { originVisitor } from "./alias-visitor.ts";
 import { reportViolation } from "./lint-context.ts";
-
-const forbiddenStateApis: Readonly<Record<string, ReadonlySet<string>>> = {
-  "@effect/atom-react": new Set([
-    "HydrationBoundary",
-    "RegistryContext",
-    "make",
-    "useAtomInitialValues",
-    "useAtomSuspense",
-  ]),
-  "effect/unstable/reactivity": new Set(["searchParam"]),
-  "effect/unstable/reactivity/Atom": new Set(["searchParam"]),
-  react: new Set([
-    "Component",
-    "PureComponent",
-    "createContext",
-    "createRef",
-    "use",
-    "useActionState",
-    "useContext",
-    "useOptimistic",
-    "useReducer",
-    "useRef",
-    "useState",
-    "useSyncExternalStore",
-    "useTransition",
-  ]),
-  "react-dom": new Set(["useFormStatus"]),
-};
 
 const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
 
@@ -170,18 +142,57 @@ function effectFailuresVisitor(context: LintContext): Visitor {
   };
 }
 
+const forbiddenStateApis: Readonly<Record<string, readonly string[]>> = {
+  "@effect/atom-react": [
+    "HydrationBoundary",
+    "RegistryContext",
+    "make",
+    "useAtomInitialValues",
+    "useAtomRef",
+    "useAtomRefProp",
+    "useAtomRefPropValue",
+    "useAtomSuspense",
+  ],
+  "effect/unstable/reactivity": ["AtomRef", "searchParam"],
+  react: [
+    "Component",
+    "PureComponent",
+    "createRef",
+    "useActionState",
+    "useReducer",
+    "useRef",
+    "useState",
+    "useSyncExternalStore",
+  ],
+  "react-dom": ["useFormState", "useFormStatus"],
+};
+
+const forbiddenStateList = Object.entries(forbiddenStateApis)
+  .map(([source, apis]) => `${source} の ${apis.join("・")}`)
+  .join("、");
+
 function isForbiddenState(origin: Origin): boolean {
   const [source = "", ...members] = origin;
   const apis = forbiddenStateApis[source];
-  return apis !== undefined && members.some((member) => apis.has(member));
+  return apis !== undefined && members.some((member) => apis.includes(member));
 }
 
 function atomStateVisitor(context: LintContext): Visitor {
-  return originVisitor(
-    context,
-    (origin) => isForbiddenState(origin) || isServerCacheApi(origin),
-    (node) => holdsServerData(context, node),
-  );
+  return {
+    ...originVisitor(
+      context,
+      (origin) => isForbiddenState(origin) || isServerCacheApi(origin),
+      (node) => holdsServerData(context, node),
+    ),
+    ExportAllDeclaration(node: Node): void {
+      if (
+        node.type === "ExportAllDeclaration" &&
+        Object.hasOwn(forbiddenStateApis, node.source.value)
+      ) {
+        reportViolation(context, node);
+      }
+    },
+  };
 }
 
-export { atomStateVisitor, effectFailuresVisitor, effectStackVisitor };
+export { atomStateVisitor, effectFailuresVisitor, effectStackVisitor, forbiddenStateList };

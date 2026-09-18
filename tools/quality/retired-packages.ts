@@ -1,13 +1,7 @@
-interface RetiredImportPattern {
-  readonly group: string[];
-  readonly message: string;
-}
-
 const atomState = "Effect Atom (effect/unstable/reactivity と @effect/atom-react)";
 const serverState = "TanStack Query (@template/ui の serverQuery と useServerQuery)";
 
 const retiredPackages: Readonly<Record<string, string>> = {
-  "@ai-sdk/react": atomState,
   "@apollo/client": serverState,
   "@effect-atom/": atomState,
   "@legendapp/state": atomState,
@@ -15,28 +9,19 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "@preact/signals-react": atomState,
   "@pulumi/": "alchemy",
   "@reduxjs/": atomState,
-  "@tanstack/ai-react": atomState,
-  "@tanstack/db": atomState,
-  "@tanstack/form-core": atomState,
-  "@tanstack/react-db": atomState,
-  "@tanstack/react-form": atomState,
   "@tanstack/react-store": atomState,
   "@tanstack/store": atomState,
   "@trpc/": serverState,
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
   "@urql/": serverState,
-  "@xstate/": atomState,
   effector: atomState,
   "effector-react": atomState,
-  formik: atomState,
   jotai: atomState,
   mobx: atomState,
   "mobx-react": atomState,
   "mobx-react-lite": atomState,
   nanostores: atomState,
   pulumi: "alchemy",
-  "react-final-form": atomState,
-  "react-hook-form": atomState,
   "react-intl": "Paraglide JS",
   "react-query": serverState,
   "react-redux": atomState,
@@ -49,22 +34,33 @@ const retiredPackages: Readonly<Record<string, string>> = {
   swr: serverState,
   urql: serverState,
   valtio: atomState,
-  xstate: atomState,
   zustand: atomState,
 };
 
-function importPatterns(retired: string): string[] {
-  return retired.endsWith("/") ? [`${retired}*`] : [retired, `${retired}/*`];
+const retiredEntries: Readonly<Record<string, string>> = {
+  "@effect/atom-react/": "@effect/atom-react の root",
+  "better-auth/react": "better-auth/client と Effect Atom",
+  "effect/unstable/reactivity/": "effect/unstable/reactivity の root",
+};
+
+function replacementIn(
+  table: Readonly<Record<string, string>>,
+  specifier: string,
+): string | undefined {
+  const matched = Object.keys(table).find((retired) =>
+    retired.endsWith("/")
+      ? specifier.startsWith(retired)
+      : specifier === retired || specifier.startsWith(`${retired}/`),
+  );
+  return matched === undefined ? undefined : table[matched];
 }
 
-function retiredImportPatterns(): RetiredImportPattern[] {
-  const replacements = new Set(Object.values(retiredPackages));
-  return [...replacements].map((replacement) => ({
-    group: Object.keys(retiredPackages)
-      .filter((retired) => retiredPackages[retired] === replacement)
-      .flatMap((retired) => importPatterns(retired)),
-    message: `${replacement} を使ってください。`,
-  }));
+function retiredDependency(dependency: string): string | undefined {
+  return replacementIn(retiredPackages, dependency);
 }
 
-export { retiredImportPatterns, retiredPackages };
+function retiredImport(source: string): string | undefined {
+  return replacementIn({ ...retiredPackages, ...retiredEntries }, source);
+}
+
+export { retiredDependency, retiredImport, retiredPackages };
