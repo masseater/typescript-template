@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { expect, screen, userEvent, waitForElementToBeRemoved } from "storybook/test";
+import { expect, screen, userEvent, waitFor } from "storybook/test";
 
 import preview from "../../../.storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
@@ -11,11 +11,14 @@ const meta = preview.meta({
   args: { children: "認証設定" },
   component: DropdownMenuLinkItem,
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "アカウント" }));
+    const trigger = canvas.getByRole("button", { name: "アカウント" });
+    await userEvent.click(trigger);
     const item = await screen.findByRole("menuitem", { name: "認証設定" });
     await expect(item).toHaveAttribute("href", "/");
     await userEvent.click(item);
-    await waitForElementToBeRemoved(item);
+    await waitFor(async () => {
+      await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
   },
   render: ({ children }): ReactElement => (
     <DropdownMenu>
