@@ -1,0 +1,71 @@
+import { ADDRESS_PAGE_SIZE, verifiedAddresses, zoneName } from "./email-lookup.ts";
+import { HttpResponse, http } from "msw";
+import { assert, it } from "@effect/vitest";
+import { mockServer, pagedCollection } from "./account-fixture.ts";
+import { Effect } from "effect";
+import { verificationSettings } from "./verification-fixture.ts";
+
+const access = {
+  accountId: verificationSettings.accountId,
+  apiToken: "email-lookup-test-not-a-real-token",
+};
+const addresses = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}/email/routing/addresses`;
+const zone = `https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`;
+const mixedRows = `{"result":[{"email":"alerts@example.com","verified":"2026-01-01T00:00:00Z"},{"email":"pending@example.com","verified":null},{"email":null,"verified":null}],"result_info":{"per_page":50,"total_count":3}}`;
+
+it.effect("counts only the destination addresses Cloudflare has dated as verified", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      pagedCollection(addresses, ADDRESS_PAGE_SIZE, ({ request }) => {
+        const asked = new URL(request.url).searchParams;
+        assert.strictEqual(asked.get("per_page"), String(ADDRESS_PAGE_SIZE));
+        assert.strictEqual(asked.get("page"), "1");
+        return new HttpResponse(mixedRows, { headers: { "content-type": "application/json" } });
+      }),
+    );
+    assert.deepStrictEqual(yield* verifiedAddresses(access), ["alerts@example.com"]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("asks for every page Cloudflare counted rather than the first one", () =>
+  Effect.gen(function* program() {
+    const rows = Array.from({ length: ADDRESS_PAGE_SIZE + 1 }, (_unused, index) => ({
+      email: `alerts-${index}@example.com`,
+      verified: "2026-01-01T00:00:00Z",
+    }));
+    yield* mockServer(
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      pagedCollection(addresses, ADDRESS_PAGE_SIZE, ({ request }) => {
+        const asked = Number(new URL(request.url).searchParams.get("page"));
+        return HttpResponse.json({
+          result: rows.slice((asked - 1) * ADDRESS_PAGE_SIZE, asked * ADDRESS_PAGE_SIZE),
+          result_info: { per_page: ADDRESS_PAGE_SIZE, total_count: rows.length },
+        });
+      }),
+    );
+    assert.lengthOf(yield* verifiedAddresses(access), rows.length);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses an address list whose pages do not add up to what Cloudflare counted", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      pagedCollection(addresses, ADDRESS_PAGE_SIZE, () =>
+        HttpResponse.json({
+          result: [],
+          result_info: { per_page: ADDRESS_PAGE_SIZE, total_count: 2 },
+        }),
+      ),
+    );
+    const failure = yield* verifiedAddresses(access).pipe(Effect.flip);
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/email/routing/addresses", "truncated"]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reads the zone by id so the sender's domain can be told from the apex", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(http.get(zone, () => HttpResponse.json({ result: { name: "example.com" } })));
+    assert.strictEqual(yield* zoneName(access, verificationSettings.zoneId), "example.com");
+  }).pipe(Effect.scoped),
+);

@@ -1,12 +1,12 @@
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { blocked, inspectAccount } from "./account-inspection.ts";
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect } from "effect";
 import { InMemoryService } from "alchemy/State";
 import type { StateService } from "alchemy/State";
 import { deployTokenPermissions } from "./deploy-token.ts";
-import { mockServer } from "./account-fixture.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -16,7 +16,11 @@ const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountI
 const zone = `https://api.cloudflare.com/client/v4/zones/${config.zoneId}`;
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
+const SECRETS_STORE_PAGE_LIMIT = 100;
+const ADDRESS_PAGE_LIMIT = 50;
 const sending = "send.example.com";
+const RETURNED_PAGE_SIZE = 50;
+const ACCOUNT_DATABASE_COUNT = 5;
 const tokenId = "0123456789abcdef0123456789abcdef";
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
@@ -94,93 +98,101 @@ const tokenHandlers = [
   ),
 ];
 
-const ADDRESS_PAGE_LIMIT = 50;
-const INVALID_PAGE_SIZE_STATUS = 400;
-const FIRST_PAGE = 1;
+function page(total: number): Readonly<{ per_page: number; total_count: number }> {
+  return { per_page: RETURNED_PAGE_SIZE, total_count: total };
+}
 
-function addressPage(
-  addresses: readonly { readonly email: string; readonly verified?: string }[],
-  url: string,
-): Response {
-  const asked = new URL(url).searchParams;
-  const size = Number(asked.get("per_page"));
-  if (size > ADDRESS_PAGE_LIMIT) {
-    return HttpResponse.json({ success: false }, { status: INVALID_PAGE_SIZE_STATUS });
-  }
-  const page = Number(asked.get("page") ?? String(FIRST_PAGE));
-  return HttpResponse.json({
-    result: addresses.slice((page - FIRST_PAGE) * size, page * size),
-    result_info: { total_count: addresses.length },
-  });
+function rowsAsPage(rows: number): Readonly<{ per_page: number; total_count: number }> {
+  return { per_page: rows, total_count: rows };
+}
+
+type Domain = Readonly<{ hostname: string; service: string }>;
+type Address = Readonly<{ email: string; verified?: string }>;
+
+function domainPage(domains: readonly Domain[], url: string): Response {
+  const wanted = new URL(url).searchParams.get("hostname");
+  const matching = domains.filter((domain) => domain.hostname === wanted);
+  return HttpResponse.json({ result: matching, result_info: rowsAsPage(matching.length) });
 }
 
 function dnsPage(records: readonly string[], url: string): Response {
-  const name = new URL(url).searchParams.get("name");
+  const wanted = new URL(url).searchParams.get("name.exact");
+  const matching = records.filter((record) => record === wanted);
   return HttpResponse.json({
-    result: records.filter((record) => record === name).map((record) => ({ name: record })),
+    result: matching.map((name) => ({ name })),
+    result_info: page(records.length),
   });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function accountHandlers(options: {
+function scriptPage(scripts: readonly string[]): Response {
+  // oxlint-disable-next-line unicorn/no-null
+  return HttpResponse.json({ result: scripts.map((id) => ({ id })), result_info: null });
+}
+
+function addressPage(addresses: readonly Address[], url: string): Response {
+  const asked = Number(new URL(url).searchParams.get("page"));
+  return HttpResponse.json({
+    result: addresses.slice((asked - 1) * ADDRESS_PAGE_LIMIT, asked * ADDRESS_PAGE_LIMIT),
+    result_info: { per_page: ADDRESS_PAGE_LIMIT, total_count: addresses.length },
+  });
+}
+
+interface AccountState {
   readonly token?: readonly ReturnType<typeof http.get>[];
-  readonly addresses?: readonly { readonly email: string; readonly verified?: string }[];
+  readonly addresses?: readonly Address[];
   readonly databases?: readonly { readonly name: string; readonly uuid: string }[];
-  readonly domains?: readonly { readonly hostname: string; readonly service: string }[];
+  readonly domains?: readonly Domain[];
   readonly records?: readonly string[];
   readonly scripts?: readonly string[];
   readonly stores?: number;
   readonly zoneName?: string;
-}): Parameters<typeof mockServer> {
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
   return [
     ...(options.token ?? tokenHandlers),
-    http.get(`${account}/d1/database`, () =>
-      HttpResponse.json({ result: options.databases ?? [], success: true }),
+    unpagedCollection(`${account}/d1/database`, () =>
+      HttpResponse.json({
+        result: options.databases ?? [],
+        result_info: page(ACCOUNT_DATABASE_COUNT),
+        success: true,
+      }),
     ),
     http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
       HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
     ),
-    http.get(`${account}/secrets_store/stores`, () =>
+    pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
       HttpResponse.json({
         result: Array.from({ length: options.stores ?? 0 }, () => ({ id: "s" })),
+        result_info: page(options.stores ?? 0),
       }),
     ),
-    http.get(`${account}/workers/scripts`, () =>
-      HttpResponse.json({ result: (options.scripts ?? []).map((id) => ({ id })) }),
-    ),
+    unpagedCollection(`${account}/workers/scripts`, () => scriptPage(options.scripts ?? [])),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    http.get(`${account}/workers/domains`, ({ request }) => {
-      const hostname = new URL(request.url).searchParams.get("hostname");
-      return HttpResponse.json({
-        result: (options.domains ?? []).filter((domain) => domain.hostname === hostname),
-      });
-    }),
+    unpagedCollection(`${account}/workers/domains`, ({ request }) =>
+      domainPage(options.domains ?? [], request.url),
+    ),
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    http.get(`${account}/email/routing/addresses`, ({ request }) =>
+    unpagedCollection(`${zone}/dns_records`, ({ request }) =>
+      dnsPage(options.records ?? [], request.url),
+    ),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    pagedCollection(`${account}/email/routing/addresses`, ADDRESS_PAGE_LIMIT, ({ request }) =>
       addressPage(options.addresses ?? [], request.url),
     ),
     http.get(zone, () =>
       HttpResponse.json({ result: { name: options.zoneName ?? "example.com" } }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    http.get(`${zone}/dns_records`, ({ request }) => dnsPage(options.records ?? [], request.url)),
   ];
 }
 
 it.effect("clears an account that holds nothing this deployment claims", () =>
   Effect.gen(function* program() {
-    yield* mockServer(
-      ...accountHandlers({
-        databases: [],
-        domains: [],
-        records: [],
-        scripts: ["unrelated-worker"],
-        stores: 0,
-      }),
-    );
+    yield* mockServer(...accountHandlers({ scripts: ["unrelated-worker"] }));
     const inspection = yield* inspectAccount(access, config, emptyState());
     assert.deepStrictEqual(blocked(inspection), []);
     assert.deepStrictEqual(inspection.database, "free");
@@ -239,12 +251,9 @@ it.effect("clears the account this deployment has just finished applying to", ()
   Effect.gen(function* program() {
     yield* mockServer(
       ...accountHandlers({
+        addresses: config.budget.recipients.map((email) => ({ email, verified: "2026-01-01" })),
         databases: [{ name: `${config.prefix}-db`, uuid: databaseId }],
-        domains: hosts.map((hostname, index) => ({
-          hostname,
-          service: workers[index] ?? "",
-        })),
-        records: [],
+        domains: hosts.map((hostname, index) => ({ hostname, service: workers[index] ?? "" })),
         scripts: workers,
         stores: 1,
       }),
@@ -254,6 +263,7 @@ it.effect("clears the account this deployment has just finished applying to", ()
     assert.strictEqual(inspection.database, "owned");
     assert.strictEqual(inspection.workerNames, "owned");
     assert.strictEqual(inspection.workerDomains, "owned");
+    assert.strictEqual(inspection.alertQuota, "free");
   }).pipe(Effect.scoped),
 );
 
@@ -265,7 +275,6 @@ it.effect("blocks only the names an unrelated project is holding", () =>
         domains: [{ hostname: hosts[0] ?? "", service: "someone-elses-worker" }],
         records: [hosts[1] ?? ""],
         scripts: [`${config.prefix}-user`],
-        stores: 0,
       }),
     );
     const inspection = yield* inspectAccount(access, config, emptyState());
@@ -280,16 +289,7 @@ it.effect("blocks only the names an unrelated project is holding", () =>
 
 it.effect("blocks when the token cannot be read or is missing a permission", () =>
   Effect.gen(function* program() {
-    yield* mockServer(
-      ...accountHandlers({
-        databases: [],
-        domains: [],
-        records: [],
-        scripts: [],
-        stores: 0,
-        token: [unverifiableToken],
-      }),
-    );
+    yield* mockServer(...accountHandlers({ token: [unverifiableToken] }));
     const inspection = yield* inspectAccount(access, config, emptyState());
     assert.deepStrictEqual(blocked(inspection), ["deployToken"]);
     assert.strictEqual(inspection.deployToken, "unreadable_account_owned_token_required");

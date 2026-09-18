@@ -4,12 +4,11 @@ import {
   grantedPermissions,
   secretsStoreCount,
   stateStorePresent,
-  verifiedAddresses,
   workerNames,
   workersSubdomain,
-  zoneName,
 } from "./account-lookup.ts";
 import { databaseName, findDatabaseId } from "./database-lookup.ts";
+import { verifiedAddresses, zoneName } from "./email-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";

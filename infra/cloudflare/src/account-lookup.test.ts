@@ -2,17 +2,17 @@ import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import {
   attachedService,
+  dnsRecordNames,
   grantedPermissions,
   secretsStoreCount,
   stateStorePresent,
-  verifiedAddresses,
   workerNames,
   workersSubdomain,
-  zoneName,
 } from "./account-lookup.ts";
 import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import { Effect } from "effect";
-import { mockServer } from "./account-fixture.ts";
+import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const access = {
@@ -20,9 +20,11 @@ const access = {
   apiToken: "lookup-test-not-a-real-token",
 };
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
+const zone = `https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`;
+const { hostname } = new URL(verificationSettings.origins.user);
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
-const ADDRESS_PAGE_LIMIT = 50;
+const SECRETS_STORE_PAGE_LIMIT = 100;
 const tokenId = "0123456789abcdef0123456789abcdef";
 const granted = deployTokenPermissions.map((required) => ({ name: required.satisfiedBy[0].name }));
 const withoutRoutes = granted.filter(
@@ -35,9 +37,27 @@ it.effect("reads an untouched account as free of the names this deployment claim
       http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
         HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
       ),
-      http.get(`${account}/secrets_store/stores`, () => HttpResponse.json({ result: [] })),
-      http.get(`${account}/workers/scripts`, () => HttpResponse.json({ result: [] })),
-      http.get(`${account}/workers/domains`, () => HttpResponse.json({ result: [] })),
+      pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 20, total_count: 0 },
+        }),
+      ),
+      unpagedCollection(`${account}/workers/scripts`, () =>
+        // oxlint-disable-next-line unicorn/no-null
+        HttpResponse.json({ result: [], result_info: null }),
+      ),
+      unpagedCollection(`${account}/workers/domains`, () =>
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 0, total_count: 0 },
+        }),
+      ),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      unpagedCollection(`${zone}/dns_records`, ({ request }) => {
+        assert.strictEqual(new URL(request.url).searchParams.get("name.exact"), hostname);
+        return HttpResponse.json({ result: [], result_info: { per_page: 100, total_count: 0 } });
+      }),
       http.get(`${account}/workers/subdomain`, () =>
         HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
       ),
@@ -45,8 +65,66 @@ it.effect("reads an untouched account as free of the names this deployment claim
     assert.isFalse(yield* stateStorePresent(access));
     assert.strictEqual(yield* secretsStoreCount(access), 0);
     assert.deepStrictEqual(yield* workerNames(access), []);
-    assert.isUndefined(yield* attachedService(access, "user.example.com"));
+    assert.isUndefined(yield* attachedService(access, hostname));
+    assert.deepStrictEqual(
+      yield* dnsRecordNames(access, verificationSettings.zoneId, hostname),
+      [],
+    );
     assert.strictEqual(yield* workersSubdomain(access), "example-subdomain");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("keeps a read honest when the collection ignores the filter it was given", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${zone}/dns_records`, () =>
+        HttpResponse.json({
+          result: [{ name: "mail.example.com" }, { name: "other.example.com" }],
+          result_info: { count: 2, page: 1, per_page: 100, total_count: 2, total_pages: 1 },
+        }),
+      ),
+      http.get(`${account}/workers/domains`, () =>
+        HttpResponse.json({
+          result: [{ hostname: "other.example.com", service: "someone-elses-worker" }],
+          result_info: { count: 1, page: 1, per_page: 20, total_count: 1, total_pages: 1 },
+        }),
+      ),
+    );
+    assert.deepStrictEqual(
+      yield* dnsRecordNames(access, verificationSettings.zoneId, hostname),
+      [],
+    );
+    assert.isUndefined(yield* attachedService(access, hostname));
+  }).pipe(Effect.scoped),
+);
+
+it.effect("names the read that failed and why, without naming the zone or the hostname", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${zone}/dns_records`, () =>
+        HttpResponse.json({ success: false }, { status: FORBIDDEN_STATUS }),
+      ),
+    );
+    const failure = yield* dnsRecordNames(access, verificationSettings.zoneId, hostname).pipe(
+      Effect.flip,
+    );
+    assert.deepStrictEqual(failure.keys, ["zones/{}/dns_records", `status_${FORBIDDEN_STATUS}`]);
+    const printed = JSON.stringify(describeFailure(failure, []));
+    for (const value of [access.accountId, verificationSettings.zoneId, hostname]) {
+      assert.notInclude(printed, value);
+    }
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses rows that do not carry the fields the read declares", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${account}/secrets_store/stores`, () =>
+        HttpResponse.json({ result: [{}], result_info: { per_page: 100, total_count: 1 } }),
+      ),
+    );
+    const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/secrets_store/stores", "decode_failed"]);
   }).pipe(Effect.scoped),
 );
 
@@ -56,8 +134,11 @@ it.effect("reports an account another project already bootstrapped", () =>
       http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
         HttpResponse.json({ result: { id: "alchemy-state-store" } }),
       ),
-      http.get(`${account}/secrets_store/stores`, () =>
-        HttpResponse.json({ result: [{ id: "store" }] }),
+      pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
+        HttpResponse.json({
+          result: [{ id: "store" }],
+          result_info: { per_page: 100, total_count: 1 },
+        }),
       ),
     );
     assert.isTrue(yield* stateStorePresent(access));
@@ -74,6 +155,10 @@ it.effect("refuses a collection it cannot reach instead of reading it as empty",
     );
     const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/secrets_store/stores",
+      `status_${NOT_FOUND_STATUS}`,
+    ]);
   }).pipe(Effect.scoped),
 );
 
@@ -86,6 +171,10 @@ it.effect("refuses a collection the token is not allowed to see", () =>
     );
     const failure = yield* workerNames(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/workers/scripts",
+      `status_${FORBIDDEN_STATUS}`,
+    ]);
   }).pipe(Effect.scoped),
 );
 
@@ -122,91 +211,16 @@ it.effect("requires every permission the deployment actually exercises", () =>
   }),
 );
 
-it.effect("refuses a page that does not carry every row Cloudflare counted", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      http.get(`${account}/workers/scripts`, () =>
-        HttpResponse.json({ result: [{ id: "one" }], result_info: { total_count: 2 } }),
-      ),
-    );
-    const failure = yield* workerNames(access).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "account_read_unavailable");
-  }).pipe(Effect.scoped),
-);
-
-it.effect("reads only the destination addresses Cloudflare has dated as verified", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      http.get(`${account}/email/routing/addresses`, ({ request }) => {
-        const asked = new URL(request.url).searchParams;
-        assert.strictEqual(asked.get("per_page"), String(ADDRESS_PAGE_LIMIT));
-        assert.strictEqual(asked.get("page"), "1");
-        return new HttpResponse(
-          '{"result":[{"email":"alerts@example.com","verified":"2026-01-01T00:00:00Z"},{"email":"pending@example.com","verified":null},{"email":null,"verified":null}],"result_info":{"total_count":3}}',
-          { headers: { "content-type": "application/json" } },
-        );
-      }),
-    );
-    assert.deepStrictEqual(yield* verifiedAddresses(access), ["alerts@example.com"]);
-  }).pipe(Effect.scoped),
-);
-
-it.effect("asks for every page Cloudflare counted rather than the first one", () =>
-  Effect.gen(function* program() {
-    const rows = Array.from({ length: ADDRESS_PAGE_LIMIT + 1 }, (_unused, index) => ({
-      email: `alerts-${index}@example.com`,
-      verified: "2026-01-01T00:00:00Z",
-    }));
-    yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      http.get(`${account}/email/routing/addresses`, ({ request }) => {
-        const page = Number(new URL(request.url).searchParams.get("page"));
-        return HttpResponse.json({
-          result: rows.slice((page - 1) * ADDRESS_PAGE_LIMIT, page * ADDRESS_PAGE_LIMIT),
-          result_info: { total_count: rows.length },
-        });
-      }),
-    );
-    assert.lengthOf(yield* verifiedAddresses(access), rows.length);
-  }).pipe(Effect.scoped),
-);
-
-it.effect("refuses an address list whose pages do not add up to what Cloudflare counted", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      http.get(`${account}/email/routing/addresses`, () =>
-        HttpResponse.json({ result: [], result_info: { total_count: 2 } }),
-      ),
-    );
-    const failure = yield* verifiedAddresses(access).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "account_read_unavailable");
-  }).pipe(Effect.scoped),
-);
-
-it.effect("reads the zone by id so the sender's domain can be told from the apex", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      http.get(`https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`, () =>
-        HttpResponse.json({ result: { name: "example.com" } }),
-      ),
-    );
-    assert.strictEqual(yield* zoneName(access, verificationSettings.zoneId), "example.com");
-  }).pipe(Effect.scoped),
-);
-
 it.effect("asks for the worker a single hostname is attached to", () =>
   Effect.gen(function* program() {
     yield* mockServer(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(`${account}/workers/domains`, ({ request }) => {
-        assert.strictEqual(new URL(request.url).searchParams.get("hostname"), "user.example.com");
-        return HttpResponse.json({
-          result: [{ hostname: "user.example.com", service: "other-user" }],
-        });
+        assert.strictEqual(new URL(request.url).searchParams.get("hostname"), hostname);
+        return HttpResponse.json({ result: [{ hostname, service: "other-user" }] });
       }),
     );
-    assert.strictEqual(yield* attachedService(access, "user.example.com"), "other-user");
+    assert.strictEqual(yield* attachedService(access, hostname), "other-user");
   }).pipe(Effect.scoped),
 );
 
@@ -216,13 +230,7 @@ it.effect("names the deploy token permissions the account token does not carry",
       http.get(`${account}/tokens/verify`, () => HttpResponse.json({ result: { id: tokenId } })),
       http.get(`${account}/tokens/${tokenId}`, () =>
         HttpResponse.json({
-          result: {
-            policies: [
-              {
-                permission_groups: withoutRoutes,
-              },
-            ],
-          },
+          result: { policies: [{ permission_groups: withoutRoutes }] },
         }),
       ),
     );
@@ -265,5 +273,9 @@ it.effect("treats a token the account does not own as unreadable, not as unrestr
     );
     const failure = yield* grantedPermissions(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/tokens/verify",
+      `status_${NOT_FOUND_STATUS}`,
+    ]);
   }).pipe(Effect.scoped),
 );
