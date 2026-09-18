@@ -1,6 +1,1 @@
-Revision history for #328:
-
-rev 2 (content) 2026-09-18 16:19 UTC — rebase onto main and pin checks_timeout after the queue dequeued this PR on the auto timeout
-rev 1 (initial) 2026-09-18 16:19 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":328,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"5f962782445ed9d264720749a71d198a1734838c","timestamp_iso":"2026-09-18T16:19:44Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"5f962782445ed9d264720749a71d198a1734838c","new_sha":"91bc21d5c41992206950d41c23f0052357e61f95","timestamp_iso":"2026-09-18T16:19:44Z","reason":"rebase onto main and pin checks_timeout after the queue dequeued this PR on the auto timeout","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/5f962782445ed9d264720749a71d198a1734838c...91bc21d5c41992206950d41c23f0052357e61f95"}]} -->
+merge queue の並列検査を 1 本に絞り、同居 runner の過負荷による timeout を止める
