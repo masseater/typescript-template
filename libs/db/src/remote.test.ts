@@ -1,4 +1,10 @@
-import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
+import {
+  CloudflareInternalTestDatabase,
+  EmptyTestDatabase,
+  TestBinding,
+  d1Executor,
+  runStatement,
+} from "./testing-node.ts";
 import { assert, it } from "@effect/vitest";
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
@@ -214,6 +220,37 @@ it.effect(
           "LAST_ADMIN_REQUIRED",
         );
       }
+    }).pipe(Effect.provide(EmptyTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect(
+  "migrates a database that holds only the Cloudflare internal tables",
+  () =>
+    Effect.gen(function* program() {
+      const internal = yield* runStatement(
+        "SELECT name FROM sqlite_master WHERE name = ?",
+        "_cf_KV",
+      );
+      assert.deepStrictEqual(internal.results, [{ name: "_cf_KV" }]);
+      const executor = d1Executor(yield* TestBinding);
+      const migrations = yield* loadRemoteMigrations();
+      assert.strictEqual(yield* migrateDatabase(executor, migrations), migrations.length);
+    }).pipe(Effect.provide(CloudflareInternalTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect(
+  "refuses to migrate application tables that have no recorded history",
+  () =>
+    Effect.gen(function* program() {
+      yield* runStatement("CREATE TABLE user (id TEXT PRIMARY KEY)");
+      const executor = d1Executor(yield* TestBinding);
+      const migrations = yield* loadRemoteMigrations();
+      assert.strictEqual(
+        yield* code(migrateDatabase(executor, migrations)),
+        "REMOTE_MIGRATION_HISTORY_MISSING",
+      );
     }).pipe(Effect.provide(EmptyTestDatabase)),
   { timeout: TEST_TIMEOUT_MS },
 );
