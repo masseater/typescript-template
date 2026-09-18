@@ -6,6 +6,13 @@ const application = {
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
+const load = {
+  entry: ["scenarios/*.ts!"],
+  ignoreDependencies: ["k6"],
+  project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
+};
+const loadCommands = ["src/cli.ts!"];
+
 const workspaces = {
   ".": {
     entry: ["doctor.config.ts"],
@@ -109,6 +116,7 @@ function config({
         ignoreDependencies: ["playwright"],
         project: ["src/**/*.ts!"],
       },
+      "tools/load": { ...load, entry: [...load.entry, ...productionOnly(...loadCommands)] },
       "tools/observe": {
         entry: productionOnly(...scripts["tools/observe"]),
         project: ["src/**/*.ts!"],

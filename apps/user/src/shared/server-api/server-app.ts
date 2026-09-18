@@ -13,14 +13,7 @@ import {
   ProfileView,
   memberPageSize,
 } from "@repo/runtime/contracts";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@repo/runtime/http";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 
 import { interviewApi } from "./interview-api.ts";
 import { runtime } from "./runtime.ts";
@@ -31,7 +24,7 @@ const failures = {
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-const app = createApi(apiRoot)
+const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(interviewApi(api))
   .get(
@@ -91,7 +84,5 @@ const app = createApi(apiRoot)
       failures,
     ),
   );
-
-const userApi = compileApi(app);
 
 export { userApi };
