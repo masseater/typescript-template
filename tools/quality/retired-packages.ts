@@ -11,16 +11,22 @@ function isPrefix(retired: string): boolean {
   return retired.endsWith("/");
 }
 
+function replacementMessage(replacement: string): string {
+  return `${replacement}を使ってください。`;
+}
+
+function replacementFor(dependency: string): string | undefined {
+  const matched = Object.keys(retiredPackages).find(
+    (retired) => dependency === retired || (isPrefix(retired) && dependency.startsWith(retired)),
+  );
+  return matched === undefined ? undefined : retiredPackages[matched];
+}
+
 const retiredImports = {
-  paths: Object.entries(retiredPackages)
-    .filter(([retired]) => !isPrefix(retired))
-    .map(([name, replacement]) => ({ message: `${replacement} を使ってください。`, name })),
-  patterns: Object.entries(retiredPackages)
-    .filter(([retired]) => isPrefix(retired))
-    .map(([prefix, replacement]) => ({
-      group: [`${prefix}*`],
-      message: `${replacement} を使ってください。`,
-    })),
+  patterns: Object.entries(retiredPackages).map(([retired, replacement]) => ({
+    message: replacementMessage(replacement),
+    regex: `^${RegExp.escape(retired)}${isPrefix(retired) ? ".+" : "(?:/.*)?"}$`,
+  })),
 };
 
-export { isPrefix, retiredImports, retiredPackages };
+export { replacementFor, replacementMessage, retiredImports, retiredPackages };
