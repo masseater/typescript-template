@@ -1,6 +1,14 @@
 import type { UserConfig } from "vite-plus";
 import { retiredImports } from "./retired-packages.ts";
 
+const importedToolPatterns = [
+  "tools/ai-native/**",
+  "tools/dont-review-it/**",
+  "tools/lint-rule-authoring/**",
+  "tools/repository-checks/**",
+  "tools/stop-ai-slop/**",
+];
+
 const lint = {
   categories: {
     correctness: "error",
@@ -19,6 +27,7 @@ const lint = {
     ".local/**",
     ".local-agents/**",
     "**/.wrangler/**",
+    ...importedToolPatterns,
   ],
   jsPlugins: [
     "./tools/quality/rules.ts",
@@ -236,4 +245,4 @@ const lint = {
   },
 } satisfies UserConfig["lint"];
 
-export { lint };
+export { importedToolPatterns, lint };

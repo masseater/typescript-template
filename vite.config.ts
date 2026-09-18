@@ -1,6 +1,6 @@
+import { importedToolPatterns, lint } from "./tools/quality/lint.ts";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
-import { lint } from "./tools/quality/lint.ts";
 import { taskInput } from "@repo/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
@@ -20,6 +20,7 @@ export default defineConfig({
       ".local-agents/**",
       "**/.wrangler/**",
       "**/dist/**",
+      ...importedToolPatterns,
     ],
   },
   lint,
@@ -92,6 +93,11 @@ export default defineConfig({
       },
       "./tools/quality/vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
+      "./tools/ai-native",
+      "./tools/dont-review-it",
+      "./tools/lint-rule-authoring",
+      "./tools/repository-checks",
+      "./tools/stop-ai-slop",
     ],
     restoreMocks: false,
     testTimeout: 30_000,

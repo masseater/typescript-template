@@ -1,0 +1,86 @@
+{
+  "name": "@repo/dont-review-it",
+  "version": "0.0.0",
+  "description": "Machine-enforced answers to the writing questions that would otherwise be raised in review.",
+  "keywords": [
+    "tanstack-intent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/masseater/typescript-template.git",
+    "directory": "tools/dont-review-it"
+  },
+  "bin": {
+    "dont-review-it": "./src/cli.ts"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "tsconfig"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./plugin": "./src/plugin.ts",
+    "./vitest": "./src/vitest/standard-io-test.ts",
+    "./tsconfig/*": "./tsconfig/*",
+    "./package.json": "./package.json",
+    "./vitest/parsed-fields": "./src/vitest/parsed-fields.ts"
+  },
+  "publishConfig": {
+    "bin": {
+      "dont-review-it": "./dist/cli.mjs"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "./plugin": {
+        "types": "./dist/plugin.d.mts",
+        "default": "./dist/plugin.mjs"
+      },
+      "./vitest": {
+        "types": "./dist/vitest/standard-io-test.d.mts",
+        "default": "./dist/vitest/standard-io-test.mjs"
+      },
+      "./tsconfig/*": "./tsconfig/*",
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "check": "intent validate"
+  },
+  "dependencies": {
+    "@repo/lint-rule-authoring": "workspace:*",
+    "@repo/repository-checks": "workspace:*",
+    "citty": "0.2.2",
+    "es-toolkit": "catalog:",
+    "jsonc-parser": "3.3.1",
+    "oxc-parser": "catalog:",
+    "oxfmt": "0.67.0",
+    "oxlint": "catalog:",
+    "std-env": "4.2.0",
+    "typescript": "catalog:",
+    "typescript-6": "npm:@typescript/typescript6@6.0.2",
+    "yaml": "catalog:"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "catalog:",
+    "@repo/ai-native": "workspace:*",
+    "@tanstack/intent": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "vite-plus": "^0.3.2"
+  },
+  "lintRules": [
+    "src/lint/oxlint/rules"
+  ]
+}
