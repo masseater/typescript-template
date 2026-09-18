@@ -1,0 +1,7 @@
+Revision history for #331:
+
+rev 3 (rebase) 2026-09-18 20:57 UTC — main を取り込み（コンフリクト無し）、新しい run で検査し直す
+rev 2 (content) 2026-09-18 16:18 UTC — rebase onto main and move the newly merged commander runtime and http-events test onto workerRuntime
+rev 1 (initial) 2026-09-18 16:18 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":331,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"81981ea525f1e3c53e4c59b84083e0c430125cfd","timestamp_iso":"2026-09-18T16:18:01Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"81981ea525f1e3c53e4c59b84083e0c430125cfd","new_sha":"8fdcffe0199d515fb56dfbb33c316c2dd7bb89de","timestamp_iso":"2026-09-18T16:18:01Z","reason":"rebase onto main and move the newly merged commander runtime and http-events test onto workerRuntime","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/81981ea525f1e3c53e4c59b84083e0c430125cfd...8fdcffe0199d515fb56dfbb33c316c2dd7bb89de"},{"number":3,"change_type":"rebase","old_sha":"8fdcffe0199d515fb56dfbb33c316c2dd7bb89de","new_sha":"a6b5b260bdfce70653d6bdb301c1538f0031f58a","timestamp_iso":"2026-09-18T20:57:59Z","reason":"main を取り込み（コンフリクト無し）、新しい run で検査し直す","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/8fdcffe0199d515fb56dfbb33c316c2dd7bb89de...a6b5b260bdfce70653d6bdb301c1538f0031f58a"}]} -->
