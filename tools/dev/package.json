@@ -14,7 +14,6 @@
     "storybook": "node src/cli.ts storybook"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/local": "workspace:*",
     "agent-browser": "0.37.1",

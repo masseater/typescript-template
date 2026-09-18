@@ -6,7 +6,6 @@
     "load": "node src/cli.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/runtime": "workspace:*",
     "effect": "catalog:"
