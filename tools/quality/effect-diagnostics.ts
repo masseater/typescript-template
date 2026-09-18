@@ -32,9 +32,11 @@ function areaProjects(area: string): Effect.Effect<string[]> {
 }
 
 function hasProject(project: string): Effect.Effect<boolean> {
-  const directory = new URL(`../../${project.replace(/tsconfig\.json$/u, "")}`, import.meta.url);
-  return Effect.promise(async () => readdir(directory)).pipe(
-    Effect.map((names) => names.includes("tsconfig.json")),
+  return Effect.promise(async () =>
+    access(new URL(`../../${project}`, import.meta.url)).then(
+      () => true,
+      () => false,
+    ),
   );
 }
 
