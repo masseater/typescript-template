@@ -117,7 +117,7 @@ describe("a wiki worker whose database has not been migrated", () => {
 });
 
 async function servedDocument(url: string): Promise<Response> {
-  const layer = appLayer(environment({}), "user", validRoutes);
+  const layer = appLayer(appEnvironment({}), "user", validRoutes);
   const worker = serveApp(
     ManagedRuntime.make(layer),
     startRoute({
@@ -140,7 +140,7 @@ async function servedDocument(url: string): Promise<Response> {
 describe("a worker serving a rendered document", () => {
   it.effect("names the nonce it handed the renderer and forbids everything else", () =>
     Effect.gen(function* program() {
-      const response = yield* Effect.promise(async () => servedDocument("http://localhost:3001/"));
+      const response = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
       const directives = (response.headers.get("content-security-policy") ?? "").split("; ");
       const nonce = response.headers.get("x-rendered-nonce") ?? "";
       assert.match(nonce, /^[\w+/]{22}==$/u);
@@ -155,7 +155,7 @@ describe("a worker serving a rendered document", () => {
       const secure = yield* Effect.promise(async () =>
         servedDocument("https://user.example.test/"),
       );
-      const plain = yield* Effect.promise(async () => servedDocument("http://localhost:3001/"));
+      const plain = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
       assert.strictEqual(
         secure.headers.get("strict-transport-security"),
         "max-age=31536000; includeSubDomains",
