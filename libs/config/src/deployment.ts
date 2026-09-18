@@ -15,12 +15,21 @@ function configurationHome(project: string): string {
   );
 }
 
-function secretsFile(project: string): string {
+function environmentFile(): string | undefined {
   // oxlint-disable-next-line node/no-process-env
   const configured = process.env[ENVIRONMENT_FILE_VARIABLE];
-  return configured === undefined || configured === ""
+  return configured === undefined || configured === "" ? undefined : configured;
+}
+
+function secretsFileConfigured(): boolean {
+  return environmentFile() !== undefined;
+}
+
+function secretsFile(project: string): string {
+  const configured = environmentFile();
+  return configured === undefined
     ? path.join(configurationHome(project), ENVIRONMENT_FILE_NAME)
     : path.resolve(configured);
 }
 
-export { secretsFile };
+export { secretsFile, secretsFileConfigured };

@@ -10,7 +10,7 @@ import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
 import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
-import { testImportGraphVisitor } from "./test-import-graph.ts";
+import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 
 const mockSources = new Set([
@@ -145,6 +145,12 @@ export default definePlugin({
       create: exampleValuesVisitor,
       meta: metadata(
         `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 11111111-1111-4111-8111-111111111111 のように数字だけで version と variant を満たす合成値にし、secret・token・password・credential の値は大文字を含まない自己申告な文字列にしてください。`,
+      ),
+    },
+    "git-environment": {
+      create: gitEnvironmentVisitor,
+      meta: metadata(
+        "テストと fixture から git を起動するときは env を明示してください。継承した GIT_DIR・GIT_INDEX_FILE・GIT_WORK_TREE を持ったままの git init・git config・git add は、一時ディレクトリではなくこのリポジトリの設定と index を書き換えます。",
       ),
     },
     layers: {
