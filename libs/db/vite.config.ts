@@ -1,6 +1,5 @@
-import { defineConfig } from "vite-plus";
-
 import { effectDiagnostics, lifecycle } from "@repo/config/vite";
+import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {

@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
@@ -13,51 +11,58 @@ const PRIVATE_DIRECTORY_MODE = 0o700;
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../../..");
 
-async function moveMap(source: string, target: string): Promise<void> {
-  const directory = path.dirname(target);
+const moveMap = async (source: string, destination: string): Promise<void> => {
+  const directory = path.dirname(destination);
   await mkdir(directory, { mode: PRIVATE_DIRECTORY_MODE, recursive: true });
   if ((await realpath(directory)) !== directory) {
     throw new Error(`${directory} must not be an alias`);
   }
-  await rename(source, target);
-  await chmod(target, PRIVATE_FILE_MODE);
-}
+  await rename(source, destination);
+  await chmod(destination, PRIVATE_FILE_MODE);
+};
 
-async function recordEmitted(destination: string, maps: readonly string[]): Promise<void> {
+const recordEmitted = async (
+  destination: string,
+  sourceMapFiles: readonly string[],
+): Promise<void> => {
   await writeFile(
     path.join(destination, SOURCE_MAP_MANIFEST),
-    `${JSON.stringify(maps.toSorted())}\n`,
-    {
-      mode: PRIVATE_FILE_MODE,
-    },
+    `${JSON.stringify(sourceMapFiles.toSorted())}\n`,
+    { mode: PRIVATE_FILE_MODE },
   );
-}
+};
 
-function privateSourceMaps(app: Application): Plugin {
-  const destination = sourceMapDirectories(repositoryRoot, app).client;
+const privateSourceMaps = (app: Application): Plugin => {
+  const mapDirectory = sourceMapDirectories(repositoryRoot, app).client;
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
     name: "template-private-source-maps",
-    async writeBundle(options, bundle) {
-      const outDir = options.dir;
+    async writeBundle(outputOptions, bundle) {
+      const outDir = outputOptions.dir;
       if (outDir === undefined) {
         this.error("client output directory is unknown");
       }
-      const maps = Object.keys(bundle).filter((file) => file.endsWith(".map"));
-      if (maps.length === 0) {
+      const sourceMapFiles = Object.keys(bundle).filter((file) => file.endsWith(".map"));
+      if (sourceMapFiles.length === 0) {
         this.error("client build emitted no source maps");
       }
-      await rm(destination, { force: true, recursive: true });
+      await rm(mapDirectory, { force: true, recursive: true });
       await Promise.all(
-        maps.map(async (file) => moveMap(path.join(outDir, file), path.join(destination, file))),
+        sourceMapFiles.map(async (file) =>
+          moveMap(path.join(outDir, file), path.join(mapDirectory, file)),
+        ),
       );
-      await recordEmitted(destination, maps);
+      await recordEmitted(mapDirectory, sourceMapFiles);
       this.info(
-        JSON.stringify({ audience: app, event: "build.source_maps_private", moved: maps.length }),
+        JSON.stringify({
+          audience: app,
+          event: "build.source_maps_private",
+          moved: sourceMapFiles.length,
+        }),
       );
     },
   };
-}
+};
 
 export { privateSourceMaps };
