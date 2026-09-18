@@ -3,22 +3,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
     "precommit": "vp run check",
+    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
     "prepush": "vp run check && vp test run --changed origin/main && vp run build"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
+    "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/monitor": "workspace:*",
     "@shadcn/lint": "catalog:",
-    "@template/config": "workspace:*",
-    "@template/db": "workspace:*",
-    "@template/monitor": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "5.20260917.0-alpha",
+    "react-doctor": "0.9.14",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

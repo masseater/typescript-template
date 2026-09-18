@@ -1,13 +1,15 @@
-import { Effect, Schedule, Schema } from "effect";
-import { applicationPorts, applicationReadyPaths, applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { loadavg } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+import { Effect, Schedule, Schema } from "effect";
+
+import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
   reason: Schema.Literals([

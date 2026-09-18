@@ -1,8 +1,10 @@
-import { Avatar, ButtonLink, Heading } from "@template/ui";
-import { Biography } from "./biography.tsx";
-import type { Member } from "#pages/profile/model/member.ts";
-import { ProfileBody } from "./profile-body.tsx";
 import type { ReactElement } from "react";
+
+import type { Member } from "#pages/profile/model/member.ts";
+import { Avatar, ButtonLink, Heading } from "@repo/ui";
+
+import { Biography } from "./biography.tsx";
+import { ProfileBody } from "./profile-body.tsx";
 
 const joinedMonth = new Intl.DateTimeFormat("ja", {
   month: "long",

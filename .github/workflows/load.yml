@@ -26,9 +26,9 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-      - run: vp run --filter @template/local up
-      - run: vp run --filter @template/dev setup loopback
-      - run: vp run --filter @template/db db:migrate:local
-      - run: vp run --filter @template/user build
-      - run: vp run --filter @template/user preview &
-      - run: vp run --filter @template/load load user ${{ inputs.profile }}
+      - run: vp run --filter @repo/local up
+      - run: vp run --filter @repo/dev setup loopback
+      - run: vp run --filter @repo/db db:migrate:local
+      - run: vp run --filter @repo/user build
+      - run: vp run --filter @repo/user preview &
+      - run: vp run --filter @repo/load load user ${{ inputs.profile }}

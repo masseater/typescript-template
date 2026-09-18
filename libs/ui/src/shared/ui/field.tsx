@@ -1,6 +1,7 @@
-import type { ComponentProps, ReactElement } from "react";
-import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
+import type { ComponentProps, ReactElement } from "react";
+
+import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 
 const validationMessages: readonly (readonly [keyof ValidityState, string])[] = [
   ["valueMissing", "入力してください。"],
@@ -15,8 +16,6 @@ const errors = validationMessages.map(([match, message]) => (
     {message}
   </FieldPrimitive.Error>
 ));
-
-const textarea = <textarea />;
 
 type AutoComplete =
   | "current-password"
@@ -58,7 +57,7 @@ function Field({
     <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
-        render={multiline === true ? textarea : undefined}
+        render={multiline === true ? <textarea aria-label={label} /> : undefined}
         type={type}
         name={name}
         value={value}

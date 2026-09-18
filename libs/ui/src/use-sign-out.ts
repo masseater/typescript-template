@@ -1,7 +1,7 @@
 import type { ActionState } from "./action";
+import { useAction } from "./action";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
-import { useAction } from "./action";
 
 function useSignOut(
   destination = "/login",

@@ -1,5 +1,5 @@
 {
-  "name": "@template/db",
+  "name": "@repo/db",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,13 +13,13 @@
     "./local": "./src/local.ts"
   },
   "scripts": {
+    "db:bootstrap:local": "node src/bootstrap-local.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "node src/migrate-local.ts",
-    "db:bootstrap:local": "node src/bootstrap-local.ts"
+    "db:migrate:local": "node src/migrate-local.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@template/config": "workspace:*",
+    "@repo/config": "workspace:*",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "miniflare": "4.20260730.0",

@@ -1,3 +1,7 @@
+import { ChevronDownIcon } from "lucide-react";
+import type { ReactElement } from "react";
+import { useEffect } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,10 +11,7 @@ import {
   Icon,
   useSignOut,
   useToast,
-} from "@template/ui";
-import { ChevronDownIcon } from "lucide-react";
-import type { ReactElement } from "react";
-import { useEffect } from "react";
+} from "@repo/ui";
 
 function AccountMenu({ email }: Readonly<{ email: string }>): ReactElement {
   const { action, signOut } = useSignOut();

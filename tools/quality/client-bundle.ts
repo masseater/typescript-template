@@ -1,31 +1,33 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-import { build } from "vite-plus";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { serverOnlyMarkers } from "@template/config/vite";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { build } from "vite-plus";
+
+import { serverOnlyMarkers } from "@repo/config/vite";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
 const outDirectory = await mkdtemp(path.join(tmpdir(), "template-client-bundle-"));
 
 const clientReachable: readonly string[] = [
-  "@template/runtime/client",
-  "@template/runtime/contracts",
-  "@template/ui",
+  "@repo/runtime/client",
+  "@repo/runtime/contracts",
+  "@repo/ui",
   "#shared/api/client.ts",
 ];
 const serverOnly: readonly (readonly [string, string])[] = [
-  ["@template/runtime/http", "**/libs/runtime/src/**"],
-  ["@template/runtime/worker", "**/libs/runtime/src/**"],
-  ["@template/runtime/account", "**/libs/runtime/src/**"],
-  ["@template/runtime/wiki", "**/libs/runtime/src/**"],
-  ["@template/db", "**/libs/db/src/**"],
-  ["@template/auth", "**/libs/auth/src/**"],
+  ["@repo/runtime/http", "**/libs/runtime/src/**"],
+  ["@repo/runtime/worker", "**/libs/runtime/src/**"],
+  ["@repo/runtime/account", "**/libs/runtime/src/**"],
+  ["@repo/runtime/wiki", "**/libs/runtime/src/**"],
+  ["@repo/db", "**/libs/db/src/**"],
+  ["@repo/auth", "**/libs/auth/src/**"],
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
 

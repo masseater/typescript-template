@@ -1,3 +1,18 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+
+import { mailpitPort } from "@repo/config";
+import { memberPageSize } from "@repo/runtime/contracts";
+
+import { exists, installBinary } from "./binary.ts";
+import type { BinaryUnavailable } from "./binary.ts";
 import {
   Application,
   awaitReady,
@@ -6,21 +21,9 @@ import {
   requireLoopbackOrigin,
   targetOrigin,
 } from "./environment.ts";
-import { Console, Effect, Schema } from "effect";
-import { discardSummary, readSummary } from "./summary.ts";
-import { exists, installBinary } from "./binary.ts";
-import type { BinaryUnavailable } from "./binary.ts";
 import type { EnvironmentUnusable } from "./environment.ts";
-import { NodeRuntime } from "@effect/platform-node";
+import { discardSummary, readSummary } from "./summary.ts";
 import type { Report } from "./summary.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-import { mailpitPort } from "@template/config";
-import { memberPageSize } from "@template/runtime/contracts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
 
 class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFailure", {
   code: Schema.optionalKey(Schema.Int),
@@ -49,14 +52,13 @@ const profiles = {
 const peak = Effect.succeed("peak" as const);
 const Profile = Schema.Literals(["peak", "smoke"]).pipe(Schema.withDecodingDefaultKey(peak));
 const Arguments = Schema.Struct({ app: Application, profile: Profile });
-const usage = "vp run --filter @template/load load <user|admin|wiki> [smoke|peak]";
-const rebuild =
-  "vp run --filter @template/dev setup loopback, then vp run --filter @template/<app> build";
+const usage = "vp run --filter @repo/load load <user|admin|wiki> [smoke|peak]";
+const rebuild = "vp run --filter @repo/dev setup loopback, then vp run --filter @repo/<app> build";
 const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
   build_missing: rebuild,
   origin_mismatch: rebuild,
-  target_unreachable: "vp run --filter @template/<app> preview",
-  traces_not_cleared: "restart vp run --filter @template/<app> preview",
+  target_unreachable: "vp run --filter @repo/<app> preview",
+  traces_not_cleared: "restart vp run --filter @repo/<app> preview",
   usage_invalid: usage,
 };
 

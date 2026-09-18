@@ -1,18 +1,21 @@
-import { Console, Effect, Schema } from "effect";
-import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
-import type { DeploymentValue } from "./secrets.ts";
-import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readFile } from "node:fs/promises";
-import { secretsFile } from "@template/config/deployment";
+import { promisify } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+
+import { secretsFile } from "@repo/config/deployment";
+
+import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
+import type { DeploymentValue } from "./secrets.ts";
 
 const MAX_OUTPUT_BYTES = 33_554_432;
 const FAILED_EXIT_CODE = 1;

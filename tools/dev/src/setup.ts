@@ -1,5 +1,17 @@
-import type { App, Credentials } from "./local-environment.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { randomBytes } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { mkdir, stat } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
 import { Effect, Schema } from "effect";
+
+import { applications } from "@repo/config";
+
+import { failure, fileIo } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App, Credentials } from "./local-environment.ts";
 import {
   credentialsFile,
   lanOrigin,
@@ -8,21 +20,12 @@ import {
   refreshBrowserConfig,
   routes,
 } from "./local-environment.ts";
-import { failure, fileIo } from "./failure.ts";
 import {
   isErrorCode,
   privateDirectoryMode,
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, stat } from "node:fs/promises";
-import type { LocalCommandFailure } from "./failure.ts";
-import { applications } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { randomBytes } from "node:crypto";
 
 const OriginMode = Schema.Literals(["lan", "loopback"]);
 interface SetupReport {

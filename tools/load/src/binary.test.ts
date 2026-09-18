@@ -1,15 +1,17 @@
-import { BinaryUnavailable, installBinary } from "./binary.ts";
-import { assert, describe, it } from "@effect/vitest";
-import { downloadUrl, releases } from "./releases.ts";
-import { http, passthrough } from "msw";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, realpath, rm } from "node:fs/promises";
-import { Effect } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { setupServer } from "msw/node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import { assert, describe, it } from "@effect/vitest";
+import { Effect } from "effect";
+import { http, passthrough } from "msw";
+import { setupServer } from "msw/node";
+
+import { BinaryUnavailable, installBinary } from "./binary.ts";
+import { downloadUrl, releases } from "./releases.ts";
 
 const prefix = path.join(tmpdir(), "template-k6-");
 const archives = [...releases.values()].map((release) => downloadUrl(release.archive));

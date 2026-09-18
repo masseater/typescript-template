@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { exactMatchesFirst, rankPages } from "./semantic.ts";
 
 const PAGE_LIMIT = 5;

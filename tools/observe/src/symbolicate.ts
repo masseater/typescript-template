@@ -1,10 +1,13 @@
-import { Console, Effect, Schema } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+
+import { applications } from "@repo/config";
+
 import { reportFailed } from "./failure.ts";
 import { symbolicate } from "./source-maps.ts";
 
@@ -33,7 +36,7 @@ const help = Console.info(
   JSON.stringify({
     locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
     readOnly: true,
-    usage: `vp run --filter @template/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
+    usage: `vp run --filter @repo/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
   }),
 );
 

@@ -1,13 +1,16 @@
-import { browserConfig, lanOrigin, refreshBrowserConfig, root, run } from "./local-environment.ts";
-import type { App } from "./local-environment.ts";
-import { Effect } from "effect";
-import { applicationReadyPaths } from "@template/config";
-import { browserLaunchArguments } from "./lan-gateway.ts";
-import { failure } from "./failure.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { applicationReadyPaths } from "@repo/config";
+
+import { failure } from "./failure.ts";
+import { browserLaunchArguments } from "./lan-gateway.ts";
+import { browserConfig, lanOrigin, refreshBrowserConfig, root, run } from "./local-environment.ts";
+import type { App } from "./local-environment.ts";
 
 interface BrowserReport {
   readonly event: "local.browser_opened";

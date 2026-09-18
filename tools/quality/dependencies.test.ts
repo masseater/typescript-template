@@ -1,9 +1,12 @@
+import { describe, expect, it } from "vite-plus/test";
+
 import {
   applicationDependencyViolations,
   retiredDependencyViolations,
+  rootOnlyDependencyViolations,
+  rootOnlyPackages,
   workspaceManifests,
 } from "./dependencies.ts";
-import { describe, expect, it } from "vite-plus/test";
 import { retiredPackages } from "./retired-packages.ts";
 
 describe("application package boundaries", () => {
@@ -12,21 +15,21 @@ describe("application package boundaries", () => {
     (key) => {
       expect.hasAssertions();
       const violations = applicationDependencyViolations([
-        { area: "apps", file: "apps/user/package.json", manifest: { name: "@template/user" } },
+        { area: "apps", file: "apps/user/package.json", manifest: { name: "@repo/user" } },
         {
           area: "apps",
           file: "apps/batch/package.json",
-          manifest: { [key]: { "@template/user": "workspace:*" }, name: "@template/batch" },
+          manifest: { [key]: { "@repo/user": "workspace:*" }, name: "@repo/batch" },
         },
         {
           area: "libs",
           file: "libs/domain/package.json",
-          manifest: { [key]: { "@template/db": "workspace:*" }, name: "@template/domain" },
+          manifest: { [key]: { "@repo/db": "workspace:*" }, name: "@repo/domain" },
         },
       ]);
       expect(violations).toHaveLength(1);
       expect(violations[0]).toMatch(
-        /^apps\/batch\/package\.json: @template\/user はデプロイ単位のアプリです。/u,
+        /^apps\/batch\/package\.json: @repo\/user はデプロイ単位のアプリです。/u,
       );
     },
   );
@@ -51,7 +54,7 @@ describe("replaced packages", () => {
       {
         area: "libs",
         file: "libs/ui/package.json",
-        manifest: { dependencies: { [dependency]: "1.0.0" }, name: "@template/ui" },
+        manifest: { dependencies: { [dependency]: "1.0.0" }, name: "@repo/ui" },
       },
     ]);
     expect(violations).toHaveLength(1);
@@ -61,5 +64,25 @@ describe("replaced packages", () => {
   it("repository workspaces no longer declare them", () => {
     expect.hasAssertions();
     expect(retiredDependencyViolations(workspaceManifests)).toStrictEqual([]);
+  });
+});
+
+describe("root-only packages", () => {
+  it.for(Object.keys(rootOnlyPackages))("rejects a workspace that declares %s", (dependency) => {
+    expect.hasAssertions();
+    const violations = rootOnlyDependencyViolations([
+      {
+        area: "libs",
+        file: "libs/ui/package.json",
+        manifest: { devDependencies: { [dependency]: "1.0.0" }, name: "@repo/ui" },
+      },
+    ]);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain(dependency);
+  });
+
+  it("repository workspaces leave them to the root", () => {
+    expect.hasAssertions();
+    expect(rootOnlyDependencyViolations(workspaceManifests)).toStrictEqual([]);
   });
 });

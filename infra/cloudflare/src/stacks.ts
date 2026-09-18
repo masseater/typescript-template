@@ -1,5 +1,6 @@
 import { providers, state } from "alchemy/Cloudflare";
-import type { Application } from "@template/config";
+
+import type { Application } from "@repo/config";
 
 const application = ["database"] as const;
 const stackDependencies = {

@@ -1,12 +1,14 @@
+import { Effect } from "effect";
+
+import { getSessionSecurity } from "@repo/db/security";
+
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
+import { authSession } from "./auth-request.ts";
 import { Auth } from "./auth.ts";
-import { Effect } from "effect";
+import { isStrongMethod } from "./policy.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
-import { authSession } from "./auth-request.ts";
-import { getSessionSecurity } from "@template/db/security";
-import { isStrongMethod } from "./policy.ts";
 
 const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* requireSessionSecurity(
   headers: Headers,

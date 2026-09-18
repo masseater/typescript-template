@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { errorAttributes, errorFingerprint } from "./errors.ts";
 
 const deepFrames = 6;

@@ -1,6 +1,7 @@
-import { Effect, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, rm } from "node:fs/promises";
+
+import { Effect, Schema } from "effect";
 
 const Thresholds = Schema.Record(Schema.String, Schema.Boolean);
 const Metric = Schema.Struct({

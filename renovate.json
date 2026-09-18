@@ -80,6 +80,11 @@
       "matchManagers": ["docker-compose"]
     },
     {
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["Mergifyio/mergify-cli"],
+      "versioning": "loose"
+    },
+    {
       "groupName": "k6",
       "matchPackageNames": ["@types/k6", "grafana/k6"]
     }

@@ -1,9 +1,10 @@
-import { Button, FormColumn } from "@template/ui";
-import type { ReactElement } from "react";
 import { Schema } from "effect";
-import { decodeJson } from "@template/runtime/client";
-import { serviceName } from "#shared/config/index.ts";
+import type { ReactElement } from "react";
 import { useState } from "react";
+
+import { serviceName } from "#shared/config/index.ts";
+import { decodeJson } from "@repo/runtime/client";
+import { Button, FormColumn } from "@repo/ui";
 
 const Redirect = Schema.Struct({ url: Schema.String });
 

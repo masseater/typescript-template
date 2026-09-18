@@ -1,9 +1,10 @@
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
-import { origins, propertyName, staticText } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
-import { reportViolation } from "./lint-context.ts";
 
-const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
+import { reportViolation } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
+
+const elysiaServerOrigin = ["@repo/runtime/http", "elysiaServer"];
 
 function filename(context: LintContext): string {
   return context.filename.replaceAll("\\", "/");

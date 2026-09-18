@@ -1,5 +1,5 @@
-import { Spinner } from "./spinner";
 import preview from "../../../.storybook/preview";
+import { Spinner } from "./spinner";
 
 const meta = preview.meta({ component: Spinner });
 

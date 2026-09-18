@@ -1,3 +1,6 @@
+import { ChevronDownIcon } from "lucide-react";
+import type { ReactElement } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,13 +9,7 @@ import {
   DropdownMenuTrigger,
   Icon,
   useSignOut,
-} from "@template/ui";
-import { ChevronDownIcon } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import type { ReactElement } from "react";
-
-const profileEditLink = <Link to="/settings/profile" />;
-const securityLink = <Link to="/security" />;
+} from "@repo/ui";
 
 function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
   const { action, signOut } = useSignOut("/");
@@ -23,8 +20,8 @@ function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
         <Icon icon={ChevronDownIcon} size="small" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLinkItem render={profileEditLink}>プロフィールの編集</DropdownMenuLinkItem>
-        <DropdownMenuLinkItem render={securityLink}>認証設定</DropdownMenuLinkItem>
+        <DropdownMenuLinkItem to="/settings/profile">プロフィールの編集</DropdownMenuLinkItem>
+        <DropdownMenuLinkItem to="/security">認証設定</DropdownMenuLinkItem>
         <DropdownMenuItem disabled={action.blocked} onClick={signOut}>
           ログアウト
         </DropdownMenuItem>

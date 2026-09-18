@@ -1,16 +1,16 @@
 {
-  "name": "@template/health-monitor",
+  "name": "@repo/health-monitor",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@template/monitor": "workspace:*",
+    "@repo/monitor": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
-    "@template/config": "workspace:*",
+    "@repo/config": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

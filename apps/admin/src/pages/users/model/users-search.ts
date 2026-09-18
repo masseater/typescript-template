@@ -1,11 +1,13 @@
+import { Option, Schema } from "effect";
+
 import {
   BooleanText,
   Role,
   SearchKeyword,
   absentSearchKey,
   laterPage,
-} from "@template/runtime/contracts";
-import { Option, Schema } from "effect";
+} from "@repo/runtime/contracts";
+
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);

@@ -1,12 +1,14 @@
-import { AppOrigin, secureResponse } from "@template/runtime/http";
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
-import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
-import { searchServer, wikiLlms } from "./search.ts";
 import type { Context } from "effect";
 import { Effect } from "effect";
-import type { WikiServices } from "@template/runtime/wiki";
-import { authorizeMcpRequest } from "@template/auth/mcp";
+import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
+
 import { source } from "#shared/content/index.ts";
+import { authorizeMcpRequest } from "@repo/auth/mcp";
+import { AppOrigin, secureResponse } from "@repo/runtime/http";
+import type { WikiServices } from "@repo/runtime/wiki";
+
+import { searchServer, wikiLlms } from "./search.ts";
 
 const mcpVersion = "1.0.0";
 

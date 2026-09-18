@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
+
 import { parseErrorMonitorConfig } from "./config.ts";
 
 const ACCOUNT_ID_LENGTH = 32;

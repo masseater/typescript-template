@@ -1,6 +1,7 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
-import { Button } from "./button";
 import type { ReactElement } from "react";
+
+import { Button } from "./button";
 
 interface ConfirmDialogProps {
   readonly confirmLabel: string;

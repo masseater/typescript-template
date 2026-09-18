@@ -1,6 +1,8 @@
-import { CompactNavigation } from "./compact-navigation.tsx";
-import { NavigationLink } from "@template/ui";
 import type { ReactElement } from "react";
+
+import { NavigationLink } from "@repo/ui";
+
+import { CompactNavigation } from "./compact-navigation.tsx";
 
 function MemberNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
   return (

@@ -1,7 +1,8 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-import { PublicFrame } from "#widgets/public-frame/index.ts";
 import type { ReactElement } from "react";
+
 import { enterPublicFrame } from "#app/entry-conditions.ts";
+import { PublicFrame } from "#widgets/public-frame/index.ts";
 
 const Route = createFileRoute("/_public")({
   beforeLoad: async ({ location }: Readonly<{ location: Readonly<{ pathname: string }> }>) =>

@@ -1,11 +1,13 @@
-import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { Effect, Schema } from "effect";
-import { RemoteFailure, fail } from "./remote-input.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { URL, fileURLToPath } from "node:url";
-import type { EmailAddress } from "./bootstrap-statement.ts";
-import { SQLiteDialect } from "drizzle-orm/sqlite-core";
+
 import { readMigrationFiles } from "drizzle-orm/migrator";
+import { SQLiteDialect } from "drizzle-orm/sqlite-core";
+import { Effect, Schema } from "effect";
+
+import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
+import type { EmailAddress } from "./bootstrap-statement.ts";
+import { RemoteFailure, fail } from "./remote-input.ts";
 
 interface RemoteQuery {
   readonly params: readonly (string | number | null)[];
@@ -32,8 +34,7 @@ const StatementParams = Schema.Array(Schema.Union([Schema.String, Schema.Finite,
 
 const History = Schema.Array(Schema.Struct({ hash: Schema.String, name: Schema.String }));
 
-const APPLICATION_TABLES =
-  "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('__drizzle_migrations', '_cf_METADATA', 'd1_migrations')";
+const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' AND name NOT LIKE '\_cf\_%' ESCAPE '\' AND name NOT IN ('__drizzle_migrations', 'd1_migrations')`;
 
 const MIGRATIONS_TABLE =
   "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric, name text, applied_at TEXT)";
@@ -126,5 +127,11 @@ const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapData
   );
 });
 
-export { MigrationFiles, bootstrapDatabase, loadRemoteMigrations, migrateDatabase };
+export {
+  APPLICATION_TABLES,
+  MigrationFiles,
+  bootstrapDatabase,
+  loadRemoteMigrations,
+  migrateDatabase,
+};
 export type { DatabaseExecutor, RemoteQuery };

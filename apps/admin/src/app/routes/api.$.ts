@@ -1,6 +1,7 @@
-import { adminApi } from "#shared/server-api/index.ts";
 import { createFileRoute } from "@tanstack/react-router";
-import { elysiaServer } from "@template/runtime/http";
+
+import { adminApi } from "#shared/server-api/index.ts";
+import { elysiaServer } from "@repo/runtime/http";
 
 const Route = createFileRoute("/api/$")({ server: elysiaServer(adminApi) });
 

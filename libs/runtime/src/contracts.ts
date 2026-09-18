@@ -1,5 +1,6 @@
 import { Effect, Option, Schema, SchemaGetter } from "effect";
-import { applications, roles } from "@template/config";
+
+import { applications, roles } from "@repo/config";
 
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;

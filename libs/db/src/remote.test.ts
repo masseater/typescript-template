@@ -1,14 +1,23 @@
-import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { DatabaseSync } from "node:sqlite";
+
 import { assert, it } from "@effect/vitest";
-import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
-import { session, user } from "./schema.ts";
-import type { Database } from "./database.ts";
 import { Effect } from "effect";
-import type { RemoteFailure } from "./remote-input.ts";
+
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import { getSessionSecurity } from "./security.ts";
-import { parseRemoteInput } from "./remote-input.ts";
+import type { Database } from "./database.ts";
 import { query } from "./database.ts";
+import type { RemoteFailure } from "./remote-input.ts";
+import { parseRemoteInput } from "./remote-input.ts";
+import {
+  APPLICATION_TABLES,
+  bootstrapDatabase,
+  loadRemoteMigrations,
+  migrateDatabase,
+} from "./remote-operations.ts";
+import { session, user } from "./schema.ts";
+import { getSessionSecurity } from "./security.ts";
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
 
 const HEX_ID_LENGTH = 32;
 const HASH_LENGTH = 64;
@@ -214,6 +223,47 @@ it.effect(
           "LAST_ADMIN_REQUIRED",
         );
       }
+    }).pipe(Effect.provide(EmptyTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect("counts as application tables everything but the Cloudflare and migration tables", () =>
+  Effect.sync(() => {
+    const storage = new DatabaseSync(":memory:");
+    for (const name of [
+      "__drizzle_migrations",
+      "_cf_KV",
+      "_cf_METADATA",
+      "acfxtable",
+      "cf_users",
+      "d1_migrations",
+      "sqlitex_thing",
+      "user",
+    ]) {
+      storage.exec(`CREATE TABLE "${name}" (id TEXT)`);
+    }
+    const names = storage.prepare(APPLICATION_TABLES).all();
+    storage.close();
+    assert.deepStrictEqual(names, [
+      { name: "acfxtable" },
+      { name: "cf_users" },
+      { name: "sqlitex_thing" },
+      { name: "user" },
+    ]);
+  }),
+);
+
+it.effect(
+  "refuses to migrate application tables that have no recorded history",
+  () =>
+    Effect.gen(function* program() {
+      yield* runStatement("CREATE TABLE user (id TEXT PRIMARY KEY)");
+      const executor = d1Executor(yield* TestBinding);
+      const migrations = yield* loadRemoteMigrations();
+      assert.strictEqual(
+        yield* code(migrateDatabase(executor, migrations)),
+        "REMOTE_MIGRATION_HISTORY_MISSING",
+      );
     }).pipe(Effect.provide(EmptyTestDatabase)),
   { timeout: TEST_TIMEOUT_MS },
 );

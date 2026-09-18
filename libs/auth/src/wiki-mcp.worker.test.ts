@@ -1,3 +1,8 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { runStatement } from "@repo/db/testing";
+
 import {
   Fixture,
   HTTP_FORBIDDEN,
@@ -12,7 +17,7 @@ import {
   signInAs,
   withAuth,
 } from "./auth-test-fixture.ts";
-import { assert, it } from "@effect/vitest";
+import { BrowserClient } from "./browser-client.ts";
 import {
   exchangeCode,
   grantAuthorization,
@@ -22,9 +27,6 @@ import {
   wikiAdministrator,
   wikiOrigin,
 } from "./wiki-oauth-fixture.ts";
-import { BrowserClient } from "./browser-client.ts";
-import { Effect } from "effect";
-import { runStatement } from "@template/db/testing";
 
 const tamperedSuffix = "xx";
 

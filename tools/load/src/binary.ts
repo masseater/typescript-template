@@ -1,16 +1,18 @@
-import { Effect, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, mkdir, rm, stat, writeFile } from "node:fs/promises";
-import { downloadUrl, releases, version } from "./releases.ts";
-import type { Release } from "./releases.ts";
+import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createHash } from "node:crypto";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { execFile } from "node:child_process";
+import { chmod, mkdir, rm, stat, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
+
+import { Effect, Schema } from "effect";
+
+import { downloadUrl, releases, version } from "./releases.ts";
+import type { Release } from "./releases.ts";
 
 class BinaryUnavailable extends Schema.TaggedError<BinaryUnavailable>()("BinaryUnavailable", {
   reason: Schema.Literals([
