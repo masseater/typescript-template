@@ -27,7 +27,6 @@ export const Rejected = meta.story({
       ),
     );
   },
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com");
     await userEvent.type(canvas.getByLabelText("パスワード"), "wrong password");

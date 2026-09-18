@@ -1,6 +1,8 @@
-import { Button, Field, FormColumn } from "./shared/ui";
 import type { ReactElement, SyntheticEvent } from "react";
 import { requireSecureContext, requireSuccess } from "./protocol";
+import { Button } from "./shared/ui/button";
+import { Field } from "./shared/ui/field";
+import { FormColumn } from "./shared/ui/form-column";
 import type { SettingsContext } from "./mfa-types";
 import { authClient } from "./client";
 import { useTextInput } from "./use-text-input";

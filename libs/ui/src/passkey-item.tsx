@@ -1,5 +1,5 @@
 import type { ActionState } from "./action";
-import { Button } from "./shared/ui";
+import { Button } from "./shared/ui/button";
 import type { PasskeySummary } from "./mfa-types";
 import type { ReactElement } from "react";
 import { authClient } from "./client";

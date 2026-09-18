@@ -61,7 +61,6 @@ export const TooShort = meta.story({
     type: "password",
     value: undefined,
   },
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas, canvasElement }) => {
     const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);
@@ -75,7 +74,6 @@ export const TooShort = meta.story({
 
 export const Missing = meta.story({
   args: { label: "ユーザー名", name: "name", required: true, value: undefined },
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas, canvasElement }) => {
     const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);
