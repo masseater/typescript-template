@@ -38,18 +38,23 @@ const Scanned = Schema.Struct({
   skippedProjects: Schema.optionalKey(Schema.Array(SkippedProject)),
 });
 const Report = Schema.fromJsonString(Scanned);
+const Rules = Schema.fromJsonString(
+  Schema.Array(
+    Schema.Struct({ key: Schema.String, severity: Schema.String, source: Schema.String }),
+  ),
+);
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/react-doctor", import.meta.url));
 
-function scan(): Effect.Effect<Scan> {
+function scan(args: readonly string[]): Effect.Effect<Scan> {
   return Effect.promise(
     async () =>
       // oxlint-disable-next-line promise/avoid-new
       new Promise<Scan>((resolve) => {
         execFile(
           executable,
-          ["--json", "--no-score"],
+          args,
           { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
           (failure, stdout, stderr) => {
             resolve({ failed: failure !== null, stderr, stdout });
@@ -79,13 +84,22 @@ function skippedOf(entry: typeof Project.Type): string[] {
 }
 
 const inspect = Effect.fn("inspect")(function* inspect() {
-  const { failed, stderr, stdout } = yield* scan();
+  const [{ failed, stderr, stdout }, listed] = yield* Effect.all(
+    [scan(["--json", "--no-score"]), scan(["rules", "list", "--json"])],
+    { concurrency: "unbounded" },
+  );
   if (failed && stderr !== "") {
     yield* Console.error(stderr);
   }
   const report = yield* Schema.decodeUnknownEffect(Report)(stdout).pipe(
     Effect.tapError(() => Console.error(stdout)),
   );
+  const rules = yield* Schema.decodeUnknownEffect(Rules)(listed.stdout).pipe(
+    Effect.tapError(() => Console.error(listed.stderr)),
+  );
+  const unclassified = rules
+    .filter((rule) => rule.source === "default" || rule.severity === "warn")
+    .map((rule) => `${rule.key} ${rule.source} ${rule.severity}`);
   const findings = report.projects.flatMap((entry) => findingsOf(entry));
   const skipped = [
     ...report.projects.flatMap((entry) => skippedOf(entry)),
@@ -94,9 +108,16 @@ const inspect = Effect.fn("inspect")(function* inspect() {
   return {
     error: report.error?.message,
     findings,
-    ok: !failed && skipped.length === 0,
+    ok:
+      !failed &&
+      !listed.failed &&
+      report.error === null &&
+      findings.length === 0 &&
+      skipped.length === 0 &&
+      unclassified.length === 0,
     projects: report.projects.length,
     skipped,
+    unclassified,
   };
 });
 
