@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
@@ -73,18 +73,18 @@ const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
 NodeRuntime.runMain(
   diagnoseAll().pipe(
     Effect.flatMap((results) =>
-      Effect.sync(() => {
+      Effect.gen(function* report() {
         const failed = results.filter((result) => !result.ok);
         for (const result of failed) {
-          process.stderr.write(result.output);
+          yield* Console.error(result.output);
         }
-        process.stdout.write(
-          `${JSON.stringify({
+        yield* Console.log(
+          JSON.stringify({
             event: "quality.effect_diagnostics",
             failed: failed.map((result) => result.project),
             ok: failed.length === 0,
             projects: results.length,
-          })}\n`,
+          }),
         );
         if (failed.length > 0) {
           process.exitCode = 1;
