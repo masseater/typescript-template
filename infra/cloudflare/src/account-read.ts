@@ -144,5 +144,52 @@ const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
   return yield* decodeBody(collection.source, shape, reading.body);
 });
 
-export { decodeBody, endpoint, readList, readRequired, readResource, requestReason };
+const FIRST_PAGE = 1;
+
+type Pages = Readonly<{ filter?: Query; pageSize: number; source: Endpoint }>;
+
+const readPage = Effect.fn("readPage")(function* readPage<Shape, Encoded>(
+  access: AccountAccess,
+  asked: Pages & Readonly<{ page: number }>,
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const reading = yield* fetchJson(access.apiToken, asked.source, {
+    ...listedQuery(asked),
+    page: String(asked.page),
+  });
+  if (!reading.found) {
+    return yield* Effect.fail(unreadable(asked.source, MISSING_REASON));
+  }
+  const paged = yield* decodeBody(asked.source, Paged, reading.body);
+  return {
+    rows: paged.result.length,
+    total: paged.result_info?.total_count,
+    value: yield* decodeBody(asked.source, shape, reading.body),
+  } as const;
+});
+
+const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
+  access: AccountAccess,
+  collection: Pages,
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const first = yield* readPage(access, { ...collection, page: FIRST_PAGE }, shape);
+  if (first.total === undefined || first.total <= first.rows) {
+    return [first.value];
+  }
+  const rest = yield* Effect.forEach(
+    Array.from(
+      { length: Math.ceil(first.total / collection.pageSize) - FIRST_PAGE },
+      (_unused, index) => index + FIRST_PAGE + 1,
+    ),
+    (page) => readPage(access, { ...collection, page }, shape),
+  );
+  const gathered = rest.reduce((rows, page) => rows + page.rows, first.rows);
+  if (gathered !== first.total) {
+    return yield* Effect.fail(unreadable(collection.source, "truncated"));
+  }
+  return [first.value, ...rest.map((page) => page.value)];
+});
+
+export { decodeBody, endpoint, readList, readPages, readRequired, readResource, requestReason };
 export type { AccountAccess, Endpoint };

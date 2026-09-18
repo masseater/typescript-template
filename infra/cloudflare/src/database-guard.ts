@@ -28,4 +28,21 @@ const assertDatabaseUnclaimed = Effect.fn("assertDatabaseUnclaimed")(
   },
 );
 
-export { assertDatabaseUnclaimed };
+const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
+  Failure,
+  Requirements,
+>(
+  access: AccountAccess,
+  target: DeploymentTarget,
+  store: Effect.Effect<StateService, Failure, Requirements>,
+) {
+  if ((yield* findDatabaseId(access, databaseName(target.prefix))) === undefined) {
+    return "free" as const;
+  }
+  return yield* assertDatabaseUnclaimed(access, target, store).pipe(
+    Effect.as("owned" as const),
+    Effect.catchCause(() => Effect.succeed("taken" as const)),
+  );
+});
+
+export { assertDatabaseUnclaimed, databaseVerdict };

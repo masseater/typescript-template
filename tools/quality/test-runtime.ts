@@ -1,18 +1,13 @@
-import type { Visitor } from "vite-plus/lint/plugins";
-
-import type { LintContext, Node } from "./lint-context.ts";
-import { importVisitor, reportViolation } from "./lint-context.ts";
-import { staticText } from "./references.ts";
-
 const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
-const workerTestFile = /\.worker\.test\.[cm]?[jt]sx?$/u;
-const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
+const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
+const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
+const workerTestFile = new RegExp(workerTestPattern, "u");
+const testFile = new RegExp(testPattern, "u");
 const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 const browserOrNodeOnly =
   /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/(?:remote|testing-node)[^/]*\.ts$/u;
-const nodeRuntimeModules = [
-  "node:",
+const nodeRuntimePackages = [
   "msw/node",
   "miniflare",
   "wrangler",
@@ -20,15 +15,6 @@ const nodeRuntimeModules = [
   "@effect/platform-node",
 ] as const;
 const workerRuntimeModules = ["cloudflare:test", "cloudflare:workers"] as const;
-
-function importsAnyOf(specifiers: readonly string[], source: string): boolean {
-  return specifiers.some(
-    (specifier) =>
-      source === specifier ||
-      source.startsWith(`${specifier}/`) ||
-      (specifier.endsWith(":") && source.startsWith(specifier)),
-  );
-}
 
 function runsInWorkerRuntime(current: string): boolean {
   return (
@@ -38,24 +24,12 @@ function runsInWorkerRuntime(current: string): boolean {
   );
 }
 
-function testRuntimeVisitor(context: LintContext): Visitor {
-  const current = context.filename.replaceAll("\\", "/");
-  if (!testFile.test(current)) {
-    return {};
-  }
-  const forbidden = workerTestFile.test(current) ? nodeRuntimeModules : workerRuntimeModules;
-  return importVisitor((node: Node) => {
-    if (importsAnyOf(forbidden, staticText(context, node) ?? "")) {
-      reportViolation(context, node);
-    }
-  });
-}
-
 export {
-  nodeRuntimeModules,
+  nodeRuntimePackages,
   runsInWorkerRuntime,
-  testRuntimeVisitor,
+  testPattern,
   workerRuntimeModules,
+  workerTestPattern,
   workerTestSuffix,
   workerTests,
 };
