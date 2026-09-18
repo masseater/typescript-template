@@ -1,0 +1,1 @@
+keep @effect/vitest listed in auth/config/db/observability until remaining it.effect specs are converted (knip unlisted deps)
