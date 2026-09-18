@@ -35,6 +35,7 @@ export default defineConfig({
           "vp check",
           "vp run knip",
           "vp run check:client",
+          "vp run check:imports",
           "vp run check:react",
           "vp run check:staged",
           "vp run check:effect",
@@ -47,6 +48,8 @@ export default defineConfig({
         command: "node tools/quality/effect-diagnostics.ts",
         input: [...taskInput],
       },
+      "check:imports":
+        "depcruise --config tools/quality/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
         command: "node tools/quality/react-doctor.ts",
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
