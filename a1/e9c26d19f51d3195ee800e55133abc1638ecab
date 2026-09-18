@@ -1,0 +1,1 @@
+After app rename rebase: keep main monitorWorker API, add ./binding export; restore service-* package surfaces from main.
