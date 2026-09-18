@@ -1,6 +1,8 @@
 import {
   applicationDependencyViolations,
   retiredDependencyViolations,
+  rootOnlyDependencyViolations,
+  rootOnlyPackages,
   workspaceManifests,
 } from "./dependencies.ts";
 import { describe, expect, it } from "vite-plus/test";
@@ -61,5 +63,25 @@ describe("replaced packages", () => {
   it("repository workspaces no longer declare them", () => {
     expect.hasAssertions();
     expect(retiredDependencyViolations(workspaceManifests)).toStrictEqual([]);
+  });
+});
+
+describe("root-only packages", () => {
+  it.for(Object.keys(rootOnlyPackages))("rejects a workspace that declares %s", (dependency) => {
+    expect.hasAssertions();
+    const violations = rootOnlyDependencyViolations([
+      {
+        area: "libs",
+        file: "libs/ui/package.json",
+        manifest: { devDependencies: { [dependency]: "1.0.0" }, name: "@repo/ui" },
+      },
+    ]);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain(dependency);
+  });
+
+  it("repository workspaces leave them to the root", () => {
+    expect.hasAssertions();
+    expect(rootOnlyDependencyViolations(workspaceManifests)).toStrictEqual([]);
   });
 });
