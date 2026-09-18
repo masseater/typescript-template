@@ -11,6 +11,7 @@ merge_queue:
 
 queue_rules:
   - name: default
+    batch_size: 3
     merge_method: merge
     queue_conditions:
       - base = main
