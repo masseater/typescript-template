@@ -35,7 +35,6 @@ function storedDatabase(uuid: string): CreatedResourceState {
 }
 
 function store(uuid?: string): Effect.Effect<StateService> {
-  // oxlint-disable-next-line new-cap
   return InMemoryService(
     uuid === undefined
       ? {}

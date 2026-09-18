@@ -3,9 +3,9 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   applicationDependencyViolations,
   retiredDependencyViolations,
-  retiredPackages,
   workspaceManifests,
 } from "./dependencies.ts";
+import { retiredPackages } from "./retired-packages.ts";
 
 describe("application package boundaries", () => {
   it.for(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])(
