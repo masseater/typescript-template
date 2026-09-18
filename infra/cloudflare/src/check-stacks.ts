@@ -1,37 +1,57 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { isDeepStrictEqual } from "node:util";
+
 import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect } from "effect";
+import { Cause, Console, Effect, Schema } from "effect";
 
+import { applications, grants } from "@template/config";
 import type { Application } from "@template/config";
-import { grants } from "@template/config";
 
-import { workerModuleGlobs } from "./artifacts.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import { databaseName } from "./database-lookup.ts";
-import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
+import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
 import type { StackInventory } from "./inventory.ts";
 import { markFailed } from "./secrets.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-const { accountId, origins, prefix } = verificationSettings;
+type ResourceInventory = StackInventory["resources"][string];
+
+const { accountId, budget, mailFrom, origins, prefix } = verificationSettings;
+
+const sampling = { enabled: true, headSamplingRate: 0.5 };
 
 const sharedWorker = {
-  compatibility: workerCompatibilityOptions,
-  observability: workerObservability(verificationSettings.observabilitySampling),
-  workersDev: workerSubdomain,
+  compatibility: { date: "2026-09-16", flags: ["nodejs_compat"] },
+  isExternal: true,
+  observability: {
+    ...sampling,
+    logs: { ...sampling, invocationLogs: false },
+    traces: sampling,
+  },
+  workersDev: { enabled: false, previewsEnabled: false },
 };
 
-function applicationResource(app: Application): unknown {
+const isApplication = Schema.is(Schema.Literals(applications));
+
+function plainText(name: string, value: number | string): string {
+  return `${name}:plain_text:text=${value}`;
+}
+
+function tokenValue(name: string, resource: string): string {
+  return `${name}:deferred:${stackName("tokens")}.${resource}.value`;
+}
+
+function applicationResource(app: Application, release: string): ResourceInventory {
   return {
     adopt: false,
     bindings: [
-      "APP_ORIGIN:plain_text",
-      "APP_RELEASE:plain_text",
-      "AUTH_SECRET:secret_text",
-      "DB:d1",
-      `EMAIL:send_email:${verificationSettings.mailFrom}`,
-      "EMAIL_FROM:plain_text",
+      plainText("APP_ORIGIN", origins[app]),
+      plainText("APP_RELEASE", release),
+      "AUTH_SECRET:secret_text:text=$TEMPLATE_AUTH_SECRET",
+      `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
+      `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
+      plainText("EMAIL_FROM", mailFrom),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {
@@ -44,7 +64,7 @@ function applicationResource(app: Application): unknown {
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
-      rules: [{ globs: workerModuleGlobs }],
+      rules: [{ globs: ["**/*.js", "**/*.mjs", "**/*.txt", "**/*.wasm", "**/*.map"] }],
     },
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
@@ -57,14 +77,14 @@ function monitorResource(options: {
   readonly cron: string;
   readonly name: string;
   readonly variables: readonly string[];
-}): unknown {
+}): ResourceInventory {
   return {
     adopt: false,
     bindings: [
-      "ALERT_FROM:plain_text",
-      "ALERT_TO:plain_text",
-      `EMAIL:send_email:${[...verificationSettings.budget.recipients].toSorted().join(",")}:${verificationSettings.mailFrom}`,
-      `MONITOR:durable_object_namespace:${options.className}`,
+      plainText("ALERT_FROM", mailFrom),
+      plainText("ALERT_TO", budget.recipients.join(",")),
+      `EMAIL:send_email:allowedDestinationAddresses=${[...budget.recipients].toSorted().join(",")}:allowedSenderAddresses=${mailFrom}`,
+      `MONITOR:durable_object_namespace:className=${options.className}`,
       ...options.variables,
     ].toSorted(),
     declared: {
@@ -79,11 +99,12 @@ function monitorResource(options: {
   };
 }
 
-function accountToken(slug: string, permission: string): unknown {
+function accountToken(slug: string, permission: string): ResourceInventory {
   return {
     adopt: false,
     bindings: [],
     declared: {
+      accountId,
       name: `${prefix}-${slug}`,
       policies: [
         {
@@ -98,7 +119,10 @@ function accountToken(slug: string, permission: string): unknown {
   };
 }
 
-function declaredStack(stack: StackName, resources: Readonly<Record<string, unknown>>): unknown {
+function declaredStack(
+  stack: StackName,
+  resources: Readonly<Record<string, ResourceInventory>>,
+): StackInventory {
   return {
     dependencies: stackDependencies[stack].map((dependency) => stackName(dependency)).toSorted(),
     name: stackName(stack),
@@ -106,8 +130,14 @@ function declaredStack(stack: StackName, resources: Readonly<Record<string, unkn
   };
 }
 
-const expected: Readonly<Record<StackName, unknown>> = {
-  admin: declaredStack("admin", { Worker: applicationResource("admin") }),
+const applicationStack = Effect.fn("applicationStack")(function* applicationStack(
+  app: Application,
+) {
+  const artifacts = yield* loadArtifacts(repositoryRoot, app);
+  return declaredStack(app, { Worker: applicationResource(app, artifacts.release) });
+});
+
+const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInventory>> = {
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
@@ -115,12 +145,12 @@ const expected: Readonly<Record<StackName, unknown>> = {
       cron: "17 */6 * * *",
       name: "budget",
       variables: [
-        "BILLING_READ_TOKEN:deferred",
-        "BUDGET_JPY:plain_text",
-        "CLOUDFLARE_ACCOUNT_ID:plain_text",
-        "FIXED_COST_USD:plain_text",
-        "JPY_PER_USD:plain_text",
-        "RESERVE_USD:plain_text",
+        tokenValue("BILLING_READ_TOKEN", "BillingRead"),
+        plainText("BUDGET_JPY", budget.budgetJpy),
+        plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
+        plainText("FIXED_COST_USD", budget.fixedCostUsd),
+        plainText("JPY_PER_USD", budget.jpyPerUsd),
+        plainText("RESERVE_USD", budget.reserveUsd),
       ],
     }),
   }),
@@ -128,7 +158,7 @@ const expected: Readonly<Record<StackName, unknown>> = {
     Database: {
       adopt: false,
       bindings: [],
-      declared: { name: databaseName(prefix) },
+      declared: { name: `${prefix}-db` },
       removalPolicy: "retain",
       type: "Cloudflare.D1Database",
     },
@@ -139,7 +169,10 @@ const expected: Readonly<Record<StackName, unknown>> = {
       className: "ErrorMonitor",
       cron: "*/5 * * * *",
       name: "errors",
-      variables: ["CLOUDFLARE_ACCOUNT_ID:plain_text", "OBSERVABILITY_TOKEN:deferred"],
+      variables: [
+        plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
+        tokenValue("OBSERVABILITY_TOKEN", "ObservabilityQuery"),
+      ],
     }),
   }),
   "health-monitor": declaredStack("health-monitor", {
@@ -148,46 +181,32 @@ const expected: Readonly<Record<StackName, unknown>> = {
       className: "HealthMonitor",
       cron: "37 * * * *",
       name: "health",
-      variables: ["ADMIN_ORIGIN:plain_text", "USER_ORIGIN:plain_text", "WIKI_ORIGIN:plain_text"],
+      variables: [
+        plainText("ADMIN_ORIGIN", origins.admin),
+        plainText("USER_ORIGIN", origins.user),
+        plainText("WIKI_ORIGIN", origins.wiki),
+      ],
     }),
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
   }),
-  user: declaredStack("user", { Worker: applicationResource("user") }),
-  wiki: declaredStack("wiki", { Worker: applicationResource("wiki") }),
 };
+
+const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: StackName) {
+  return isApplication(stack) ? yield* applicationStack(stack) : staticExpected[stack];
+});
 
 applyVerificationEnvironment();
 
-function byKey(left: readonly [string, unknown], right: readonly [string, unknown]): number {
-  return left[0].localeCompare(right[0]);
-}
-
-function canonical(value: unknown): string {
-  return JSON.stringify(value, (_key: string, nested: unknown) =>
-    typeof nested === "object" && nested !== null && !Array.isArray(nested)
-      ? Object.fromEntries(Object.entries(nested).toSorted(byKey))
-      : nested,
-  );
-}
-
-function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
-  return canonical(inventory) === canonical(expected[stack]);
-}
-
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
-  const matches = declaredMatches(inventory, stack);
+  const expected = yield* expectedStack(stack);
+  const matches = isDeepStrictEqual(inventory, expected);
   if (!matches) {
     yield* Console.error(
-      JSON.stringify({
-        actual: inventory,
-        event: "stacks.differs",
-        expected: expected[stack],
-        stack,
-      }),
+      JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }),
     );
   }
   return matches;
@@ -204,12 +223,20 @@ NodeRuntime.runMain(
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
       Console.error(
-        JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
+        JSON.stringify({
+          code: failure.code,
+          detail: failure.detail,
+          event: "stacks.invalid",
+          stack: failure.stack,
+        }),
       ).pipe(Effect.andThen(markFailed)),
     ),
-    Effect.catchCause(() =>
-      Console.error(JSON.stringify({ event: "stacks.invalid" })).pipe(Effect.andThen(markFailed)),
-    ),
+    Effect.catchCause((cause) => {
+      const detail = describeCause(Cause.squash(cause));
+      return Console.error(JSON.stringify({ detail, event: "stacks.invalid" })).pipe(
+        Effect.andThen(markFailed),
+      );
+    }),
   ),
   { disableErrorReporting: true },
 );
