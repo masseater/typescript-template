@@ -197,6 +197,41 @@ describe("browser ingress", () => {
   });
 });
 
+const noStatus = 0;
+const severityByStatus = [
+  [httpStatus.unauthorized, "stdout"],
+  [httpStatus.forbidden, "stdout"],
+  [httpStatus.notFound, "stdout"],
+  [httpStatus.badRequest, "stdwarn"],
+  [httpStatus.tooManyRequests, "stdwarn"],
+  [httpStatus.internalServerError, "stderr"],
+  [noStatus, "stderr"],
+] as const;
+
+describe("the severity of a browser client span", () => {
+  for (const [status, stream] of severityByStatus) {
+    it.effect(`records ${status} on ${stream}`, () => {
+      const logs = recordingSink();
+      const body = JSON.stringify([{ ...browserEvent(), status }]);
+      return Effect.gen(function* program() {
+        yield* ingestStatus({ body, headers: jsonHeaders, method: "POST" });
+        assert.containSubset(logs[stream], [
+          {
+            event: "http.client.request",
+            "http.response.status_code": status,
+            service: "user-browser",
+          },
+        ]);
+        const others = (["stderr", "stdout", "stdwarn"] as const).filter((name) => name !== stream);
+        assert.deepStrictEqual(
+          others.map((name) => logs[name].length),
+          others.map(() => 0),
+        );
+      }).pipe(Effect.provide(recordedTelemetry(logs.sink)));
+    });
+  }
+});
+
 describe("structured log lines", () => {
   it.effect("browser events and server errors become structured log lines", () =>
     Effect.gen(function* program() {
