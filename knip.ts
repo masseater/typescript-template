@@ -12,6 +12,7 @@ const application = {
 
 const workspaces = {
   ".": {
+    entry: ["doctor.config.ts"],
     ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
   },

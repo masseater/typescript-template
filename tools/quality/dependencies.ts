@@ -59,11 +59,28 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
 const retiredPackages: Readonly<Record<string, string>> = {
   "@pulumi/": "alchemy",
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  "eslint-plugin-react-doctor": "vp run check が実行する react-doctor",
+  "oxlint-plugin-react-doctor": "vp run check が実行する react-doctor",
   pulumi: "alchemy",
   "react-intl": "Paraglide JS",
   "smarthr-ui": "@template/ui の shadcn/ui (Base UI) 部品",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
+
+const rootOnlyPackages: Readonly<Record<string, string>> = {
+  "react-doctor": "ルートの vp run check",
+};
+
+function rootOnlyDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+  return workspaces.flatMap(({ file, manifest }) =>
+    declaredDependencies(manifest)
+      .filter((dependency) => dependency in rootOnlyPackages)
+      .map(
+        (dependency) =>
+          `${file}: ${dependency} はリポジトリ全体の検査なのでルートだけが宣言します。${rootOnlyPackages[dependency] ?? ""} から実行してください。`,
+      ),
+  );
+}
 
 function replacementFor(dependency: string): string | undefined {
   const matched = Object.keys(retiredPackages).find(
@@ -89,6 +106,8 @@ export {
   field,
   retiredDependencyViolations,
   retiredPackages,
+  rootOnlyDependencyViolations,
+  rootOnlyPackages,
   workspaceManifests,
 };
 export type { WorkspaceManifest };
