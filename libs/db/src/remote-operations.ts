@@ -123,9 +123,9 @@ const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
 });
 
 const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(
-  target: typeof MigrationStatusTarget.Type,
+  d1Database: typeof MigrationStatusTarget.Type,
 ) {
-  return yield* migrationStatus(remoteExecutor(target), yield* loadRemoteMigrations());
+  return yield* migrationStatus(remoteExecutor(d1Database), yield* loadRemoteMigrations());
 });
 
 const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapDatabase(

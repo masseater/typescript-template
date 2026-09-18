@@ -1,6 +1,5 @@
-import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
-import { captureObservers } from "./browser-observers.ts";
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
 import { errorAttributes } from "./errors.ts";
 import { maximumMeasurement, type BrowserEvent } from "./events.ts";
@@ -15,6 +14,7 @@ import {
   traceIdBytes,
   type Correlation,
 } from "./protocol.ts";
+import { stoppableVitals, type VitalMetric } from "./vital-reporting.ts";
 
 const flushIntervalMilliseconds = 3000;
 const exportTimeoutMilliseconds = 5000;
@@ -175,7 +175,7 @@ const listen = (recorder: Recorder): (() => void) => {
 };
 
 const observeVitals = (recorder: Recorder): (() => void) => {
-  const recordVital = (metric: Readonly<Pick<Metric, "name" | "value">>): void => {
+  const vitals = stoppableVitals((metric: VitalMetric): void => {
     recorder.queue.enqueue({
       ...documentFields(recorder),
       kind: "vital",
@@ -183,14 +183,13 @@ const observeVitals = (recorder: Recorder): (() => void) => {
       value: Math.min(Math.max(metric.value, 0), maximumMeasurement),
     });
     recorder.queue.flushInBackground();
-  };
-  const stopCapturing = captureObservers();
-  onCLS(recordVital, { reportAllChanges: true });
-  onFCP(recordVital);
-  onINP(recordVital, { reportAllChanges: true });
-  onLCP(recordVital, { reportAllChanges: true });
-  onTTFB(recordVital);
-  return stopCapturing;
+  });
+  onCLS(vitals.report, { reportAllChanges: true });
+  onFCP(vitals.report);
+  onINP(vitals.report, { reportAllChanges: true });
+  onLCP(vitals.report, { reportAllChanges: true });
+  onTTFB(vitals.report);
+  return vitals.stop;
 };
 
 const batchSender =
