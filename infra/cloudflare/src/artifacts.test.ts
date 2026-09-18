@@ -1,6 +1,3 @@
-import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
-import { assert, it } from "@effect/vitest";
-// oxlint-disable-next-line import/no-nodejs-modules
 import {
   mkdir,
   mkdtemp,
@@ -12,38 +9,41 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import type { Application } from "@template/config";
-import type { ArtifactFailure } from "./artifact-io.ts";
-import { Effect } from "effect";
-import type { Scope } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+import path from "node:path";
 
-interface UserBuild {
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
+
+import type { Application } from "@template/config";
+import type { Scope } from "effect";
+import type { ArtifactFailure } from "./artifact-io.ts";
+
+type UserBuild = {
   readonly client: string;
   readonly root: string;
   readonly server: string;
-}
+};
 
-async function createTemporaryRoot(): Promise<string> {
+const createTemporaryRoot = async (): Promise<string> => {
   const temporary = await mkdtemp(path.join(tmpdir(), "template-artifacts-"));
   return realpath(temporary);
-}
+};
 
 const temporaryRoot = Effect.acquireRelease(Effect.promise(createTemporaryRoot), (root) =>
   Effect.promise(async () => rm(root, { force: true, recursive: true })),
 );
 
-function run<Value>(operation: () => Promise<Value>): Effect.Effect<Value> {
+const run = <Value>(operation: () => Promise<Value>): Effect.Effect<Value> => {
   return Effect.promise(operation);
-}
+};
 
-async function writeFiles(
+const writeFiles = async (
   directory: string,
   contents: Readonly<Record<string, string>>,
-): Promise<void> {
+): Promise<void> => {
   await Promise.all(
     Object.entries(contents).map(async ([name, content]: readonly [string, string]) => {
       const filename = path.join(directory, name);
@@ -51,9 +51,9 @@ async function writeFiles(
       await writeFile(filename, content);
     }),
   );
-}
+};
 
-async function writeUserBuild(root: string): Promise<UserBuild> {
+const writeUserBuild = async (root: string): Promise<UserBuild> => {
   const client = path.join(root, "apps/user/dist/client");
   const server = path.join(root, "apps/user/dist/server");
   await writeFiles(client, {
@@ -70,26 +70,26 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
     "styles.css": "body{color:red}",
   });
   return { client, root, server };
-}
+};
 
 const userBuild: Effect.Effect<UserBuild, never, Scope.Scope> = temporaryRoot.pipe(
   Effect.flatMap((root) => run(async () => writeUserBuild(root))),
 );
 
-function load(root: string, target: Application): ReturnType<typeof loadArtifacts> {
+const load = (root: string, target: Application): ReturnType<typeof loadArtifacts> => {
   return loadArtifacts(root, target).pipe(Effect.provideService(ArtifactWrites, "publish"));
-}
+};
 
-function failureCode(
+const failureCode = (
   root: string,
   target: Application,
-): Effect.Effect<ArtifactFailure["code"], Effect.Success<ReturnType<typeof loadArtifacts>>> {
+): Effect.Effect<ArtifactFailure["code"], Effect.Success<ReturnType<typeof loadArtifacts>>> => {
   return load(root, target).pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((failure) => failure.code),
   );
-}
+};
 
 it.effect(
   "uploads server chunks with their source maps but excludes private client source maps",

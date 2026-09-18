@@ -1,28 +1,30 @@
-import { ActionStatus } from "./action-status";
-import { Heading } from "./shared/ui/heading";
-import { PasskeySettings } from "./passkey-settings";
-import type { ReactElement } from "react";
-import { RecoveryNotice } from "./recovery-notice";
-import type { SessionView } from "./protocol";
-import type { SettingsContext } from "./mfa-types";
-import { TotpSettings } from "./totp-settings";
-import { useAction } from "./action";
 import { useState } from "react";
 
-function readRecovery(): string | undefined {
+import { useAction } from "./action";
+import { ActionStatus } from "./action-status";
+import { PasskeySettings } from "./passkey-settings";
+import { RecoveryNotice } from "./recovery-notice";
+import { Heading } from "./shared/ui/heading";
+import { TotpSettings } from "./totp-settings";
+
+import type { ReactElement } from "react";
+import type { SettingsContext } from "./mfa-types";
+import type { SessionView } from "./protocol";
+
+const readRecovery = (): string | undefined => {
   if (!("location" in globalThis)) {
     return undefined;
   }
   return new URLSearchParams(globalThis.location.search).get("recovery") ?? undefined;
-}
+};
 
-function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElement {
+const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElement => {
   const [notice, setNotice] = useState<string>();
   const recovery = readRecovery();
   const action = useAction();
-  function clearNotice(): void {
+  const clearNotice = (): void => {
     setNotice(undefined);
-  }
+  };
   const context: SettingsContext = {
     action,
     onNotice: setNotice,
@@ -40,6 +42,6 @@ function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElem
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
     </div>
   );
-}
+};
 
 export { MFASettings };

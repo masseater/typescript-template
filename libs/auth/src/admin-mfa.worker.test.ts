@@ -1,3 +1,6 @@
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
 import {
   Fixture,
   HTTP_FORBIDDEN,
@@ -12,19 +15,16 @@ import {
   signInAs,
   withAuth,
 } from "./auth-test-fixture.ts";
-import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
-import { Effect } from "effect";
 
 const email = "admin@example.com";
 const totpUriPattern = /^otpauth:\/\/totp\//u;
 
-function totpUri(body: unknown): string {
+const totpUri = (body: unknown): string => {
   return typeof body === "object" && body !== null ? String(Reflect.get(body, "totpURI")) : "";
-}
+};
 
 const assertTotpUriDenied = Effect.fn("assertTotpUriDenied")(function* assertTotpUriDenied(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   client: Readonly<BrowserClient>,
 ) {
   const denied = yield* client.json("/two-factor/get-totp-uri", { password: PASSWORD });
@@ -34,7 +34,6 @@ const assertTotpUriDenied = Effect.fn("assertTotpUriDenied")(function* assertTot
 });
 
 const assertTotpUriAllowed = Effect.fn("assertTotpUriAllowed")(function* assertTotpUriAllowed(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   client: Readonly<BrowserClient>,
 ) {
   const allowed = yield* client.json("/two-factor/get-totp-uri", { password: PASSWORD });

@@ -1,9 +1,10 @@
-import type { AuthenticatedHandler } from "./authenticated-handler";
 import { LoginForm } from "./login-form";
 import { Page } from "./shared/ui/page";
-import type { ReactElement } from "react";
 
-function LoginPage({
+import type { ReactElement } from "react";
+import type { AuthenticatedHandler } from "./authenticated-handler";
+
+const LoginPage = ({
   title,
   signUp,
   onAuthenticated,
@@ -11,13 +12,13 @@ function LoginPage({
   title: string;
   signUp: boolean;
   onAuthenticated?: AuthenticatedHandler;
-}>): ReactElement {
+}>): ReactElement => {
   return (
     <Page title={title}>
       <LoginForm onAuthenticated={onAuthenticated} />
       {signUp && <a href="/signup">新規登録</a>}
     </Page>
   );
-}
+};
 
 export { LoginPage };

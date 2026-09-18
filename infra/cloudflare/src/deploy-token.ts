@@ -1,15 +1,15 @@
 const STATE_STORE_SCRIPT_NAME = "alchemy-state-store";
 
-interface PermissionGroup {
+type PermissionGroup = {
   readonly id?: string | undefined;
   readonly name?: string | undefined;
-}
+};
 
-interface RequiredPermission {
+type RequiredPermission = {
   readonly dashboard: string;
   readonly satisfiedBy: readonly { readonly id: string; readonly name: string }[];
   readonly scope: "account" | "zone";
-}
+};
 
 const workersScriptsWrite = {
   id: "e086da7e2179491d91ee5f35b3ca210a",
@@ -81,7 +81,7 @@ const deployTokenPermissions = [
   { dashboard: "Zone / DNS / Read", satisfiedBy: [dnsRead, dnsWrite], scope: "zone" },
 ] as const satisfies readonly RequiredPermission[];
 
-function missingPermissions(granted: readonly PermissionGroup[]): readonly string[] {
+const missingPermissions = (granted: readonly PermissionGroup[]): readonly string[] => {
   const held = new Set(granted.flatMap((group) => [group.id, group.name]));
   return deployTokenPermissions
     .filter(
@@ -89,7 +89,7 @@ function missingPermissions(granted: readonly PermissionGroup[]): readonly strin
         !required.satisfiedBy.some((group) => held.has(group.id) || held.has(group.name)),
     )
     .map((required) => required.dashboard);
-}
+};
 
 export { STATE_STORE_SCRIPT_NAME, deployTokenPermissions, missingPermissions };
 export type { PermissionGroup, RequiredPermission };

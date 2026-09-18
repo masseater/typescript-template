@@ -1,15 +1,15 @@
-import { assert, it } from "@effect/vitest";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { assert, it } from "@effect/vitest";
 import { deploymentKeys, secretsFile } from "@template/config/deployment";
 import { Effect } from "effect";
-import type { Scope } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
-import { verificationEnvironment } from "./verification-fixture.ts";
+
 import { verifySecretsFile } from "./credentials.ts";
+import { verificationEnvironment } from "./verification-fixture.ts";
+
+import type { Scope } from "effect";
 
 const OWNER_ONLY_FILE_MODE = 0o600;
 const GROUP_READABLE_FILE_MODE = 0o640;
@@ -19,19 +19,19 @@ const complete = deploymentKeys
   .join("\n");
 const temporaryPrefix = path.join(tmpdir(), "template-secrets-");
 
-function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
+const temporaryDirectory = (): Effect.Effect<string, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.promise(async () => mkdtemp(temporaryPrefix)),
     (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
   );
-}
+};
 
-function writeSecrets(filename: string, content: string, mode: number): Effect.Effect<void> {
+const writeSecrets = (filename: string, content: string, mode: number): Effect.Effect<void> => {
   return Effect.promise(async () => {
     await writeFile(filename, content);
     await chmod(filename, mode);
   });
-}
+};
 
 it.effect("accepts an owner-only file that declares every deployment input", () =>
   Effect.gen(function* program() {
@@ -105,22 +105,19 @@ it.effect("reports a missing file instead of deploying without it", () =>
 
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
-    // oxlint-disable-next-line node/no-process-env
-    Effect.sync(() => process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"]),
+    Effect.sync(() => process.env.TEMPLATE_CLOUDFLARE_ENV_FILE),
     () =>
       Effect.sync(() => {
-        // oxlint-disable-next-line node/no-process-env
-        delete process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"];
+        delete process.env.TEMPLATE_CLOUDFLARE_ENV_FILE;
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        // oxlint-disable-next-line node/no-process-env
-        process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"] = "/elsewhere/cloudflare.env";
+
+        process.env.TEMPLATE_CLOUDFLARE_ENV_FILE = "/elsewhere/cloudflare.env";
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
     (previous) =>
       Effect.sync(() => {
-        // oxlint-disable-next-line node/no-process-env
         const environment = process.env;
-        delete environment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
+        delete environment.TEMPLATE_CLOUDFLARE_ENV_FILE;
         Object.assign(
           environment,
           previous === undefined ? {} : { TEMPLATE_CLOUDFLARE_ENV_FILE: previous },

@@ -1,21 +1,21 @@
-import { test as baseTest, describe, expect } from "vite-plus/test";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { applications as apps } from "@template/config";
+import { createServer } from "vite-plus";
+import { test as baseTest, describe, expect } from "vite-plus/test";
+
+import { devBoundary } from "./index.ts";
+
 import type { Application as App } from "@template/config";
 import type { HttpServer } from "vite-plus";
 import type { TestAPI } from "vite-plus/test";
-import { applications as apps } from "@template/config";
-import { createServer } from "vite-plus";
-import { devBoundary } from "./index.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
 
-interface DevServer {
+type DevServer = {
   readonly origin: string;
   readonly root: string;
-}
+};
 
 type ServerContext = Readonly<{ server: DevServer }>;
 
@@ -23,11 +23,11 @@ const okStatus = 200;
 const forbiddenStatus = 403;
 const hexRadix = 16;
 
-function otherApps(app: App): App[] {
+const otherApps = (app: App): App[] => {
   return apps.filter((name) => name !== app);
-}
+};
 
-async function createRepository(root: string, app: App): Promise<string> {
+const createRepository = async (root: string, app: App): Promise<string> => {
   const appDirectory = path.join(root, "apps", app);
   const folders = [
     ...apps.map((name) => `apps/${name}/src`),
@@ -70,16 +70,18 @@ async function createRepository(root: string, app: App): Promise<string> {
     symlink(path.join(root, ".local/runtime.json"), path.join(appDirectory, "src/alias.json")),
   ]);
   return appDirectory;
-}
+};
 
-function listeningPort(address: Readonly<ReturnType<HttpServer["address"]>> | undefined): number {
+const listeningPort = (
+  address: Readonly<ReturnType<HttpServer["address"]>> | undefined,
+): number => {
   if (address === undefined || address === null || typeof address === "string") {
     throw new Error("TEST_SERVER_ADDRESS_REQUIRED");
   }
   return address.port;
-}
+};
 
-function boundaryTest(app: App): TestAPI<{ server: DevServer }> {
+const boundaryTest = (app: App): TestAPI<{ server: DevServer }> => {
   return baseTest.extend<{ server: DevServer }>({
     server: [
       async ({}: object, provide): Promise<void> => {
@@ -104,14 +106,14 @@ function boundaryTest(app: App): TestAPI<{ server: DevServer }> {
       { scope: "file" },
     ],
   });
-}
+};
 
-async function statusOf(url: string): Promise<number> {
+const statusOf = async (url: string): Promise<number> => {
   const response = await fetch(url);
   return response.status;
-}
+};
 
-function privateFiles(app: App): string[] {
+const privateFiles = (app: App): string[] => {
   return [
     ".local/runtime.json",
     `apps/${app}/.dev.vars`,
@@ -119,9 +121,9 @@ function privateFiles(app: App): string[] {
     "tools/private.js",
     ...otherApps(app).map((name) => `apps/${name}/src/private.js`),
   ].flatMap((file) => ["", "?raw", "?import"].map((suffix) => `${file}${suffix}`));
-}
+};
 
-function privateModules(app: App): string[] {
+const privateModules = (app: App): string[] => {
   return [
     "/.dev.vars",
     "/src/alias.json",
@@ -132,7 +134,7 @@ function privateModules(app: App): string[] {
       `/@fs/{root}/apps/%${(other.codePointAt(0) ?? 0).toString(hexRadix)}${other.slice(1)}/src/private.js?raw`,
     ]),
   ];
-}
+};
 
 const boundaryTests: Readonly<Record<App, TestAPI<{ server: DevServer }>>> = {
   admin: boundaryTest("admin"),

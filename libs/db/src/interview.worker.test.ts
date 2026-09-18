@@ -1,9 +1,10 @@
 import { assert, it } from "@effect/vitest";
-import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
-import { TestDatabase } from "./testing.ts";
+
+import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
 import { addUser } from "./records-fixture.ts";
+import { TestDatabase } from "./testing.ts";
 
 const LIMIT = 2;
 const TWICE_STORED = 2;
@@ -16,7 +17,6 @@ it.effect("of two writers holding the same version only the first one is stored"
     const late = yield* storeInterview("member", 0, { state: { step: 2 } }).pipe(Effect.flip);
     assert.strictEqual(late._tag, "InterviewConflict");
     assert.deepStrictEqual(yield* findInterview("member"), {
-      // oxlint-disable-next-line unicorn/no-null
       savedSheet: null,
       state: { step: 1 },
       version: 1,
@@ -35,7 +35,7 @@ it.effect("the saved sheet stays until a write names it", () =>
       state: { step: 2 },
       version: TWICE_STORED,
     });
-    // oxlint-disable-next-line unicorn/no-null
+
     yield* storeInterview("member", TWICE_STORED, { savedSheet: null, state: { step: 3 } });
     assert.isNull((yield* findInterview("member"))?.savedSheet);
   }).pipe(Effect.provide(TestDatabase)),

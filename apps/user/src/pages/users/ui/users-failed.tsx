@@ -1,13 +1,15 @@
-import { Button, Status } from "@template/ui";
-import type { ReactElement } from "react";
-import { UsersBody } from "./users-body.tsx";
 import { useRouter } from "@tanstack/react-router";
+import { Button, Status } from "@template/ui";
 
-function UsersFailed(): ReactElement {
+import { UsersBody } from "./users-body.tsx";
+
+import type { ReactElement } from "react";
+
+const UsersFailed = (): ReactElement => {
   const router = useRouter();
-  function retry(): void {
+  const retry = (): void => {
     void router.invalidate();
-  }
+  };
   return (
     <UsersBody>
       <Status variant="error">ユーザー一覧を取得できませんでした。</Status>
@@ -16,6 +18,6 @@ function UsersFailed(): ReactElement {
       </Button>
     </UsersBody>
   );
-}
+};
 
 export { UsersFailed };

@@ -1,21 +1,23 @@
-import type { ActionState } from "./action";
+import { useState } from "react";
+
 import { BackupCodeList } from "./backup-code-list";
 import { CheckboxField } from "./shared/ui/checkbox-field";
-import type { Enrollment } from "./mfa-types";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
 import { Heading } from "./shared/ui/heading";
-import type { ReactElement } from "react";
 import { TotpVerifyForm } from "./totp-verify-form";
-import { useState } from "react";
 
-interface TotpEnrollmentProps {
+import type { ReactElement } from "react";
+import type { ActionState } from "./action";
+import type { Enrollment } from "./mfa-types";
+
+type TotpEnrollmentProps = {
   readonly action: ActionState;
   readonly enrollment: Enrollment;
   readonly onVerified: () => void;
-}
+};
 
-function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement {
+const TotpEnrollment = ({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement => {
   const [saved, setSaved] = useState(false);
   return (
     <FormColumn>
@@ -32,6 +34,6 @@ function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps)
       <TotpVerifyForm action={action} onVerified={onVerified} saved={saved} />
     </FormColumn>
   );
-}
+};
 
 export { TotpEnrollment };

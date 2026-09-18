@@ -1,16 +1,18 @@
 import { Monitor, monitorHandler } from "@template/monitor";
-import type { MonitorBindings, Notify } from "@template/monitor";
-import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
-import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 import { Effect } from "effect";
-import type { HealthState } from "./decision.ts";
+
+import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
+import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
-interface Bindings extends MonitorBindings {
+import type { MonitorBindings, Notify } from "@template/monitor";
+import type { HealthState } from "./decision.ts";
+
+type Bindings = {
   USER_ORIGIN: string;
   ADMIN_ORIGIN: string;
   WIKI_ORIGIN: string;
-}
+} & MonitorBindings;
 
 export class HealthMonitor extends Monitor<Bindings> {
   protected readonly event = "health_monitor";
@@ -51,5 +53,4 @@ export class HealthMonitor extends Monitor<Bindings> {
   }
 }
 
-// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("health_monitor");

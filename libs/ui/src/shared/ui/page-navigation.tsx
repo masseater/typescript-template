@@ -1,14 +1,15 @@
-import type { ReactElement } from "react";
 import { pageItems } from "./page-items";
 
-interface PageTarget {
+import type { ReactElement } from "react";
+
+type PageTarget = {
   readonly current: boolean;
   readonly label: string;
   readonly page: number;
   readonly text: string;
-}
+};
 
-function PageNavigation({
+const PageNavigation = ({
   current,
   last,
   renderLink,
@@ -16,7 +17,7 @@ function PageNavigation({
   current: number;
   last: number;
   renderLink: (target: PageTarget) => ReactElement;
-}>): ReactElement | undefined {
+}>): ReactElement | undefined => {
   if (last <= 1) {
     return undefined;
   }
@@ -41,7 +42,6 @@ function PageNavigation({
       <ul className="flex flex-wrap items-center gap-1">
         {targets.map((target, index) =>
           target === undefined ? (
-            // oxlint-disable-next-line react/no-array-index-key
             <li key={`gap-${index}`} aria-hidden="true" className="px-1 text-muted-foreground">
               …
             </li>
@@ -52,7 +52,7 @@ function PageNavigation({
       </ul>
     </nav>
   );
-}
+};
 
 export { PageNavigation };
 export type { PageTarget };

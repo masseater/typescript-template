@@ -1,15 +1,17 @@
 import { Monitor, monitorHandler } from "@template/monitor";
-import type { MonitorBindings, Notify } from "@template/monitor";
-import { decideNotifications, formatMessage } from "./decision.ts";
 import { Effect } from "effect";
-import type { SeenFingerprints } from "./decision.ts";
-import { fetchErrorGroups } from "./telemetry.ts";
-import { parseErrorMonitorConfig } from "./config.ts";
 
-interface Bindings extends MonitorBindings {
+import { parseErrorMonitorConfig } from "./config.ts";
+import { decideNotifications, formatMessage } from "./decision.ts";
+import { fetchErrorGroups } from "./telemetry.ts";
+
+import type { MonitorBindings, Notify } from "@template/monitor";
+import type { SeenFingerprints } from "./decision.ts";
+
+type Bindings = {
   CLOUDFLARE_ACCOUNT_ID: string;
   OBSERVABILITY_TOKEN: string;
-}
+} & MonitorBindings;
 
 const LOOKBACK_MS = 900_000;
 
@@ -45,5 +47,4 @@ export class ErrorMonitor extends Monitor<Bindings> {
   }
 }
 
-// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("error_monitor");

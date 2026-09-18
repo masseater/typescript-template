@@ -1,30 +1,29 @@
-import { assert, it } from "@effect/vitest";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
-import { Effect } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { symbolicate } from "./source-maps.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { symbolicate } from "./source-maps.ts";
 
 const release = "0123456789abcdef";
 
-function sourceMap(source: string): string {
+const sourceMap = (source: string): string => {
   return JSON.stringify({
     mappings: "AAAA;AAEEA",
     names: ["check"],
     sources: [source],
     version: 3,
   });
-}
+};
 
-async function createTemporaryRoot(): Promise<string> {
+const createTemporaryRoot = async (): Promise<string> => {
   const temporary = await mkdtemp(path.join(tmpdir(), "template-symbolicate-"));
   return realpath(temporary);
-}
+};
 
-async function writeReleaseMaps(root: string): Promise<void> {
+const writeReleaseMaps = async (root: string): Promise<void> => {
   const directory = path.join(root, ".local/source-maps/user/releases", release);
   await mkdir(path.join(directory, "client/assets"), { recursive: true });
   await mkdir(path.join(directory, "server/assets"), { recursive: true });
@@ -36,7 +35,7 @@ async function writeReleaseMaps(root: string): Promise<void> {
     path.join(directory, "server/assets/auth-def.js.map"),
     sourceMap("../../../../../libs/auth/src/index.ts"),
   );
-}
+};
 
 const temporaryRoot = Effect.acquireRelease(Effect.promise(createTemporaryRoot), (root) =>
   Effect.promise(async () => rm(root, { force: true, recursive: true })),

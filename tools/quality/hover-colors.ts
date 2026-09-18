@@ -1,7 +1,6 @@
 import { declarations } from "./design-system.ts";
 
 const hoverSuffix = "-hover";
-const variablePattern = /^var\((?<name>--[\w-]+)\)$/u;
 const hexPattern = /^#(?<digits>(?:[\da-f]{3}|[\da-f]{6}))$/iu;
 const referenceDepth = 8;
 const hexChannels = 3;
@@ -15,27 +14,29 @@ const redWeight = 0.2126;
 const greenWeight = 0.7152;
 const blueWeight = 0.0722;
 
-function resolvedColor(
+const variablePattern = /^var\((?<name>--[\w-]+)\)$/u;
+
+const resolvedColor = (
   declared: Readonly<ReadonlyMap<string, string>>,
   name: string,
   depth: number,
-): string | undefined {
+): string | undefined => {
   const value = declared.get(name);
-  const reference = value === undefined ? undefined : variablePattern.exec(value)?.groups?.["name"];
+  const reference = value === undefined ? undefined : variablePattern.exec(value)?.groups?.name;
   return reference === undefined || depth === 0
     ? value
     : resolvedColor(declared, reference, depth - 1);
-}
+};
 
-function channel(byte: number): number {
+const channel = (byte: number): number => {
   const value = byte / byteMaximum;
   return value <= srgbThreshold
     ? value / srgbSlope
     : ((value + srgbOffset) / srgbScale) ** srgbExponent;
-}
+};
 
-function luminance(color: string | undefined): number | undefined {
-  const digits = color === undefined ? undefined : hexPattern.exec(color)?.groups?.["digits"];
+const luminance = (color: string | undefined): number | undefined => {
+  const digits = color === undefined ? undefined : hexPattern.exec(color)?.groups?.digits;
   if (digits === undefined) {
     return undefined;
   }
@@ -46,9 +47,9 @@ function luminance(color: string | undefined): number | undefined {
       return weight * channel(Number.parseInt(digit.repeat(hexChannels - width), 16));
     })
     .reduce((total: number, weighted: number) => total + weighted, 0);
-}
+};
 
-function hoverViolations(css: string): string[] {
+const hoverViolations = (css: string): string[] => {
   const declared = declarations(css);
   return [...declared.keys()]
     .filter((name) => name.endsWith(hoverSuffix))
@@ -68,6 +69,6 @@ function hoverViolations(css: string): string[] {
           ];
     })
     .toSorted();
-}
+};
 
 export { hoverViolations };

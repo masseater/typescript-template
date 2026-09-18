@@ -1,9 +1,11 @@
-import { ButtonLink, NavigationLink } from "@template/ui";
-import type { ReactElement } from "react";
-import { serviceName } from "#shared/config/index.ts";
 import { useLocation } from "@tanstack/react-router";
+import { ButtonLink, NavigationLink } from "@template/ui";
 
-function PublicHeader(): ReactElement {
+import { serviceName } from "#shared/config/index.ts";
+
+import type { ReactElement } from "react";
+
+const PublicHeader = (): ReactElement => {
   const { pathname } = useLocation();
   return (
     <header className="flex w-full flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3 shadow-sm">
@@ -20,6 +22,6 @@ function PublicHeader(): ReactElement {
       )}
     </header>
   );
-}
+};
 
 export { PublicHeader };

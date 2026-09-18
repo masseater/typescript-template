@@ -5,12 +5,14 @@ import {
   DropdownMenuTrigger,
   Icon,
 } from "@template/ui";
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
 import { EllipsisIcon } from "lucide-react";
+
+import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
 
-function RowActionMenu({
+const RowActionMenu = ({
   disabled,
   onDelete,
   onRoleChange,
@@ -20,7 +22,7 @@ function RowActionMenu({
   onDelete: () => void;
   onRoleChange: () => void;
   user: ListedUser;
-}>): ReactElement {
+}>): ReactElement => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label={`${user.email} の操作`} disabled={disabled}>
@@ -36,6 +38,6 @@ function RowActionMenu({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
 export { RowActionMenu };

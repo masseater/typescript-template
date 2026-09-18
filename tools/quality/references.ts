@@ -1,9 +1,11 @@
-import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
-import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
 import { scopeOf } from "./lint-context.ts";
 
-type Origin = readonly string[];
+import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
+import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
+
 type Resolve<Result> = (node: Node) => Result;
+
+type Origin = readonly string[];
 
 const knownGlobals: ReadonlyMap<string, Origin> = new Map([
   ["vi", ["vitest", "vi"]],
@@ -16,7 +18,11 @@ const knownGlobals: ReadonlyMap<string, Origin> = new Map([
   ["require", ["require"]],
 ]);
 
-function variableOf(context: LintContext, node: NodeOf<"Identifier">): Variable | undefined {
+const extendOrigin = (origin: Origin, suffix: readonly string[]): Origin => {
+  return [...origin, ...suffix];
+};
+
+const variableOf = (context: LintContext, node: NodeOf<"Identifier">): Variable | undefined => {
   let scope: Scope | null = scopeOf(context, node);
   while (scope !== null) {
     const variable = scope.set.get(node.name);
@@ -26,13 +32,12 @@ function variableOf(context: LintContext, node: NodeOf<"Identifier">): Variable 
     scope = scope.upper;
   }
   return undefined;
-}
+};
 
-function extendOrigin(origin: Origin, suffix: readonly string[]): Origin {
-  return [...origin, ...suffix];
-}
-
-function constantInitializer(context: LintContext, node: NodeOf<"Identifier">): Node | undefined {
+const constantInitializer = (
+  context: LintContext,
+  node: NodeOf<"Identifier">,
+): Node | undefined => {
   const variable = variableOf(context, node);
   if (
     variable?.references.some(
@@ -43,13 +48,13 @@ function constantInitializer(context: LintContext, node: NodeOf<"Identifier">): 
   }
   const definition = variable?.defs[0]?.node;
   return definition?.type === "VariableDeclarator" && definition.init ? definition.init : undefined;
-}
+};
 
-function derivedText(
+const derivedText = (
   context: LintContext,
   node: Node,
   resolve: Resolve<string | undefined>,
-): string | undefined {
+): string | undefined => {
   if (
     node.type === "TSAsExpression" ||
     node.type === "TSSatisfiesExpression" ||
@@ -64,13 +69,13 @@ function derivedText(
   }
   const initializer = node.type === "Identifier" ? constantInitializer(context, node) : undefined;
   return initializer === undefined ? undefined : resolve(initializer);
-}
+};
 
-function staticText(
+const staticText = (
   context: LintContext,
   node: Node,
   seen: Readonly<ReadonlySet<Node>> = new Set(),
-): string | undefined {
+): string | undefined => {
   if (seen.has(node)) {
     return undefined;
   }
@@ -82,62 +87,45 @@ function staticText(
   }
   const next = new Set([...seen, node]);
   return derivedText(context, node, (child) => staticText(context, child, next));
-}
+};
 
-function propertyName(
+const propertyKey = (
   context: LintContext,
-  property: NodeOf<"Property" | "TSPropertySignature">,
-): string | undefined {
-  return !property.computed && property.key.type === "Identifier"
-    ? property.key.name
-    : staticText(context, property.key);
-}
-
-function propertyKey(context: LintContext, node: NodeOf<"MemberExpression">): string | undefined {
+  node: NodeOf<"MemberExpression">,
+): string | undefined => {
   if (!node.computed && node.property.type === "Identifier") {
     return node.property.name;
   }
   return staticText(context, node.property);
-}
+};
 
-function propertyBindingPath(
+const propertyName = (
+  context: LintContext,
+  property: NodeOf<"Property" | "TSPropertySignature">,
+): string | undefined => {
+  return !property.computed && property.key.type === "Identifier"
+    ? property.key.name
+    : staticText(context, property.key);
+};
+
+const propertyBindingPath = (
   context: LintContext,
   property: NodeOf<"ObjectPattern">["properties"][number],
   resolve: Resolve<string[] | undefined>,
-): string[] | undefined {
+): string[] | undefined => {
   if (property.type === "RestElement") {
     return resolve(property.argument);
   }
   const suffix = resolve(property.value);
   const key = suffix === undefined ? undefined : propertyName(context, property);
   return key === undefined || suffix === undefined ? undefined : [key, ...suffix];
-}
+};
 
-function bindingPath(context: LintContext, pattern: Node, name: string): string[] | undefined {
-  if (pattern.type === "Identifier") {
-    return pattern.name === name ? [] : undefined;
-  }
-  if (pattern.type !== "ObjectPattern") {
-    return pattern.type === "AssignmentPattern"
-      ? bindingPath(context, pattern.left, name)
-      : undefined;
-  }
-  for (const property of pattern.properties) {
-    const path = propertyBindingPath(context, property, (child) =>
-      bindingPath(context, child, name),
-    );
-    if (path !== undefined) {
-      return path;
-    }
-  }
-  return undefined;
-}
-
-function destructuredOrigins(
+const destructuredOrigins = (
   context: LintContext,
   pattern: Node,
   inputs: readonly Origin[],
-): readonly Origin[] {
+): readonly Origin[] => {
   if (pattern.type === "AssignmentPattern") {
     return destructuredOrigins(context, pattern.left, inputs);
   }
@@ -157,9 +145,9 @@ function destructuredOrigins(
           inputs.map((origin) => extendOrigin(origin, [key])),
         );
   });
-}
+};
 
-function importedOrigin(declaration: Node): Origin | undefined {
+const importedOrigin = (declaration: Node): Origin | undefined => {
   if (
     !["ImportSpecifier", "ImportDefaultSpecifier", "ImportNamespaceSpecifier"].includes(
       declaration.type,
@@ -175,13 +163,33 @@ function importedOrigin(declaration: Node): Origin | undefined {
   return declaration.imported.type === "Identifier"
     ? [source, declaration.imported.name]
     : [source, declaration.imported.value];
-}
+};
 
-function identifierOrigins(
+const bindingPath = (context: LintContext, pattern: Node, name: string): string[] | undefined => {
+  if (pattern.type === "Identifier") {
+    return pattern.name === name ? [] : undefined;
+  }
+  if (pattern.type !== "ObjectPattern") {
+    return pattern.type === "AssignmentPattern"
+      ? bindingPath(context, pattern.left, name)
+      : undefined;
+  }
+  for (const property of pattern.properties) {
+    const path = propertyBindingPath(context, property, (child) =>
+      bindingPath(context, child, name),
+    );
+    if (path !== undefined) {
+      return path;
+    }
+  }
+  return undefined;
+};
+
+const identifierOrigins = (
   context: LintContext,
   node: NodeOf<"Identifier">,
   resolve: Resolve<Origin[]>,
-): Origin[] {
+): Origin[] => {
   const variable = variableOf(context, node);
   if (variable === undefined || variable.defs.length === 0) {
     const known = knownGlobals.get(node.name);
@@ -207,7 +215,7 @@ function identifierOrigins(
       : resolve(reference.writeExpr),
   );
   return [...definitions, ...assignments];
-}
+};
 
 function callOrigins(
   context: LintContext,
@@ -230,16 +238,20 @@ function callOrigins(
   return source === undefined ? [] : [[source]];
 }
 
-function memberOrigins(
+const memberOrigins = (
   context: LintContext,
   node: NodeOf<"MemberExpression">,
   resolve: Resolve<Origin[]>,
-): Origin[] {
+): Origin[] => {
   const key = propertyKey(context, node);
   return key === undefined ? [] : resolve(node.object).map((origin) => extendOrigin(origin, [key]));
-}
+};
 
-function expressionOrigins(context: LintContext, node: Node, resolve: Resolve<Origin[]>): Origin[] {
+const expressionOrigins = (
+  context: LintContext,
+  node: Node,
+  resolve: Resolve<Origin[]>,
+): Origin[] => {
   if (node.type === "MetaProperty") {
     return node.meta.name === "import" && node.property.name === "meta" ? [["import.meta"]] : [];
   }
@@ -254,13 +266,13 @@ function expressionOrigins(context: LintContext, node: Node, resolve: Resolve<Or
     return callOrigins(context, node, resolve);
   }
   return node.type === "Identifier" ? identifierOrigins(context, node, resolve) : [];
-}
+};
 
-function origins(
+const origins = (
   context: LintContext,
   node: Node,
   seen: Readonly<ReadonlySet<Node>> = new Set(),
-): Origin[] {
+): Origin[] => {
   if (seen.has(node)) {
     return [];
   }
@@ -277,7 +289,7 @@ function origins(
   return node.type === "AwaitExpression"
     ? origins(context, node.argument, next)
     : expressionOrigins(context, node, (child) => origins(context, child, next));
-}
+};
 
 export {
   bindingPath,

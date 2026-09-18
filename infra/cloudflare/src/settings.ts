@@ -1,3 +1,5 @@
+import { Config, Effect, Redacted } from "effect";
+
 import {
   AuthSecret,
   Email,
@@ -11,11 +13,11 @@ import {
   checkSharedConfig,
   originKeys,
 } from "./config.ts";
-import { Config, Effect, Redacted } from "effect";
 
-const DEFAULT_JPY_PER_USD = 150;
 const FULL_SAMPLING = 1;
 const DEFAULT_USD = 0;
+
+const DEFAULT_JPY_PER_USD = 150;
 
 const budget = Config.all({
   budgetJpy: Config.schema(Positive, "BUDGET_JPY"),

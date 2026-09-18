@@ -1,14 +1,16 @@
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
 import { ConfirmDialog } from "@template/ui";
+
+import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
+import { RowActionMenu } from "./row-action-menu.tsx";
+
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
-import { RowActionMenu } from "./row-action-menu.tsx";
-import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
 
-function UserRowActions({
+const UserRowActions = ({
   onChanged,
   user,
-}: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
+}: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement => {
   const action = useUserRowAction(user, onChanged);
   const deleting = action.confirming === "delete";
   const nextRole = roleLabels[nextRoles[user.role]];
@@ -35,6 +37,6 @@ function UserRowActions({
       />
     </>
   );
-}
+};
 
 export { UserRowActions };

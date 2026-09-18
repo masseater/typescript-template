@@ -1,8 +1,10 @@
-import type { Outcome, SentMail } from "./monitor-fixture.ts";
-import { describe, expect, it } from "vite-plus/test";
-import handler, { probeAlert, probeEvent, probeFailure } from "./monitor-fixture.ts";
 import { listDurableObjectIds, reset, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
+import { describe, expect, it } from "vite-plus/test";
+
+import handler, { probeAlert, probeEvent, probeFailure } from "./monitor-fixture.ts";
+
+import type { Outcome, SentMail } from "./monitor-fixture.ts";
 
 const isoDayLength = "0000-00-00".length;
 const checkFailed = 500;
@@ -10,36 +12,35 @@ const notFound = 404;
 const ok = 200;
 const monitor = env.MONITOR;
 
-function stub(): DurableObjectStub {
+const stub = (): DurableObjectStub => {
   return monitor.get(monitor.idFromName(probeEvent));
-}
+};
 
-function mailed(alert: { readonly subject: string; readonly text: string }): SentMail {
+const mailed = (alert: { readonly subject: string; readonly text: string }): SentMail => {
   return { ...alert, from: env.ALERT_FROM, to: env.ALERT_TO.split(",") };
-}
+};
 
-async function seed(outcome: Outcome): Promise<void> {
+const seed = async (outcome: Outcome): Promise<void> => {
   await reset();
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   await runInDurableObject(stub(), async (_instance, state) =>
     state.storage.put("outcome", outcome),
   );
   await env.EMAIL.taken();
-}
+};
 
-async function stored<Value>(key: string): Promise<Value | undefined> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const stored = async <Value>(key: string): Promise<Value | undefined> => {
   return runInDurableObject(stub(), async (_instance, state) => state.storage.get<Value>(key));
-}
+};
 
-async function check(): Promise<number> {
+const check = async (): Promise<number> => {
   const response = await stub().fetch("https://monitor.internal/check", { method: "POST" });
   return response.status;
-}
+};
 
-function today(): string {
+const today = (): string => {
   return new Date().toISOString().slice(0, isoDayLength);
-}
+};
 
 describe("a monitor check running inside its durable object", () => {
   it("keeps what the check stored and answers with the result of the check", async () => {

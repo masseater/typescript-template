@@ -1,9 +1,11 @@
 import { Avatar, CardLink } from "@template/ui";
+
 import { MemberSummary } from "./member-summary.tsx";
+
 import type { Members } from "#pages/users/api/load-members.ts";
 import type { ReactElement } from "react";
 
-function MemberCard({ member }: Readonly<{ member: Members["members"][number] }>): ReactElement {
+const MemberCard = ({ member }: Readonly<{ member: Members["members"][number] }>): ReactElement => {
   return (
     <li>
       <CardLink to="/users/$id" params={{ id: member.id }}>
@@ -12,6 +14,6 @@ function MemberCard({ member }: Readonly<{ member: Members["members"][number] }>
       </CardLink>
     </li>
   );
-}
+};
 
 export { MemberCard };

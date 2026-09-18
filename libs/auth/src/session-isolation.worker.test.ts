@@ -1,3 +1,7 @@
+import { assert, it } from "@effect/vitest";
+import { setUserRole } from "@template/db/admin";
+import { Effect } from "effect";
+
 import {
   Fixture,
   HTTP_FORBIDDEN,
@@ -12,21 +16,17 @@ import {
   withAuth,
   withEmptyDatabase,
 } from "./auth-test-fixture.ts";
-import { assert, it } from "@effect/vitest";
 import { BrowserClient } from "./browser-client.ts";
-import { Effect } from "effect";
-import { setUserRole } from "@template/db/admin";
 
 const adminEmail = "admin@example.com";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function adminCopyOf(from: Readonly<BrowserClient>, to: BrowserClient): BrowserClient {
+const adminCopyOf = (from: Readonly<BrowserClient>, to: BrowserClient): BrowserClient => {
   for (const [key, value] of from.cookies) {
     const adminKey = key.replaceAll("template-user", "template-admin");
     to.cookies.set(adminKey, value);
   }
   return to;
-}
+};
 
 it.effect(
   "wiki auth finishes OAuth provider initialization while its layer is built",

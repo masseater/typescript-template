@@ -1,19 +1,24 @@
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-import { AdminHeader } from "./admin-header.tsx";
-import { AdminNavigation } from "./admin-navigation.tsx";
 import { useState } from "react";
 
-function AdminFrame({
+import { AdminHeader } from "./admin-header.tsx";
+import { AdminNavigation } from "./admin-navigation.tsx";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
+
+const AdminFrame = ({
   children,
   email,
-}: Readonly<{ children: Readonly<Exclude<ReactNode, ReactPortal>>; email: string }>): ReactElement {
+}: Readonly<{
+  children: Readonly<Exclude<ReactNode, ReactPortal>>;
+  email: string;
+}>): ReactElement => {
   const [navigationOpen, setNavigationOpen] = useState(false);
-  function toggleNavigation(): void {
+  const toggleNavigation = (): void => {
     setNavigationOpen((open) => !open);
-  }
-  function closeNavigation(): void {
+  };
+  const closeNavigation = (): void => {
     setNavigationOpen(false);
-  }
+  };
   return (
     <div className="flex min-h-screen flex-col">
       <AdminHeader
@@ -27,6 +32,6 @@ function AdminFrame({
       </div>
     </div>
   );
-}
+};
 
 export { AdminFrame };

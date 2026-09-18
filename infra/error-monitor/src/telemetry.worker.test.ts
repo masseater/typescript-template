@@ -1,9 +1,11 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import type { Scope } from "effect";
-import { fetchErrorGroups } from "./telemetry.ts";
 import { setupNetwork } from "@msw/cloudflare";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { fetchErrorGroups } from "./telemetry.ts";
+
+import type { Scope } from "effect";
 
 type Network = ReturnType<typeof setupNetwork>;
 
@@ -50,10 +52,9 @@ const queryResult = {
   success: true,
 };
 
-function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const withServer = (
   ...handlers: Parameters<Network["use"]>
-): Effect.Effect<Network, never, Scope.Scope> {
+): Effect.Effect<Network, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const network = setupNetwork();
@@ -62,18 +63,16 @@ function withServer(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (network) =>
       Effect.sync(() => {
         network.disable();
       }),
   );
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.Scope> {
+const recordQuery = (requests: unknown[]): Effect.Effect<Network, never, Scope.Scope> => {
   return withServer(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     http.post(endpoint, async ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${token}`) {
         return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -82,7 +81,7 @@ function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.S
       return HttpResponse.json(queryResult);
     }),
   );
-}
+};
 
 it.effect("groups fingerprinted error logs through the Workers Observability query API", () =>
   Effect.gen(function* program() {

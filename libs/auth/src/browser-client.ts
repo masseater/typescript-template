@@ -1,11 +1,12 @@
-import { Auth } from "./auth.ts";
 import { Effect } from "effect";
+
+import { Auth } from "./auth.ts";
 import { verifySession } from "./session.ts";
 
-interface JsonResponse {
+type JsonResponse = {
   readonly body: unknown;
   readonly status: number;
-}
+};
 
 const origins = {
   admin: "http://localhost:4102",
@@ -18,11 +19,7 @@ class BrowserClient {
   readonly #auth: Auth["Service"];
   readonly #network: Readonly<Record<string, string>>;
 
-  public constructor(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    auth: Auth["Service"],
-    network: Readonly<Record<string, string>> = {},
-  ) {
+  public constructor(auth: Auth["Service"], network: Readonly<Record<string, string>> = {}) {
     this.#auth = auth;
     this.#network = network;
   }
@@ -59,7 +56,6 @@ class BrowserClient {
     return this.send(new Request(url, { headers, redirect: "manual" }));
   }
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public send(request: Request): Effect.Effect<Response> {
     return Effect.promise(async () => {
       const response = await this.#auth.instance.handler(request);
@@ -75,7 +71,6 @@ class BrowserClient {
     body?: Readonly<Record<string, unknown>>,
   ): Effect.Effect<JsonResponse> {
     return this.request(endpoint, body).pipe(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.flatMap((response) =>
         Effect.promise(async (): Promise<JsonResponse> => ({
           body: await response.json(),
@@ -85,7 +80,6 @@ class BrowserClient {
     );
   }
 
-  // oxlint-disable-next-line typescript/explicit-function-return-type, typescript/explicit-module-boundary-types
   public verify(allowEnrollment = false) {
     return verifySession(this.headers(), allowEnrollment).pipe(
       Effect.provideService(Auth, this.#auth),

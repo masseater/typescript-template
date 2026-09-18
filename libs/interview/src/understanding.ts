@@ -1,3 +1,5 @@
+import { Schema } from "effect";
+
 import {
   FieldKey,
   ReadableSheet,
@@ -7,9 +9,9 @@ import {
   readValue,
   readable,
 } from "./sheet.ts";
-import type { InterviewState } from "./state.ts";
-import { Schema } from "effect";
+
 import type { SheetData } from "./sheet.ts";
+import type { InterviewState } from "./state.ts";
 
 const maximumQuestion = 300;
 
@@ -32,15 +34,15 @@ const skipPattern =
 const correctionPattern =
   /^(?<label>[^はを:：]+)\s*[はを:：]\s*(?<value>.+?)(?:に(?:して|変えて|変更して)(?:ください)?)?。?$/u;
 
-function correction(text: string): SheetData {
+const correction = (text: string): SheetData => {
   const groups = correctionPattern.exec(text)?.groups;
-  const label = groups?.["label"]?.trim();
+  const label = groups?.label?.trim();
   const key = fieldKeys.find((candidate) => fieldDefinitions[candidate].label === label);
-  const value = groups?.["value"];
+  const value = groups?.value;
   return key === undefined || value === undefined ? {} : readValue(key, [value]);
-}
+};
 
-function understandByRules(state: InterviewState, text: string): UnderstandingData {
+const understandByRules = (state: InterviewState, text: string): UnderstandingData => {
   if (state.phase !== "asking") {
     return { finish: false, skip: false, values: correction(text) };
   }
@@ -48,7 +50,7 @@ function understandByRules(state: InterviewState, text: string): UnderstandingDa
   const skip = !finish && skipPattern.test(text);
   const answers = !finish && !skip && state.reply?.kind !== "confirm";
   return { finish, skip, values: answers ? readValue(state.current, [text]) : {} };
-}
+};
 
 export { Understanding, understandByRules };
 export type { UnderstandingData };

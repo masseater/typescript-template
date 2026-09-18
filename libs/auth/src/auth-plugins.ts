@@ -1,16 +1,18 @@
-import { assertEligibleUser, deny } from "./policy.ts";
+import { mcp } from "@better-auth/mcp";
+import { passkey } from "@better-auth/passkey";
+import { findPasskeyUser } from "@template/db/security";
 import { jwt, twoFactor } from "better-auth/plugins";
+
+import { assertEligibleUser, deny } from "./policy.ts";
+import { wikiScopes } from "./scopes.ts";
+
 import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
-import { findPasskeyUser } from "@template/db/security";
-import { mcp } from "@better-auth/mcp";
-import { passkey } from "@better-auth/passkey";
-import { wikiScopes } from "./scopes.ts";
 
 type AuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
 
-function verificationAudiencePlugin(audience: Application): AuthPlugin {
+const verificationAudiencePlugin = (audience: Application): AuthPlugin => {
   const audienceField = {
     defaultValue: audience,
     input: false,
@@ -24,13 +26,13 @@ function verificationAudiencePlugin(audience: Application): AuthPlugin {
       verification: { fields: { audience: audienceField } },
     },
   };
-}
+};
 
-function passkeyPlugin(
+const passkeyPlugin = (
   origin: string,
   run: Run,
   audience: Application,
-): ReturnType<typeof passkey> {
+): ReturnType<typeof passkey> => {
   return passkey({
     authentication: {
       afterVerification: async ({
@@ -51,9 +53,9 @@ function passkeyPlugin(
     origin,
     rpID: new URL(origin).hostname,
   });
-}
+};
 
-function wikiAuthorizationServer(origin: string): AuthPlugin[] {
+const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
   return [
     jwt({ disableSettingJwtHeader: true }),
     mcp({
@@ -67,19 +69,19 @@ function wikiAuthorizationServer(origin: string): AuthPlugin[] {
       scopes: [...wikiScopes],
     }),
   ];
-}
+};
 
-function authPlugins({
+const authPlugins = ({
   audience,
   origin,
   run,
-}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] {
+}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] => {
   return [
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin(origin, run, audience),
     ...(audience === "wiki" ? wikiAuthorizationServer(origin) : []),
   ];
-}
+};
 
 export { authPlugins };

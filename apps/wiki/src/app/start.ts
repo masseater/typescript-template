@@ -1,22 +1,19 @@
-import { Exit, Option } from "effect";
 import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/react-start";
-import { guardAccess, runtime } from "#shared/server-api/index.ts";
 import { httpStatus } from "@template/observability";
 import { jsonResponse } from "@template/runtime/http";
+import { Exit, Option } from "effect";
 
-const guard = createMiddleware().server(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  async ({ next, request }) => {
-    const exit = await runtime.runPromiseExit(guardAccess(request, new URL(request.url).pathname));
-    if (Exit.isFailure(exit)) {
-      return jsonResponse({ error: "処理に失敗しました。" }, httpStatus.internalServerError);
-    }
-    return Option.isSome(exit.value) ? exit.value.value : next();
-  },
-);
+import { guardAccess, runtime } from "#shared/server-api/index.ts";
+
+const guard = createMiddleware().server(async ({ next, request }) => {
+  const exit = await runtime.runPromiseExit(guardAccess(request, new URL(request.url).pathname));
+  if (Exit.isFailure(exit)) {
+    return jsonResponse({ error: "処理に失敗しました。" }, httpStatus.internalServerError);
+  }
+  return Option.isSome(exit.value) ? exit.value.value : next();
+});
 
 const csrf = createCsrfMiddleware({
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   filter: (context) => context.handlerType === "serverFn",
 });
 

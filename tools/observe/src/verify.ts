@@ -1,20 +1,21 @@
-import { Cause, Effect, Schema } from "effect";
-import { explorerOrigin, requestTelemetry } from "./explorer.ts";
-import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-interface Verified {
+import { NodeRuntime } from "@effect/platform-node";
+import { applications } from "@template/config";
+import { Cause, Effect, Schema } from "effect";
+
+import { explorerOrigin, requestTelemetry } from "./explorer.ts";
+
+type Verified = {
   readonly logs: number;
   readonly spans: number;
-}
+};
 
-interface VerificationTarget {
+type VerificationTarget = {
   readonly app: string;
   readonly requestId: string;
   readonly service: string;
-}
+};
 
 type Fields = Readonly<Record<string, unknown>>;
 
@@ -44,30 +45,30 @@ const { values } = parseArgs({
   },
 });
 
-function fail(reason: VerificationFailure["reason"]): VerificationFailure {
+const fail = (reason: VerificationFailure["reason"]): VerificationFailure => {
   return new VerificationFailure({ reason });
-}
+};
 
 const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {
   const telemetry = yield* requestTelemetry(target.app, target.requestId);
   const logged = telemetry.logs.some(
     ({ event }: Readonly<{ event: Fields | undefined }>) =>
-      event?.["event"] === "http.server.request" &&
-      event["service"] === target.service &&
-      event["request_id"] === target.requestId,
+      event?.event === "http.server.request" &&
+      event.service === target.service &&
+      event.request_id === target.requestId,
   );
   const traced = telemetry.spans.some(
-    (span: Fields) => span["parent_id"] === null && span["duration_ms"] !== null,
+    (span: Fields) => span.parent_id === null && span.duration_ms !== null,
   );
   const verified: Verified | undefined =
     logged && traced ? { logs: telemetry.logs.length, spans: telemetry.spans.length } : undefined;
   return verified;
 });
 
-function waitForCorrelation(
+const waitForCorrelation = (
   target: VerificationTarget,
   deadline: number,
-): Effect.Effect<Verified, VerificationFailure | Effect.Error<ReturnType<typeof correlated>>> {
+): Effect.Effect<Verified, VerificationFailure | Effect.Error<ReturnType<typeof correlated>>> => {
   if (Date.now() >= deadline) {
     return Effect.fail(fail("telemetry_not_correlated"));
   }
@@ -80,13 +81,12 @@ function waitForCorrelation(
         : Effect.succeed(verified),
     ),
   );
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<URL>) {
   const response = yield* Effect.tryPromise({
     catch: () => fail("request_failed"),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     try: async (signal) =>
       fetch(app, {
         method: "GET",
@@ -128,13 +128,12 @@ const verify = Effect.fn("verify")(function* verify() {
 
 NodeRuntime.runMain(
   verify().pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((report) =>
       Effect.sync(() => {
         process.stdout.write(`${JSON.stringify(report)}\n`);
       }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)

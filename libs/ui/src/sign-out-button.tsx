@@ -1,11 +1,12 @@
 import { ActionStatus } from "./action-status";
 import { Button } from "./shared/ui/button";
-import type { ReactElement } from "react";
 import { useSignOut } from "./use-sign-out";
 
-function SignOutButton({
+import type { ReactElement } from "react";
+
+const SignOutButton = ({
   destination,
-}: Readonly<{ destination?: string | undefined }>): ReactElement {
+}: Readonly<{ destination?: string | undefined }>): ReactElement => {
   const { action, signOut } = useSignOut(destination);
   return (
     <>
@@ -15,6 +16,6 @@ function SignOutButton({
       <ActionStatus action={action} />
     </>
   );
-}
+};
 
 export { SignOutButton };

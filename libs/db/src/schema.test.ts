@@ -1,9 +1,10 @@
-import { Effect, Schema } from "effect";
-import { EmptyTestDatabase, TestBinding, runStatement } from "./testing-node.ts";
 import { assert, it } from "@effect/vitest";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
+import { Effect, Schema } from "effect";
+
 import { migrateD1 } from "./migrate-d1.ts";
 import { schema } from "./schema.ts";
+import { EmptyTestDatabase, TestBinding, runStatement } from "./testing-node.ts";
 
 type SqliteSnapshot = Parameters<typeof generateMigration>[0];
 
@@ -38,16 +39,16 @@ const objectNames = Effect.fn("objectNames")(function* objectNames(type: string)
 
 const positionalKeys = new Set(["cid", "id", "seq"]);
 
-function isPrimaryKeyColumn(row: Readonly<Record<string, unknown>>): boolean {
-  return row["pk"] === 1;
-}
+const isPrimaryKeyColumn = (row: Readonly<Record<string, unknown>>): boolean => {
+  return row.pk === 1;
+};
 
-function comparableColumn(row: Readonly<Record<string, unknown>>): string {
+const comparableColumn = (row: Readonly<Record<string, unknown>>): string => {
   const kept = Object.keys(row)
     .filter((key) => !positionalKeys.has(key) && !(key === "notnull" && isPrimaryKeyColumn(row)))
     .toSorted((left, right) => left.localeCompare(right));
   return JSON.stringify(kept.map((key) => [key, row[key]]));
-}
+};
 
 const pragmaRows = Effect.fn("pragmaRows")(function* pragmaRows(pragma: string, table: string) {
   const result = yield* runStatement(`PRAGMA ${pragma}("${table}")`);
@@ -71,7 +72,7 @@ const primaryKeyNullability = Effect.fn("primaryKeyNullability")(function* prima
   for (const table of tables) {
     for (const row of yield* pragmaRows("table_info", table)) {
       if (isPrimaryKeyColumn(row)) {
-        flags.add(row["notnull"]);
+        flags.add(row.notnull);
       }
     }
   }

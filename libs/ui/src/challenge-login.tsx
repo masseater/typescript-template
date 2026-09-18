@@ -1,35 +1,36 @@
-import type { ActionState } from "./action";
-import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./shared/ui/button";
 import { ChallengeForm } from "./challenge-form";
-import type { ChallengeMode } from "./challenge-form";
-import type { ReactElement } from "react";
+import { Button } from "./shared/ui/button";
 import { useTextInput } from "./use-text-input";
 
-interface ChallengeLoginProps {
+import type { ReactElement } from "react";
+import type { ActionState } from "./action";
+import type { AuthenticatedHandler } from "./authenticated-handler";
+import type { ChallengeMode } from "./challenge-form";
+
+type ChallengeLoginProps = {
   readonly action: ActionState;
   readonly mode: ChallengeMode;
   readonly onAuthenticated: AuthenticatedHandler;
   readonly onModeChange: (mode: ChallengeMode) => void;
   readonly onRestart: () => void;
-}
+};
 
-function ChallengeLogin({
+const ChallengeLogin = ({
   action,
   mode,
   onAuthenticated,
   onModeChange,
   onRestart,
-}: ChallengeLoginProps): ReactElement {
+}: ChallengeLoginProps): ReactElement => {
   const code = useTextInput();
-  function toggleMode(): void {
+  const toggleMode = (): void => {
     onModeChange(mode === "backup" ? "totp" : "backup");
     code.handleChange("");
-  }
-  function restart(): void {
+  };
+  const restart = (): void => {
     onRestart();
     code.handleChange("");
-  }
+  };
   return (
     <>
       <ChallengeForm action={action} code={code} mode={mode} onAuthenticated={onAuthenticated} />
@@ -41,6 +42,6 @@ function ChallengeLogin({
       </Button>
     </>
   );
-}
+};
 
 export { ChallengeLogin };

@@ -1,22 +1,23 @@
-import type { ReactElement, SyntheticEvent } from "react";
-import type { ActionState } from "./action";
+import { authClient } from "./client";
+import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
-import type { TextInput } from "./use-text-input";
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 import { useTextInput } from "./use-text-input";
 
-interface SignUpFieldsProps {
+import type { ReactElement, SyntheticEvent } from "react";
+import type { ActionState } from "./action";
+import type { TextInput } from "./use-text-input";
+
+type SignUpFieldsProps = {
   readonly action: ActionState;
   readonly onSent: () => void;
-}
+};
 
-async function signUp(
+const signUp = async (
   fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
   onSent: () => void,
-): Promise<void> {
+): Promise<void> => {
   const { email, name, password } = fields;
   requireSuccess(
     await authClient.signUp.email({
@@ -28,16 +29,16 @@ async function signUp(
   );
   password.handleChange("");
   onSent();
-}
+};
 
-function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
+const SignUpFields = ({ action, onSent }: SignUpFieldsProps): ReactElement => {
   const name = useTextInput();
   const email = useTextInput();
   const password = useTextInput();
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+  const submit = (event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     event.preventDefault();
     action.run(async () => signUp({ email, name, password }, onSent));
-  }
+  };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <FormColumn>
@@ -76,6 +77,6 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
       </FormColumn>
     </form>
   );
-}
+};
 
 export { SignUpFields };

@@ -1,28 +1,29 @@
-import type { BrowserEvent } from "./events.ts";
-import { logError } from "./log.ts";
 import { maximumBatchSize } from "./events.ts";
+import { logError } from "./log.ts";
+
+import type { BrowserEvent } from "./events.ts";
 
 type Deliver = (events: readonly BrowserEvent[]) => Promise<void>;
-interface EventQueue {
+type EventQueue = {
   readonly disposed: boolean;
   readonly enqueue: (event: BrowserEvent) => void;
   readonly flushInBackground: () => void;
   readonly flushBeforeUnload: () => void;
-}
+};
 
 const maximumPendingEvents = 128;
 
-function reportFailure(): void {
+const reportFailure = (): void => {
   logError({ event: "browser.telemetry_export_failed" });
-}
+};
 
-async function settle(delivery: Readonly<Promise<void>>): Promise<void> {
+const settle = async (delivery: Readonly<Promise<void>>): Promise<void> => {
   try {
     await delivery;
   } catch {
     reportFailure();
   }
-}
+};
 
 class BrowserEventQueue implements EventQueue {
   private readonly deliver: Deliver;

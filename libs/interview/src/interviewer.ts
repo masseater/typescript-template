@@ -1,13 +1,15 @@
+import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
+import { chat } from "@tanstack/ai";
+import { readAi } from "@template/config";
 import { Context, Effect, Layer, Schema } from "effect";
+
 import { fieldDefinitions, fieldKeys } from "./sheet.ts";
+import { UnderstandingFailed } from "./understanding-failed.ts";
+import { Understanding } from "./understanding.ts";
+
 import type { ConfigurationInvalid } from "@template/config";
 import type { InterviewState } from "./state.ts";
-import { Understanding } from "./understanding.ts";
 import type { UnderstandingData } from "./understanding.ts";
-import { UnderstandingFailed } from "./understanding-failed.ts";
-import { chat } from "@tanstack/ai";
-import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
-import { readAi } from "@template/config";
 
 type ModelAccess = Parameters<typeof createWorkersAiChat>[1];
 
@@ -20,12 +22,12 @@ const modelOptions = {
   temperature: 0.3,
 };
 
-interface InterviewerShape {
+type InterviewerShape = {
   readonly understand: (
     state: InterviewState,
     utterance: string,
   ) => Effect.Effect<UnderstandingData, UnderstandingFailed>;
-}
+};
 
 const ModelOutput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Understanding));
 
@@ -43,7 +45,7 @@ const instructions = [
   "reply: 次の質問に添える回答欄。kind は single（1 つ選ぶ）、multiple（いくつでも選ぶ）、confirm（はい/いいえ）のどれか。single と multiple は options に 2〜8 個、それぞれ 20 文字以内の選択肢を入れる。自由に答えてもらうほうがよい質問では reply を省く。",
 ].join("\n");
 
-function request(state: InterviewState, utterance: string): string {
+const request = (state: InterviewState, utterance: string): string => {
   return JSON.stringify({
     current: state.phase === "asking" ? state.current : undefined,
     messages: state.messages.slice(-recentMessages).map(({ role, text }) => ({ role, text })),
@@ -52,14 +54,13 @@ function request(state: InterviewState, utterance: string): string {
     skipped: state.skipped,
     utterance,
   });
-}
+};
 
-function complete(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const complete = (
   access: ModelAccess,
   state: InterviewState,
   utterance: string,
-): Effect.Effect<UnderstandingData, UnderstandingFailed> {
+): Effect.Effect<UnderstandingData, UnderstandingFailed> => {
   return Effect.tryPromise({
     catch: (cause) => new UnderstandingFailed({ cause, reason: "model_failed" }),
     try: async () =>
@@ -77,12 +78,11 @@ function complete(
     }),
     Effect.withSpan("interview.complete"),
   );
-}
+};
 
 class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
   "@template/interview/Interviewer",
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {
     return Layer.succeed(
       Interviewer,
@@ -97,7 +97,6 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
 
   public static fromEnvironment(env: unknown): Layer.Layer<Interviewer, ConfigurationInvalid> {
     return Layer.unwrap(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.map(readAi(env), (ai) =>
         Interviewer.layer(ai === undefined ? undefined : { binding: ai }),
       ),

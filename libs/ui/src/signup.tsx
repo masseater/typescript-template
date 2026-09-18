@@ -1,10 +1,11 @@
+import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
 import { FormColumn } from "./shared/ui/form-column";
-import type { ReactElement } from "react";
 import { SignUpFields } from "./signup-fields";
-import { useAction } from "./action";
 
-function SignUpForm({ onSent }: Readonly<{ onSent: () => void }>): ReactElement {
+import type { ReactElement } from "react";
+
+const SignUpForm = ({ onSent }: Readonly<{ onSent: () => void }>): ReactElement => {
   const action = useAction();
   return (
     <FormColumn>
@@ -12,6 +13,6 @@ function SignUpForm({ onSent }: Readonly<{ onSent: () => void }>): ReactElement 
       <ActionStatus action={action} pendingMessage="登録を処理しています。" />
     </FormColumn>
   );
-}
+};
 
 export { SignUpForm };

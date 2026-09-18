@@ -1,21 +1,22 @@
-import type { ReactElement, SyntheticEvent } from "react";
-import type { ActionState } from "./action";
+import { authClient } from "./client";
+import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { FormColumn } from "./shared/ui/form-column";
 import { TotpField } from "./totp-field";
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 import { useTextInput } from "./use-text-input";
 
-interface TotpVerifyFormProps {
+import type { ReactElement, SyntheticEvent } from "react";
+import type { ActionState } from "./action";
+
+type TotpVerifyFormProps = {
   readonly action: ActionState;
   readonly saved: boolean;
   readonly onVerified: () => void;
-}
+};
 
-function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): ReactElement {
+const TotpVerifyForm = ({ action, onVerified, saved }: TotpVerifyFormProps): ReactElement => {
   const code = useTextInput();
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+  const submit = (event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     event.preventDefault();
     action.run(async () => {
       if (!saved) {
@@ -28,7 +29,7 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
       code.handleChange("");
       globalThis.location.assign("/");
     });
-  }
+  };
   return (
     <form onSubmit={submit}>
       <FormColumn>
@@ -39,6 +40,6 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
       </FormColumn>
     </form>
   );
-}
+};
 
 export { TotpVerifyForm };

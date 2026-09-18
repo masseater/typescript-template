@@ -1,25 +1,27 @@
-import { Effect, Schema } from "effect";
 import { Stage, inMemoryState } from "alchemy";
-import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
-import type { StackName } from "./stacks.ts";
 import { providers } from "alchemy/Cloudflare";
+import { toEffect } from "alchemy/Test/Core";
+import { Effect, Schema } from "effect";
+
 import { repositoryRoot } from "./artifacts.ts";
 import { stackName } from "./stacks.ts";
-import { toEffect } from "alchemy/Test/Core";
+import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 
-interface ResourceInventory {
+import type { StackName } from "./stacks.ts";
+
+type ResourceInventory = {
   readonly adopt: boolean;
   readonly bindings: readonly string[];
   readonly declared: unknown;
   readonly removalPolicy: string;
   readonly type: string;
-}
+};
 
-interface StackInventory {
+type StackInventory = {
   readonly dependencies: readonly string[];
   readonly name: string;
   readonly resources: Readonly<Record<string, ResourceInventory>>;
-}
+};
 
 class InventoryFailure extends Schema.TaggedError<InventoryFailure>()("InventoryFailure", {
   code: Schema.Literals(["stack_module_invalid", "stack_compilation_failed"]),
@@ -58,7 +60,7 @@ const declaredProperties = [
 
 const DIGEST_SEGMENT = /\/[0-9a-f]{64}\//u;
 
-function declaredValue(value: unknown): unknown {
+const declaredValue = (value: unknown): unknown => {
   if (typeof value === "string") {
     return value.replace(repositoryRoot, "").replace(DIGEST_SEGMENT, "/<digest>/");
   }
@@ -70,14 +72,13 @@ function declaredValue(value: unknown): unknown {
       ([key, nested]: readonly [string, unknown]) => [key, declaredValue(nested)] as const,
     ),
   );
-}
+};
 
-function applyVerificationEnvironment(): void {
+const applyVerificationEnvironment = (): void => {
   for (const [name, value] of Object.entries(verificationEnvironment)) {
-    // oxlint-disable-next-line node/no-process-env
     process.env[name] = value;
   }
-}
+};
 
 const bindingDetails = [
   "className",
@@ -88,14 +89,14 @@ const bindingDetails = [
 
 const isBindingDetail = Schema.is(Schema.Union([Schema.String, Schema.Array(Schema.String)]));
 
-function bindingDetail(value: unknown): readonly string[] {
+const bindingDetail = (value: unknown): readonly string[] => {
   if (!isBindingDetail(value)) {
     return [];
   }
   return [typeof value === "string" ? value : [...value].toSorted().join(",")];
-}
+};
 
-function describeBinding(entry: typeof BindingEntry.Type): string {
+const describeBinding = (entry: typeof BindingEntry.Type): string => {
   const [binding] = entry.data.bindings;
   if (typeof binding !== "object" || binding === null) {
     return `${entry.sid}:deferred`;
@@ -105,25 +106,24 @@ function describeBinding(entry: typeof BindingEntry.Type): string {
     String(Reflect.get(binding, "type")),
     ...bindingDetails.flatMap((key) => bindingDetail(Reflect.get(binding, key))),
   ].join(":");
-}
+};
 
-function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
+const declaredOf = (props: Readonly<Record<string, unknown>>): unknown => {
   return Object.fromEntries(
     declaredProperties.flatMap((property) =>
       Object.hasOwn(props, property) ? [[property, declaredValue(props[property])]] : [],
     ),
   );
-}
+};
 
 const REFERENCE_KIND = "RefExpr";
 const CALLABLE_KEYS: ReadonlySet<string> = new Set(["length", "name", "prototype"]);
 
-function traversable(value: unknown): value is object {
+const traversable = (value: unknown): value is object => {
   return value !== null && (typeof value === "object" || typeof value === "function");
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string>): void {
+const collectReferences = (value: unknown, seen: Set<unknown>, found: Set<string>): void => {
   if (!traversable(value) || seen.has(value)) {
     return;
   }
@@ -137,15 +137,15 @@ function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string
       collectReferences(Reflect.get(value, key), seen, found);
     }
   }
-}
+};
 
-function referencedStacks(shape: typeof CompiledShape.Type): readonly string[] {
+const referencedStacks = (shape: typeof CompiledShape.Type): readonly string[] => {
   const found = new Set<string>();
   collectReferences(shape.bindings, new Set(), found);
   return [...found].filter((referenced) => referenced !== shape.name).toSorted();
-}
+};
 
-function inventoryOf(shape: typeof CompiledShape.Type): StackInventory {
+const inventoryOf = (shape: typeof CompiledShape.Type): StackInventory => {
   return {
     dependencies: referencedStacks(shape),
     name: shape.name,
@@ -164,15 +164,15 @@ function inventoryOf(shape: typeof CompiledShape.Type): StackInventory {
       ),
     ),
   };
-}
+};
 
 type StackProgram = Parameters<typeof toEffect>[0];
 
-function stackProgram(module: unknown): StackProgram | undefined {
+const stackProgram = (module: unknown): StackProgram | undefined => {
   const program: unknown =
     typeof module === "object" && module !== null ? Reflect.get(module, "default") : undefined;
   return Effect.isEffect(program) ? (program as StackProgram) : undefined;
-}
+};
 
 const compileStack = Effect.fn("compileStack")(function* compileStack(stack: StackName) {
   const invalid = new InventoryFailure({ code: "stack_module_invalid", stack });

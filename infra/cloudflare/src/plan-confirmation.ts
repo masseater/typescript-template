@@ -1,24 +1,15 @@
-import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
-import { Effect, Redacted } from "effect";
-import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
-import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
-import type { Plan } from "alchemy/Plan";
-import type { Stack as StackRoute } from "alchemy/Alchemist";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createHash } from "node:crypto";
 
-type RowAction = PlannedAction["action"] | PlannedResource["action"];
+import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
+import { Effect, Redacted } from "effect";
 
-const rowDisposition = {
-  adopted: "plan_adopts_existing_resources",
-  create: undefined,
-  delete: "plan_removes_resources",
-  noop: undefined,
-  orphaned: "plan_removes_resources",
-  replace: "plan_removes_resources",
-  run: undefined,
-  update: undefined,
-} as const satisfies Record<RowAction, CloudflareFailure["code"] | undefined>;
+import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
+
+import type { Stack as StackRoute } from "alchemy/Alchemist";
+import type { Plan } from "alchemy/Plan";
+import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
+
+type RowAction = PlannedAction["action"] | PlannedResource["action"];
 
 const bindingDisposition = {
   create: undefined,
@@ -44,17 +35,17 @@ type PlannedStack = Pick<StackRoute.PlanSnapshot, "actions" | "resources" | "sta
   readonly props: Readonly<Record<string, unknown>>;
 };
 
-function digest(value: unknown): string {
+const digest = (value: unknown): string => {
   return createHash("sha256")
     .update(JSON.stringify({ value }))
     .digest("hex")
     .slice(0, CONFIRMATION_LENGTH);
-}
+};
 
 const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "stack", "stage"];
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
+const stableExpression = (value: object, seen: ReadonlySet<unknown>): unknown => {
   const node: unknown = Reflect.get(value, ExprSymbol);
   if (typeof node !== "object" || node === null) {
     return { kind: "expression" };
@@ -73,10 +64,10 @@ function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
     ),
     ...(typeof logicalId === "string" ? { logicalId } : {}),
   };
-}
+};
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
+const stableEntries = (value: object, seen: ReadonlySet<unknown>): unknown => {
   const nested = new Set([...seen, value]);
   if (Array.isArray(value)) {
     // oxlint-disable-next-line typescript/no-use-before-define
@@ -90,10 +81,10 @@ function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
       // oxlint-disable-next-line typescript/no-use-before-define
       .map(([key, item]: readonly [string, unknown]) => [key, stable(item, nested)] as const),
   );
-}
+};
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function stable(value: unknown, seen: ReadonlySet<unknown>): unknown {
+const stable = (value: unknown, seen: ReadonlySet<unknown>): unknown => {
   if (Redacted.isRedacted(value)) {
     return { redacted: digest(String(Redacted.value(value))) };
   }
@@ -107,21 +98,21 @@ function stable(value: unknown, seen: ReadonlySet<unknown>): unknown {
     return value;
   }
   return seen.has(value) ? "<cycle>" : stableEntries(value, seen);
-}
+};
 
-function byBinding(left: PlannedBinding, right: PlannedBinding): number {
+const byBinding = (left: PlannedBinding, right: PlannedBinding): number => {
   return left.sid.localeCompare(right.sid) || left.action.localeCompare(right.action);
-}
+};
 
-function byRow(left: PlanRow, right: PlanRow): number {
+const byRow = (left: PlanRow, right: PlanRow): number => {
   return (
     left.id.localeCompare(right.id) ||
     left.type.localeCompare(right.type) ||
     left.action.localeCompare(right.action)
   );
-}
+};
 
-function planRows(planned: PlannedStack): readonly PlanRow[] {
+const planRows = (planned: PlannedStack): readonly PlanRow[] => {
   return [
     ...planned.resources.map((resource) => ({
       action: resource.action,
@@ -140,9 +131,9 @@ function planRows(planned: PlannedStack): readonly PlanRow[] {
       type: action.actionType,
     })),
   ].toSorted(byRow);
-}
+};
 
-function planReport(planned: PlannedStack): PlanReport {
+const planReport = (planned: PlannedStack): PlanReport => {
   return {
     rows: planRows(planned).map(({ action, bindings, id, type }) => ({
       action,
@@ -152,62 +143,68 @@ function planReport(planned: PlannedStack): PlanReport {
     })),
     stack: planned.stack.name,
   };
-}
+};
 
-function planConfirmation(planned: PlannedStack, accountId: string): string {
+const planConfirmation = (planned: PlannedStack, accountId: string): string => {
   return digest({
     account: digest(accountId),
     rows: planRows(planned),
     stack: planned.stack.name,
     stage: digest(planned.stack.stage),
   });
-}
+};
 
 interface Refusal {
   readonly code: CloudflareFailure["code"];
   readonly id: string;
 }
 
-function refused(code: CloudflareFailure["code"] | undefined, id: string): readonly Refusal[] {
+const refused = (code: CloudflareFailure["code"] | undefined, id: string): readonly Refusal[] => {
   return code === undefined ? [] : [{ code, id }];
-}
+};
 
-function refusedBindings(row: PlanRow): readonly Refusal[] {
+const refusedBindings = (row: PlanRow): readonly Refusal[] => {
   return row.bindings.flatMap((binding) =>
     refused(bindingDisposition[binding.action], `${row.id}.${binding.sid}`),
   );
-}
+};
 
-function refusedRows(planned: PlannedStack): readonly Refusal[] {
+const rowDisposition = {
+  adopted: "plan_adopts_existing_resources",
+  create: undefined,
+  delete: "plan_removes_resources",
+  noop: undefined,
+  orphaned: "plan_removes_resources",
+  replace: "plan_removes_resources",
+  run: undefined,
+  update: undefined,
+} as const satisfies Record<RowAction, CloudflareFailure["code"] | undefined>;
+
+const refusedRows = (planned: PlannedStack): readonly Refusal[] => {
   const rows = planRows(planned);
   return [
     ...rows.flatMap((row) => refused(rowDisposition[row.action], row.id)),
     ...rows.flatMap((row) => refusedBindings(row)),
   ];
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function resourceProps(nodes: Plan["resources"]): readonly (readonly [string, unknown])[] {
+const resourceProps = (nodes: Plan["resources"]): readonly (readonly [string, unknown])[] => {
   return Object.entries(nodes).map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
       [fqn, node.action === "noop" ? undefined : node.props] as const,
   );
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unknown])[] {
+const actionInputs = (nodes: Plan["actions"]): readonly (readonly [string, unknown])[] => {
   return Object.entries(nodes).map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ([fqn, node]: readonly [string, Plan["actions"][string]]) =>
       [fqn, node.action === "run" ? node.input : undefined] as const,
   );
-}
+};
 
-function plannedStack(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const plannedStack = (
   snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "native" | "resources" | "stack">,
-): PlannedStack {
+): PlannedStack => {
   return {
     actions: snapshot.actions,
     props: Object.fromEntries([
@@ -217,7 +214,7 @@ function plannedStack(
     resources: snapshot.resources,
     stack: snapshot.stack,
   };
-}
+};
 
 const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   planned: PlannedStack,

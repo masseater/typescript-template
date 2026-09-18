@@ -1,16 +1,17 @@
-import type { D1Database, D1Result } from "@cloudflare/workers-types";
-import { Effect, Layer, Schema } from "effect";
-import { MigrationFiles, migrateDatabase } from "./remote-operations.ts";
-import { Database } from "./database.ts";
-import { DatabaseFailure } from "./database-failure.ts";
-import { d1Executor } from "./migrate-d1.ts";
+import { reset } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { getColumns } from "drizzle-orm";
-import { reset } from "cloudflare:test";
+import { Effect, Layer, Schema } from "effect";
+
+import { DatabaseFailure } from "./database-failure.ts";
+import { Database } from "./database.ts";
+import { d1Executor } from "./migrate-d1.ts";
+import { MigrationFiles, migrateDatabase } from "./remote-operations.ts";
 import { schema } from "./schema.ts";
 
+import type { D1Database, D1Result } from "@cloudflare/workers-types";
+
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;
@@ -21,17 +22,16 @@ declare global {
 
 const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
-function getSchemaShape(): Record<string, string[]> {
+const getSchemaShape = (): Record<string, string[]> => {
   return Object.fromEntries(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Object.entries(schema).map(([name, table]) => [name, Object.keys(getColumns(table))]),
   );
-}
+};
 
-function runStatement(
+const runStatement = (
   sql: string,
   ...params: readonly (string | number)[]
-): Effect.Effect<D1Result, DatabaseFailure> {
+): Effect.Effect<D1Result, DatabaseFailure> => {
   return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
     try: async () =>
@@ -39,9 +39,9 @@ function runStatement(
         .bind(...params)
         .run(),
   });
-}
+};
 
-function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
+const testDatabase = (migrated: boolean): Layer.Layer<Database, unknown> => {
   return Layer.unwrap(
     Effect.gen(function* database() {
       yield* Effect.promise(async () => reset());
@@ -51,7 +51,7 @@ function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
       return Database.layer(env.DB);
     }),
   );
-}
+};
 
 const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);

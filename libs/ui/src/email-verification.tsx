@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import type { ReactElement } from "react";
+
 import { Status } from "./shared/ui/status";
 
-async function verifyEmailToken(): Promise<boolean> {
+import type { ReactElement } from "react";
+
+const verifyEmailToken = async (): Promise<boolean> => {
   const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
   globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
   if (token === null || token === "") {
@@ -19,18 +21,18 @@ async function verifyEmailToken(): Promise<boolean> {
   } catch {
     return false;
   }
-}
+};
 
-function EmailVerification(): ReactElement {
+const EmailVerification = (): ReactElement => {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    async function verify(): Promise<void> {
+    const verify = async (): Promise<void> => {
       if (await verifyEmailToken()) {
         globalThis.location.replace("/login");
         return;
       }
       setFailed(true);
-    }
+    };
     void verify();
   }, []);
   return failed ? (
@@ -40,6 +42,6 @@ function EmailVerification(): ReactElement {
   ) : (
     <Status variant="pending">メールアドレスを確認しています。</Status>
   );
-}
+};
 
 export { EmailVerification };

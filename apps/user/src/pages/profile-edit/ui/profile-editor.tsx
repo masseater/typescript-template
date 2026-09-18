@@ -1,13 +1,15 @@
-import { Field, FormColumn } from "@template/ui";
 import { maximumNameLength, maximumProfileLength } from "@template/runtime/contracts";
+import { Field, FormColumn } from "@template/ui";
+
 import { ProfileActions } from "./profile-actions.tsx";
+
 import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
 
-function ProfileEditor({
+const ProfileEditor = ({
   form,
   homeId,
-}: Readonly<{ form: ProfileForm; homeId: string }>): ReactElement {
+}: Readonly<{ form: ProfileForm; homeId: string }>): ReactElement => {
   return (
     <form onSubmit={form.handleSubmit} aria-busy={form.pending}>
       <FormColumn>
@@ -34,6 +36,6 @@ function ProfileEditor({
       </FormColumn>
     </form>
   );
-}
+};
 
 export { ProfileEditor };

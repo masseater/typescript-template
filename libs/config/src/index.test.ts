@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 import { Effect } from "effect";
+
+import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",
@@ -9,15 +10,15 @@ const local = {
   MAILPIT_URL: "http://127.0.0.1:8025",
 };
 
-function reason(
+const reason = (
   input: unknown,
-): Effect.Effect<string, Effect.Success<ReturnType<typeof readEnvironment>>> {
+): Effect.Effect<string, Effect.Success<ReturnType<typeof readEnvironment>>> => {
   return readEnvironment(input).pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((error) => error.reason),
   );
-}
+};
 
 it.effect("validates local configuration and defaults the release to local", () =>
   Effect.gen(function* program() {

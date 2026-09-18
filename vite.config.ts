@@ -1,8 +1,9 @@
 import { applications } from "@template/config";
 import { dontReviewItPreset } from "@template/dont-review-it";
 import { LINT_SEVERITY } from "@template/lint-rule-authoring";
-import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { defaultExclude } from "vite-plus/test/config";
+
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;

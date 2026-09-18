@@ -1,11 +1,11 @@
-import { CircleAlertIcon, CircleCheckIcon, XIcon } from "lucide-react";
-import type { ReactElement } from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
+import { CircleAlertIcon, CircleCheckIcon, XIcon } from "lucide-react";
+
+import type { ReactElement } from "react";
 
 type ToastObject = ReturnType<typeof ToastPrimitive.useToastManager>["toasts"][number];
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function ToastItem({ toast }: Readonly<{ toast: ToastObject }>): ReactElement {
+const ToastItem = ({ toast }: Readonly<{ toast: ToastObject }>): ReactElement => {
   return (
     <ToastPrimitive.Root
       toast={toast}
@@ -26,6 +26,6 @@ function ToastItem({ toast }: Readonly<{ toast: ToastObject }>): ReactElement {
       </ToastPrimitive.Close>
     </ToastPrimitive.Root>
   );
-}
+};
 
 export { ToastItem };

@@ -1,26 +1,28 @@
-import { Effect, Redacted } from "effect";
-import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import { assert, it } from "@effect/vitest";
-import { CONFIRMATION_LENGTH } from "./config.ts";
-import type { Plan } from "alchemy/Plan";
-import type { PlannedStack } from "./plan-confirmation.ts";
 import { ResourceExpr } from "alchemy/Output";
+import { Effect, Redacted } from "effect";
+
+import { CONFIRMATION_LENGTH } from "./config.ts";
+import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { Plan } from "alchemy/Plan";
+import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
+import type { PlannedStack } from "./plan-confirmation.ts";
 
 const { accountId } = verificationSettings;
 const otherAccountId = verificationSettings.zoneId;
 const stack = { name: "template-user", stage: "NOT-A-DEPLOYABLE-PREFIX" };
 
-function fqn(logicalId: string): string {
+const fqn = (logicalId: string): string => {
   return `${stack.name}/${stack.stage}/${logicalId}`;
-}
+};
 
-function resource(
+const resource = (
   kind: PlannedResource["action"],
   logicalId: string,
   bindings: readonly PlannedBinding[] = [],
-): PlannedResource {
+): PlannedResource => {
   return {
     action: kind,
     bindings,
@@ -28,29 +30,27 @@ function resource(
     logicalId,
     resourceType: "Cloudflare.Worker",
   };
-}
+};
 
-function action(kind: PlannedAction["action"], logicalId: string): PlannedAction {
+const action = (kind: PlannedAction["action"], logicalId: string): PlannedAction => {
   return { action: kind, actionType: "Cloudflare.Migration", fqn: fqn(logicalId), logicalId };
-}
+};
 
-function nativePlan(shape: Readonly<Record<string, unknown>>): Plan {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+const nativePlan = (shape: Readonly<Record<string, unknown>>): Plan => {
   return shape as unknown as Plan;
-}
+};
 
-function expression(logicalId: string): unknown {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+const expression = (logicalId: string): unknown => {
   return new ResourceExpr({ LogicalId: logicalId, Type: "Cloudflare.Test" } as never);
-}
+};
 
-function planned(
+const planned = (
   resources: readonly PlannedResource[],
   props: Readonly<Record<string, unknown>> = {},
   actions: readonly PlannedAction[] = [],
-): PlannedStack {
+): PlannedStack => {
   return { actions, props, resources, stack };
-}
+};
 
 const workerProps = {
   domain: { name: "user.example.com", zoneId: verificationSettings.zoneId },
@@ -63,12 +63,12 @@ const created = planned(
   { [fqn("Worker")]: workerProps },
 );
 
-function token(target: PlannedStack, account = accountId): string {
+const token = (target: PlannedStack, account = accountId): string => {
   return planConfirmation(target, account);
-}
-function withProps(props: Readonly<Record<string, unknown>>): PlannedStack {
+};
+const withProps = (props: Readonly<Record<string, unknown>>): PlannedStack => {
   return planned(created.resources, { [fqn("Worker")]: props });
-}
+};
 
 it.effect("prints the rows and their bindings without the stage or any property value", () =>
   Effect.sync(() => {

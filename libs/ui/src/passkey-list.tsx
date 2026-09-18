@@ -1,16 +1,17 @@
-import type { ActionState } from "./action";
 import { PasskeyItem } from "./passkey-item";
-import type { PasskeySummary } from "./mfa-types";
-import type { ReactElement } from "react";
 import { Status } from "./shared/ui/status";
 
-interface PasskeyListProps {
+import type { ReactElement } from "react";
+import type { ActionState } from "./action";
+import type { PasskeySummary } from "./mfa-types";
+
+type PasskeyListProps = {
   readonly action: ActionState;
   readonly listError: string | undefined;
   readonly passkeys: readonly PasskeySummary[] | undefined;
-}
+};
 
-function PasskeyList({ action, listError, passkeys }: PasskeyListProps): ReactElement {
+const PasskeyList = ({ action, listError, passkeys }: PasskeyListProps): ReactElement => {
   if (listError !== undefined && listError !== "") {
     return <Status variant="error">{listError}</Status>;
   }
@@ -27,6 +28,6 @@ function PasskeyList({ action, listError, passkeys }: PasskeyListProps): ReactEl
       ))}
     </ul>
   );
-}
+};
 
 export { PasskeyList };

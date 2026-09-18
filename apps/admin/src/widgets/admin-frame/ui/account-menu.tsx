@@ -9,10 +9,11 @@ import {
   useToast,
 } from "@template/ui";
 import { ChevronDownIcon } from "lucide-react";
-import type { ReactElement } from "react";
 import { useEffect } from "react";
 
-function AccountMenu({ email }: Readonly<{ email: string }>): ReactElement {
+import type { ReactElement } from "react";
+
+const AccountMenu = ({ email }: Readonly<{ email: string }>): ReactElement => {
   const { action, signOut } = useSignOut();
   const notify = useToast();
   useEffect(() => {
@@ -34,6 +35,6 @@ function AccountMenu({ email }: Readonly<{ email: string }>): ReactElement {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
 export { AccountMenu };

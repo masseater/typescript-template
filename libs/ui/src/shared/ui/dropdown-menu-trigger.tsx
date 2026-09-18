@@ -1,12 +1,13 @@
-import type { Children } from "./types";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import type { ReactElement } from "react";
 
-function DropdownMenuTrigger({
+import type { ReactElement } from "react";
+import type { Children } from "./types";
+
+const DropdownMenuTrigger = ({
   "aria-label": ariaLabel,
   children,
   disabled,
-}: Children & Readonly<{ "aria-label": string; disabled?: boolean }>): ReactElement {
+}: Children & Readonly<{ "aria-label": string; disabled?: boolean }>): ReactElement => {
   return (
     <MenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
@@ -17,6 +18,6 @@ function DropdownMenuTrigger({
       {children}
     </MenuPrimitive.Trigger>
   );
-}
+};
 
 export { DropdownMenuTrigger };

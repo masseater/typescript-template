@@ -1,17 +1,15 @@
-import { Effect } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
-interface Diagnosis {
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect } from "effect";
+
+type Diagnosis = {
   readonly ok: boolean;
   readonly output: string;
   readonly project: string;
-}
+};
 
 const MAX_OUTPUT_BYTES = 33_554_432;
 const DIAGNOSTIC_CONCURRENCY = 4;
@@ -19,46 +17,43 @@ const DIAGNOSTIC_CONCURRENCY = 4;
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/effect-tsgo", import.meta.url));
 
-function areaProjects(area: string): Effect.Effect<string[]> {
+const areaProjects = (area: string): Effect.Effect<string[]> => {
   return Effect.promise(async () =>
     readdir(new URL(`../../${area}/`, import.meta.url), { withFileTypes: true }),
   ).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((entries) =>
       entries
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
         .filter((entry) => entry.isDirectory())
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
         .map((entry) => `${area}/${entry.name}/tsconfig.json`),
     ),
   );
-}
+};
 
-function hasProject(project: string): Effect.Effect<boolean> {
+const hasProject = (project: string): Effect.Effect<boolean> => {
   const directory = new URL(`../../${project.replace(/tsconfig\.json$/u, "")}`, import.meta.url);
   return Effect.promise(async () => readdir(directory)).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((names) => names.includes("tsconfig.json")),
   );
-}
+};
 
-function diagnose(project: string): Effect.Effect<Diagnosis> {
+const diagnose = (project: string): Effect.Effect<Diagnosis> => {
   return Effect.promise(
     async () =>
-      // oxlint-disable-next-line promise/avoid-new
       new Promise<Diagnosis>((resolve) => {
         execFile(
           executable,
           ["diagnostics", "--project", `${root}${project}`, "--format", "text", "--strict"],
           { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
           (failure, stdout, stderr) => {
             resolve({ ok: failure === null, output: `${stdout}${stderr}`, project });
           },
         );
       }),
   );
-}
+};
 
 const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
   const areas = yield* Effect.all(
@@ -75,7 +70,6 @@ const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
 
 NodeRuntime.runMain(
   diagnoseAll().pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((results) =>
       Effect.sync(() => {
         const failed = results.filter((result) => !result.ok);

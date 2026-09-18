@@ -1,10 +1,11 @@
 import { Button, ButtonLink } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-function ProfileActions({
+const ProfileActions = ({
   homeId,
   pending,
-}: Readonly<{ homeId: string; pending: boolean }>): ReactElement {
+}: Readonly<{ homeId: string; pending: boolean }>): ReactElement => {
   return (
     <div className="flex items-center gap-4">
       <Button type="submit" variant="primary" disabled={pending}>
@@ -15,6 +16,6 @@ function ProfileActions({
       </ButtonLink>
     </div>
   );
-}
+};
 
 export { ProfileActions };

@@ -1,7 +1,9 @@
 import { Avatar, ButtonLink, Heading } from "@template/ui";
+
 import { Biography } from "./biography.tsx";
-import type { Member } from "#pages/profile/model/member.ts";
 import { ProfileBody } from "./profile-body.tsx";
+
+import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
 
 const joinedMonth = new Intl.DateTimeFormat("ja", {
@@ -10,7 +12,7 @@ const joinedMonth = new Intl.DateTimeFormat("ja", {
   year: "numeric",
 });
 
-function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
+const ProfilePage = ({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement => {
   return (
     <ProfileBody>
       <div className="flex items-center gap-4">
@@ -26,6 +28,6 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
       {own && <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>}
     </ProfileBody>
   );
-}
+};
 
 export { ProfilePage };

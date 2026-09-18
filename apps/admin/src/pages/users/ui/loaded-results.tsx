@@ -1,25 +1,27 @@
-import { EmptyResults } from "./empty-results.tsx";
-import type { ListedUsers } from "#pages/users/model/user-list.ts";
 import { PageNavigation } from "@template/ui";
+
+import { usersPageSize } from "#pages/users/model/users-pagination.ts";
+import { EmptyResults } from "./empty-results.tsx";
+import { UserPageLink } from "./user-page-link.tsx";
+import { UsersTable } from "./users-table.tsx";
+
+import type { ListedUsers } from "#pages/users/model/user-list.ts";
+import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";
-import { UserPageLink } from "./user-page-link.tsx";
-import type { UsersSearch } from "#pages/users/model/users-search.ts";
-import { UsersTable } from "./users-table.tsx";
-import { usersPageSize } from "#pages/users/model/users-pagination.ts";
 
-function LoadedResults({
+const LoadedResults = ({
   list,
   onReload,
   search,
-}: Readonly<{ list: ListedUsers; onReload: () => void; search: UsersSearch }>): ReactElement {
-  const page = search.page ?? 1;
-  function pageLink(target: PageTarget): ReactElement {
+}: Readonly<{ list: ListedUsers; onReload: () => void; search: UsersSearch }>): ReactElement => {
+  const pageLink = (target: PageTarget): ReactElement => {
     return <UserPageLink search={search} target={target} />;
-  }
+  };
   if (list.users.length === 0) {
     return <EmptyResults beyondLastPage={list.total > 0} search={search} />;
   }
+  const page = search.page ?? 1;
   const first = (page - 1) * usersPageSize + 1;
   const last = first + list.users.length - 1;
   return (
@@ -35,6 +37,6 @@ function LoadedResults({
       />
     </>
   );
-}
+};
 
 export { LoadedResults };

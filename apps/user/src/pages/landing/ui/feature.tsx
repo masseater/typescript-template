@@ -1,12 +1,12 @@
 import { Card, Heading } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function Feature({
+const Feature = ({
   description,
   icon,
   title,
-}: Readonly<{ description: string; icon: ReactElement; title: string }>): ReactElement {
+}: Readonly<{ description: string; icon: ReactElement; title: string }>): ReactElement => {
   return (
     <li className="flex">
       <Card>
@@ -18,6 +18,6 @@ function Feature({
       </Card>
     </li>
   );
-}
+};
 
 export { Feature };

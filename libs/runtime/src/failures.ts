@@ -1,12 +1,14 @@
-import { Cause, Effect, Option, Schema } from "effect";
 import { httpStatus, rejectionStatus, reportFailure } from "@template/observability";
-import type { InputInvalid } from "./input-invalid.ts";
-import type { RequestRejected } from "@template/observability";
+import { Cause, Effect, Option, Schema } from "effect";
+
 import { jsonResponse } from "./responses.ts";
 
-interface Tagged {
+import type { RequestRejected } from "@template/observability";
+import type { InputInvalid } from "./input-invalid.ts";
+
+type Tagged = {
   readonly _tag: string;
-}
+};
 type SettledStatus =
   | typeof httpStatus.accepted
   | typeof httpStatus.found
@@ -23,10 +25,10 @@ const settledStatuses: ReadonlySet<HttpStatus> = new Set([
 const failureStatuses = Object.values(httpStatus).filter(
   (code): code is FailureStatus => !settledStatuses.has(code),
 );
-interface Failure {
+type Failure = {
   readonly status: FailureStatus;
   readonly message: string;
-}
+};
 type FailureTable<Failures extends Tagged> = {
   readonly [Tag in Failures["_tag"]]:
     | Failure
@@ -56,7 +58,7 @@ const commonFailures: FailureTable<CommonFailure> = {
   AdminMfaRequired: { message: forbidden, status: httpStatus.forbidden },
   AdminRequired: { message: forbidden, status: httpStatus.forbidden },
   InputInvalid: { message: invalidInput, status: httpStatus.badRequest },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   RequestRejected: (error) => ({
     message: error.reason === "invalid_json" ? invalidInput : forbidden,
     status: rejectionStatus[error.reason],
@@ -65,7 +67,7 @@ const commonFailures: FailureTable<CommonFailure> = {
   SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized },
 };
 
-function toFailure(table: object, error: unknown): Failure | undefined {
+const toFailure = (table: object, error: unknown): Failure | undefined => {
   if (!isTagged(error)) {
     return undefined;
   }
@@ -73,13 +75,13 @@ function toFailure(table: object, error: unknown): Failure | undefined {
   const failure: unknown =
     typeof entry === "function" ? Reflect.apply(entry, undefined, [error]) : entry;
   return isFailure(failure) ? failure : undefined;
-}
+};
 
-function reportedFailure(
+const reportedFailure = (
   table: object,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   cause: Readonly<Cause.Cause<unknown>>,
-): Effect.Effect<Failure> {
+): Effect.Effect<Failure> => {
   const error = Cause.findErrorOption(cause);
   const failure = Option.isSome(error)
     ? toFailure({ ...commonFailures, ...table }, error.value)
@@ -89,23 +91,22 @@ function reportedFailure(
   }
   const unexpected = { message: unexpectedMessage, status: httpStatus.internalServerError };
   return reportFailure(cause).pipe(Effect.as(unexpected));
-}
+};
 
-function failureResponse(
+const failureResponse = (
   table: object,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   cause: Readonly<Cause.Cause<unknown>>,
-): Effect.Effect<Response> {
+): Effect.Effect<Response> => {
   return reportedFailure(table, cause).pipe(
     Effect.map((failure) => jsonResponse({ error: failure.message }, failure.status)),
   );
-}
+};
 
-function runtimeUnavailable(): Failure {
-  // oxlint-disable-next-line no-console
+const runtimeUnavailable = (): Failure => {
   console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
   return { message: unexpectedMessage, status: httpStatus.serviceUnavailable };
-}
+};
 
 export { failureResponse, reportedFailure, runtimeUnavailable };
 export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };

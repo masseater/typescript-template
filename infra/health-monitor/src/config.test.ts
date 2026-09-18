@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 import { Effect } from "effect";
+
+import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
   ADMIN_ORIGIN: "https://admin.example.com",
@@ -8,18 +9,18 @@ const valid = {
   WIKI_ORIGIN: "https://wiki.example.com",
 };
 
-function code(
+const code = (
   input: unknown,
 ): Effect.Effect<
   "health_monitor_config_invalid" | "health_monitor_origins_must_differ",
   { readonly ADMIN_ORIGIN: string; readonly USER_ORIGIN: string; readonly WIKI_ORIGIN: string }
-> {
+> => {
   return parseHealthMonitorConfig(input).pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((failure) => failure.code),
   );
-}
+};
 
 it.effect("accepts distinct https origins", () =>
   Effect.gen(function* program() {

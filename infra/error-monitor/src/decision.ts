@@ -1,24 +1,25 @@
 import type { ErrorGroup } from "./telemetry.ts";
 
 type SeenFingerprints = Readonly<Record<string, number>>;
-interface Notification extends ErrorGroup {
+type Notification = {
   readonly reason: "new" | "regressed";
-}
-interface NotificationDecision {
+} & ErrorGroup;
+type NotificationDecision = {
   readonly notifications: Notification[];
   readonly seen: Record<string, number>;
-}
+};
 
-const MILLISECONDS_PER_DAY = 86_400_000;
 const FORGET_AFTER_DAYS = 7;
+const MILLISECONDS_PER_DAY = 86_400_000;
+
 const quietPeriod = MILLISECONDS_PER_DAY;
 const forgetAfter = FORGET_AFTER_DAYS * MILLISECONDS_PER_DAY;
 
-function decideNotifications(
+const decideNotifications = (
   groups: readonly ErrorGroup[],
   seen: SeenFingerprints,
   now: number,
-): NotificationDecision {
+): NotificationDecision => {
   const notifications = groups.flatMap((group): Notification[] => {
     const lastSeen = seen[group.fingerprint];
     if (lastSeen === undefined) {
@@ -36,9 +37,9 @@ function decideNotifications(
     ...groups.map((group) => [group.fingerprint, now] as const),
   ]);
   return { notifications, seen: next };
-}
+};
 
-function formatMessage(notifications: readonly Notification[]): string {
+const formatMessage = (notifications: readonly Notification[]): string => {
   return [
     `Cloudflare Workers で ${notifications.length} 件のエラーを検出しました。`,
     ...notifications.map(
@@ -47,7 +48,7 @@ function formatMessage(notifications: readonly Notification[]): string {
     ),
     "Workers Observability で error.fingerprint を指定して検索してください。",
   ].join("\n");
-}
+};
 
 export { decideNotifications, formatMessage };
 export type { SeenFingerprints };

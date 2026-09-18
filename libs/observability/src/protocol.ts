@@ -2,15 +2,15 @@ import { Schema } from "effect";
 
 type RouteEntry = readonly [string, string];
 type HttpMethod = (typeof httpMethods)[number];
-interface Correlation {
+type Correlation = {
   readonly traceId: string;
   readonly spanId: string;
   readonly requestId: string;
-}
-interface ParentContext {
+};
+type ParentContext = {
   readonly parentSpanId: string;
   readonly traceId: string;
-}
+};
 
 const traceIdBytes = 16;
 const spanIdBytes = 8;
@@ -37,26 +37,26 @@ const isRequestId = Schema.is(RequestId);
 const isHttpMethod = Schema.is(HttpMethodSchema);
 const isRoutes = Schema.is(Routes);
 
-function randomHex(bytes: number): string {
+const randomHex = (bytes: number): string => {
   return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
     byte.toString(hexRadix).padStart(hexByteWidth, "0"),
   ).join("");
-}
+};
 
-function parentContext(value: string | null): ParentContext | undefined {
+const parentContext = (value: string | null): ParentContext | undefined => {
   const groups = value?.match(
     /^00-(?<traceId>[0-9a-f]{32})-(?<parentSpanId>[0-9a-f]{16})-0[01]$/u,
   )?.groups;
-  const traceId = groups?.["traceId"];
-  const parentSpanId = groups?.["parentSpanId"];
+  const traceId = groups?.traceId;
+  const parentSpanId = groups?.parentSpanId;
   return isTraceId(traceId) && isSpanId(parentSpanId) ? { parentSpanId, traceId } : undefined;
-}
+};
 
-function httpMethod(method: string): HttpMethod {
+const httpMethod = (method: string): HttpMethod => {
   return isHttpMethod(method) ? method : "_OTHER";
-}
+};
 
-function routeLabel(pathname: string, routes: Readonly<Record<string, string>>): string {
+const routeLabel = (pathname: string, routes: Readonly<Record<string, string>>): string => {
   if (Object.hasOwn(routes, pathname)) {
     return routes[pathname] ?? "unmatched";
   }
@@ -67,7 +67,7 @@ function routeLabel(pathname: string, routes: Readonly<Record<string, string>>):
     prefixes.find(([path]: RouteEntry) => pathname.startsWith(path.slice(0, -1)))?.[1] ??
     "unmatched"
   );
-}
+};
 
 export {
   RequestId,

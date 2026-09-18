@@ -1,6 +1,7 @@
-import type { ComponentProps, ReactElement } from "react";
 import { createLink } from "@tanstack/react-router";
 import { cva } from "class-variance-authority";
+
+import type { ComponentProps, ReactElement } from "react";
 
 const paginationLinkVariants = cva(
   "inline-flex min-w-8 items-center justify-center rounded-md border px-2 py-1 text-base leading-tight no-underline outline-none focus-visible:focus-indicator",
@@ -17,11 +18,13 @@ const paginationLinkVariants = cva(
 
 type PaginationAnchorProps = Readonly<ComponentProps<"a"> & { current?: boolean }>;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function PaginationAnchor({ children, current, ...anchor }: PaginationAnchorProps): ReactElement {
+const PaginationAnchor = ({
+  children,
+  current,
+  ...anchor
+}: PaginationAnchorProps): ReactElement => {
   return (
     <a
-      // oxlint-disable-next-line react/jsx-props-no-spreading
       {...anchor}
       data-slot="pagination-link"
       aria-current={current === true ? "page" : undefined}
@@ -30,7 +33,7 @@ function PaginationAnchor({ children, current, ...anchor }: PaginationAnchorProp
       {children}
     </a>
   );
-}
+};
 
 const PaginationLink = createLink(PaginationAnchor);
 

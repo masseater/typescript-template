@@ -1,11 +1,10 @@
-import type { ComponentProps, ReactElement } from "react";
 import { createLink } from "@tanstack/react-router";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function TextAnchor({ children, ...anchor }: Readonly<ComponentProps<"a">>): ReactElement {
+import type { ComponentProps, ReactElement } from "react";
+
+const TextAnchor = ({ children, ...anchor }: Readonly<ComponentProps<"a">>): ReactElement => {
   return (
     <a
-      // oxlint-disable-next-line react/jsx-props-no-spreading
       {...anchor}
       data-slot="text-link"
       className="rounded-sm text-link underline outline-none hover:text-link-hover focus-visible:focus-indicator-outer"
@@ -13,7 +12,7 @@ function TextAnchor({ children, ...anchor }: Readonly<ComponentProps<"a">>): Rea
       {children}
     </a>
   );
-}
+};
 
 const TextLink = createLink(TextAnchor);
 

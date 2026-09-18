@@ -1,16 +1,17 @@
 import { Effect, Option, Schema } from "effect";
+
 import type { Application as HealthService } from "@template/config";
 
-interface HealthTarget {
+type HealthTarget = {
   readonly service: HealthService;
   readonly origin: string;
-}
+};
 
-interface ProbeResult {
+type ProbeResult = {
   readonly service: HealthService;
   readonly healthy: boolean;
   readonly detail: string;
-}
+};
 
 type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
 
@@ -22,11 +23,7 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
-  return { detail, healthy, service: target.service };
-}
-
-function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
+const requestHealth = (target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> => {
   return Effect.tryPromise(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     async (signal): Promise<ProbeResponse> =>
@@ -36,7 +33,11 @@ function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeR
         signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
       }),
   ).pipe(Effect.option);
-}
+};
+
+const probeResult = (target: HealthTarget, healthy: boolean, detail: string): ProbeResult => {
+  return { detail, healthy, service: target.service };
+};
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   target: HealthTarget,

@@ -1,3 +1,7 @@
+import { verifySession } from "@template/auth";
+import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@template/db";
+import { httpStatus } from "@template/observability";
+import { accountApi, unavailable } from "@template/runtime/account";
 import {
   MemberList,
   MemberListQuery,
@@ -7,8 +11,6 @@ import {
   ProfileView,
   memberPageSize,
 } from "@template/runtime/contracts";
-import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@template/db";
-import { accountApi, unavailable } from "@template/runtime/account";
 import {
   apiRoot,
   apiRoutes,
@@ -18,10 +20,9 @@ import {
   readSearchParams,
 } from "@template/runtime/http";
 import { Effect } from "effect";
-import { httpStatus } from "@template/observability";
+
 import { interviewApi } from "./interview-api.ts";
 import { runtime } from "./runtime.ts";
-import { verifySession } from "@template/auth";
 
 const api = apiRoutes(runtime);
 const failures = {
@@ -36,7 +37,7 @@ const app = createApi(apiRoot)
     "/profile",
     api.route(
       ProfileView,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
@@ -53,7 +54,7 @@ const app = createApi(apiRoot)
     "/member",
     api.route(
       MemberView,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
@@ -67,7 +68,7 @@ const app = createApi(apiRoot)
     "/members",
     api.route(
       MemberList,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       (request) =>
         Effect.gen(function* handleRequest() {
           yield* verifySession(request.headers);
@@ -83,7 +84,7 @@ const app = createApi(apiRoot)
     "/profile",
     api.route(
       ProfileView,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);

@@ -1,3 +1,10 @@
+import { AssertionError } from "node:assert";
+
+import { plugin } from "@shadcn/lint";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
+import { describe, expect, it } from "vite-plus/test";
+
+import { field, workspaceManifests } from "./dependencies.ts";
 import {
   appStylesheetViolations,
   coverageViolations,
@@ -12,13 +19,7 @@ import {
   tokenViolations,
   untouchedTokens,
 } from "./design-system.ts";
-import { describe, expect, it } from "vite-plus/test";
-import { field, workspaceManifests } from "./dependencies.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { AssertionError } from "node:assert";
-import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { hoverViolations } from "./hover-colors.ts";
-import { plugin } from "@shadcn/lint";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
   eager: true,
@@ -27,7 +28,7 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 
 const lint = field(configs["../../vite.config.ts"], "lint");
 
-function restrictedImportNames(): string[] {
+const restrictedImportNames = (): string[] => {
   const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
   const options: unknown = Array.isArray(rule) ? rule.at(1) : undefined;
   const paths: unknown = field(options, "paths");
@@ -37,7 +38,7 @@ function restrictedImportNames(): string[] {
         return typeof name === "string" ? [name] : [];
       })
     : [];
-}
+};
 
 const restyled = [
   ["no-restyle", "bg-destructive"],
@@ -46,9 +47,9 @@ const restyled = [
   ["no-unknown-classes", "shadow-xs"],
 ] as const;
 
-function runDirectly(_text: string, run: () => void): void {
+const runDirectly = (_text: string, run: () => void): void => {
   run();
-}
+};
 
 RuleTester.describe = runDirectly;
 RuleTester.it = runDirectly;
@@ -57,7 +58,7 @@ const tester = new RuleTester({});
 
 type RuleName = (typeof restyled)[number][0];
 
-function reports(rule: RuleName, className: string): boolean {
+const reports = (rule: RuleName, className: string): boolean => {
   try {
     tester.run(rule, plugin.rules[rule], {
       invalid: [],
@@ -76,7 +77,7 @@ function reports(rule: RuleName, className: string): boolean {
     throw error;
   }
   return false;
-}
+};
 
 describe("smarthr-ui token port", () => {
   it("reads the stylesheet the linter resolves from components.json", () => {

@@ -1,9 +1,7 @@
 {
   "extends": "@template/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": [
-      "esnext"
-    ],
+    "lib": ["esnext"],
     "types": [
       "vite-plus/client",
       "node",
@@ -16,9 +14,5 @@
       }
     ]
   },
-  "include": [
-    "src/**/*.ts",
-    "drizzle.config.ts",
-    "vite.config.ts"
-  ]
+  "include": ["src/**/*.ts", "drizzle.config.ts", "vite.config.ts"]
 }

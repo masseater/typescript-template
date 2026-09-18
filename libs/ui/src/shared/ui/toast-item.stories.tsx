@@ -1,26 +1,28 @@
-import { expect, screen, userEvent, waitFor } from "storybook/test";
-import { Button } from "./button";
-import type { ReactElement } from "react";
-import { ToastItem } from "./toast-item";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
-import { ToastViewport } from "./toast-viewport";
+import { expect, screen, userEvent, waitFor } from "storybook/test";
+
 import preview from "../../../.storybook/preview";
+import { Button } from "./button";
+import { ToastItem } from "./toast-item";
+import { ToastViewport } from "./toast-viewport";
 import { useToast } from "./use-toast";
 
-function Raise({
+import type { ReactElement } from "react";
+
+const Raise = ({
   title,
   variant,
-}: Readonly<{ title: string; variant: "error" | "success" }>): ReactElement {
+}: Readonly<{ title: string; variant: "error" | "success" }>): ReactElement => {
   const raise = useToast();
-  function show(): void {
+  const show = (): void => {
     raise(variant, title);
-  }
+  };
   return (
     <Button type="button" variant="primary" onClick={show}>
       通知を出す
     </Button>
   );
-}
+};
 
 const meta = preview.meta({
   args: { toast: { id: "toast_01", title: "利用者の権限を変更しました。", type: "success" } },

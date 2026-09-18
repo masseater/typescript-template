@@ -38,18 +38,18 @@ const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
   },
 );
 
-function healthTargets(
+const healthTargets = (
   config: HealthMonitorConfig,
 ): readonly [
   { readonly origin: string; readonly service: "user" },
   { readonly origin: string; readonly service: "admin" },
   { readonly origin: string; readonly service: "wiki" },
-] {
+] => {
   return [
     { origin: config.USER_ORIGIN, service: "user" },
     { origin: config.ADMIN_ORIGIN, service: "admin" },
     { origin: config.WIKI_ORIGIN, service: "wiki" },
   ] as const;
-}
+};
 
 export { healthTargets, parseHealthMonitorConfig };

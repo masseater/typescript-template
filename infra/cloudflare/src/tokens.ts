@@ -1,8 +1,9 @@
-import { stackName, stackOptions } from "./stacks.ts";
+import { Stack } from "alchemy";
 import { ApiToken } from "alchemy/Cloudflare";
 import { Effect } from "effect";
-import { Stack } from "alchemy";
+
 import { settings } from "./settings.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 
 const accountTokens = {
   BillingRead: { permission: "Billing Read", slug: "billing-read" },
@@ -34,7 +35,6 @@ const stack = Stack(
                 resources: { [`com.cloudflare.api.account.${config.accountId}`]: "*" },
               },
             ],
-            // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           }).pipe(Effect.map((token) => token.name)),
       ),
     );
@@ -42,10 +42,10 @@ const stack = Stack(
   }),
 );
 
-function accountTokenRef(resource: TokenResource): Effect.Effect<ApiToken.AccountApiToken> {
-  return ApiToken.AccountApiToken.ref(resource, { stack: stackName("tokens") });
-}
-
 // oxlint-disable-next-line import/no-default-export
 export default stack;
+const accountTokenRef = (resource: TokenResource): Effect.Effect<ApiToken.AccountApiToken> => {
+  return ApiToken.AccountApiToken.ref(resource, { stack: stackName("tokens") });
+};
+
 export { accountTokenRef, accountTokens };

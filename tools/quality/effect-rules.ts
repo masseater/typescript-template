@@ -1,28 +1,29 @@
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
-import { origins, propertyName, staticText } from "./references.ts";
-import type { Visitor } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
 
-const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
+import type { Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 
-function filename(context: LintContext): string {
+const filename = (context: LintContext): string => {
   return context.filename.replaceAll("\\", "/");
-}
+};
 
-function definesFileRoute(context: LintContext, node: Node): boolean {
+const definesFileRoute = (context: LintContext, node: Node): boolean => {
   return (
     node.type === "CallExpression" &&
     node.callee.type === "CallExpression" &&
     origins(context, node.callee.callee).some((origin) => origin[1] === "createFileRoute")
   );
-}
+};
 
 function routeOptions(node: Node): NodeOf<"ObjectExpression">["properties"] {
   const [options] = node.type === "CallExpression" ? node.arguments : [];
   return options?.type === "ObjectExpression" ? options.properties : [];
 }
 
-function servesElysia(context: LintContext, node: Node): boolean {
+const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
+
+const servesElysia = (context: LintContext, node: Node): boolean => {
   if (node.type === "ObjectExpression") {
     return node.properties.some(
       (property) => property.type === "SpreadElement" && servesElysia(context, property.argument),
@@ -34,9 +35,9 @@ function servesElysia(context: LintContext, node: Node): boolean {
       (origin) => origin.join(".") === elysiaServerOrigin.join("."),
     )
   );
-}
+};
 
-function reportForeignServer(context: LintContext, node: Node): void {
+const reportForeignServer = (context: LintContext, node: Node): void => {
   if (!definesFileRoute(context, node)) {
     return;
   }
@@ -50,13 +51,13 @@ function reportForeignServer(context: LintContext, node: Node): void {
       reportViolation(context, property);
     }
   }
-}
+};
 
-function effectStackVisitor(context: LintContext): Visitor {
+const effectStackVisitor = (context: LintContext): Visitor => {
   const current = filename(context);
   const elysiaFactory = current.endsWith("/libs/runtime/src/http.ts");
   const startRoute = /\/apps\/[^/]+\/src\/(?:[^/]+\/)*routes\//u.test(current);
-  function check(node: Node, typeOnly: boolean): void {
+  const check = (node: Node, typeOnly: boolean): void => {
     const source = staticText(context, node);
     if (source === undefined) {
       return;
@@ -67,7 +68,7 @@ function effectStackVisitor(context: LintContext): Visitor {
     ) {
       reportViolation(context, node);
     }
-  }
+  };
   return {
     CallExpression(node: Node): void {
       if (startRoute) {
@@ -95,27 +96,27 @@ function effectStackVisitor(context: LintContext): Visitor {
       }
     },
   };
-}
+};
 
-function isEffectScope(current: string): boolean {
+const isEffectScope = (current: string): boolean => {
   return (
     /\/(?:apps|libs|infra|tools)\/[^/]+\/src\//u.test(current) &&
     !/\/libs\/ui\/|\/libs\/runtime\/src\/client\.ts$|\/libs\/observability\/src\/browser\.ts$|\.tsx$/u.test(
       current,
     )
   );
-}
+};
 
-function isApiErrorThrow(node: Node): boolean {
+const isApiErrorThrow = (node: Node): boolean => {
   return (
     node.type === "ThrowStatement" &&
     node.argument.type === "NewExpression" &&
     node.argument.callee.type === "Identifier" &&
     node.argument.callee.name === "APIError"
   );
-}
+};
 
-function effectFailuresVisitor(context: LintContext): Visitor {
+const effectFailuresVisitor = (context: LintContext): Visitor => {
   if (!isEffectScope(filename(context))) {
     return {};
   }
@@ -137,6 +138,6 @@ function effectFailuresVisitor(context: LintContext): Visitor {
       }
     },
   };
-}
+};
 
 export { effectFailuresVisitor, effectStackVisitor };

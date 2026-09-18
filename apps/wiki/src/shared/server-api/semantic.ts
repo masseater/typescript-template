@@ -1,41 +1,42 @@
-import { Effect } from "effect";
 import { Embedder } from "@template/runtime/wiki";
+import { Effect } from "effect";
+
 import type { EmbeddingFailed } from "@template/runtime/wiki";
 
-interface SemanticDocument {
+type SemanticDocument = {
   readonly id: string;
   readonly url: string;
   readonly title: string;
   readonly text: string;
-}
+};
 
-interface SemanticMatch {
+type SemanticMatch = {
   readonly document: SemanticDocument;
   readonly score: number;
-}
+};
 
-interface PageScore {
+type PageScore = {
   readonly url: string;
   readonly score: number;
-}
+};
 
-interface SemanticIndex {
+type SemanticIndex = {
   readonly documents: readonly SemanticDocument[];
   readonly vectors: readonly (readonly number[])[];
-}
+};
 
 type SemanticSearch = (query: string) => Effect.Effect<SemanticMatch[], EmbeddingFailed, Embedder>;
 
 const KEYWORD_RANK_BONUS = 0.3;
 
-function normalize(vector: readonly number[]): number[] {
+const similarity = (vector: readonly number[], target: readonly number[]): number => {
+  return vector.reduce((total, value, column) => total + value * (target[column] ?? 0), 0);
+};
+
+const normalize = (vector: readonly number[]): number[] => {
   const length = Math.hypot(...vector);
   return length > 0 ? vector.map((value) => value / length) : [...vector];
-}
-
-function similarity(vector: readonly number[], target: readonly number[]): number {
-  return vector.reduce((total, value, column) => total + value * (target[column] ?? 0), 0);
-}
+};
 
 const buildIndex = Effect.fn("buildIndex")(function* buildIndex(
   loadDocuments: () => readonly SemanticDocument[],
@@ -47,7 +48,7 @@ const buildIndex = Effect.fn("buildIndex")(function* buildIndex(
   return index;
 });
 
-function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): SemanticSearch {
+const createSemanticIndex = (loadDocuments: () => readonly SemanticDocument[]): SemanticSearch => {
   const cache: { index: SemanticIndex | undefined } = { index: undefined };
   const load = Effect.suspend(() =>
     cache.index === undefined
@@ -71,26 +72,26 @@ function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): 
       score: similarity(vectors[index] ?? [], target),
     }));
   });
-}
+};
 
-function exactMatchesFirst(
+const exactMatchesFirst = (
   query: string,
   keywordPages: readonly string[],
   textOf: (url: string) => string,
-): string[] {
+): string[] => {
   const needle = query.trim().toLowerCase();
   if (needle === "") {
     return [...keywordPages];
   }
   const exact = keywordPages.filter((url) => textOf(url).toLowerCase().includes(needle));
   return [...exact, ...keywordPages.filter((url) => !exact.includes(url))];
-}
+};
 
-function rankPages(
+const rankPages = (
   semantic: readonly PageScore[],
   keywordPages: readonly string[],
   limit: number,
-): string[] {
+): string[] => {
   const scores = new Map<string, number>();
   const values = semantic.map((match) => match.score);
   const lowest = Math.min(...values);
@@ -108,7 +109,7 @@ function rankPages(
     )
     .slice(0, limit)
     .map(([url]: readonly [string, number]) => url);
-}
+};
 
 export { createSemanticIndex, exactMatchesFirst, rankPages };
 export type { SemanticDocument, SemanticMatch };

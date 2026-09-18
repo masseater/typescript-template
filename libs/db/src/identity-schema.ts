@@ -1,7 +1,7 @@
 import { applications, authenticationMethods, roles } from "@template/config";
-import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import { createSelectSchema } from "drizzle-orm/effect-schema";
 import { sql } from "drizzle-orm";
+import { createSelectSchema } from "drizzle-orm/effect-schema";
+import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const user = sqliteTable(
   "user",
@@ -18,7 +18,7 @@ const user = sqliteTable(
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   (table) => [
     uniqueIndex("user_email_unique").on(table.email),
     check("user_role", sql`${table.role} IN ('user', 'admin')`),
@@ -45,7 +45,7 @@ const session = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   (table) => [
     index("session_user_id_idx").on(table.userId),
     uniqueIndex("session_token_unique").on(table.token),

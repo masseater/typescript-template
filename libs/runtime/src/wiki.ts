@@ -1,18 +1,22 @@
+import { readWikiConfig } from "@template/config";
 import { Effect, Layer } from "effect";
+
 import { Embedder, embedWith } from "./embedder.ts";
-import type { AppServices } from "./index.ts";
+import { configuredAppLayer } from "./index.ts";
+
 import type { AuthFailure } from "@template/auth";
 import type { ConfigurationInvalid } from "@template/config";
 import type { TelemetryInvalid } from "@template/observability";
-import { configuredAppLayer } from "./index.ts";
-import { readWikiConfig } from "@template/config";
+import type { AppServices } from "./index.ts";
 
 type WikiServices = AppServices | Embedder;
 
-function wikiLayer(
+export { Embedder } from "./embedder.ts";
+export { EmbeddingFailed } from "./embedding-failed.ts";
+const wikiLayer = (
   env: unknown,
   routes: Readonly<Record<string, string>>,
-): Layer.Layer<WikiServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
+): Layer.Layer<WikiServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> => {
   return Layer.unwrap(
     readWikiConfig(env).pipe(
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -28,9 +32,7 @@ function wikiLayer(
       }),
     ),
   );
-}
+};
 
-export { Embedder } from "./embedder.ts";
-export { EmbeddingFailed } from "./embedding-failed.ts";
 export { wikiLayer };
 export type { WikiServices };

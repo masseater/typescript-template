@@ -1,5 +1,6 @@
-import { BudgetFailure, fail } from "./config.ts";
 import { Effect, Schema } from "effect";
+
+import { BudgetFailure, fail } from "./config.ts";
 
 const MILLISECONDS_PER_HOUR = 3_600_000;
 const FUTURE_CHARGE_TOLERANCE_HOURS = 24;
@@ -32,8 +33,6 @@ const UsageEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-type UsageRecord = typeof UsageRow.Type;
-
 interface UsageSnapshot {
   periodStart: string;
   measuredThrough: string;
@@ -47,18 +46,20 @@ interface RowExpectation {
   now: Readonly<Date>;
 }
 
-function billingPeriodStart(rows: readonly UsageRecord[]): Effect.Effect<string, BudgetFailure> {
+type UsageRecord = typeof UsageRow.Type;
+
+const billingPeriodStart = (rows: readonly UsageRecord[]): Effect.Effect<string, BudgetFailure> => {
   const starts = new Set(rows.map((item) => item.BillingPeriodStart));
   const [periodStart] = starts;
   return starts.size === 1 && periodStart !== undefined
     ? Effect.succeed(periodStart)
     : fail("billing_period_ambiguous");
-}
+};
 
-function rowFailure(
+const rowFailure = (
   item: UsageRecord,
   expectation: Readonly<RowExpectation>,
-): BudgetFailure["code"] | undefined {
+): BudgetFailure["code"] | undefined => {
   if (item.BillingAccountId !== expectation.accountId) {
     return "billing_account_mismatch";
   }
@@ -71,9 +72,9 @@ function rowFailure(
     start > now ||
     end > now + FUTURE_CHARGE_TOLERANCE_HOURS * MILLISECONDS_PER_HOUR;
   return outOfPeriod ? "billing_dates_invalid" : undefined;
-}
+};
 
-function hasDuplicateRows(rows: readonly UsageRecord[]): boolean {
+const hasDuplicateRows = (rows: readonly UsageRecord[]): boolean => {
   const keys = new Set(
     rows.map((item) =>
       JSON.stringify([
@@ -86,22 +87,22 @@ function hasDuplicateRows(rows: readonly UsageRecord[]): boolean {
     ),
   );
   return keys.size !== rows.length;
-}
+};
 
-function latestChargeEnd(
+const latestChargeEnd = (
   rows: readonly UsageRecord[],
   now: Readonly<Date>,
-): Effect.Effect<number, BudgetFailure> {
+): Effect.Effect<number, BudgetFailure> => {
   const latest = Math.max(...rows.map((item) => Date.parse(item.ChargePeriodEnd)));
   return now.getTime() - latest > MAX_DATA_AGE_HOURS * MILLISECONDS_PER_HOUR
     ? fail("billing_data_stale")
     : Effect.succeed(latest);
-}
+};
 
-function totalCost(rows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> {
+const totalCost = (rows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> => {
   const total = rows.reduce((sum, item) => sum + item.BilledCost, 0);
   return Number.isFinite(total) ? Effect.succeed(total) : fail("billing_cost_invalid");
-}
+};
 
 const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(
   input: unknown,
@@ -130,9 +131,9 @@ const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(
   return snapshot;
 });
 
-function httpFailed(): BudgetFailure {
+const httpFailed = (): BudgetFailure => {
   return new BudgetFailure({ code: "billing_http_failed" });
-}
+};
 
 const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   accountId: string,
@@ -144,7 +145,7 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   }
   const response = yield* Effect.tryPromise({
     catch: httpFailed,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     try: async (signal) =>
       fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, {
         headers: { Accept: "application/json", Authorization: `Bearer ${token}` },

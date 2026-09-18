@@ -1,7 +1,9 @@
-import { ProfileView, RoleChanged, SessionView, UserDeleted, UserList } from "./contracts.ts";
-import { describe, expect, it } from "vite-plus/test";
-import type { UserRecord } from "@template/db";
 import { getSchemaShape } from "@template/db/testing";
+import { describe, expect, it } from "vite-plus/test";
+
+import { ProfileView, RoleChanged, SessionView, UserDeleted, UserList } from "./contracts.ts";
+
+import type { UserRecord } from "@template/db";
 
 type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserRecord, Fields>]
   ? [Pick<UserRecord, Fields>] extends [View]
@@ -46,7 +48,7 @@ describe("user views", () => {
 
   it("name only columns that the user table has", () => {
     expect.hasAssertions();
-    const columns = new Set(getSchemaShape()["user"]);
+    const columns = new Set(getSchemaShape().user);
     const unknown = Object.entries(views).flatMap(([view, fields]: readonly [string, object]) =>
       Object.keys(fields)
         .filter((field) => !columns.has(field))

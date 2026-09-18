@@ -1,13 +1,14 @@
-import { Effect } from "effect";
-import { cloudflareTest } from "@cloudflare/vitest-plugin";
-import { defineProject } from "vite-plus/test/config";
-import { kCurrentWorker } from "miniflare";
-import { loadRemoteMigrations } from "@template/db/migrations";
-import { localDatabase } from "@template/db/local";
-import { monitorBinding } from "@template/monitor";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { workerCompatibility } from "@template/config/worker";
+import { localDatabase } from "@template/db/local";
+import { loadRemoteMigrations } from "@template/db/migrations";
+import { monitorBinding } from "@template/monitor";
+import { Effect } from "effect";
+import { kCurrentWorker } from "miniflare";
+import { defineProject } from "vite-plus/test/config";
+
 import { workerTests } from "./test-runtime.ts";
 
 const root = path.join(import.meta.dirname, "../..");
@@ -15,10 +16,9 @@ const mailRecorder = "MailRecorder";
 const probeMonitor = "ProbeMonitor";
 
 const loaded = await Effect.runPromise(Effect.orDie(loadRemoteMigrations()));
-// oxlint-disable-next-line oxc/no-map-spread
+
 const migrations = loaded.map((migration) => ({ ...migration, sql: [...migration.sql] }));
 
-// oxlint-disable-next-line import/no-default-export
 export default defineProject({
   plugins: [
     cloudflareTest({

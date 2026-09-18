@@ -1,12 +1,13 @@
+import { describe, expect, it } from "vite-plus/test";
+
+import { field } from "./dependencies.ts";
+import { partsDirectory } from "./design-system.ts";
 import {
   a11yRelaxations,
   storybookEndpointViolations,
   storylessParts,
   vendoredWorkerViolations,
 } from "./part-stories.ts";
-import { describe, expect, it } from "vite-plus/test";
-import { field } from "./dependencies.ts";
-import { partsDirectory } from "./design-system.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../libs/ui/.storybook/preview.tsx",
@@ -23,16 +24,16 @@ const ports: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: true, import: "storybookPort" },
 );
 
-function composedParameters(preview: unknown): unknown {
+const composedParameters = (preview: unknown): unknown => {
   return typeof preview === "object" && preview !== null && "composed" in preview
     ? field(preview.composed, "parameters")
     : undefined;
-}
+};
 
-function storybookProjects(): unknown[] {
+const storybookProjects = (): unknown[] => {
   const projects: unknown = field(field(configs["../../vite.config.ts"], "test"), "projects");
   return Array.isArray(projects) ? projects : [];
-}
+};
 
 const acceptedA11yViolations = [
   {

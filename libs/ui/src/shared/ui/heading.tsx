@@ -1,6 +1,7 @@
-import type { Children } from "./types";
-import type { ReactElement } from "react";
 import { cva } from "class-variance-authority";
+
+import type { ReactElement } from "react";
+import type { Children } from "./types";
 
 const headingVariants = cva("font-bold text-foreground", {
   defaultVariants: { size: "section" },
@@ -13,17 +14,17 @@ const headingVariants = cva("font-bold text-foreground", {
   },
 });
 
-function Heading({
+const Heading = ({
   as: Tag = "h2",
   children,
   size,
 }: Children &
-  Readonly<{ as?: "h1" | "h2" | "h3"; size?: "block" | "page" | "section" }>): ReactElement {
+  Readonly<{ as?: "h1" | "h2" | "h3"; size?: "block" | "page" | "section" }>): ReactElement => {
   return (
     <Tag data-slot="heading" className={headingVariants({ size })}>
       {children}
     </Tag>
   );
-}
+};
 
 export { Heading };

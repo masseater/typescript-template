@@ -1,7 +1,8 @@
 import { ButtonLink, Heading } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-function Closing(): ReactElement {
+const Closing = (): ReactElement => {
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-4 px-4 py-16 text-center">
       <Heading as="h2">さっそく始めましょう</Heading>
@@ -10,6 +11,6 @@ function Closing(): ReactElement {
       </ButtonLink>
     </section>
   );
-}
+};
 
 export { Closing };

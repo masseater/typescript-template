@@ -1,4 +1,5 @@
 import { providers, state } from "alchemy/Cloudflare";
+
 import type { Application } from "@template/config";
 
 const application = ["database"] as const;
@@ -27,9 +28,9 @@ const stackNames = [
   "wiki",
 ] as const satisfies readonly StackName[];
 
-function stackName(stack: StackName): string {
+const stackName = (stack: StackName): string => {
   return `template-${stack}`;
-}
+};
 
 const stackOptions = { providers: providers(), state: state() };
 

@@ -1,10 +1,12 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { Interviewer } from "./interviewer.ts";
-import type { Scope } from "effect";
-import { begin } from "./engine.ts";
 import { setupNetwork } from "@msw/cloudflare";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { begin } from "./engine.ts";
+import { Interviewer } from "./interviewer.ts";
+
+import type { Scope } from "effect";
 
 type Network = ReturnType<typeof setupNetwork>;
 
@@ -13,10 +15,9 @@ const access = { accountId: "account", apiKey: "test-token" } as const;
 const unavailable = 503;
 const NICKNAME_LIMIT = 30;
 
-function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const withServer = (
   ...handlers: Parameters<Network["use"]>
-): Effect.Effect<Network, never, Scope.Scope> {
+): Effect.Effect<Network, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const network = setupNetwork();
@@ -25,25 +26,25 @@ function withServer(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (network) =>
       Effect.sync(() => {
         network.disable();
       }),
   );
-}
+};
 
-function understand(
+const understand = (
   credentials: typeof access | undefined,
   utterance: string,
-): ReturnType<Interviewer["Service"]["understand"]> {
+): ReturnType<Interviewer["Service"]["understand"]> => {
   return Effect.gen(function* ask() {
     const interviewer = yield* Interviewer;
     return yield* interviewer.understand(begin(), utterance);
   }).pipe(Effect.provide(Interviewer.layer(credentials)));
-}
+};
 
-function completion(content: unknown): Response {
+const completion = (content: unknown): Response => {
   return HttpResponse.json({
     choices: [
       {
@@ -57,7 +58,7 @@ function completion(content: unknown): Response {
     model: "@cf/google/gemma-4-26b-a4b-it",
     object: "chat.completion",
   });
-}
+};
 
 it.effect("the model's structured answer becomes values and the next question", () =>
   Effect.gen(function* program() {
@@ -67,16 +68,16 @@ it.effect("the model's structured answer becomes values and the next question", 
           ask: "nickname",
           finish: false,
           message: "東京のエンジニアさんなんですね。なんて呼べばいいですか？",
-          // oxlint-disable-next-line unicorn/no-null
+
           reply: null,
           skip: false,
           values: {
             area: "東京",
-            // oxlint-disable-next-line unicorn/no-null
+
             interests: null,
-            // oxlint-disable-next-line unicorn/no-null
+
             message: null,
-            // oxlint-disable-next-line unicorn/no-null
+
             nickname: null,
             occupation: "エンジニア",
           },
@@ -107,10 +108,10 @@ it.effect("parts of the answer that break the sheet's rules are dropped one by o
           values: {
             area: "大阪",
             interests: ["音楽", "料理", "読書", "映画", "旅行", "登山"],
-            // oxlint-disable-next-line unicorn/no-null
+
             message: null,
             nickname: "あ".repeat(NICKNAME_LIMIT + 1),
-            // oxlint-disable-next-line unicorn/no-null
+
             occupation: null,
           },
         }),
@@ -130,7 +131,6 @@ it.effect("the member's words reach the model only as data beside the instructio
   Effect.gen(function* program() {
     const received: unknown[] = [];
     yield* withServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.post(endpoint, async ({ request }) => {
         received.push(request.headers.get("authorization"), await request.json());
         return completion({ finish: false, skip: false, values: {} });
@@ -159,7 +159,6 @@ it.effect("the member's words reach the model only as data beside the instructio
 it.effect("a model error and an unreadable answer are both reported as a model failure", () =>
   Effect.gen(function* program() {
     const server = yield* withServer(
-      // oxlint-disable-next-line unicorn/no-null
       http.post(endpoint, () => new HttpResponse(null, { status: unavailable })),
     );
     const failed = yield* understand(access, "たろう").pipe(Effect.flip);

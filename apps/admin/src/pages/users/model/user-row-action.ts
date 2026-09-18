@@ -1,23 +1,25 @@
+import { apiData } from "@template/runtime/client";
 import { RoleChanged, UserDeleted } from "@template/runtime/contracts";
 import { errorMessage, useToast } from "@template/ui";
-import type { ListedUser } from "./user-list.ts";
-import { adminClient } from "#shared/api/index.ts";
-import { apiData } from "@template/runtime/client";
-import { nextRoles } from "./user-labels.ts";
 import { useState } from "react";
+
+import { adminClient } from "#shared/api/index.ts";
+import { nextRoles } from "./user-labels.ts";
+
+import type { ListedUser } from "./user-list.ts";
 
 type RowOperation = "delete" | "role";
 
-interface UserRowAction {
+type UserRowAction = {
   readonly handleConfirm: () => void;
   readonly handleDelete: () => void;
   readonly handleRoleChange: () => void;
   readonly confirming: RowOperation | undefined;
   readonly handleOpenChange: (open: boolean) => void;
   readonly pending: boolean;
-}
+};
 
-async function perform(user: ListedUser, operation: RowOperation): Promise<string> {
+const perform = async (user: ListedUser, operation: RowOperation): Promise<string> => {
   const { users } = adminClient();
   if (operation === "delete") {
     apiData(UserDeleted, await users.delete({ id: user.id }));
@@ -26,24 +28,24 @@ async function perform(user: ListedUser, operation: RowOperation): Promise<strin
   const role = nextRoles[user.role];
   apiData(RoleChanged, await users.patch({ id: user.id, role }));
   return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
-}
+};
 
-function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowAction {
+const useUserRowAction = (user: ListedUser, onChanged: () => void): UserRowAction => {
   const notify = useToast();
   const [confirming, setConfirming] = useState<RowOperation>();
   const [pending, setPending] = useState(false);
-  function handleRoleChange(): void {
+  const handleRoleChange = (): void => {
     setConfirming("role");
-  }
-  function handleDelete(): void {
+  };
+  const handleDelete = (): void => {
     setConfirming("delete");
-  }
-  function handleOpenChange(open: boolean): void {
+  };
+  const handleOpenChange = (open: boolean): void => {
     if (!open) {
       setConfirming(undefined);
     }
-  }
-  function handleConfirm(): void {
+  };
+  const handleConfirm = (): void => {
     if (confirming === undefined) {
       return;
     }
@@ -59,7 +61,7 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
       setPending(false);
     }
     void run(confirming);
-  }
+  };
   return {
     confirming,
     handleConfirm,
@@ -68,6 +70,6 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
     handleRoleChange,
     pending,
   };
-}
+};
 
 export { useUserRowAction };

@@ -1,7 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
 import { workerCompatibility } from "@template/config/worker";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
@@ -16,7 +15,7 @@ const localDatabase = {
 const localDatabasePersistence = path.join(import.meta.dirname, "../../../.local/d1");
 const localDatabaseStore = path.join(localDatabasePersistence, "v3");
 
-async function writeLocalDatabaseConfig(): Promise<string> {
+const writeLocalDatabaseConfig = async (): Promise<string> => {
   await mkdir(localDatabasePersistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
   const file = path.join(localDatabasePersistence, "wrangler.generated.json");
   const config = {
@@ -27,6 +26,6 @@ async function writeLocalDatabaseConfig(): Promise<string> {
   };
   await writeFile(file, `${JSON.stringify(config)}\n`, { mode: OWNER_ONLY_FILE_MODE });
   return file;
-}
+};
 
 export { localDatabase, localDatabasePersistence, localDatabaseStore, writeLocalDatabaseConfig };

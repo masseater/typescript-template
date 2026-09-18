@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,13 +6,13 @@ import {
   DropdownMenuTrigger,
   Icon,
 } from "@template/ui";
-import { Link } from "@tanstack/react-router";
 import { MenuIcon } from "lucide-react";
+
 import type { ReactElement } from "react";
 
 const usersLink = <Link to="/users" />;
 
-function CompactNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
+const CompactNavigation = ({ userId }: Readonly<{ userId: string }>): ReactElement => {
   const homeLink = <Link to="/users/$id" params={{ id: userId }} />;
   return (
     <DropdownMenu>
@@ -24,6 +25,6 @@ function CompactNavigation({ userId }: Readonly<{ userId: string }>): ReactEleme
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
 export { CompactNavigation };

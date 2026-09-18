@@ -1,13 +1,14 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+import react from "@vitejs/plugin-react";
+
+import { applicationPorts } from "./applications.ts";
+
 import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
 import type { Application } from "./applications.ts";
-import { applicationPorts } from "./applications.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import react from "@vitejs/plugin-react";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile } from "node:fs/promises";
 
-async function readDevVars(appRoot: string): Promise<string | undefined> {
+const readDevVars = async (appRoot: string): Promise<string | undefined> => {
   try {
     return await readFile(path.join(appRoot, ".dev.vars"), "utf-8");
   } catch (error: unknown) {
@@ -16,9 +17,9 @@ async function readDevVars(appRoot: string): Promise<string | undefined> {
     }
     throw error;
   }
-}
+};
 
-function previewDevVars(appRoot: string): Plugin {
+const previewDevVars = (appRoot: string): Plugin => {
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
@@ -30,7 +31,7 @@ function previewDevVars(appRoot: string): Plugin {
     },
     name: "template-preview-dev-vars",
   };
-}
+};
 
 const serverOnlyFiles: (string | RegExp)[] = [
   "**/libs/auth/src/**",
@@ -59,12 +60,10 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
+const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
   let removed = 0;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  function strip(options: readonly PluginOption[]): PluginOption[] {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
+  const strip = (options: readonly PluginOption[]): PluginOption[] => {
     return options.flatMap((plugin: PluginOption): PluginOption[] => {
       if (Array.isArray(plugin)) {
         return [strip(plugin)];
@@ -80,26 +79,26 @@ function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] 
       }
       return [plugin];
     });
-  }
+  };
   const kept = strip(plugins);
   if (removed === 0) {
     throw new Error(`${envFileLoader} plugin not found`);
   }
   return kept;
-}
+};
 
-function reactCompiler(): PluginOption[] {
+const reactCompiler = (): PluginOption[] => {
   return react({ compiler: { logDiagnostics: true } });
-}
+};
 
-function appServer(app: Application): ServerOptions {
+const appServer = (app: Application): ServerOptions => {
   return {
     allowedHosts: [".local"],
     host: "127.0.0.1",
     port: applicationPorts[app],
     strictPort: true,
   };
-}
+};
 
 const appRun = {
   tasks: { build: { command: "vp build", input: [{ auto: true }, "!.wrangler/**", "!dist"] } },

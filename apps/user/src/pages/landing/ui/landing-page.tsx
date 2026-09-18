@@ -1,10 +1,11 @@
+import { serviceName } from "#shared/config/index.ts";
 import { Closing } from "./closing.tsx";
 import { Features } from "./features.tsx";
 import { Hero } from "./hero.tsx";
-import type { ReactElement } from "react";
-import { serviceName } from "#shared/config/index.ts";
 
-function LandingPage(): ReactElement {
+import type { ReactElement } from "react";
+
+const LandingPage = (): ReactElement => {
   return (
     <>
       <main>
@@ -17,6 +18,6 @@ function LandingPage(): ReactElement {
       </footer>
     </>
   );
-}
+};
 
 export { LandingPage };

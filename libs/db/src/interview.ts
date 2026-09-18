@@ -1,9 +1,10 @@
-import { Clock, Effect } from "effect";
 import { and, eq, sql } from "drizzle-orm";
+import { Clock, Effect } from "effect";
+
+import { query } from "./database.ts";
 import { InterviewConflict } from "./interview-conflict.ts";
 import { InterviewLimitReached } from "./interview-limit-reached.ts";
 import { interview } from "./schema.ts";
-import { query } from "./database.ts";
 
 const dayLength = 10;
 
@@ -16,11 +17,10 @@ const recordColumns = {
 const currentTime = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
 
 const findInterview = Effect.fn("findInterview")(function* findInterview(userId: string) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const [record] = yield* query((database) =>
     database.select(recordColumns).from(interview).where(eq(interview.userId, userId)).limit(1),
   );
-  // oxlint-disable-next-line unicorn/no-null
+
   return record ?? null;
 });
 
@@ -30,7 +30,7 @@ const startInterview = Effect.fn("startInterview")(function* startInterview(
 ) {
   const now = yield* currentTime;
   const day = now.toISOString().slice(0, dayLength);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   yield* query((database) =>
     database.insert(interview).values({ day, state, updatedAt: now, userId }).onConflictDoNothing(),
   );
@@ -42,7 +42,7 @@ const countInterviewTurn = Effect.fn("countInterviewTurn")(function* countInterv
 ) {
   const day = (yield* currentTime).toISOString().slice(0, dayLength);
   const turns = sql<number>`CASE WHEN ${interview.day} = ${day} THEN ${interview.turns} + 1 ELSE 1 END`;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const [counted] = yield* query((database) =>
     database
       .update(interview)
@@ -61,7 +61,7 @@ const storeInterview = Effect.fn("storeInterview")(function* storeInterview(
   content: { readonly savedSheet?: unknown; readonly state: unknown },
 ) {
   const updatedAt = yield* currentTime;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const [stored] = yield* query((database) =>
     database
       .update(interview)

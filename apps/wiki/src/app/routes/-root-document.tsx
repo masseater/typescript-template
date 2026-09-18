@@ -1,20 +1,22 @@
 import { HeadContent, Scripts } from "@tanstack/react-router";
-import type { ReactElement } from "react";
-import { WikiProvider } from "./-wiki-provider.tsx";
 import { initBrowserTelemetry } from "@template/observability/browser";
-import { routes } from "#shared/telemetry/index.ts";
 import { useEffect } from "react";
 
-function useBrowserTelemetry(): void {
+import { routes } from "#shared/telemetry/index.ts";
+import { WikiProvider } from "./-wiki-provider.tsx";
+
+import type { ReactElement } from "react";
+
+const useBrowserTelemetry = (): void => {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
     return (): void => {
       telemetry.dispose();
     };
   }, []);
-}
+};
 
-function RootDocument(): ReactElement {
+const RootDocument = (): ReactElement => {
   useBrowserTelemetry();
   return (
     <html lang="ja" suppressHydrationWarning>
@@ -27,6 +29,6 @@ function RootDocument(): ReactElement {
       </body>
     </html>
   );
-}
+};
 
 export { RootDocument };

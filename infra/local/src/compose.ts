@@ -1,13 +1,10 @@
-import { Effect, Schema } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { access } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
+import { constants } from "node:fs";
+import { access } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Schema } from "effect";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
@@ -27,14 +24,14 @@ const actions: Readonly<Record<string, readonly string[]>> = {
   up: ["up", "-d", "--wait"],
 };
 
-function composeArguments(
+const composeArguments = (
   name: string | undefined,
-): Effect.Effect<readonly string[], LocalServicesFailure> {
+): Effect.Effect<readonly string[], LocalServicesFailure> => {
   const args = name === undefined || !Object.hasOwn(actions, name) ? undefined : actions[name];
   return args === undefined
     ? Effect.fail(new LocalServicesFailure({ code: "local_action_unknown" }))
     : Effect.succeed(args);
-}
+};
 
 const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly string[]) {
   const bundled = yield* Effect.promise(async () =>

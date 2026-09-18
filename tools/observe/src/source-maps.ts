@@ -1,16 +1,13 @@
-import { Effect, Schema } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
-import type { Application } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { SourceMap } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { Effect, Schema } from "effect";
+
+import type { Dirent } from "node:fs";
+import type { Application } from "@template/config";
+
 type App = Application;
-type Runtime = "client" | "server";
 type DirectoryEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "name">>;
 type Frame =
   | {
@@ -40,15 +37,18 @@ interface ParsedLocation {
   readonly line: number;
 }
 
+type Runtime = "client" | "server";
+
 interface MapCandidate {
   readonly mapFile: string;
   readonly runtime: Runtime;
   readonly runtimeDirectory: string;
 }
 
-interface MapLookup extends ParsedLocation, MapCandidate {
+type MapLookup = {
   readonly location: string;
-}
+} & ParsedLocation &
+  MapCandidate;
 
 class SourceMapFailure extends Schema.TaggedError<SourceMapFailure>()("SourceMapFailure", {
   reason: Schema.Literals(["source_map_unreadable", "source_map_invalid"]),
@@ -62,73 +62,72 @@ const Payload = Schema.Struct({
   version: Schema.Literal(sourceMapVersion),
 });
 
-function unreadable(): SourceMapFailure {
-  return new SourceMapFailure({ reason: "source_map_unreadable" });
-}
-
-function invalid(): SourceMapFailure {
+const invalid = (): SourceMapFailure => {
   return new SourceMapFailure({ reason: "source_map_invalid" });
-}
+};
 
-function isMissing(cause: unknown): boolean {
+const isMissing = (cause: unknown): boolean => {
   return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
-}
+};
 
-function directoryEntries(directory: string): Effect.Effect<Dirent[], SourceMapFailure> {
+const unreadable = (): SourceMapFailure => {
+  return new SourceMapFailure({ reason: "source_map_unreadable" });
+};
+
+const directoryEntries = (directory: string): Effect.Effect<Dirent[], SourceMapFailure> => {
   return Effect.tryPromise({
     catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isMissing(cause) }),
     try: async () => readdir(directory, { withFileTypes: true }),
   }).pipe(
     Effect.matchEffect({
       onFailure: ({ missing }) => (missing ? Effect.succeed([]) : Effect.fail(unreadable())),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       onSuccess: (entries) => Effect.succeed(entries),
     }),
   );
-}
+};
 
-function entryMap(
+const entryMap = (
   directory: string,
   entry: DirectoryEntry,
   filename: string,
-): Effect.Effect<string | undefined, SourceMapFailure> {
+): Effect.Effect<string | undefined, SourceMapFailure> => {
   const candidate = path.join(directory, entry.name);
   if (entry.isFile() && entry.name === `${filename}.map`) {
     return Effect.succeed(candidate);
   }
-  // oxlint-disable-next-line typescript/no-use-before-define
-  return entry.isDirectory() ? findMap(candidate, filename) : Effect.undefined;
-}
 
-function findMap(
+  return entry.isDirectory() ? findMap(candidate, filename) : Effect.undefined;
+};
+
+const findMap = (
   directory: string,
   filename: string,
-): Effect.Effect<string | undefined, SourceMapFailure> {
+): Effect.Effect<string | undefined, SourceMapFailure> => {
   return directoryEntries(directory).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((entries) =>
       Effect.forEach(entries, (entry: DirectoryEntry) => entryMap(directory, entry, filename)),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((found) => found.find((candidate) => candidate !== undefined)),
   );
-}
+};
 
-function parseLocation(location: string): ParsedLocation | undefined {
+const parseLocation = (location: string): ParsedLocation | undefined => {
   const pattern =
     /^(?<client>\/assets\/)?(?<filename>[\w.-]+\.[cm]?[jt]sx?):(?<line>\d+):(?<column>\d+)$/u;
   const groups = pattern.exec(location)?.groups;
-  const filename = groups?.["filename"];
+  const filename = groups?.filename;
   if (groups === undefined || filename === undefined) {
     return undefined;
   }
   return {
-    client: groups["client"] !== undefined,
-    column: Number(groups["column"]),
+    client: groups.client !== undefined,
+    column: Number(groups.column),
     filename,
-    line: Number(groups["line"]),
+    line: Number(groups.line),
   };
-}
+};
 
 const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   mapFile: string,
@@ -156,7 +155,7 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   });
 });
 
-function repositorySource(request: Symbolication, lookup: MapLookup, fileName: string): string {
+const repositorySource = (request: Symbolication, lookup: MapLookup, fileName: string): string => {
   const builtFile = path.join(
     request.repositoryRoot,
     "apps",
@@ -168,7 +167,7 @@ function repositorySource(request: Symbolication, lookup: MapLookup, fileName: s
   return path
     .relative(request.repositoryRoot, path.resolve(path.dirname(builtFile), fileName))
     .replaceAll(path.sep, "/");
-}
+};
 
 const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
   request: Symbolication,
@@ -194,10 +193,10 @@ const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
   return frame;
 });
 
-function findCandidate(
+const findCandidate = (
   releaseDirectory: string,
   parsed: ParsedLocation,
-): Effect.Effect<MapCandidate | undefined, SourceMapFailure> {
+): Effect.Effect<MapCandidate | undefined, SourceMapFailure> => {
   const runtimes: readonly Runtime[] = parsed.client ? ["client"] : ["server", "client"];
   return Effect.forEach(runtimes, (runtime) => {
     const runtimeDirectory = path.join(releaseDirectory, runtime);
@@ -206,9 +205,8 @@ function findCandidate(
         mapFile === undefined ? undefined : { mapFile, runtime, runtimeDirectory },
       ),
     );
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   }).pipe(Effect.map((candidates) => candidates.find((candidate) => candidate !== undefined)));
-}
+};
 
 const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolicateLocation(
   request: Symbolication,
@@ -235,13 +233,13 @@ const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolica
   return yield* resolveWithMap(request, { ...parsed, ...match, location });
 });
 
-function symbolicate(
+const symbolicate = (
   request: Symbolication,
   locations: readonly string[],
-): Effect.Effect<Frame[], SourceMapFailure> {
+): Effect.Effect<Frame[], SourceMapFailure> => {
   return Effect.forEach(locations, (location) => symbolicateLocation(request, location), {
     concurrency: "unbounded",
   });
-}
+};
 
 export { symbolicate };

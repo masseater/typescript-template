@@ -1,43 +1,44 @@
-import { useRef, useState, useSyncExternalStore } from "react";
-import { errorMessage } from "./protocol";
 import { noop } from "es-toolkit";
+import { useRef, useState, useSyncExternalStore } from "react";
+
+import { errorMessage } from "./protocol";
 
 type Task = () => Promise<void>;
 
-interface ActionState {
+type ActionState = {
   readonly blocked: boolean;
   readonly error: string | undefined;
   readonly pending: boolean;
   readonly run: (task: Task) => void;
-}
+};
 
-function subscribeNothing(): () => void {
+const subscribeNothing = (): (() => void) => {
   return noop;
-}
+};
 
-function clientSnapshot(): boolean {
+const clientSnapshot = (): boolean => {
   return true;
-}
+};
 
-function serverSnapshot(): boolean {
+const serverSnapshot = (): boolean => {
   return false;
-}
+};
 
-async function failureOf(task: Task): Promise<string | undefined> {
+const failureOf = async (task: Task): Promise<string | undefined> => {
   try {
     await task();
   } catch (error) {
     return errorMessage(error);
   }
   return undefined;
-}
+};
 
-function useAction(): ActionState {
+const useAction = (): ActionState => {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   const hydrated = useSyncExternalStore(subscribeNothing, clientSnapshot, serverSnapshot);
   const active = useRef(false);
-  function run(task: Task): void {
+  const run = (task: Task): void => {
     if (active.current) {
       return;
     }
@@ -53,9 +54,9 @@ function useAction(): ActionState {
       setPending(false);
     }
     void perform();
-  }
+  };
   return { blocked: pending || !hydrated, error, pending, run };
-}
+};
 
 export { useAction };
 export type { ActionState };

@@ -1,13 +1,15 @@
 import { Effect, Schema } from "effect";
+
 import { ErrorLocations, errorTypes } from "./errors.ts";
 import { RequestId, SpanId, TraceId, httpMethods } from "./protocol.ts";
 
 const maximumBatchSize = 32;
-const maximumMeasurement = 600_000;
 const maximumClockSkew = 60_000;
 const maximumEventAge = 3_600_000;
 const maximumStatus = 599;
 const minimumHttpStatus = 100;
+
+const maximumMeasurement = 600_000;
 
 const Measurement = Schema.Number.check(
   Schema.isFinite(),
@@ -60,24 +62,24 @@ class BrowserEventsInvalid extends Schema.TaggedError<BrowserEventsInvalid>()(
   {},
 ) {}
 
-function placed(
+const placed = (
   events: readonly BrowserEvent[],
   labels: Readonly<ReadonlySet<string>>,
   now: number,
-): boolean {
+): boolean => {
   return events.every(
     (event) =>
       labels.has(event.route) &&
       event.start >= now - maximumEventAge &&
       event.start <= now + maximumClockSkew,
   );
-}
+};
 
-function parseBrowserEvents(
+const parseBrowserEvents = (
   input: unknown,
   labels: Readonly<ReadonlySet<string>>,
   now: number,
-): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> {
+): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> => {
   return decodeEvents(input).pipe(
     Effect.mapError(() => new BrowserEventsInvalid()),
     Effect.filterOrFail(
@@ -85,7 +87,7 @@ function parseBrowserEvents(
       () => new BrowserEventsInvalid(),
     ),
   );
-}
+};
 
 export { maximumBatchSize, maximumMeasurement, parseBrowserEvents };
 export type { BrowserEvent };

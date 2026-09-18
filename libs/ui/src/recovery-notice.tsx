@@ -1,13 +1,14 @@
-import type { ReactElement } from "react";
-import type { SessionView } from "./protocol";
 import { Status } from "./shared/ui/status";
 
-interface RecoveryNoticeProps {
+import type { ReactElement } from "react";
+import type { SessionView } from "./protocol";
+
+type RecoveryNoticeProps = {
   readonly recovery: string | undefined;
   readonly role: SessionView["user"]["role"];
-}
+};
 
-function RecoveryNotice({ recovery, role }: RecoveryNoticeProps): ReactElement | undefined {
+const RecoveryNotice = ({ recovery, role }: RecoveryNoticeProps): ReactElement | undefined => {
   if (recovery === "setup") {
     return <Status>新しい認証アプリを登録してください。</Status>;
   }
@@ -30,6 +31,6 @@ function RecoveryNotice({ recovery, role }: RecoveryNoticeProps): ReactElement |
       )}
     </>
   );
-}
+};
 
 export { RecoveryNotice };

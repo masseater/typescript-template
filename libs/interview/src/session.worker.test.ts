@@ -1,11 +1,12 @@
-import { Effect, Layer } from "effect";
-import { TestDatabase, runStatement } from "@template/db/testing";
 import { assert, it } from "@effect/vitest";
-import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
-import { Interviewer } from "./interviewer.ts";
-import { TestClock } from "effect/testing";
-import { UnderstandingFailed } from "./understanding-failed.ts";
 import { findInterview } from "@template/db/interview";
+import { TestDatabase, runStatement } from "@template/db/testing";
+import { Effect, Layer } from "effect";
+import { TestClock } from "effect/testing";
+
+import { Interviewer } from "./interviewer.ts";
+import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
+import { UnderstandingFailed } from "./understanding-failed.ts";
 
 type Understand = Parameters<typeof Interviewer.of>[0]["understand"];
 
@@ -13,20 +14,23 @@ const DAILY_TURNS = 60;
 const NICKNAME_LIMIT = 30;
 const greeting = { role: "interviewer", text: "はじめまして。なんて呼べばいいですか？" } as const;
 
-function addMember(id: string): Effect.Effect<unknown, unknown> {
+const addMember = (id: string): Effect.Effect<unknown, unknown> => {
   return runStatement(
     "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
     id,
     id,
     `${id}@example.com`,
   );
-}
+};
 
-function services(
+const services = (
   understand: Understand,
-): Layer.Layer<Layer.Success<typeof TestDatabase> | Interviewer, Layer.Error<typeof TestDatabase>> {
+): Layer.Layer<
+  Layer.Success<typeof TestDatabase> | Interviewer,
+  Layer.Error<typeof TestDatabase>
+> => {
   return Layer.merge(TestDatabase, Layer.succeed(Interviewer, Interviewer.of({ understand })));
-}
+};
 
 const withoutModel = Layer.merge(TestDatabase, Interviewer.layer());
 
@@ -48,7 +52,7 @@ it.effect("an interview that was left midway resumes with the same conversation"
 
 it.effect("what the model understood is applied to the sheet", () => {
   const message = "大阪の学生さんなんですね。なんて呼べばいいですか？";
-  function understand(): ReturnType<Understand> {
+  const understand = (): ReturnType<Understand> => {
     return Effect.succeed({
       ask: "nickname",
       finish: false,
@@ -56,7 +60,7 @@ it.effect("what the model understood is applied to the sheet", () => {
       skip: false,
       values: { area: "大阪", occupation: "学生" },
     });
-  }
+  };
   return Effect.gen(function* program() {
     yield* addMember("member");
     const view = yield* takeTurn("member", { kind: "text", text: "大阪で学生をしています" });
@@ -76,9 +80,9 @@ it.effect("what the model understood is applied to the sheet", () => {
 
 it.effect("a failing model is hidden from the member and the scripted interview continues", () => {
   const failure = new UnderstandingFailed({ reason: "model_failed" });
-  function understand(): ReturnType<Understand> {
+  const understand = (): ReturnType<Understand> => {
     return Effect.fail(failure);
-  }
+  };
   return Effect.gen(function* program() {
     yield* addMember("member");
     const view = yield* takeTurn("member", { kind: "text", text: "たろう" });

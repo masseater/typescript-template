@@ -1,5 +1,6 @@
-const HEX_ID_LENGTH = 32;
 const verificationAuthSecret = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
+
+const HEX_ID_LENGTH = 32;
 
 const verificationSettings = {
   accountId: "a".repeat(HEX_ID_LENGTH),

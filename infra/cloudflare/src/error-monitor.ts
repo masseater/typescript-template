@@ -1,9 +1,10 @@
-import { stackName, stackOptions } from "./stacks.ts";
-import { Effect } from "effect";
 import { Stack } from "alchemy";
-import { accountTokenRef } from "./tokens.ts";
+import { Effect } from "effect";
+
 import { monitorArtifact } from "./artifacts.ts";
 import { monitorProgram } from "./monitor.ts";
+import { stackName, stackOptions } from "./stacks.ts";
+import { accountTokenRef } from "./tokens.ts";
 
 const stack = Stack(
   stackName("error-monitor"),
@@ -20,5 +21,4 @@ const stack = Stack(
   }),
 );
 
-// oxlint-disable-next-line import/no-default-export
 export default stack;

@@ -1,6 +1,8 @@
-import type { ComponentProps, ReactElement } from "react";
-import { buttonVariants } from "./button-variants";
 import { createLink } from "@tanstack/react-router";
+
+import { buttonVariants } from "./button-variants";
+
+import type { ComponentProps, ReactElement } from "react";
 
 type ButtonAnchorProps = Readonly<
   ComponentProps<"a"> & {
@@ -9,15 +11,13 @@ type ButtonAnchorProps = Readonly<
   }
 >;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function ButtonAnchor({ children, size, variant, ...anchor }: ButtonAnchorProps): ReactElement {
+const ButtonAnchor = ({ children, size, variant, ...anchor }: ButtonAnchorProps): ReactElement => {
   return (
-    // oxlint-disable-next-line react/jsx-props-no-spreading
     <a {...anchor} data-slot="button-link" className={buttonVariants({ size, variant })}>
       {children}
     </a>
   );
-}
+};
 
 const ButtonLink = createLink(ButtonAnchor);
 

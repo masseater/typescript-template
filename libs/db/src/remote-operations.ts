@@ -1,22 +1,24 @@
-import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { Effect, Schema } from "effect";
-import { RemoteFailure, fail } from "./remote-input.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { URL, fileURLToPath } from "node:url";
-import type { EmailAddress } from "./bootstrap-statement.ts";
-import { SQLiteDialect } from "drizzle-orm/sqlite-core";
-import { readMigrationFiles } from "drizzle-orm/migrator";
 
-interface RemoteQuery {
+import { readMigrationFiles } from "drizzle-orm/migrator";
+import { SQLiteDialect } from "drizzle-orm/sqlite-core";
+import { Effect, Schema } from "effect";
+
+import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
+import { RemoteFailure, fail } from "./remote-input.ts";
+
+import type { EmailAddress } from "./bootstrap-statement.ts";
+
+type RemoteQuery = {
   readonly params: readonly (string | number | null)[];
   readonly sql: string;
-}
+};
 
-interface DatabaseExecutor {
+type DatabaseExecutor = {
   readonly batch: (
     queries: readonly RemoteQuery[],
   ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
-}
+};
 
 const Statement = Schema.Trim.check(Schema.isMinLength(1));
 const MigrationFile = Schema.Struct({

@@ -6,6 +6,7 @@ import {
   laterPage,
 } from "@template/runtime/contracts";
 import { Option, Schema } from "effect";
+
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);
@@ -21,11 +22,11 @@ type UsersSearch = typeof UsersSearchParams.Type;
 
 const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
 
-function normalizeUsersSearch(raw: unknown): UsersSearch {
+const normalizeUsersSearch = (raw: unknown): UsersSearch => {
   return Option.getOrElse(decodeUsersSearch(raw), () => ({}));
-}
+};
 
-function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
+const userListQuery = (search: UsersSearch): Readonly<Record<string, string>> => {
   return {
     limit: String(usersPageSize),
     offset: String(((search.page ?? 1) - 1) * usersPageSize),
@@ -33,7 +34,7 @@ function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
     ...(search.role === undefined ? {} : { role: search.role }),
     ...(search.verified === undefined ? {} : { emailVerified: String(search.verified) }),
   };
-}
+};
 
 export { normalizeUsersSearch, userListQuery };
 export type { UsersSearch };

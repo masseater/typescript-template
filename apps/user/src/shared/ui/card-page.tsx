@@ -1,13 +1,14 @@
 import { Card, Heading } from "@template/ui";
+
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
-function CardPage({
+const CardPage = ({
   children,
   title,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
   title: string;
-}>): ReactElement {
+}>): ReactElement => {
   return (
     <main className="mx-auto flex w-full max-w-column flex-col px-4 py-12">
       <Card>
@@ -18,6 +19,6 @@ function CardPage({
       </Card>
     </main>
   );
-}
+};
 
 export { CardPage };

@@ -1,11 +1,10 @@
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { aliasChecker, aliasVisitor } from "./alias-visitor.ts";
-import { origins, propertyName, staticText } from "./references.ts";
-import type { Origin } from "./references.ts";
-import type { Visitor } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
 
-type SourceCheck = (node: Node) => void;
+import type { Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
+import type { Origin } from "./references.ts";
 
 const outOfGraphModules: ReadonlySet<string> = new Set([
   "node:child_process",
@@ -17,7 +16,7 @@ const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "r
 const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
 const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
 
-function isOutOfGraph(origin: Origin): boolean {
+const isOutOfGraph = (origin: Origin): boolean => {
   const [source = "", first = "", second = ""] = origin;
   return (
     outOfGraphModules.has(source) ||
@@ -25,25 +24,27 @@ function isOutOfGraph(origin: Origin): boolean {
     ((source === "node:process" || source === "process") && first === "cwd") ||
     (source === "global" && first === "process" && second === "cwd")
   );
-}
+};
 
-function sourceChecker(context: LintContext): SourceCheck {
+type SourceCheck = (node: Node) => void;
+
+const sourceChecker = (context: LintContext): SourceCheck => {
   return (node) => {
     const source = staticText(context, node) ?? "";
     if (outOfGraphModules.has(source) || source.includes("?")) {
       reportViolation(context, node);
     }
   };
-}
+};
 
-function hasQueryOption(context: LintContext, options: Node): boolean {
+const hasQueryOption = (context: LintContext, options: Node): boolean => {
   if (options.type !== "ObjectExpression") {
     return true;
   }
   return options.properties.some(
     (property) => property.type !== "Property" || propertyName(context, property) === "query",
   );
-}
+};
 
 function checkGlob(
   context: LintContext,
@@ -62,7 +63,7 @@ function checkGlob(
   }
 }
 
-function callVisitor(context: LintContext, checkSource: SourceCheck): Visitor {
+const callVisitor = (context: LintContext, checkSource: SourceCheck): Visitor => {
   return {
     CallExpression(node: Node): void {
       if (node.type !== "CallExpression") {
@@ -81,9 +82,9 @@ function callVisitor(context: LintContext, checkSource: SourceCheck): Visitor {
       }
     },
   };
-}
+};
 
-function moduleVisitor(context: LintContext, checkSource: SourceCheck): Visitor {
+const moduleVisitor = (context: LintContext, checkSource: SourceCheck): Visitor => {
   const checkAlias = aliasChecker(context, isOutOfGraph);
   return {
     ExportAllDeclaration(node: Node): void {
@@ -111,9 +112,9 @@ function moduleVisitor(context: LintContext, checkSource: SourceCheck): Visitor 
       }
     },
   };
-}
+};
 
-function testImportGraphVisitor(context: LintContext): Visitor {
+const testImportGraphVisitor = (context: LintContext): Visitor => {
   if (!testFile.test(context.filename.replaceAll("\\", "/"))) {
     return {};
   }
@@ -123,6 +124,6 @@ function testImportGraphVisitor(context: LintContext): Visitor {
     ...moduleVisitor(context, checkSource),
     ...callVisitor(context, checkSource),
   };
-}
+};
 
 export { testImportGraphVisitor };

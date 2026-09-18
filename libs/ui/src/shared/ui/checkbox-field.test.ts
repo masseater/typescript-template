@@ -1,21 +1,22 @@
-import { describe, expect, it } from "vite-plus/test";
-import { CheckboxField } from "./checkbox-field";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vite-plus/test";
+
+import { CheckboxField } from "./checkbox-field";
 
 const label = "バックアップコードを保管しました";
 
 const changes: boolean[] = [];
 
-function record(checked: boolean): void {
+const record = (checked: boolean): void => {
   changes.push(checked);
-}
+};
 
-function serverMarkup(): string {
+const serverMarkup = (): string => {
   return renderToStaticMarkup(
     createElement(CheckboxField, { checked: false, label, onCheckedChange: record }),
   );
-}
+};
 
 describe("server rendered checkbox", () => {
   it("names the checkbox before hydration", () => {

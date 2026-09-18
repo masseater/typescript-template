@@ -1,19 +1,20 @@
+import { NodeRuntime } from "@effect/platform-node";
+import { runRemoteDatabaseCommand } from "@template/db/remote";
+import { layer } from "alchemy/Alchemist";
+import { Effect } from "effect";
+
+import { CloudflareFailure } from "./config.ts";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
-import { CloudflareFailure } from "./config.ts";
-import { Effect } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
-import { layer } from "alchemy/Alchemist";
 import { reportCause } from "./secrets.ts";
-import { runRemoteDatabaseCommand } from "@template/db/remote";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";
 
-function inputInvalid(): CloudflareFailure {
+const inputInvalid = (): CloudflareFailure => {
   return new CloudflareFailure({ code: "database_input_invalid", keys: [] });
-}
+};
 
 const readBootstrapEmail = Effect.tryPromise({
   catch: inputInvalid,
@@ -25,7 +26,6 @@ const readBootstrapEmail = Effect.tryPromise({
     return chunks;
   },
 }).pipe(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   Effect.flatMap((chunks) =>
     chunks.every((chunk) => Buffer.isBuffer(chunk))
       ? Effect.succeed(Buffer.concat(chunks).toString("utf-8").trim())
@@ -47,21 +47,13 @@ NodeRuntime.runMain(
         databaseId,
         ...(email === "" ? {} : { email }),
       });
-      // oxlint-disable-next-line no-console
+
       console.info(JSON.stringify(result));
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,
-      Effect.catchCause(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (cause) => reportCause(EVENT, cause, confidential),
-      ),
+      Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );
-  }).pipe(
-    Effect.catchCause(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause(EVENT, cause),
-    ),
-  ),
+  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
   { disableErrorReporting: true },
 );

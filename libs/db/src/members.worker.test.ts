@@ -1,22 +1,22 @@
-import { addUser, failureTag } from "./records-fixture.ts";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { TestDatabase } from "./testing.ts";
 import { eq } from "drizzle-orm";
-import { getMember } from "./members.ts";
-import { query } from "./database.ts";
-import { user } from "./schema.ts";
+import { Effect } from "effect";
 
-function describeMember(
+import { query } from "./database.ts";
+import { getMember } from "./members.ts";
+import { addUser, failureTag } from "./records-fixture.ts";
+import { user } from "./schema.ts";
+import { TestDatabase } from "./testing.ts";
+
+const describeMember = (
   id: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   values: { readonly createdAt: Date; readonly name: string; readonly profile: string },
-): ReturnType<typeof addUser> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+): ReturnType<typeof addUser> => {
   return query(async (database): Promise<void> => {
     await database.update(user).set(values).where(eq(user.id, id));
   });
-}
+};
 
 it.effect("shows another member only what the profile page shows to others", () =>
   Effect.gen(function* program() {

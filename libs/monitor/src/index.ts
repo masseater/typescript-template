@@ -1,24 +1,25 @@
 import { Effect, Exit, Schema, SchemaGetter } from "effect";
+
 import { MonitorFailure } from "./failure.ts";
 
-interface Alert {
+type Alert = {
   readonly subject: string;
   readonly text: string;
-}
+};
 
 type Notify = (alert: Alert) => Effect.Effect<void>;
 
-interface MonitorBindings {
+type MonitorBindings = {
   readonly ALERT_FROM: string;
   readonly ALERT_TO: string;
   readonly EMAIL: SendEmail;
   readonly MONITOR: DurableObjectNamespace;
-}
+};
 
-interface MonitorHandler {
+type MonitorHandler = {
   readonly fetch: () => Response;
   readonly scheduled: (controller: unknown, env: MonitorSchedule) => Promise<void>;
-}
+};
 
 type MonitorSchedule = Readonly<{
   MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">>;
@@ -47,7 +48,6 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   protected readonly ctx: DurableObjectState;
   protected readonly env: Bindings;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public constructor(ctx: DurableObjectState, env: Bindings) {
     this.ctx = ctx;
     this.env = env;
@@ -62,7 +62,6 @@ abstract class Monitor<Bindings extends MonitorBindings> {
       Effect.flatMap((notify) => {
         const started = Date.now();
         return Effect.exit(this.check(notify)).pipe(
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           Effect.flatMap((outcome) =>
             Exit.isSuccess(outcome)
               ? this.reportSuccess(outcome.value, started)
@@ -90,7 +89,6 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   private reportSuccess(result: object, started: number): Effect.Effect<Response> {
     return Effect.promise(async () => this.ctx.storage.delete("failureNotifiedDay")).pipe(
       Effect.map(() => {
-        // oxlint-disable-next-line no-console
         console.log(
           JSON.stringify({
             event: `${this.event}.checked`,
@@ -106,7 +104,6 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   private reportFailure(notify: Notify, started: number): Effect.Effect<Response> {
     const { ctx, event, failure } = this;
     return Effect.gen(function* reportFailure() {
-      // oxlint-disable-next-line no-console
       console.error(
         JSON.stringify({ durationMs: Date.now() - started, event: `${event}.check_failed` }),
       );
@@ -124,7 +121,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   protected abstract check(notify: Notify): Effect.Effect<object, unknown>;
 }
 
-function monitorHandler(event: string): MonitorHandler {
+const monitorHandler = (event: string): MonitorHandler => {
   return {
     fetch: () => new Response("Not found", { status: NOT_FOUND_STATUS }),
     scheduled: async (_controller, env) => {
@@ -139,7 +136,7 @@ function monitorHandler(event: string): MonitorHandler {
       }
     },
   };
-}
+};
 
 export { AlertEnvironment, Monitor, monitorBinding, monitorHandler };
 export type { Alert, MonitorBindings, Notify };

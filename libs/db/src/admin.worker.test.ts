@@ -1,21 +1,22 @@
-import { account, auditEvent, user } from "./schema.ts";
-import { addCredential, addSession, addUser, failureTag, successCount } from "./records-fixture.ts";
 import { assert, it } from "@effect/vitest";
-import { deleteUser, listUsers, setUserRole } from "./admin.ts";
-import { getProfile, query, updateProfile } from "./index.ts";
-import type { Database } from "./index.ts";
-import { Effect } from "effect";
-import { TestDatabase } from "./testing.ts";
-import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+
+import { deleteUser, listUsers, setUserRole } from "./admin.ts";
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
+import { getProfile, query, updateProfile } from "./index.ts";
+import { addCredential, addSession, addUser, failureTag, successCount } from "./records-fixture.ts";
+import { account, auditEvent, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
+import { TestDatabase } from "./testing.ts";
+
+import type { Database } from "./index.ts";
 
 const page = { limit: 50, offset: 0 };
 
-function auditRecords(): Effect.Effect<readonly unknown[], unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const auditRecords = (): Effect.Effect<readonly unknown[], unknown, Database> => {
   return query(async (database) => database.select().from(auditEvent));
-}
+};
 
 it.effect("persists Unicode profiles", () =>
   Effect.gen(function* program() {
@@ -66,7 +67,7 @@ it.effect("protects final administrator and credentials during deletion", () =>
     const actor = yield* addSession("last", "admin");
     assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
     assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     assert.lengthOf(yield* query(async (database) => database.select().from(account)), 1);
     assert.strictEqual((yield* getSessionSecurity(actor, "admin"))?.user.role, "admin");
   }).pipe(Effect.provide(TestDatabase)),
@@ -86,7 +87,7 @@ it.effect("simultaneous self-demotions cannot remove all administrators", () =>
       { concurrency: "unbounded" },
     );
     assert.strictEqual(successCount(outcomes), 1);
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     const admins = yield* query(async (database) =>
       database.select().from(user).where(eq(user.role, "admin")),
     );

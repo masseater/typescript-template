@@ -1,9 +1,9 @@
-interface AppHead {
+type AppHead = {
   links: { href: string; rel: string }[];
   meta: ({ charSet: string } | { content: string; name: string } | { title: string })[];
-}
+};
 
-function appHead(title: string, stylesheet: string): AppHead {
+const appHead = (title: string, stylesheet: string): AppHead => {
   return {
     links: [{ href: stylesheet, rel: "stylesheet" }],
     meta: [
@@ -12,6 +12,6 @@ function appHead(title: string, stylesheet: string): AppHead {
       { title },
     ],
   };
-}
+};
 
 export { appHead };

@@ -1,24 +1,15 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
-import { build } from "vite-plus";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { serverOnlyMarkers } from "@template/config/vite";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { serverOnlyMarkers } from "@template/config/vite";
+import { build } from "vite-plus";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
 const outDirectory = path.join(tmpdir(), "template-client-bundle");
 
-const clientReachable: readonly string[] = [
-  "@template/runtime/client",
-  "@template/runtime/contracts",
-  "@template/ui",
-  "#shared/api/client.ts",
-];
 const serverOnly: readonly (readonly [string, string])[] = [
   ["@template/runtime/http", "**/libs/runtime/src/**"],
   ["@template/runtime/worker", "**/libs/runtime/src/**"],
@@ -29,7 +20,7 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
 
-async function clientBuild(specifiers: readonly string[]): Promise<string> {
+const clientBuild = async (specifiers: readonly string[]): Promise<string> => {
   try {
     await build({
       build: { outDir: outDirectory },
@@ -54,13 +45,12 @@ async function clientBuild(specifiers: readonly string[]): Promise<string> {
     return "";
   } catch (error: unknown) {
     return (
-      /Denied by file pattern: (?<pattern>\S+)/u.exec(String(error))?.groups?.["pattern"] ??
-      "denied"
+      /Denied by file pattern: (?<pattern>\S+)/u.exec(String(error))?.groups?.pattern ?? "denied"
     );
   }
-}
+};
 
-async function bundledMarkers(): Promise<readonly string[]> {
+const bundledMarkers = async (): Promise<readonly string[]> => {
   const entries = await readdir(outDirectory, { recursive: true });
   const sources = await Promise.all(
     entries
@@ -68,9 +58,16 @@ async function bundledMarkers(): Promise<readonly string[]> {
       .map(async (entry) => readFile(path.join(outDirectory, entry), "utf-8")),
   );
   return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
-}
+};
 
 const unexpected: string[] = [];
+
+const clientReachable: readonly string[] = [
+  "@template/runtime/client",
+  "@template/runtime/contracts",
+  "@template/ui",
+  "#shared/api/client.ts",
+];
 
 const reachableDenial = await clientBuild(clientReachable);
 if (reachableDenial !== "") {
@@ -80,7 +77,6 @@ for (const marker of await bundledMarkers()) {
   unexpected.push(`${marker} reached the client bundle`);
 }
 for (const [specifier, pattern] of serverOnly) {
-  // oxlint-disable-next-line no-await-in-loop
   const denial = await clientBuild([specifier]);
   if (denial !== pattern) {
     unexpected.push(`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`);

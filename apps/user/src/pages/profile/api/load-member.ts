@@ -1,10 +1,12 @@
-import { absent, apiDataOrNone } from "@template/runtime/client";
-import type { Member } from "#pages/profile/model/member.ts";
-import { MemberView } from "@template/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
+import { absent, apiDataOrNone } from "@template/runtime/client";
+import { MemberView } from "@template/runtime/contracts";
+
 import { userClient } from "#shared/api/index.ts";
 
-async function loadMember(id: string): Promise<Member> {
+import type { Member } from "#pages/profile/model/member.ts";
+
+const loadMember = async (id: string): Promise<Member> => {
   const { api } = await userClient();
   const member = apiDataOrNone(
     MemberView,
@@ -15,6 +17,6 @@ async function loadMember(id: string): Promise<Member> {
     throw notFound();
   }
   return member;
-}
+};
 
 export { loadMember };

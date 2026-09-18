@@ -1,36 +1,38 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
+import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { probeService } from "./probe.ts";
+
 import type { HttpResponseResolver } from "msw";
 import type { ProbeResult } from "./probe.ts";
-import { probeService } from "./probe.ts";
-import { setupNetwork } from "@msw/cloudflare";
 
-function otherServiceHealth(): Response {
+const otherServiceHealth = (): Response => {
   return HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "admin" });
-}
+};
 
-function failedDependency(): Response {
+const failedDependency = (): Response => {
   return HttpResponse.json({ error: "処理に失敗しました。" }, { status: 500 });
-}
+};
 
-function htmlPage(): Response {
+const htmlPage = (): Response => {
   return HttpResponse.text("<!doctype html>");
-}
+};
 
-function networkError(): Response {
+const networkError = (): Response => {
   return HttpResponse.error();
-}
+};
 
 const userTarget: Parameters<typeof probeService>[0] = {
   origin: "https://app.example.com",
   service: "user",
 };
 
-function probe(
+const probe = (
   target: Parameters<typeof probeService>[0],
   resolver: HttpResponseResolver,
-): Effect.Effect<ProbeResult> {
+): Effect.Effect<ProbeResult> => {
   return Effect.acquireUseRelease(
     Effect.sync(() => {
       const network = setupNetwork();
@@ -40,13 +42,13 @@ function probe(
       return network;
     }),
     () => probeService(target),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (network) =>
       Effect.sync(() => {
         network.disable();
       }),
   );
-}
+};
 
 it.effect("an application reporting its own service name and release is healthy", () =>
   Effect.gen(function* program() {

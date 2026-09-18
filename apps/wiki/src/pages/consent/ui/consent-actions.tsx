@@ -1,13 +1,15 @@
-import { Button, FormColumn } from "@template/ui";
-import type { ReactElement } from "react";
-import { Schema } from "effect";
 import { decodeJson } from "@template/runtime/client";
-import { serviceName } from "#shared/config/index.ts";
+import { Button, FormColumn } from "@template/ui";
+import { Schema } from "effect";
 import { useState } from "react";
+
+import { serviceName } from "#shared/config/index.ts";
+
+import type { ReactElement } from "react";
 
 const Redirect = Schema.Struct({ url: Schema.String });
 
-async function submitDecision(accept: boolean): Promise<void> {
+const submitDecision = async (accept: boolean): Promise<void> => {
   const response = await fetch("/api/auth/oauth2/consent", {
     body: JSON.stringify({ accept, oauth_query: globalThis.location.search.slice(1) }),
     credentials: "same-origin",
@@ -18,14 +20,14 @@ async function submitDecision(accept: boolean): Promise<void> {
     throw new Error("連携の許可を処理できませんでした。");
   }
   globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
-}
+};
 
-function ConsentActions({
+const ConsentActions = ({
   client,
   onError,
-}: Readonly<{ client: string; onError: (message: string) => void }>): ReactElement {
+}: Readonly<{ client: string; onError: (message: string) => void }>): ReactElement => {
   const [pending, setPending] = useState(false);
-  async function decide(accept: boolean): Promise<void> {
+  const decide = async (accept: boolean): Promise<void> => {
     setPending(true);
     onError("");
     try {
@@ -34,13 +36,13 @@ function ConsentActions({
       onError(error instanceof Error ? error.message : String(error));
       setPending(false);
     }
-  }
-  function allow(): void {
+  };
+  const allow = (): void => {
     void decide(true);
-  }
-  function deny(): void {
+  };
+  const deny = (): void => {
     void decide(false);
-  }
+  };
   return (
     <FormColumn>
       <p>
@@ -56,6 +58,6 @@ function ConsentActions({
       </div>
     </FormColumn>
   );
-}
+};
 
 export { ConsentActions };

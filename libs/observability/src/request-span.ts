@@ -1,5 +1,8 @@
 import { Cause, Effect } from "effect";
+
+import { CurrentRequest } from "./current-request.ts";
 import { errorAttributes, errorFingerprint } from "./errors.ts";
+import { httpStatus } from "./http-status.ts";
 import {
   httpMethod,
   parentContext,
@@ -8,29 +11,27 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
-import { CurrentRequest } from "./current-request.ts";
-import type { ErrorAttributes } from "./errors.ts";
-import type { RequestContext } from "./current-request.ts";
-import { Telemetry } from "./telemetry.ts";
-import { httpStatus } from "./http-status.ts";
 import { isRecord } from "./structured-logs.ts";
+import { Telemetry } from "./telemetry.ts";
+
+import type { RequestContext } from "./current-request.ts";
+import type { ErrorAttributes } from "./errors.ts";
 
 type RequestHandler<Requirements> = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
 type FailureAttributes = ErrorAttributes & { readonly "error.tag"?: string };
 
-const tagPattern = /^[A-Za-z]{1,64}$/u;
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 
-function failureTag(error: unknown): string | undefined {
-  const tag = isRecord(error) ? error["_tag"] : undefined;
-  return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
-}
+const tagPattern = /^[A-Za-z]{1,64}$/u;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
+const failureTag = (error: unknown): string | undefined => {
+  const tag = isRecord(error) ? error._tag : undefined;
+  return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
+};
+
+const failureAttributes = (cause: Readonly<Cause.Cause<unknown>>): FailureAttributes => {
   const error = Cause.squash(cause);
   const attributes = errorAttributes(error);
   const tag = failureTag(error);
@@ -42,14 +43,13 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
     `${tag}\n${attributes["error.locations"]}`,
   );
   return { ...attributes, "error.fingerprint": fingerprint, "error.tag": tag };
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
+const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> => {
   return Effect.logError("application.error", failureAttributes(cause));
-}
+};
 
-function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContext {
+const incomingContext = (headers: Readonly<Pick<Headers, "get">>): RequestContext => {
   const traceId = parentContext(headers.get("traceparent"))?.traceId ?? randomHex(traceIdBytes);
   const spanId = randomHex(spanIdBytes);
   return {
@@ -58,10 +58,9 @@ function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContex
     traceId,
     traceparent: `00-${traceId}-${spanId}-01`,
   };
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function correlatedResponse(response: Response, context: RequestContext): Response {
+const correlatedResponse = (response: Response, context: RequestContext): Response => {
   const headers = new Headers(response.headers);
   headers.set("x-request-id", context.requestId);
   headers.set("traceparent", context.traceparent);
@@ -70,10 +69,9 @@ function correlatedResponse(response: Response, context: RequestContext): Respon
     status: response.status,
     statusText: response.statusText,
   });
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function failureResponse(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> {
+const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> => {
   return reportFailure(cause).pipe(
     Effect.as(
       Response.json(
@@ -82,7 +80,7 @@ function failureResponse(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<R
       ),
     ),
   );
-}
+};
 
 const recordRequest = Effect.fn("recordRequest")(function* recordRequest(
   request: Readonly<Pick<Request, "method" | "url">>,
@@ -101,12 +99,11 @@ const recordRequest = Effect.fn("recordRequest")(function* recordRequest(
     : Effect.logInfo("http.server.request", attributes);
 });
 
-function respond<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const respond = <Requirements>(
   request: Request,
   context: RequestContext,
   handler: RequestHandler<Requirements>,
-): Effect.Effect<Response, never, Exclude<Requirements, CurrentRequest> | Telemetry> {
+): Effect.Effect<Response, never, Exclude<Requirements, CurrentRequest> | Telemetry> => {
   return Effect.gen(function* respondProgram() {
     const start = performance.now();
     const response = yield* handler(request).pipe(
@@ -116,13 +113,12 @@ function respond<Requirements>(
     yield* recordRequest(request, response.status, start);
     return correlatedResponse(response, context);
   });
-}
+};
 
-function observeRequest<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const observeRequest = <Requirements>(
   request: Request,
   handler: RequestHandler<Requirements>,
-): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> {
+): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> => {
   return Effect.suspend(() => {
     const context = incomingContext(request.headers);
     return respond(request, context, handler).pipe(
@@ -133,6 +129,6 @@ function observeRequest<Requirements>(
       }),
     );
   });
-}
+};
 
 export { observeRequest, reportFailure };

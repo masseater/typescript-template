@@ -1,9 +1,10 @@
 import { RemovalPolicy, Stack } from "alchemy";
-import { stackName, stackOptions } from "./stacks.ts";
 import { D1 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
+
 import { databaseName } from "./database-lookup.ts";
 import { settings } from "./settings.ts";
+import { stackName, stackOptions } from "./stacks.ts";
 
 const databaseResource = "Database";
 
@@ -19,10 +20,10 @@ const stack = Stack(
   }),
 );
 
-function databaseRef(): Effect.Effect<D1.Database> {
-  return D1.Database.ref(databaseResource, { stack: stackName("database") });
-}
-
 // oxlint-disable-next-line import/no-default-export
 export default stack;
+const databaseRef = (): Effect.Effect<D1.Database> => {
+  return D1.Database.ref(databaseResource, { stack: stackName("database") });
+};
+
 export { databaseRef };

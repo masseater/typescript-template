@@ -1,7 +1,8 @@
 import { ButtonLink, TextLink } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-function Hero(): ReactElement {
+const Hero = (): ReactElement => {
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4 py-20 text-center">
       <h1 className="text-2xl leading-tight font-bold text-foreground">
@@ -18,6 +19,6 @@ function Hero(): ReactElement {
       </div>
     </section>
   );
-}
+};
 
 export { Hero };

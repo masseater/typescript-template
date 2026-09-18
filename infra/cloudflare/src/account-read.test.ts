@@ -1,10 +1,12 @@
+import { assert, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 import { HttpResponse, delay, http } from "msw";
-import { assert, it } from "@effect/vitest";
+import { setupServer } from "msw/node";
+
 import { endpoint, readList, requestReason } from "./account-read.ts";
+
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
-import { setupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
 const PAGE_SIZE = 20;
@@ -18,23 +20,22 @@ const access = {
 const url = `https://api.cloudflare.com/client/v4/zones/${access.accountId}/dns_records`;
 const Rows = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
 
-function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const mockServer = (
   ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> {
+): Effect.Effect<SetupServer, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const server = setupServer(...handlers);
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (server) =>
       Effect.sync(() => {
         server.close();
       }),
   );
-}
+};
 
 it.effect("accepts a filtered page that Cloudflare counted against the whole collection", () =>
   Effect.gen(function* program() {

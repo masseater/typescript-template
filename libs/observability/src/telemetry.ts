@@ -1,19 +1,21 @@
 import { Context, Effect, Layer } from "effect";
-import type { Application } from "@template/config";
-import type { StructuredLogOptions } from "./structured-logs.ts";
-import { TelemetryInvalid } from "./telemetry-invalid.ts";
+
 import { isRoutes } from "./protocol.ts";
 import { structuredLogs } from "./structured-logs.ts";
+import { TelemetryInvalid } from "./telemetry-invalid.ts";
 
-interface TelemetryShape {
+import type { Application } from "@template/config";
+import type { StructuredLogOptions } from "./structured-logs.ts";
+
+type TelemetryShape = {
   readonly serviceName: Application;
   readonly release: string;
   readonly routes: Readonly<Record<string, string>>;
   readonly labels: Readonly<ReadonlySet<string>>;
-}
-interface TelemetryOptions extends StructuredLogOptions {
+};
+type TelemetryOptions = {
   readonly routes: Readonly<Record<string, string>>;
-}
+} & StructuredLogOptions;
 
 class Telemetry extends Context.Service<Telemetry, TelemetryShape>()(
   "@template/observability/Telemetry",

@@ -1,8 +1,10 @@
-import { controlClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
+
+import { controlClassName, fieldClassName, labelClassName } from "./control";
+
 import type { ReactElement } from "react";
 
-function SelectField({
+const SelectField = ({
   label,
   name,
   onValueChange,
@@ -14,7 +16,7 @@ function SelectField({
   onValueChange: (value: string) => void;
   options: readonly Readonly<{ label: string; value: string }>[];
   value: string;
-}>): ReactElement {
+}>): ReactElement => {
   const select = (
     <select>
       {options.map((option) => (
@@ -36,6 +38,6 @@ function SelectField({
       />
     </FieldPrimitive.Root>
   );
-}
+};
 
 export { SelectField };

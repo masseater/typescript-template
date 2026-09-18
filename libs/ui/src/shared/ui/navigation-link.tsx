@@ -1,6 +1,7 @@
-import type { ComponentProps, ReactElement } from "react";
 import { createLink } from "@tanstack/react-router";
 import { cva } from "class-variance-authority";
+
+import type { ComponentProps, ReactElement } from "react";
 
 const navigationLinkVariants = cva(
   "rounded-md text-foreground no-underline outline-none hover:text-foreground focus-visible:focus-indicator",
@@ -20,15 +21,17 @@ type NavigationAnchorProps = Readonly<
   ComponentProps<"a"> & { variant?: "brand" | "item" | "side" }
 >;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function NavigationAnchor({ children, variant, ...anchor }: NavigationAnchorProps): ReactElement {
+const NavigationAnchor = ({
+  children,
+  variant,
+  ...anchor
+}: NavigationAnchorProps): ReactElement => {
   return (
-    // oxlint-disable-next-line react/jsx-props-no-spreading
     <a {...anchor} data-slot="navigation-link" className={navigationLinkVariants({ variant })}>
       {children}
     </a>
   );
-}
+};
 
 const NavigationLink = createLink(NavigationAnchor);
 

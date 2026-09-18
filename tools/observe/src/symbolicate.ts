@@ -1,10 +1,10 @@
-import { Effect, Schema } from "effect";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { parseArgs } from "node:util";
+import { Effect, Schema } from "effect";
+
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
@@ -29,7 +29,6 @@ const { values, positionals } = parseArgs({
 });
 
 const help = Effect.sync(() => {
-  // oxlint-disable-next-line no-console
   console.info(
     JSON.stringify({
       locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
@@ -54,7 +53,6 @@ const resolveFrames = Effect.gen(function* resolveFrames() {
     input.locations,
   );
   yield* Effect.sync(() => {
-    // oxlint-disable-next-line no-console
     console.info(
       JSON.stringify({
         app: input.app,
@@ -70,7 +68,6 @@ NodeRuntime.runMain(
   (values.help ? help : resolveFrames).pipe(
     Effect.catchCause(() =>
       Effect.sync(() => {
-        // oxlint-disable-next-line no-console
         console.error(JSON.stringify({ event: "observe.symbolicate_failed" }));
         process.exitCode = 1;
       }),

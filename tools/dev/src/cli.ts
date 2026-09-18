@@ -1,17 +1,19 @@
-import { Cause, Effect } from "effect";
-import { browser, browserCommand } from "./browser.ts";
-import { connection, logs, start, status, stop } from "./applications.ts";
-import type { App } from "./local-environment.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { application } from "./local-environment.ts";
+import { Cause, Effect } from "effect";
+
+import { connection, logs, start, status, stop } from "./applications.ts";
+import { browser, browserCommand } from "./browser.ts";
 import { failure } from "./failure.ts";
+import { application } from "./local-environment.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
-type Command = Effect.Effect<unknown, LocalCommandFailure>;
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App } from "./local-environment.ts";
 
 const firstUserArgumentIndex = 2;
+
+type Command = Effect.Effect<unknown, LocalCommandFailure>;
 
 const globalCommands = new Map<string, () => Command>([
   ["connect", connection],
@@ -19,6 +21,14 @@ const globalCommands = new Map<string, () => Command>([
   ["status", status],
   ["storybook", storybook],
 ]);
+
+const writeReport = (report: unknown): Effect.Effect<void> => {
+  return Effect.sync(() => {
+    if (report !== undefined) {
+      process.stdout.write(`${JSON.stringify(report)}\n`);
+    }
+  });
+};
 
 const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
   ["browser", browser],
@@ -28,15 +38,11 @@ const appCommands = new Map<string, (app: App, args: readonly string[]) => Comma
   ["stop", stop],
 ]);
 
-function writeReport(report: unknown): Effect.Effect<void> {
-  return Effect.sync(() => {
-    if (report !== undefined) {
-      process.stdout.write(`${JSON.stringify(report)}\n`);
-    }
-  });
-}
-
-function selectCommand(action: string, app: string | undefined, args: readonly string[]): Command {
+const selectCommand = (
+  action: string,
+  app: string | undefined,
+  args: readonly string[],
+): Command => {
   const global = globalCommands.get(action);
   if (global !== undefined) {
     return global();
@@ -45,14 +51,14 @@ function selectCommand(action: string, app: string | undefined, args: readonly s
   return scoped === undefined
     ? Effect.fail(failure("command_unsupported"))
     : application(app).pipe(Effect.flatMap((name) => scoped(name, args)));
-}
+};
 
 const [action = "", app, ...args] = process.argv.slice(firstUserArgumentIndex);
 
 NodeRuntime.runMain(
   selectCommand(action, app, args).pipe(
     Effect.flatMap(writeReport),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)

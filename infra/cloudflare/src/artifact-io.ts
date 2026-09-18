@@ -1,10 +1,9 @@
-import { Effect, Schema } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir, realpath } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { Effect, Schema } from "effect";
+
+import type { Dirent } from "node:fs";
 
 type ArtifactEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
 
@@ -32,76 +31,72 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
   ]),
 }) {}
 
-function fail(code: ArtifactFailure["code"]): Effect.Effect<never, ArtifactFailure> {
+const fail = (code: ArtifactFailure["code"]): Effect.Effect<never, ArtifactFailure> => {
   return Effect.fail(new ArtifactFailure({ code }));
-}
+};
 
-function io<Value>(run: () => Promise<Value>): Effect.Effect<Value, ArtifactFailure> {
+const io = <Value>(run: () => Promise<Value>): Effect.Effect<Value, ArtifactFailure> => {
   return Effect.tryPromise({
     catch: () => new ArtifactFailure({ code: "artifact_io_failed" }),
     try: run,
   });
-}
+};
 
-function entryFiles(
+const entryFiles = (
   directory: string,
   entry: ArtifactEntry,
-): Effect.Effect<string[], ArtifactFailure> {
+): Effect.Effect<string[], ArtifactFailure> => {
   if (entry.isSymbolicLink()) {
     return fail("artifact_symlink_forbidden");
   }
   const filename = path.join(directory, entry.name);
   if (entry.isDirectory()) {
-    // oxlint-disable-next-line typescript/no-use-before-define
     return files(filename);
   }
   return entry.isFile() ? Effect.succeed([filename]) : fail("artifact_file_type_invalid");
-}
+};
 
-function files(directory: string): Effect.Effect<string[], ArtifactFailure> {
+const files = (directory: string): Effect.Effect<string[], ArtifactFailure> => {
   return io(async () => readdir(directory, { withFileTypes: true })).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((entries) =>
       Effect.all(
         entries.map((entry: ArtifactEntry) => entryFiles(directory, entry)),
         { concurrency: "unbounded" },
       ),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((nested) => nested.flat().toSorted()),
   );
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function sha256Hex(content: Uint8Array<ArrayBuffer>): Effect.Effect<string, ArtifactFailure> {
+const sha256Hex = (content: Uint8Array<ArrayBuffer>): Effect.Effect<string, ArtifactFailure> => {
   return io(async () =>
     Buffer.from(await crypto.subtle.digest("SHA-256", content)).toString("hex"),
   );
-}
+};
 
-function fileSha256(file: string): Effect.Effect<string, ArtifactFailure> {
+const fileSha256 = (file: string): Effect.Effect<string, ArtifactFailure> => {
   return io(async () => readFile(file)).pipe(Effect.flatMap(sha256Hex));
-}
+};
 
-function jsonSha256(value: unknown): Effect.Effect<string, ArtifactFailure> {
+const jsonSha256 = (value: unknown): Effect.Effect<string, ArtifactFailure> => {
   return sha256Hex(new TextEncoder().encode(JSON.stringify(value)));
-}
+};
 
-function sameContent(left: string, right: string): Effect.Effect<boolean, ArtifactFailure> {
+const sameContent = (left: string, right: string): Effect.Effect<boolean, ArtifactFailure> => {
   return io(async () => Promise.all([readFile(left), readFile(right)])).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map(([leftContent, rightContent]) => leftContent.equals(rightContent)),
   );
-}
+};
 
-function assertRealDirectory(
+const assertRealDirectory = (
   directory: string,
   code: ArtifactFailure["code"],
-): Effect.Effect<void, ArtifactFailure> {
+): Effect.Effect<void, ArtifactFailure> => {
   return io(async () => realpath(directory)).pipe(
     Effect.flatMap((resolved) => (resolved === directory ? Effect.void : fail(code))),
   );
-}
+};
 
 export {
   ArtifactFailure,

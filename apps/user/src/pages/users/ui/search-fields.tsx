@@ -1,17 +1,18 @@
-import { Button, Field } from "@template/ui";
-import type { ReactElement } from "react";
-import { maximumKeywordLength } from "@template/runtime/contracts";
 import { useNavigate } from "@tanstack/react-router";
+import { maximumKeywordLength } from "@template/runtime/contracts";
+import { Button, Field } from "@template/ui";
 import { useState } from "react";
 
-function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement {
+import type { ReactElement } from "react";
+
+const SearchFields = ({ keyword }: Readonly<{ keyword: string }>): ReactElement => {
   const [draft, setDraft] = useState(keyword);
   const navigate = useNavigate();
-  function search(event: Readonly<{ preventDefault: () => void }>): void {
+  const search = (event: Readonly<{ preventDefault: () => void }>): void => {
     event.preventDefault();
     const next = draft.trim();
     void navigate({ search: next === "" ? {} : { keyword: next }, to: "/users" });
-  }
+  };
   return (
     <search>
       <form onSubmit={search} className="flex w-full max-w-search items-end gap-2">
@@ -28,6 +29,6 @@ function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement 
       </form>
     </search>
   );
-}
+};
 
 export { SearchFields };

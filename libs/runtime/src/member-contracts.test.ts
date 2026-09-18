@@ -1,6 +1,7 @@
-import { Effect, Schema } from "effect";
-import { MemberList, MemberListQuery, MemberView, maximumMemberPage } from "./contracts.ts";
 import { assert, describe, it } from "@effect/vitest";
+import { Effect, Schema } from "effect";
+
+import { MemberList, MemberListQuery, MemberView, maximumMemberPage } from "./contracts.ts";
 
 const encode = Schema.encodeUnknownEffect(MemberView);
 
@@ -74,7 +75,6 @@ describe("member list query", () => {
     { keyword: "" },
     { keyword: "   " },
     { limit: "500" },
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ])("rejects the query %o", (input) =>
     Effect.gen(function* program() {
       const failure = yield* decodeQuery(input).pipe(Effect.flip);

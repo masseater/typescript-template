@@ -1,8 +1,10 @@
-import { ProfileBody } from "./profile-body.tsx";
-import type { ReactElement } from "react";
 import { Status } from "@template/ui";
 
-function ProfilePending(): ReactElement {
+import { ProfileBody } from "./profile-body.tsx";
+
+import type { ReactElement } from "react";
+
+const ProfilePending = (): ReactElement => {
   return (
     <ProfileBody>
       <div className="flex items-center gap-4">
@@ -12,6 +14,6 @@ function ProfilePending(): ReactElement {
       <Status variant="pending">プロフィールを読み込んでいます。</Status>
     </ProfileBody>
   );
-}
+};
 
 export { ProfilePending };

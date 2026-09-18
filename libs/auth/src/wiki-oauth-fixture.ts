@@ -1,5 +1,6 @@
-import { BrowserClient, origins } from "./browser-client.ts";
+import { assert } from "@effect/vitest";
 import { Effect, Schema } from "effect";
+
 import {
   Fixture,
   HTTP_CREATED,
@@ -12,14 +13,14 @@ import {
   signInAs,
 } from "./auth-test-fixture.ts";
 import { Auth } from "./auth.ts";
-import { assert } from "@effect/vitest";
+import { BrowserClient, origins } from "./browser-client.ts";
 import { authorizeMcpRequest } from "./mcp.ts";
 
-interface AuthorizationFlow {
+type AuthorizationFlow = {
   readonly clientId: string;
   readonly oauthQuery: string;
   readonly verifier: string;
-}
+};
 
 const wikiOrigin = origins.wiki;
 const redirectUri = "http://127.0.0.1:43123/callback";
@@ -28,14 +29,13 @@ const Redirect = Schema.Struct({ url: Schema.String });
 const Registration = Schema.Struct({ client_id: Schema.String });
 const Tokens = Schema.Struct({ access_token: Schema.String });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function base64url(bytes: Readonly<Uint8Array>): string {
+const base64url = (bytes: Readonly<Uint8Array>): string => {
   return Buffer.from(bytes).toString("base64url");
-}
+};
 
-function responseStatus(value: unknown): number | undefined {
+const responseStatus = (value: unknown): number | undefined => {
   return value instanceof Response ? value.status : undefined;
-}
+};
 
 const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
   email: string,
@@ -59,7 +59,7 @@ const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifie
   return base64url(new Uint8Array(digest));
 });
 
-function authorizeUrl(clientId: string, challenge: string): URL {
+const authorizeUrl = (clientId: string, challenge: string): URL => {
   const authorize = new URL(`${wikiOrigin}/api/auth/oauth2/authorize`);
   for (const [key, value] of Object.entries({
     client_id: clientId,
@@ -74,10 +74,9 @@ function authorizeUrl(clientId: string, challenge: string): URL {
     authorize.searchParams.set(key, value);
   }
   return authorize;
-}
+};
 
 const registerClient = Effect.fn("registerClient")(function* registerClient(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   anonymous: Readonly<BrowserClient>,
 ) {
   const registration = yield* anonymous.json("/oauth2/register", {
@@ -105,7 +104,6 @@ const startAuthorization = Effect.fn("startAuthorization")(function* startAuthor
 });
 
 const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   wiki: Readonly<BrowserClient>,
   oauthQuery: string,
 ) {

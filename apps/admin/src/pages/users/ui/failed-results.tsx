@@ -1,10 +1,11 @@
 import { Button, Status } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-function FailedResults({
+const FailedResults = ({
   message,
   onReload,
-}: Readonly<{ message: string; onReload: () => void }>): ReactElement {
+}: Readonly<{ message: string; onReload: () => void }>): ReactElement => {
   return (
     <div className="flex flex-col items-start gap-2">
       <Status variant="error">一覧を取得できませんでした。{message}</Status>
@@ -13,6 +14,6 @@ function FailedResults({
       </Button>
     </div>
   );
-}
+};
 
 export { FailedResults };

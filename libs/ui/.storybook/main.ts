@@ -1,12 +1,12 @@
-import type { InlineConfig } from "vite-plus";
-import type { StorybookConfig } from "@storybook/react-vite";
-import { reactCompiler } from "@template/config/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { reactCompiler } from "@template/config/vite";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function withAppTransforms(config: InlineConfig): InlineConfig {
+import type { StorybookConfig } from "@storybook/react-vite";
+import type { InlineConfig } from "vite-plus";
+
+const withAppTransforms = (config: InlineConfig): InlineConfig => {
   return { ...config, plugins: [...(config.plugins ?? []), tailwindcss(), reactCompiler()] };
-}
+};
 
 const config: StorybookConfig = {
   addons: ["@storybook/addon-a11y", "@storybook/addon-vitest", "@storybook/addon-mcp"],
@@ -18,5 +18,4 @@ const config: StorybookConfig = {
   viteFinal: withAppTransforms,
 };
 
-// oxlint-disable-next-line import/no-default-export
 export default config;

@@ -1,7 +1,8 @@
 import { Page, TextLink } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-function ProfileMissing(): ReactElement {
+const ProfileMissing = (): ReactElement => {
   return (
     <Page title="利用者が見つかりません">
       <p className="text-base leading-normal">
@@ -10,6 +11,6 @@ function ProfileMissing(): ReactElement {
       <TextLink to="/users">ユーザーを探す</TextLink>
     </Page>
   );
-}
+};
 
 export { ProfileMissing };

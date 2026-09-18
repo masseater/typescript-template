@@ -1,12 +1,14 @@
-import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 import { Effect, Schema } from "effect";
-import { ConfigurationInvalid } from "./configuration-invalid.ts";
-import { loopbackHosts } from "./applications.ts";
 
-interface AssetFetcher {
+import { loopbackHosts } from "./applications.ts";
+import { ConfigurationInvalid } from "./configuration-invalid.ts";
+
+import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
+
+type AssetFetcher = {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
-}
+};
 
 const minimumAuthSecretLength = 32;
 
@@ -24,10 +26,10 @@ const localRelease = Effect.succeed("local");
 const withRelease = Release.pipe(Schema.withDecodingDefaultKey(localRelease));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 
-function bindingWith<Binding>(
+const bindingWith = <Binding>(
   name: string,
   methods: readonly string[],
-): Schema.declare<Binding, Binding> {
+): Schema.declare<Binding, Binding> => {
   return Schema.declare(
     (value: unknown): value is Binding =>
       typeof value === "object" &&
@@ -35,7 +37,7 @@ function bindingWith<Binding>(
       methods.every((method) => typeof Reflect.get(value, method) === "function"),
     { expected: name },
   );
-}
+};
 
 const Scalars = Schema.Struct({
   APP_ORIGIN: Origin,
@@ -56,35 +58,34 @@ const AiBindings = Schema.Struct({
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
 });
 
-function isLocalDevelopmentOrigin(value: string): boolean {
+const isLocalDevelopmentOrigin = (value: string): boolean => {
   const url = URL.parse(value);
   return (
     url !== null &&
     (loopbackHosts.includes(url.hostname) ||
       (url.protocol === "https:" && /^[a-z0-9-]+\.local$/u.test(url.hostname)))
   );
-}
+};
 
-function invalid(reason: string): ConfigurationInvalid {
+const invalid = (reason: string): ConfigurationInvalid => {
   return new ConfigurationInvalid({ reason });
-}
+};
 
-function decode<Decoded extends Schema.Top & { readonly DecodingServices: never }>(
+const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never }>(
   schema: Decoded,
   input: unknown,
-): Effect.Effect<Decoded["Type"], ConfigurationInvalid> {
+): Effect.Effect<Decoded["Type"], ConfigurationInvalid> => {
   return Schema.decodeUnknownEffect(schema)(input).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((issue) => invalid(issue.message)),
   );
-}
+};
 
-function requireSecureOrigin(origin: string): Effect.Effect<void, ConfigurationInvalid> {
+const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationInvalid> => {
   const url = new URL(origin);
   return url.protocol === "https:" || loopbackHosts.includes(url.hostname)
     ? Effect.void
     : Effect.fail(invalid("HTTPS is required outside localhost"));
-}
+};
 
 const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
   const scalars = yield* decode(Scalars, input);

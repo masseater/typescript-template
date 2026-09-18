@@ -1,3 +1,10 @@
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { failure } from "./failure.ts";
+import { browserLaunchArguments } from "./lan-gateway.ts";
 import {
   browserConfig,
   lanOrigin,
@@ -6,22 +13,16 @@ import {
   root,
   run,
 } from "./local-environment.ts";
-import type { App } from "./local-environment.ts";
-import { Effect } from "effect";
-import { browserLaunchArguments } from "./lan-gateway.ts";
-import { failure } from "./failure.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
 
-interface BrowserReport {
+import type { App } from "./local-environment.ts";
+
+type BrowserReport = {
   readonly event: "local.browser_opened";
   readonly ok: true;
   readonly origin: string;
   readonly secretsPrinted: false;
   readonly session: string;
-}
+};
 
 type ChildExit =
   | { readonly started: false }
@@ -29,9 +30,9 @@ type ChildExit =
 
 const FAILED_EXIT_CODE = 1;
 
-function sessionName(app: App): string {
+const sessionName = (app: App): string => {
   return `template-local-${app}`;
-}
+};
 
 const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(app: App) {
   return [
@@ -46,7 +47,7 @@ const sessionArguments = Effect.fn("sessionArguments")(function* sessionArgument
 const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app);
-  // oxlint-disable-next-line node/no-process-env
+
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...args, "open", `${lanOrigin(app)}${readyPaths[app]}`], {
     cwd: root,
@@ -62,11 +63,11 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   return report;
 });
 
-function runBrowser(args: readonly string[], socketDirectory: string): Effect.Effect<ChildExit> {
+const runBrowser = (args: readonly string[], socketDirectory: string): Effect.Effect<ChildExit> => {
   return Effect.callback<ChildExit>((resume) => {
     const child = spawn("agent-browser", [...args], {
       cwd: root,
-      // oxlint-disable-next-line node/no-process-env
+
       env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
       stdio: "inherit",
     });
@@ -82,7 +83,7 @@ function runBrowser(args: readonly string[], socketDirectory: string): Effect.Ef
       }
     });
   });
-}
+};
 
 const browserCommand = Effect.fn("browserCommand")(function* browserCommand(
   app: App,

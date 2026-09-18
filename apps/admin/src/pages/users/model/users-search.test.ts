@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vite-plus/test";
-import { normalizeUsersSearch, userListQuery } from "./users-search.ts";
 import { maximumKeywordLength } from "@template/runtime/contracts";
+import { describe, expect, it } from "vite-plus/test";
+
 import { maximumUsersPage } from "./users-pagination.ts";
+import { normalizeUsersSearch, userListQuery } from "./users-search.ts";
 
 const numericKeyword = 2026;
 

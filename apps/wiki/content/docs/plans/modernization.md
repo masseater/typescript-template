@@ -11,30 +11,29 @@ TanStack Start、Elysia、Effect v4 を土台にし、Cloudflare 上で動かし
 
 ## 現在の構成から置き換えるもの
 
-| 置き換え前       | 置き換え先     | 置き換える理由                                                                                     | 状況                                                           |
-| ---------------- | -------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Pulumi           | Alchemy v2     | Cloudflare のリソース定義と、そのリソースを使うアプリのコードを 1 つの Effect プログラムに書けます | 導入済み                                                       |
-| valibot、zod     | Effect Schema  | 検証とシリアライズのスキーマを Effect の型に揃えます                                               | 一部。zod が fumadocs の要求する依存として wiki に残っています |
-| Drizzle ORM 0.45 | Drizzle ORM v1 | `drizzle-orm/effect-schema` で DB スキーマから Effect Schema を作れます                            | 導入済み                                                       |
+| 置き換え前 | 置き換え先 | 置き換える理由 | 状況 |
+| --- | --- | --- | --- |
+| Pulumi | Alchemy v2 | Cloudflare のリソース定義と、そのリソースを使うアプリのコードを 1 つの Effect プログラムに書けます | 導入済み |
+| valibot、zod | Effect Schema | 検証とシリアライズのスキーマを Effect の型に揃えます | 一部。zod が fumadocs の要求する依存として wiki に残っています |
+| Drizzle ORM 0.45 | Drizzle ORM v1 | `drizzle-orm/effect-schema` で DB スキーマから Effect Schema を作れます | 導入済み |
 
 ## 基盤
 
-| 優先度 | 採用するもの                   | 役割                                                                                                                      | 状況                                                                                  |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 前提   | TanStack Start                 | フルスタックのフレームワークです                                                                                          | 導入済み                                                                              |
-| 前提   | Elysia                         | 外部に公開する HTTP API を担います。Cloudflare アダプタは experimental で、OpenAPI の型生成と静的ファイル配信は使えません | 導入済み                                                                              |
-| 前提   | Effect v4                      | エラー、依存注入、並行処理を型で扱います                                                                                  | 導入済み                                                                              |
-| ★5     | React 19 と React Compiler     | 手作業のメモ化をなくします                                                                                                | 導入済み                                                                              |
-| ★5     | TypeScript 7                   | 型検査を高速化します                                                                                                      | 導入済み                                                                              |
-| ★5     | Vite+（Oxlint、Oxfmt、Vitest） | lint、format、test、ビルドをまとめて担います                                                                              | 導入済み                                                                              |
-| ★5     | pnpm workspaces                | モノレポを管理します                                                                                                      | 導入済み                                                                              |
-| ★5     | Effect Schema                  | スキーマを 1 つに揃えます                                                                                                 | 導入済み                                                                              |
-| ★5     | Better Auth                    | 認証を担います                                                                                                            | 導入済み                                                                              |
-| ★5     | Drizzle ORM v1                 | D1 と Durable Objects の SQLite の両方に対応したドライバを持ちます                                                        | 導入済み                                                                              |
-| ★4     | Varlock                        | 環境変数の契約を型付きで検査します                                                                                        | 採用しない。理由: 契約の正本を 1 つにできず、Effect Schema による検証と二重になります |
+| 優先度 | 採用するもの | 役割 | 状況 |
+| --- | --- | --- | --- |
+| 前提 | TanStack Start | フルスタックのフレームワークです | 導入済み |
+| 前提 | Elysia | 外部に公開する HTTP API を担います。Cloudflare アダプタは experimental で、OpenAPI の型生成と静的ファイル配信は使えません | 導入済み |
+| 前提 | Effect v4 | エラー、依存注入、並行処理を型で扱います | 導入済み |
+| ★5 | React 19 と React Compiler | 手作業のメモ化をなくします | 導入済み |
+| ★5 | TypeScript 7 | 型検査を高速化します | 導入済み |
+| ★5 | Vite+（Oxlint、Oxfmt、Vitest） | lint、format、test、ビルドをまとめて担います | 導入済み |
+| ★5 | pnpm workspaces | モノレポを管理します | 導入済み |
+| ★5 | Effect Schema | スキーマを 1 つに揃えます | 導入済み |
+| ★5 | Better Auth | 認証を担います | 導入済み |
+| ★5 | Drizzle ORM v1 | D1 と Durable Objects の SQLite の両方に対応したドライバを持ちます | 導入済み |
+| ★4 | Varlock | 環境変数の契約を型付きで検査します | 採用しない。理由: 契約の正本を 1 つにできず、Effect Schema による検証と二重になります |
 
-ORM は Prisma と Kysely も比べたうえで Drizzle にしました。
-Prisma 8 では SQLite が experimental で、Prisma 7 はバンドルが約 1.6MB あります。Kysely は Effect v4 で公式の連携が削除され、D1 と Durable Objects のドライバもサードパーティ製です。
+ORM は Prisma と Kysely も比べたうえで Drizzle にしました。Prisma 8 では SQLite が experimental で、Prisma 7 はバンドルが約 1.6MB あります。Kysely は Effect v4 で公式の連携が削除され、D1 と Durable Objects のドライバもサードパーティ製です。
 
 Varlock は採用しません。契約の正本を 1 つにできないからです。
 
@@ -46,40 +45,39 @@ Worker が実行時に受け取るのは文字列だけではなく、D1、メ�
 
 ## Cloudflare
 
-| 優先度 | 採用するもの                 | 役割                                                                                                      | 状況                                                                                     |
-| ------ | ---------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| ★5     | `@cloudflare/vite-plugin`    | TanStack Start を開発中から workerd 上で動かします                                                        | 導入済み                                                                                 |
-| ★5     | `@cloudflare/vitest-plugin`  | 本物の D1 と Durable Objects を相手にテストします（`@cloudflare/vitest-pool-workers` の改名後の名前です） | 導入済み                                                                                 |
-| ★5     | D1                           | 共有データを保存します。トランザクションがないので、まとめて書き込むときは Drizzle の `batch` を使います  | 導入済み                                                                                 |
-| ★5     | Durable Objects（SQLite）    | ユーザー単位の状態を持ち、通知や新着投稿を WebSocket で届けます                                           | 一部。監視 Worker の状態を持つ Durable Object だけがあり、WebSocket の配信は残っています |
-| ★5     | Cloudflare Flagship          | OpenFeature のプロバイダです。サーバー側で評価した値をローダーで画面に渡します                            | 未着手                                                                                   |
-| ★5     | Alchemy v2                   | IaC です                                                                                                  | 導入済み                                                                                 |
-| ★4     | Cloudflare Workflows V2      | 途中で落ちても再開できる多段処理を担います                                                                | 未着手                                                                                   |
-| ★4     | Queues                       | 非同期処理のキューです                                                                                    | 未着手                                                                                   |
-| ★4     | R2                           | 投稿画像などのファイルを保存します                                                                        | 未着手                                                                                   |
-| ★4     | Workers の OTLP エクスポート | Workers のトレースとログを外部に送ります                                                                  | 未着手                                                                                   |
-| ★4     | effect-cf                    | Cloudflare の binding を Effect の Layer として扱います                                                   | 未着手                                                                                   |
-| ★3     | KV                           | セッションなど、読み込みの多いデータをキャッシュします                                                    | 未着手                                                                                   |
-| ★2     | Containers                   | Workers で動かないネイティブ依存の処理を逃がします                                                        | 未着手                                                                                   |
+| 優先度 | 採用するもの | 役割 | 状況 |
+| --- | --- | --- | --- |
+| ★5 | `@cloudflare/vite-plugin` | TanStack Start を開発中から workerd 上で動かします | 導入済み |
+| ★5 | `@cloudflare/vitest-plugin` | 本物の D1 と Durable Objects を相手にテストします（`@cloudflare/vitest-pool-workers` の改名後の名前です） | 導入済み |
+| ★5 | D1 | 共有データを保存します。トランザクションがないので、まとめて書き込むときは Drizzle の `batch` を使います | 導入済み |
+| ★5 | Durable Objects（SQLite） | ユーザー単位の状態を持ち、通知や新着投稿を WebSocket で届けます | 一部。監視 Worker の状態を持つ Durable Object だけがあり、WebSocket の配信は残っています |
+| ★5 | Cloudflare Flagship | OpenFeature のプロバイダです。サーバー側で評価した値をローダーで画面に渡します | 未着手 |
+| ★5 | Alchemy v2 | IaC です | 導入済み |
+| ★4 | Cloudflare Workflows V2 | 途中で落ちても再開できる多段処理を担います | 未着手 |
+| ★4 | Queues | 非同期処理のキューです | 未着手 |
+| ★4 | R2 | 投稿画像などのファイルを保存します | 未着手 |
+| ★4 | Workers の OTLP エクスポート | Workers のトレースとログを外部に送ります | 未着手 |
+| ★4 | effect-cf | Cloudflare の binding を Effect の Layer として扱います | 未着手 |
+| ★3 | KV | セッションなど、読み込みの多いデータをキャッシュします | 未着手 |
+| ★2 | Containers | Workers で動かないネイティブ依存の処理を逃がします | 未着手 |
 
 ## TanStack 系
 
-| 優先度 | 採用するもの      | 役割                                                                                                                     | 状況   |
-| ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------ | ------ |
-| ★5     | TanStack Query    | サーバーデータの取得とキャッシュを担います                                                                               | 未着手 |
-| ★5     | TanStack DB       | いいねやコメントを楽観的に更新し、同じデータを表示している全箇所へ即座に反映します。同期には Query collection を使います | 未着手 |
-| ★5     | TanStack Virtual  | 無限スクロールのフィードを描画します                                                                                     | 未着手 |
-| ★5     | TanStack Form     | フォームの状態と検証を担い、Effect Schema をそのまま渡します                                                             | 未着手 |
-| ★5     | TanStack Table v9 | 表のロジックを担います                                                                                                   | 未着手 |
-| ★5     | TanStack Devtools | 各ライブラリの devtools を 1 つのパネルにまとめます                                                                      | 未着手 |
-| ★3     | TanStack Pacer    | debounce、throttle、rate limit を担います                                                                                | 未着手 |
+| 優先度 | 採用するもの | 役割 | 状況 |
+| --- | --- | --- | --- |
+| ★5 | TanStack Query | サーバーデータの取得とキャッシュを担います | 未着手 |
+| ★5 | TanStack DB | いいねやコメントを楽観的に更新し、同じデータを表示している全箇所へ即座に反映します。同期には Query collection を使います | 未着手 |
+| ★5 | TanStack Virtual | 無限スクロールのフィードを描画します | 未着手 |
+| ★5 | TanStack Form | フォームの状態と検証を担い、Effect Schema をそのまま渡します | 未着手 |
+| ★5 | TanStack Table v9 | 表のロジックを担います | 未着手 |
+| ★5 | TanStack Devtools | 各ライブラリの devtools を 1 つのパネルにまとめます | 未着手 |
+| ★3 | TanStack Pacer | debounce、throttle、rate limit を担います | 未着手 |
 
 ## フロントエンド
 
 user アプリは業務アプリではなく、Facebook のような SNS の画面を想定します。
 
-フロントを含むアプリは [Feature-Sliced Design](https://fsd.how/ja/docs/get-started/overview/) で構成し、層の境界を [steiger](https://github.com/feature-sliced/steiger) で検査します。
-TanStack Start のルートファイルは app 層の薄いアダプタにとどめ、画面は pages 層に置きます。
+フロントを含むアプリは [Feature-Sliced Design](https://fsd.how/ja/docs/get-started/overview/) で構成し、層の境界を [steiger](https://github.com/feature-sliced/steiger) で検査します。TanStack Start のルートファイルは app 層の薄いアダプタにとどめ、画面は pages 層に置きます。
 
 導入済みです。user・admin・wiki の 3 アプリが層に分かれ、steiger の検査も 3 アプリすべてに掛かっています。
 
@@ -121,31 +119,31 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 
 ### その他のフロントエンドのライブラリ
 
-| 優先度 | 採用するもの                                       | 役割                                                     | 状況     |
-| ------ | -------------------------------------------------- | -------------------------------------------------------- | -------- |
-| ★5     | Paraglide JS                                       | i18n を担います。TanStack Start の公式サンプルがあります | 未着手   |
-| ★5     | `@smarthr/wareki`                                  | 和暦を変換します                                         | 未着手   |
-| ★5     | Storybook 10、`@storybook/addon-mcp`、Vitest addon | AI が部品を参照、再利用、テストできるようにします        | 導入済み |
-| ★4     | Storybook a11y addon（axe）                        | 描画結果の a11y 違反を検出します                         | 導入済み |
-| ★3     | `temporal-polyfill`                                | Safari でも Temporal を使えるようにします                | 未着手   |
-| ★2     | Motion                                             | アニメーションを担います                                 | 未着手   |
+| 優先度 | 採用するもの | 役割 | 状況 |
+| --- | --- | --- | --- |
+| ★5 | Paraglide JS | i18n を担います。TanStack Start の公式サンプルがあります | 未着手 |
+| ★5 | `@smarthr/wareki` | 和暦を変換します | 未着手 |
+| ★5 | Storybook 10、`@storybook/addon-mcp`、Vitest addon | AI が部品を参照、再利用、テストできるようにします | 導入済み |
+| ★4 | Storybook a11y addon（axe） | 描画結果の a11y 違反を検出します | 導入済み |
+| ★3 | `temporal-polyfill` | Safari でも Temporal を使えるようにします | 未着手 |
+| ★2 | Motion | アニメーションを担います | 未着手 |
 
 ## フィーチャーフラグ
 
-| 優先度 | 採用するもの                            | 役割                                               | 状況   |
-| ------ | --------------------------------------- | -------------------------------------------------- | ------ |
-| ★5     | `@openfeature/react-sdk` とサーバー SDK | フラグを評価し、値が変わると該当箇所を再描画します | 未着手 |
+| 優先度 | 採用するもの | 役割 | 状況 |
+| --- | --- | --- | --- |
+| ★5 | `@openfeature/react-sdk` とサーバー SDK | フラグを評価し、値が変わると該当箇所を再描画します | 未着手 |
 
 ## 品質と運用
 
-| 優先度 | 採用するもの                            | 役割                                               | 状況                                                                                  |
-| ------ | --------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| ★5     | Vitest browser mode と Playwright       | 実ブラウザでテストと E2E を実行します              | 一部。Storybook の部品のテストだけが実ブラウザで走り、アプリ全体の E2E は残っています |
-| ★5     | MSW                                     | 外部 HTTP だけを置き換えます                       | 導入済み                                                                              |
-| ★5     | knip                                    | 使われていない export や依存を検出します           | 導入済み                                                                              |
-| ★4     | Effect の OTLP 出力                     | Effect のスパンとログを OpenTelemetry で送ります   | 未着手                                                                                |
-| ★4     | Renovate と pnpm の `minimumReleaseAge` | 依存を更新し、公開直後のパッケージは取り込みません | 導入済み                                                                              |
-| ★3     | Scalar                                  | OpenAPI から API ドキュメントの画面を作ります      | 未着手                                                                                |
-| ★3     | dependency-cruiser                      | steiger で表せない import の制約を検出します       | 未着手                                                                                |
-| ★3     | k6                                      | 負荷試験を行います                                 | 未着手                                                                                |
-| ★2     | Stryker                                 | ミューテーションテストで、テストの検出力を測ります | 未着手                                                                                |
+| 優先度 | 採用するもの | 役割 | 状況 |
+| --- | --- | --- | --- |
+| ★5 | Vitest browser mode と Playwright | 実ブラウザでテストと E2E を実行します | 一部。Storybook の部品のテストだけが実ブラウザで走り、アプリ全体の E2E は残っています |
+| ★5 | MSW | 外部 HTTP だけを置き換えます | 導入済み |
+| ★5 | knip | 使われていない export や依存を検出します | 導入済み |
+| ★4 | Effect の OTLP 出力 | Effect のスパンとログを OpenTelemetry で送ります | 未着手 |
+| ★4 | Renovate と pnpm の `minimumReleaseAge` | 依存を更新し、公開直後のパッケージは取り込みません | 導入済み |
+| ★3 | Scalar | OpenAPI から API ドキュメントの画面を作ります | 未着手 |
+| ★3 | dependency-cruiser | steiger で表せない import の制約を検出します | 未着手 |
+| ★3 | k6 | 負荷試験を行います | 未着手 |
+| ★2 | Stryker | ミューテーションテストで、テストの検出力を測ります | 未着手 |

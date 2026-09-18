@@ -1,10 +1,12 @@
-import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
-import { fail, parseRemoteInput } from "./remote-input.ts";
 import { Effect } from "effect";
+
 import { remoteExecutor } from "./remote-http.ts";
+import { fail, parseRemoteInput } from "./remote-input.ts";
+import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
+
+type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
 type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
-type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
 interface PlanReport {
   readonly databaseId: string;
@@ -15,8 +17,7 @@ interface PlanReport {
   readonly remoteStateVerified: false;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function planReport({ operation, target }: RemoteInput, migrations: Migrations): PlanReport {
+const planReport = ({ operation, target }: RemoteInput, migrations: Migrations): PlanReport => {
   return {
     databaseId: target.databaseId,
     event: "database.remote_plan",
@@ -25,10 +26,9 @@ function planReport({ operation, target }: RemoteInput, migrations: Migrations):
     operation,
     remoteStateVerified: false,
   };
-}
+};
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   { operation, target }: RemoteInput,
   migrations: Migrations,
 ) {

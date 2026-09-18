@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { errorAttributes, errorFingerprint } from "./errors.ts";
 
 const deepFrames = 6;
 const fingerprintPattern = /^[0-9a-f]{8}$/u;
 
-function fingerprintOf(error: unknown): string {
+const fingerprintOf = (error: unknown): string => {
   return errorAttributes(error)["error.fingerprint"];
-}
+};
 
 describe("error attributes", () => {
   it("keeps useful error locations without messages, arguments or local directory names", () => {

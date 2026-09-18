@@ -1,14 +1,15 @@
 import { MFASettings } from "./mfa";
 import { Page } from "./shared/ui/page";
-import type { ReactElement } from "react";
-import { SignOutButton } from "./sign-out-button";
 import { Status } from "./shared/ui/status";
+import { SignOutButton } from "./sign-out-button";
 import { useSession } from "./use-session";
 
-function SecurityPage({
+import type { ReactElement } from "react";
+
+const SecurityPage = ({
   signedOutPath,
   title,
-}: Readonly<{ signedOutPath?: string; title: string }>): ReactElement {
+}: Readonly<{ signedOutPath?: string; title: string }>): ReactElement => {
   const { session, loading, error } = useSession();
   return (
     <Page title={title}>
@@ -23,6 +24,6 @@ function SecurityPage({
       {(error ?? "") !== "" && <Status variant="error">{error}</Status>}
     </Page>
   );
-}
+};
 
 export { SecurityPage };

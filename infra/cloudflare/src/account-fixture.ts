@@ -1,17 +1,16 @@
-import { HttpResponse, http } from "msw";
-import { Effect } from "effect";
-import type { HttpResponseResolver } from "msw";
-import type { Scope } from "effect";
-import type { SetupServer } from "msw/node";
 import { assert } from "@effect/vitest";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 
-const INVALID_PAGE_SIZE_STATUS = 400;
+import type { Scope } from "effect";
+import type { HttpResponseResolver } from "msw";
+import type { SetupServer } from "msw/node";
 
-function mockServer(
+const mockServer = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> {
+): Effect.Effect<SetupServer, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const server = setupServer(...handlers);
@@ -24,15 +23,16 @@ function mockServer(
         server.close();
       }),
   );
-}
+};
 
-function pagedCollection(
+const INVALID_PAGE_SIZE_STATUS = 400;
+
+const pagedCollection = (
   url: string,
   limit: number,
   resolver: HttpResponseResolver,
-): ReturnType<typeof http.get> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  function guard(info: Parameters<HttpResponseResolver>[0]): ReturnType<HttpResponseResolver> {
+): ReturnType<typeof http.get> => {
+  const guard = (info: Parameters<HttpResponseResolver>[0]): ReturnType<HttpResponseResolver> => {
     const requested = new URL(info.request.url).searchParams.get("per_page");
     return requested !== null && Number(requested) > limit
       ? HttpResponse.json(
@@ -40,20 +40,19 @@ function pagedCollection(
           { status: INVALID_PAGE_SIZE_STATUS },
         )
       : resolver(info);
-  }
+  };
   return http.get(url, guard);
-}
+};
 
-function unpagedCollection(
+const unpagedCollection = (
   url: string,
   resolver: HttpResponseResolver,
-): ReturnType<typeof http.get> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  function guard(info: Parameters<HttpResponseResolver>[0]): ReturnType<HttpResponseResolver> {
+): ReturnType<typeof http.get> => {
+  const guard = (info: Parameters<HttpResponseResolver>[0]): ReturnType<HttpResponseResolver> => {
     assert.isNull(new URL(info.request.url).searchParams.get("per_page"));
     return resolver(info);
-  }
+  };
   return http.get(url, guard);
-}
+};
 
 export { mockServer, pagedCollection, unpagedCollection };

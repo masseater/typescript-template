@@ -1,24 +1,14 @@
 {
   "extends": "@template/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": [
-      "esnext",
-      "dom"
-    ],
+    "lib": ["esnext", "dom"],
     "jsx": "react-jsx",
-    "types": [
-      "vite-plus/client"
-    ],
+    "types": ["vite-plus/client"],
     "plugins": [
       {
         "name": "@effect/language-service"
       }
     ]
   },
-  "include": [
-    ".storybook/**/*.ts",
-    ".storybook/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx"
-  ]
+  "include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"]
 }

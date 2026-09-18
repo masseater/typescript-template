@@ -1,6 +1,6 @@
+import { setupNetwork } from "@msw/cloudflare";
 import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
-import { setupNetwork } from "@msw/cloudflare";
 
 const HTTP_BAD_REQUEST = 400;
 const mailConfig = { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: "http://127.0.0.1:8025" };
@@ -13,8 +13,7 @@ const MailpitMessage = Schema.Struct({
 const decodeMail = Schema.decodeUnknownPromise(MailpitMessage);
 const mailbox = new Map<string, string>();
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function receiveMail({ request }: { readonly request: Request }): Promise<Response> {
+const receiveMail = async ({ request }: { readonly request: Request }): Promise<Response> => {
   const message = await decodeMail(await request.json());
   const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
   if (
@@ -28,7 +27,7 @@ async function receiveMail({ request }: { readonly request: Request }): Promise<
     mailbox.set(recipient.Email, url);
   }
   return HttpResponse.json({ ID: crypto.randomUUID() });
-}
+};
 
 const mailServer = Layer.effectDiscard(
   Effect.acquireRelease(
@@ -40,7 +39,7 @@ const mailServer = Layer.effectDiscard(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (network) =>
       Effect.sync(() => {
         network.disable();

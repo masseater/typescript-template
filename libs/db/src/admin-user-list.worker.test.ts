@@ -1,10 +1,11 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { TestDatabase } from "./testing.ts";
-import { addSession } from "./records-fixture.ts";
+
 import { listUsers } from "./admin.ts";
 import { query } from "./database.ts";
+import { addSession } from "./records-fixture.ts";
 import { user } from "./schema.ts";
+import { TestDatabase } from "./testing.ts";
 
 const members = [
   {
@@ -44,7 +45,7 @@ const members = [
 const seedMembers = Effect.fn("seedMembers")(function* seedMembers() {
   for (const member of members) {
     const createdAt = new Date(member.createdAt);
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     yield* query(async (database): Promise<void> => {
       await database.insert(user).values({
         createdAt,
@@ -61,11 +62,11 @@ const seedMembers = Effect.fn("seedMembers")(function* seedMembers() {
   return yield* addSession("actor", "admin");
 });
 
-function listed(
+const listed = (
   page: Readonly<{ total: number; users: readonly Readonly<{ id: string }>[] }>,
-): Readonly<{ ids: readonly string[]; total: number }> {
+): Readonly<{ ids: readonly string[]; total: number }> => {
   return { ids: page.users.map((member) => member.id), total: page.total };
-}
+};
 
 it.effect("lists newest users first with the fields the admin table shows", () =>
   Effect.gen(function* program() {

@@ -1,14 +1,8 @@
 {
   "extends": "@template/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": [
-      "esnext"
-    ],
-    "types": [
-      "node"
-    ]
+    "lib": ["esnext"],
+    "types": ["node"]
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

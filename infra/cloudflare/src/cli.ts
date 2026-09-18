@@ -1,7 +1,8 @@
-import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { deploymentAccess } from "./deployment-access.ts";
+import { Effect } from "effect";
+
 import { parseDeploymentCommand } from "./config.ts";
+import { deploymentAccess } from "./deployment-access.ts";
 import { reportCause } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 
@@ -16,17 +17,7 @@ NodeRuntime.runMain(
       access,
       secrets,
       target: { accountId: config.accountId, prefix: config.prefix },
-    }).pipe(
-      Effect.catchCause(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (cause) => reportCause(EVENT, cause, confidential),
-      ),
-    );
-  }).pipe(
-    Effect.catchCause(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause(EVENT, cause),
-    ),
-  ),
+    }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)));
+  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
   { disableErrorReporting: true },
 );

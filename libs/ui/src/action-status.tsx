@@ -1,14 +1,15 @@
-import type { ActionState } from "./action";
-import type { ReactElement } from "react";
 import { Status } from "./shared/ui/status";
 
-interface ActionStatusProps {
+import type { ReactElement } from "react";
+import type { ActionState } from "./action";
+
+type ActionStatusProps = {
   readonly action: ActionState;
   readonly notice?: string | undefined;
   readonly pendingMessage?: string;
-}
+};
 
-function ActionStatus({ action, notice, pendingMessage }: ActionStatusProps): ReactElement {
+const ActionStatus = ({ action, notice, pendingMessage }: ActionStatusProps): ReactElement => {
   return (
     <>
       {action.pending && pendingMessage !== undefined && (
@@ -20,6 +21,6 @@ function ActionStatus({ action, notice, pendingMessage }: ActionStatusProps): Re
       )}
     </>
   );
-}
+};
 
 export { ActionStatus };

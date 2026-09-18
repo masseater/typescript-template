@@ -1,7 +1,8 @@
 import { Status, TableCell, TableRow } from "@template/ui";
+
 import type { ReactElement } from "react";
 
-function LoadingRow({ columnCount }: Readonly<{ columnCount: number }>): ReactElement {
+const LoadingRow = ({ columnCount }: Readonly<{ columnCount: number }>): ReactElement => {
   return (
     <TableRow>
       <TableCell colSpan={columnCount}>
@@ -9,6 +10,6 @@ function LoadingRow({ columnCount }: Readonly<{ columnCount: number }>): ReactEl
       </TableCell>
     </TableRow>
   );
-}
+};
 
 export { LoadingRow };

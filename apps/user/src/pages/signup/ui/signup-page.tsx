@@ -1,14 +1,13 @@
-import { CardPage } from "#shared/ui/index.ts";
-import type { ReactElement } from "react";
-import { SignUpForm } from "@template/ui/signup";
 import { TextLink } from "@template/ui";
+import { SignUpForm } from "@template/ui/signup";
 import { useState } from "react";
 
-function SignUpPage(): ReactElement {
+import { CardPage } from "#shared/ui/index.ts";
+
+import type { ReactElement } from "react";
+
+const SignUpPage = (): ReactElement => {
   const [sent, setSent] = useState(false);
-  function showSent(): void {
-    setSent(true);
-  }
   if (sent) {
     return (
       <CardPage title="確認メールを送りました">
@@ -19,6 +18,9 @@ function SignUpPage(): ReactElement {
       </CardPage>
     );
   }
+  const showSent = (): void => {
+    setSent(true);
+  };
   return (
     <CardPage title="新規登録">
       <SignUpForm onSent={showSent} />
@@ -27,6 +29,6 @@ function SignUpPage(): ReactElement {
       </p>
     </CardPage>
   );
-}
+};
 
 export { SignUpPage };

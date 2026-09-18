@@ -1,14 +1,16 @@
-import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
 import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
+import { query } from "./database.ts";
+import { parseRemoteInput } from "./remote-input.ts";
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
-import type { Database } from "./database.ts";
-import { Effect } from "effect";
-import type { RemoteFailure } from "./remote-input.ts";
-import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { getSessionSecurity } from "./security.ts";
-import { parseRemoteInput } from "./remote-input.ts";
-import { query } from "./database.ts";
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
+
+import type { Database } from "./database.ts";
+import type { RemoteFailure } from "./remote-input.ts";
 
 const HEX_ID_LENGTH = 32;
 const HASH_LENGTH = 64;
@@ -21,29 +23,26 @@ const target = {
 };
 const executeFlags = ["--execute", "--confirm-database"] as const;
 
-function code<Value, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const code = <Value, Requirements>(
   effect: Effect.Effect<Value, RemoteFailure, Requirements>,
-): Effect.Effect<RemoteFailure["code"], Value, Requirements> {
+): Effect.Effect<RemoteFailure["code"], Value, Requirements> => {
   return effect.pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((failure) => failure.code),
   );
-}
+};
 
-function tag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const tag = <Value, Failure extends { readonly _tag: string }, Requirements>(
   effect: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<string, Value, Requirements> {
+): Effect.Effect<string, Value, Requirements> => {
   return effect.pipe(
     Effect.flip,
     Effect.map((failure) => failure._tag),
   );
-}
+};
 
-function insertUser(id: string, verified: boolean): Effect.Effect<void, unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const insertUser = (id: string, verified: boolean): Effect.Effect<void, unknown, Database> => {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),
@@ -54,10 +53,9 @@ function insertUser(id: string, verified: boolean): Effect.Effect<void, unknown,
       updatedAt: new Date(),
     });
   });
-}
+};
 
-function insertSession(id: string, userId: string): Effect.Effect<void, unknown, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const insertSession = (id: string, userId: string): Effect.Effect<void, unknown, Database> => {
   return query(async (database): Promise<void> => {
     await database.insert(session).values({
       audience: "user",
@@ -71,7 +69,7 @@ function insertSession(id: string, userId: string): Effect.Effect<void, unknown,
       userId,
     });
   });
-}
+};
 
 it.effect("requires explicit execution and exact target confirmation", () =>
   Effect.gen(function* program() {

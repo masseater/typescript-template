@@ -1,4 +1,5 @@
 import { Effect, Schema } from "effect";
+
 import { EmailAddress } from "./bootstrap-statement.ts";
 
 const RemoteFailureCode = Schema.Literals([
@@ -18,18 +19,19 @@ class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure",
   code: RemoteFailureCode,
 }) {}
 
-function fail(code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> {
+const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> => {
   return Effect.fail(new RemoteFailure({ code }));
-}
+};
 
 const AccountId = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const DatabaseId = Schema.String.check(
   Schema.isUUID(),
   Schema.makeFilter((value: string) => !value.startsWith("00000000-")),
 );
-const MIN_API_TOKEN_LENGTH = 20;
 const PLAN_ARGUMENT_COUNT = 2;
 const EXECUTE_ARGUMENT_COUNT = 4;
+
+const MIN_API_TOKEN_LENGTH = 20;
 
 const ApiToken = Schema.String.check(
   Schema.isMinLength(MIN_API_TOKEN_LENGTH),

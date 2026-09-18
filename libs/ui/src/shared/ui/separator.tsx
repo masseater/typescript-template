@@ -1,7 +1,8 @@
-import type { ReactElement } from "react";
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
 
-function Separator({ label }: Readonly<{ label: string }>): ReactElement {
+import type { ReactElement } from "react";
+
+const Separator = ({ label }: Readonly<{ label: string }>): ReactElement => {
   return (
     <SeparatorPrimitive
       data-slot="separator"
@@ -10,6 +11,6 @@ function Separator({ label }: Readonly<{ label: string }>): ReactElement {
       {label}
     </SeparatorPrimitive>
   );
-}
+};
 
 export { Separator };

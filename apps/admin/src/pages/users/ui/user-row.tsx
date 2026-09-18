@@ -1,13 +1,15 @@
 import { TableCell, TableRow } from "@template/ui";
+
 import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
-import type { ReactElement } from "react";
 import { UserRowActions } from "./user-row-actions.tsx";
 
-function UserRow({
+import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ReactElement } from "react";
+
+const UserRow = ({
   onChanged,
   user,
-}: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
+}: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement => {
   return (
     <TableRow>
       <TableCell>{user.name}</TableCell>
@@ -23,6 +25,6 @@ function UserRow({
       </TableCell>
     </TableRow>
   );
-}
+};
 
 export { UserRow };

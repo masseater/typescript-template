@@ -1,8 +1,10 @@
-import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
-import type { FieldName, SheetData } from "./sheet.ts";
-import { roles, settledPhases } from "./state.ts";
-import type { InterviewState } from "./state.ts";
 import { Schema } from "effect";
+
+import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
+import { roles, settledPhases } from "./state.ts";
+
+import type { FieldName, SheetData } from "./sheet.ts";
+import type { InterviewState } from "./state.ts";
 
 const FieldView = Schema.Struct({
   key: FieldKey,
@@ -25,7 +27,7 @@ const InterviewView = Schema.Struct({
 type FieldViewData = typeof FieldView.Type;
 type InterviewViewData = typeof InterviewView.Type;
 
-function fieldViews(sheet: SheetData, skipped: readonly FieldName[]): readonly FieldViewData[] {
+const fieldViews = (sheet: SheetData, skipped: readonly FieldName[]): readonly FieldViewData[] => {
   return fieldKeys.map((key) => {
     const value = displayValue(sheet, key);
     const { label } = fieldDefinitions[key];
@@ -34,9 +36,9 @@ function fieldViews(sheet: SheetData, skipped: readonly FieldName[]): readonly F
     }
     return { key, label, status: skipped.includes(key) ? "skipped" : "unanswered" };
   });
-}
+};
 
-function viewOf(state: InterviewState): InterviewViewData {
+const viewOf = (state: InterviewState): InterviewViewData => {
   return {
     fields: fieldViews(state.sheet, state.skipped),
     messages: state.messages.map(({ card, role, text }) => ({
@@ -47,7 +49,7 @@ function viewOf(state: InterviewState): InterviewViewData {
     phase: state.phase,
     ...(state.phase === "asking" && state.reply !== undefined ? { reply: state.reply } : {}),
   };
-}
+};
 
 export { InterviewView, viewOf };
 export { Utterance } from "./state.ts";

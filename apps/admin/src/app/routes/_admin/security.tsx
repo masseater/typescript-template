@@ -1,6 +1,7 @@
-import type { ReactElement } from "react";
-import { SecurityPage } from "@template/ui/auth";
 import { createFileRoute } from "@tanstack/react-router";
+import { SecurityPage } from "@template/ui/auth";
+
+import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_admin/security")({
   component: (): ReactElement => <SecurityPage title="認証設定" />,

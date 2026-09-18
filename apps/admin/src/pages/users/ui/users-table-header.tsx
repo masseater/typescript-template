@@ -1,8 +1,10 @@
 import { TableHead, TableHeader, TableRow } from "@template/ui";
-import type { ReactElement } from "react";
+
 import { usersTableColumns } from "#pages/users/model/users-table-columns.ts";
 
-function UsersTableHeader(): ReactElement {
+import type { ReactElement } from "react";
+
+const UsersTableHeader = (): ReactElement => {
   return (
     <TableHeader>
       <TableRow>
@@ -12,6 +14,6 @@ function UsersTableHeader(): ReactElement {
       </TableRow>
     </TableHeader>
   );
-}
+};
 
 export { UsersTableHeader };

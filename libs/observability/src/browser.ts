@@ -1,4 +1,8 @@
-import type { Correlation, HttpMethod } from "./protocol.ts";
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
+
+import { BrowserEventQueue } from "./browser-queue.ts";
+import { errorAttributes } from "./errors.ts";
+import { maximumMeasurement } from "./events.ts";
 import {
   httpMethod,
   isRequestId,
@@ -9,34 +13,32 @@ import {
   spanIdBytes,
   traceIdBytes,
 } from "./protocol.ts";
-import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
-import type { BrowserEvent } from "./events.ts";
-import { BrowserEventQueue } from "./browser-queue.ts";
-import type { EventQueue } from "./browser-queue.ts";
-import type { Metric } from "web-vitals";
-import { errorAttributes } from "./errors.ts";
-import { maximumMeasurement } from "./events.ts";
 
-interface BrowserTelemetryOptions {
+import type { Metric } from "web-vitals";
+import type { EventQueue } from "./browser-queue.ts";
+import type { BrowserEvent } from "./events.ts";
+import type { Correlation, HttpMethod } from "./protocol.ts";
+
+type BrowserTelemetryOptions = {
   readonly endpoint: "/api/telemetry";
   readonly routes: Readonly<Record<string, string>>;
-}
-interface BrowserTelemetry {
+};
+type BrowserTelemetry = {
   readonly dispose: () => void;
   readonly flush: () => Promise<void>;
-}
-interface Recorder {
+};
+type Recorder = {
   readonly documentContext: Correlation;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
-}
-interface FetchInstrumentation {
+};
+type FetchInstrumentation = {
   readonly endpoint: string;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
   readonly send: typeof fetch;
-}
-interface HttpObservation {
+};
+type HttpObservation = {
   readonly duration: number;
   readonly method: HttpMethod;
   readonly requestId: string;
@@ -45,16 +47,17 @@ interface HttpObservation {
   readonly start: number;
   readonly status: number;
   readonly traceId: string;
-}
+};
 
-const exportTimeoutMilliseconds = 5000;
 const flushIntervalMilliseconds = 3000;
 
-async function deliverEvents(
+const exportTimeoutMilliseconds = 5000;
+
+const deliverEvents = async (
   send: typeof fetch,
   endpoint: string,
   events: readonly BrowserEvent[],
-): Promise<void> {
+): Promise<void> => {
   const response = await send(endpoint, {
     body: JSON.stringify(events),
     credentials: "same-origin",
@@ -68,31 +71,30 @@ async function deliverEvents(
   if (!response.ok) {
     throw new Error(`Browser telemetry rejected (${response.status})`);
   }
-}
+};
 
-function httpEvent(observation: HttpObservation): BrowserEvent {
+const httpEvent = (observation: HttpObservation): BrowserEvent => {
   return { ...observation, kind: "http", name: "http.client.request", value: 0 };
-}
+};
 
-function elapsed(timer: number): number {
+const elapsed = (timer: number): number => {
   return Math.min(performance.now() - timer, maximumMeasurement);
-}
+};
 
-function responseOutcome(
+const responseOutcome = (
   response: Readonly<Pick<Response, "status">> & {
     readonly headers: Readonly<Pick<Headers, "get">>;
   },
   fallbackRequestId: string,
-): Pick<BrowserEvent, "requestId" | "status"> {
+): Pick<BrowserEvent, "requestId" | "status"> => {
   const serverRequestId = response.headers.get("x-request-id");
   return {
     requestId: isRequestId(serverRequestId) ? serverRequestId : fallbackRequestId,
     status: response.status,
   };
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function tracedFetch(setup: FetchInstrumentation, request: Request): Promise<Response> {
+const tracedFetch = async (setup: FetchInstrumentation, request: Request): Promise<Response> => {
   const timer = performance.now();
   const span = {
     spanId: randomHex(spanIdBytes),
@@ -117,16 +119,15 @@ async function tracedFetch(setup: FetchInstrumentation, request: Request): Promi
       }),
     );
   }
-}
+};
 
-function patchFetch(setup: FetchInstrumentation): () => void {
+const patchFetch = (setup: FetchInstrumentation): (() => void) => {
   const originalFetch = globalThis.fetch;
-  async function instrumentedFetch(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  const instrumentedFetch = async (
     input: RequestInfo | URL,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     init?: RequestInit,
-  ): Promise<Response> {
+  ): Promise<Response> => {
     const url = new URL(
       input instanceof Request ? input.url : String(input),
       globalThis.location.href,
@@ -135,18 +136,18 @@ function patchFetch(setup: FetchInstrumentation): () => void {
       return setup.send(input, init);
     }
     return tracedFetch(setup, new Request(input instanceof Request ? input : url, init));
-  }
+  };
   globalThis.fetch = instrumentedFetch;
   return () => {
     if (globalThis.fetch === instrumentedFetch) {
       globalThis.fetch = originalFetch;
     }
   };
-}
+};
 
-function documentFields(
+const documentFields = (
   recorder: Recorder,
-): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> {
+): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> => {
   return {
     ...recorder.documentContext,
     duration: 0,
@@ -156,13 +157,13 @@ function documentFields(
     start: Date.now(),
     status: 0,
   };
-}
+};
 
-function recordException(
+const recordException = (
   recorder: Recorder,
   name: "browser.error" | "browser.unhandledrejection",
   error: unknown,
-): void {
+): void => {
   const attributes = errorAttributes(error);
   recorder.queue.enqueue({
     ...documentFields(recorder),
@@ -173,24 +174,24 @@ function recordException(
     value: 1,
   });
   recorder.queue.flushInBackground();
-}
+};
 
-function listen(recorder: Recorder): () => void {
+const listen = (recorder: Recorder): (() => void) => {
   const { queue } = recorder;
-  function errorListener(event: Readonly<Pick<ErrorEvent, "error">>): void {
-    recordException(recorder, "browser.error", event.error);
-  }
-  function rejectionListener(event: Readonly<Pick<PromiseRejectionEvent, "reason">>): void {
+  const rejectionListener = (event: Readonly<Pick<PromiseRejectionEvent, "reason">>): void => {
     recordException(recorder, "browser.unhandledrejection", event.reason);
-  }
-  function visibilityListener(): void {
+  };
+  const visibilityListener = (): void => {
     if (document.visibilityState === "hidden") {
       queue.flushBeforeUnload();
     }
-  }
-  function pageHideListener(): void {
+  };
+  const pageHideListener = (): void => {
     queue.flushBeforeUnload();
-  }
+  };
+  const errorListener = (event: Readonly<Pick<ErrorEvent, "error">>): void => {
+    recordException(recorder, "browser.error", event.error);
+  };
   globalThis.addEventListener("error", errorListener);
   globalThis.addEventListener("unhandledrejection", rejectionListener);
   globalThis.addEventListener("pagehide", pageHideListener);
@@ -201,10 +202,10 @@ function listen(recorder: Recorder): () => void {
     globalThis.removeEventListener("pagehide", pageHideListener);
     document.removeEventListener("visibilitychange", visibilityListener);
   };
-}
+};
 
-function observeVitals(recorder: Recorder): void {
-  function recordVital(metric: Readonly<Pick<Metric, "name" | "value">>): void {
+const observeVitals = (recorder: Recorder): void => {
+  const recordVital = (metric: Readonly<Pick<Metric, "name" | "value">>): void => {
     const value = Math.min(Math.max(metric.value, 0), maximumMeasurement);
     recorder.queue.enqueue({
       ...documentFields(recorder),
@@ -215,21 +216,21 @@ function observeVitals(recorder: Recorder): void {
     if (!recorder.queue.disposed) {
       recorder.queue.flushInBackground();
     }
-  }
+  };
   onCLS(recordVital, { reportAllChanges: true });
   onFCP(recordVital);
   onINP(recordVital, { reportAllChanges: true });
   onLCP(recordVital, { reportAllChanges: true });
   onTTFB(recordVital);
-}
+};
 
-function assertRoutes(routes: Readonly<Record<string, string>>): void {
+const assertRoutes = (routes: Readonly<Record<string, string>>): void => {
   if (!isRoutes(routes)) {
     throw new Error(routeMessage);
   }
-}
+};
 
-function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetry {
+const initBrowserTelemetry = (options: BrowserTelemetryOptions): BrowserTelemetry => {
   assertRoutes(options.routes);
   const { endpoint, routes } = options;
   const send = globalThis.fetch.bind(globalThis);
@@ -263,6 +264,6 @@ function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetr
       await queue.flush();
     },
   };
-}
+};
 
 export { initBrowserTelemetry };

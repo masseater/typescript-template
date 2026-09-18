@@ -1,10 +1,12 @@
-import type { SubmitEventHandler } from "react";
-import type { UsersSearch } from "./users-search.ts";
-import { normalizeUsersSearch } from "./users-search.ts";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-interface UserFilterForm {
+import { normalizeUsersSearch } from "./users-search.ts";
+
+import type { SubmitEventHandler } from "react";
+import type { UsersSearch } from "./users-search.ts";
+
+type UserFilterForm = {
   readonly handleClear: () => void;
   readonly handleKeywordChange: (value: string) => void;
   readonly handleRoleChange: (role: string) => void;
@@ -13,22 +15,22 @@ interface UserFilterForm {
   readonly keyword: string;
   readonly role: string;
   readonly verified: string;
-}
+};
 
-function useUserFilterForm(search: UsersSearch): UserFilterForm {
+const useUserFilterForm = (search: UsersSearch): UserFilterForm => {
   const navigate = useNavigate({ from: "/" });
   const [keyword, setKeyword] = useState(search.keyword ?? "");
   const [role, setRole] = useState<string>(search.role ?? "");
   const [verified, setVerified] = useState<string>(
     search.verified === undefined ? "" : String(search.verified),
   );
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
+  const handleSubmit = (event: Readonly<{ preventDefault: () => void }>): void => {
     event.preventDefault();
     void navigate({ search: normalizeUsersSearch({ keyword, role, verified }) });
-  }
-  function handleClear(): void {
+  };
+  const handleClear = (): void => {
     void navigate({ search: {} });
-  }
+  };
   return {
     handleClear,
     handleKeywordChange: setKeyword,
@@ -39,6 +41,6 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
     role,
     verified,
   };
-}
+};
 
 export { useUserFilterForm };

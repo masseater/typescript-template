@@ -1,19 +1,19 @@
 import { APIError } from "better-auth/api";
+import { Effect } from "effect";
+
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
-import { Auth } from "./auth.ts";
 import { AuthFailure } from "./auth-failure.ts";
-import type { BetterAuthInstance } from "./create-auth.ts";
-import { Effect } from "effect";
+import { Auth } from "./auth.ts";
 import { EmailVerificationFailed } from "./email-verification-failed.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 
-const tooManyRequests = 429;
+import type { BetterAuthInstance } from "./create-auth.ts";
 
-function authPromise<Value>(
+const authPromise = <Value>(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   run: (instance: BetterAuthInstance) => Promise<Value>,
-): Effect.Effect<Value, AuthFailure, Auth> {
+): Effect.Effect<Value, AuthFailure, Auth> => {
   return Effect.gen(function* authPromiseProgram() {
     const { instance } = yield* Auth;
     return yield* Effect.tryPromise({
@@ -21,12 +21,12 @@ function authPromise<Value>(
       try: async () => run(instance),
     });
   });
-}
+};
 
-function classifyDenial(
+const classifyDenial = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   failure: AuthFailure,
-): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired {
+): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired => {
   const denial = failure.cause instanceof APIError ? failure.cause.body?.message : undefined;
   if (denial === "SESSION_INVALID") {
     return new SessionInvalid();
@@ -35,33 +35,35 @@ function classifyDenial(
     return new AdminRequired();
   }
   return denial === "ADMIN_MFA_REQUIRED" ? new AdminMfaRequired() : failure;
-}
+};
 
 type AuthSession = Awaited<ReturnType<BetterAuthInstance["api"]["getSession"]>>;
 
-function authSession(
+const authSession = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   headers: Headers,
 ): Effect.Effect<
   AuthSession,
   AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired,
   Auth
-> {
+> => {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return authPromise(async (instance): Promise<AuthSession> =>
     instance.api.getSession({ headers, query: { disableCookieCache: true } }),
   ).pipe(Effect.mapError(classifyDenial));
-}
+};
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function handleAuthRequest(request: Request): Effect.Effect<Response, AuthFailure, Auth> {
+const handleAuthRequest = (request: Request): Effect.Effect<Response, AuthFailure, Auth> => {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return authPromise(async (instance) => instance.handler(request));
-}
+};
+
+const tooManyRequests = 429;
 
 const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToken(
   token: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   headers: Headers,
 ) {
   const { instance } = yield* Auth;

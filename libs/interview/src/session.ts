@@ -1,29 +1,31 @@
-import { Effect, Option, Schema } from "effect";
-import type { InterviewState, MemberUtterance } from "./state.ts";
-import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";
 import {
   countInterviewTurn,
   findInterview,
   startInterview,
   storeInterview,
 } from "@template/db/interview";
+import { Effect, Option, Schema } from "effect";
+
+import { viewOf } from "./contracts.ts";
+import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";
 import { Interviewer } from "./interviewer.ts";
+import { fieldKeys } from "./sheet.ts";
 import { State } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";
-import type { UnderstandingData } from "./understanding.ts";
+
+import type { InterviewState, MemberUtterance } from "./state.ts";
 import type { UnderstandingFailed } from "./understanding-failed.ts";
-import { fieldKeys } from "./sheet.ts";
-import { viewOf } from "./contracts.ts";
+import type { UnderstandingData } from "./understanding.ts";
 
 const dailyModelTurns = 60;
 
 const decodeState = Schema.decodeUnknownOption(State);
 const encodeState = Schema.encodeEffect(State);
 
-interface Reading {
+type Reading = {
   readonly source: "model" | "rules" | UnderstandingFailed["reason"];
   readonly understanding?: UnderstandingData;
-}
+};
 
 const replace = Effect.fn("interview.replace")(function* replace(
   userId: string,
@@ -68,7 +70,7 @@ const understood = Effect.fn("interview.understand")(function* understood(
   const interviewer = yield* Interviewer;
   return yield* interviewer.understand(state, spoken(utterance)).pipe(
     Effect.map((understanding): Reading => ({ source: "model", understanding })),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.catchTag("UnderstandingFailed", (failure) =>
       Effect.as(
         Effect.logWarning("interview.model_failed", {
@@ -117,7 +119,7 @@ const saveInterview = Effect.fn("interview.save")(function* saveInterview(userId
 
 const restartInterview = Effect.fn("interview.restart")(function* restartInterview(userId: string) {
   const { version } = yield* current(userId);
-  // oxlint-disable-next-line unicorn/no-null
+
   return yield* replace(userId, version, { savedSheet: null, state: begin() });
 });
 

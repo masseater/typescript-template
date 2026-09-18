@@ -1,7 +1,7 @@
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
+import { storybookPort } from "@template/config";
 import { defineConfig } from "vite-plus";
 import { playwright } from "vite-plus/test/browser-playwright";
-import { storybookPort } from "@template/config";
-import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 
 const storybook = await storybookTest({
   configDir: import.meta.dirname,
@@ -9,7 +9,6 @@ const storybook = await storybookTest({
   storybookUrl: `http://localhost:${String(storybookPort)}`,
 });
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   plugins: storybook,
   test: {

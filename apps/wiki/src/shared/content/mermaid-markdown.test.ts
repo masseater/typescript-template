@@ -1,18 +1,19 @@
-import { describe, expect, it } from "vite-plus/test";
-import { processedMarkdown } from "./mermaid-markdown.ts";
-import { remark } from "remark";
-import { remarkLLMs } from "fumadocs-core/mdx-plugins/remark-llms";
-import remarkMdx from "remark-mdx";
 import { remarkMdxMermaid } from "fumadocs-core/mdx-plugins";
+import { remarkLLMs } from "fumadocs-core/mdx-plugins/remark-llms";
+import { remark } from "remark";
+import remarkMdx from "remark-mdx";
+import { describe, expect, it } from "vite-plus/test";
 
-async function process(source: string): Promise<unknown> {
+import { processedMarkdown } from "./mermaid-markdown.ts";
+
+const process = async (source: string): Promise<unknown> => {
   const file = await remark()
     .use(remarkMdx)
     .use(remarkMdxMermaid)
     .use(remarkLLMs, { ...processedMarkdown, _data: true })
     .process(source);
-  return file.data["markdown"];
-}
+  return file.data.markdown;
+};
 
 describe("mermaid diagrams in processed markdown", () => {
   it("keeps a mermaid code block as a mermaid code block", async () => {

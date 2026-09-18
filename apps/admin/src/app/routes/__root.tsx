@@ -1,10 +1,12 @@
-import { AppShell, appHead } from "@template/ui/shell";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import type { ReactElement } from "react";
 import { ToastProvider } from "@template/ui";
-import { routes } from "#shared/telemetry/index.ts";
-import { serviceName } from "#shared/config/index.ts";
+import { AppShell, appHead } from "@template/ui/shell";
+
 import styles from "#app/styles.css?url";
+import { serviceName } from "#shared/config/index.ts";
+import { routes } from "#shared/telemetry/index.ts";
+
+import type { ReactElement } from "react";
 
 const Route = createRootRoute({
   component: (): ReactElement => (

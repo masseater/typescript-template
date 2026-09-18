@@ -1,19 +1,22 @@
-import { Cause, Effect } from "effect";
-import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
-import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
-import type { Context } from "effect";
+import { reportFailure } from "@template/observability";
 import { Embedder } from "@template/runtime/wiki";
-import type { SearchServer } from "fumadocs-core/search/server";
-import type { SortedResult } from "fumadocs-core/search";
-import type { WikiServices } from "@template/runtime/wiki";
+import { Cause, Effect } from "effect";
 import { createFromSource } from "fumadocs-core/search/server";
 import { llms } from "fumadocs-core/source";
-import { reportFailure } from "@template/observability";
-import { source } from "#shared/content/index.ts";
 
-type WikiPage = ReturnType<typeof source.getPages>[number];
+import { source } from "#shared/content/index.ts";
+import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
+
+import type { WikiServices } from "@template/runtime/wiki";
+import type { Context } from "effect";
+import type { SortedResult } from "fumadocs-core/search";
+import type { SearchServer } from "fumadocs-core/search/server";
+import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
+
 type KeywordResult = Awaited<ReturnType<SearchServer["search"]>>[number];
 type SearchOptions = Parameters<SearchServer["search"]>[1];
+type WikiPage = ReturnType<typeof source.getPages>[number];
+
 type StructuredData = WikiPage["data"]["structuredData"];
 type WikiPageView = Readonly<{
   url: string;
@@ -33,14 +36,14 @@ const HEADING_RESULT_LIMIT = 3;
 
 const keyword = createFromSource(source);
 
-function sectionText(page: WikiPageView, heading?: string): string {
+const sectionText = (page: WikiPageView, heading?: string): string => {
   return page.data.structuredData.contents
     .filter((content) => content.heading === heading)
     .map((content) => content.content)
     .join(" ");
-}
+};
 
-function pageDocuments(page: WikiPageView): SemanticDocument[] {
+const pageDocuments = (page: WikiPageView): SemanticDocument[] => {
   const headings = page.data.structuredData.headings.map((heading) => ({
     id: `${page.url}#${heading.id}`,
     text: sectionText(page, heading.id),
@@ -56,7 +59,7 @@ function pageDocuments(page: WikiPageView): SemanticDocument[] {
     },
     ...headings,
   ];
-}
+};
 
 const semantic = createSemanticIndex(() =>
   source.getPages().flatMap((page: WikiPageView) => pageDocuments(page)),
@@ -68,11 +71,11 @@ const wikiLlms = llms(source, {
   ) => `# ${page.data.title} (${page.url})\n\n${await page.data.getText("processed")}`,
 });
 
-function pageOf(url: string): string {
+const pageOf = (url: string): string => {
   return url.split("#")[0] ?? url;
-}
+};
 
-async function readProcessedTexts(): Promise<ReadonlyMap<string, string>> {
+const readProcessedTexts = async (): Promise<ReadonlyMap<string, string>> => {
   const entries = await Promise.all(
     source
       .getPages()
@@ -83,13 +86,12 @@ async function readProcessedTexts(): Promise<ReadonlyMap<string, string>> {
       ),
   );
   return new Map(entries);
-}
+};
 
 const textCache: { texts: ReadonlyMap<string, string> | undefined } = { texts: undefined };
 const processedTexts = Effect.suspend(() =>
   textCache.texts === undefined
     ? Effect.promise(readProcessedTexts).pipe(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         Effect.tap((texts) =>
           Effect.sync(() => {
             textCache.texts = texts;
@@ -99,12 +101,12 @@ const processedTexts = Effect.suspend(() =>
     : Effect.succeed(textCache.texts),
 );
 
-function pageResults(
+const pageResults = (
   url: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   keywordResults: readonly KeywordResult[],
   semanticResults: readonly SemanticMatch[],
-): SortedResult[] {
+): SortedResult[] => {
   const page = source
     .getPages()
     .find((candidate: Readonly<Pick<WikiPage, "url">>) => candidate.url === url);
@@ -134,7 +136,7 @@ function pageResults(
     { content: title, id: url, type: "page", url },
     ...headings.slice(0, HEADING_RESULT_LIMIT),
   ];
-}
+};
 
 const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(query: string) {
   const { available } = yield* Embedder;
@@ -143,9 +145,8 @@ const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(quer
   }
   return yield* semantic(query).pipe(
     Effect.matchEffect({
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onFailure: (error) => reportFailure(Cause.fail(error)).pipe(Effect.as([])),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       onSuccess: (matches) => Effect.succeed(matches),
     }),
   );
@@ -153,7 +154,7 @@ const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(quer
 
 const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
   query: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   options?: SearchOptions,
 ) {
   const [keywordResults, texts, semanticResults] = yield* Effect.all(
@@ -177,13 +178,12 @@ const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
   return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function searchServer(context: Context.Context<WikiServices>): SearchServer {
+const searchServer = (context: Context.Context<WikiServices>): SearchServer => {
   return {
     export: async () => keyword.export(),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     search: async (query, options) => Effect.runPromiseWith(context)(searchWiki(query, options)),
   };
-}
+};
 
 export { searchServer, searchWiki, wikiLlms };

@@ -1,23 +1,24 @@
+import { ChallengeCodeField } from "./challenge-code-field";
+import { authClient } from "./client";
+import { requireSuccess } from "./protocol";
+import { Button } from "./shared/ui/button";
+import { FormColumn } from "./shared/ui/form-column";
+
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./shared/ui/button";
-import { ChallengeCodeField } from "./challenge-code-field";
-import { FormColumn } from "./shared/ui/form-column";
 import type { TextInput } from "./use-text-input";
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 
 type ChallengeMode = "backup" | "totp";
 
-interface ChallengeFormProps {
+type ChallengeFormProps = {
   readonly action: ActionState;
   readonly code: TextInput;
   readonly mode: ChallengeMode;
   readonly onAuthenticated: AuthenticatedHandler;
-}
+};
 
-async function verifyChallenge(mode: ChallengeMode, code: string): Promise<void> {
+const verifyChallenge = async (mode: ChallengeMode, code: string): Promise<void> => {
   if (mode === "backup") {
     requireSuccess(
       await authClient.twoFactor.verifyBackupCode({
@@ -29,10 +30,15 @@ async function verifyChallenge(mode: ChallengeMode, code: string): Promise<void>
     return;
   }
   requireSuccess(await authClient.twoFactor.verifyTotp({ code, trustDevice: false }));
-}
+};
 
-function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormProps): ReactElement {
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+const ChallengeForm = ({
+  action,
+  code,
+  mode,
+  onAuthenticated,
+}: ChallengeFormProps): ReactElement => {
+  const submit = (event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     event.preventDefault();
     action.run(async () => {
       await verifyChallenge(mode, code.value);
@@ -43,7 +49,7 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
       }
       await onAuthenticated();
     });
-  }
+  };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <FormColumn>
@@ -54,7 +60,7 @@ function ChallengeForm({ action, code, mode, onAuthenticated }: ChallengeFormPro
       </FormColumn>
     </form>
   );
-}
+};
 
 export { ChallengeForm };
 export type { ChallengeMode };

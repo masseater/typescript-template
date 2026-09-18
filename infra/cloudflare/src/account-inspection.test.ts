@@ -1,14 +1,16 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { blocked, inspectAccount } from "./account-inspection.ts";
-import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
-import type { CreatedResourceState } from "alchemy/State/ResourceState";
-import { Effect } from "effect";
 import { InMemoryService } from "alchemy/State";
-import type { StateService } from "alchemy/State";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
+import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deployTokenPermissions } from "./deploy-token.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { StateService } from "alchemy/State";
+import type { CreatedResourceState } from "alchemy/State/ResourceState";
 
 const config = verificationSettings;
 const access = { accountId: config.accountId, apiToken: "inspection-test-not-a-real-token" };
@@ -25,7 +27,10 @@ const workers = ["user", "admin", "wiki", "budget", "errors", "health"].map(
   (suffix) => `${config.prefix}-${suffix}`,
 );
 
-function row(resourceType: string, attr: Readonly<Record<string, string>>): CreatedResourceState {
+const row = (
+  resourceType: string,
+  attr: Readonly<Record<string, string>>,
+): CreatedResourceState => {
   return {
     attr,
     bindings: [],
@@ -39,7 +44,7 @@ function row(resourceType: string, attr: Readonly<Record<string, string>>): Crea
     resourceType,
     status: "created",
   };
-}
+};
 
 const deployedUnits = [
   ["user", "user"],
@@ -50,13 +55,11 @@ const deployedUnits = [
   ["health-monitor", "health"],
 ] as const;
 
-function emptyState(): Effect.Effect<StateService> {
-  // oxlint-disable-next-line new-cap
+const emptyState = (): Effect.Effect<StateService> => {
   return InMemoryService({});
-}
+};
 
-function deployedState(): Effect.Effect<StateService> {
-  // oxlint-disable-next-line new-cap
+const deployedState = (): Effect.Effect<StateService> => {
   return InMemoryService({
     [stackName("database")]: {
       [config.prefix]: { Database: row("Cloudflare.D1Database", { databaseId }) },
@@ -72,7 +75,7 @@ function deployedState(): Effect.Effect<StateService> {
       ]),
     ),
   });
-}
+};
 
 const unverifiableToken = http.get(`${account}/tokens/verify`, () =>
   HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
@@ -95,23 +98,22 @@ const tokenHandlers = [
   ),
 ];
 
-function page(total: number): Readonly<{ per_page: number; total_count: number }> {
+const page = (total: number): Readonly<{ per_page: number; total_count: number }> => {
   return { per_page: RETURNED_PAGE_SIZE, total_count: total };
-}
+};
 
-function rowsAsPage(rows: number): Readonly<{ per_page: number; total_count: number }> {
+const rowsAsPage = (rows: number): Readonly<{ per_page: number; total_count: number }> => {
   return { per_page: rows, total_count: rows };
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function accountHandlers(options: {
+const accountHandlers = (options: {
   readonly token?: readonly ReturnType<typeof http.get>[];
   readonly databases: readonly { readonly name: string; readonly uuid: string }[];
   readonly domains: readonly { readonly hostname: string; readonly service: string }[];
   readonly records: readonly string[];
   readonly scripts: readonly string[];
   readonly stores: number;
-}): Parameters<typeof mockServer> {
+}): Parameters<typeof mockServer> => {
   return [
     ...(options.token ?? tokenHandlers),
     unpagedCollection(`${account}/d1/database`, () =>
@@ -131,10 +133,9 @@ function accountHandlers(options: {
       }),
     ),
     unpagedCollection(`${account}/workers/scripts`, () =>
-      // oxlint-disable-next-line unicorn/no-null
       HttpResponse.json({ result: options.scripts.map((id) => ({ id })), result_info: null }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     unpagedCollection(`${account}/workers/domains`, ({ request }) => {
       const wanted = new URL(request.url).searchParams.get("hostname");
       const matching = options.domains.filter((domain) => domain.hostname === wanted);
@@ -143,7 +144,7 @@ function accountHandlers(options: {
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     unpagedCollection(`${zone}/dns_records`, ({ request }) => {
       const wanted = new URL(request.url).searchParams.get("name.exact");
       const matching = options.records.filter((record) => record === wanted);
@@ -153,7 +154,7 @@ function accountHandlers(options: {
       });
     }),
   ];
-}
+};
 
 it.effect("clears an account that holds nothing this deployment claims", () =>
   Effect.gen(function* program() {

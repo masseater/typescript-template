@@ -1,9 +1,10 @@
-import { Effect, Schema } from "effect";
-import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
+import { parseArgs } from "node:util";
+
 import { NodeRuntime } from "@effect/platform-node";
 import { applicationPorts } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { parseArgs } from "node:util";
+import { Effect, Schema } from "effect";
+
+import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
@@ -42,15 +43,15 @@ const { values, positionals } = parseArgs({
   },
 });
 
-function argumentsInvalid(): QueryFailure {
+const argumentsInvalid = (): QueryFailure => {
   return new QueryFailure({ reason: "arguments_invalid" });
-}
+};
 
-function required(value: string | undefined): Effect.Effect<string, QueryFailure> {
+const required = (value: string | undefined): Effect.Effect<string, QueryFailure> => {
   return value === undefined ? Effect.fail(argumentsInvalid()) : Effect.succeed(value);
-}
+};
 
-function queryLogs(app: string, input: Query, since: number): Effect.Effect<unknown, unknown> {
+const queryLogs = (app: string, input: Query, since: number): Effect.Effect<unknown, unknown> => {
   const levelFilter = input.level === undefined ? "" : " AND level = ?";
   const params =
     input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
@@ -58,11 +59,10 @@ function queryLogs(app: string, input: Query, since: number): Effect.Effect<unkn
     app,
     `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${levelFilter} ORDER BY ts_ms DESC LIMIT ?`,
     params,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
-}
+};
 
-function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
+const runQuery = (app: string, input: Query): Effect.Effect<unknown, unknown> => {
   const since = Date.now() - input.minutes * millisecondsPerMinute;
   if (input.command === "request") {
     return required(input.requestId).pipe(
@@ -88,7 +88,7 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
     );
   }
   return queryLogs(app, input, since);
-}
+};
 
 const help = Effect.sync(() => {
   process.stdout.write(

@@ -1,5 +1,6 @@
-import { decideNotifications, formatMessage } from "./decision.ts";
 import { describe, expect, it } from "vite-plus/test";
+
+import { decideNotifications, formatMessage } from "./decision.ts";
 
 const now = Date.parse("2026-09-17T12:00:00Z");
 const hour = 3_600_000;
@@ -8,13 +9,15 @@ const daysBeforeForgotten = 8;
 const recentHours = 2;
 const occurrences = 3;
 
-function group(fingerprint: string): {
+const group = (
+  fingerprint: string,
+): {
   count: number;
   event: string;
   fingerprint: string;
   service: string;
   type: string;
-} {
+} => {
   return {
     count: occurrences,
     event: "browser.error",
@@ -22,7 +25,7 @@ function group(fingerprint: string): {
     service: "user-browser",
     type: "TypeError",
   };
-}
+};
 
 describe("error notifications", () => {
   it("notifies new fingerprints and fingerprints silent for a day, but not ongoing ones", () => {

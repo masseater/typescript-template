@@ -1,14 +1,15 @@
-import { createAuthClient } from "better-auth/react";
 import { passkeyClient } from "@better-auth/passkey/client";
-import { requirePasskeyUV } from "./protocol";
 import { twoFactorClient } from "better-auth/client/plugins";
+import { createAuthClient } from "better-auth/react";
+
+import { requirePasskeyUV } from "./protocol";
 
 const authClient = createAuthClient({
   basePath: "/api/auth",
   fetchOptions: {
     baseURL: "/api/auth",
     credentials: "same-origin",
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     customFetchImpl: async (input, init) => globalThis.fetch(input, init),
     onSuccess: ({
       data,

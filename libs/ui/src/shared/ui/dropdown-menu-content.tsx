@@ -1,8 +1,9 @@
-import type { Children } from "./types";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import type { ReactElement } from "react";
 
-function DropdownMenuContent({ children }: Children): ReactElement {
+import type { ReactElement } from "react";
+import type { Children } from "./types";
+
+const DropdownMenuContent = ({ children }: Children): ReactElement => {
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner className="z-50 outline-none" align="end" sideOffset={4}>
@@ -15,6 +16,6 @@ function DropdownMenuContent({ children }: Children): ReactElement {
       </MenuPrimitive.Positioner>
     </MenuPrimitive.Portal>
   );
-}
+};
 
 export { DropdownMenuContent };

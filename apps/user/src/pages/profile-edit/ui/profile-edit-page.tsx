@@ -1,19 +1,21 @@
-import { Field, FormColumn, Page, Status, useToast } from "@template/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
-import { ProfileEditor } from "./profile-editor.tsx";
-import type { ReactElement } from "react";
-import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { Field, FormColumn, Page, Status, useToast } from "@template/ui";
 
-function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElement {
+import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { ProfileEditor } from "./profile-editor.tsx";
+
+import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import type { ReactElement } from "react";
+
+const ProfileEditPage = ({ initial }: Readonly<{ initial: Profile }>): ReactElement => {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showSaved(): Promise<void> {
+  const showSaved = async (): Promise<void> => {
     await router.invalidate();
     await navigate({ params: { id: initial.id }, to: "/users/$id" });
     notify("success", "プロフィールを保存しました。");
-  }
+  };
   const form = useProfileForm(initial, showSaved);
   return (
     <Page title="プロフィールの編集">
@@ -24,6 +26,6 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
       {form.error !== "" && <Status variant="error">{form.error}</Status>}
     </Page>
   );
-}
+};
 
 export { ProfileEditPage };

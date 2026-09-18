@@ -1,31 +1,33 @@
-import { ActionStatus } from "./action-status";
-import type { AuthenticatedHandler } from "./authenticated-handler";
-import { ChallengeLogin } from "./challenge-login";
-import type { ChallengeMode } from "./challenge-form";
-import { CredentialsForm } from "./credentials-form";
-import { FormColumn } from "./shared/ui/form-column";
-import { PasskeyLogin } from "./passkey-login";
-import type { ReactElement } from "react";
-import { useAction } from "./action";
 import { useState } from "react";
+
+import { useAction } from "./action";
+import { ActionStatus } from "./action-status";
+import { ChallengeLogin } from "./challenge-login";
+import { CredentialsForm } from "./credentials-form";
+import { PasskeyLogin } from "./passkey-login";
+import { FormColumn } from "./shared/ui/form-column";
 import { useTextInput } from "./use-text-input";
 
-function goHome(): void {
-  globalThis.location.assign("/");
-}
+import type { ReactElement } from "react";
+import type { AuthenticatedHandler } from "./authenticated-handler";
+import type { ChallengeMode } from "./challenge-form";
 
-function LoginForm({
+const goHome = (): void => {
+  globalThis.location.assign("/");
+};
+
+const LoginForm = ({
   onAuthenticated = goHome,
-}: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement {
+}: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement => {
   const email = useTextInput();
   const password = useTextInput();
   const [challenge, setChallenge] = useState<ChallengeMode>();
   const action = useAction();
-  function restart(): void {
+  const restart = (): void => {
     setChallenge(undefined);
     email.handleChange("");
     password.handleChange("");
-  }
+  };
   return (
     <FormColumn>
       {challenge === undefined ? (
@@ -51,6 +53,6 @@ function LoginForm({
       <ActionStatus action={action} pendingMessage="認証を処理しています。" />
     </FormColumn>
   );
-}
+};
 
 export { LoginForm };

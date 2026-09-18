@@ -1,11 +1,13 @@
-import { Effect, Option, Schema } from "effect";
-import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
-import { APIError } from "better-auth/api";
-import { Auth } from "./auth.ts";
-import type { BetterAuthInstance } from "./create-auth.ts";
-import { APIError as ChallengeError } from "better-call";
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { findWikiReader } from "@template/db/security";
+import { APIError } from "better-auth/api";
+import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
+import { APIError as ChallengeError } from "better-call";
+import { Effect, Option, Schema } from "effect";
+
+import { Auth } from "./auth.ts";
+
+import type { BetterAuthInstance } from "./create-auth.ts";
 
 type TokenClaims = Awaited<ReturnType<typeof verifyJwsAccessToken>>;
 
@@ -19,34 +21,22 @@ const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
 const Jwks = Schema.Struct({ keys: Schema.mutable(Schema.Array(Jwk)) });
 const decodeJwks = Schema.decodeUnknownPromise(Jwks);
 
-function jsonRpcError(
+const jsonRpcError = (
   status: number,
   message: string,
   headers: Readonly<Record<string, string>>,
-): Response {
+): Response => {
   return Response.json(
-    // oxlint-disable-next-line unicorn/no-null
     { error: { code: JSON_RPC_SERVER_ERROR, message }, id: null, jsonrpc: "2.0" },
     { headers: { ...headers, "cache-control": "no-store" }, status },
   );
-}
+};
 
-function challengeResponse(error: unknown, resource: string): Response {
-  const challenge = createResourceServerChallenge(error, resource, {
-    challengeScopes: requiredScopes,
-  });
-  if (!(challenge instanceof ChallengeError)) {
-    return jsonRpcError(UNAUTHORIZED, "ACCESS_TOKEN_INVALID", {});
-  }
-  const headers = Object.fromEntries(new Headers(challenge.headers));
-  return jsonRpcError(challenge.statusCode, challenge.message, headers);
-}
-
-function unauthorized(message: string): APIError {
+const unauthorized = (message: string): APIError => {
   return new APIError("UNAUTHORIZED", { message });
-}
+};
 
-function bearerToken(authorization: string): Option.Option<string> {
+const bearerToken = (authorization: string): Option.Option<string> => {
   const [scheme, token, ...rest] = authorization.split(" ");
   return scheme?.toLowerCase() === "bearer" &&
     token !== undefined &&
@@ -54,23 +44,23 @@ function bearerToken(authorization: string): Option.Option<string> {
     rest.length === 0
     ? Option.some(token)
     : Option.none();
-}
+};
 
-async function fetchJwks(
+const fetchJwks = async (
   instance: Readonly<Pick<BetterAuthInstance, "handler">>,
   origin: string,
-): ReturnType<typeof decodeJwks> {
+): ReturnType<typeof decodeJwks> => {
   const response = await instance.handler(new Request(`${origin}/api/auth/jwks`));
   return response.ok
     ? decodeJwks(await response.json())
     : Promise.reject(new Error("WIKI_JWKS_UNAVAILABLE"));
-}
+};
 
-function verifiedClaims(
+const verifiedClaims = (
   instance: Readonly<Pick<BetterAuthInstance, "handler">>,
   origin: string,
   token: string,
-): Effect.Effect<TokenClaims, APIError> {
+): Effect.Effect<TokenClaims, APIError> => {
   return Effect.tryPromise({
     catch: () => unauthorized("ACCESS_TOKEN_INVALID"),
     try: async () =>
@@ -80,9 +70,9 @@ function verifiedClaims(
         verifyOptions: { audience: `${origin}/mcp`, issuer: `${origin}/api/auth` },
       }),
   });
-}
+};
 
-function scopeError(claims: Readonly<Record<string, unknown>>): Option.Option<unknown> {
+const scopeError = (claims: Readonly<Record<string, unknown>>): Option.Option<unknown> => {
   const { cnf, scope } = claims;
   if (cnf !== undefined) {
     return Option.some(unauthorized("SENDER_CONSTRAINED_TOKEN_UNSUPPORTED"));
@@ -90,7 +80,18 @@ function scopeError(claims: Readonly<Record<string, unknown>>): Option.Option<un
   const granted = new Set(typeof scope === "string" ? scope.split(" ") : []);
   const missing = requiredScopes.filter((required) => !granted.has(required));
   return missing.length > 0 ? Option.some(createInsufficientScopeError(missing)) : Option.none();
-}
+};
+
+const challengeResponse = (error: unknown, resource: string): Response => {
+  const challenge = createResourceServerChallenge(error, resource, {
+    challengeScopes: requiredScopes,
+  });
+  if (!(challenge instanceof ChallengeError)) {
+    return jsonRpcError(UNAUTHORIZED, "ACCESS_TOKEN_INVALID", {});
+  }
+  const headers = Object.fromEntries(new Headers(challenge.headers));
+  return jsonRpcError(challenge.statusCode, challenge.message, headers);
+};
 
 const readerFor = Effect.fn("readerFor")(function* readerFor(
   instance: Readonly<Pick<BetterAuthInstance, "handler">>,

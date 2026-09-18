@@ -1,16 +1,18 @@
-import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import type { Application } from "@template/config";
-import { Effect } from "effect";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
+import { grants } from "@template/config";
+import { Effect } from "effect";
+
+import { workerModuleGlobs } from "./artifacts.ts";
+import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import { databaseName } from "./database-lookup.ts";
+import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import { FAILED_EXIT_CODE } from "./secrets.ts";
+import { stackDependencies, stackName, stackNames } from "./stacks.ts";
+import { verificationSettings } from "./verification-fixture.ts";
+
+import type { Application } from "@template/config";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
-import { databaseName } from "./database-lookup.ts";
-import { grants } from "@template/config";
-import { verificationSettings } from "./verification-fixture.ts";
-import { workerModuleGlobs } from "./artifacts.ts";
 
 const { accountId, origins, prefix } = verificationSettings;
 
@@ -29,7 +31,7 @@ const sharedWorker = {
   workersDev: workerSubdomain,
 };
 
-function applicationResource(app: Application): unknown {
+const applicationResource = (app: Application): unknown => {
   return {
     adopt: false,
     bindings: [
@@ -56,15 +58,15 @@ function applicationResource(app: Application): unknown {
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
   };
-}
+};
 
-function monitorResource(options: {
+const monitorResource = (options: {
   readonly artifact: string;
   readonly className: string;
   readonly cron: string;
   readonly name: string;
   readonly variables: readonly string[];
-}): unknown {
+}): unknown => {
   return {
     adopt: false,
     bindings: [
@@ -84,9 +86,9 @@ function monitorResource(options: {
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
   };
-}
+};
 
-function accountToken(slug: string, permission: string): unknown {
+const accountToken = (slug: string, permission: string): unknown => {
   return {
     adopt: false,
     bindings: [],
@@ -103,15 +105,15 @@ function accountToken(slug: string, permission: string): unknown {
     removalPolicy: "destroy",
     type: "Cloudflare.ApiToken.AccountApiToken",
   };
-}
+};
 
-function declaredStack(stack: StackName, resources: Readonly<Record<string, unknown>>): unknown {
+const declaredStack = (stack: StackName, resources: Readonly<Record<string, unknown>>): unknown => {
   return {
     dependencies: stackDependencies[stack].map((dependency) => stackName(dependency)).toSorted(),
     name: stackName(stack),
     resources,
   };
-}
+};
 
 const expected: Readonly<Record<StackName, unknown>> = {
   admin: declaredStack("admin", { Worker: applicationResource("admin") }),
@@ -168,26 +170,26 @@ const expected: Readonly<Record<StackName, unknown>> = {
 
 applyVerificationEnvironment();
 
-function byKey(left: readonly [string, unknown], right: readonly [string, unknown]): number {
+const byKey = (left: readonly [string, unknown], right: readonly [string, unknown]): number => {
   return left[0].localeCompare(right[0]);
-}
+};
 
-function canonical(value: unknown): string {
+const canonical = (value: unknown): string => {
   return JSON.stringify(value, (_key: string, nested: unknown) =>
     typeof nested === "object" && nested !== null && !Array.isArray(nested)
       ? Object.fromEntries(Object.entries(nested).toSorted(byKey))
       : nested,
   );
-}
+};
 
-function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
+const declaredMatches = (inventory: StackInventory, stack: StackName): boolean => {
   return canonical(inventory) === canonical(expected[stack]);
-}
+};
 
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
-  // oxlint-disable-next-line no-console
+
   console.log(
     JSON.stringify({
       declaration: matches ? "matches" : "differs",
@@ -206,10 +208,8 @@ NodeRuntime.runMain(
       process.exitCode = FAILED_EXIT_CODE;
     }
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("InventoryFailure", (failure) =>
       Effect.sync(() => {
-        // oxlint-disable-next-line no-console
         console.error(
           JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
         );
@@ -218,7 +218,6 @@ NodeRuntime.runMain(
     ),
     Effect.catchCause(() =>
       Effect.sync(() => {
-        // oxlint-disable-next-line no-console
         console.error(JSON.stringify({ event: "stacks.invalid" }));
         process.exitCode = FAILED_EXIT_CODE;
       }),

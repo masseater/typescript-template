@@ -1,7 +1,7 @@
-import type { Children } from "./types";
 import type { ReactElement } from "react";
+import type { Children } from "./types";
 
-function TableHead({ children }: Children): ReactElement {
+const TableHead = ({ children }: Children): ReactElement => {
   return (
     <th
       data-slot="table-head"
@@ -10,6 +10,6 @@ function TableHead({ children }: Children): ReactElement {
       {children}
     </th>
   );
-}
+};
 
 export { TableHead };

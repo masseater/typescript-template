@@ -1,7 +1,10 @@
-import type { Children } from "./types";
 import type { ReactElement } from "react";
+import type { Children } from "./types";
 
-function TableCell({ children, colSpan }: Children & Readonly<{ colSpan?: number }>): ReactElement {
+const TableCell = ({
+  children,
+  colSpan,
+}: Children & Readonly<{ colSpan?: number }>): ReactElement => {
   return (
     <td
       data-slot="table-cell"
@@ -11,6 +14,6 @@ function TableCell({ children, colSpan }: Children & Readonly<{ colSpan?: number
       {children}
     </td>
   );
-}
+};
 
 export { TableCell };

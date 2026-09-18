@@ -1,14 +1,16 @@
-import { AppBody } from "./app-body";
-import type { Children } from "./shared/ui/types";
 import { HeadContent } from "@tanstack/react-router";
-import type { ReactElement } from "react";
 import { initBrowserTelemetry } from "@template/observability/browser";
 import { useEffect } from "react";
 
-function AppShell({
+import { AppBody } from "./app-body";
+
+import type { ReactElement } from "react";
+import type { Children } from "./shared/ui/types";
+
+const AppShell = ({
   children,
   routes,
-}: Children & Readonly<{ routes: Readonly<Record<string, string>> }>): ReactElement {
+}: Children & Readonly<{ routes: Readonly<Record<string, string>> }>): ReactElement => {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
     return (): void => {
@@ -23,6 +25,6 @@ function AppShell({
       <AppBody>{children}</AppBody>
     </html>
   );
-}
+};
 
 export { AppShell };

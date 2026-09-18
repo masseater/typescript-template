@@ -1,16 +1,18 @@
-import { Effect, Schema } from "effect";
+import { roles } from "@template/config";
 import { and, count, desc, eq, or, sql } from "drizzle-orm";
-import { auditEvent, user } from "./schema.ts";
+import { Effect, Schema } from "effect";
+
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
-import type { DatabaseFailure } from "./database-failure.ts";
-import type { DrizzleDatabase } from "./database.ts";
-import { LastAdminRequired } from "./last-admin-required.ts";
-import type { Role } from "@template/config";
-import type { SQL } from "drizzle-orm";
-import { TargetUnavailable } from "./target-unavailable.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { query } from "./database.ts";
-import { roles } from "@template/config";
+import { LastAdminRequired } from "./last-admin-required.ts";
+import { auditEvent, user } from "./schema.ts";
+import { TargetUnavailable } from "./target-unavailable.ts";
+
+import type { Role } from "@template/config";
+import type { SQL } from "drizzle-orm";
+import type { DatabaseFailure } from "./database-failure.ts";
+import type { DrizzleDatabase } from "./database.ts";
 
 const MAX_PAGE_SIZE = 100;
 
@@ -22,7 +24,7 @@ const UserPage = Schema.Struct({
   role: Schema.optionalKey(Schema.Literals(roles)),
 });
 
-function matchesPage(page: typeof UserPage.Type): SQL | undefined {
+const matchesPage = (page: typeof UserPage.Type): SQL | undefined => {
   const { emailVerified, keyword, role } = page;
   return and(
     keyword === undefined
@@ -31,34 +33,31 @@ function matchesPage(page: typeof UserPage.Type): SQL | undefined {
     role === undefined ? undefined : eq(user.role, role),
     emailVerified === undefined ? undefined : eq(user.emailVerified, emailVerified),
   );
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function mentionsLastAdmin(failure: DatabaseFailure): boolean {
+const mentionsLastAdmin = (failure: DatabaseFailure): boolean => {
   for (let current: unknown = failure.cause; current instanceof Error; current = current.cause) {
     if (current.message.includes("LAST_ADMIN_REQUIRED")) {
       return true;
     }
   }
   return false;
-}
+};
 
-function protectLastAdmin<Value, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const protectLastAdmin = <Value, Requirements>(
   effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
-): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> {
+): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> => {
   return effect.pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((failure) => (mentionsLastAdmin(failure) ? new LastAdminRequired() : failure)),
   );
-}
+};
 
 const listUsers = Effect.fn("listUsers")(function* listUsers(
   sessionId: string,
   page: typeof UserPage.Type,
 ) {
   yield* requireAdmin(sessionId);
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const users = yield* query((database) =>
     database
       .select({
@@ -76,7 +75,7 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
       .limit(page.limit)
       .offset(page.offset),
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const [total] = yield* query((database) =>
     database
       .select({ count: count() })
@@ -86,8 +85,7 @@ const listUsers = Effect.fn("listUsers")(function* listUsers(
   return { total: total?.count ?? 0, users };
 });
 
-function auditWhenTargeted(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const auditWhenTargeted = (
   database: DrizzleDatabase,
   {
     action,
@@ -100,7 +98,7 @@ function auditWhenTargeted(
     sessionId: string;
     targetId: string;
   }>,
-): SQL {
+): SQL => {
   const record = [
     [auditEvent.action, action],
     [auditEvent.actorId, actorId],
@@ -109,18 +107,16 @@ function auditWhenTargeted(
     [auditEvent.targetId, targetId],
   ] as const;
   const names = sql.join(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     record.map(([column]) => sql.identifier(column.name)),
     sql`, `,
   );
   const values = sql.join(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     record.map(([, value]) => sql`${value}`),
     sql`, `,
   );
   const targeted = sql`SELECT 1 FROM ${user} WHERE ${user.id} = ${targetId} AND ${liveAdmin(database, sessionId)}`;
   return sql`INSERT INTO ${auditEvent} (${names}) SELECT ${values} WHERE EXISTS (${targeted})`;
-}
+};
 
 const setUserRole = Effect.fn("setUserRole")(function* setUserRole(
   sessionId: string,
@@ -129,7 +125,7 @@ const setUserRole = Effect.fn("setUserRole")(function* setUserRole(
 ) {
   const actor = yield* requireAdmin(sessionId);
   const change = { action: "role_changed", actorId: actor.user.id, sessionId, targetId } as const;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const [, rows] = yield* query(async (database) => {
     const audit = database.run(auditWhenTargeted(database, change));
     const promotion = database
@@ -152,7 +148,7 @@ const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
 ) {
   const actor = yield* requireAdmin(sessionId);
   const change = { action: "user_deleted", actorId: actor.user.id, sessionId, targetId } as const;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const [, rows] = yield* query(async (database) => {
     const audit = database.run(auditWhenTargeted(database, change));
     const removal = database

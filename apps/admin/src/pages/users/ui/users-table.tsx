@@ -1,15 +1,17 @@
 import { Table, TableBody } from "@template/ui";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
+
+import { usersTableColumns } from "#pages/users/model/users-table-columns.ts";
 import { LoadingRow } from "./loading-row.tsx";
-import type { ReactElement } from "react";
 import { UserRow } from "./user-row.tsx";
 import { UsersTableHeader } from "./users-table-header.tsx";
-import { usersTableColumns } from "#pages/users/model/users-table-columns.ts";
 
-function UsersTable({
+import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ReactElement } from "react";
+
+const UsersTable = ({
   onChanged,
   users,
-}: Readonly<{ onChanged: () => void; users: readonly ListedUser[] | undefined }>): ReactElement {
+}: Readonly<{ onChanged: () => void; users: readonly ListedUser[] | undefined }>): ReactElement => {
   return (
     <Table>
       <UsersTableHeader />
@@ -22,6 +24,6 @@ function UsersTable({
       </TableBody>
     </Table>
   );
-}
+};
 
 export { UsersTable };

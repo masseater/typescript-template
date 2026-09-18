@@ -1,5 +1,8 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import {
   attachedService,
   dnsRecordNames,
@@ -10,8 +13,6 @@ import {
   workersSubdomain,
 } from "./account-lookup.ts";
 import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
-import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
-import { Effect } from "effect";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -44,7 +45,6 @@ it.effect("reads an untouched account as free of the names this deployment claim
         }),
       ),
       unpagedCollection(`${account}/workers/scripts`, () =>
-        // oxlint-disable-next-line unicorn/no-null
         HttpResponse.json({ result: [], result_info: null }),
       ),
       unpagedCollection(`${account}/workers/domains`, () =>
@@ -53,7 +53,7 @@ it.effect("reads an untouched account as free of the names this deployment claim
           result_info: { count: 0, page: 1, per_page: 0, total_count: 0 },
         }),
       ),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
       unpagedCollection(`${zone}/dns_records`, ({ request }) => {
         assert.strictEqual(new URL(request.url).searchParams.get("name.exact"), hostname);
         return HttpResponse.json({ result: [], result_info: { per_page: 100, total_count: 0 } });
@@ -208,7 +208,6 @@ it.effect("requires every permission the deployment actually exercises", () =>
 it.effect("asks for the worker a single hostname is attached to", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(`${account}/workers/domains`, ({ request }) => {
         assert.strictEqual(new URL(request.url).searchParams.get("hostname"), hostname);
         return HttpResponse.json({ result: [{ hostname, service: "other-user" }] });

@@ -1,36 +1,35 @@
-import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
-import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
-import type { ArtifactMode } from "./artifacts.ts";
-import { ArtifactWrites } from "./artifacts.ts";
-import type { DeploymentSecrets } from "./credentials.ts";
-import { Effect } from "effect";
-import type { PlannedStack } from "./plan-confirmation.ts";
-import type { ProgressEvent } from "alchemy/Alchemist";
-import type { StackName } from "./stacks.ts";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-import { stateStore } from "./deployment-access.ts";
 
-interface Deployment {
+import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
+import { Effect } from "effect";
+
+import { ArtifactWrites } from "./artifacts.ts";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { stateStore } from "./deployment-access.ts";
+import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+
+import type { ProgressEvent } from "alchemy/Alchemist";
+import type { ArtifactMode } from "./artifacts.ts";
+import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
+import type { DeploymentSecrets } from "./credentials.ts";
+import type { PlannedStack } from "./plan-confirmation.ts";
+import type { StackName } from "./stacks.ts";
+
+type Deployment = {
   readonly access: { readonly accountId: string; readonly apiToken: string };
   readonly secrets: DeploymentSecrets;
   readonly target: DeploymentTarget;
-}
+};
 
 const alchemist = layer();
 
-function write(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
+const write = (record: Readonly<Record<string, unknown>>): Effect.Effect<void> => {
   return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
     console.info(JSON.stringify(record));
   });
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effect<void> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const reportProgress = (stack: StackName): ((event: ProgressEvent) => Effect.Effect<void>) => {
   return (event) =>
     event._tag === "apply.resource.status"
       ? write({
@@ -41,7 +40,7 @@ function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effe
           type: event.type,
         })
       : Effect.void;
-}
+};
 
 const planStack = Effect.fn("planStack")(function* planStack(
   stack: StackName,
@@ -58,18 +57,18 @@ const planStack = Effect.fn("planStack")(function* planStack(
   return { planned: plannedStack(snapshot), snapshot };
 });
 
-function announce(
+const announce = (
   planned: PlannedStack,
   stack: StackName,
   confirmation?: string,
-): Effect.Effect<void> {
+): Effect.Effect<void> => {
   return write({
     ...(confirmation === undefined ? {} : { confirmation }),
     event: "cloudflare.planned",
     plan: planReport(planned),
     stack,
   });
-}
+};
 
 const previewStack = Effect.fn("previewStack")(function* previewStack(
   stack: StackName,

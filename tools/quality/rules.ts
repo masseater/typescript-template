@@ -1,10 +1,13 @@
-import type { LintContext, Node } from "./lint-context.ts";
-import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import { definePlugin } from "vite-plus/lint/plugins";
+
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
-import { importVisitor, reportViolation } from "./lint-context.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
+import { layersVisitor } from "./layers.ts";
+import { importVisitor, reportViolation } from "./lint-context.ts";
+import { origins, propertyName, staticText } from "./references.ts";
+import { testImportGraphVisitor } from "./test-import-graph.ts";
 import {
   nodeRuntimeModules,
   runsInWorkerRuntime,
@@ -12,28 +15,16 @@ import {
   workerRuntimeModules,
   workerTestSuffix,
 } from "./test-runtime.ts";
-import { origins, propertyName, staticText } from "./references.ts";
-import type { Origin } from "./references.ts";
-import { definePlugin } from "vite-plus/lint/plugins";
-import { layersVisitor } from "./layers.ts";
-import { testImportGraphVisitor } from "./test-import-graph.ts";
 
-interface RawD1Checks {
+import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
+import type { Origin } from "./references.ts";
+
+type RawD1Checks = {
   readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;
   readonly operation: (node: Node) => void;
-}
+};
 
-const mockSources = new Set([
-  "vitest",
-  "@vitest/spy",
-  "vite-plus/test",
-  "vite-plus/test/plugins/spy",
-  "@jest/globals",
-  "jest-mock",
-  "node:test",
-  "test",
-  "bun:test",
-]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
 const mockMethods = new Set([
   "mock",
@@ -46,33 +37,45 @@ const mockMethods = new Set([
   "mockModule",
 ]);
 
-function metadata(message: string): RuleMeta {
+const metadata = (message: string): RuleMeta => {
   return {
     messages: { violation: message },
     schema: [],
     type: "problem",
   };
-}
+};
 
-function filename(context: LintContext): string {
+const filename = (context: LintContext): string => {
   return context.filename.replaceAll("\\", "/");
-}
+};
 
-function isMock(origin: Origin): boolean {
+const mockSources = new Set([
+  "vitest",
+  "@vitest/spy",
+  "vite-plus/test",
+  "vite-plus/test/plugins/spy",
+  "@jest/globals",
+  "jest-mock",
+  "node:test",
+  "test",
+  "bun:test",
+]);
+
+const isMock = (origin: Origin): boolean => {
   const [source, ...members] = origin;
   return mockSources.has(source ?? "") && members.some((member) => mockMethods.has(member));
-}
+};
 
-function isEnvironment(origin: Origin): boolean {
+const isEnvironment = (origin: Origin): boolean => {
   const [source, ...members] = origin;
   return (
     ((source === "node:process" || source === "process" || source === "import.meta") &&
       members[0] === "env") ||
     (source === "global" && members[0] === "process" && members[1] === "env")
   );
-}
+};
 
-function importSourceChecker(context: LintContext): (node: Node) => void {
+const importSourceChecker = (context: LintContext): ((node: Node) => void) => {
   const importer = importerOf(filename(context));
   return (node) => {
     const source = staticText(context, node);
@@ -82,13 +85,13 @@ function importSourceChecker(context: LintContext): (node: Node) => void {
       reportViolation(context, node);
     }
   };
-}
+};
 
 const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
 const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
 
-function rawD1Checks(context: LintContext): RawD1Checks {
+const rawD1Checks = (context: LintContext): RawD1Checks => {
   const allowed = rawD1Pattern.test(filename(context));
   return {
     destructuring: (reported, pattern, input) => {
@@ -102,9 +105,9 @@ function rawD1Checks(context: LintContext): RawD1Checks {
       }
     },
   };
-}
+};
 
-function boundariesVisitor(context: LintContext): Visitor {
+const boundariesVisitor = (context: LintContext): Visitor => {
   const checkSource = importSourceChecker(context);
   const checks = rawD1Checks(context);
   return {
@@ -143,9 +146,9 @@ function boundariesVisitor(context: LintContext): Visitor {
       }
     },
   };
-}
+};
 
-function environmentVisitor(context: LintContext): Visitor {
+const environmentVisitor = (context: LintContext): Visitor => {
   if (/\/(?:libs\/config|infra|tools)\//u.test(filename(context))) {
     return {};
   }
@@ -168,22 +171,22 @@ function environmentVisitor(context: LintContext): Visitor {
       }
     },
   };
-}
+};
 
-function mockVisitor(context: LintContext): Visitor {
+const mockVisitor = (context: LintContext): Visitor => {
   return originVisitor(context, isMock);
-}
+};
 
-function isManualMemoization(origin: Origin): boolean {
+const isManualMemoization = (origin: Origin): boolean => {
   const [source, ...members] = origin;
   return source === "react" && members.some((member) => memoizationApis.has(member));
-}
+};
 
-function memoizationVisitor(context: LintContext): Visitor {
+const memoizationVisitor = (context: LintContext): Visitor => {
   return originVisitor(context, isManualMemoization);
-}
+};
 
-function workerFetchVisitor(context: LintContext): Visitor {
+const workerFetchVisitor = (context: LintContext): Visitor => {
   if (!runsInWorkerRuntime(filename(context))) {
     return {};
   }
@@ -198,9 +201,8 @@ function workerFetchVisitor(context: LintContext): Visitor {
       }
     },
   };
-}
+};
 
-// oxlint-disable-next-line import/no-default-export
 export default definePlugin({
   meta: { name: "project" },
   rules: {

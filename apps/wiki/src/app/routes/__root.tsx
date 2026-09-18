@@ -1,8 +1,9 @@
-import { RootDocument } from "./-root-document.tsx";
-import { appHead } from "@template/ui/shell";
 import { createRootRoute } from "@tanstack/react-router";
-import { serviceName } from "#shared/config/index.ts";
+import { appHead } from "@template/ui/shell";
+
 import styles from "#app/styles.css?url";
+import { serviceName } from "#shared/config/index.ts";
+import { RootDocument } from "./-root-document.tsx";
 
 const Route = createRootRoute({
   component: RootDocument,

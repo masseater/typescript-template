@@ -1,4 +1,3 @@
-type LogFields = Readonly<Record<string, string | number | boolean>>;
 type LogLevel = "error" | "info";
 
 interface LogSink {
@@ -6,25 +5,27 @@ interface LogSink {
   readonly info: (line: string) => void;
 }
 
-function consoleError(line: string): void {
+const consoleError = (line: string): void => {
   // oxlint-disable-next-line no-console
   console.error(line);
-}
+};
 
-function consoleInfo(line: string): void {
+const consoleInfo = (line: string): void => {
   // oxlint-disable-next-line no-console
   console.info(line);
-}
+};
 
 const consoleSink: LogSink = { error: consoleError, info: consoleInfo };
 
-function writeLog(sink: LogSink, level: LogLevel, fields: LogFields): void {
-  sink[level](JSON.stringify(fields));
-}
+type LogFields = Readonly<Record<string, string | number | boolean>>;
 
-function logError(fields: LogFields): void {
+const writeLog = (sink: LogSink, level: LogLevel, fields: LogFields): void => {
+  sink[level](JSON.stringify(fields));
+};
+
+const logError = (fields: LogFields): void => {
   writeLog(consoleSink, "error", fields);
-}
+};
 
 export { consoleSink, logError };
 export type { LogSink };

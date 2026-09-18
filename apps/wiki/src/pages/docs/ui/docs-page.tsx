@@ -1,15 +1,17 @@
 import { getRouteApi, notFound } from "@tanstack/react-router";
-import { DocsContent } from "./docs-content.tsx";
-import { DocsLayout } from "fumadocs-ui/layouts/docs";
-import type { ReactElement } from "react";
-import { docs } from "#shared/content/index.ts";
-import { serviceName } from "#shared/config/index.ts";
 import { useFumadocsLoader } from "fumadocs-core/source/client";
+import { DocsLayout } from "fumadocs-ui/layouts/docs";
+
+import { serviceName } from "#shared/config/index.ts";
+import { docs } from "#shared/content/index.ts";
+import { DocsContent } from "./docs-content.tsx";
+
+import type { ReactElement } from "react";
 
 const route = getRouteApi("/$");
 const nav = { title: serviceName };
 
-function DocsPage(): ReactElement {
+const DocsPage = (): ReactElement => {
   const { path, pageTree } = useFumadocsLoader(route.useLoaderData());
   const page = docs.getPage(path);
   if (!page) {
@@ -20,6 +22,6 @@ function DocsPage(): ReactElement {
       <DocsContent page={page} />
     </DocsLayout>
   );
-}
+};
 
 export { DocsPage };

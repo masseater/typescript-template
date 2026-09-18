@@ -1,6 +1,8 @@
-import type { ComponentProps, ReactElement } from "react";
-import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
+
+import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
+
+import type { ComponentProps, ReactElement } from "react";
 
 const validationMessages: readonly (readonly [keyof ValidityState, string])[] = [
   ["valueMissing", "入力してください。"],
@@ -26,7 +28,7 @@ type AutoComplete =
   | "one-time-code"
   | "username";
 
-function Field({
+const Field = ({
   autoComplete,
   inputMode,
   label,
@@ -53,7 +55,7 @@ function Field({
   Readonly<
     | { multiline: true; pattern?: never; type?: never }
     | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
-  >): ReactElement {
+  >): ReactElement => {
   return (
     <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
@@ -75,6 +77,6 @@ function Field({
       {errors}
     </FieldPrimitive.Root>
   );
-}
+};
 
 export { Field };

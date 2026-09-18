@@ -1,9 +1,11 @@
-import { stackName, stackOptions } from "./stacks.ts";
-import { Effect } from "effect";
-import type { SharedConfig } from "./config.ts";
 import { Stack } from "alchemy";
+import { Effect } from "effect";
+
 import { monitorArtifact } from "./artifacts.ts";
 import { monitorProgram } from "./monitor.ts";
+import { stackName, stackOptions } from "./stacks.ts";
+
+import type { SharedConfig } from "./config.ts";
 
 const stack = Stack(
   stackName("health-monitor"),
@@ -22,5 +24,4 @@ const stack = Stack(
   }),
 );
 
-// oxlint-disable-next-line import/no-default-export
 export default stack;

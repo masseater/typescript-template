@@ -1,12 +1,15 @@
-import type { BudgetConfig } from "./config.ts";
 import { Effect } from "effect";
-import type { UsageSnapshot } from "./billing.ts";
+
 import { fail } from "./config.ts";
 
-const NO_ALERT_LEVEL = 0;
+import type { UsageSnapshot } from "./billing.ts";
+import type { BudgetConfig } from "./config.ts";
+
 const WARNING_LEVEL = 80;
 const EXHAUSTED_LEVEL = 100;
 const WARNING_RATIO = 0.8;
+
+const NO_ALERT_LEVEL = 0;
 
 interface BudgetDecision {
   periodStart: string;
@@ -17,7 +20,7 @@ interface BudgetDecision {
   notificationKey: string;
 }
 
-function alertLevel(ratio: number): BudgetDecision["level"] {
+const alertLevel = (ratio: number): BudgetDecision["level"] => {
   if (ratio >= 1) {
     return EXHAUSTED_LEVEL;
   }
@@ -25,7 +28,7 @@ function alertLevel(ratio: number): BudgetDecision["level"] {
     return WARNING_LEVEL;
   }
   return NO_ALERT_LEVEL;
-}
+};
 
 const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(
   snapshot: Readonly<UsageSnapshot>,
@@ -60,11 +63,11 @@ const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(
   return decision;
 });
 
-function shouldNotify(
+const shouldNotify = (
   decision: Readonly<BudgetDecision>,
   notifiedKeys: readonly string[],
-): boolean {
+): boolean => {
   return decision.level !== NO_ALERT_LEVEL && !notifiedKeys.includes(decision.notificationKey);
-}
+};
 
 export { evaluateBudget, shouldNotify };

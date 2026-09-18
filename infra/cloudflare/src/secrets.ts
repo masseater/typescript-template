@@ -9,20 +9,20 @@ const isCoded = Schema.is(
   Schema.Struct({ code: Schema.String, keys: Schema.optional(FailureKeys) }),
 );
 
-interface Confidential {
+type Confidential = {
   readonly key: string;
   readonly value: string;
-}
+};
 
-function withVerifiedSecrets<Value, Failure, Requirements>(
+const withVerifiedSecrets = <Value, Failure, Requirements>(
   secrets: Readonly<{ contents: string }>,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  program: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<Value, Failure, Requirements> {
-  return Effect.provideService(program, ConfigProvider, fromDotEnvContents(secrets.contents));
-}
 
-function redact(text: string, confidential: readonly Confidential[]): string {
+  program: Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<Value, Failure, Requirements> => {
+  return Effect.provideService(program, ConfigProvider, fromDotEnvContents(secrets.contents));
+};
+
+const redact = (text: string, confidential: readonly Confidential[]): string => {
   let masked = text;
   for (const { key, value } of confidential) {
     if (value !== "") {
@@ -30,12 +30,12 @@ function redact(text: string, confidential: readonly Confidential[]): string {
     }
   }
   return masked;
-}
+};
 
-function describeFailure(
+const describeFailure = (
   failure: unknown,
   confidential: readonly Confidential[],
-): Readonly<Record<string, unknown>> {
+): Readonly<Record<string, unknown>> => {
   if (isCoded(failure)) {
     return {
       code: failure.code,
@@ -46,13 +46,12 @@ function describeFailure(
   return typeof reason === "string"
     ? { reason: redact(reason, confidential) }
     : { code: "unknown_failure" };
-}
+};
 
-function describeCause(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const describeCause = (
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[],
-): Readonly<Record<string, unknown>> {
+): Readonly<Record<string, unknown>> => {
   const failure = Option.getOrUndefined(Cause.findErrorOption(cause));
   if (failure !== undefined) {
     return describeFailure(failure, confidential);
@@ -66,20 +65,19 @@ function describeCause(
   return "code" in described
     ? { ...described, ...counted, defect: true }
     : { code: "defect", ...counted, ...described };
-}
+};
 
-function reportCause(
+const reportCause = (
   event: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[] = [],
-): Effect.Effect<void> {
+): Effect.Effect<void> => {
   return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
     console.error(JSON.stringify({ event, ...describeCause(cause, confidential) }));
     process.exitCode = FAILED_EXIT_CODE;
   });
-}
+};
 
 export {
   FAILED_EXIT_CODE,

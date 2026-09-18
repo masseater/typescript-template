@@ -1,13 +1,14 @@
-import { Monitor, monitorHandler } from "./index.ts";
-import type { MonitorBindings, Notify } from "./index.ts";
 import { Effect } from "effect";
+
 import { MonitorFailure } from "./failure.ts";
+import { Monitor, monitorHandler } from "./index.ts";
+
+import type { MonitorBindings, Notify } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 
 type Outcome = "fail" | "notify" | "succeed";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly ALERT_FROM: string;
@@ -22,6 +23,8 @@ const probeEvent = "probe_monitor";
 const probeAlert = { subject: "probe alert", text: "probe alert" } as const;
 const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 
+export { MailRecorder } from "./mail-recorder.ts";
+export type { SentMail } from "./mail-recorder.ts";
 class ProbeMonitor extends Monitor<MonitorBindings> {
   protected readonly event = probeEvent;
   protected readonly failure = probeFailure;
@@ -41,9 +44,7 @@ class ProbeMonitor extends Monitor<MonitorBindings> {
   }
 }
 
-export { MailRecorder } from "./mail-recorder.ts";
-export type { SentMail } from "./mail-recorder.ts";
 export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
-// oxlint-disable-next-line import/no-default-export
+
 export default monitorHandler(probeEvent);

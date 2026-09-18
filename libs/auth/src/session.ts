@@ -1,15 +1,15 @@
+import { getSessionSecurity } from "@template/db/security";
+import { Effect } from "effect";
+
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
+import { authSession } from "./auth-request.ts";
 import { Auth } from "./auth.ts";
-import { Effect } from "effect";
+import { isStrongMethod } from "./policy.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
-import { authSession } from "./auth-request.ts";
-import { getSessionSecurity } from "@template/db/security";
-import { isStrongMethod } from "./policy.ts";
 
 const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* requireSessionSecurity(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   headers: Headers,
 ) {
   const { audience } = yield* Auth;
@@ -38,7 +38,6 @@ const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(
 });
 
 const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProgram(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   headers: Headers,
   allowEnrollment: boolean,
 ) {
@@ -51,9 +50,8 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   return { session: current.session, strong, user: current.user };
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types, typescript/explicit-function-return-type, typescript/explicit-module-boundary-types
-function verifySession(headers: Headers, allowEnrollment = false) {
+const verifySession = (headers: Headers, allowEnrollment = false) => {
   return verifySessionWith(headers, allowEnrollment);
-}
+};
 
 export { verifySession };

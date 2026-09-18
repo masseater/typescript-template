@@ -1,41 +1,39 @@
-import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
-import type { Application as App } from "@template/config";
-import { applications as apps } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { realpath } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-interface BoundaryRoots {
+import { applications as apps } from "@template/config";
+
+import type { Application as App } from "@template/config";
+import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
+
+type BoundaryRoots = {
   readonly app: App;
   readonly appRoot: string;
   readonly canonicalRepository: string;
   readonly repository: string;
-}
+};
 
-const maxDecodeDepth = 3;
 const forbiddenStatus = 403;
 const badRequestStatus = 400;
 
-function otherApps(app: App): App[] {
+const otherApps = (app: App): App[] => {
   return apps.filter((name) => name !== app);
-}
+};
 
-function privateAdminPath(normalized: string, app: App): boolean {
+const privateAdminPath = (normalized: string, app: App): boolean => {
   return (
     app !== "admin" &&
     (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(normalized) ||
       /@template\/db\/admin(?:\/|$)/u.test(normalized))
   );
-}
+};
 
-function privatePath(
+const privatePath = (
   value: string,
   roots: Readonly<Pick<BoundaryRoots, "app">>,
   repository: string,
-): boolean {
+): boolean => {
   const normalized = value.replaceAll("\\", "/");
   const relative = path.relative(repository, normalized).replaceAll("\\", "/");
   const others = otherApps(roots.app).join("|");
@@ -49,9 +47,9 @@ function privatePath(
     /@template\/db\/(?:remote|testing)(?:\/|$)/u.test(normalized) ||
     privateAdminPath(normalized, roots.app)
   );
-}
+};
 
-function serverOptions(app: App, appRoot: string, repository: string): UserConfig {
+const serverOptions = (app: App, appRoot: string, repository: string): UserConfig => {
   return {
     server: {
       cors: false,
@@ -77,9 +75,11 @@ function serverOptions(app: App, appRoot: string, repository: string): UserConfi
       },
     },
   };
-}
+};
 
-function decodedPathname(url: string | undefined): string {
+const maxDecodeDepth = 3;
+
+const decodedPathname = (url: string | undefined): string => {
   let [pathname = "/"] = (url ?? "/").split("?");
   for (let depth = 0; depth < maxDecodeDepth; depth += 1) {
     const decoded = decodeURIComponent(pathname);
@@ -89,9 +89,9 @@ function decodedPathname(url: string | undefined): string {
     pathname = decoded;
   }
   return pathname;
-}
+};
 
-async function deniesRequest(url: string | undefined, roots: BoundaryRoots): Promise<boolean> {
+const deniesRequest = async (url: string | undefined, roots: BoundaryRoots): Promise<boolean> => {
   const pathname = decodedPathname(url);
   const file = pathname.startsWith("/@fs/")
     ? pathname.slice("/@fs".length)
@@ -102,20 +102,20 @@ async function deniesRequest(url: string | undefined, roots: BoundaryRoots): Pro
     privatePath(file, roots, roots.repository) ||
     privatePath(resolved, roots, roots.canonicalRepository)
   );
-}
+};
 
 type DevRequest = Parameters<Connect.NextHandleFunction>[0];
 type DevResponse = Parameters<Connect.NextHandleFunction>[1];
 
-function createRequestGuard(
+const createRequestGuard = (
   roots: () => BoundaryRoots,
-): (
+): ((
   request: Readonly<Pick<DevRequest, "url">>,
   response: Readonly<Pick<DevResponse, "end" | "writeHead">>,
   next: () => void,
-) => void {
+) => void) => {
   return (request, response, next) => {
-    async function guard(): Promise<void> {
+    const guard = async (): Promise<void> => {
       try {
         if (!(await deniesRequest(request.url, roots()))) {
           next();
@@ -127,15 +127,15 @@ function createRequestGuard(
         response.writeHead(badRequestStatus);
         response.end("Invalid request");
       }
-    }
+    };
     void guard();
   };
-}
+};
 
-function devBoundary(
+const devBoundary = (
   app: App,
   repository = fileURLToPath(new URL("../../../", import.meta.url)),
-): Plugin {
+): Plugin => {
   let appRoot = path.join(repository, "apps", app);
   let canonicalRepository = repository;
   return {
@@ -172,6 +172,6 @@ function devBoundary(
     },
     name: `template-${app}-dev-boundary`,
   };
-}
+};
 
 export { devBoundary };

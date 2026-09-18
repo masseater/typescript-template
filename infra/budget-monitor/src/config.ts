@@ -17,9 +17,9 @@ class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure",
   ]),
 }) {}
 
-function fail(code: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> {
+const fail = (code: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> => {
   return Effect.fail(new BudgetFailure({ code }));
-}
+};
 
 const MIN_BILLING_TOKEN_LENGTH = 20;
 

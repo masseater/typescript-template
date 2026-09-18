@@ -1,22 +1,24 @@
-import { LoginPage } from "@template/ui/auth";
-import type { ReactElement } from "react";
-import { Schema } from "effect";
 import { decodeJson } from "@template/runtime/client";
+import { LoginPage } from "@template/ui/auth";
+import { Schema } from "effect";
+
 import { serviceName } from "#shared/config/index.ts";
+
+import type { ReactElement } from "react";
 
 const HTTP_FORBIDDEN = 403;
 const Redirect = Schema.Struct({ url: Schema.String });
 
-async function requestContinuation(oauthQuery: string): Promise<Response> {
+const requestContinuation = async (oauthQuery: string): Promise<Response> => {
   return fetch("/api/auth/oauth2/continue", {
     body: JSON.stringify({ oauth_query: oauthQuery, postLogin: true }),
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
     method: "POST",
   });
-}
+};
 
-async function continuationTarget(oauthQuery: string): Promise<string> {
+const continuationTarget = async (oauthQuery: string): Promise<string> => {
   const response = await requestContinuation(oauthQuery);
   if (response.status === HTTP_FORBIDDEN) {
     return "/security";
@@ -25,18 +27,18 @@ async function continuationTarget(oauthQuery: string): Promise<string> {
     throw new Error("連携の許可を続けられませんでした。");
   }
   return decodeJson(Redirect, await response.json()).url;
-}
+};
 
-async function continueAuthorization(): Promise<void> {
+const continueAuthorization = async (): Promise<void> => {
   const oauthQuery = globalThis.location.search.slice(1);
   if (!new URLSearchParams(oauthQuery).has("sig")) {
     globalThis.location.assign("/");
     return;
   }
   globalThis.location.assign(await continuationTarget(oauthQuery));
-}
+};
 
-function WikiLogin(): ReactElement {
+const WikiLogin = (): ReactElement => {
   return (
     <LoginPage
       title={`${serviceName} にログイン`}
@@ -44,6 +46,6 @@ function WikiLogin(): ReactElement {
       onAuthenticated={continueAuthorization}
     />
   );
-}
+};
 
 export { WikiLogin };

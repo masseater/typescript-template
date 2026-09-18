@@ -1,20 +1,21 @@
 import { Effect, Schema } from "effect";
+
 import { ErrorMonitorFailure } from "./config.ts";
 
-interface ErrorGroup {
+type ErrorGroup = {
   readonly fingerprint: string;
   readonly service: string;
   readonly event: string;
   readonly type: string;
   readonly count: number;
-}
+};
 
-interface QueryWindow {
+type QueryWindow = {
   readonly accountId: string;
   readonly token: string;
   readonly from: number;
   readonly to: number;
-}
+};
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const QUERY_LIMIT = 50;
@@ -31,11 +32,7 @@ const QueryEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-function failure(code: ErrorMonitorFailure["code"]): () => ErrorMonitorFailure {
-  return () => new ErrorMonitorFailure({ code });
-}
-
-function errorGroup(item: typeof Aggregate.Type): ErrorGroup[] {
+const errorGroup = (item: typeof Aggregate.Type): ErrorGroup[] => {
   const values = new Map((item.groups ?? []).map((entry) => [entry.key, String(entry.value)]));
   const fingerprint = values.get("error.fingerprint");
   if (fingerprint === undefined || !/^[0-9a-f]{8}$/u.test(fingerprint)) {
@@ -50,9 +47,9 @@ function errorGroup(item: typeof Aggregate.Type): ErrorGroup[] {
       type: values.get("error.type") ?? "Error",
     },
   ];
-}
+};
 
-function queryBody(window: QueryWindow): string {
+const queryBody = (window: QueryWindow): string => {
   return JSON.stringify({
     parameters: {
       calculations: [{ alias: "events", operator: "count" }],
@@ -65,12 +62,16 @@ function queryBody(window: QueryWindow): string {
     timeframe: { from: window.from, to: window.to },
     view: "calculations",
   });
-}
+};
 
-function queryTelemetry(window: QueryWindow): Effect.Effect<Response, ErrorMonitorFailure> {
+const failure = (code: ErrorMonitorFailure["code"]): (() => ErrorMonitorFailure) => {
+  return () => new ErrorMonitorFailure({ code });
+};
+
+const queryTelemetry = (window: QueryWindow): Effect.Effect<Response, ErrorMonitorFailure> => {
   return Effect.tryPromise({
     catch: failure("telemetry_http_failed"),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     try: async (signal) =>
       fetch(
         `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
@@ -87,7 +88,7 @@ function queryTelemetry(window: QueryWindow): Effect.Effect<Response, ErrorMonit
         },
       ),
   });
-}
+};
 
 const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroups(
   window: QueryWindow,

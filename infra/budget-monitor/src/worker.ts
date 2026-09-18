@@ -1,18 +1,20 @@
 import { Monitor, monitorHandler } from "@template/monitor";
-import type { MonitorBindings, Notify } from "@template/monitor";
-import { evaluateBudget, shouldNotify } from "./decision.ts";
 import { Effect } from "effect";
+
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
+import { evaluateBudget, shouldNotify } from "./decision.ts";
 
-interface Bindings extends MonitorBindings {
+import type { MonitorBindings, Notify } from "@template/monitor";
+
+type Bindings = {
   CLOUDFLARE_ACCOUNT_ID: string;
   BILLING_READ_TOKEN: string;
   BUDGET_JPY: string;
   JPY_PER_USD: string;
   FIXED_COST_USD: string;
   RESERVE_USD: string;
-}
+} & MonitorBindings;
 
 export class BudgetMonitor extends Monitor<Bindings> {
   protected readonly event = "budget";
@@ -52,5 +54,4 @@ export class BudgetMonitor extends Monitor<Bindings> {
   }
 }
 
-// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("budget");

@@ -1,5 +1,6 @@
-import { CheckIcon } from "lucide-react";
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
+import { CheckIcon } from "lucide-react";
+
 import type { ReactElement } from "react";
 
 const indicator = (
@@ -11,7 +12,7 @@ const indicator = (
   </CheckboxPrimitive.Indicator>
 );
 
-function Checkbox({
+const Checkbox = ({
   "aria-label": ariaLabel,
   checked,
   onCheckedChange,
@@ -19,7 +20,7 @@ function Checkbox({
   "aria-label": string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-}>): ReactElement {
+}>): ReactElement => {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
@@ -31,6 +32,6 @@ function Checkbox({
       {indicator}
     </CheckboxPrimitive.Root>
   );
-}
+};
 
 export { Checkbox };

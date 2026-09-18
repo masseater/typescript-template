@@ -1,10 +1,12 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
 import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+import { setupServer } from "msw/node";
+
+import { findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
+
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
-import { setupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
 const FORBIDDEN_STATUS = 403;
@@ -17,28 +19,26 @@ const target = { ...access, name: "template-db" };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database`;
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 
-function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const mockServer = (
   ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> {
+): Effect.Effect<SetupServer, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const server = setupServer(...handlers);
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (server) =>
       Effect.sync(() => {
         server.close();
       }),
   );
-}
+};
 
 it.effect("resolves the database the stack owns by its declared name", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(endpoint, ({ request }) => {
         const query = new URL(request.url).searchParams;
         assert.strictEqual(query.get("name"), target.name);

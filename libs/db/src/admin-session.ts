@@ -1,12 +1,14 @@
-import { and, eq, exists, gt, inArray } from "drizzle-orm";
-import { session, user } from "./schema.ts";
-import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
-import type { DrizzleDatabase } from "./database.ts";
-import { Effect } from "effect";
-import type { SQL } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
-import { getSessionSecurity } from "./security.ts";
 import { strongAuthenticationMethods } from "@template/config";
+import { and, eq, exists, gt, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
+import { Effect } from "effect";
+
+import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+import { session, user } from "./schema.ts";
+import { getSessionSecurity } from "./security.ts";
+
+import type { SQL } from "drizzle-orm";
+import type { DrizzleDatabase } from "./database.ts";
 
 const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId: string) {
   const actor = yield* getSessionSecurity(sessionId, "admin");
@@ -20,8 +22,7 @@ const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId:
   return actor;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function liveAdmin(database: DrizzleDatabase, sessionId: string): SQL {
+const liveAdmin = (database: DrizzleDatabase, sessionId: string): SQL => {
   const actor = alias(user, "actor");
   const now = new Date();
   const liveSession = and(
@@ -39,6 +40,6 @@ function liveAdmin(database: DrizzleDatabase, sessionId: string): SQL {
     .innerJoin(actor, eq(session.userId, actor.id))
     .where(liveSession);
   return exists(sessions);
-}
+};
 
 export { liveAdmin, requireAdmin };

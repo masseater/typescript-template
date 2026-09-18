@@ -1,5 +1,5 @@
-import type { AIBinding, Assets, D1, Email, InferEnv } from "alchemy/Cloudflare";
 import type { Application, Capability, CapabilityOf } from "@template/config";
+import type { AIBinding, Assets, D1, Email, InferEnv } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{
@@ -11,9 +11,9 @@ type SharedEnv = Readonly<{
   EMAIL_FROM: string;
 }>;
 
-interface CapabilityEnv {
+type CapabilityEnv = {
   readonly ai: Readonly<{ AI: AIBinding }>;
-}
+};
 
 type GrantedEnv<App extends Application> = [CapabilityOf<App>] extends [never]
   ? unknown

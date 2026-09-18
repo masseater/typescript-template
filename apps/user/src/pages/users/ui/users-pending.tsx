@@ -1,10 +1,12 @@
-import type { ReactElement } from "react";
 import { Status } from "@template/ui";
+
 import { UsersBody } from "./users-body.tsx";
+
+import type { ReactElement } from "react";
 
 const placeholders = ["first", "second", "third", "fourth", "fifth", "sixth"] as const;
 
-function UsersPending(): ReactElement {
+const UsersPending = (): ReactElement => {
   return (
     <UsersBody>
       <Status variant="pending">ユーザーを読み込んでいます。</Status>
@@ -15,6 +17,6 @@ function UsersPending(): ReactElement {
       </ul>
     </UsersBody>
   );
-}
+};
 
 export { UsersPending };

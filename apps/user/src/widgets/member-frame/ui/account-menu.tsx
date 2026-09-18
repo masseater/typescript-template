@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,13 +9,13 @@ import {
   useSignOut,
 } from "@template/ui";
 import { ChevronDownIcon } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+
 import type { ReactElement } from "react";
 
 const profileEditLink = <Link to="/settings/profile" />;
 const securityLink = <Link to="/security" />;
 
-function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
+const AccountMenu = ({ name }: Readonly<{ name: string }>): ReactElement => {
   const { action, signOut } = useSignOut("/");
   return (
     <DropdownMenu>
@@ -31,6 +32,6 @@ function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
 export { AccountMenu };

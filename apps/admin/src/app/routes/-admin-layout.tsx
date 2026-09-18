@@ -1,12 +1,14 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { Status, loginPath, useSession } from "@template/ui";
-import { AdminFrame } from "#widgets/admin-frame/index.ts";
-import type { ReactElement } from "react";
 import { useEffect } from "react";
+
+import { AdminFrame } from "#widgets/admin-frame/index.ts";
+
+import type { ReactElement } from "react";
 
 const SECURITY = "/security";
 
-function AdminLayout(): ReactElement {
+const AdminLayout = (): ReactElement => {
   const { error, loading, session } = useSession();
   const { href, pathname } = useLocation();
   const navigate = useNavigate();
@@ -34,6 +36,6 @@ function AdminLayout(): ReactElement {
       <Outlet />
     </AdminFrame>
   );
-}
+};
 
 export { AdminLayout };

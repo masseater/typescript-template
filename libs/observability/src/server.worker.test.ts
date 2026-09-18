@@ -1,19 +1,21 @@
-import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
+
+import { httpStatus } from "./http-status.ts";
+import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
+
 import type { Layer } from "effect";
 import type { TelemetryInvalid } from "./server.ts";
-import { httpStatus } from "./http-status.ts";
 
-interface RecordedLogs {
+type RecordedLogs = {
   readonly stderr: unknown[];
   readonly stdout: unknown[];
-}
-interface IngestInit {
+};
+type IngestInit = {
   readonly body?: string;
   readonly headers?: Readonly<Record<string, string>>;
   readonly method?: string;
-}
+};
 
 const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const spanId = "bbbbbbbbbbbbbbbb";
@@ -28,10 +30,7 @@ const telemetry = Telemetry.layer({
   serviceName: "user",
 });
 
-function recordedTelemetry(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  logs: RecordedLogs,
-): Layer.Layer<Telemetry, TelemetryInvalid> {
+const recordedTelemetry = (logs: RecordedLogs): Layer.Layer<Telemetry, TelemetryInvalid> => {
   return Telemetry.layer({
     log: {
       error: (line) => {
@@ -45,9 +44,9 @@ function recordedTelemetry(
     routes: { "/": "home" },
     serviceName: "user",
   });
-}
+};
 
-function browserEvent(): Record<string, unknown> {
+const browserEvent = (): Record<string, unknown> => {
   return {
     duration: 25,
     kind: "http",
@@ -61,16 +60,15 @@ function browserEvent(): Record<string, unknown> {
     traceId,
     value: 0,
   };
-}
+};
 
-function ingestStatus(init?: IngestInit): Effect.Effect<number, never, Telemetry> {
+const ingestStatus = (init?: IngestInit): Effect.Effect<number, never, Telemetry> => {
   return ingestBrowser(new Request(telemetryUrl, init)).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((response) => response.status),
   );
-}
+};
 
-function probeEvents(): string {
+const probeEvents = (): string => {
   const base = {
     duration: 25,
     requestId: "11111111-1111-4111-8111-111111111111",
@@ -91,7 +89,7 @@ function probeEvents(): string {
   };
   const request = { ...base, kind: "http", method: "POST", name: "http.client.request" };
   return JSON.stringify([{ ...request, status: created, value: 0 }, exception]);
-}
+};
 
 const runProbe = Effect.fn("runProbe")(function* runProbe() {
   const accepted = yield* ingestBrowser(

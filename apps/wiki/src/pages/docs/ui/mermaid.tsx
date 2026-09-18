@@ -1,8 +1,9 @@
-import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
-import { useEffect, useId, useRef, useState } from "react";
-import type { ReactElement } from "react";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import { useTheme } from "fumadocs-ui/provider/base";
+import { useEffect, useId, useRef, useState } from "react";
+
+import type { ReactElement } from "react";
 
 const renderChart = createClientOnlyFn(
   async (id: string, chart: string, dark: boolean): Promise<DocumentFragment> => {
@@ -19,7 +20,7 @@ const renderChart = createClientOnlyFn(
   },
 );
 
-function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
+const Mermaid = ({ chart }: Readonly<{ chart: string }>): ReactElement => {
   const id = `mermaid-${useId()}`;
   const { resolvedTheme } = useTheme();
   const container = useRef<HTMLDivElement>(null);
@@ -29,7 +30,7 @@ function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
   >({ status: "pending" });
   useEffect(() => {
     const controller = { active: true };
-    async function render(): Promise<void> {
+    const render = async (): Promise<void> => {
       try {
         const diagram = await renderChart(id, chart, resolvedTheme === "dark");
         if (controller.active) {
@@ -44,7 +45,7 @@ function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
           });
         }
       }
-    }
+    };
     void render();
     return (): void => {
       controller.active = false;
@@ -67,6 +68,6 @@ function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
       )}
     </figure>
   );
-}
+};
 
 export { Mermaid };

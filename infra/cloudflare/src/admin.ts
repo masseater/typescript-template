@@ -1,6 +1,6 @@
-import { stackName, stackOptions } from "./stacks.ts";
 import { Stack } from "alchemy";
-import { applicationProgram } from "./app.ts";
 
-// oxlint-disable-next-line import/no-default-export
+import { applicationProgram } from "./app.ts";
+import { stackName, stackOptions } from "./stacks.ts";
+
 export default Stack(stackName("admin"), stackOptions, applicationProgram("admin"));

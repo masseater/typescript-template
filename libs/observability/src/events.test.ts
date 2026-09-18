@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
 import { Effect } from "effect";
+
+import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
 
 const now = 1_800_000_000_000;
 const staleMilliseconds = 4_000_000;
@@ -29,15 +30,15 @@ const exception = {
   value: 1,
 };
 
-function rejected(input: unknown): Effect.Effect<boolean> {
+const rejected = (input: unknown): Effect.Effect<boolean> => {
   return parseBrowserEvents(input, labels, now).pipe(
     Effect.match({ onFailure: () => true, onSuccess: () => false }),
   );
-}
+};
 
-function rejectedAll(inputs: readonly unknown[]): Effect.Effect<readonly boolean[]> {
+const rejectedAll = (inputs: readonly unknown[]): Effect.Effect<readonly boolean[]> => {
   return Effect.forEach(inputs, rejected);
-}
+};
 
 describe("browser ingress events", () => {
   it.effect("accepts a well-formed event", () =>

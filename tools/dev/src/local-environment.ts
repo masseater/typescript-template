@@ -1,21 +1,18 @@
-import { Effect, Schema } from "effect";
-import { applicationPorts, applications, loopbackHosts } from "@template/config";
-import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
+import { execFile } from "node:child_process";
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+
+import { applicationPorts, applications, loopbackHosts } from "@template/config";
+import { Effect, Schema } from "effect";
+
 import { failure, fileIo } from "./failure.ts";
+import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
+
 import type { Application } from "@template/config";
 import type { LocalCommandFailure } from "./failure.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
 
 type App = Application;
 type RouteName = App | "mailpit";
@@ -24,7 +21,6 @@ const ROOT_HASH_LENGTH = 12;
 const AUTH_SECRET_MINIMUM_LENGTH = 32;
 const MAILPIT_PORT = 8025;
 
-// oxlint-disable-next-line typescript/strict-void-return
 const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
@@ -38,51 +34,52 @@ const CredentialsFile = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(AUTH_SECRET_MINIMUM_LENGTH)),
 });
 const routes = { ...applicationPorts, mailpit: MAILPIT_PORT };
-const routeNames = [...applications, "mailpit"] as const;
 const readyPaths = { admin: "/login", user: "/login", wiki: "/" };
 
 type Credentials = typeof CredentialsFile.Type;
 
-function lanHostname(name: RouteName): string {
+const lanHostname = (name: RouteName): string => {
   return `template-${name}.local`;
-}
+};
 
-function lanOrigin(name: RouteName): string {
+const lanOrigin = (name: RouteName): string => {
   return `https://${lanHostname(name)}`;
-}
+};
+
+const routeNames = [...applications, "mailpit"] as const;
 
 const browserSettings = `${JSON.stringify({
   allowedDomains: [...loopbackHosts, ...routeNames.map((name) => lanHostname(name))],
   restoreSave: "never",
 })}\n`;
 
-function logFileUrl(name: string): URL {
+const logFileUrl = (name: string): URL => {
   return new URL(`logs/${name}.log`, local);
-}
+};
 
-function run(
+const run = (
   file: string,
   args: readonly string[],
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   options: Parameters<typeof execFileAsync>[2],
-): Effect.Effect<unknown, LocalCommandFailure> {
+): Effect.Effect<unknown, LocalCommandFailure> => {
   return Effect.tryPromise({
     catch: () => failure("process_failed"),
     try: async () => execFileAsync(file, args, options),
   });
-}
+};
 
-function running(session: string): Effect.Effect<boolean> {
+const running = (session: string): Effect.Effect<boolean> => {
   return run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root }).pipe(
     Effect.match({ onFailure: () => false, onSuccess: () => true }),
   );
-}
+};
 
-function application(value: string | undefined): Effect.Effect<App, LocalCommandFailure> {
+const application = (value: string | undefined): Effect.Effect<App, LocalCommandFailure> => {
   return Schema.decodeUnknownEffect(AppName)(value).pipe(
     Effect.mapError(() => failure("app_invalid")),
   );
-}
+};
 
 const readCredentials = Effect.fn("readCredentials")(function* readCredentials() {
   yield* assertOwnerOnly(credentialsFile);

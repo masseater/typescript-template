@@ -1,5 +1,5 @@
-import { Effect, Option, Schema, SchemaGetter } from "effect";
 import { applications, roles } from "@template/config";
+import { Effect, Option, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
@@ -53,16 +53,16 @@ const EmailVerificationRequest = Schema.Struct({
 
 const EmailVerified = Schema.Struct({ verified: Schema.Literal(true) });
 
-function pageNumber(
+const pageNumber = (
   fallback: number,
   minimum: number,
   maximum: number,
-): Schema.withDecodingDefaultKey<Schema.NumberFromString> {
+): Schema.withDecodingDefaultKey<Schema.NumberFromString> => {
   const range = Schema.isBetween({ maximum, minimum });
   const bounded = Schema.NumberFromString.check(Schema.isInt(), range);
   const fallbackText = Effect.succeed(String(fallback));
   return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
-}
+};
 
 const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
 const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
@@ -77,16 +77,16 @@ const ScalarText = JsonScalar.pipe(
 
 const SearchKeyword = ScalarText.pipe(Schema.decodeTo(UserKeyword));
 
-function laterPage(maximum: number): Schema.Codec<number, number | string> {
+const laterPage = (maximum: number): Schema.Codec<number, number | string> => {
   return Schema.Union([Schema.Number, Schema.NumberFromString]).check(
     Schema.isInt(),
     Schema.isBetween({ maximum, minimum: secondPage }),
   );
-}
+};
 
-function absentSearchKey(): Effect.Effect<Option.Option<never>> {
+const absentSearchKey = (): Effect.Effect<Option.Option<never>> => {
   return Effect.succeed(Option.none());
-}
+};
 
 const memberPageSize = 24;
 const maximumMemberPage = 1_000_000;

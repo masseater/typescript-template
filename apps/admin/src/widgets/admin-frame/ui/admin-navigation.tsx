@@ -1,4 +1,5 @@
 import { AdminNavigationItem } from "./admin-navigation-item.tsx";
+
 import type { ReactElement } from "react";
 
 const items = [
@@ -6,10 +7,10 @@ const items = [
   { label: "認証設定", to: "/security" },
 ] as const;
 
-function AdminNavigation({
+const AdminNavigation = ({
   onNavigate,
   open,
-}: Readonly<{ onNavigate: () => void; open: boolean }>): ReactElement {
+}: Readonly<{ onNavigate: () => void; open: boolean }>): ReactElement => {
   return (
     <nav
       id="admin-navigation"
@@ -28,6 +29,6 @@ function AdminNavigation({
       </ul>
     </nav>
   );
-}
+};
 
 export { AdminNavigation };

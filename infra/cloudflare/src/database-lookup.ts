@@ -1,24 +1,26 @@
-import type { AccountAccess, Endpoint } from "./account-read.ts";
 import { Effect, Schema } from "effect";
+
 import { endpoint, readList } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
+
+import type { AccountAccess, Endpoint } from "./account-read.ts";
 
 const DatabaseList = Schema.Struct({
   result: Schema.Array(Schema.Struct({ name: Schema.String, uuid: Schema.String })),
   success: Schema.Literal(true),
 });
 
-function databaseName(prefix: string): string {
+const databaseName = (prefix: string): string => {
   return `${prefix}-db`;
-}
+};
 
-function databaseSource(accountId: string): Endpoint {
+const databaseSource = (accountId: string): Endpoint => {
   return endpoint`accounts/${accountId}/d1/database`;
-}
+};
 
-function unavailable(keys: readonly string[]): CloudflareFailure {
+const unavailable = (keys: readonly string[]): CloudflareFailure => {
   return new CloudflareFailure({ code: "database_output_unavailable", keys });
-}
+};
 
 const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
   access: AccountAccess,
@@ -26,7 +28,6 @@ const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
 ) {
   const source = databaseSource(access.accountId);
   const listed = yield* readList(access, { filter: { name }, source }, DatabaseList).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((failure) => unavailable(failure.keys)),
   );
   const matches = listed.result.filter((database) => database.name === name);

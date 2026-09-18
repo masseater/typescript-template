@@ -1,5 +1,7 @@
-import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 import { describe, expect, it } from "vite-plus/test";
+
+import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
+
 import type { ProbeResult } from "./probe.ts";
 
 const healthy: ProbeResult = { detail: "release_abc", healthy: true, service: "user" };

@@ -1,22 +1,23 @@
 import { assert, it } from "@effect/vitest";
-import type { Database } from "./database.ts";
-import type { DatabaseFailure } from "./database-failure.ts";
 import { Effect } from "effect";
-import { TestDatabase } from "./testing.ts";
-import { listMembers } from "./members.ts";
-import { query } from "./database.ts";
-import { user } from "./schema.ts";
 
-interface Seed {
+import { query } from "./database.ts";
+import { listMembers } from "./members.ts";
+import { user } from "./schema.ts";
+import { TestDatabase } from "./testing.ts";
+
+import type { DatabaseFailure } from "./database-failure.ts";
+import type { Database } from "./database.ts";
+
+type Seed = {
   readonly createdAt: string;
   readonly emailVerified?: boolean;
   readonly id: string;
   readonly name: string;
   readonly profile?: string;
-}
+};
 
-function addMembers(seeds: readonly Seed[]): Effect.Effect<void, DatabaseFailure, Database> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const addMembers = (seeds: readonly Seed[]): Effect.Effect<void, DatabaseFailure, Database> => {
   return query(async (database): Promise<void> => {
     await database.insert(user).values(
       seeds.map((seed) => ({
@@ -31,7 +32,7 @@ function addMembers(seeds: readonly Seed[]): Effect.Effect<void, DatabaseFailure
       })),
     );
   });
-}
+};
 
 it.effect("lists verified members newest first with only what others may see", () =>
   Effect.gen(function* program() {

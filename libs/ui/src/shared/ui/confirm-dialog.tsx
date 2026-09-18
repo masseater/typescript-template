@@ -1,9 +1,11 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
-import { ConfirmDialogPopup } from "./confirm-dialog-popup";
-import type { ConfirmDialogProps } from "./confirm-dialog-popup";
-import type { ReactElement } from "react";
 
-function ConfirmDialog(props: ConfirmDialogProps): ReactElement {
+import { ConfirmDialogPopup } from "./confirm-dialog-popup";
+
+import type { ReactElement } from "react";
+import type { ConfirmDialogProps } from "./confirm-dialog-popup";
+
+const ConfirmDialog = (props: ConfirmDialogProps): ReactElement => {
   const { confirmLabel, description, onConfirm, onOpenChange, open, title, variant } = props;
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -24,6 +26,6 @@ function ConfirmDialog(props: ConfirmDialogProps): ReactElement {
       </AlertDialogPrimitive.Portal>
     </AlertDialogPrimitive.Root>
   );
-}
+};
 
 export { ConfirmDialog };

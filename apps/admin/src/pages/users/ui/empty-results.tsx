@@ -1,12 +1,13 @@
 import { Status, TextLink } from "@template/ui";
-import type { ReactElement } from "react";
-import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import { omit } from "es-toolkit";
 
-function EmptyResults({
+import type { UsersSearch } from "#pages/users/model/users-search.ts";
+import type { ReactElement } from "react";
+
+const EmptyResults = ({
   beyondLastPage,
   search,
-}: Readonly<{ beyondLastPage: boolean; search: UsersSearch }>): ReactElement {
+}: Readonly<{ beyondLastPage: boolean; search: UsersSearch }>): ReactElement => {
   const target = beyondLastPage ? omit(search, ["page"]) : {};
   return (
     <div className="flex flex-col items-start gap-2">
@@ -20,6 +21,6 @@ function EmptyResults({
       </TextLink>
     </div>
   );
-}
+};
 
 export { EmptyResults };

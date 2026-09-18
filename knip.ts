@@ -72,15 +72,15 @@ const scripts = {
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
 
-function config({
+const config = ({
   production = false,
   strict = false,
 }: Readonly<
   Pick<Parameters<Extract<KnipConfig, (options: never) => unknown>>[0], "production" | "strict">
->): KnipConfiguration {
-  function productionOnly(...files: readonly string[]): string[] {
+>): KnipConfiguration => {
+  const productionOnly = (...files: readonly string[]): string[] => {
     return production || strict ? [...files] : [];
-  }
+  };
   const app = { ...application, ignore: productionOnly("src/app/routeTree.gen.ts") };
   return {
     ignoreDependencies: ["vite", "vitest"],
@@ -118,7 +118,6 @@ function config({
       },
     },
   };
-}
+};
 
-// oxlint-disable-next-line import/no-default-export
 export default config satisfies KnipConfig;

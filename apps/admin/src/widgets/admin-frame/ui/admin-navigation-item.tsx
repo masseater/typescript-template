@@ -1,13 +1,14 @@
 import { NavigationLink } from "@template/ui";
+
 import type { ReactElement } from "react";
 
 const activeOptions = { exact: true, includeSearch: false } as const;
 
-function AdminNavigationItem({
+const AdminNavigationItem = ({
   label,
   onNavigate,
   to,
-}: Readonly<{ label: string; onNavigate: () => void; to: "/" | "/security" }>): ReactElement {
+}: Readonly<{ label: string; onNavigate: () => void; to: "/" | "/security" }>): ReactElement => {
   return (
     <li>
       <NavigationLink to={to} variant="side" activeOptions={activeOptions} onClick={onNavigate}>
@@ -15,6 +16,6 @@ function AdminNavigationItem({
       </NavigationLink>
     </li>
   );
-}
+};
 
 export { AdminNavigationItem };

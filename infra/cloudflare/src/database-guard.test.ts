@@ -1,14 +1,16 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { describeCause, describeFailure } from "./secrets.ts";
-import type { CreatedResourceState } from "alchemy/State/ResourceState";
-import { Effect } from "effect";
 import { InMemoryService } from "alchemy/State";
-import type { StateService } from "alchemy/State";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
 import { mockServer } from "./account-fixture.ts";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { describeCause, describeFailure } from "./secrets.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { StateService } from "alchemy/State";
+import type { CreatedResourceState } from "alchemy/State/ResourceState";
 
 const target = { accountId: verificationSettings.accountId, prefix: verificationSettings.prefix };
 const access = { accountId: target.accountId, apiToken: "guard-test-not-a-real-token" };
@@ -17,7 +19,7 @@ const databaseName = `${target.prefix}-db`;
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 const otherDatabaseId = "11111111-2222-3333-4444-555555555555";
 
-function storedDatabase(uuid: string): CreatedResourceState {
+const storedDatabase = (uuid: string): CreatedResourceState => {
   return {
     attr: { databaseId: uuid, databaseName },
     bindings: [],
@@ -31,16 +33,15 @@ function storedDatabase(uuid: string): CreatedResourceState {
     resourceType: "Cloudflare.D1Database",
     status: "created",
   };
-}
+};
 
-function store(uuid?: string): Effect.Effect<StateService> {
-  // oxlint-disable-next-line new-cap
+const store = (uuid?: string): Effect.Effect<StateService> => {
   return InMemoryService(
     uuid === undefined
       ? {}
       : { [stackName("database")]: { [target.prefix]: { Database: storedDatabase(uuid) } } },
   );
-}
+};
 
 const unusedName = http.get(endpoint, () => HttpResponse.json({ result: [], success: true }));
 const takenName = http.get(endpoint, () =>

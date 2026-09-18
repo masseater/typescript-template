@@ -1,7 +1,9 @@
-import { CircleAlertIcon, CircleCheckIcon, InfoIcon } from "lucide-react";
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-import { Spinner } from "./spinner";
 import { cn } from "cn";
+import { CircleAlertIcon, CircleCheckIcon, InfoIcon } from "lucide-react";
+
+import { Spinner } from "./spinner";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 type StatusVariant = "error" | "info" | "pending" | "success";
 
@@ -21,13 +23,13 @@ const tones: Readonly<Record<StatusVariant, string>> = {
   success: "text-foreground",
 };
 
-function Status({
+const Status = ({
   variant = "info",
   children,
 }: Readonly<{
   variant?: StatusVariant;
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-}>): ReactElement {
+}>): ReactElement => {
   return (
     <p
       data-slot="status"
@@ -39,6 +41,6 @@ function Status({
       <span>{children}</span>
     </p>
   );
-}
+};
 
 export { Status };

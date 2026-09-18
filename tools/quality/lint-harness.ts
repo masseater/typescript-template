@@ -1,4 +1,5 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
+
 import plugin from "./rules.ts";
 
 type RuleName =
@@ -26,9 +27,9 @@ const ruleNames: readonly RuleName[] = [
   "worker-fetch",
 ];
 
-function runImmediately(_text: string, run: () => void): void {
+const runImmediately = (_text: string, run: () => void): void => {
   run();
-}
+};
 
 RuleTester.describe = runImmediately;
 RuleTester.it = runImmediately;
@@ -36,7 +37,7 @@ const tester = new RuleTester({ cwd: "/project" });
 
 const errorCountPattern = /^Should have no errors but had (?<count>\d+)/u;
 
-function reportCount(name: RuleName, filename: string, code: string): number {
+const reportCount = (name: RuleName, filename: string, code: string): number => {
   const rule = plugin.rules[name];
   if (rule === undefined) {
     throw new Error(`Unknown rule ${name}`);
@@ -46,20 +47,20 @@ function reportCount(name: RuleName, filename: string, code: string): number {
     return 0;
   } catch (error) {
     const count =
-      error instanceof Error ? errorCountPattern.exec(error.message)?.groups?.["count"] : undefined;
+      error instanceof Error ? errorCountPattern.exec(error.message)?.groups?.count : undefined;
     if (count === undefined) {
       throw error;
     }
     return Number(count);
   }
-}
+};
 
-function reported(name: RuleName, filename: string, code: string): boolean {
+const reported = (name: RuleName, filename: string, code: string): boolean => {
   return reportCount(name, filename, code) > 0;
-}
+};
 
-function reportedRules(filename: string, code: string): RuleName[] {
+const reportedRules = (filename: string, code: string): RuleName[] => {
   return ruleNames.filter((rule) => reported(rule, filename, code));
-}
+};
 
 export { reportCount, reported, reportedRules, ruleNames };

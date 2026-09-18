@@ -1,24 +1,25 @@
-import type { ReactElement, SyntheticEvent } from "react";
+import { authClient } from "./client";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
-import type { SettingsContext } from "./mfa-types";
-import { authClient } from "./client";
 import { useTextInput } from "./use-text-input";
 
-interface PasskeyRegisterFormProps {
+import type { ReactElement, SyntheticEvent } from "react";
+import type { SettingsContext } from "./mfa-types";
+
+type PasskeyRegisterFormProps = {
   readonly context: SettingsContext;
   readonly onRegistered: () => Promise<void>;
-}
+};
 
 const REGISTERED_NOTICE =
   "パスキーを登録しました。強認証への切り替えにはパスキーでログインし直してください。";
 
-function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps): ReactElement {
+const PasskeyRegisterForm = ({ context, onRegistered }: PasskeyRegisterFormProps): ReactElement => {
   const { action, onNotice, onNoticeClear, recovery, session } = context;
   const name = useTextInput();
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+  const submit = (event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     event.preventDefault();
     action.run(async () => {
       onNoticeClear();
@@ -30,7 +31,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
       onNotice(REGISTERED_NOTICE);
       await onRegistered();
     });
-  }
+  };
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
@@ -49,6 +50,6 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
       </FormColumn>
     </form>
   );
-}
+};
 
 export { PasskeyRegisterForm };

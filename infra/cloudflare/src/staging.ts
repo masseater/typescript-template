@@ -1,11 +1,10 @@
-import { assertRealDirectory, fail, files, io, sameContent } from "./artifact-io.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { copyFile, lstat, mkdir } from "node:fs/promises";
-import { Effect } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
+import { copyFile, lstat, mkdir } from "node:fs/promises";
 import path from "node:path";
+
+import { Effect } from "effect";
+
+import { assertRealDirectory, fail, files, io, sameContent } from "./artifact-io.ts";
 
 const assertExistingStagedCopy = Effect.fn("assertExistingStagedCopy")(
   function* assertExistingStagedCopy(source: string, destination: string) {
@@ -20,9 +19,9 @@ const assertExistingStagedCopy = Effect.fn("assertExistingStagedCopy")(
   },
 );
 
-function isExistingFile(cause: unknown): boolean {
+const isExistingFile = (cause: unknown): boolean => {
   return cause instanceof Error && "code" in cause && cause.code === "EEXIST";
-}
+};
 
 const stageFile = Effect.fn("stageFile")(function* stageFile(source: string, destination: string) {
   yield* io(async () => mkdir(path.dirname(destination), { recursive: true }));
@@ -31,7 +30,6 @@ const stageFile = Effect.fn("stageFile")(function* stageFile(source: string, des
     catch: (cause) => ({ cause }),
     try: async () => copyFile(source, destination, constants.COPYFILE_EXCL),
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catch(({ cause }) =>
       isExistingFile(cause)
         ? assertExistingStagedCopy(source, destination)

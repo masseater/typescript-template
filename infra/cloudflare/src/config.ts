@@ -1,8 +1,10 @@
-import { Config, Effect, Schema } from "effect";
-import type { StackName } from "./stacks.ts";
-import type { WorkerObservability } from "alchemy/Cloudflare";
-import { stackNames } from "./stacks.ts";
 import { workerCompatibility } from "@template/config/worker";
+import { Config, Effect, Schema } from "effect";
+
+import { stackNames } from "./stacks.ts";
+
+import type { WorkerObservability } from "alchemy/Cloudflare";
+import type { StackName } from "./stacks.ts";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
@@ -24,12 +26,12 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
   keys: Schema.Array(Schema.String),
 }) {}
 
-function fail(
+const fail = (
   code: CloudflareFailure["code"],
   keys: readonly string[] = [],
-): Effect.Effect<never, CloudflareFailure> {
+): Effect.Effect<never, CloudflareFailure> => {
   return Effect.fail(new CloudflareFailure({ code, keys }));
-}
+};
 
 const MAX_BUDGET_RECIPIENTS = 10;
 const MIN_AUTH_SECRET_LENGTH = 32;
@@ -95,14 +97,14 @@ const workerCompatibilityOptions = {
   date: workerCompatibility.date,
   flags: [...workerCompatibility.flags],
 };
-function workerObservability(headSamplingRate: number): WorkerObservability {
+const workerObservability = (headSamplingRate: number): WorkerObservability => {
   return {
     enabled: true,
     headSamplingRate,
     logs: { enabled: true, headSamplingRate, invocationLogs: false },
     traces: { enabled: true, headSamplingRate },
   };
-}
+};
 
 const PlanCommand = Schema.Tuple([Schema.Literal("plan"), Schema.Literals(["all", ...stackNames])]);
 const DeployCommand = Schema.Tuple([
@@ -129,7 +131,7 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   return { operation: "plan", stacks } as const;
 });
 
-function duplicatedOrigins(config: SharedConfig): readonly string[] {
+const duplicatedOrigins = (config: SharedConfig): readonly string[] => {
   const origins = [
     [originKeys.admin, config.origins.admin],
     [originKeys.user, config.origins.user],
@@ -138,7 +140,7 @@ function duplicatedOrigins(config: SharedConfig): readonly string[] {
   return origins.flatMap(([key, origin]) =>
     origins.some(([other, value]) => other !== key && value === origin) ? [key] : [],
   );
-}
+};
 
 const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedConfig(
   config: SharedConfig,

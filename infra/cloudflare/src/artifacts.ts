@@ -1,4 +1,10 @@
+import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { serverOnlyMarkers } from "@template/config/vite";
 import { Context, Effect } from "effect";
+
 import {
   assertRealDirectory,
   fail,
@@ -8,26 +14,20 @@ import {
   jsonSha256,
   sameContent,
 } from "./artifact-io.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, stat } from "node:fs/promises";
+import { retainGenerations } from "./retention.ts";
+import { archiveSourceMaps } from "./source-maps.ts";
+import { stageFiles } from "./staging.ts";
+
 import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
-import { archiveSourceMaps } from "./source-maps.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import { retainGenerations } from "./retention.ts";
-import { serverOnlyMarkers } from "@template/config/vite";
-import { stageFiles } from "./staging.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const MAIN_MODULE = "index.js";
 
-function monitorArtifact(unit: string): string {
+const monitorArtifact = (unit: string): string => {
   return path.join(repositoryRoot, "infra", unit, "dist", MAIN_MODULE);
-}
+};
 
 const RELEASE_LENGTH = 16;
 const STAGED_DIGESTS_KEPT = 1;
@@ -38,33 +38,34 @@ type ArtifactMode = "describe" | "publish" | "stage";
 const ArtifactWrites = Context.Reference<ArtifactMode>("template/cloudflare/ArtifactWrites", {
   defaultValue: (): ArtifactMode => "describe",
 });
-const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
 
 interface WorkerModule {
   readonly contentFile: string;
   readonly name: string;
 }
 
+const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
+
 const workerModuleGlobs = [
   ...[...MODULE_EXTENSIONS].map((extension) => `**/*${extension}`),
   "**/*.map",
 ];
 
-interface Artifacts {
+type Artifacts = {
   readonly clientDirectory: string;
   readonly clientFiles: readonly string[];
   readonly mainModule: string;
   readonly modules: readonly WorkerModule[];
   readonly release: string;
   readonly uploaded: string;
-}
+};
 
-interface BuildOutput {
+type BuildOutput = {
   readonly client: string;
   readonly server: string;
-}
+};
 
-function privateArtifact(relative: string): boolean {
+const privateArtifact = (relative: string): boolean => {
   return relative
     .split(path.sep)
     .some(
@@ -72,13 +73,13 @@ function privateArtifact(relative: string): boolean {
         /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*)$/u.test(name) ||
         /\.(?:pem|key)$/u.test(name),
     );
-}
+};
 
-function carriesServerOnlyCode(file: string): Effect.Effect<boolean, ArtifactFailure> {
+const carriesServerOnlyCode = (file: string): Effect.Effect<boolean, ArtifactFailure> => {
   return io(async () => readFile(file, "utf-8")).pipe(
     Effect.map((source) => serverOnlyMarkers.some((marker) => source.includes(marker))),
   );
-}
+};
 
 const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArtifactFiles(
   client: string,
@@ -101,11 +102,11 @@ const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArt
   return clientFiles;
 });
 
-function assertServerCssPublished(
+const assertServerCssPublished = (
   output: BuildOutput,
   cssFiles: readonly string[],
   clientFiles: readonly string[],
-): Effect.Effect<void, ArtifactFailure> {
+): Effect.Effect<void, ArtifactFailure> => {
   return Effect.all(
     cssFiles.map((file) => {
       const publicFile = path.join(output.client, path.relative(output.server, file));
@@ -118,22 +119,25 @@ function assertServerCssPublished(
     }),
     { concurrency: "unbounded", discard: true },
   );
-}
+};
 
-function workerModule(server: string, file: string): Effect.Effect<WorkerModule, ArtifactFailure> {
+const workerModule = (
+  server: string,
+  file: string,
+): Effect.Effect<WorkerModule, ArtifactFailure> => {
   return MODULE_EXTENSIONS.has(path.extname(file))
     ? Effect.succeed({
         contentFile: file,
         name: path.relative(server, file).replaceAll(path.sep, "/"),
       })
     : fail("worker_module_type_unsupported");
-}
+};
 
-function sourceMapModules(
+const sourceMapModules = (
   server: string,
   serverFiles: readonly string[],
   codeModules: readonly WorkerModule[],
-): WorkerModule[] {
+): WorkerModule[] => {
   const codeFiles = new Set(codeModules.map((module) => module.contentFile));
   return serverFiles
     .filter((file) => file.endsWith(".map") && codeFiles.has(file.slice(0, -".map".length)))
@@ -141,7 +145,7 @@ function sourceMapModules(
       contentFile: file,
       name: path.relative(server, file).replaceAll(path.sep, "/"),
     }));
-}
+};
 
 const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerModules(
   output: BuildOutput,
@@ -167,17 +171,17 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
   return { code, sourceMaps: sourceMapModules(output.server, allServerFiles, code) };
 });
 
-function manifestDigest(
+const manifestDigest = (
   root: string,
   contentFiles: readonly string[],
-): Effect.Effect<string, ArtifactFailure> {
+): Effect.Effect<string, ArtifactFailure> => {
   return Effect.all(
     contentFiles.map((file) =>
       fileSha256(file).pipe(Effect.map((hash) => [path.relative(root, file), hash])),
     ),
     { concurrency: "unbounded" },
   ).pipe(Effect.flatMap(jsonSha256));
-}
+};
 
 const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
   repository: string,
@@ -197,15 +201,15 @@ const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
   return output;
 });
 
-function serverDigest(
+const serverDigest = (
   server: string,
   modules: readonly WorkerModule[],
-): Effect.Effect<string, ArtifactFailure> {
+): Effect.Effect<string, ArtifactFailure> => {
   return manifestDigest(
     server,
     modules.map((module) => module.contentFile),
   );
-}
+};
 
 const digests = Effect.fn("digests")(function* digests(
   output: BuildOutput,
@@ -219,9 +223,9 @@ const digests = Effect.fn("digests")(function* digests(
   return { release: release.slice(0, RELEASE_LENGTH), uploaded };
 });
 
-function stagedRoot(repository: string, target: Application): string {
+const stagedRoot = (repository: string, target: Application): string => {
   return path.join(repository, "infra", "cloudflare", ".artifacts", target);
-}
+};
 
 const materialize = Effect.fn("materialize")(function* materialize(
   place: { readonly repository: string; readonly target: Application },

@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vite-plus/test";
-import { errorMessage, requirePasskeyUV, requireSuccess } from "./protocol";
-import { SessionView } from "@template/runtime/contracts";
 import { decodeJson } from "@template/runtime/client";
+import { SessionView } from "@template/runtime/contracts";
+import { describe, expect, it } from "vite-plus/test";
 
-function parseSession(input: unknown): typeof SessionView.Type {
+import { errorMessage, requirePasskeyUV, requireSuccess } from "./protocol";
+
+const parseSession = (input: unknown): typeof SessionView.Type => {
   return decodeJson(SessionView, input);
-}
+};
 
 describe("パスキー応答の本人確認", () => {
   it("認証要求では既存の challenge を維持して本人確認を必須にする", () => {
@@ -49,7 +50,6 @@ describe("パスキー応答の形式検証", () => {
   it("パスキー設定の不正な応答を拒否する", () => {
     expect.hasAssertions();
     expect(() => {
-      // oxlint-disable-next-line unicorn/no-null
       requirePasskeyUV(null, "/api/auth/passkey/generate-register-options");
     }).toThrow("パスキー設定の応答形式が不正です。");
     expect(() => {
@@ -64,17 +64,17 @@ describe("パスキー応答の形式検証", () => {
 describe("認証結果の検証", () => {
   it("認証失敗と結果の欠落を成功扱いにしない", () => {
     expect.hasAssertions();
-    // oxlint-disable-next-line unicorn/no-null
+
     expect(() => requireSuccess({ data: null, error: { message: "SESSION_INVALID" } })).toThrow(
       "SESSION_INVALID",
     );
-    // oxlint-disable-next-line unicorn/no-null
+
     expect(() => requireSuccess({ data: null, error: null })).toThrow("結果が返りませんでした");
-    // oxlint-disable-next-line unicorn/no-null
+
     expect(() => requireSuccess({ data: undefined, error: null })).toThrow(
       "結果が返りませんでした",
     );
-    // oxlint-disable-next-line unicorn/no-null
+
     expect(requireSuccess({ data: { status: true }, error: null })).toStrictEqual({
       status: true,
     });

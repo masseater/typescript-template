@@ -1,6 +1,8 @@
 import { Effect, Schema } from "effect";
-import type { DatabaseExecutor } from "./remote-operations.ts";
+
 import { RemoteFailure } from "./remote-input.ts";
+
+import type { DatabaseExecutor } from "./remote-operations.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const StatementResult = Schema.Struct({
@@ -12,11 +14,11 @@ const QueryResponse = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-function queryFailed(): RemoteFailure {
+const queryFailed = (): RemoteFailure => {
   return new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
-}
+};
 
-function remoteExecutor({
+const remoteExecutor = ({
   accountId,
   databaseId,
   apiToken,
@@ -24,14 +26,14 @@ function remoteExecutor({
   readonly accountId: string;
   readonly databaseId: string;
   readonly apiToken: string;
-}): DatabaseExecutor {
+}): DatabaseExecutor => {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
   return {
     batch: (queries) =>
       Effect.gen(function* batch() {
         const response = yield* Effect.tryPromise({
           catch: queryFailed,
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
           try: async (signal) =>
             fetch(endpoint, {
               body: JSON.stringify({ batch: queries }),
@@ -57,6 +59,6 @@ function remoteExecutor({
         return decoded.result.map((item) => item.results);
       }),
   };
-}
+};
 
 export { remoteExecutor };

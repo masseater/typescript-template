@@ -1,5 +1,5 @@
-import { Status } from "./status";
 import preview from "../../../.storybook/preview";
+import { Status } from "./status";
 
 const meta = preview.meta({ component: Status });
 

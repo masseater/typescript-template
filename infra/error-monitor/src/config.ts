@@ -16,15 +16,15 @@ const ErrorMonitorEnvironment = Schema.Struct({
   OBSERVABILITY_TOKEN: Schema.String.check(Schema.isMinLength(MIN_OBSERVABILITY_TOKEN_LENGTH)),
 });
 
-function parseErrorMonitorConfig(
+const parseErrorMonitorConfig = (
   input: unknown,
 ): Effect.Effect<
   { readonly CLOUDFLARE_ACCOUNT_ID: string; readonly OBSERVABILITY_TOKEN: string },
   ErrorMonitorFailure
-> {
+> => {
   return Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
     Effect.mapError(() => new ErrorMonitorFailure({ code: "error_monitor_config_invalid" })),
   );
-}
+};
 
 export { ErrorMonitorFailure, parseErrorMonitorConfig };

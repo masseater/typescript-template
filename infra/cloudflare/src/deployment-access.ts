@@ -1,22 +1,24 @@
-import { Config, Effect, Redacted } from "effect";
-import type { Confidential } from "./secrets.ts";
-import type { DeploymentSecrets } from "./credentials.ts";
-import type { SharedConfig } from "./config.ts";
 import { State as StateRoute } from "alchemy/Alchemist";
-import { settings } from "./settings.ts";
+import { Config, Effect, Redacted } from "effect";
+
 import { verifiedSecrets } from "./credentials.ts";
 import { withVerifiedSecrets } from "./secrets.ts";
+import { settings } from "./settings.ts";
+
+import type { SharedConfig } from "./config.ts";
+import type { DeploymentSecrets } from "./credentials.ts";
+import type { Confidential } from "./secrets.ts";
 
 const apiToken = Config.redacted("CLOUDFLARE_API_TOKEN");
 
-function byLongest(left: Confidential, right: Confidential): number {
+const byLongest = (left: Confidential, right: Confidential): number => {
   return right.value.length - left.value.length;
-}
+};
 
-function confidentialValues(
+const confidentialValues = (
   config: SharedConfig,
   secrets: DeploymentSecrets,
-): readonly Confidential[] {
+): readonly Confidential[] => {
   const origins = Object.entries(config.origins).flatMap(
     ([app, origin]: readonly [string, string]) => {
       const key = `TEMPLATE_${app.toUpperCase()}_ORIGIN`;
@@ -35,7 +37,7 @@ function confidentialValues(
     ...origins,
     ...config.budget.recipients.map((recipient) => ({ key: "ALERT_EMAIL", value: recipient })),
   ].toSorted(byLongest);
-}
+};
 
 const deploymentAccess = Effect.fn("deploymentAccess")(function* deploymentAccess() {
   const secrets = yield* verifiedSecrets();
@@ -49,8 +51,8 @@ const deploymentAccess = Effect.fn("deploymentAccess")(function* deploymentAcces
   };
 });
 
-function stateStore(secrets: DeploymentSecrets): ReturnType<typeof StateRoute.store> {
+const stateStore = (secrets: DeploymentSecrets): ReturnType<typeof StateRoute.store> => {
   return StateRoute.store({ backend: "cloudflare", envFile: secrets.filename });
-}
+};
 
 export { deploymentAccess, stateStore };

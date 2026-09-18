@@ -1,11 +1,13 @@
 import { Heading } from "@template/ui";
-import type { ReactElement } from "react";
-import { UserFilters } from "./user-filters.tsx";
-import { UserResults } from "./user-results.tsx";
+
 import { useUserList } from "#pages/users/model/user-list.ts";
 import { useUsersSearch } from "#pages/users/model/users-search-state.ts";
+import { UserFilters } from "./user-filters.tsx";
+import { UserResults } from "./user-results.tsx";
 
-function UsersPage(): ReactElement {
+import type { ReactElement } from "react";
+
+const UsersPage = (): ReactElement => {
   const search = useUsersSearch();
   const { reload, state } = useUserList(search);
   return (
@@ -17,6 +19,6 @@ function UsersPage(): ReactElement {
       <UserResults search={search} state={state} onReload={reload} />
     </main>
   );
-}
+};
 
 export { UsersPage };

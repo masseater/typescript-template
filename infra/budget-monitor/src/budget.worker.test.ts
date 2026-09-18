@@ -1,12 +1,14 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { evaluateBudget, shouldNotify } from "./decision.ts";
-import type { BudgetFailure } from "./config.ts";
+import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
-import type { UsageSnapshot } from "./billing.ts";
+import { HttpResponse, http } from "msw";
+
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
-import { setupNetwork } from "@msw/cloudflare";
+import { evaluateBudget, shouldNotify } from "./decision.ts";
+
+import type { UsageSnapshot } from "./billing.ts";
+import type { BudgetFailure } from "./config.ts";
 
 const ACCOUNT_ID_LENGTH = 32;
 const WORKERS_COST_USD = 20;
@@ -44,13 +46,12 @@ const record = {
 };
 const now = new Date("2026-09-16T00:00:00Z");
 
-function usageFrom(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const usageFrom = (
   input: Record<string, unknown>,
   accountId: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   date: Date,
-): Effect.Effect<UsageSnapshot, BudgetFailure> {
+): Effect.Effect<UsageSnapshot, BudgetFailure> => {
   return Effect.acquireUseRelease(
     Effect.sync(() => {
       const network = setupNetwork();
@@ -64,24 +65,23 @@ function usageFrom(
       return network;
     }),
     () => fetchUsage(accountId, "test-token", date),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     (network) =>
       Effect.sync(() => {
         network.disable();
       }),
   );
-}
+};
 
-function code<Value, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const code = <Value, Requirements>(
   effect: Effect.Effect<Value, BudgetFailure, Requirements>,
-): Effect.Effect<BudgetFailure["code"], Value, Requirements> {
+): Effect.Effect<BudgetFailure["code"], Value, Requirements> => {
   return effect.pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     Effect.map((failure) => failure.code),
   );
-}
+};
 
 it.effect("aggregates daily actual costs instead of summing cumulative costs", () =>
   Effect.gen(function* program() {
@@ -130,7 +130,7 @@ it.effect("missing cost, failed API envelope and empty usage are not treated as 
     for (const input of [
       { result: [], success: true },
       { result: [record], success: false },
-      // oxlint-disable-next-line unicorn/no-null
+
       { result: [{ ...record, BilledCost: null }], success: true },
     ]) {
       assert.strictEqual(yield* code(usageFrom(input, account, now)), "billing_response_invalid");

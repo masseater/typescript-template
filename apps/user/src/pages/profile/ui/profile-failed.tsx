@@ -1,12 +1,13 @@
-import { Button, Page, Status } from "@template/ui";
-import type { ReactElement } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { Button, Page, Status } from "@template/ui";
 
-function ProfileFailed(): ReactElement {
+import type { ReactElement } from "react";
+
+const ProfileFailed = (): ReactElement => {
   const router = useRouter();
-  function retry(): void {
+  const retry = (): void => {
     void router.invalidate();
-  }
+  };
   return (
     <Page title="プロフィール">
       <Status variant="error">プロフィールを取得できませんでした。</Status>
@@ -15,6 +16,6 @@ function ProfileFailed(): ReactElement {
       </Button>
     </Page>
   );
-}
+};
 
 export { ProfileFailed };

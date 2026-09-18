@@ -1,4 +1,6 @@
-import type { ConfigEnv, UserConfig } from "vite-plus";
+import { cloudflare } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import {
   appRun,
   appServer,
@@ -7,15 +9,13 @@ import {
   startOptions,
   withoutEnvFileLoader,
 } from "@template/config/vite";
-import { localDatabase, localDatabasePersistence } from "@template/db/local";
-import { cloudflare } from "@cloudflare/vite-plugin";
-import { defineConfig } from "vite-plus";
-import { devBoundary } from "@template/dev-boundary";
-import tailwindcss from "@tailwindcss/vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { workerCompatibility } from "@template/config/worker";
+import { localDatabase, localDatabasePersistence } from "@template/db/local";
+import { devBoundary } from "@template/dev-boundary";
+import { defineConfig } from "vite-plus";
 
-// oxlint-disable-next-line import/no-default-export
+import type { ConfigEnv, UserConfig } from "vite-plus";
+
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
   build: { sourcemap: "hidden" },
   plugins: [

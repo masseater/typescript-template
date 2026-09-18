@@ -1,4 +1,11 @@
-import type { App, Credentials } from "./local-environment.ts";
+import { randomBytes } from "node:crypto";
+import { mkdir, stat } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+import { applications } from "@template/config";
+import { Effect } from "effect";
+
+import { failure, fileIo } from "./failure.ts";
 import {
   credentialsFile,
   lanOrigin,
@@ -7,34 +14,27 @@ import {
   refreshBrowserConfig,
   routes,
 } from "./local-environment.ts";
-import { failure, fileIo } from "./failure.ts";
 import {
   isErrorCode,
   privateDirectoryMode,
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, stat } from "node:fs/promises";
-import { Effect } from "effect";
-import type { LocalCommandFailure } from "./failure.ts";
-import { applications } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { randomBytes } from "node:crypto";
 
-interface SetupReport {
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App, Credentials } from "./local-environment.ts";
+
+type SetupReport = {
   readonly credentialsFile: string;
   readonly event: "local.app_configuration_ready";
   readonly ok: true;
   readonly secretsPrinted: false;
-}
+};
 
 const authSecretBytes = 48;
 const jsonIndentation = 2;
 
-function credentialsExist(): Effect.Effect<boolean, LocalCommandFailure> {
+const credentialsExist = (): Effect.Effect<boolean, LocalCommandFailure> => {
   return Effect.tryPromise({
     catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isErrorCode(cause, "ENOENT") }),
     try: async () => stat(credentialsFile),
@@ -45,7 +45,7 @@ function credentialsExist(): Effect.Effect<boolean, LocalCommandFailure> {
       onSuccess: () => Effect.succeed(true),
     }),
   );
-}
+};
 
 const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
   function* loadOrCreateCredentials() {
@@ -58,24 +58,24 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
   },
 );
 
-function appVariables(app: App, credentials: Credentials): Readonly<Record<string, string>> {
+const appVariables = (app: App, credentials: Credentials): Readonly<Record<string, string>> => {
   return {
     APP_ORIGIN: lanOrigin(app),
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
     MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
   };
-}
+};
 
-function writeAppVariables(
+const writeAppVariables = (
   app: App,
   credentials: Credentials,
-): Effect.Effect<void, LocalCommandFailure> {
+): Effect.Effect<void, LocalCommandFailure> => {
   const content = `${Object.entries(appVariables(app, credentials))
     .map(([key, value]: readonly [string, string]) => `${key}=${JSON.stringify(value)}`)
     .join("\n")}\n`;
   return replacePrivateFile(new URL(`../../../apps/${app}/.dev.vars`, import.meta.url), content);
-}
+};
 
 const setup = Effect.fn("setup")(function* setup() {
   yield* fileIo(async () => mkdir(local, { mode: privateDirectoryMode, recursive: true }));

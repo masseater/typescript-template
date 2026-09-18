@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { exactMatchesFirst, rankPages } from "./semantic.ts";
 
 const PAGE_LIMIT = 5;
@@ -9,9 +10,9 @@ const pageTexts = new Map([
   ["/database", "INFRA:DEPLOY:SHARED"],
 ]);
 
-function textOf(url: string): string {
+const textOf = (url: string): string => {
   return pageTexts.get(url) ?? "";
-}
+};
 
 describe("verbatim query matches", () => {
   it("pages containing the whole query verbatim outrank pages matching only its words", () => {

@@ -1,10 +1,10 @@
-import { Result, Schema } from "effect";
-import type { AnyElysia } from "elysia";
-import { ErrorBody } from "./contracts.ts";
-import { httpStatus } from "@template/observability";
 import { treaty } from "@elysiajs/eden";
+import { httpStatus } from "@template/observability";
+import { Result, Schema } from "effect";
 
-type Decodable = Schema.Top & { readonly DecodingServices: never };
+import { ErrorBody } from "./contracts.ts";
+
+import type { AnyElysia } from "elysia";
 
 interface ApiFailure {
   readonly status: number;
@@ -17,35 +17,36 @@ interface ApiReply {
   readonly response: Readonly<Pick<Response, "headers">>;
 }
 
-function decodeJson<Contract extends Decodable>(
+type Decodable = Schema.Top & { readonly DecodingServices: never };
+
+const decodeJson = <Contract extends Decodable>(
   contract: Contract,
   input: unknown,
-): Contract["Type"] {
+): Contract["Type"] => {
   const decoded = Schema.decodeUnknownResult(contract)(input);
   if (Result.isFailure(decoded)) {
     throw new Error("サーバーの応答形式が不正です。");
   }
   return decoded.success;
-}
+};
 
-function failureMessage(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const failureMessage = (
   reply: Readonly<Pick<Response, "headers" | "status">>,
   body: unknown,
-): string {
+): string => {
   const failure = Schema.decodeUnknownResult(ErrorBody)(body);
   const message = Result.isSuccess(failure)
     ? failure.success.error
     : `リクエストに失敗しました（HTTP ${reply.status}）。`;
   const requestId = reply.headers.get("x-request-id") ?? "";
   return requestId === "" ? message : `${message} リクエスト ID: ${requestId}`;
-}
+};
 
-function apiData<Contract extends Decodable>(
+const apiData = <Contract extends Decodable>(
   contract: Contract,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   reply: ApiReply,
-): Contract["Type"] {
+): Contract["Type"] => {
   if (reply.error !== null) {
     throw new Error(
       failureMessage(
@@ -55,34 +56,34 @@ function apiData<Contract extends Decodable>(
     );
   }
   return decodeJson(contract, reply.data);
-}
+};
 
 const absent = {
   notFound: httpStatus.notFound,
   unauthorized: httpStatus.unauthorized,
 } as const;
 
-function apiDataOrNone<Contract extends Decodable>(
+const apiDataOrNone = <Contract extends Decodable>(
   contract: Contract,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   reply: ApiReply,
   absentStatus: (typeof absent)[keyof typeof absent] = absent.unauthorized,
-): Contract["Type"] | undefined {
+): Contract["Type"] | undefined => {
   return reply.error?.status === absentStatus ? undefined : apiData(contract, reply);
-}
+};
 
-function apiServerClient<App extends AnyElysia>(
+const apiServerClient = <App extends AnyElysia>(
   app: App,
   headers: Readonly<Record<string, string>>,
-): ReturnType<typeof treaty<App, string>> {
+): ReturnType<typeof treaty<App, string>> => {
   return treaty(app, { headers, parseDate: false });
-}
+};
 
-function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
+const apiClient = <App extends AnyElysia>(): ReturnType<typeof treaty<App>> => {
   return treaty<App>(globalThis.location.origin, {
     fetch: { cache: "no-store", credentials: "same-origin", redirect: "error" },
     parseDate: false,
   });
-}
+};
 
 export { absent, apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson, failureMessage };

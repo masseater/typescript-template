@@ -1,13 +1,13 @@
-import { Effect, Result, Schema } from "effect";
 import { loopbackHosts } from "@template/config";
+import { Effect, Result, Schema } from "effect";
 
 type Row = Record<string, unknown>;
 type LogRow = Row & { readonly event: Row | undefined };
 
-interface RequestTelemetry {
+type RequestTelemetry = {
   readonly logs: LogRow[];
   readonly spans: Row[];
-}
+};
 
 class ExplorerFailure extends Schema.TaggedError<ExplorerFailure>()("ExplorerFailure", {
   reason: Schema.Literals([
@@ -28,20 +28,16 @@ const RequestId = Schema.String.check(
   Schema.isPattern(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
 );
 
-function originInvalid(): ExplorerFailure {
-  return new ExplorerFailure({ reason: "origin_invalid" });
-}
-
-function queryFailed(): ExplorerFailure {
+const queryFailed = (): ExplorerFailure => {
   return new ExplorerFailure({ reason: "query_failed" });
-}
+};
 
-function responseInvalid(): ExplorerFailure {
+const responseInvalid = (): ExplorerFailure => {
   return new ExplorerFailure({ reason: "response_invalid" });
-}
+};
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function isLoopbackAppOrigin(url: Readonly<URL>): boolean {
+const isLoopbackAppOrigin = (url: Readonly<URL>): boolean => {
   return (
     url.protocol === "http:" &&
     loopbackHostSet.has(url.hostname) &&
@@ -51,14 +47,18 @@ function isLoopbackAppOrigin(url: Readonly<URL>): boolean {
     url.hash === "" &&
     url.pathname === "/"
   );
-}
+};
 
-function explorerOrigin(app: string): Effect.Effect<URL, ExplorerFailure> {
+const originInvalid = (): ExplorerFailure => {
+  return new ExplorerFailure({ reason: "origin_invalid" });
+};
+
+const explorerOrigin = (app: string): Effect.Effect<URL, ExplorerFailure> => {
   const url = URL.parse(app);
   return url !== null && isLoopbackAppOrigin(url)
     ? Effect.succeed(url)
     : Effect.fail(originInvalid());
-}
+};
 
 const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   app: string,
@@ -68,7 +68,7 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   const origin = yield* explorerOrigin(app);
   const response = yield* Effect.tryPromise({
     catch: queryFailed,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     try: async (signal) =>
       fetch(new URL("/cdn-cgi/local/explorer/api/local/observability/query", origin), {
         body: JSON.stringify({ params, sql }),
@@ -93,24 +93,24 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   );
 });
 
-function parseStructured(message: string): Row | undefined {
+const parseStructured = (message: string): Row | undefined => {
   const args: unknown = JSON.parse(message);
   const first: unknown = Array.isArray(args) ? args[0] : args;
   const parsed: unknown = typeof first === "string" ? JSON.parse(first) : undefined;
   return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
     ? Object.fromEntries(Object.entries(parsed))
     : undefined;
-}
+};
 
-function structuredMessage(message: unknown): Row | undefined {
+const structuredMessage = (message: unknown): Row | undefined => {
   return typeof message === "string"
     ? Result.getOrUndefined(Result.try(() => parseStructured(message)))
     : undefined;
-}
+};
 
-function withEvent({ message, ...row }: Readonly<Row>): LogRow {
+const withEvent = ({ message, ...row }: Readonly<Row>): LogRow => {
   return { ...row, event: structuredMessage(message) };
-}
+};
 
 const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetry(
   app: string,
@@ -135,7 +135,7 @@ const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetr
     ],
     { concurrency: "unbounded" },
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   const telemetry: RequestTelemetry = { logs: logs.map((row) => withEvent(row)), spans };
   return telemetry;
 });

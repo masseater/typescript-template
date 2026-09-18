@@ -1,8 +1,10 @@
-import { CompactNavigation } from "./compact-navigation.tsx";
 import { NavigationLink } from "@template/ui";
+
+import { CompactNavigation } from "./compact-navigation.tsx";
+
 import type { ReactElement } from "react";
 
-function MemberNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
+const MemberNavigation = ({ userId }: Readonly<{ userId: string }>): ReactElement => {
   return (
     <>
       <nav aria-label="メイン" className="hidden items-center gap-1 md:flex">
@@ -18,6 +20,6 @@ function MemberNavigation({ userId }: Readonly<{ userId: string }>): ReactElemen
       </div>
     </>
   );
-}
+};
 
 export { MemberNavigation };

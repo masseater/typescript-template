@@ -3,26 +3,27 @@ import { Effect, Option, Schema } from "effect";
 const maximumNickname = 30;
 const maximumOccupation = 50;
 const maximumInterest = 20;
-const maximumInterests = 5;
 const maximumArea = 50;
 const maximumMessage = 200;
 const maximumOption = 20;
 const minimumOptions = 2;
 const maximumOptions = 8;
 
-function text(maximum: number): Schema.Trim {
+const text = (maximum: number): Schema.Trim => {
   return Schema.Trim.check(Schema.isLengthBetween(1, maximum));
-}
+};
 
-function dropped(): Effect.Effect<Option.Option<never>> {
+const dropped = (): Effect.Effect<Option.Option<never>> => {
   return Effect.succeedNone;
-}
+};
 
-function readable<Value extends Schema.Constraint>(
+const readable = <Value extends Schema.Constraint>(
   schema: Value,
-): Schema.optionalKey<Schema.middlewareDecoding<Value, Value["DecodingServices"]>> {
+): Schema.optionalKey<Schema.middlewareDecoding<Value, Value["DecodingServices"]>> => {
   return Schema.optionalKey(Schema.catchDecoding<Value>(dropped)(schema));
-}
+};
+
+const maximumInterests = 5;
 
 const interestCount = Schema.isLengthBetween(1, maximumInterests);
 const valueSchemas = {
@@ -64,11 +65,11 @@ const Reply = Schema.Union([
 type SheetData = typeof Sheet.Type;
 type ReplyForm = typeof Reply.Type;
 
-interface FieldDefinition {
+type FieldDefinition = {
   readonly label: string;
   readonly question: string;
   readonly reply?: ReplyForm;
-}
+};
 
 const fieldDefinitions: Readonly<Record<FieldName, FieldDefinition>> = {
   area: {
@@ -93,17 +94,17 @@ const fieldDefinitions: Readonly<Record<FieldName, FieldDefinition>> = {
 const separators = /[、,，]/u;
 const decodeReadable = Schema.decodeUnknownOption(ReadableSheet);
 
-function readValue(key: FieldName, spoken: readonly string[]): SheetData {
+const readValue = (key: FieldName, spoken: readonly string[]): SheetData => {
   const parts = spoken.flatMap((part) => part.split(separators));
   const candidate =
     key === "interests" ? parts.filter((part) => part.trim() !== "") : spoken.join("、");
   return Option.getOrElse(decodeReadable({ [key]: candidate }), () => ({}));
-}
+};
 
-function displayValue(sheet: SheetData, key: FieldName): string | undefined {
+const displayValue = (sheet: SheetData, key: FieldName): string | undefined => {
   const value = sheet[key];
   return typeof value === "string" || value === undefined ? value : value.join("、");
-}
+};
 
 export {
   FieldKey,

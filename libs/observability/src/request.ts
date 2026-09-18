@@ -1,10 +1,11 @@
 import { Effect, Option, Schema } from "effect";
+
 import { httpStatus } from "./http-status.ts";
 
-interface JsonRequest {
+type JsonRequest = {
   readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
   readonly headers: Readonly<Pick<Headers, "get">>;
-}
+};
 
 const defaultBodyLimit = 16_384;
 
@@ -26,11 +27,11 @@ const rejectionStatus = {
   origin_denied: httpStatus.forbidden,
 } as const satisfies Readonly<Record<RequestRejected["reason"], number>>;
 
-function headerRejection(
+const headerRejection = (
   request: JsonRequest,
   expectedOrigin: string,
   limit: number,
-): Option.Option<RequestRejected["reason"]> {
+): Option.Option<RequestRejected["reason"]> => {
   if (
     request.headers.get("origin") !== expectedOrigin ||
     request.headers.get("sec-fetch-site") === "cross-site"
@@ -43,12 +44,12 @@ function headerRejection(
   return Number(request.headers.get("content-length")) > limit
     ? Option.some("body_too_large")
     : Option.none();
-}
+};
 
-async function readBoundedText(
+const readBoundedText = async (
   body: Readonly<AsyncIterable<Uint8Array>>,
   limit: number,
-): Promise<string | undefined> {
+): Promise<string | undefined> => {
   const decoder = new TextDecoder();
   let length = 0;
   let text = "";
@@ -60,7 +61,7 @@ async function readBoundedText(
     text += decoder.decode(chunk, { stream: true });
   }
   return text + decoder.decode();
-}
+};
 
 const parseJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
 
@@ -77,11 +78,11 @@ const readBody = Effect.fn("readBody")(function* readBody(
   );
 });
 
-function readJson(
+const readJson = (
   request: JsonRequest,
   expectedOrigin: string,
   limit = defaultBodyLimit,
-): Effect.Effect<unknown, RequestRejected> {
+): Effect.Effect<unknown, RequestRejected> => {
   const rejection = headerRejection(request, expectedOrigin, limit);
   if (Option.isSome(rejection)) {
     return Effect.fail(new RequestRejected({ reason: rejection.value }));
@@ -89,7 +90,7 @@ function readJson(
   return request.body === null
     ? Effect.fail(new RequestRejected({ reason: "body_required" }))
     : readBody(request.body, limit);
-}
+};
 
 export { RequestRejected, readJson, rejectionStatus };
 export type { JsonRequest };

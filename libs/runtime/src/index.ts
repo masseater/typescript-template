@@ -1,22 +1,23 @@
-import type { AppConfig, Application, ConfigurationInvalid } from "@template/config";
-import { Effect, Layer } from "effect";
-import { readConfig, sendVerificationEmail } from "@template/config";
-import { AppOrigin } from "./app-origin.ts";
-import { Assets } from "./assets.ts";
 import { Auth } from "@template/auth";
-import type { AuthFailure } from "@template/auth";
+import { readConfig, sendVerificationEmail } from "@template/config";
 import { Database } from "@template/db";
 import { Telemetry } from "@template/observability";
+import { Effect, Layer } from "effect";
+
+import { AppOrigin } from "./app-origin.ts";
+import { Assets } from "./assets.ts";
+
+import type { AuthFailure } from "@template/auth";
+import type { AppConfig, Application, ConfigurationInvalid } from "@template/config";
 import type { TelemetryInvalid } from "@template/observability";
 
 type AppServices = Auth | Database | AppOrigin | Assets | Telemetry;
 
-function configuredAppLayer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const configuredAppLayer = (
   config: AppConfig,
   audience: Application,
   routes: Readonly<Record<string, string>>,
-): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> {
+): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> => {
   const auth = Auth.layer({
     audience,
     baseURL: config.APP_ORIGIN,
@@ -30,18 +31,17 @@ function configuredAppLayer(
     Layer.succeed(Assets, config.ASSETS),
   );
   return services.pipe(Layer.provideMerge(telemetry));
-}
+};
 
-function appLayer(
+const appLayer = (
   env: unknown,
   audience: Exclude<Application, "wiki">,
   routes: Readonly<Record<string, string>>,
-): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
+): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> => {
   return Layer.unwrap(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     readConfig(env).pipe(Effect.map((config) => configuredAppLayer(config, audience, routes))),
   );
-}
+};
 
 export { appLayer, configuredAppLayer };
 export type { AppServices };

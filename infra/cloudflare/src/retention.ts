@@ -1,23 +1,23 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readdir, rm, stat } from "node:fs/promises";
-import type { ArtifactFailure } from "./artifact-io.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-import { Effect } from "effect";
-import { io } from "./artifact-io.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-type GenerationEntry = Readonly<Pick<Dirent, "isDirectory" | "name">>;
+import { Effect } from "effect";
+
+import { io } from "./artifact-io.ts";
+
+import type { Dirent } from "node:fs";
+import type { ArtifactFailure } from "./artifact-io.ts";
 
 interface Generation {
   readonly modified: number;
   readonly name: string;
 }
 
-function newestFirst(left: Generation, right: Generation): number {
+const newestFirst = (left: Generation, right: Generation): number => {
   return right.modified - left.modified;
-}
+};
+
+type GenerationEntry = Readonly<Pick<Dirent, "isDirectory" | "name">>;
 
 const generations = Effect.fn("generations")(function* generations(parent: string) {
   const entries = yield* io(async () => readdir(parent, { withFileTypes: true })).pipe(
@@ -28,7 +28,6 @@ const generations = Effect.fn("generations")(function* generations(parent: strin
       .filter((entry: GenerationEntry) => entry.isDirectory())
       .map((entry: GenerationEntry) =>
         io(async () => stat(path.join(parent, entry.name))).pipe(
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           Effect.map((information): Generation => ({
             modified: information.mtimeMs,
             name: entry.name,
@@ -39,13 +38,12 @@ const generations = Effect.fn("generations")(function* generations(parent: strin
   );
 });
 
-function retainGenerations(
+const retainGenerations = (
   parent: string,
   pinned: string,
   kept: number,
-): Effect.Effect<void, ArtifactFailure> {
+): Effect.Effect<void, ArtifactFailure> => {
   return generations(parent).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((found) => {
       const retained = new Set([
         pinned,
@@ -65,6 +63,6 @@ function retainGenerations(
       );
     }),
   );
-}
+};
 
 export { retainGenerations };

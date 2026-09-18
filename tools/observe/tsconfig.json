@@ -1,19 +1,13 @@
 {
   "extends": "@template/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": [
-      "esnext"
-    ],
-    "types": [
-      "node"
-    ],
+    "lib": ["esnext"],
+    "types": ["node"],
     "plugins": [
       {
         "name": "@effect/language-service"
       }
     ]
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

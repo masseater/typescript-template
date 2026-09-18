@@ -1,14 +1,15 @@
 import { Effect, Predicate, Schema } from "effect";
+
 import { CloudflareFailure } from "./config.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const NOT_FOUND_STATUS = 404;
 const MISSING_REASON = `status_${NOT_FOUND_STATUS}`;
 
-interface AccountAccess {
+type AccountAccess = {
   readonly accountId: string;
   readonly apiToken: string;
-}
+};
 
 const cloudflareEndpoint = Symbol("cloudflareEndpoint");
 
@@ -25,46 +26,45 @@ const Paged = Schema.Struct({
   result_info: Schema.optional(Schema.NullOr(PageInfo)),
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function endpoint(parts: TemplateStringsArray, ...values: readonly string[]): Endpoint {
+const endpoint = (parts: TemplateStringsArray, ...values: readonly string[]): Endpoint => {
   return {
     marker: cloudflareEndpoint,
     path: String.raw(parts, ...values),
     shape: parts.join("{}"),
   };
-}
+};
 
-function unreadable(source: Endpoint, reason: string): CloudflareFailure {
-  return new CloudflareFailure({ code: "account_read_unavailable", keys: [source.shape, reason] });
-}
-
-function requestReason(error: unknown): string {
+const requestReason = (error: unknown): string => {
   return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
     ? "timeout"
     : "request_failed";
-}
+};
 
-function listedQuery(collection: Collection): Query {
+const listedQuery = (collection: Collection): Query => {
   return collection.pageSize === undefined
     ? { ...collection.filter }
     : { ...collection.filter, per_page: String(collection.pageSize) };
-}
+};
 
-function overflowed(
+const overflowed = (
   rows: number,
   info:
     | Readonly<{ per_page?: number | undefined; total_count?: number | undefined }>
     | null
     | undefined,
   collection: Collection,
-): boolean {
+): boolean => {
   const counted = info?.total_count;
   if (counted !== undefined && (counted <= rows || collection.filter === undefined)) {
     return counted > rows;
   }
   const page = info?.per_page ?? collection.pageSize;
   return page !== undefined && page > 0 && rows >= page;
-}
+};
+
+const unreadable = (source: Endpoint, reason: string): CloudflareFailure => {
+  return new CloudflareFailure({ code: "account_read_unavailable", keys: [source.shape, reason] });
+};
 
 const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
   apiToken: string,
@@ -77,7 +77,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
   }
   const response = yield* Effect.tryPromise({
     catch: (error) => unreadable(source, requestReason(error)),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
     try: async (signal) =>
       fetch(url, {
         headers: { authorization: `Bearer ${apiToken}` },
@@ -100,7 +100,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
 
 const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
   source: Endpoint,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   shape: Schema.Codec<Shape, Encoded>,
   body: unknown,
 ) {
@@ -112,7 +112,7 @@ const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
 const readResource = Effect.fn("readResource")(function* readResource<Shape, Encoded>(
   access: AccountAccess,
   source: Endpoint,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   shape: Schema.Codec<Shape, Encoded>,
 ) {
   const reading = yield* fetchJson(access.apiToken, source, {});
@@ -122,7 +122,7 @@ const readResource = Effect.fn("readResource")(function* readResource<Shape, Enc
 const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Encoded>(
   access: AccountAccess,
   source: Endpoint,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   shape: Schema.Codec<Shape, Encoded>,
 ) {
   const found = yield* readResource(access, source, shape);
@@ -135,7 +135,7 @@ const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Enc
 const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
   access: AccountAccess,
   collection: Collection,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   shape: Schema.Codec<Shape, Encoded>,
 ) {
   const reading = yield* fetchJson(access.apiToken, collection.source, listedQuery(collection));

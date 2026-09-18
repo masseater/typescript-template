@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { field, workspaceManifests } from "./dependencies.ts";
 import { scriptViolations, taskViolations } from "./scripts.ts";
+
 import type { UserConfig } from "vite-plus";
 import type { WorkspaceManifest } from "./dependencies.ts";
 
-function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
+const packageNames = (manifests: readonly WorkspaceManifest[]): string[] => {
   return manifests.flatMap(({ manifest }) => {
     const name = field(manifest, "name");
     return typeof name === "string" ? [name] : [];
   });
-}
+};
 
-function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly string[]): string[] {
+const toolReferences = (
+  { file, manifest }: WorkspaceManifest,
+  tools: readonly string[],
+): string[] => {
   const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
     const value = field(manifest, key);
     return typeof value === "object" && value !== null ? Object.entries(value) : [];
@@ -21,7 +26,7 @@ function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly s
       tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
     )
     .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
-}
+};
 
 const configs: Readonly<Record<string, Readonly<UserConfig>>> = import.meta.glob(
   ["../../vite.config.ts", "../../infra/*/vite.config.ts"],

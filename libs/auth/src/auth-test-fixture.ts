@@ -1,15 +1,17 @@
-import { BrowserClient, origins } from "./browser-client.ts";
-import { Context, Effect, Layer, Schema } from "effect";
-import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@template/db/testing";
-import { mailConfig, mailServer, mailbox } from "./mail-fixture.ts";
-import type { Application } from "@template/config";
-import { Auth } from "./auth.ts";
-import type { AuthFailure } from "./auth-failure.ts";
-import type { Database } from "@template/db";
-import type { Scope } from "effect";
-import { URI } from "otpauth";
 import { assert } from "@effect/vitest";
 import { sendVerificationEmail } from "@template/config";
+import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@template/db/testing";
+import { Context, Effect, Layer, Schema } from "effect";
+import { URI } from "otpauth";
+
+import { Auth } from "./auth.ts";
+import { BrowserClient, origins } from "./browser-client.ts";
+import { mailConfig, mailServer, mailbox } from "./mail-fixture.ts";
+
+import type { Application } from "@template/config";
+import type { Database } from "@template/db";
+import type { Scope } from "effect";
+import type { AuthFailure } from "./auth-failure.ts";
 
 type AuthService = Auth["Service"];
 type TestServices = Layer.Success<typeof TestDatabase>;
@@ -28,21 +30,16 @@ const TotpEnrollment = Schema.Struct({
   totpURI: Schema.String,
 });
 
-class Fixture extends Context.Service<
-  Fixture,
-  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
->()("AuthTestFixture") {}
-
-function decodeOrDie<Contract extends Schema.Top & { readonly DecodingServices: never }>(
+const decodeOrDie = <Contract extends Schema.Top & { readonly DecodingServices: never }>(
   contract: Contract,
   input: unknown,
-): Effect.Effect<Contract["Type"]> {
+): Effect.Effect<Contract["Type"]> => {
   return Schema.decodeUnknownEffect(contract)(input).pipe(Effect.orDie);
-}
+};
 
-function authFor(
+const authFor = (
   audience: Application,
-): Effect.Effect<AuthService, AuthFailure, Database | Scope.Scope> {
+): Effect.Effect<AuthService, AuthFailure, Database | Scope.Scope> => {
   const layer = Auth.layer({
     audience,
     baseURL: origins[audience],
@@ -52,7 +49,12 @@ function authFor(
   });
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return Layer.build(layer).pipe(Effect.map((context) => Context.get(context, Auth)));
-}
+};
+
+class Fixture extends Context.Service<
+  Fixture,
+  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
+>()("AuthTestFixture") {}
 
 const fixture = Layer.effect(
   Fixture,
@@ -65,19 +67,17 @@ const fixture = Layer.effect(
   }),
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
 
-function withAuth<Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const withAuth = <Value>(
   effect: Effect.Effect<Value, unknown, Fixture | TestServices>,
-): Effect.Effect<Value, unknown> {
+): Effect.Effect<Value, unknown> => {
   return effect.pipe(Effect.provide(fixture));
-}
+};
 
-function withEmptyDatabase<Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const withEmptyDatabase = <Value>(
   effect: Effect.Effect<Value, unknown, TestServices>,
-): Effect.Effect<Value, unknown> {
+): Effect.Effect<Value, unknown> => {
   return effect.pipe(Effect.provide(EmptyTestDatabase));
-}
+};
 
 const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
   const { user } = yield* Fixture;
@@ -108,10 +108,9 @@ const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* boo
   yield* bootstrapAdmin(email);
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function signIn(client: Readonly<BrowserClient>, email: string): Effect.Effect<Response> {
+const signIn = (client: Readonly<BrowserClient>, email: string): Effect.Effect<Response> => {
   return client.request("/sign-in/email", { email, password: PASSWORD });
-}
+};
 
 const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application, email: string) {
   const client = new BrowserClient((yield* Fixture)[audience]);
@@ -119,7 +118,6 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application,
   return client;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: Readonly<BrowserClient>) {
   const response = yield* client.json("/two-factor/enable", { password: PASSWORD });
   assert.strictEqual(response.status, HTTP_OK);
@@ -130,15 +128,14 @@ const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: Readonly
   return { authenticator, backupCodes: enrollment.backupCodes };
 });
 
-function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const failureTag = <Value, Failure extends { readonly _tag: string }, Requirements>(
   effect: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<string, Value, Requirements> {
+): Effect.Effect<string, Value, Requirements> => {
   return effect.pipe(
     Effect.flip,
     Effect.map((error) => error._tag),
   );
-}
+};
 
 export {
   Fixture,

@@ -1,10 +1,11 @@
 import { Field } from "./shared/ui/field";
+
 import type { ReactElement } from "react";
 import type { TextInput } from "./use-text-input";
 
 const TOTP_LENGTH = 6;
 
-function TotpField({ code }: Readonly<{ code: TextInput }>): ReactElement {
+const TotpField = ({ code }: Readonly<{ code: TextInput }>): ReactElement => {
   return (
     <Field
       label="認証アプリの確認コード"
@@ -19,6 +20,6 @@ function TotpField({ code }: Readonly<{ code: TextInput }>): ReactElement {
       onValueChange={code.handleChange}
     />
   );
-}
+};
 
 export { TotpField };
