@@ -1,7 +1,11 @@
 import { Console, Logger, References } from "effect";
 import type { Application } from "@template/config";
 import type { Layer } from "effect";
-import type { LogSink } from "./log.ts";
+
+interface LogSink {
+  readonly error: (line: string) => void;
+  readonly info: (line: string) => void;
+}
 
 interface StructuredLogOptions {
   readonly serviceName: Application;
