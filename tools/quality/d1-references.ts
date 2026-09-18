@@ -1,8 +1,9 @@
-import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
 import type { Definition, Reference } from "vite-plus/lint/plugins";
-import { bindingPath, origins, propertyKey, propertyName, variableOf } from "./references.ts";
+
 import { d1Property, d1Type, followPath, prefixPath } from "./d1-types.ts";
 import type { D1Reference } from "./d1-types.ts";
+import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
+import { bindingPath, origins, propertyKey, propertyName, variableOf } from "./references.ts";
 import type { Resolve } from "./references.ts";
 
 interface Resolution {
@@ -17,10 +18,10 @@ interface BindingLookup {
 
 const templateFactories = new Map<string, ReadonlyMap<string, D1Reference>>([
   [
-    "@template/config",
+    "@repo/config",
     new Map<string, D1Reference>([["readConfig", { kind: "database", path: ["DB"] }]]),
   ],
-  ["@template/db", new Map<string, D1Reference>([["createDb", { kind: "orm", path: [] }]])],
+  ["@repo/db", new Map<string, D1Reference>([["createDb", { kind: "orm", path: [] }]])],
 ]);
 
 function annotatedBinding(

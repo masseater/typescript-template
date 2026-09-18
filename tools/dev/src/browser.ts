@@ -1,3 +1,12 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { failure } from "./failure.ts";
+import { browserLaunchArguments } from "./lan-gateway.ts";
 import {
   browserConfig,
   lanOrigin,
@@ -7,13 +16,6 @@ import {
   run,
 } from "./local-environment.ts";
 import type { App } from "./local-environment.ts";
-import { Effect } from "effect";
-import { browserLaunchArguments } from "./lan-gateway.ts";
-import { failure } from "./failure.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
 
 interface BrowserReport {
   readonly event: "local.browser_opened";

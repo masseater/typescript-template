@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
+
 import { UserListQuery } from "./contracts.ts";
 import { readSearchParams } from "./http.ts";
 

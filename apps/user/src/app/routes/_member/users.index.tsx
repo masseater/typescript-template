@@ -1,15 +1,20 @@
+import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+
 import {
   UsersFailed,
   UsersPending,
   loadMembers,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
-import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+
 import { UsersRoute } from "./-users-route.tsx";
 
 type RawSearch = Readonly<Record<string, unknown>>;
 
+// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/users/")({
+  validateSearch: normalizeUsersSearch,
+  loaderDeps: ({ search }: Readonly<{ search: RawSearch }>) => normalizeUsersSearch(search),
   beforeLoad: ({
     location,
     search,
@@ -19,13 +24,11 @@ const Route = createFileRoute("/_member/users/")({
       throw redirect({ replace: true, search: normalized, to: "/users" });
     }
   },
-  component: UsersRoute,
-  errorComponent: UsersFailed,
   loader: async ({ deps }: Readonly<{ deps: ReturnType<typeof normalizeUsersSearch> }>) =>
     loadMembers(deps),
-  loaderDeps: ({ search }: Readonly<{ search: RawSearch }>) => normalizeUsersSearch(search),
+  component: UsersRoute,
+  errorComponent: UsersFailed,
   pendingComponent: UsersPending,
-  validateSearch: normalizeUsersSearch,
 });
 
 export { Route };

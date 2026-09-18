@@ -1,6 +1,7 @@
-import { Effect, Schema } from "effect";
-import { EmailVerificationRequest, EmailVerified, ErrorBody } from "./contracts.ts";
 import { assert, describe, it } from "@effect/vitest";
+import { Effect, Schema } from "effect";
+
+import { EmailVerificationRequest, EmailVerified, ErrorBody } from "./contracts.ts";
 
 const maximumTokenLength = 4096;
 const decodeRequest = Schema.decodeUnknownEffect(EmailVerificationRequest, {

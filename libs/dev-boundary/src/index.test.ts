@@ -1,16 +1,19 @@
-import { test as baseTest, describe, expect } from "vite-plus/test";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
-import type { Application as App } from "@template/config";
-import type { HttpServer } from "vite-plus";
-import type { TestAPI } from "vite-plus/test";
-import { applications as apps } from "@template/config";
-import { createServer } from "vite-plus";
-import { devBoundary } from "./index.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import type { HttpServer } from "vite-plus";
+import { createServer } from "vite-plus";
+import { test as baseTest, describe, expect } from "vite-plus/test";
+import type { TestAPI } from "vite-plus/test";
+
+import type { Application as App } from "@repo/config";
+import { applications as apps } from "@repo/config";
+
+import { devBoundary } from "./index.ts";
 
 interface DevServer {
   readonly origin: string;
@@ -125,10 +128,10 @@ function privateModules(app: App): string[] {
   return [
     "/.dev.vars",
     "/src/alias.json",
-    "/@id/@template/db/remote",
-    ...(app === "admin" ? [] : ["/@id/@template/db/admin"]),
+    "/@id/@repo/db/remote",
+    ...(app === "admin" ? [] : ["/@id/@repo/db/admin"]),
     ...otherApps(app).flatMap((other) => [
-      `/@id/@template/${other}`,
+      `/@id/@repo/${other}`,
       `/@fs/{root}/apps/%${(other.codePointAt(0) ?? 0).toString(hexRadix)}${other.slice(1)}/src/private.js?raw`,
     ]),
   ];

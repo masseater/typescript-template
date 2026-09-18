@@ -1,10 +1,11 @@
-import { Cause, Console, Effect } from "effect";
-import { browser, browserCommand } from "./browser.ts";
-import { connection, logs, start, status, stop } from "./applications.ts";
-import { failure, reportFailed } from "./failure.ts";
-import type { App } from "./local-environment.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Console, Effect } from "effect";
+
+import { connection, logs, start, status, stop } from "./applications.ts";
+import { browser, browserCommand } from "./browser.ts";
+import { failure, reportFailed } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App } from "./local-environment.ts";
 import { application } from "./local-environment.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
@@ -55,7 +56,7 @@ NodeRuntime.runMain(
             event: "local.application_command_failed",
             ok: false,
             remediation:
-              "Check vp run --filter @template/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+              "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
           }),
     ),
   ),

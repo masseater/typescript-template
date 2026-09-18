@@ -1,7 +1,8 @@
-import { expect, userEvent } from "storybook/test";
-import { TotpEnrollment } from "./totp-enrollment";
 import { noop } from "es-toolkit";
+import { expect, userEvent } from "storybook/test";
+
 import preview from "../.storybook/preview";
+import { TotpEnrollment } from "./totp-enrollment";
 
 const meta = preview.meta({
   args: {

@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment } from "./index.ts";
 import { Effect } from "effect";
+
+import { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment } from "./index.ts";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",

@@ -1,6 +1,7 @@
-import { TotpSettings } from "./totp-settings";
 import { noop } from "es-toolkit";
+
 import preview from "../.storybook/preview";
+import { TotpSettings } from "./totp-settings";
 
 const user = {
   email: "taro@example.com",

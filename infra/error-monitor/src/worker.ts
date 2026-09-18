@@ -1,10 +1,12 @@
-import { Monitor, monitorHandler } from "@template/monitor";
-import type { MonitorBindings, Notify } from "@template/monitor";
-import { decideNotifications, formatMessage } from "./decision.ts";
 import { Effect } from "effect";
+
+import { Monitor, monitorHandler } from "@repo/monitor";
+import type { MonitorBindings, Notify } from "@repo/monitor";
+
+import { parseErrorMonitorConfig } from "./config.ts";
+import { decideNotifications, formatMessage } from "./decision.ts";
 import type { SeenFingerprints } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
-import { parseErrorMonitorConfig } from "./config.ts";
 
 interface Bindings extends MonitorBindings {
   CLOUDFLARE_ACCOUNT_ID: string;

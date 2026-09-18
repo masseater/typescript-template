@@ -1,26 +1,25 @@
+import { MenuIcon } from "lucide-react";
+import type { ReactElement } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
   Icon,
-} from "@template/ui";
-import { Link } from "@tanstack/react-router";
-import { MenuIcon } from "lucide-react";
-import type { ReactElement } from "react";
-
-const usersLink = <Link to="/users" />;
+} from "@repo/ui";
 
 function CompactNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
-  const homeLink = <Link to="/users/$id" params={{ id: userId }} />;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="メニュー">
         <Icon icon={MenuIcon} />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLinkItem render={homeLink}>ホーム</DropdownMenuLinkItem>
-        <DropdownMenuLinkItem render={usersLink}>ユーザーを探す</DropdownMenuLinkItem>
+        <DropdownMenuLinkItem to="/users/$id" params={{ id: userId }}>
+          ホーム
+        </DropdownMenuLinkItem>
+        <DropdownMenuLinkItem to="/users">ユーザーを探す</DropdownMenuLinkItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

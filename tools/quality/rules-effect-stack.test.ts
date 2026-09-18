@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { reported, reportedRules } from "./lint-harness.ts";
 
 const forbiddenStacks = [
@@ -44,11 +45,11 @@ const allowedStacks = [
   ["libs/shared/src/probe.ts", 'export { helper } from "my-valibot";'],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
+    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@repo/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
   ],
   [
     "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { ...elysiaServer(userApi), middleware: [] } });',
+    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@repo/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { ...elysiaServer(userApi), middleware: [] } });',
   ],
   ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;

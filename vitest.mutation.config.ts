@@ -1,5 +1,6 @@
-import base from "./vite.config.ts";
 import { defineConfig } from "vite-plus";
+
+import base from "./vite.config.ts";
 
 const [node] = base.test?.projects ?? [];
 

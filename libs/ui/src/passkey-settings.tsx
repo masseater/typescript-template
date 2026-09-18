@@ -1,8 +1,9 @@
-import { Button } from "./shared/ui/button";
+import type { ReactElement } from "react";
+
+import type { SettingsContext } from "./mfa-types";
 import { PasskeyList } from "./passkey-list";
 import { PasskeyRegisterForm } from "./passkey-register-form";
-import type { ReactElement } from "react";
-import type { SettingsContext } from "./mfa-types";
+import { Button } from "./shared/ui/button";
 import { usePasskeys } from "./use-passkeys";
 
 function PasskeySettings({ context }: Readonly<{ context: SettingsContext }>): ReactElement {

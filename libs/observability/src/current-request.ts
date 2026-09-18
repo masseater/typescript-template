@@ -1,4 +1,5 @@
 import { Context } from "effect";
+
 import type { Correlation } from "./protocol.ts";
 
 interface RequestContext extends Correlation {
@@ -6,7 +7,7 @@ interface RequestContext extends Correlation {
 }
 
 class CurrentRequest extends Context.Service<CurrentRequest, RequestContext>()(
-  "@template/observability/CurrentRequest",
+  "@repo/observability/CurrentRequest",
 ) {}
 
 export { CurrentRequest };

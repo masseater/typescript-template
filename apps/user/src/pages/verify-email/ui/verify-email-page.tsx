@@ -1,6 +1,7 @@
-import { CardPage } from "#shared/ui/index.ts";
-import { EmailVerification } from "@template/ui/auth";
 import type { ReactElement } from "react";
+
+import { CardPage } from "#shared/ui/index.ts";
+import { EmailVerification } from "@repo/ui/auth";
 
 function VerifyEmailPage(): ReactElement {
   return (

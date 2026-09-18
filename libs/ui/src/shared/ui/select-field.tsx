@@ -1,6 +1,7 @@
-import { controlClassName, fieldClassName, labelClassName } from "./control";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 import type { ReactElement } from "react";
+
+import { controlClassName, fieldClassName, labelClassName } from "./control";
 
 function SelectField({
   label,
@@ -16,7 +17,7 @@ function SelectField({
   value: string;
 }>): ReactElement {
   const select = (
-    <select>
+    <select aria-label={label}>
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}

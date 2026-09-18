@@ -1,10 +1,11 @@
-import { Context, Effect, Layer, Schema } from "effect";
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
-import { Database } from "./database.ts";
+import { Context, Effect, Layer, Schema } from "effect";
 import { Miniflare } from "miniflare";
-import type { RemoteFailure } from "./remote-input.ts";
+
+import { Database } from "./database.ts";
 import { localDatabase } from "./local.ts";
 import { prepareBatch } from "./migrate-d1.ts";
+import type { RemoteFailure } from "./remote-input.ts";
 
 const miniflareCompatibilityDate = "2026-07-30";
 
@@ -17,7 +18,7 @@ const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
 const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-class TestBinding extends Context.Service<TestBinding, D1Database>()("@template/db/TestBinding") {}
+class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
 async function executeD1HttpBatch(
   database: D1Database,

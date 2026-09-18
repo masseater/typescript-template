@@ -1,4 +1,9 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+
+import { applications } from "@repo/config";
+
+import { session, user } from "./identity-schema.ts";
+import { interview } from "./interview-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -9,9 +14,6 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
-import { session, user } from "./identity-schema.ts";
-import { applications } from "@template/config";
-import { interview } from "./interview-schema.ts";
 
 const account = sqliteTable(
   "account",

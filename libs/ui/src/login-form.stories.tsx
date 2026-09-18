@@ -1,8 +1,9 @@
+import { noop } from "es-toolkit";
 import { HttpResponse, http } from "msw";
 import { expect, userEvent } from "storybook/test";
-import { LoginForm } from "./login-form";
-import { noop } from "es-toolkit";
+
 import preview from "../.storybook/preview";
+import { LoginForm } from "./login-form";
 
 const meta = preview.meta({ args: { onAuthenticated: noop }, component: LoginForm });
 

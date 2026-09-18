@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { loginPath, redirectTarget } from "./login-redirect";
 
 describe("post-login redirect target", () => {

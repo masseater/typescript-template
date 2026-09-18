@@ -1,6 +1,6 @@
-import type { ComponentProps, ReactElement } from "react";
 import { createLink } from "@tanstack/react-router";
 import { cva } from "class-variance-authority";
+import type { ComponentProps, ReactElement } from "react";
 
 const paginationLinkVariants = cva(
   "inline-flex min-w-8 items-center justify-center rounded-md border px-2 py-1 text-base leading-tight no-underline outline-none focus-visible:focus-indicator",

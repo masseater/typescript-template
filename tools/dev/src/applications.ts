@@ -1,7 +1,17 @@
-import { applicationPorts, applications } from "@template/config";
-import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { applicationPorts, applications } from "@repo/config";
+
+import type { LocalCommandFailure } from "./failure.ts";
+import { fileIo } from "./failure.ts";
+import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import {
   lanOrigin,
   logFileUrl,
@@ -14,13 +24,6 @@ import {
   socket,
 } from "./local-environment.ts";
 import type { App } from "./local-environment.ts";
-import { Effect } from "effect";
-import type { LocalCommandFailure } from "./failure.ts";
-import { fileIo } from "./failure.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
 import { privateFileMode } from "./private-files.ts";
 
 interface AppStatus {
@@ -98,7 +101,7 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   );
   yield* fileIo(async () => chmod(log, privateFileMode));
   const vp = JSON.stringify(path.join(root, "node_modules/.bin/vp"));
-  const command = `exec ${vp} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
+  const command = `exec ${vp} run --filter @repo/${app} preview >> ${JSON.stringify(log)} 2>&1`;
   return yield* run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],

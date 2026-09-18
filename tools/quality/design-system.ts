@@ -2,6 +2,7 @@
 import { readFileSync, statSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
 import { project } from "@shadcn/lint";
 
 const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
@@ -98,6 +99,21 @@ function partsDirectory(): string {
   return project.componentsFor(designSystemProbe).dir ?? "";
 }
 
+const linkPartPattern = /^const (?<name>\w+) = createLink\(/gmu;
+
+function linkParts(): string[] {
+  const found: string[] = [];
+  for (const file of project.componentsFor(designSystemProbe).files.values()) {
+    for (const match of read(file).matchAll(linkPartPattern)) {
+      const { name } = match.groups ?? {};
+      if (name !== undefined) {
+        found.push(name);
+      }
+    }
+  }
+  return found.toSorted();
+}
+
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.css",
 );
@@ -106,7 +122,7 @@ const appModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.{ts,tsx}",
 );
 
-const partsImport = '@import "@template/ui/styles.css"';
+const partsImport = '@import "@repo/ui/styles.css"';
 
 const sourcePattern = /@source\s+"(?<directory>[^"]+)"/gu;
 
@@ -228,6 +244,7 @@ export {
   designSystemComponents,
   declarations,
   designSystemProbe,
+  linkParts,
   linkViolations,
   partsDirectory,
   smarthrTokens,

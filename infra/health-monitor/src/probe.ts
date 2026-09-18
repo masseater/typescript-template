@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from "effect";
-import type { Application as HealthService } from "@template/config";
+
+import type { Application as HealthService } from "@repo/config";
 
 interface HealthTarget {
   readonly service: HealthService;

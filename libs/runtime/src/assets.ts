@@ -1,6 +1,7 @@
-import type { AssetFetcher } from "@template/config";
 import { Context } from "effect";
 
-class Assets extends Context.Service<Assets, AssetFetcher>()("@template/runtime/Assets") {}
+import type { AssetFetcher } from "@repo/config";
+
+class Assets extends Context.Service<Assets, AssetFetcher>()("@repo/runtime/Assets") {}
 
 export { Assets };

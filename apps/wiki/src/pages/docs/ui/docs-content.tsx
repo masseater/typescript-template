@@ -4,10 +4,12 @@ import {
   DocsPage as DocsPageLayout,
   DocsTitle,
 } from "fumadocs-ui/layouts/docs/page";
-import { Mermaid } from "./mermaid.tsx";
-import type { ReactElement } from "react";
 import defaultMdxComponents from "fumadocs-ui/mdx";
+import type { ReactElement } from "react";
+
 import type { docs } from "#shared/content/index.ts";
+
+import { Mermaid } from "./mermaid.tsx";
 
 const mdxComponents = { ...defaultMdxComponents, Mermaid };
 

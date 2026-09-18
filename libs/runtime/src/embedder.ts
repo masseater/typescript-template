@@ -1,5 +1,6 @@
-import { Context, Effect, Schema } from "effect";
 import type { Ai } from "@cloudflare/workers-types";
+import { Context, Effect, Schema } from "effect";
+
 import { EmbeddingFailed } from "./embedding-failed.ts";
 
 interface EmbedderShape {
@@ -43,6 +44,6 @@ function embedWith(ai: Ai | undefined): EmbedderShape["embed"] {
         );
 }
 
-class Embedder extends Context.Service<Embedder, EmbedderShape>()("@template/runtime/Embedder") {}
+class Embedder extends Context.Service<Embedder, EmbedderShape>()("@repo/runtime/Embedder") {}
 
 export { Embedder, embedWith };

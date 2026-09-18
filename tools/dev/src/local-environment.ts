@@ -1,21 +1,24 @@
-import { Effect, Schema } from "effect";
-import { applicationPorts, applications, loopbackHosts } from "@template/config";
-import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-import { failure, fileIo } from "./failure.ts";
-import type { Application } from "@template/config";
-import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
+import { promisify } from "node:util";
+
+import { Effect, Schema } from "effect";
+
+import { applicationPorts, applications, loopbackHosts } from "@repo/config";
+import type { Application } from "@repo/config";
+
+import { failure, fileIo } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 
 type App = Application;
 type RouteName = App | "mailpit";

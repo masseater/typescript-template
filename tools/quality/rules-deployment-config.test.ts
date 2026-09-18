@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { reported, reportedRules } from "./lint-harness.ts";
 
 const forbidden = [
   [
     "app-deployment-config",
     "apps/user/src/probe.ts",
-    'import { secretsFile } from "@template/config/deployment";',
+    'import { secretsFile } from "@repo/config/deployment";',
   ],
   [
     "config-root-deployment-laundering",
@@ -15,14 +16,14 @@ const forbidden = [
   [
     "shared-deployment-config",
     "libs/auth/src/probe.ts",
-    'export const load = () => import("@template/config/deployment");',
+    'export const load = () => import("@repo/config/deployment");',
   ],
 ] as const;
 
 const allowed = [
-  ["infra/cloudflare/src/probe.ts", 'export * from "@template/config/deployment";'],
+  ["infra/cloudflare/src/probe.ts", 'export * from "@repo/config/deployment";'],
   ["libs/config/src/deployment.ts", 'export { homedir } from "node:os";'],
-  ["apps/user/src/app/probe.ts", 'export * from "@template/config";'],
+  ["apps/user/src/app/probe.ts", 'export * from "@repo/config";'],
 ] as const;
 
 describe("deployment configuration boundary", () => {

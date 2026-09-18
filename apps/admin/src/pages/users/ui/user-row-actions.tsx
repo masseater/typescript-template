@@ -1,9 +1,11 @@
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
-import { ConfirmDialog } from "@template/ui";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
-import { RowActionMenu } from "./row-action-menu.tsx";
+
+import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+import type { ListedUser } from "#pages/users/model/user-list.ts";
 import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
+import { ConfirmDialog } from "@repo/ui";
+
+import { RowActionMenu } from "./row-action-menu.tsx";
 
 function UserRowActions({
   onChanged,

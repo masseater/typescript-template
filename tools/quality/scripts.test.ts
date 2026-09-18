@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vite-plus/test";
-import { field, workspaceManifests } from "./dependencies.ts";
-import { scriptViolations, taskViolations } from "./scripts.ts";
 import type { UserConfig } from "vite-plus";
+import { describe, expect, it } from "vite-plus/test";
+
+import { field, workspaceManifests } from "./dependencies.ts";
 import type { WorkspaceManifest } from "./dependencies.ts";
+import { scriptViolations, taskViolations } from "./scripts.ts";
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   return manifests.flatMap(({ manifest }) => {
@@ -44,13 +45,26 @@ const repositoryTaskViolations = taskFiles.flatMap((file: string) =>
   taskViolations(runs[file]?.tasks ?? {}),
 );
 
+const rootTasks = runs["../../vite.config.ts"]?.tasks ?? {};
+const checkTask = rootTasks["check"];
+const checkCommand =
+  typeof checkTask === "object" && "command" in checkTask ? checkTask.command : checkTask;
+const checkSteps = [checkCommand ?? []]
+  .flat()
+  .filter((entry: string) => entry.startsWith("vp run check:"))
+  .toSorted();
+const checkTaskNames = Object.keys(rootTasks)
+  .filter((name) => name.startsWith("check:"))
+  .map((name) => `vp run ${name}`)
+  .toSorted();
+
 const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,
   import: "default",
 });
 
 const packageManagerCommands = [
-  "pnpm --filter @template/dev run setup",
+  "pnpm --filter @repo/dev run setup",
   "pnpm -r --if-present build",
   "pnpm run test",
   "pnpm check",
@@ -63,7 +77,7 @@ const packageManagerCommands = [
   "bunx vp build",
   "./node_modules/.bin/pnpm run build",
   "pnpm.cmd run build",
-  "corepack pnpm --filter @template/dev run setup",
+  "corepack pnpm --filter @repo/dev run setup",
   "env CI=true pnpm run test",
   "exec pnpm run preview",
   "vp run build && pnpm run test",
@@ -73,7 +87,7 @@ const packageManagerCommands = [
 ];
 
 const vitePlusCommands = [
-  "vp run --filter @template/dev setup",
+  "vp run --filter @repo/dev setup",
   "vp run -r build",
   "vp exec knip",
   "vp dlx wrangler deploy",
@@ -131,6 +145,11 @@ describe("vite task conventions", () => {
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
     expect.assertions(1);
     expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
+  });
+
+  it("the check task runs every check step", () => {
+    expect.hasAssertions();
+    expect(checkSteps).toStrictEqual(checkTaskNames);
   });
 
   it("all repository tasks run through Vite+", () => {
