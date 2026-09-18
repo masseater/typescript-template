@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readdir } from "node:fs/promises";
+import { access, readdir } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
@@ -33,9 +33,8 @@ function areaProjects(area: string): Effect.Effect<string[]> {
 }
 
 function hasProject(project: string): Effect.Effect<boolean> {
-  const directory = new URL(`../../${project.replace(/tsconfig\.json$/u, "")}`, import.meta.url);
-  return Effect.promise(async () => readdir(directory)).pipe(
-    Effect.map((names) => names.includes("tsconfig.json")),
+  return Effect.isSuccess(
+    Effect.tryPromise(async () => access(new URL(`../../${project}`, import.meta.url))),
   );
 }
 

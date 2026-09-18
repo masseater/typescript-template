@@ -1,5 +1,5 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, readdir } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -13,7 +13,7 @@ import { serverOnlyMarkers } from "@template/config/vite";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
-const outDirectory = path.join(tmpdir(), "template-client-bundle");
+const outDirectory = await mkdtemp(path.join(tmpdir(), "template-client-bundle-"));
 
 const clientReachable: readonly string[] = [
   "@template/runtime/client",
@@ -88,6 +88,7 @@ for (const [specifier, pattern] of serverOnly) {
     unexpected.push(`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`);
   }
 }
+await rm(outDirectory, { force: true, recursive: true });
 
 // oxlint-disable-next-line eslint/no-restricted-properties
 process.stdout.write(
