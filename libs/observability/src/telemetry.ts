@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
-import type { Application } from "@repo/config";
+import type { ServiceName } from "@repo/config";
 
 import type { OtlpDestination, TelemetryFlusher } from "./otlp.ts";
 import { otlpExport } from "./otlp.ts";
@@ -10,7 +10,7 @@ import { serviceLabel, structuredLogs } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 
 interface TelemetryShape {
-  readonly serviceName: Application;
+  readonly serviceName: ServiceName;
   readonly release: string;
   readonly routes: Readonly<Record<string, string>>;
   readonly labels: Readonly<ReadonlySet<string>>;

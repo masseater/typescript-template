@@ -11,5 +11,5 @@ description: 各workspaceのAGENTS.mdの書き方について。
 - どこに参照されているかは書かない。
 - 外部公開される可能性がある時は、どこにどう公開されるのかを書く。
 - 他の workspace のことは書かない。
-- 開発方法や検証コマンドは package.json を読めば分かるので書かない。
+- 開発方法や検証コマンドは package.json の scripts と vite.config.ts の run.tasks を読めば分かるので書かない。
 - 書くべきかどうか迷ったら書かない。
