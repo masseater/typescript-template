@@ -1,11 +1,7 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const application = {
-  entry: [
-    "src/app/{router,server,start}.{ts,tsx}!",
-    "src/app/routes/**/*.{ts,tsx}!",
-    "steiger.config.ts",
-  ],
+  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
   ignoreDependencies: ["cloudflare"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
@@ -37,13 +33,7 @@ const workspaces = {
     project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
   },
   "libs/ui": {
-    project: [
-      "src/**/*.{ts,tsx}!",
-      "src/**/*.css",
-      ".storybook/*.ts",
-      "!src/story-fixture.ts!",
-      "!src/**/*.stories.tsx!",
-    ],
+    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
   },
   "tools/perf": {
     entry: ["src/{hook,workerd-sdk}.ts!", "src/{node,browser}-sdk.ts"],
