@@ -2,10 +2,10 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 import {
   appRun,
   appServer,
-  importProtection,
   previewDevVars,
   reactCompiler,
   scalarReference,
+  startOptions,
   withoutEnvFileLoader,
 } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
@@ -28,7 +28,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
         compatibility_date: workerCompatibility.date,
         compatibility_flags: [...workerCompatibility.flags],
         d1_databases: [localDatabase],
-        main: "./src/server.ts",
+        main: "./src/app/server.ts",
         name: "template-admin",
       },
       inspectorPort: false,
@@ -36,7 +36,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
       viteEnvironment: { name: "ssr" },
     }),
     tailwindcss(),
-    ...withoutEnvFileLoader(tanstackStart({ importProtection })),
+    ...withoutEnvFileLoader(tanstackStart(startOptions)),
     reactCompiler(),
     scalarReference(),
   ],

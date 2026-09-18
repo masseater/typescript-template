@@ -111,6 +111,7 @@ function createAdvancedOptions(audience: Application, origin: string): AdvancedO
   return {
     cookiePrefix: `template-${audience}`,
     crossSubDomainCookies: { enabled: false },
+    ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     useSecureCookies: origin.startsWith("https:"),
   };
 }

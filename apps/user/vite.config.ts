@@ -2,10 +2,10 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 import {
   appRun,
   appServer,
-  importProtection,
   previewDevVars,
   reactCompiler,
   scalarReference,
+  startOptions,
   withoutEnvFileLoader,
 } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
@@ -36,16 +36,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
       viteEnvironment: { name: "ssr" },
     }),
     tailwindcss(),
-    ...withoutEnvFileLoader(
-      tanstackStart({
-        importProtection,
-        router: {
-          entry: "app/router.tsx",
-          generatedRouteTree: "app/routeTree.gen.ts",
-          routesDirectory: "app/routes",
-        },
-      }),
-    ),
+    ...withoutEnvFileLoader(tanstackStart(startOptions)),
     reactCompiler(),
     scalarReference(),
   ],
