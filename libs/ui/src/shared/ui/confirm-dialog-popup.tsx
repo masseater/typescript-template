@@ -27,7 +27,7 @@ function ConfirmDialogPopup({
   return (
     <AlertDialogPrimitive.Popup
       data-slot="confirm-dialog"
-      className="fixed top-1/2 left-1/2 z-50 flex w-full max-w-column -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border border-border bg-card p-6 text-card-foreground shadow-xl outline-none"
+      className="fixed top-1/2 left-1/2 z-50 flex w-full max-w-column -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg outline-none"
     >
       <AlertDialogPrimitive.Title className="text-lg leading-tight font-bold text-foreground">
         {title}

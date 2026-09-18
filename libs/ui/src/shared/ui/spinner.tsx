@@ -6,7 +6,7 @@ function Spinner(): ReactElement {
     <Loader2Icon
       data-slot="spinner"
       aria-hidden="true"
-      className="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground"
+      className="mt-0.5 size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
     />
   );
 }

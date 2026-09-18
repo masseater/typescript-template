@@ -16,7 +16,7 @@ const access = {
 };
 const target = { ...access, name: "template-db" };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database`;
-const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
+const databaseId = "22222222-2222-4222-8222-222222222222";
 
 function mockServer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

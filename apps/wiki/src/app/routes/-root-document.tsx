@@ -23,7 +23,7 @@ function RootDocument(): ReactElement {
       <head>
         <HeadContent />
       </head>
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-svh flex-col">
         <WikiProvider />
         <Scripts />
       </body>

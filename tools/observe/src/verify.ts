@@ -20,8 +20,6 @@ interface VerificationTarget {
   readonly service: string;
 }
 
-type Fields = Readonly<Record<string, unknown>>;
-
 class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("VerificationFailure", {
   reason: Schema.Literals([
     "arguments_invalid",
@@ -55,13 +53,14 @@ function fail(reason: VerificationFailure["reason"]): VerificationFailure {
 const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {
   const telemetry = yield* requestTelemetry(target.app, target.requestId);
   const logged = telemetry.logs.some(
-    ({ event }: Readonly<{ event: Fields | undefined }>) =>
+    ({ event }: Readonly<{ event: Readonly<Record<string, unknown>> | undefined }>) =>
       event?.["event"] === "http.server.request" &&
       event["service"] === target.service &&
       event["request_id"] === target.requestId,
   );
   const traced = telemetry.spans.some(
-    (span: Fields) => span["parent_id"] === null && span["duration_ms"] !== null,
+    (span: Readonly<Record<string, unknown>>) =>
+      span["parent_id"] === null && span["duration_ms"] !== null,
   );
   const verified: Verified | undefined =
     logged && traced ? { logs: telemetry.logs.length, spans: telemetry.spans.length } : undefined;
