@@ -113,7 +113,7 @@ const readPage = Effect.fn("readPage")(function* readPage<Shape, Encoded>(
     rows: paged.result.length,
     total: paged.result_info?.total_count,
     value: yield* decodeBody(shape, reading.body),
-  };
+  } as const;
 });
 
 const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
@@ -133,15 +133,10 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
     ),
     (page) => readPage(access, { ...collection, page }, shape),
   );
-  const gathered = rest.reduce(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (rows, page) => rows + page.rows,
-    first.rows,
-  );
+  const gathered = rest.reduce((rows, page) => rows + page.rows, first.rows);
   if (gathered !== first.total) {
     return yield* Effect.fail(unreadable());
   }
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return [first.value, ...rest.map((page) => page.value)];
 });
 

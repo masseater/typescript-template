@@ -210,8 +210,7 @@ it.effect("blocks a sender address that is not a dedicated subdomain of the zone
     [
       { verdict: "zone_apex", zoneName: sending },
       { verdict: "outside_zone", zoneName: "elsewhere.example" },
-    ],
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    ] as const,
     (asked) =>
       Effect.gen(function* program() {
         yield* mockServer(...accountHandlers({ zoneName: asked.zoneName }));

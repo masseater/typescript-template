@@ -123,15 +123,15 @@ const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVer
   access: AccountAccess,
   recipients: readonly string[],
 ) {
-  return yield* verifiedAddresses(access).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    Effect.map((addresses) =>
-      recipients.every((recipient) => addresses.includes(recipient))
-        ? ("free" as const)
-        : ("counted" as const),
-    ),
+  const addresses = yield* verifiedAddresses(access).pipe(
     Effect.catchTag("CloudflareFailure", () => Effect.succeed("unreadable" as const)),
   );
+  if (typeof addresses === "string") {
+    return addresses;
+  }
+  return recipients.every((recipient) => addresses.includes(recipient))
+    ? ("free" as const)
+    : ("counted" as const);
 });
 
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
