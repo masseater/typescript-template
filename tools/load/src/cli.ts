@@ -29,6 +29,7 @@ class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFai
   code: Schema.optionalKey(Schema.Int),
   crossed: Schema.optionalKey(Schema.Array(Schema.String)),
   reason: Schema.Literals([
+    "measurement_empty",
     "scenario_failed",
     "scenario_missing",
     "summary_unreadable",
@@ -62,12 +63,6 @@ const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
   usage_invalid: usage,
 };
 
-function discardPreviousSummary(): Effect.Effect<void, LoadTestFailure> {
-  return discardSummary(summaryFile).pipe(
-    Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
-  );
-}
-
 function runScenario(
   binary: string,
   scenario: string,
@@ -93,9 +88,13 @@ function runScenario(
   });
 }
 
-function readReport(): Effect.Effect<Report, LoadTestFailure> {
+function requireMeasurement(): Effect.Effect<Report, LoadTestFailure> {
   return readSummary(summaryFile).pipe(
     Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
+    Effect.filterOrFail(
+      (report) => report.requests > 0,
+      () => new LoadTestFailure({ reason: "measurement_empty" }),
+    ),
   );
 }
 
@@ -132,7 +131,9 @@ const prepare = Effect.fn("prepare")(function* prepare(
   const binary = yield* installBinary(home);
   yield* awaitReady(app);
   yield* clearTraces(origin);
-  yield* discardPreviousSummary();
+  yield* discardSummary(summaryFile).pipe(
+    Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
+  );
   return { binary, scenario };
 });
 
@@ -147,7 +148,7 @@ const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.T
     app,
     crossed,
     loadAverage,
-    measured: yield* readReport(),
+    measured: yield* requireMeasurement(),
     origin,
     profile,
   };
