@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { evaluateBudget } from "./decision.ts";
 import { fetchUsage } from "./billing.ts";
@@ -14,15 +14,16 @@ NodeRuntime.runMain(
       new Date(),
     );
     const decision = yield* evaluateBudget(usage, config);
-    // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ event: "budget.inspected", ...decision }));
+    yield* Console.log(JSON.stringify({ event: "budget.inspected", ...decision }));
   }).pipe(
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "budget.inspect_failed" }));
-        process.exitCode = 1;
-      }),
+      Console.error(JSON.stringify({ event: "budget.inspect_failed" })).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = 1;
+          }),
+        ),
+      ),
     ),
   ),
   { disableErrorReporting: true },

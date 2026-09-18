@@ -8,5 +8,4 @@ export { failureAttributes, observeRequest, reportFailure } from "./request-span
 export { consoleSink } from "./log.ts";
 export { redactSecrets } from "./redact.ts";
 export type { Correlation } from "./protocol.ts";
-export type { LogSink } from "./log.ts";
 export type { RequestContext } from "./current-request.ts";
