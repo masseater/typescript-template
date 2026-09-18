@@ -6,7 +6,6 @@
     "inspect": "node src/inspect.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
     "effect": "catalog:"

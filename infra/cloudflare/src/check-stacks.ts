@@ -1,12 +1,11 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
-import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Schema } from "effect";
 
 import { applications, grants } from "@repo/config";
 import type { Application } from "@repo/config";
-import { markFailed, reportFailed } from "@repo/config/cli";
+import { markFailed, reportFailed, runCli } from "@repo/config/cli";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { hstsSetting } from "./config.ts";
@@ -293,7 +292,7 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   return { matches, onboards: onboards(inventory), sends: bindsSendEmail(inventory) } as const;
 });
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     const differs = yield* rolesDiffer(verified);
@@ -311,9 +310,6 @@ NodeRuntime.runMain(
         stack: failure.stack,
       }),
     ),
-    Effect.catchCause((cause) =>
-      reportFailed({ detail: describeCause(Cause.squash(cause)), event: "stacks.invalid" }),
-    ),
   ),
-  { disableErrorReporting: true },
+  (cause) => ({ detail: describeCause(Cause.squash(cause)), event: "stacks.invalid" }),
 );

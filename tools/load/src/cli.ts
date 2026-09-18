@@ -5,10 +5,10 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { reportFailed } from "@repo/config/cli";
+import { applicationOrigins, mailpitOrigin } from "@repo/config";
+import { reportFailed, runCli } from "@repo/config/cli";
 import { memberPageSize } from "@repo/runtime/contracts";
 
 import { exists, installBinary } from "./binary.ts";
@@ -17,10 +17,8 @@ import {
   Application,
   awaitReady,
   clearTraces,
-  mailpitOrigin,
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
-  targetOrigin,
 } from "./environment.ts";
 import type { EnvironmentUnusable } from "./environment.ts";
 import { discardSummary, readSummary } from "./summary.ts";
@@ -140,7 +138,7 @@ const prepare = Effect.fn("prepare")(function* prepare(
 
 const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.Type) {
   const { app, profile } = input;
-  const origin = targetOrigin(app);
+  const origin = applicationOrigins[app];
   const { binary, scenario } = yield* prepare(app, origin);
   const before = oneMinuteLoadAverage();
   const crossed = yield* runScenario(binary, scenario, scenarioEnvironment(profile, origin));
@@ -184,7 +182,7 @@ function announceFailure(failure: Failure): Effect.Effect<void> {
 const firstUserArgumentIndex = 2;
 const [app, profile] = process.argv.slice(firstUserArgumentIndex);
 
-NodeRuntime.runMain(
+runCli(
   Schema.decodeUnknownEffect(Arguments)(profile === undefined ? { app } : { app, profile }).pipe(
     Effect.mapError(() => new LoadTestFailure({ reason: "usage_invalid" })),
     Effect.flatMap(measure),
@@ -195,5 +193,5 @@ NodeRuntime.runMain(
       LoadTestFailure: announceFailure,
     }),
   ),
-  { disableErrorReporting: true },
+  { event: "load.run_failed", ok: false, reason: "unexpected" },
 );

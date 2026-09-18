@@ -328,9 +328,6 @@ importers:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
         version: 1.1.12(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@effect/tsgo':
         specifier: 0.45.0
         version: 0.45.0
@@ -664,9 +661,6 @@ importers:
 
   infra/budget-monitor:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -824,9 +818,6 @@ importers:
 
   infra/local:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -926,9 +917,6 @@ importers:
 
   libs/db:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../config
@@ -1358,9 +1346,6 @@ importers:
 
   tools/dev:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1511,9 +1496,6 @@ importers:
 
   tools/load:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1542,9 +1524,6 @@ importers:
 
   tools/observe:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
