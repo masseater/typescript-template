@@ -144,7 +144,7 @@ export default definePlugin({
     "example-values": {
       create: exampleValuesVisitor,
       meta: metadata(
-        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 00000000-0000-0000-0000-000000000000 のような数字だけの合成値にし、secret・token・password・credential の値は大文字を含まない自己申告な文字列にしてください。`,
+        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 11111111-1111-4111-8111-111111111111 のように数字だけで version と variant を満たす合成値にし、secret・token・password・credential の値は大文字を含まない自己申告な文字列にしてください。`,
       ),
     },
     layers: {
