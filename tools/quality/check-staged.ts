@@ -4,12 +4,12 @@ import { fileURLToPath } from "node:url";
 import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Option } from "effect";
 
+import { markFailed, reportFailed } from "@repo/config/cli";
+
 import { deploymentCredentials } from "./credentials.ts";
 import { prefixScan, secretViolations } from "./secrets.ts";
 import { stagedFiles } from "./staged.ts";
 import type { StagedFile } from "./staged.ts";
-
-const FAILED_EXIT_CODE = 1;
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -27,14 +27,8 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
   return { credentials: credentials.source, failures, scan };
 });
 
-const markFailed = Effect.sync(() => {
-  process.exitCode = FAILED_EXIT_CODE;
-});
-
 function reportUnchecked(detail: Readonly<Record<string, unknown>>): Effect.Effect<void> {
-  return Console.error(
-    JSON.stringify({ event: "quality.staged_secrets_failed", ok: false, ...detail }),
-  ).pipe(Effect.andThen(markFailed));
+  return reportFailed({ event: "quality.staged_secrets_failed", ok: false, ...detail });
 }
 
 NodeRuntime.runMain(

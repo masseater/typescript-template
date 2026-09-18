@@ -12,7 +12,7 @@ import { promisify } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { reportFailed } from "./failure.ts";
+import { reportFailed } from "@repo/config/cli";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
   "PrepareBrowserFailure",

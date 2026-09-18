@@ -146,6 +146,11 @@ const lint = {
         object: "process",
         property,
       })),
+      {
+        message: "@repo/config/cli の reportFailed / markFailed / exitWith を使ってください。",
+        object: "process",
+        property: "exitCode",
+      },
     ],
     "eslint/no-ternary": "off",
     "eslint/no-undef": "off",
