@@ -1,14 +1,17 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const application = {
-  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
+  entry: [
+    "src/app/{router,server,start}.{ts,tsx}!",
+    "src/app/routes/**/*.{ts,tsx}!",
+    "steiger.config.ts",
+  ],
   ignoreDependencies: ["cloudflare"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
 const workspaces = {
   ".": {
-    entry: ["steiger.config.js"],
     ignoreBinaries: ["stryker"],
     ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
