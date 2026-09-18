@@ -54,7 +54,7 @@ export default defineConfig({
       },
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
-        command: ["knip --no-config-hints", "knip --strict"],
+        command: ["knip", "knip --strict"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },

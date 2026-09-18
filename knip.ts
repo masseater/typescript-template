@@ -9,7 +9,6 @@ const application = {
 const workspaces = {
   ".": {
     entry: ["doctor.config.ts"],
-    ignoreBinaries: ["stryker"],
     ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
@@ -83,6 +82,7 @@ function config({
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
+      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
       "apps/wiki": { ...app, project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"] },
       "infra/budget-monitor": {
