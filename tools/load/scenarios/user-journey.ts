@@ -1,6 +1,7 @@
 import { check, fail, group, sleep } from "k6";
 import type { Options } from "k6/options";
 import type { Params } from "k6/http";
+import exec from "k6/execution";
 import http from "k6/http";
 
 const ok = 200;
@@ -49,12 +50,19 @@ interface Session {
 const jar = new http.CookieJar();
 const anonymous = new http.CookieJar();
 
+const documentationRange = "203.0.113.";
+const hosts = 254;
+
+function client(): Readonly<Record<string, string>> {
+  return { "cf-connecting-ip": `${documentationRange}${1 + (exec.vu.idInTest % hosts)}` };
+}
+
 function json(): Readonly<Record<string, string>> {
-  return { "content-type": "application/json", origin: target };
+  return { ...client(), "content-type": "application/json", origin: target };
 }
 
 function read(name: string): Params {
-  return { jar, tags: { name } };
+  return { headers: client(), jar, tags: { name } };
 }
 
 const tokenMarker = "#token=";
@@ -178,6 +186,7 @@ function searchMembers(): void {
 
 function readLoginPage(): void {
   const response = http.get(`${target}/login`, {
+    headers: client(),
     jar: anonymous,
     redirects: 0,
     tags: { name: "login-page" },
