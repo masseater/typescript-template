@@ -67,7 +67,7 @@ const lint = {
           "error",
           {
             capIsNewExceptionPattern:
-              "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers)\\.",
+              "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers|Zone)\\.",
             capIsNewExceptions: ["DurableObject", "InMemoryService", "Stack", "Worker"],
           },
         ],

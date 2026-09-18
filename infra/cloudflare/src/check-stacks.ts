@@ -8,6 +8,7 @@ import { applications, grants } from "@repo/config";
 import type { Application } from "@repo/config";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
+import { hstsSetting } from "./config.ts";
 import {
   applyVerificationEnvironment,
   bindsSendEmail,
@@ -53,6 +54,16 @@ const isApplication = Schema.is(Schema.Literals(applications));
 
 function plainText(name: string, value: number | string): string {
   return `${name}:plain_text:text=${value}`;
+}
+
+function zoneSetting(settingId: string, value: unknown): ResourceInventory {
+  return {
+    adopt: false,
+    bindings: [],
+    declared: { settingId, value, zoneId: verificationSettings.zoneId },
+    removalPolicy: "destroy",
+    type: "Cloudflare.Zone.Setting",
+  };
 }
 
 function tokenValue(name: string, resource: string): string {
@@ -235,6 +246,10 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
+  }),
+  zone: declaredStack("zone", {
+    AlwaysUseHttps: zoneSetting("always_use_https", "on"),
+    SecurityHeader: zoneSetting("security_header", hstsSetting),
   }),
 };
 
