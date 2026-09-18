@@ -57,6 +57,12 @@ function unreadableVerdict(
   return Effect.succeed({ unreadable: failure.keys });
 }
 
+const STATE_STORE_SOURCE = "state_store";
+
+function unreadableState(): Effect.Effect<Unreadable> {
+  return Effect.succeed({ unreadable: [STATE_STORE_SOURCE] });
+}
+
 function isUnreadable(verdict: unknown): verdict is Unreadable {
   return Predicate.hasProperty(verdict, "unreadable");
 }
@@ -242,6 +248,7 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
 });
 
 export {
+  STATE_STORE_SOURCE,
   decodeBody,
   endpoint,
   isUnreadable,
@@ -251,6 +258,7 @@ export {
   readResource,
   readVerdict,
   requestReason,
+  unreadableState,
   unreadableVerdict,
 };
 export type { AccountAccess, Endpoint, Unreadable };

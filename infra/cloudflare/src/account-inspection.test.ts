@@ -4,6 +4,7 @@ import { HttpResponse, http } from "msw";
 
 import { mockServer } from "./account-fixture.ts";
 import { blocked, inspectAccount } from "./account-inspection.ts";
+import { STATE_STORE_SOURCE } from "./account-read.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 import {
   FORBIDDEN_STATUS,
@@ -47,7 +48,7 @@ it.effect("clears the account this deployment has just finished applying to", ()
         addresses: config.budget.recipients.map((email) => ({ email, verified: "2026-01-01" })),
         databases: [{ name: `${config.prefix}-db`, uuid: databaseId }],
         domains: hosts.map((hostname, index) => ({ hostname, service: workers[index] ?? "" })),
-        records: sendingRecords,
+        records: [...sendingRecords, ...hosts],
         scripts: [...workers, STATE_STORE_SCRIPT_NAME],
         stores: 1,
         subdomains: [sending],
@@ -58,12 +59,48 @@ it.effect("clears the account this deployment has just finished applying to", ()
     assert.deepInclude(inspection, {
       alertQuota: "free",
       database: "owned",
+      dnsRecords: "owned",
       emailSending: "owned",
       sendingSubdomain: "owned",
       stateStore: "present",
       workerDomains: "owned",
       workerNames: "owned",
     });
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reads the state store as the source of the names this deployment owns", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      ...accountHandlers({
+        domains: hosts.map((hostname, index) => ({ hostname, service: workers[index] ?? "" })),
+        records: hosts,
+        scripts: [...workers, STATE_STORE_SCRIPT_NAME],
+      }),
+    );
+    const unreadable = { unreadable: [STATE_STORE_SOURCE] };
+    const inspection = yield* inspectAccount(
+      access,
+      config,
+      Effect.fail("the state store cannot be read"),
+    );
+    assert.deepStrictEqual(inspection.workerNames, unreadable);
+    assert.deepStrictEqual(inspection.workerDomains, unreadable);
+    assert.deepStrictEqual(inspection.dnsRecords, unreadable);
+    assert.deepStrictEqual(blocked(inspection).toSorted(), [
+      "dnsRecords",
+      "workerDomains",
+      "workerNames",
+    ]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("holds the records of a hostname no worker of this deployment answers", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({ records: hosts }));
+    const inspection = yield* inspectAccount(access, config, deployedState());
+    assert.deepStrictEqual(inspection.dnsRecords, "taken");
+    assert.include(blocked(inspection), "dnsRecords");
   }).pipe(Effect.scoped),
 );
 
