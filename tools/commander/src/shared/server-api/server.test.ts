@@ -1,20 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
 import { assert, it } from "@effect/vitest";
-import {
-  Deferred,
-  Effect,
-  Fiber,
-  FileSystem,
-  ManagedRuntime,
-  Option,
-  Schedule,
-  Schema,
-  Stream,
-} from "effect";
+import { Deferred, Effect, Fiber, FileSystem, Option, Schedule, Schema, Stream } from "effect";
 import type { Scope } from "effect";
 
 import { AppState, ChatEvent, applyChat, receiveChat } from "#shared/contract/index.ts";
 import { playbookDirectory } from "#shared/playbook/index.ts";
+import { workerRuntime } from "@repo/runtime/worker";
 
 import { bd } from "./bd.ts";
 import { commanderApp } from "./commander-api.ts";
@@ -102,7 +93,7 @@ function appAt(
   directory: string,
 ): Effect.Effect<Served["fetch"], never, Scope.Scope> {
   return Effect.gen(function* built() {
-    const runtime = ManagedRuntime.make(
+    const runtime = workerRuntime(() =>
       commanderServices({
         assets: playbookDirectory,
         directory,
@@ -112,7 +103,7 @@ function appAt(
         stateDirectory: `${home}/state`,
       }),
     );
-    yield* Effect.addFinalizer(() => runtime.disposeEffect);
+    yield* Effect.addFinalizer(() => Effect.promise(async () => runtime.dispose()));
     const app = commanderApp(runtime, reporting);
     return async (request: Request): Promise<Response> => app.fetch(request);
   });

@@ -1,4 +1,6 @@
-import { Config, Effect, Layer, ManagedRuntime, Option } from "effect";
+import { Config, Effect, Layer, Option } from "effect";
+
+import { workerRuntime } from "@repo/runtime/worker";
 
 import { commanderServices } from "./services.ts";
 
@@ -14,6 +16,6 @@ const settings = Config.all({
 const configured = Effect.gen(function* configured() {
   return commanderServices(yield* settings);
 });
-const runtime = ManagedRuntime.make(Layer.unwrap(configured));
+const runtime = workerRuntime(() => Layer.unwrap(configured));
 
 export { runtime };
