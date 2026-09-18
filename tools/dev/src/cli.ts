@@ -1,11 +1,11 @@
-import { Cause, Effect } from "effect";
+import { Cause, Console, Effect } from "effect";
 import { browser, browserCommand } from "./browser.ts";
 import { connection, logs, start, status, stop } from "./applications.ts";
+import { failure, reportFailed } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { application } from "./local-environment.ts";
-import { failure } from "./failure.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
@@ -29,11 +29,7 @@ const appCommands = new Map<string, (app: App, args: readonly string[]) => Comma
 ]);
 
 function writeReport(report: unknown): Effect.Effect<void> {
-  return Effect.sync(() => {
-    if (report !== undefined) {
-      process.stdout.write(`${JSON.stringify(report)}\n`);
-    }
-  });
+  return report === undefined ? Effect.void : Console.log(JSON.stringify(report));
 }
 
 function selectCommand(action: string, app: string | undefined, args: readonly string[]): Command {
@@ -55,16 +51,11 @@ NodeRuntime.runMain(
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
-        : Effect.sync(() => {
-            process.stderr.write(
-              `${JSON.stringify({
-                event: "local.application_command_failed",
-                ok: false,
-                remediation:
-                  "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-              })}\n`,
-            );
-            process.exitCode = 1;
+        : reportFailed({
+            event: "local.application_command_failed",
+            ok: false,
+            remediation:
+              "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
           }),
     ),
   ),

@@ -1,7 +1,7 @@
+import { Console, Effect } from "effect";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { CloudflareFailure } from "./config.ts";
-import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { layer } from "alchemy/Alchemist";
@@ -46,8 +46,7 @@ NodeRuntime.runMain(
         databaseId,
         ...(email === "" ? {} : { email }),
       });
-      // oxlint-disable-next-line no-console
-      console.info(JSON.stringify(result));
+      yield* Console.info(JSON.stringify(result));
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,
