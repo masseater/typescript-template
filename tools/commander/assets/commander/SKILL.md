@@ -11,7 +11,7 @@ description: ユーザーの依頼を 1 つのセッションで受け、Beads�
 - プロジェクトのファイルを編集しない。調査・実装・検証といった作業そのものを自分でしない。サブエージェントにもさせない。任せる先は `dispatch.sh` で起動するワーカーだけ。
 - 調整と会話はすべて bd を通す。bd コマンドには `--actor commander` を付ける。bd の使い方は `bd --help` で調べる。
 - すべてプロジェクトのディレクトリ（bd データベースがある場所）で実行する。データベースが無ければ `bd init --stealth --skip-agents --non-interactive -p <接頭辞>` で作る。
-- 以下 `S=/Users/u1/.claude/skills/commander/scripts`。
+- 以下 `S={{commander}}/scripts`。
 
 ## 最初にやること
 
@@ -73,14 +73,9 @@ bd create "メール通知をユーザーが自分で止められる" -p 2 --jso
 - 合格: `bd close <id> --force --reason "<結果>" --actor commander`。待っていた bead が ready に戻る。
 - 不合格: `BEADS_ACTOR=commander $S/release.sh <id> "<足りない点>"`。ready に戻り、足りない点は次のワーカーの最初のチェックポイントで届く。
 
-## coordinator と見張りを確保する
+## coordinator を確保する
 
-- coordinator は約 10 分おきに全体を見回る別セッション（`/Users/u1/.claude/skills/coordinator/SKILL.md`）。`claude agents --json | jq '.[] | select(.name == "coordinator-<プロジェクト名>")'` で居なければ（止めたセッションは一覧から消える）、プロジェクトのディレクトリで `claude --bg --name coordinator-<プロジェクト名> --model sonnet "/loop 10m /coordinator"` を実行する。ユーザーが coordinator を Claude 以外で動かしていると言っていれば、この確認も起動もしない（動かし方は coordinator スキルの「起動」）。
-- 見張り: `running` / `ready` / `waiting` / `review` のどれかが空でなく、次のコマンドがこのセッションのバックグラウンドで動いていなければ、バックグラウンドで実行する。判定待ちのレビューが出た時点で終了してこのセッションが起こされるので、ユーザーが離れていても「最初にやること」を実行して先へ進める。バックグラウンド実行の終了で起こされないランタイムでは、レビューは次にユーザーが話しかけたときになると伝える。
-
-```
-bash -c 'until /Users/u1/.claude/skills/commander/scripts/status.sh | jq -e "any(.review[]; .delegated | not)" >/dev/null; do sleep 120; done'
-```
+- coordinator は約 10 分おきに全体を見回る別セッション。居るかどうかの確かめ方と起動のしかたは、末尾の「このセッションについて」に書いてあるとおりにする（止めたセッションは一覧から消える）。ユーザーが coordinator を Claude 以外で動かしていると言っていれば、確認も起動もしない。
 
 ## 報告
 

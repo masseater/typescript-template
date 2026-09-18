@@ -277,7 +277,8 @@ it.live(
         `claude --bg --name coordinator-project-state --model sonnet "${served.home}/state/coordinator.md を読んで`,
       );
       assert.include(systemPrompt, 'select(.name == "coordinator-project-state")');
-      assert.notInclude(systemPrompt, ".claude/skills/");
+      assert.include(systemPrompt, `S=${bundledAssets}/commander/scripts`);
+      assert.notMatch(systemPrompt, /\.claude\/skills\/|\{\{/u);
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   timeout,
 );

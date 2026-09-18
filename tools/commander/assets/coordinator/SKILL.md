@@ -11,13 +11,11 @@ description: 走っている作業を定期的に見回る調整役。Beads（bd
 - プロジェクトの作業をしない。プロジェクトのファイルを編集しない。bead を close しない。ユーザーと話さない（ユーザーとの窓口は commander。伝えたいことは bead のコメントに残す）。
 - tick をまたぐ記憶は bd にだけ置く。セッションの記憶に頼らない。
 - bd コマンドには `--actor coordinator` を付ける。bd の使い方は `bd --help` で調べる。
-- 以下 `S=/Users/u1/.claude/skills/commander/scripts`。プロジェクトのディレクトリ（bd データベースがある場所）で実行する。
+- 以下 `S={{commander}}/scripts`。プロジェクトのディレクトリ（bd データベースがある場所）で実行する。
 
 ## 起動
 
-- Claude のセッションの中で: `/loop 10m /coordinator`
-- 別セッションとして: `claude --bg --name coordinator-<プロジェクト名> --model sonnet "/loop 10m /coordinator"`
-- Claude 以外: コマンドを一定間隔で実行できるエージェントランタイムなら何でもこの役を担える。10 分おきに「`/Users/u1/.claude/skills/coordinator/SKILL.md` を読んで tick を 1 回実行する」を走らせるだけで、やることは同じ。
+起動は司令塔が行う。コマンドを一定間隔で実行できるエージェントランタイムなら何でもこの役を担える。10 分おきに「このファイルを読んで tick を 1 回実行する」を走らせるだけで、やることは同じ。
 
 ## tick
 

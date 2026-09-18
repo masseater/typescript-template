@@ -1,8 +1,6 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createHash } from "node:crypto";
 // oxlint-disable-next-line import/no-nodejs-modules
-import os from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect, FileSystem } from "effect";
@@ -13,6 +11,7 @@ interface Project {
 }
 
 const stateKeyLength = 12;
+const localState = path.join(import.meta.dirname, "../../../.local/commander");
 
 function repository(start: string): Effect.Effect<string, never, FileSystem.FileSystem> {
   return Effect.gen(function* search() {
@@ -40,7 +39,7 @@ function resolveProject(
   return located.pipe(
     Effect.map((directory) => {
       const key = createHash("sha256").update(directory).digest("hex").slice(0, stateKeyLength);
-      const stateDirectory = path.join(os.homedir(), ".local", "state", "commander", key);
+      const stateDirectory = path.join(localState, key);
       return { directory, stateDirectory };
     }),
   );
