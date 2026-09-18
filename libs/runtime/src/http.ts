@@ -1,6 +1,6 @@
-import { Effect, Exit, Schema } from "effect";
+import { Effect, Exit, Schema, Stream } from "effect";
 import type { Cause, ManagedRuntime } from "effect";
-import { Elysia, status } from "elysia";
+import { Elysia, sse, status } from "elysia";
 import type { AnyElysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 
@@ -20,9 +20,22 @@ type Handler<Value, Failures, Requirements> = (
 interface ElysiaContext {
   readonly request: Request;
 }
+interface ElysiaStreamContext extends ElysiaContext {
+  readonly set: { readonly headers: Readonly<Record<string, string | number>> };
+}
+interface ServerSentEvent {
+  readonly data: unknown;
+  readonly event: string;
+}
 type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
+type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
 interface ApiRoutes<Requirements> {
+  readonly events: <Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
+    event: Schema.Codec<Value, Encoded>,
+    handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -146,6 +159,60 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
     );
 }
 
+class EventFeed<Encoded extends ServerSentEvent> implements EventStream<Encoded> {
+  private readonly source: AsyncIterator<Encoded>;
+
+  public constructor(events: AsyncIterable<Encoded>) {
+    this.source = events[Symbol.asyncIterator]();
+  }
+
+  public async next(): Promise<IteratorResult<Encoded, void>> {
+    const step = await this.source.next();
+    if (step.done === true) {
+      return { done: true, value: undefined };
+    }
+    const frame = sse({ data: step.value.data, event: step.value.event });
+    return { done: false, value: { ...step.value, ...frame } };
+  }
+
+  public async return(): Promise<IteratorResult<Encoded, void>> {
+    await this.source.return?.();
+    return { done: true, value: undefined };
+  }
+
+  public async throw(): Promise<IteratorResult<Encoded, void>> {
+    return this.return();
+  }
+
+  public [Symbol.asyncIterator](): this {
+    return this;
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    await this.return();
+  }
+}
+
+function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tagged, Requirements>(
+  event: Schema.Codec<Value, Encoded>,
+  handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
+): (request: Request) => Effect.Effect<EventStream<Encoded> | Failed, never, Requirements> {
+  const encode = Schema.encodeEffect(event);
+  return (request) =>
+    handler(request).pipe(
+      Effect.flatMap((values) =>
+        Stream.toAsyncIterableEffect(
+          Stream.mapEffect(values, (value) => Effect.orDie(encode(value))),
+        ),
+      ),
+      Effect.map((events) => new EventFeed(events)),
+      Effect.catchCause((cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus))),
+    );
+}
+
+const streamHeaders = { "cache-control": "no-store", "content-encoding": "identity" };
+
 function apiRoutes<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements, unknown>,
   reporting: Reporting,
@@ -177,7 +244,21 @@ function apiRoutes<Requirements>(
         unavailableStatus(cause, reporting),
       );
   }
-  return { raw, route };
+  function events<Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
+    event: Schema.Codec<Value, Encoded>,
+    handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed> {
+    const open = openStream(event, handler, failures);
+    return async (context): Promise<EventStream<Encoded> | Failed> => {
+      const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));
+      if (opened instanceof EventFeed) {
+        Object.assign(context.set.headers, streamHeaders);
+      }
+      return opened;
+    };
+  }
+  return { events, raw, route };
 }
 
 export { AppOrigin } from "./app-origin.ts";
