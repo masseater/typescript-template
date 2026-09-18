@@ -32,6 +32,15 @@ export default defineConfig({
       ],
       check: ["vp run precommit", "vp run prepush"],
       "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
+      "check:dev": {
+        command: "node tools/quality/dev-start.ts",
+        input: [
+          ...taskInput,
+          { base: "workspace", pattern: "!.local/**" },
+          { base: "workspace", pattern: "!apps/*/.dev.vars" },
+          { base: "workspace", pattern: "!node_modules/.vite/**" },
+        ],
+      },
       "check:effect": {
         command: [
           "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
@@ -59,6 +68,7 @@ export default defineConfig({
         "vp run check:imports",
         "vp run check:react",
         "vp run check:effect",
+        "vp run check:dev",
         "vp run -F '!typescript-template' --cache check",
       ],
     },

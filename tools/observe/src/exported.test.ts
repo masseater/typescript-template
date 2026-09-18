@@ -7,9 +7,9 @@ import { receiverOrigin } from "@repo/local";
 
 import { exportedTelemetry } from "./exported.ts";
 
-const traceId = "4eb48993cedc4e7ba84e2c7f87eeb940";
-const spanId = "99da669e5163438a";
-const requestId = "67b86070-ce9a-4021-b3be-e34dea5cc0c7";
+const traceId = "0123456789abcdeffedcba9876543210";
+const spanId = "0123456789abcdef";
+const requestId = "11111111-1111-4111-8111-111111111111";
 const minutes = 15;
 const millisecondsPerMinute = 60_000;
 const nanosecondsPerMillisecond = 1_000_000;

@@ -13,6 +13,10 @@ type LintContext = Readonly<
 type Node = DeepReadonly<ESTree.Node>;
 type NodeOf<Type extends Node["type"]> = Extract<Node, { type: Type }>;
 
+function filename(context: LintContext): string {
+  return context.filename.replaceAll("\\", "/");
+}
+
 function scopeOf(context: LintContext, node: Node): Scope {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return context.sourceCode.getScope(node as ESTree.Node);
@@ -57,5 +61,5 @@ function reportViolation(context: LintContext, node: Node): void {
   context.report({ messageId: "violation", node: { range: [node.range[0], node.range[1]] } });
 }
 
-export { importVisitor, reportViolation, scopeOf };
+export { filename, importVisitor, reportViolation, scopeOf };
 export type { DeepReadonly, LintContext, Node, NodeOf };
