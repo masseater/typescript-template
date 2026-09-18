@@ -1,12 +1,24 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@template/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
+    "lib": [
+      "esnext"
+    ],
     "types": [
       "vite-plus/client",
       "node",
       "@cloudflare/workers-types",
       "@cloudflare/vitest-plugin/types"
+    ],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
     ]
   },
-  "include": ["src/**/*.ts", "drizzle.config.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "drizzle.config.ts",
+    "vite.config.ts"
+  ]
 }

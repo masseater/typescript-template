@@ -1,5 +1,19 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["@cloudflare/workers-types"] },
-  "include": ["src/**/*.ts"]
+  "extends": "@template/dont-review-it/tsconfig/app.json",
+  "compilerOptions": {
+    "lib": [
+      "esnext"
+    ],
+    "types": [
+      "@cloudflare/workers-types"
+    ],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
 }

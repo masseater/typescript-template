@@ -1,147 +1,126 @@
 import { applications } from "@template/config";
+import { dontReviewItPreset } from "@template/dont-review-it";
+import { LINT_SEVERITY } from "@template/lint-rule-authoring";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
-function textModule(code: string, id: string): string | undefined {
-  return textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
-}
+const textModule = (code: string, id: string): string | undefined =>
+  textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
 
-// oxlint-disable-next-line import/no-default-export
+const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
+
 export default defineConfig({
-  fmt: {
-    ignorePatterns: [
-      "**/mockServiceWorker.js",
-      "**/routeTree.gen.ts",
-      ".local/**",
-      ".local-agents/**",
-      "**/.wrangler/**",
-      "**/dist/**",
-    ],
-  },
-  lint: {
-    categories: {
-      correctness: "error",
-      nursery: "error",
-      pedantic: "error",
-      perf: "error",
-      restriction: "error",
-      style: "error",
-      suspicious: "error",
-    },
-    ignorePatterns: [
-      "**/mockServiceWorker.js",
-      "**/routeTree.gen.ts",
-      "**/dist/**",
-      "**/node_modules/**",
-      ".local/**",
-      ".local-agents/**",
-      "**/.wrangler/**",
-    ],
+  fmt: dontReviewItPreset.fmt({ ignorePatterns: generatedFiles }),
+  lint: dontReviewItPreset.lint({
+    bundles: "all",
+    ignorePatterns: generatedFiles,
     jsPlugins: [
       "./tools/quality/rules.ts",
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
       "@shadcn/lint",
     ],
-    options: {
-      denyWarnings: true,
-      reportUnusedDisableDirectives: "error",
-      respectEslintDisableDirectives: false,
-      typeAware: true,
-      typeCheck: true,
-    },
+    options: { denyWarnings: true, typeAware: true, typeCheck: true },
     overrides: [
       {
-        files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts", "libs/runtime/src/account.ts"],
+        files: ["**/*.ts", "**/*.tsx"],
+        plugins: ["react"],
         rules: {
-          "typescript/explicit-function-return-type": "off",
-          "typescript/explicit-module-boundary-types": "off",
+          "react/exhaustive-deps": LINT_SEVERITY.ERROR,
+          "react/forbid-component-props": LINT_SEVERITY.ERROR,
+          "react/jsx-filename-extension": [LINT_SEVERITY.ERROR, { extensions: [".tsx"] }],
+          "react/jsx-props-no-spreading": LINT_SEVERITY.ERROR,
+          "react/only-export-components": [LINT_SEVERITY.ERROR, { allowExportNames: ["Route"] }],
+          "react/rules-of-hooks": LINT_SEVERITY.ERROR,
         },
       },
       {
         files: ["libs/ui/src/shared/ui/**"],
         rules: {
-          "react/forbid-component-props": ["error", { forbid: ["style"] }],
-          "shadcn/no-restyle": "off",
+          "react/forbid-component-props": [LINT_SEVERITY.ERROR, { forbid: ["style"] }],
+          "shadcn/no-restyle": LINT_SEVERITY.OFF,
         },
       },
       {
-        files: ["infra/cloudflare/src/**"],
+        files: ["tools/ai-native/**", "tools/lint-rule-authoring/**"],
         rules: {
-          "eslint/new-cap": [
-            "error",
-            {
-              capIsNewExceptionPattern:
-                "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers)\\.",
-              capIsNewExceptions: ["DurableObject", "Stack", "Worker"],
-            },
+          "dont-review-it/no-handmade-standard-io-double--use-standard-io-test": LINT_SEVERITY.OFF,
+        },
+      },
+      {
+        files: ["tools/dont-review-it/src/lint/oxlint/**"],
+        rules: {
+          "typescript/switch-exhaustiveness-check": [
+            LINT_SEVERITY.ERROR,
+            { considerDefaultExhaustiveForUnions: true },
           ],
         },
       },
       {
-        files: ["**/*.test.ts", "**/*-fixture.ts"],
-        plugins: ["vitest"],
+        files: ["**/{test,tests,__tests__,spec,__specs__}/**"],
         rules: {
-          "no-empty-pattern": ["error", { allowObjectPatternsAsParameters: true }],
-          "vitest/no-importing-vitest-globals": "off",
-          "vitest/no-standalone-expect": [
-            "error",
-            { additionalTestBlockFunctions: ["it", "it.for", "test", "test.for"] },
+          "vitest/consistent-test-filename": [
+            LINT_SEVERITY.ERROR,
+            { pattern: "place-the-test-file-next-to-its-source-instead-of-a-test-directory" },
           ],
-          "vitest/prefer-to-be-falsy": "off",
-          "vitest/prefer-to-be-truthy": "off",
-          "vitest/require-test-timeout": "off",
-          "vitest/valid-expect": ["error", { maxArgs: 2 }],
         },
       },
-      {
-        files: [
-          "libs/ui/src/shared/ui/table.stories.tsx",
-          "libs/ui/src/shared/ui/table-cell.stories.tsx",
-          "libs/ui/src/shared/ui/table-head.stories.tsx",
-        ],
-        rules: { "react/jsx-max-depth": "off" },
-      },
-      {
-        files: ["**/*.stories.tsx"],
-        rules: {
-          "import/group-exports": "off",
-          "import/no-relative-parent-imports": "off",
-          "typescript/prefer-readonly-parameter-types": "off",
-        },
-      },
-    ],
-    plugins: [
-      "eslint",
-      "typescript",
-      "unicorn",
-      "oxc",
-      "react",
-      "jsx-a11y",
-      "import",
-      "promise",
-      "node",
-      "jsdoc",
     ],
     rules: {
-      "eslint/func-style": ["error", "declaration"],
-      "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." }],
-      "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
-      "eslint/no-magic-numbers": [
-        "error",
+      "dont-review-it/no-array-mutation--derive-new-array": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-blanket-suppression--name-and-record": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-class-as-mutable-cell--decide-in-an-iife": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-default-export--use-named-export": [
+        LINT_SEVERITY.ERROR,
         {
-          ignore: [0, 1, -1],
-          ignoreArrayIndexes: true,
-          ignoreDefaultValues: true,
-          ignoreEnums: true,
-          ignoreNumericLiteralTypes: true,
-          ignoreTypeIndexes: true,
+          toolRequiredFileNames: [
+            "drizzle.config.ts",
+            "knip.ts",
+            "main.ts",
+            "preview.tsx",
+            "server.ts",
+            "steiger.config.js",
+            "vite.config.ts",
+            "vitest-sdk.ts",
+            "vitest.config.ts",
+            "vitest.workers.config.ts",
+            "worker.ts",
+          ],
         },
       ],
-      "eslint/no-restricted-imports": [
-        "error",
+      "dont-review-it/no-empty-catch--throw-or-handle": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-floating-promise--await-the-result": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-non-boundary-double--replace-at-the-external-boundary": [
+        LINT_SEVERITY.ERROR,
+        {
+          externalIoPackages: [
+            "@template/ai-native/telemetry",
+            "@opentelemetry/exporter-logs-otlp-http",
+            "@opentelemetry/exporter-metrics-otlp-http",
+            "@opentelemetry/exporter-trace-otlp-http",
+          ],
+        },
+      ],
+      "dont-review-it/no-partial-rule-set--enable-the-whole-set": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-promise-chain--use-async-await": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-reassign--use-spread-or-iife": [
+        LINT_SEVERITY.ERROR,
+        {
+          assignOnlyTargets: [
+            "RuleTester.describe",
+            "RuleTester.it",
+            "RuleTester.itOnly",
+            "globalThis.fetch",
+          ],
+        },
+      ],
+      "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.ERROR,
+      "dont-review-it/no-silent-catch--rethrow-or-handle": LINT_SEVERITY.ERROR,
+      "import/no-cycle": LINT_SEVERITY.ERROR,
+      "no-restricted-imports": [
+        LINT_SEVERITY.ERROR,
         {
           paths: [
             {
@@ -156,61 +135,20 @@ export default defineConfig({
           ],
         },
       ],
-      "eslint/no-ternary": "off",
-      "eslint/no-undef": "off",
-      "eslint/no-undefined": "off",
-      "eslint/no-underscore-dangle": ["error", { allow: ["_tag"] }],
-      "eslint/no-void": ["error", { allowAsStatement: true }],
-      "eslint/one-var": ["error", "never"],
-      "eslint/require-await": "off",
-      "import/no-cycle": "error",
-      "import/no-named-export": "off",
-      "import/prefer-default-export": "off",
-      "node/no-top-level-await": "off",
-      "oxc/no-async-await": "off",
-      "oxc/no-optional-chaining": "off",
-      "oxc/no-rest-spread-properties": "off",
-      "project/boundaries": "error",
-      "project/effect-failures": "error",
-      "project/effect-stack": "error",
-      "project/environment-boundary": "error",
-      "project/layers": "error",
-      "project/no-internal-mocks": "error",
-      "project/no-manual-memoization": "error",
-      "project/test-import-graph": "error",
-      "project/test-runtime": "error",
-      "project/worker-fetch": "error",
-      "react/exhaustive-deps": "error",
-      "react/forbid-component-props": "error",
-      "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
-      "react/jsx-no-literals": "off",
-      "react/jsx-props-no-spreading": "error",
-      "react/only-export-components": ["error", { allowExportNames: ["Route"] }],
-      "react/react-in-jsx-scope": "off",
-      "react/rules-of-hooks": "error",
-      "shadcn/no-arbitrary-values": "error",
-      "shadcn/no-raw-colors": "error",
-      "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
-      "shadcn/no-unknown-classes": "error",
-      "typescript/consistent-return": "off",
-      "typescript/explicit-function-return-type": [
-        "error",
-        { allowedNames: ["createApi", "createAuth"] },
-      ],
-      "typescript/explicit-module-boundary-types": [
-        "error",
-        { allowedNames: ["createApi", "createAuth"] },
-      ],
-      "typescript/no-explicit-any": "error",
-      "typescript/no-floating-promises": "error",
-      "typescript/no-misused-promises": "error",
-      "typescript/no-unsafe-argument": "error",
-      "typescript/no-unsafe-assignment": "error",
-      "typescript/no-unsafe-call": "error",
-      "typescript/no-unsafe-member-access": "error",
-      "typescript/no-unsafe-return": "error",
+      "project/boundaries": LINT_SEVERITY.ERROR,
+      "project/effect-failures": LINT_SEVERITY.ERROR,
+      "project/effect-stack": LINT_SEVERITY.ERROR,
+      "project/environment-boundary": LINT_SEVERITY.ERROR,
+      "project/layers": LINT_SEVERITY.ERROR,
+      "project/no-manual-memoization": LINT_SEVERITY.ERROR,
+      "project/test-runtime": LINT_SEVERITY.ERROR,
+      "project/worker-fetch": LINT_SEVERITY.ERROR,
+      "shadcn/no-arbitrary-values": LINT_SEVERITY.ERROR,
+      "shadcn/no-raw-colors": LINT_SEVERITY.ERROR,
+      "shadcn/no-restyle": [LINT_SEVERITY.ERROR, { allow: ["layout", "spacing"] }],
+      "shadcn/no-unknown-classes": LINT_SEVERITY.ERROR,
       "typescript/only-throw-error": [
-        "error",
+        LINT_SEVERITY.ERROR,
         {
           allow: [
             { from: "package", name: "NotFoundError", package: "@tanstack/router-core" },
@@ -218,13 +156,9 @@ export default defineConfig({
           ],
         },
       ],
-      "typescript/require-await": "off",
-      "unicorn/no-array-method-this-argument": "off",
-      "unicorn/text-encoding-identifier-case": ["error", { withDash: true }],
-      "unicorn/throw-new-error": "off",
-      "vite-plus/prefer-vite-plus-imports": "error",
+      "vite-plus/prefer-vite-plus-imports": LINT_SEVERITY.ERROR,
     },
-  },
+  }),
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
@@ -274,6 +208,11 @@ export default defineConfig({
       },
       "./tools/quality/vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
+      "./tools/ai-native",
+      "./tools/dont-review-it",
+      "./tools/lint-rule-authoring",
+      "./tools/repository-checks",
+      "./tools/stop-ai-slop",
     ],
     restoreMocks: false,
     testTimeout: 30_000,

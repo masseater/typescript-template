@@ -19,7 +19,7 @@
     "@template/runtime": "workspace:*",
     "@template/ui": "workspace:*",
     "effect": "catalog:",
-    "es-toolkit": "1.52.0",
+    "es-toolkit": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"

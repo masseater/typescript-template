@@ -1,8 +1,25 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@template/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": ["ES2025", "DOM"],
-    "types": ["vite-plus/client", "@cloudflare/workers-types", "node"]
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "jsx": "react-jsx",
+    "types": [
+      "vite-plus/client",
+      "@cloudflare/workers-types",
+      "node"
+    ],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts"
+  ]
 }
