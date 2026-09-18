@@ -2,7 +2,7 @@ import { useLocation } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
-import { ButtonLink, NavigationLink } from "@template/ui";
+import { ButtonLink, NavigationLink } from "@repo/ui";
 
 function PublicHeader(): ReactElement {
   const { pathname } = useLocation();

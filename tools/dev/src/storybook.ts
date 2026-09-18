@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { Effect } from "effect";
 
-import { storybookPort } from "@template/config";
+import { storybookPort } from "@repo/config";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import { root, run } from "./local-environment.ts";

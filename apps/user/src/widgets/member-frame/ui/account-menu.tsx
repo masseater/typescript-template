@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   Icon,
   useSignOut,
-} from "@template/ui";
+} from "@repo/ui";
 
 function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
   const { action, signOut } = useSignOut("/");

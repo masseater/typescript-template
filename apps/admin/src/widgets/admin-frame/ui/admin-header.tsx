@@ -2,7 +2,7 @@ import { MenuIcon } from "lucide-react";
 import type { ReactElement } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
-import { Icon, NavigationLink } from "@template/ui";
+import { Icon, NavigationLink } from "@repo/ui";
 
 import { AccountMenu } from "./account-menu.tsx";
 

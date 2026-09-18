@@ -3,7 +3,7 @@ import type { SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 
-import { strongAuthenticationMethods } from "@template/config";
+import { strongAuthenticationMethods } from "@repo/config";
 
 import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
 import type { DrizzleDatabase } from "./database.ts";

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import { reportFailed } from "./failure.ts";
 

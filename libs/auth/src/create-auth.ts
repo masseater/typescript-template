@@ -3,11 +3,11 @@ import type { BetterAuthOptions } from "better-auth";
 import { betterAuth } from "better-auth";
 import { Effect } from "effect";
 
-import { applications, authenticationMethods, roles } from "@template/config";
-import type { Application } from "@template/config";
-import type { DrizzleDatabase } from "@template/db";
-import { schema } from "@template/db";
-import { findUser } from "@template/db/security";
+import { applications, authenticationMethods, roles } from "@repo/config";
+import type { Application } from "@repo/config";
+import type { DrizzleDatabase } from "@repo/db";
+import { schema } from "@repo/db";
+import { findUser } from "@repo/db/security";
 
 import { authPlugins } from "./auth-plugins.ts";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";

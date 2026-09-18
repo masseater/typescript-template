@@ -1,6 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import { failure, fileIo } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";

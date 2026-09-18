@@ -1,13 +1,13 @@
 import { defineConfig } from "vite-plus";
 
-import { taskInput } from "@template/config/vite";
+import { taskInput } from "@repo/config/vite";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   pack: {
     deps: {
-      alwaysBundle: ["effect", "@template/monitor"],
-      onlyBundle: ["effect", "@template/monitor"],
+      alwaysBundle: ["effect", "@repo/monitor"],
+      onlyBundle: ["effect", "@repo/monitor"],
     },
     entry: { index: "src/worker.ts" },
     format: "esm",

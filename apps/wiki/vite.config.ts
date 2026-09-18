@@ -12,10 +12,10 @@ import {
   reactCompiler,
   startOptions,
   withoutEnvFileLoader,
-} from "@template/config/vite";
-import { workerCompatibility } from "@template/config/worker";
-import { localDatabase, localDatabasePersistence } from "@template/db/local";
-import { devBoundary } from "@template/dev-boundary";
+} from "@repo/config/vite";
+import { workerCompatibility } from "@repo/config/worker";
+import { localDatabase, localDatabasePersistence } from "@repo/db/local";
+import { devBoundary } from "@repo/dev-boundary";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({

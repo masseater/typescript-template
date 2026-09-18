@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { Status } from "@template/ui";
+import { Status } from "@repo/ui";
 
 import { ProfileBody } from "./profile-body.tsx";
 

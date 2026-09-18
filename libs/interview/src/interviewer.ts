@@ -2,8 +2,8 @@ import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai
 import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Schema } from "effect";
 
-import type { ConfigurationInvalid } from "@template/config";
-import { readAi } from "@template/config";
+import type { ConfigurationInvalid } from "@repo/config";
+import { readAi } from "@repo/config";
 
 import { fieldDefinitions, fieldKeys } from "./sheet.ts";
 import type { InterviewState } from "./state.ts";
@@ -82,7 +82,7 @@ function complete(
 }
 
 class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
-  "@template/interview/Interviewer",
+  "@repo/interview/Interviewer",
 ) {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {

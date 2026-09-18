@@ -5,7 +5,7 @@ import {
   findInterview,
   startInterview,
   storeInterview,
-} from "@template/db/interview";
+} from "@repo/db/interview";
 
 import { viewOf } from "./contracts.ts";
 import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";

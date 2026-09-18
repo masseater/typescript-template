@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { redirectTarget } from "@template/ui";
+import { redirectTarget } from "@repo/ui";
 
 import { LoginRoute } from "./-login-route.tsx";
 

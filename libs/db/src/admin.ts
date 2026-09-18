@@ -2,8 +2,8 @@ import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
-import type { Role } from "@template/config";
-import { roles } from "@template/config";
+import type { Role } from "@repo/config";
+import { roles } from "@repo/config";
 
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import { containsKeyword } from "./contains-keyword.ts";

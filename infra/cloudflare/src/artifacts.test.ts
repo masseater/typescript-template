@@ -19,7 +19,7 @@ import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 import type { Scope } from "effect";
 
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";

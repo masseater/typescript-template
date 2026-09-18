@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { Page, TextLink } from "@template/ui";
+import { Page, TextLink } from "@repo/ui";
 
 function ProfileMissing(): ReactElement {
   return (

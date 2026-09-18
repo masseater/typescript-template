@@ -7,7 +7,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vite-plus/test";
 
-import { secretsFile } from "@template/config/deployment";
+import { secretsFile } from "@repo/config/deployment";
 
 import type { DeploymentValue, PrefixScan } from "./secrets.ts";
 import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";

@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import { httpStatus } from "@template/observability";
+import { httpStatus } from "@repo/observability";
 
 import { apiData, apiServerClient } from "./client.ts";
 import { compileApi, createApi } from "./http.ts";

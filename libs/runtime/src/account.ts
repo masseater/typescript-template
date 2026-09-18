@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
-import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
-import type { EmailVerificationFailed } from "@template/auth";
-import { checkDatabase } from "@template/db";
-import { Telemetry, httpStatus, ingestBrowser } from "@template/observability";
+import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
+import type { EmailVerificationFailed } from "@repo/auth";
+import { checkDatabase } from "@repo/db";
+import { Telemetry, httpStatus, ingestBrowser } from "@repo/observability";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
 import type { Failure } from "./failures.ts";

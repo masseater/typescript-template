@@ -9,7 +9,7 @@ import path from "node:path";
 
 import { Effect, Schema } from "effect";
 
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 
 type App = Application;
 type Runtime = "client" | "server";

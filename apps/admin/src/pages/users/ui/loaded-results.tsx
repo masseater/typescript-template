@@ -3,8 +3,8 @@ import type { ReactElement } from "react";
 import type { ListedUsers } from "#pages/users/model/user-list.ts";
 import { usersPageSize } from "#pages/users/model/users-pagination.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
-import { PageNavigation } from "@template/ui";
-import type { PageTarget } from "@template/ui";
+import { PageNavigation } from "@repo/ui";
+import type { PageTarget } from "@repo/ui";
 
 import { EmptyResults } from "./empty-results.tsx";
 import { UserPageLink } from "./user-page-link.tsx";

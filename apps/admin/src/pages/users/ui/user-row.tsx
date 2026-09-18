@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
 import type { ListedUser } from "#pages/users/model/user-list.ts";
-import { TableCell, TableRow } from "@template/ui";
+import { TableCell, TableRow } from "@repo/ui";
 
 import { UserRowActions } from "./user-row-actions.tsx";
 

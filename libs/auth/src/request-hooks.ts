@@ -1,14 +1,14 @@
 import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import {
   getSessionSecurity,
   hasEnrolledFactor,
   hasVerificationAudience,
   markSessionStrong,
   revokeUserSessions,
-} from "@template/db/security";
+} from "@repo/db/security";
 
 import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
 import type { Run } from "./runner.ts";

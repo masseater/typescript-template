@@ -4,7 +4,7 @@ import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/
 import { APIError as ChallengeError } from "better-call";
 import { Effect, Option, Schema } from "effect";
 
-import { findWikiReader } from "@template/db/security";
+import { findWikiReader } from "@repo/db/security";
 
 import { Auth } from "./auth.ts";
 import type { BetterAuthInstance } from "./create-auth.ts";

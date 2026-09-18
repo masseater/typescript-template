@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { DurableObject, Email, Worker } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-import { monitorBinding } from "@template/monitor";
+import { monitorBinding } from "@repo/monitor";
 
 import { fail, io } from "./artifact-io.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";

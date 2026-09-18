@@ -1,7 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
-import { Button, Status } from "@template/ui";
+import { Button, Status } from "@repo/ui";
 
 import { UsersBody } from "./users-body.tsx";
 

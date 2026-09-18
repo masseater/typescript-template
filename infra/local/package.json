@@ -1,5 +1,5 @@
 {
-  "name": "@template/local",
+  "name": "@repo/local",
   "private": true,
   "type": "module",
   "scripts": {

@@ -6,7 +6,7 @@ import {
   SearchKeyword,
   absentSearchKey,
   laterPage,
-} from "@template/runtime/contracts";
+} from "@repo/runtime/contracts";
 
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 

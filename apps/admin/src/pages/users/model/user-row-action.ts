@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 import { adminClient } from "#shared/api/index.ts";
-import { apiData } from "@template/runtime/client";
-import { RoleChanged, UserDeleted } from "@template/runtime/contracts";
-import { errorMessage, useToast } from "@template/ui";
+import { apiData } from "@repo/runtime/client";
+import { RoleChanged, UserDeleted } from "@repo/runtime/contracts";
+import { errorMessage, useToast } from "@repo/ui";
 
 import { nextRoles } from "./user-labels.ts";
 import type { ListedUser } from "./user-list.ts";

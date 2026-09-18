@@ -10,8 +10,8 @@ import { createServer } from "vite-plus";
 import { test as baseTest, describe, expect } from "vite-plus/test";
 import type { TestAPI } from "vite-plus/test";
 
-import type { Application as App } from "@template/config";
-import { applications as apps } from "@template/config";
+import type { Application as App } from "@repo/config";
+import { applications as apps } from "@repo/config";
 
 import { devBoundary } from "./index.ts";
 
@@ -128,10 +128,10 @@ function privateModules(app: App): string[] {
   return [
     "/.dev.vars",
     "/src/alias.json",
-    "/@id/@template/db/remote",
-    ...(app === "admin" ? [] : ["/@id/@template/db/admin"]),
+    "/@id/@repo/db/remote",
+    ...(app === "admin" ? [] : ["/@id/@repo/db/admin"]),
     ...otherApps(app).flatMap((other) => [
-      `/@id/@template/${other}`,
+      `/@id/@repo/${other}`,
       `/@fs/{root}/apps/%${(other.codePointAt(0) ?? 0).toString(hexRadix)}${other.slice(1)}/src/private.js?raw`,
     ]),
   ];

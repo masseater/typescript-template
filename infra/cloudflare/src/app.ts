@@ -2,8 +2,8 @@ import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 import type { Redacted } from "effect";
 
-import type { Application } from "@template/config";
-import { grants } from "@template/config";
+import type { Application } from "@repo/config";
+import { grants } from "@repo/config";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import type { DeclaredEnv, SharedEnv } from "./bindings.ts";

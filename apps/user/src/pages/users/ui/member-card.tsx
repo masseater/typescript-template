@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import type { Members } from "#pages/users/api/load-members.ts";
-import { Avatar, CardLink } from "@template/ui";
+import { Avatar, CardLink } from "@repo/ui";
 
 import { MemberSummary } from "./member-summary.tsx";
 

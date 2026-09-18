@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import { saveProfile } from "#pages/profile-edit/api/profile.ts";
-import { errorMessage } from "@template/ui";
+import { errorMessage } from "@repo/ui";
 
 interface ProfileForm {
   readonly error: string;

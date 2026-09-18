@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 import type { Session } from "#entities/session/index.ts";
-import { ToastProvider } from "@template/ui";
+import { ToastProvider } from "@repo/ui";
 
 import { MemberHeader } from "./member-header.tsx";
 

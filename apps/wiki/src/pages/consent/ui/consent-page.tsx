@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
-import { decodeJson } from "@template/runtime/client";
-import { Page, Status } from "@template/ui";
+import { decodeJson } from "@repo/runtime/client";
+import { Page, Status } from "@repo/ui";
 
 import { ConsentActions } from "./consent-actions.tsx";
 

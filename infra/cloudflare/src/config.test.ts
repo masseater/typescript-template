@@ -2,7 +2,7 @@ import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-typ
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { ConfigurationInvalid, readAi, readConfig } from "@template/config";
+import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
 
 import type { AppBindings } from "./bindings.ts";
 import { parseDeploymentCommand } from "./config.ts";

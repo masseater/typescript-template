@@ -1,7 +1,7 @@
 import { APIError } from "better-auth/api";
 
-import type { Application } from "@template/config";
-import { strongAuthenticationMethods } from "@template/config";
+import type { Application } from "@repo/config";
+import { strongAuthenticationMethods } from "@repo/config";
 
 type AuthenticationMethod = "passkey_uv" | "password" | "password_totp" | "recovery";
 

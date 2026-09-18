@@ -4,9 +4,9 @@ import { Effect } from "effect";
 import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
 
 import { source } from "#shared/content/index.ts";
-import { authorizeMcpRequest } from "@template/auth/mcp";
-import { AppOrigin, secureResponse } from "@template/runtime/http";
-import type { WikiServices } from "@template/runtime/wiki";
+import { authorizeMcpRequest } from "@repo/auth/mcp";
+import { AppOrigin, secureResponse } from "@repo/runtime/http";
+import type { WikiServices } from "@repo/runtime/wiki";
 
 import { searchServer, wikiLlms } from "./search.ts";
 

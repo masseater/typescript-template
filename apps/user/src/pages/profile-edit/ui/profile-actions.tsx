@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { Button, ButtonLink } from "@template/ui";
+import { Button, ButtonLink } from "@repo/ui";
 
 function ProfileActions({
   homeId,

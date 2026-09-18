@@ -6,10 +6,10 @@ import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
 
-import { workerCompatibility } from "@template/config/worker";
-import { localDatabase } from "@template/db/local";
-import { loadRemoteMigrations } from "@template/db/migrations";
-import { monitorBinding } from "@template/monitor";
+import { workerCompatibility } from "@repo/config/worker";
+import { localDatabase } from "@repo/db/local";
+import { loadRemoteMigrations } from "@repo/db/migrations";
+import { monitorBinding } from "@repo/monitor";
 
 import { workerTests } from "./test-runtime.ts";
 

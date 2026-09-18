@@ -1,7 +1,7 @@
 import type { StateService } from "alchemy/State";
 import { Effect } from "effect";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import {
   attachedService,

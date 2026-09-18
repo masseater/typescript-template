@@ -7,7 +7,7 @@ import path from "node:path";
 
 import { Effect } from "effect";
 
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 
 import { fail, io } from "./artifact-io.ts";
 import type { ArtifactFailure } from "./artifact-io.ts";

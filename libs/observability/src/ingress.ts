@@ -1,6 +1,6 @@
 import { Effect, Result } from "effect";
 
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 
 import { errorFingerprint } from "./errors.ts";
 import type { BrowserEvent } from "./events.ts";

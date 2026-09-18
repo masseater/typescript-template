@@ -12,7 +12,7 @@ import { promisify } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { secretsFile } from "@template/config/deployment";
+import { secretsFile } from "@repo/config/deployment";
 
 import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
 import type { DeploymentValue } from "./secrets.ts";

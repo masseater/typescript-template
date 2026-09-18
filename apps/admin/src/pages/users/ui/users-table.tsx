@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import { usersTableColumns } from "#pages/users/model/users-table-columns.ts";
-import { Table, TableBody } from "@template/ui";
+import { Table, TableBody } from "@repo/ui";
 
 import { LoadingRow } from "./loading-row.tsx";
 import { UserRow } from "./user-row.tsx";

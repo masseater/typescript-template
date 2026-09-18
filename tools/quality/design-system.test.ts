@@ -60,7 +60,7 @@ function reports(rule: RuleName, className: string): boolean {
       invalid: [],
       valid: [
         {
-          code: `import { Button } from "@template/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
+          code: `import { Button } from "@repo/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
           filename: designSystemProbe,
           options: [{ allow: ["layout", "spacing"] }],
         },
@@ -125,7 +125,7 @@ const designSystemApps = workspaceManifests
       area === "apps" &&
       typeof dependencies === "object" &&
       dependencies !== null &&
-      Object.hasOwn(dependencies, "@template/ui")
+      Object.hasOwn(dependencies, "@repo/ui")
     );
   })
   .map(({ file }) => file.replace("/package.json", ""));

@@ -7,7 +7,7 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
   Icon,
-} from "@template/ui";
+} from "@repo/ui";
 
 function CompactNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
   return (

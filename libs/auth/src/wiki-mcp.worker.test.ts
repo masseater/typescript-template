@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { runStatement } from "@template/db/testing";
+import { runStatement } from "@repo/db/testing";
 
 import {
   Fixture,

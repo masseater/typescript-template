@@ -1,7 +1,7 @@
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
-import { taskInput } from "@template/config/vite";
+import { taskInput } from "@repo/config/vite";
 
 import { generatedFiles, lint } from "./tools/quality/lint.ts";
 import { workerTests } from "./tools/quality/test-runtime.ts";
@@ -16,7 +16,7 @@ function textModule(code: string, id: string): string | undefined {
 export default defineConfig({
   fmt: {
     ignorePatterns: generatedFiles,
-    sortImports: { internalPattern: ["@template/"], newlinesBetween: true },
+    sortImports: { internalPattern: ["@repo/"], newlinesBetween: true },
     sortPackageJson: { sortScripts: true },
     sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
   },
@@ -26,9 +26,9 @@ export default defineConfig({
     tasks: {
       build: [
         "vp run -F '!typescript-template' build",
-        "vp run --filter @template/dev private-maps",
-        "vp run --filter @template/infra-cloudflare verify:artifacts",
-        "vp run --filter @template/infra-cloudflare verify:stacks",
+        "vp run --filter @repo/dev private-maps",
+        "vp run --filter @repo/infra-cloudflare verify:artifacts",
+        "vp run --filter @repo/infra-cloudflare verify:stacks",
       ],
       check: {
         command: [

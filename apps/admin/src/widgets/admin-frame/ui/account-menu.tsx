@@ -11,7 +11,7 @@ import {
   Icon,
   useSignOut,
   useToast,
-} from "@template/ui";
+} from "@repo/ui";
 
 function AccountMenu({ email }: Readonly<{ email: string }>): ReactElement {
   const { action, signOut } = useSignOut();

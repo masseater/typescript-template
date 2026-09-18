@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import type { Member } from "#pages/profile/model/member.ts";
-import { Avatar, ButtonLink, Heading } from "@template/ui";
+import { Avatar, ButtonLink, Heading } from "@repo/ui";
 
 import { Biography } from "./biography.tsx";
 import { ProfileBody } from "./profile-body.tsx";

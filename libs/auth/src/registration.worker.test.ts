@@ -2,7 +2,7 @@ import { assert, it } from "@effect/vitest";
 import { getSchema } from "better-auth/db";
 import { Effect } from "effect";
 
-import { getSchemaShape } from "@template/db/testing";
+import { getSchemaShape } from "@repo/db/testing";
 
 import {
   Fixture,

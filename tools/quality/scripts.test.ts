@@ -51,7 +51,7 @@ const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../
 });
 
 const packageManagerCommands = [
-  "pnpm --filter @template/dev run setup",
+  "pnpm --filter @repo/dev run setup",
   "pnpm -r --if-present build",
   "pnpm run test",
   "pnpm check",
@@ -64,7 +64,7 @@ const packageManagerCommands = [
   "bunx vp build",
   "./node_modules/.bin/pnpm run build",
   "pnpm.cmd run build",
-  "corepack pnpm --filter @template/dev run setup",
+  "corepack pnpm --filter @repo/dev run setup",
   "env CI=true pnpm run test",
   "exec pnpm run preview",
   "vp run build && pnpm run test",
@@ -74,7 +74,7 @@ const packageManagerCommands = [
 ];
 
 const vitePlusCommands = [
-  "vp run --filter @template/dev setup",
+  "vp run --filter @repo/dev setup",
   "vp run -r build",
   "vp exec knip",
   "vp dlx wrangler deploy",

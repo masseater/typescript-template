@@ -13,8 +13,8 @@ import { promisify } from "node:util";
 
 import { Effect, Schema } from "effect";
 
-import { applicationPorts, applications, loopbackHosts } from "@template/config";
-import type { Application } from "@template/config";
+import { applicationPorts, applications, loopbackHosts } from "@repo/config";
+import type { Application } from "@repo/config";
 
 import { failure, fileIo } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";

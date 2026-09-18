@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Icon,
-} from "@template/ui";
+} from "@repo/ui";
 
 function RowActionMenu({
   disabled,

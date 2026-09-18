@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { Embedder } from "@template/runtime/wiki";
-import type { EmbeddingFailed } from "@template/runtime/wiki";
+import { Embedder } from "@repo/runtime/wiki";
+import type { EmbeddingFailed } from "@repo/runtime/wiki";
 
 interface SemanticDocument {
   readonly id: string;

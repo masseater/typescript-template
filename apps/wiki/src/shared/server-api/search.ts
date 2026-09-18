@@ -6,9 +6,9 @@ import { createFromSource } from "fumadocs-core/search/server";
 import { llms } from "fumadocs-core/source";
 
 import { source } from "#shared/content/index.ts";
-import { reportFailure } from "@template/observability";
-import { Embedder } from "@template/runtime/wiki";
-import type { WikiServices } from "@template/runtime/wiki";
+import { reportFailure } from "@repo/observability";
+import { Embedder } from "@repo/runtime/wiki";
+import type { WikiServices } from "@repo/runtime/wiki";
 
 import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
 import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { decodeJson } from "@template/runtime/client";
-import { SessionView as SessionContract } from "@template/runtime/contracts";
+import { decodeJson } from "@repo/runtime/client";
+import { SessionView as SessionContract } from "@repo/runtime/contracts";
 
 import type { SessionView } from "./protocol";
 import { errorMessage } from "./protocol";

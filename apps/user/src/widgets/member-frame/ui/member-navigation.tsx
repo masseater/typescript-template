@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { NavigationLink } from "@template/ui";
+import { NavigationLink } from "@repo/ui";
 
 import { CompactNavigation } from "./compact-navigation.tsx";
 

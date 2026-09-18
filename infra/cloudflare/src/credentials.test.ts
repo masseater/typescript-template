@@ -9,7 +9,7 @@ import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 import type { Scope } from "effect";
 
-import { deploymentKeys, secretsFile } from "@template/config/deployment";
+import { deploymentKeys, secretsFile } from "@repo/config/deployment";
 
 import { verifySecretsFile } from "./credentials.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";

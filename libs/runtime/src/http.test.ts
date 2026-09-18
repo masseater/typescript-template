@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, ManagedRuntime, Schema } from "effect";
 import type { AnyElysia } from "elysia";
 
-import { Telemetry, httpStatus } from "@template/observability";
+import { Telemetry, httpStatus } from "@repo/observability";
 
 import { ProfileUpdate } from "./contracts.ts";
 import {

@@ -4,8 +4,8 @@ import { Elysia, status } from "elysia";
 import type { AnyElysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 
-import { httpStatus, readJson } from "@template/observability";
-import type { RequestRejected } from "@template/observability";
+import { httpStatus, readJson } from "@repo/observability";
+import type { RequestRejected } from "@repo/observability";
 
 import { AppOrigin } from "./app-origin.ts";
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";

@@ -3,10 +3,10 @@ import { Context, Effect, Layer, Schema } from "effect";
 import type { Scope } from "effect";
 import { URI } from "otpauth";
 
-import type { Application } from "@template/config";
-import { sendVerificationEmail } from "@template/config";
-import type { Database } from "@template/db";
-import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@template/db/testing";
+import type { Application } from "@repo/config";
+import { sendVerificationEmail } from "@repo/config";
+import type { Database } from "@repo/db";
+import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@repo/db/testing";
 
 import type { AuthFailure } from "./auth-failure.ts";
 import { Auth } from "./auth.ts";

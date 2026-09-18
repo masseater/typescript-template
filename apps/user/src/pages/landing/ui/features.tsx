@@ -1,7 +1,7 @@
 import { SearchIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
 import type { ReactElement } from "react";
 
-import { Heading, Icon } from "@template/ui";
+import { Heading, Icon } from "@repo/ui";
 
 import { Feature } from "./feature.tsx";
 

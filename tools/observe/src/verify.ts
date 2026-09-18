@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Schema } from "effect";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 import { reportFailed } from "./failure.ts";

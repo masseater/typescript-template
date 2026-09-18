@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { maximumKeywordLength } from "@template/runtime/contracts";
+import { maximumKeywordLength } from "@repo/runtime/contracts";
 
 import { maximumUsersPage } from "./users-pagination.ts";
 import { normalizeUsersSearch, userListQuery } from "./users-search.ts";

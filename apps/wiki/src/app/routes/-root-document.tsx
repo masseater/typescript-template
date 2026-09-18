@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { useEffect } from "react";
 
 import { routes } from "#shared/telemetry/index.ts";
-import { initBrowserTelemetry } from "@template/observability/browser";
+import { initBrowserTelemetry } from "@repo/observability/browser";
 
 import { WikiProvider } from "./-wiki-provider.tsx";
 

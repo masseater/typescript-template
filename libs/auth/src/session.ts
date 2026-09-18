@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { getSessionSecurity } from "@template/db/security";
+import { getSessionSecurity } from "@repo/db/security";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";

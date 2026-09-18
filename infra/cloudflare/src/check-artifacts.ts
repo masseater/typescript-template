@@ -1,7 +1,7 @@
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { markFailed } from "./secrets.ts";

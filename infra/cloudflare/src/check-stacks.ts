@@ -4,8 +4,8 @@ import { isDeepStrictEqual } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Schema } from "effect";
 
-import { applications, grants } from "@template/config";
-import type { Application } from "@template/config";
+import { applications, grants } from "@repo/config";
+import type { Application } from "@repo/config";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";

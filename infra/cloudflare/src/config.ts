@@ -1,7 +1,7 @@
 import type { WorkerObservability } from "alchemy/Cloudflare";
 import { Config, Effect, Schema } from "effect";
 
-import { workerCompatibility } from "@template/config/worker";
+import { workerCompatibility } from "@repo/config/worker";
 
 import type { StackName } from "./stacks.ts";
 import { stackNames } from "./stacks.ts";

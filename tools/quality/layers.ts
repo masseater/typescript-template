@@ -1,6 +1,6 @@
 import type { Visitor } from "vite-plus/lint/plugins";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import type { LintContext, Node } from "./lint-context.ts";
 import { reportViolation } from "./lint-context.ts";

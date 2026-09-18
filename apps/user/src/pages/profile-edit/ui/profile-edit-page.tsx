@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
-import { Field, FormColumn, Page, Status, useToast } from "@template/ui";
+import { Field, FormColumn, Page, Status, useToast } from "@repo/ui";
 
 import { ProfileEditor } from "./profile-editor.tsx";
 

@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
-import { verifySession } from "@template/auth";
-import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
-import { httpStatus } from "@template/observability";
-import { accountApi, unavailable } from "@template/runtime/account";
+import { verifySession } from "@repo/auth";
+import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
+import { httpStatus } from "@repo/observability";
+import { accountApi, unavailable } from "@repo/runtime/account";
 import {
   RoleChange,
   RoleChanged,
@@ -11,7 +11,7 @@ import {
   UserDeletion,
   UserList,
   UserListQuery,
-} from "@template/runtime/contracts";
+} from "@repo/runtime/contracts";
 import {
   apiRoot,
   apiRoutes,
@@ -19,7 +19,7 @@ import {
   createApi,
   readJsonBody,
   readSearchParams,
-} from "@template/runtime/http";
+} from "@repo/runtime/http";
 
 import { runtime } from "./runtime.ts";
 

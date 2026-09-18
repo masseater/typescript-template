@@ -3,8 +3,8 @@ import { passkey } from "@better-auth/passkey";
 import type { BetterAuthOptions } from "better-auth";
 import { jwt, twoFactor } from "better-auth/plugins";
 
-import type { Application } from "@template/config";
-import { findPasskeyUser } from "@template/db/security";
+import type { Application } from "@repo/config";
+import { findPasskeyUser } from "@repo/db/security";
 
 import { assertEligibleUser, deny } from "./policy.ts";
 import type { Run } from "./runner.ts";

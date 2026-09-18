@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
-import { handleAuthRequest } from "@template/auth";
-import { sessionApi, unavailable } from "@template/runtime/account";
-import { apiRoot, apiRoutes, compileApi, createApi, jsonResponse } from "@template/runtime/http";
-import type { WikiServices } from "@template/runtime/wiki";
+import { handleAuthRequest } from "@repo/auth";
+import { sessionApi, unavailable } from "@repo/runtime/account";
+import { apiRoot, apiRoutes, compileApi, createApi, jsonResponse } from "@repo/runtime/http";
+import type { WikiServices } from "@repo/runtime/wiki";
 
 import { serveMcp } from "./mcp.ts";
 import { runtime } from "./runtime.ts";

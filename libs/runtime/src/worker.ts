@@ -1,8 +1,8 @@
 import { Effect, Result } from "effect";
 import type { ManagedRuntime } from "effect";
 
-import type { CurrentRequest, Telemetry } from "@template/observability";
-import { httpStatus, observeRequest } from "@template/observability";
+import type { CurrentRequest, Telemetry } from "@repo/observability";
+import { httpStatus, observeRequest } from "@repo/observability";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";

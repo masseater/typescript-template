@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { applicationPorts } from "@template/config";
+import { applicationPorts } from "@repo/config";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { reportFailed } from "./failure.ts";

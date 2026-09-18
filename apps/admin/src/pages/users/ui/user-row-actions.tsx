@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
-import { ConfirmDialog } from "@template/ui";
+import { ConfirmDialog } from "@repo/ui";
 
 import { RowActionMenu } from "./row-action-menu.tsx";
 

@@ -18,10 +18,10 @@ interface BindingLookup {
 
 const templateFactories = new Map<string, ReadonlyMap<string, D1Reference>>([
   [
-    "@template/config",
+    "@repo/config",
     new Map<string, D1Reference>([["readConfig", { kind: "database", path: ["DB"] }]]),
   ],
-  ["@template/db", new Map<string, D1Reference>([["createDb", { kind: "orm", path: [] }]])],
+  ["@repo/db", new Map<string, D1Reference>([["createDb", { kind: "orm", path: [] }]])],
 ]);
 
 function annotatedBinding(

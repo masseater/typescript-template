@@ -1,5 +1,5 @@
 {
-  "name": "@template/user",
+  "name": "@repo/user",
   "private": true,
   "type": "module",
   "imports": {
@@ -12,14 +12,14 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@repo/auth": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/interview": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "@repo/runtime": "workspace:*",
+    "@repo/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "@template/auth": "workspace:*",
-    "@template/db": "workspace:*",
-    "@template/interview": "workspace:*",
-    "@template/observability": "workspace:*",
-    "@template/runtime": "workspace:*",
-    "@template/ui": "workspace:*",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
@@ -28,9 +28,9 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
+    "@repo/config": "workspace:*",
+    "@repo/dev-boundary": "workspace:*",
     "@tailwindcss/vite": "catalog:",
-    "@template/config": "workspace:*",
-    "@template/dev-boundary": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

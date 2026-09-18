@@ -1,5 +1,5 @@
 {
-  "name": "@template/budget-monitor",
+  "name": "@repo/budget-monitor",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,14 +7,14 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@template/monitor": "workspace:*",
+    "@repo/monitor": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
-    "@template/config": "workspace:*",
+    "@repo/config": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

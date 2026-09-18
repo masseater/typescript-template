@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { workerCompatibility } from "@template/config/worker";
+import { workerCompatibility } from "@repo/config/worker";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;

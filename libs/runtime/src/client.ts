@@ -2,7 +2,7 @@ import { treaty } from "@elysiajs/eden";
 import { Result, Schema } from "effect";
 import type { AnyElysia } from "elysia";
 
-import { httpStatus } from "@template/observability";
+import { httpStatus } from "@repo/observability";
 
 import { ErrorBody } from "./contracts.ts";
 

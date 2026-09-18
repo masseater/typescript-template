@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { useEffect } from "react";
 
 import { AdminFrame } from "#widgets/admin-frame/index.ts";
-import { Status, loginPath, useSession } from "@template/ui";
+import { Status, loginPath, useSession } from "@repo/ui";
 
 const SECURITY = "/security";
 

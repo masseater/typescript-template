@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Effect, Exit } from "effect";
 
-import type { Application, Role } from "@template/config";
+import type { Application, Role } from "@repo/config";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 import type { Database } from "./database.ts";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 
 import { field, workspaceManifests } from "./dependencies.ts";
 import { reported } from "./lint-harness.ts";

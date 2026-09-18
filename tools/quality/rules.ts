@@ -208,7 +208,7 @@ export default definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。`,
+        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@repo/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。`,
       ),
     },
     "effect-failures": {

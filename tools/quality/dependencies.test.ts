@@ -13,21 +13,21 @@ describe("application package boundaries", () => {
     (key) => {
       expect.hasAssertions();
       const violations = applicationDependencyViolations([
-        { area: "apps", file: "apps/user/package.json", manifest: { name: "@template/user" } },
+        { area: "apps", file: "apps/user/package.json", manifest: { name: "@repo/user" } },
         {
           area: "apps",
           file: "apps/batch/package.json",
-          manifest: { [key]: { "@template/user": "workspace:*" }, name: "@template/batch" },
+          manifest: { [key]: { "@repo/user": "workspace:*" }, name: "@repo/batch" },
         },
         {
           area: "libs",
           file: "libs/domain/package.json",
-          manifest: { [key]: { "@template/db": "workspace:*" }, name: "@template/domain" },
+          manifest: { [key]: { "@repo/db": "workspace:*" }, name: "@repo/domain" },
         },
       ]);
       expect(violations).toHaveLength(1);
       expect(violations[0]).toMatch(
-        /^apps\/batch\/package\.json: @template\/user はデプロイ単位のアプリです。/u,
+        /^apps\/batch\/package\.json: @repo\/user はデプロイ単位のアプリです。/u,
       );
     },
   );
@@ -52,7 +52,7 @@ describe("replaced packages", () => {
       {
         area: "libs",
         file: "libs/ui/package.json",
-        manifest: { dependencies: { [dependency]: "1.0.0" }, name: "@template/ui" },
+        manifest: { dependencies: { [dependency]: "1.0.0" }, name: "@repo/ui" },
       },
     ]);
     expect(violations).toHaveLength(1);
