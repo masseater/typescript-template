@@ -1,10 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
 import { assert, it } from "@effect/vitest";
-import { Effect, FileSystem, ManagedRuntime, Option, Schema, Stream } from "effect";
+import { Effect, FileSystem, Option, Schema, Stream } from "effect";
 import type { Scope } from "effect";
 
 import { AppState } from "#shared/contract/index.ts";
 import { playbookDirectory } from "#shared/playbook/index.ts";
+import { workerRuntime } from "@repo/runtime/worker";
 
 import { bd } from "./bd.ts";
 import { commanderApp } from "./commander-api.ts";
@@ -33,7 +34,7 @@ function serve(): Effect.Effect<Served, unknown, NodeServices.NodeServices | Sco
     const files = yield* FileSystem.FileSystem;
     const temporary = yield* files.makeTempDirectoryScoped({ prefix: "commander-tasks-" });
     const directory = yield* files.realPath(temporary);
-    const runtime = ManagedRuntime.make(
+    const runtime = workerRuntime(() =>
       commanderServices({
         assets: playbookDirectory,
         directory,
@@ -43,7 +44,7 @@ function serve(): Effect.Effect<Served, unknown, NodeServices.NodeServices | Sco
         stateDirectory: `${directory}/.state`,
       }),
     );
-    yield* Effect.addFinalizer(() => runtime.disposeEffect);
+    yield* Effect.addFinalizer(() => Effect.promise(async () => runtime.dispose()));
     const app = commanderApp(runtime, reporting);
     return { directory, fetch: async (request: Request) => app.fetch(request) };
   });

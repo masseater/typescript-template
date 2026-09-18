@@ -1,5 +1,5 @@
 import { Effect, Result } from "effect";
-import type { Cause, ManagedRuntime } from "effect";
+import type { Cause } from "effect";
 
 import { cspNonceHeader } from "@repo/config/security";
 import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
@@ -8,6 +8,7 @@ import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability"
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
 import { createNonce, jsonResponse, secureResponse } from "./responses.ts";
+import type { WorkerRuntime } from "./worker-runtime.ts";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;
@@ -38,12 +39,13 @@ async function unavailableResponse(
 }
 
 function serveWorker<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
+  runtime: WorkerRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: WorkerRoute<Requirements>,
   reporting: Reporting,
 ): FetchWorker {
   return {
     fetch: async (request, _environment, context): Promise<Response> => {
+      context.waitUntil(runtime.built());
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
       if (exit._tag !== "Success") {
         return unavailableResponse(request, exit.cause, reporting);
@@ -71,10 +73,7 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 }
 
 function serveApp<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<
-    Assets | Requirements | Telemetry | TelemetryFlusher,
-    unknown
-  >,
+  runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: AppRoute<Requirements>,
   reporting: Reporting,
 ): FetchWorker {
@@ -105,4 +104,6 @@ function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<
 }
 
 export { serveApp, serveWorker, startRoute };
+export { workerRuntime } from "./worker-runtime.ts";
 export type { AppRoute, FetchWorker };
+export type { WorkerRuntime } from "./worker-runtime.ts";
