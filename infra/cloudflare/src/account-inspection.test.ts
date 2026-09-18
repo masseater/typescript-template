@@ -95,6 +95,7 @@ const tokenHandlers = [
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function accountHandlers(options: {
   readonly token?: readonly ReturnType<typeof http.get>[];
+  readonly addresses?: readonly { readonly email: string; readonly verified?: string }[];
   readonly databases: readonly { readonly name: string; readonly uuid: string }[];
   readonly domains: readonly { readonly hostname: string; readonly service: string }[];
   readonly records: readonly string[];
@@ -124,6 +125,9 @@ function accountHandlers(options: {
     }),
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
+    ),
+    http.get(`${account}/email/routing/addresses`, () =>
+      HttpResponse.json({ result: options.addresses ?? [] }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     http.get(`${zone}/dns_records`, ({ request }) => {
@@ -156,6 +160,47 @@ it.effect("clears an account that holds nothing this deployment claims", () =>
     assert.deepStrictEqual(inspection.workerNames, "free");
     assert.deepStrictEqual(inspection.workerDomains, "free");
     assert.deepStrictEqual(inspection.deployToken, []);
+    assert.strictEqual(inspection.emailSending, "free");
+    assert.strictEqual(inspection.alertAddresses, "unverified");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("blocks the sending domain another project already onboarded", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      ...accountHandlers({
+        addresses: config.budget.recipients.map((email) => ({
+          email,
+          verified: "2026-01-01T00:00:00Z",
+        })),
+        databases: [],
+        domains: [],
+        records: ["cf-bounce.example.com"],
+        scripts: [],
+        stores: 0,
+      }),
+    );
+    const inspection = yield* inspectAccount(access, config, emptyState());
+    assert.deepStrictEqual(blocked(inspection), ["emailSending"]);
+    assert.strictEqual(inspection.alertAddresses, "verified");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reports an alert recipient that has not answered its verification email", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      ...accountHandlers({
+        addresses: config.budget.recipients.map((email) => ({ email })),
+        databases: [],
+        domains: [],
+        records: [],
+        scripts: [],
+        stores: 0,
+      }),
+    );
+    const inspection = yield* inspectAccount(access, config, emptyState());
+    assert.strictEqual(inspection.alertAddresses, "unverified");
+    assert.deepStrictEqual(blocked(inspection), []);
   }).pipe(Effect.scoped),
 );
 

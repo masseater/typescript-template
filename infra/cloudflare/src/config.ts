@@ -129,6 +129,10 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   return { operation: "plan", stacks } as const;
 });
 
+function sendingDomain(mailFrom: string): string {
+  return mailFrom.slice(mailFrom.indexOf("@") + 1);
+}
+
 function duplicatedOrigins(config: SharedConfig): readonly string[] {
   const origins = [
     [originKeys.admin, config.origins.admin],
@@ -179,6 +183,7 @@ export {
   checkSharedConfig,
   originKeys,
   parseDeploymentCommand,
+  sendingDomain,
   workerCompatibilityOptions,
   workerObservability,
   workerSubdomain,

@@ -5,6 +5,7 @@ import {
   grantedPermissions,
   secretsStoreCount,
   stateStorePresent,
+  verifiedAddresses,
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
@@ -97,6 +98,8 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / API Tokens / Read",
       "Account / Billing / Read",
       "Account / Workers Observability / Write",
+      "Account / Email Sending / Write",
+      "Account / Email Routing Addresses / Read",
       "Zone / Workers Routes / Edit",
       "Zone / DNS / Read",
     ]);
@@ -105,6 +108,8 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / API Tokens / Read",
       "Account / Billing / Read",
       "Account / D1 / Edit",
+      "Account / Email Routing Addresses / Read",
+      "Account / Email Sending / Write",
       "Account / Secrets Store / Edit",
       "Account / Workers Observability / Write",
       "Account / Workers Scripts / Edit",
@@ -122,6 +127,22 @@ it.effect("refuses a page that does not carry every row Cloudflare counted", () 
     );
     const failure = yield* workerNames(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reads only the destination addresses Cloudflare has dated as verified", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(
+        `${account}/email/routing/addresses`,
+        () =>
+          new HttpResponse(
+            '{"result":[{"email":"alerts@example.com","verified":"2026-01-01T00:00:00Z"},{"email":"pending@example.com","verified":null}]}',
+            { headers: { "content-type": "application/json" } },
+          ),
+      ),
+    );
+    assert.deepStrictEqual(yield* verifiedAddresses(access), ["alerts@example.com"]);
   }).pipe(Effect.scoped),
 );
 
@@ -176,6 +197,8 @@ it.effect("names the deploy token permissions the account token does not carry",
         { name: "Workers Observability Write" },
         { name: "Workers Routes Write" },
         { name: "DNS Write" },
+        { name: "Email Sending Write" },
+        { name: "Email Routing Addresses Write" },
       ]),
       [],
       "a token holding only the write groups already satisfies the read requirements",

@@ -4,6 +4,7 @@ import {
   grantedPermissions,
   secretsStoreCount,
   stateStorePresent,
+  verifiedAddresses,
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
@@ -16,6 +17,7 @@ import { applications } from "@template/config";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
+import { sendingDomain } from "./config.ts";
 
 type Claim = "free" | "owned" | "taken";
 type Presence = "absent" | "present";
@@ -31,6 +33,11 @@ function declaredNames(prefix: string): readonly string[] {
 
 function hostnames(config: SharedConfig): readonly string[] {
   return Object.values(config.origins).map((origin) => new URL(origin).hostname);
+}
+
+function sendingRecordNames(config: SharedConfig): readonly string[] {
+  const domain = sendingDomain(config.mailFrom);
+  return [`cf-bounce.${domain}`, `cf-bounce._domainkey.${domain}`];
 }
 
 function presence(found: boolean): Presence {
@@ -92,12 +99,21 @@ const domainVerdict = Effect.fn("domainVerdict")(function* domainVerdict(
 
 const dnsVerdict = Effect.fn("dnsVerdict")(function* dnsVerdict(
   access: AccountAccess,
-  config: SharedConfig,
+  zoneId: string,
+  names: readonly string[],
 ) {
-  const found = yield* Effect.forEach(hostnames(config), (hostname) =>
-    dnsRecordNames(access, config.zoneId, hostname),
-  );
+  const found = yield* Effect.forEach(names, (name) => dnsRecordNames(access, zoneId, name));
   return found.flat().length > 0 ? ("taken" as const) : ("free" as const);
+});
+
+const alertVerdict = Effect.fn("alertVerdict")(function* alertVerdict(
+  access: AccountAccess,
+  recipients: readonly string[],
+) {
+  const verified = new Set(yield* verifiedAddresses(access));
+  return recipients.every((recipient) => verified.has(recipient))
+    ? ("verified" as const)
+    : ("unverified" as const);
 });
 
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
@@ -120,9 +136,11 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
     Effect.catchCause(() => Effect.succeed<readonly string[]>([])),
   );
   return {
+    alertAddresses: yield* alertVerdict(access, config.budget.recipients),
     database: yield* databaseVerdict(access, config, store),
     deployToken: yield* tokenVerdict(access),
-    dnsRecords: yield* dnsVerdict(access, config),
+    dnsRecords: yield* dnsVerdict(access, config.zoneId, hostnames(config)),
+    emailSending: yield* dnsVerdict(access, config.zoneId, sendingRecordNames(config)),
     secretsStore: presence((yield* secretsStoreCount(access)) > 0),
     stateStore: presence(yield* stateStorePresent(access)),
     workerDomains: yield* domainVerdict(access, config, recorded),
@@ -134,10 +152,15 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
 type Inspection = Effect.Success<ReturnType<typeof inspectAccount>>;
 
 function blocked(inspection: Readonly<Inspection>): readonly string[] {
-  const claimed = ["database", "workerDomains", "workerNames"] as const;
+  const claimed = [
+    "database",
+    "dnsRecords",
+    "emailSending",
+    "workerDomains",
+    "workerNames",
+  ] as const;
   return [
     ...claimed.filter((name) => inspection[name] === "taken"),
-    ...(inspection.dnsRecords === "taken" ? ["dnsRecords"] : []),
     ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
     ...(inspection.deployToken.length > 0 ? ["deployToken"] : []),
   ];

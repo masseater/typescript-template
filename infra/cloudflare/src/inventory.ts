@@ -54,6 +54,7 @@ const declaredProperties = [
   "policies",
   "rules",
   "workersDev",
+  "zoneId",
 ] as const;
 
 const DIGEST_SEGMENT = /\/[0-9a-f]{64}\//u;

@@ -10,6 +10,11 @@ const Domains = Schema.Struct({
   result: Schema.Array(Schema.Struct({ hostname: Schema.String, service: Schema.String })),
 });
 const Records = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
+const Address = Schema.Struct({
+  email: Schema.String,
+  verified: Schema.optional(Schema.Unknown),
+});
+const Addresses = Schema.Struct({ result: Schema.Array(Address) });
 const Subdomain = Schema.Struct({
   result: Schema.Struct({ subdomain: Schema.optional(Schema.String) }),
 });
@@ -88,6 +93,19 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
   return listed.result.map((record) => record.name);
 });
 
+const verifiedAddresses = Effect.fn("verifiedAddresses")(function* verifiedAddresses(
+  access: AccountAccess,
+) {
+  const listed = yield* readList(
+    access,
+    { path: `accounts/${access.accountId}/email/routing/addresses` },
+    Addresses,
+  );
+  return listed.result.flatMap((address) =>
+    typeof address.verified === "string" ? [address.email] : [],
+  );
+});
+
 const grantedPermissions = Effect.fn("grantedPermissions")(function* grantedPermissions(
   access: AccountAccess,
 ) {
@@ -116,6 +134,7 @@ export {
   grantedPermissions,
   secretsStoreCount,
   stateStorePresent,
+  verifiedAddresses,
   workerNames,
   workersSubdomain,
 };

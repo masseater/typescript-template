@@ -1,6 +1,11 @@
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import {
+  sendingDomain,
+  workerCompatibilityOptions,
+  workerObservability,
+  workerSubdomain,
+} from "./config.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
 import { FAILED_EXIT_CODE } from "./secrets.ts";
@@ -13,6 +18,9 @@ import { verificationSettings } from "./verification-fixture.ts";
 import { workerModuleGlobs } from "./artifacts.ts";
 
 const { accountId, origins, prefix } = verificationSettings;
+
+const SENDING_SUBDOMAIN = "Cloudflare.Email.SendingSubdomain";
+const SEND_EMAIL = "send_email";
 
 const providerAddedBindings = [
   "ALCHEMY_CLOUDFLARE_ACCOUNT_ID",
@@ -140,6 +148,18 @@ const expected: Readonly<Record<StackName, unknown>> = {
       type: "Cloudflare.D1Database",
     },
   }),
+  email: declaredStack("email", {
+    Sending: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        name: sendingDomain(verificationSettings.mailFrom),
+        zoneId: verificationSettings.zoneId,
+      },
+      removalPolicy: "retain",
+      type: SENDING_SUBDOMAIN,
+    },
+  }),
   "error-monitor": declaredStack("error-monitor", {
     Worker: monitorResource({
       artifact: "infra/error-monitor/dist/index.js",
@@ -184,6 +204,24 @@ function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
   return canonical(inventory) === canonical(expected[stack]);
 }
 
+function onboards(inventory: StackInventory): boolean {
+  return Object.values(inventory.resources).some((resource) => resource.type === SENDING_SUBDOMAIN);
+}
+
+function sends(inventory: StackInventory): boolean {
+  return Object.values(inventory.resources).some((resource) =>
+    resource.bindings.some((binding) => binding.split(":")[1] === SEND_EMAIL),
+  );
+}
+
+function onboardedBeforeSending(inventories: readonly StackInventory[]): boolean {
+  const onboarding = inventories.findIndex((inventory) => onboards(inventory));
+  return (
+    onboarding !== -1 &&
+    inventories.every((inventory, index) => !sends(inventory) || index > onboarding)
+  );
+}
+
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
@@ -196,13 +234,19 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
       notCompared: providerAddedBindings,
     }),
   );
-  return matches;
+  if (!matches) {
+    process.exitCode = FAILED_EXIT_CODE;
+  }
+  return inventory;
 });
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
-    if (verified.includes(false)) {
+    const inventories = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
+    const ordered = onboardedBeforeSending(inventories);
+    // oxlint-disable-next-line no-console
+    console.log(JSON.stringify({ event: "stacks.ordered", sendersAfterOnboarding: ordered }));
+    if (!ordered) {
       process.exitCode = FAILED_EXIT_CODE;
     }
   }).pipe(

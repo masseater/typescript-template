@@ -25,6 +25,7 @@ const config: KnipConfig = {
     "infra/cloudflare": {
       entry: [
         "src/database.ts!",
+        "src/email.ts!",
         "src/tokens.ts!",
         "src/budget-monitor.ts!",
         "src/error-monitor.ts!",

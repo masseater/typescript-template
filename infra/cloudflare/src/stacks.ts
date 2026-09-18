@@ -6,6 +6,7 @@ const stackDependencies = {
   admin: application,
   "budget-monitor": ["tokens"],
   database: [],
+  email: [],
   "error-monitor": ["tokens"],
   "health-monitor": [],
   tokens: [],
@@ -17,6 +18,7 @@ const stackDependencies = {
 type StackName = keyof typeof stackDependencies;
 
 const stackNames = [
+  "email",
   "database",
   "tokens",
   "budget-monitor",
