@@ -1,12 +1,12 @@
 import type { NodeServices } from "@effect/platform-node";
 import { Effect, PubSub, Schema, Stream } from "effect";
-import type { ManagedRuntime } from "effect";
 
 import { Done, NoInput, ServerEvent, TextInput } from "#shared/contract/index.ts";
 import { httpStatus, ingestBrowser } from "@repo/observability";
 import type { Reporting, Telemetry } from "@repo/observability";
 import { AppOrigin, apiRoot, apiRoutes, createApi, readJsonBody } from "@repo/runtime/http";
 import type { ApiRoutes } from "@repo/runtime/http";
+import type { WorkerRuntime } from "@repo/runtime/worker";
 
 import type { BdFailure } from "./bd.ts";
 import { Commander } from "./commander.ts";
@@ -102,10 +102,7 @@ function commanderApi(api: ApiRoutes<Services>) {
     .post("/ledger", api.route(Done, createLedger, failures));
 }
 
-function commanderApp(
-  runtime: ManagedRuntime.ManagedRuntime<Services, unknown>,
-  reporting: Reporting,
-) {
+function commanderApp(runtime: WorkerRuntime<Services, unknown>, reporting: Reporting) {
   return createApi(apiRoot).use(commanderApi(apiRoutes(runtime, reporting)));
 }
 

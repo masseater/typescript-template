@@ -11,8 +11,8 @@ import {
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { isUnreadable, readVerdict, unreadableVerdict } from "./account-read.ts";
-import type { AccountAccess } from "./account-read.ts";
+import { isUnreadable, readVerdict, unreadableState, unreadableVerdict } from "./account-read.ts";
+import type { AccountAccess, Unreadable } from "./account-read.ts";
 import type { SharedConfig } from "./config.ts";
 import { databaseVerdict } from "./database-guard.ts";
 import { STATE_STORE_SCRIPT_NAME, missingPermissions } from "./deploy-token.ts";
@@ -49,30 +49,41 @@ function claim(present: boolean, owned: boolean): Claim {
 function workerVerdict(
   live: readonly string[],
   declared: readonly string[],
-  recorded: readonly string[],
-): Claim {
+  recorded: readonly string[] | Unreadable,
+): Claim | Unreadable {
   const running = new Set(live);
   const present = declared.filter((name) => running.has(name));
-  return claim(
-    present.length > 0,
-    present.every((name) => recorded.includes(name)),
-  );
+  if (present.length === 0) {
+    return "free";
+  }
+  return isUnreadable(recorded)
+    ? recorded
+    : claim(
+        true,
+        present.every((name) => recorded.includes(name)),
+      );
 }
 
 const domainVerdict = Effect.fn("domainVerdict")(function* domainVerdict(
   access: AccountAccess,
   config: SharedConfig,
-  recorded: readonly string[],
+  recorded: readonly string[] | Unreadable,
 ) {
   const services = yield* Effect.forEach(hostnames(config), (hostname) =>
     attachedService(access, hostname),
   ).pipe(Effect.catchTag("CloudflareFailure", unreadableVerdict));
-  return readVerdict(services, (attachable) => {
+  return readVerdict(services, (attachable): Claim | Unreadable => {
     const attached = attachable.flatMap((service) => (service === undefined ? [] : [service]));
-    return claim(
-      attached.length > 0,
-      attached.length === attachable.length && attached.every((name) => recorded.includes(name)),
-    );
+    if (attached.length === 0) {
+      return "free";
+    }
+    return isUnreadable(recorded)
+      ? recorded
+      : claim(
+          true,
+          attached.length === attachable.length &&
+            attached.every((name) => recorded.includes(name)),
+        );
   });
 });
 
@@ -83,13 +94,23 @@ const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: Ac
   );
 });
 
+function ownedRecords(
+  records: Unreadable | boolean,
+  workerDomains: Claim | Unreadable,
+): Claim | Unreadable {
+  if (isUnreadable(workerDomains)) {
+    return workerDomains;
+  }
+  return readVerdict(records, (present) => claim(present, workerDomains === "owned"));
+}
+
 const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Failure, Requirements>(
   access: AccountAccess,
   config: SharedConfig,
   store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
-    Effect.catchCause(() => Effect.succeed<readonly string[]>([])),
+    Effect.catchCause(unreadableState),
   );
   const email = yield* emailVerdicts(access, config, store);
   const scripts = yield* workerNames(access).pipe(
@@ -104,19 +125,20 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
   const subdomain = yield* workersSubdomain(access).pipe(
     Effect.catchTag("CloudflareFailure", unreadableVerdict),
   );
+  const workerDomains = yield* domainVerdict(access, config, recorded);
   return {
     alertQuota: yield* alertQuotaVerdict(access, config.budget.recipients),
     database: yield* databaseVerdict(access, config, store).pipe(
       Effect.catchTag("CloudflareFailure", unreadableVerdict),
     ),
     deployToken: yield* tokenVerdict(access),
-    dnsRecords: readVerdict(records, (present) => claim(present, false)),
+    dnsRecords: ownedRecords(records, workerDomains),
     emailSending: email.emailSending,
     secretsStore: readVerdict(stores, (counted) => presence(counted > 0)),
     senderDomain: email.senderDomain,
     sendingSubdomain: email.sendingSubdomain,
     stateStore: readVerdict(scripts, (live) => presence(live.includes(STATE_STORE_SCRIPT_NAME))),
-    workerDomains: yield* domainVerdict(access, config, recorded),
+    workerDomains,
     workerNames: readVerdict(scripts, (live) =>
       workerVerdict(live, declaredNames(config.prefix), recorded),
     ),

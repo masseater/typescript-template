@@ -6,9 +6,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { buildSetupExportSpecifierIndex } from "./export-specifier-index.ts";
 
-const SHARED_SPECIFIER_ROOT = join(tmpdir(), "setup-export-index-shared-specifier");
+const SHARED_SPECIFIER_ROOT = mkdtempSync(join(tmpdir(), "setup-export-index-shared-specifier-"));
 
-const DEPTH_LIMIT_ROOT = join(tmpdir(), "setup-export-index-depth-limit");
+const DEPTH_LIMIT_ROOT = mkdtempSync(join(tmpdir(), "setup-export-index-depth-limit-"));
 
 describe("setup-modules/export-specifier-index", () => {
   describe("a package manifest holding null", () => {

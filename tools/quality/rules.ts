@@ -25,6 +25,24 @@ const mockSources = new Set([
   "bun:test",
 ]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
+const sharedWaitApis = new Set(["cached", "cachedInvalidateWithTTL", "cachedWithTTL"]);
+const sharedWaitModules = new Set([
+  "Cache",
+  "ManagedRuntime",
+  "Pool",
+  "RcMap",
+  "RcRef",
+  "Resource",
+  "ScopedCache",
+]);
+const annotationApis = new Set([
+  "annotateCurrentSpan",
+  "annotateLogs",
+  "annotateLogsScoped",
+  "annotateSpans",
+  "withLogSpan",
+]);
+const effectModule = /^effect(?:\/|$)/u;
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -96,6 +114,44 @@ function memoizationVisitor(context: LintContext): Visitor {
   return originVisitor(context, isManualMemoization);
 }
 
+function isRawAnnotation(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  if (source === undefined || !effectModule.test(source)) {
+    return false;
+  }
+  return source === "effect"
+    ? members[0] === "Effect" && annotationApis.has(members[1] ?? "")
+    : annotationApis.has(members[0] ?? "");
+}
+
+function annotationVisitor(context: LintContext): Visitor {
+  return filename(context).endsWith("/libs/observability/src/annotations.ts")
+    ? {}
+    : originVisitor(context, isRawAnnotation);
+}
+
+function isCrossRequestState(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  if (source === undefined || !effectModule.test(source)) {
+    return false;
+  }
+  if (source !== "effect") {
+    return sharedWaitApis.has(members[0] ?? "");
+  }
+  return (
+    sharedWaitModules.has(members[0] ?? "") ||
+    (members[0] === "Effect" && sharedWaitApis.has(members[1] ?? ""))
+  );
+}
+
+function crossRequestStateVisitor(context: LintContext): Visitor {
+  const current = filename(context);
+  if (!runsInWorkerRuntime(current) || current.endsWith("/libs/runtime/src/worker-runtime.ts")) {
+    return {};
+  }
+  return originVisitor(context, isCrossRequestState);
+}
+
 function workerFetchVisitor(context: LintContext): Visitor {
   if (!runsInWorkerRuntime(filename(context))) {
     return {};
@@ -117,10 +173,22 @@ function workerFetchVisitor(context: LintContext): Visitor {
 export default definePlugin({
   meta: { name: "project" },
   rules: {
+    annotations: {
+      create: annotationVisitor,
+      meta: metadata(
+        "Effect.annotateLogs と Effect.annotateCurrentSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
+      ),
+    },
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
         `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
+      ),
+    },
+    "cross-request-state": {
+      create: crossRequestStateVisitor,
+      meta: metadata(
+        "Worker で動くコードでは ManagedRuntime と Effect.cached 系、Cache・ScopedCache・RcRef・RcMap・Pool・Resource を使えません。どれも未完了の結果を 1 本の fiber や latch にまとめ、後から来たリクエストにそれを待たせます。待たせた継続は作った側のリクエストが終わると捨てられ、応答を返さないまま固まります。libs/runtime の workerRuntime を通してください。",
       ),
     },
     "effect-failures": {

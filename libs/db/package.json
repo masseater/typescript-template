@@ -18,7 +18,6 @@
     "db:migrate:local": "node src/migrate-local.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",

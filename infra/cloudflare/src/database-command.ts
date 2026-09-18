@@ -1,14 +1,14 @@
-import { NodeRuntime } from "@effect/platform-node";
 import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
+import { runCli } from "@repo/config/cli";
 import { runRemoteDatabaseCommand } from "@repo/db/remote";
 
 import { CloudflareFailure } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
-import { reportCause } from "./secrets.ts";
+import { causeRecord, reportCause } from "./secrets.ts";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";
@@ -34,7 +34,7 @@ const readBootstrapEmail = Effect.tryPromise({
   ),
 );
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const args = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
     const { access, confidential, config, secrets } = yield* deploymentAccess();
@@ -54,6 +54,6 @@ NodeRuntime.runMain(
       Effect.scoped,
       Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );
-  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
-  { disableErrorReporting: true },
+  }),
+  (cause) => causeRecord(EVENT, cause),
 );

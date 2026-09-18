@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect, Schema } from "effect";
 
-import { applications } from "@repo/config";
+import { applicationOrigins, applications, mailpitOrigin } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
 
 import { failure, fileIo } from "./failure.ts";
@@ -20,7 +20,6 @@ import {
   local,
   readCredentials,
   refreshBrowserConfig,
-  routes,
 } from "./local-environment.ts";
 import {
   isErrorCode,
@@ -65,7 +64,7 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
 );
 
 function appOrigin(app: App, mode: typeof OriginMode.Type): string {
-  return mode === "lan" ? lanOrigin(app) : `http://127.0.0.1:${routes[app]}`;
+  return mode === "lan" ? lanOrigin(app) : applicationOrigins[app];
 }
 
 function appVariables(
@@ -77,7 +76,7 @@ function appVariables(
     APP_ORIGIN: appOrigin(app, mode),
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
-    MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
+    MAILPIT_URL: mailpitOrigin,
     OTLP_ENDPOINT: receiverOrigin("otlp"),
   };
 }

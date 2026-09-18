@@ -1,10 +1,10 @@
-import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Console, Effect } from "effect";
+import { Console, Effect } from "effect";
 
-import { reportFailed } from "@repo/config/cli";
+import { runCli } from "@repo/config/cli";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { browser, browserCommand } from "./browser.ts";
+import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
@@ -17,6 +17,7 @@ type Command = Effect.Effect<unknown, LocalCommandFailure>;
 const firstUserArgumentIndex = 2;
 
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
+  ["ci-runner", ciRunner],
   ["connect", connection],
   ["setup", setup],
   ["status", status],
@@ -49,19 +50,9 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-NodeRuntime.runMain(
-  selectCommand(action, args).pipe(
-    Effect.flatMap(writeReport),
-    Effect.catchCause((cause) =>
-      Cause.hasInterruptsOnly(cause)
-        ? Effect.failCause(cause)
-        : reportFailed({
-            event: "local.application_command_failed",
-            ok: false,
-            remediation:
-              "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-          }),
-    ),
-  ),
-  { disableErrorReporting: true },
-);
+runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), {
+  event: "local.application_command_failed",
+  ok: false,
+  remediation:
+    "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+});

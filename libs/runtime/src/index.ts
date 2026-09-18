@@ -10,8 +10,16 @@ import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
+import { DatabaseHealth } from "./database-health.ts";
 
-type AppServices = AppOrigin | Assets | Auth | Database | Telemetry | TelemetryFlusher;
+type AppServices =
+  | AppOrigin
+  | Assets
+  | Auth
+  | Database
+  | DatabaseHealth
+  | Telemetry
+  | TelemetryFlusher;
 
 function configuredAppLayer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -19,12 +27,13 @@ function configuredAppLayer(
   audience: Application,
   routes: Readonly<Record<string, string>>,
 ): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> {
+  const database = DatabaseHealth.layer.pipe(Layer.provideMerge(Database.layer(config.DB)));
   const auth = Auth.layer({
     audience,
     baseURL: config.APP_ORIGIN,
     secret: config.AUTH_SECRET,
     sendVerificationEmail: (message) => sendVerificationEmail(config, message),
-  }).pipe(Layer.provideMerge(Database.layer(config.DB)));
+  }).pipe(Layer.provideMerge(database));
   const otlp =
     config.OTLP_ENDPOINT === undefined || config.OTLP_ENABLED === "false"
       ? undefined

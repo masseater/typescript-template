@@ -328,9 +328,6 @@ importers:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
         version: 1.1.12(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@effect/tsgo':
         specifier: 0.45.0
         version: 0.45.0
@@ -664,9 +661,6 @@ importers:
 
   infra/budget-monitor:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -824,9 +818,6 @@ importers:
 
   infra/local:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -926,9 +917,6 @@ importers:
 
   libs/db:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../config
@@ -1103,6 +1091,9 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
 
   libs/ui:
     dependencies:
@@ -1346,6 +1337,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
+      playwright:
+        specifier: 'catalog:'
+        version: 1.63.0
       steiger:
         specifier: 0.6.0
         version: 0.6.0(typescript@7.0.2)
@@ -1358,9 +1352,6 @@ importers:
 
   tools/dev:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1538,9 +1529,6 @@ importers:
 
   tools/load:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1569,9 +1557,6 @@ importers:
 
   tools/observe:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config

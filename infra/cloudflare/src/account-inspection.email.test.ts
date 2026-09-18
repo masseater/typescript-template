@@ -4,6 +4,7 @@ import { HttpResponse, http } from "msw";
 
 import { mockServer } from "./account-fixture.ts";
 import { blocked, inspectAccount } from "./account-inspection.ts";
+import { STATE_STORE_SOURCE } from "./account-read.ts";
 import {
   FORBIDDEN_STATUS,
   access,
@@ -52,6 +53,19 @@ it.effect("blocks a sending domain another deployment has already onboarded", ()
       assert.deepStrictEqual(blocked(inspection).toSorted(), ["emailSending", "sendingSubdomain"]);
     }).pipe(Effect.scoped),
   ),
+);
+
+it.effect("does not report an unreadable state store as another deployment's claim", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({ records: sendingRecords, subdomains: [sending] }));
+    const inspection = yield* inspectAccount(
+      access,
+      config,
+      Effect.fail("the state store cannot be read"),
+    );
+    assert.deepStrictEqual(inspection.sendingSubdomain, { unreadable: [STATE_STORE_SOURCE] });
+    assert.deepStrictEqual(inspection.emailSending, { unreadable: [STATE_STORE_SOURCE] });
+  }).pipe(Effect.scoped),
 );
 
 it.effect("ignores sending domains onboarded beside this deployment's own", () =>

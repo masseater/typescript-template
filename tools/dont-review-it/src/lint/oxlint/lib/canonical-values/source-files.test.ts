@@ -7,27 +7,27 @@ import { describe, expect, test } from "vite-plus/test";
 import { gitOutput } from "../git-output.ts";
 import { listRepositoryFiles, nearestPackageDirectory } from "./source-files.ts";
 
-const UNREACHABLE_TARGET_ROOT = join(tmpdir(), "source-files-unreachable-target");
+const UNREACHABLE_TARGET_ROOT = mkdtempSync(join(tmpdir(), "source-files-unreachable-target-"));
 
-const DIRECTORY_TARGET_ROOT = join(tmpdir(), "source-files-directory-target");
+const DIRECTORY_TARGET_ROOT = mkdtempSync(join(tmpdir(), "source-files-directory-target-"));
 
-const OWN_MANIFEST_ROOT = join(tmpdir(), "source-files-own-manifest");
+const OWN_MANIFEST_ROOT = mkdtempSync(join(tmpdir(), "source-files-own-manifest-"));
 
-const MANIFEST_ABOVE_ROOT = join(tmpdir(), "source-files-manifest-above");
+const MANIFEST_ABOVE_ROOT = mkdtempSync(join(tmpdir(), "source-files-manifest-above-"));
 
-const RIVAL_MANIFESTS_ROOT = join(tmpdir(), "source-files-rival-manifests");
+const RIVAL_MANIFESTS_ROOT = mkdtempSync(join(tmpdir(), "source-files-rival-manifests-"));
 
-const ROOT_ONLY_MANIFEST_ROOT = join(tmpdir(), "source-files-root-only-manifest");
+const ROOT_ONLY_MANIFEST_ROOT = mkdtempSync(join(tmpdir(), "source-files-root-only-manifest-"));
 
-const NO_MANIFEST_ROOT = join(tmpdir(), "source-files-no-manifest");
+const NO_MANIFEST_ROOT = mkdtempSync(join(tmpdir(), "source-files-no-manifest-"));
 
-const MIXED_ASSET_SCRIPTS_ROOT = join(tmpdir(), "source-files-mixed-assets-scripts");
+const MIXED_ASSET_SCRIPTS_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-scripts-"));
 
-const MIXED_ASSET_STYLES_ROOT = join(tmpdir(), "source-files-mixed-assets-styles");
+const MIXED_ASSET_STYLES_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-styles-"));
 
-const MIXED_ASSET_MARKUP_ROOT = join(tmpdir(), "source-files-mixed-assets-markup");
+const MIXED_ASSET_MARKUP_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-markup-"));
 
-const MIXED_ASSET_MANIFESTS_ROOT = join(tmpdir(), "source-files-mixed-assets-manifests");
+const MIXED_ASSET_MANIFESTS_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-manifests-"));
 
 describe("listRepositoryFiles", () => {
   describe("an entry the directory lists but the file system cannot reach", () => {

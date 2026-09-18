@@ -1,4 +1,4 @@
-import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,7 +7,7 @@ import { describe } from "vite-plus/test";
 
 import { noDryTestSetup } from "./no-dry-test-setup--inline-owned-setup.ts";
 
-const workspaceDir = join(realpathSync(tmpdir()), "dont-review-it-no-dry-test-setup");
+const workspaceDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-no-dry-test-setup-"));
 
 rmSync(workspaceDir, { recursive: true, force: true });
 

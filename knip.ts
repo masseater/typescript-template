@@ -43,7 +43,7 @@ const workspaces = {
   },
   "libs/runtime": {
     ignoreDependencies: ["cloudflare"],
-    project: ["src/**/*.ts!", "!src/app-fixture.ts!"],
+    project: ["src/**/*.ts!", "!src/*-fixture.ts!"],
   },
   "libs/ui": {
     project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
@@ -76,7 +76,6 @@ const scripts = {
   "infra/budget-monitor": ["src/inspect.ts!"],
   "infra/cloudflare": [
     "src/cli.ts!",
-    "src/check-artifacts.ts!",
     "src/check-stacks.ts!",
     "src/check-account.ts!",
     "src/bootstrap-state.ts!",
@@ -84,7 +83,7 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-  "tools/commander": ["src/app/cli.ts!"],
+  "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
   "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
@@ -94,7 +93,7 @@ function commanderWorkspace(
 ): NonNullable<KnipConfiguration["workspaces"]>[string] {
   return {
     entry: [...application.entry, ...only(...scripts["tools/commander"])],
-    ignoreDependencies: [],
+    ignoreDependencies: only("playwright"),
     ignoreExportsUsedInFile: { interface: true },
   };
 }

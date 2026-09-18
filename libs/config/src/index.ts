@@ -133,14 +133,19 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
 export {
+  applicationOrigins,
   applicationPorts,
   applicationReadyPaths,
   applications,
   authenticationMethods,
   grants,
+  loopbackAddress,
   loopbackHosts,
+  loopbackOrigin,
+  mailpitOrigin,
   mailpitPort,
   roles,
+  storybookOrigin,
   storybookPort,
   strongAuthenticationMethods,
 } from "./applications.ts";

@@ -3,7 +3,9 @@ import { RuleTester } from "vite-plus/lint/plugins-dev";
 import plugin from "./rules.ts";
 
 type RuleName =
+  | "annotations"
   | "boundaries"
+  | "cross-request-state"
   | "effect-failures"
   | "effect-stack"
   | "environment-boundary"
@@ -16,7 +18,9 @@ type RuleName =
   | "worker-fetch";
 
 const ruleNames: readonly RuleName[] = [
+  "annotations",
   "boundaries",
+  "cross-request-state",
   "effect-failures",
   "effect-stack",
   "environment-boundary",

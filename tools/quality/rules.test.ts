@@ -66,6 +66,46 @@ const forbiddenCode = [
     'import { Effect } from "effect"; export const run = () => { try { return Effect; } catch { return undefined; } };',
     "effect-failures",
   ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const run = Effect.void.pipe(Effect.annotateLogs({ a: "b" }));',
+    "annotations",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
+    "annotations",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { annotateSpans } from "effect/Effect"; export const run = () => annotateSpans;',
+    "annotations",
+  ],
+  [
+    "tools/observe/src/probe.ts",
+    'import { Effect } from "effect"; export const run = (e: never) => Effect.withLogSpan(e, "x");',
+    "annotations",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const cache = () => Effect.cachedWithTTL(Effect.void, "1 minute");',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { cachedWithTTL } from "effect/Effect"; export const cache = () => cachedWithTTL;',
+    "cross-request-state",
+  ],
+  [
+    "apps/admin/src/probe.ts",
+    'import { RcMap } from "effect"; export const shared = () => RcMap;',
+    "cross-request-state",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [
@@ -124,6 +164,10 @@ const validBoundaries = [
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@repo/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@repo/db/testing";'],
+  [
+    "libs/observability/src/annotations.ts",
+    'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
+  ],
 ] as const;
 
 const singleReports = [
