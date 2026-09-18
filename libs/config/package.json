@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./deployment": "./src/deployment.ts",
+    "./security": "./src/security.ts",
     "./deployment-keys": "./src/deployment-keys.ts",
     "./vite": "./src/vite.ts",
     "./worker": "./src/worker.ts"
