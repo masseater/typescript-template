@@ -3,12 +3,12 @@ import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { authSecret, settings } from "./settings.ts";
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import { Effect } from "effect";
 import type { Redacted } from "effect";
 import type { SharedConfig } from "./config.ts";
 import { databaseRef } from "./database.ts";
-import { grants } from "@template/config";
+import { grants } from "@repo/config";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {

@@ -1,7 +1,7 @@
-import { Button, FormColumn } from "@template/ui";
+import { Button, FormColumn } from "@repo/ui";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
-import { decodeJson } from "@template/runtime/client";
+import { decodeJson } from "@repo/runtime/client";
 import { serviceName } from "#shared/config/index.ts";
 import { useState } from "react";
 

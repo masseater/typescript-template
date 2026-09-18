@@ -6,7 +6,7 @@ import { Effect } from "effect";
 import type { SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getSessionSecurity } from "./security.ts";
-import { strongAuthenticationMethods } from "@template/config";
+import { strongAuthenticationMethods } from "@repo/config";
 
 const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId: string) {
   const actor = yield* getSessionSecurity(sessionId, "admin");

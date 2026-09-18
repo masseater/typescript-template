@@ -1,6 +1,6 @@
 import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
-import type { Application as App } from "@template/config";
-import { applications as apps } from "@template/config";
+import type { Application as App } from "@repo/config";
+import { applications as apps } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -27,7 +27,7 @@ function privateAdminPath(normalized: string, app: App): boolean {
   return (
     app !== "admin" &&
     (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(normalized) ||
-      /@template\/db\/admin(?:\/|$)/u.test(normalized))
+      /@repo\/db\/admin(?:\/|$)/u.test(normalized))
   );
 }
 
@@ -42,11 +42,11 @@ function privatePath(
   return (
     /^(?:infra|tools)(?:\/|$)/u.test(relative) ||
     new RegExp(`(?:^|/)apps/(?:${others})(?:/|$)`, "u").test(normalized) ||
-    new RegExp(`@template/(?:${others})(?:/|$)`, "u").test(normalized) ||
+    new RegExp(`@repo/(?:${others})(?:/|$)`, "u").test(normalized) ||
     /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$|(?:^|\/)(?:\.env(?:\.[^/]*)?|\.dev\.vars(?:\.[^/]*)?|[^/]*\.(?:pem|key))$/u.test(
       normalized,
     ) ||
-    /@template\/db\/(?:remote|testing)(?:\/|$)/u.test(normalized) ||
+    /@repo\/db\/(?:remote|testing)(?:\/|$)/u.test(normalized) ||
     privateAdminPath(normalized, roots.app)
   );
 }

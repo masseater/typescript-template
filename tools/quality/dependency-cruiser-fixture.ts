@@ -35,7 +35,7 @@ async function write(root: string, file: string, code: string): Promise<void> {
 }
 
 async function createWorkspace(root: string, [directory, exported]: Workspace): Promise<void> {
-  const name = `@template/${directory.split("/")[1] ?? ""}`;
+  const name = `@repo/${directory.split("/")[1] ?? ""}`;
   const devDependencies = Object.fromEntries(
     (developmentDependencies[directory] ?? []).map((dependency) => [dependency, "*"]),
   );
@@ -60,7 +60,7 @@ async function createPackage(root: string, name: string): Promise<void> {
 async function createFixture(files: Fixture): Promise<string> {
   const prefix = path.join(tmpdir(), "template-depcruise-");
   const root = await realpath(await mkdtemp(prefix));
-  await mkdir(path.join(root, "node_modules/@template"), { recursive: true });
+  await mkdir(path.join(root, "node_modules/@repo"), { recursive: true });
   await Promise.all(
     Object.entries(workspaces).map(async (workspace: Workspace) =>
       createWorkspace(root, workspace),

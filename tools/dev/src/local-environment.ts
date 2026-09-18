@@ -1,10 +1,10 @@
 import { Effect, Schema } from "effect";
-import { applicationPorts, applications, loopbackHosts } from "@template/config";
+import { applicationPorts, applications, loopbackHosts } from "@repo/config";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
 import { failure, fileIo } from "./failure.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";

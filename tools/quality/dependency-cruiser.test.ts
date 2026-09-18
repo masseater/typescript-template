@@ -39,19 +39,19 @@ async function violatedRules(files: Fixture): Promise<readonly string[]> {
 }
 
 const detected: readonly Case[] = [
-  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@template/db/src/schema";\n' }],
+  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@repo/db/src/schema";\n' }],
   [
     "no-unresolvable",
-    { "apps/user/src/index.ts": 'export type { Row } from "@template/db/src/schema";\n' },
+    { "apps/user/src/index.ts": 'export type { Row } from "@repo/db/src/schema";\n' },
   ],
   [
     "no-unresolvable",
-    { "apps/user/src/index.ts": 'export type * from "@template/db/src/schema";\n' },
+    { "apps/user/src/index.ts": 'export type * from "@repo/db/src/schema";\n' },
   ],
   ["no-unresolvable", { "apps/user/src/index.ts": 'import "cloudflare:workerz";\n' }],
-  ["no-app-to-app", { "apps/user/src/index.ts": 'export * from "@template/admin";\n' }],
-  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@template/user";\n' }],
-  ["no-runtime-to-tools", { "libs/auth/src/index.ts": 'export * from "@template/dev";\n' }],
+  ["no-app-to-app", { "apps/user/src/index.ts": 'export * from "@repo/admin";\n' }],
+  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@repo/user";\n' }],
+  ["no-runtime-to-tools", { "libs/auth/src/index.ts": 'export * from "@repo/dev";\n' }],
   ["no-package-escape", { "libs/auth/src/index.ts": 'export * from "../../db/src/index.ts";\n' }],
   [
     "no-package-escape",
@@ -59,16 +59,16 @@ const detected: readonly Case[] = [
   ],
   [
     "no-database-admin-outside-admin",
-    { "apps/user/src/index.ts": 'export * from "@template/db/admin";\n' },
+    { "apps/user/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
   ["no-database-admin-outside-admin", { "libs/db/src/index.ts": 'export * from "./admin.ts";\n' }],
   [
     "no-database-operations-outside-tooling",
-    { "apps/admin/src/index.ts": 'export * from "@template/db/remote";\n' },
+    { "apps/admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
     "no-database-testing-outside-tests",
-    { "libs/auth/src/index.ts": 'export * from "@template/db/testing";\n' },
+    { "libs/auth/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
   [
     "no-database-testing-outside-tests",
@@ -76,7 +76,7 @@ const detected: readonly Case[] = [
   ],
   [
     "no-database-testing-outside-tests",
-    { "tools/dev/src/index.ts": 'export * from "@template/db/testing";\n' },
+    { "tools/dev/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
   [
     "no-development-dependency-in-shipped-code",
@@ -96,20 +96,20 @@ const detected: readonly Case[] = [
   ],
   [
     "no-signup-outside-user",
-    { "apps/admin/src/index.ts": 'export * from "@template/ui/signup";\n' },
+    { "apps/admin/src/index.ts": 'export * from "@repo/ui/signup";\n' },
   ],
   [
     "no-signup-outside-user",
-    { "apps/admin/src/index.ts": 'export type { Props } from "@template/ui/signup";\n' },
+    { "apps/admin/src/index.ts": 'export type { Props } from "@repo/ui/signup";\n' },
   ],
-  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@template/db";\n' }],
+  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@repo/db";\n' }],
   [
     "no-wiki-to-database",
-    { "apps/wiki/src/index.ts": 'export type { Db } from "@template/db";\n' },
+    { "apps/wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
-    { "apps/user/src/index.ts": 'export * from "@template/config/deployment";\n' },
+    { "apps/user/src/index.ts": 'export * from "@repo/config/deployment";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -119,7 +119,7 @@ const detected: readonly Case[] = [
     "no-deployment-config-in-shipped-code",
     {
       "libs/auth/src/index.ts": 'export * from "./settings.ts";\n',
-      "libs/auth/src/settings.ts": 'export * from "@template/config/deployment";\n',
+      "libs/auth/src/settings.ts": 'export * from "@repo/config/deployment";\n',
     },
   ],
   [
@@ -151,14 +151,14 @@ const detected: readonly Case[] = [
   [
     "no-browser-to-server",
     {
-      "libs/runtime/src/index.ts": 'export * from "@template/db";\n',
-      "libs/ui/src/index.ts": 'export * from "@template/runtime";\n',
+      "libs/runtime/src/index.ts": 'export * from "@repo/db";\n',
+      "libs/ui/src/index.ts": 'export * from "@repo/runtime";\n',
     },
   ],
 ];
 
 const accepted: readonly Case[] = [
-  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@template/db";\n' }],
+  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@repo/db";\n' }],
   [
     "no-app-to-app",
     {
@@ -166,8 +166,8 @@ const accepted: readonly Case[] = [
       "apps/user/src/index.ts": 'export * from "./helper.ts";\n',
     },
   ],
-  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@template/db";\n' }],
-  ["no-runtime-to-tools", { "tools/dev/src/index.ts": 'export * from "@template/db/remote";\n' }],
+  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@repo/db";\n' }],
+  ["no-runtime-to-tools", { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' }],
   [
     "no-package-escape",
     {
@@ -177,15 +177,15 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-database-admin-outside-admin",
-    { "apps/admin/src/index.ts": 'export * from "@template/db/admin";\n' },
+    { "apps/admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
   [
     "no-database-operations-outside-tooling",
-    { "tools/dev/src/index.ts": 'export * from "@template/db/remote";\n' },
+    { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
     "no-database-testing-outside-tests",
-    { "libs/auth/src/session.test.ts": 'export * from "@template/db/testing";\n' },
+    { "libs/auth/src/session.test.ts": 'export * from "@repo/db/testing";\n' },
   ],
   [
     "no-database-testing-outside-tests",
@@ -208,19 +208,19 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-signup-outside-user",
-    { "apps/user/src/index.ts": 'export * from "@template/ui/signup";\n' },
+    { "apps/user/src/index.ts": 'export * from "@repo/ui/signup";\n' },
   ],
-  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@template/db/local";\n' }],
+  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@repo/db/local";\n' }],
   [
     "no-browser-to-server",
     {
-      "libs/runtime/src/index.ts": 'export * from "@template/db";\n',
-      "libs/ui/src/index.ts": 'export * from "@template/runtime/contracts";\n',
+      "libs/runtime/src/index.ts": 'export * from "@repo/db";\n',
+      "libs/ui/src/index.ts": 'export * from "@repo/runtime/contracts";\n',
     },
   ],
   [
     "no-deployment-config-in-shipped-code",
-    { "tools/dev/src/index.ts": 'export * from "@template/config/deployment";\n' },
+    { "tools/dev/src/index.ts": 'export * from "@repo/config/deployment";\n' },
   ],
   [
     "no-worker-runtime-in-node-test",

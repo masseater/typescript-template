@@ -1,4 +1,4 @@
-import type { SessionView } from "@template/runtime/contracts";
+import type { SessionView } from "@repo/runtime/contracts";
 
 type Session = typeof SessionView.Type;
 

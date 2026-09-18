@@ -1,4 +1,4 @@
-import { clientReachableModules, serverOnlyPackages } from "@template/config/vite";
+import { clientReachableModules, serverOnlyPackages } from "@repo/config/vite";
 import { nodeRuntimePackages, workerRuntimeModules, workerTestSuffix } from "./test-runtime.ts";
 import type { IConfiguration } from "dependency-cruiser";
 
@@ -92,7 +92,7 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "生の DB ドライバーは libs/db の中だけで使えます。業務処理は計測付きの @template/db の入口を使ってください。",
+        "生の DB ドライバーは libs/db の中だけで使えます。業務処理は計測付きの @repo/db の入口を使ってください。",
       from: { pathNot: "^libs/db/" },
       name: "no-raw-database-driver",
       severity: "error",
@@ -131,7 +131,7 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@template/runtime/contracts など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
+        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/contracts など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
       from: { path: "^libs/ui/src/", pathNot: testModule },
       name: "no-browser-to-server",
       severity: "error",
@@ -139,7 +139,7 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
+        "@repo/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
       from: { path: "^(?:apps|libs)/" },
       name: "no-deployment-config-in-shipped-code",
       severity: "error",

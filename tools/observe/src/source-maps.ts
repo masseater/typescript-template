@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules

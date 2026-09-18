@@ -1,7 +1,7 @@
-import { LoginPage } from "@template/ui/auth";
+import { LoginPage } from "@repo/ui/auth";
 import type { ReactElement } from "react";
 import { Schema } from "effect";
-import { decodeJson } from "@template/runtime/client";
+import { decodeJson } from "@repo/runtime/client";
 import { serviceName } from "#shared/config/index.ts";
 
 const HTTP_FORBIDDEN = 403;
