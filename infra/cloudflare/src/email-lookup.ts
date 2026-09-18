@@ -1,7 +1,14 @@
 import type { StateService } from "alchemy/State";
 import { Effect, Schema } from "effect";
 
-import { endpoint, readList, readPages, readRequired } from "./account-read.ts";
+import {
+  endpoint,
+  isUnreadable,
+  readList,
+  readPages,
+  readRequired,
+  unreadableVerdict,
+} from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import type { SharedConfig } from "./config.ts";
 import { sendingDomain } from "./config.ts";
@@ -67,9 +74,9 @@ const onboardingVerdict = Effect.fn("onboardingVerdict")(function* onboardingVer
   store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   const onboarded = yield* onboardedDomains(access, config.zoneId).pipe(
-    Effect.catchTag("CloudflareFailure", () => Effect.succeed("unreadable" as const)),
+    Effect.catchTag("CloudflareFailure", unreadableVerdict),
   );
-  if (typeof onboarded === "string") {
+  if (isUnreadable(onboarded)) {
     return onboarded;
   }
   const domain = sendingDomain(config.mailFrom);
