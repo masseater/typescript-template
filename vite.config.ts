@@ -30,6 +30,8 @@ export default defineConfig({
       build: [
         "vp run -F '!typescript-template' build",
         "vp run --filter @template/dev private-maps",
+        "vp run --filter @template/infra-cloudflare verify:artifacts",
+        "vp run --filter @template/infra-cloudflare verify:stacks",
       ],
       check: {
         command: [
