@@ -74,7 +74,7 @@ it.effect("a Worker without an OTLP endpoint declares no trace destination", () 
   Effect.sync(() => {
     assert.deepStrictEqual(workerObservability({ ...settings, otlpEndpoint: undefined }).traces, {
       enabled: true,
-      headSamplingRate: 1,
+      headSamplingRate: settings.observabilitySampling,
       persist: true,
     });
   }),
