@@ -89,7 +89,7 @@ const program = Effect.gen(function* program() {
   const paths = [...new Set(["/api/health", applicationReadyPaths[app]])];
   const results = yield* Effect.all(
     paths.map((pathname) => probe(origin, pathname)),
-    { mode: "result" },
+    { concurrency: "unbounded", mode: "result" },
   );
   const reasons = results.flatMap((result) =>
     Result.isFailure(result) ? [result.failure.reason] : [],
