@@ -3,8 +3,6 @@ title: 利用者アプリのレイアウト
 description: 利用者アプリの全ページが共有する枠と、ページの一覧、ページ間の遷移
 ---
 
-この文書は、目指す画面の構成を書いている。いまの会員の枠は画面の上端にヘッダーとナビゲーションを置く形で、この文書の形になるのは [#332](https://github.com/masseater/typescript-template/issues/332) からである。各ページがいまあるかどうかは、表の「状態」の列が示す。
-
 利用者アプリのページは、誰でも開ける公開の枠、登録の直後に通る登録の枠、ログインした利用者だけが使う会員の枠のどれか 1 つに入る。
 
 ## 公開の枠
@@ -20,26 +18,26 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 - フッター
   - 利用規約・プライバシーポリシー・お問い合わせへのリンクを置く
 
-| ページ                           | パス            | 状態                                                                |
-| -------------------------------- | --------------- | ------------------------------------------------------------------- |
-| LP                               | `/`             | いまある                                                            |
-| 新規登録                         | `/signup`       | いまある                                                            |
-| ログイン                         | `/login`        | いまある                                                            |
-| メールアドレスの確認             | `/verify-email` | いまある                                                            |
-| お問い合わせ（会員でない人向け） | `/contact`      | [#338](https://github.com/masseater/typescript-template/issues/338) |
-| 利用規約                         | `/terms`        | [#299](https://github.com/masseater/typescript-template/issues/299) |
-| プライバシーポリシー             | `/privacy`      | [#299](https://github.com/masseater/typescript-template/issues/299) |
+| ページ                           | パス            |
+| -------------------------------- | --------------- |
+| LP                               | `/`             |
+| 新規登録                         | `/signup`       |
+| ログイン                         | `/login`        |
+| メールアドレスの確認             | `/verify-email` |
+| お問い合わせ（会員でない人向け） | `/contact`      |
+| 利用規約                         | `/terms`        |
+| プライバシーポリシー             | `/privacy`      |
 
 ## 登録の枠
 
 メールアドレスの確認を済ませた後の、初めてのログインで通る。ナビゲーションを持たず、1 つの作業だけを中央に置き、どこまで進んだかを上に示す。
 
-| ページ                     | パス                 | 状態                                                                                            |
-| -------------------------- | -------------------- | ----------------------------------------------------------------------------------------------- |
-| 規約への同意               | `/welcome/agreement` | [#333](https://github.com/masseater/typescript-template/issues/333)                             |
-| プロフィールの作り方を選ぶ | `/welcome`           | [#333](https://github.com/masseater/typescript-template/issues/333)                             |
-| 基本項目の入力             | `/welcome/profile`   | [#333](https://github.com/masseater/typescript-template/issues/333)                             |
-| AI インタビュー            | `/welcome/interview` | いまは `/interview`。[#333](https://github.com/masseater/typescript-template/issues/333) で移す |
+| ページ                     | パス                 |
+| -------------------------- | -------------------- |
+| 規約への同意               | `/welcome/agreement` |
+| プロフィールの作り方を選ぶ | `/welcome`           |
+| 基本項目の入力             | `/welcome/profile`   |
+| AI インタビュー            | `/welcome/interview` |
 
 - プロフィールの作り方は、「自分で入力する」か「AI にインタビューしてもらう」かを選ぶ
 - AI インタビューはいつでもスキップでき、スキップしたら空のプロフィールのままホームへ進む
@@ -69,20 +67,20 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | メッセージ         | `/messages`      |      |
 | 通知               | `/notifications` |      |
 
-| ページ                                 | パス                        | 入り方                             | 状態                                                                                                                                                             |
-| -------------------------------------- | --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ホーム（フォローしている利用者の動き） | `/home`                     | タブ                               | [#334](https://github.com/masseater/typescript-template/issues/334)。いまのホームは自分のプロフィール                                                            |
-| 探す                                   | `/search`                   | タブ                               | いまは `/users`（ユーザー一覧）。[#305](https://github.com/masseater/typescript-template/issues/305) で移す                                                      |
-| 有料の案内と契約                       | `/upgrade`                  | 有料の項目                         | [#304](https://github.com/masseater/typescript-template/issues/304)                                                                                              |
-| 掲示板                                 | `/board`                    | タブ                               | [#309](https://github.com/masseater/typescript-template/issues/309)                                                                                              |
-| スレッド                               | `/board/{id}`               | 掲示板・通知                       | [#309](https://github.com/masseater/typescript-template/issues/309)                                                                                              |
-| メッセージ（1 対 1 とグループ）        | `/messages`                 | タブ                               | [#306](https://github.com/masseater/typescript-template/issues/306)                                                                                              |
-| 会話                                   | `/messages/{id}`            | メッセージ・プロフィール・通知     | [#306](https://github.com/masseater/typescript-template/issues/306)                                                                                              |
-| グループの情報と参加                   | `/groups/{id}`              | 会話・招待のリンク                 | [#308](https://github.com/masseater/typescript-template/issues/308)                                                                                              |
-| 通知                                   | `/notifications`            | タブ                               | [#310](https://github.com/masseater/typescript-template/issues/310)                                                                                              |
-| プロフィール                           | `/users/{id}`               | ホーム・探す・共有されたリンク     | いまある。共有は [#335](https://github.com/masseater/typescript-template/issues/335)、SNS は [#336](https://github.com/masseater/typescript-template/issues/336) |
-| お問い合わせ                           | `/support`・`/support/{id}` | アイコンのメニュー・設定           | [#311](https://github.com/masseater/typescript-template/issues/311)                                                                                              |
-| 規約の再同意                           | `/agreement`                | 規約の改定の後、ほかのページより先 | [#299](https://github.com/masseater/typescript-template/issues/299)                                                                                              |
+| ページ                                 | パス                        | 入り方                             |
+| -------------------------------------- | --------------------------- | ---------------------------------- |
+| ホーム（フォローしている利用者の動き） | `/home`                     | タブ                               |
+| 探す                                   | `/search`                   | タブ                               |
+| 有料の案内と契約                       | `/upgrade`                  | 有料の項目                         |
+| 掲示板                                 | `/board`                    | タブ                               |
+| スレッド                               | `/board/{id}`               | 掲示板・通知                       |
+| メッセージ（1 対 1 とグループ）        | `/messages`                 | タブ                               |
+| 会話                                   | `/messages/{id}`            | メッセージ・プロフィール・通知     |
+| グループの情報と参加                   | `/groups/{id}`              | 会話・招待のリンク                 |
+| 通知                                   | `/notifications`            | タブ                               |
+| プロフィール                           | `/users/{id}`               | ホーム・探す・共有されたリンク     |
+| お問い合わせ                           | `/support`・`/support/{id}` | アイコンのメニュー・設定           |
+| 規約の再同意                           | `/agreement`                | 規約の改定の後、ほかのページより先 |
 
 ## 設定
 
@@ -93,16 +91,16 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 - 確認のダイアログには何が起きるかだけを書き、解約・退会のボタンもほかの操作と同じ大きさと色の濃さにする
 - 通知・AI に許す操作・検索への掲載は、既定を「オフ」「許可しない」にする
 
-| 項目            | パス                      | 状態                                                                                                                                     |
-| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 設定の一覧      | `/settings`               | [#337](https://github.com/masseater/typescript-template/issues/337)                                                                      |
-| プロフィール    | `/settings/profile`       | いまある                                                                                                                                 |
-| 通知            | `/settings/notifications` | [#310](https://github.com/masseater/typescript-template/issues/310)                                                                      |
-| セキュリティ    | `/settings/security`      | いまは `/security`（認証設定）。[#337](https://github.com/masseater/typescript-template/issues/337) で移す                               |
-| AI インタビュー | `/settings/interview`     | [#333](https://github.com/masseater/typescript-template/issues/333)                                                                      |
-| AI と API       | `/settings/ai`            | [#312](https://github.com/masseater/typescript-template/issues/312)・[#313](https://github.com/masseater/typescript-template/issues/313) |
-| プランと解約    | `/settings/plan`          | [#304](https://github.com/masseater/typescript-template/issues/304)                                                                      |
-| 退会            | `/settings/leave`         | [#300](https://github.com/masseater/typescript-template/issues/300)                                                                      |
+| 項目            | パス                      |
+| --------------- | ------------------------- |
+| 設定の一覧      | `/settings`               |
+| プロフィール    | `/settings/profile`       |
+| 通知            | `/settings/notifications` |
+| セキュリティ    | `/settings/security`      |
+| AI インタビュー | `/settings/interview`     |
+| AI と API       | `/settings/ai`            |
+| プランと解約    | `/settings/plan`          |
+| 退会            | `/settings/leave`         |
 
 ## 枠へ入る条件
 
@@ -175,4 +173,4 @@ flowchart TD
   menu -- ログアウト --> lp["/ LP"]
 ```
 
-`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。いまあるページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。
+`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。
