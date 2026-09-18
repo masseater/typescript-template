@@ -143,7 +143,7 @@ describe("readGitSourceScope", () => {
 
   describe("a source under a repository root that does not exist", () => {
     const it = test.extend("missingRootSourceAnswer", () => {
-      const missingRepositoryRoot = join(tmpdir(), "missing-git-source-scope");
+      const missingRepositoryRoot = join(mkdtempSync(join(tmpdir(), "missing-git-source-scope-")), "absent");
       return readGitSourceScope(missingRepositoryRoot).isIgnored(
         join(missingRepositoryRoot, "dist/status.ts"),
       );

@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,7 +9,7 @@ import { findWorkspaceRoot } from "./workspace-root.ts";
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../../../../..");
 
-const DETACHED_DIRECTORY = join(tmpdir(), "mst-workspace-root-detached");
+const DETACHED_DIRECTORY = mkdtempSync(join(tmpdir(), "mst-workspace-root-detached-"));
 
 describe("findWorkspaceRoot", () => {
   describe("the directory holding the workspace manifest", () => {
