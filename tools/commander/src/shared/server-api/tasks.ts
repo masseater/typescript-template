@@ -87,7 +87,7 @@ function view(issue: BdIssue, listing: Listing): TaskView {
 function classify(listing: Listing): typeof Snapshot.Type {
   const readyIds = new Set(listing.ready.map((issue) => issue.id));
   const claimed = new Set(
-    listing.open.filter((issue) => issue.status === "in_progress").map((issue) => issue.id),
+    listing.open.flatMap((issue) => (issue.status === "in_progress" ? [issue.id] : [])),
   );
   const tasks = listing.open.map((issue) => view(issue, listing)).toSorted(byPriority);
   const decided = tasks.filter((task) => !task.labels.includes(needsHuman));

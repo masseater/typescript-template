@@ -13,7 +13,7 @@ function TaskRow({
   selected: boolean;
   task: typeof Task.Type;
 }>): ReactElement {
-  function handleClick(): void {
+  function handleSelectTask(): void {
     onSelect(task.id);
   }
   return (
@@ -21,7 +21,7 @@ function TaskRow({
       <button
         type="button"
         aria-pressed={selected}
-        onClick={handleClick}
+        onClick={handleSelectTask}
         className="flex w-full cursor-pointer flex-col rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-card-hover aria-pressed:border-primary"
       >
         <span className="text-foreground">{task.title}</span>

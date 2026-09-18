@@ -17,7 +17,7 @@ function attention(tasks: Tasks): Attention {
   return {
     human: tasks.needsHuman.map((task) => task.id),
     ready: tasks.running.length < workerLimit ? tasks.ready.map((task) => task.id) : [],
-    review: tasks.review.filter((task) => !task.labels.includes(reviewing)).map((task) => task.id),
+    review: tasks.review.flatMap((task) => (task.labels.includes(reviewing) ? [] : [task.id])),
   };
 }
 
