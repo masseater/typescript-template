@@ -12,14 +12,7 @@ import {
   UserList,
   UserListQuery,
 } from "@repo/runtime/contracts";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@repo/runtime/http";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 
 import { runtime } from "./runtime.ts";
 
@@ -38,7 +31,7 @@ const failures = {
   },
 };
 
-const app = createApi(apiRoot)
+const adminApi = createApi(apiRoot)
   .use(accountApi(api))
   .get(
     "/users",
@@ -79,7 +72,5 @@ const app = createApi(apiRoot)
       failures,
     ),
   );
-
-const adminApi = compileApi(app);
 
 export { adminApi };
