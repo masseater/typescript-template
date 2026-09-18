@@ -25,7 +25,6 @@ function withServer(
       network.enable();
       return network;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();
@@ -36,7 +35,6 @@ function withServer(
 it.effect("fetches the official V1 endpoint using bearer authentication", () =>
   Effect.gen(function* program() {
     yield* withServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(endpoint, ({ request }) => {
         if (request.headers.get("authorization") !== "Bearer test-token") {
           // oxlint-disable-next-line unicorn/no-null

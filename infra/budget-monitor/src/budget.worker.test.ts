@@ -45,10 +45,8 @@ const record = {
 const now = new Date("2026-09-16T00:00:00Z");
 
 function usageFrom(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  input: Record<string, unknown>,
+  input: Readonly<Record<string, unknown>>,
   accountId: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   date: Date,
 ): Effect.Effect<UsageSnapshot, BudgetFailure> {
   return Effect.acquireUseRelease(
@@ -64,7 +62,6 @@ function usageFrom(
       return network;
     }),
     () => fetchUsage(accountId, "test-token", date),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();
@@ -73,12 +70,10 @@ function usageFrom(
 }
 
 function code<Value, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, BudgetFailure, Requirements>,
 ): Effect.Effect<BudgetFailure["code"], Value, Requirements> {
   return effect.pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((failure) => failure.code),
   );
 }
