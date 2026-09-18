@@ -85,6 +85,7 @@ export default defineConfig({
             "apps/**/*.test.ts",
             "tools/quality/**/*.test.ts",
             "tools/observe/**/*.test.ts",
+            "tools/commander/**/*.test.ts",
             "infra/**/*.test.ts",
           ],
           name: "node",
