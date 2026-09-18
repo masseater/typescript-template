@@ -78,11 +78,9 @@ function moveMaps(directory: string, move: MapMove): Effect.Effect<number, Priva
         ? fileIo(async () => readdir(directory, { withFileTypes: true }))
         : fail("directory_alias_forbidden"),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((entries) =>
       Effect.forEach(entries, (entry: MapEntry) => moveEntry(directory, entry, move)),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((moved) => moved.reduce((total, count) => total + count, 0)),
   );
 }

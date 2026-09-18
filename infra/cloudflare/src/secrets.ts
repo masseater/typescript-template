@@ -20,7 +20,6 @@ interface Confidential {
 
 function withVerifiedSecrets<Value, Failure, Requirements>(
   secrets: Readonly<{ contents: string }>,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   program: Effect.Effect<Value, Failure, Requirements>,
 ): Effect.Effect<Value, Failure, Requirements> {
   return Effect.provideService(program, ConfigProvider, fromDotEnvContents(secrets.contents));
@@ -53,7 +52,6 @@ function describeFailure(
 }
 
 function describeCause(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[],
 ): Readonly<Record<string, unknown>> {
@@ -74,7 +72,6 @@ function describeCause(
 
 function reportCause(
   event: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[] = [],
 ): Effect.Effect<void> {

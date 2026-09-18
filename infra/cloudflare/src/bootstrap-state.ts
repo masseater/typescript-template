@@ -40,17 +40,7 @@ NodeRuntime.runMain(
       yield* Console.info(
         JSON.stringify({ adopted: adopting, event: "cloudflare.state_store_ready" }),
       );
-    }).pipe(
-      Effect.catchCause(
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (cause) => reportCause(EVENT, cause, confidential),
-      ),
-    );
-  }).pipe(
-    Effect.catchCause(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (cause) => reportCause(EVENT, cause),
-    ),
-  ),
+    }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)));
+  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
   { disableErrorReporting: true },
 );

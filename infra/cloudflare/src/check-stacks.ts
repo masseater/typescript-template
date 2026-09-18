@@ -207,7 +207,6 @@ NodeRuntime.runMain(
       yield* markFailed;
     }
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("InventoryFailure", (failure) =>
       Console.error(
         JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),

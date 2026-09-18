@@ -43,7 +43,6 @@ async function fetchUsers(query: Readonly<Record<string, string>>): Promise<User
   try {
     const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
     const listed = users.map(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       ({ createdAt, email, emailVerified, id, name, role, twoFactorEnabled }) => ({
         email,
         emailVerified,

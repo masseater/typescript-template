@@ -27,7 +27,6 @@ NodeRuntime.runMain(
       );
     }
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("ArtifactFailure", (failure) => report(failure.code)),
     Effect.catchCause(() => report("artifact_check_failed")),
   ),

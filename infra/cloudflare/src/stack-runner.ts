@@ -25,9 +25,7 @@ function write(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
   return Console.info(JSON.stringify(record));
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effect<void> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return (event) =>
     event._tag === "apply.resource.status"
       ? write({

@@ -47,7 +47,6 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   protected readonly ctx: DurableObjectState;
   protected readonly env: Bindings;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public constructor(ctx: DurableObjectState, env: Bindings) {
     this.ctx = ctx;
     this.env = env;
@@ -62,7 +61,6 @@ abstract class Monitor<Bindings extends MonitorBindings> {
       Effect.flatMap((notify) => {
         const started = Date.now();
         return Effect.exit(this.check(notify)).pipe(
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           Effect.flatMap((outcome) =>
             Exit.isSuccess(outcome)
               ? this.reportSuccess(outcome.value, started)

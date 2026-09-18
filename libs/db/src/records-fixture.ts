@@ -19,7 +19,6 @@ type Records = Effect.Effect<void, DatabaseFailure, Database>;
 const SESSION_LIFETIME_MS = 60_000;
 
 function addUser(id: string, role: Role = "user", emailVerified = true): Records {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),
@@ -34,7 +33,6 @@ function addUser(id: string, role: Role = "user", emailVerified = true): Records
 }
 
 function addCredential(userId: string): Records {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.insert(account).values({
       accountId: userId,
@@ -54,12 +52,10 @@ const insertSession = Effect.fn("insertSession")(function* insertSession(
   strong: boolean,
 ) {
   const id = crypto.randomUUID();
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const owners = yield* query(async (database) =>
     database.select().from(user).where(eq(user.id, userId)),
   );
   const securityVersion = owners.at(0)?.securityVersion ?? 0;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query(async (database): Promise<void> => {
     await database.insert(session).values({
       audience,
@@ -85,7 +81,6 @@ function addSession(
 }
 
 function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, Failure, Requirements>,
 ): Effect.Effect<string, Value, Requirements> {
   return effect.pipe(
@@ -94,18 +89,13 @@ function failureTag<Value, Failure extends { readonly _tag: string }, Requiremen
   );
 }
 
-function successCount<Value, Failure>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  outcomes: readonly Exit.Exit<Value, Failure>[],
-): number {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function successCount<Value, Failure>(outcomes: readonly Exit.Exit<Value, Failure>[]): number {
   return outcomes.filter((outcome) => Exit.isSuccess(outcome)).length;
 }
 
 const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId: string) {
   const clientId = `client-${userId}`;
   const scopes = '["wiki:read"]';
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   yield* query(async (database): Promise<void> => {
     await database.batch([
       database.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" }),
@@ -130,15 +120,12 @@ const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId:
 });
 
 const oauthGrantCounts = Effect.fn("oauthGrantCounts")(function* oauthGrantCounts(userId: string) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const access = yield* query(async (database) =>
     database.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const refresh = yield* query(async (database) =>
     database.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
   );
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const consent = yield* query(async (database) =>
     database.select().from(oauthConsent).where(eq(oauthConsent.userId, userId)),
   );

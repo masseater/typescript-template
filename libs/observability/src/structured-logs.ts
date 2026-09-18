@@ -20,7 +20,6 @@ function messageParts(message: unknown): readonly unknown[] {
 }
 
 function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const logger = Logger.make(({ fiber, logLevel, message }) => {
     const sink = options.log ?? fiber.getRef(Console.Console);
     const [event, attributes] = messageParts(message);
