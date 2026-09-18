@@ -1,5 +1,2 @@
-[settings]
-lockfile = false
-
 [tools]
 "github:Mergifyio/mergify-cli" = "2026.9.16.1"
