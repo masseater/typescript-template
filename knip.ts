@@ -16,7 +16,7 @@ const loadCommands = ["src/cli.ts!"];
 const workspaces = {
   ".": {
     entry: ["doctor.config.ts"],
-    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "@swc/core", "effect-tsgo"],
+    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "@swc/core"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
   },
@@ -52,6 +52,7 @@ const workspaces = {
 const cloudflareStacks = [
   "src/database.ts!",
   "src/email.ts!",
+  "src/observability.ts!",
   "src/tokens.ts!",
   "src/budget-monitor.ts!",
   "src/error-monitor.ts!",

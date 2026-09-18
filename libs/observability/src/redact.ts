@@ -1,23 +1,27 @@
 import { privateDeploymentKeys } from "@repo/config/deployment-keys";
 
+const listWords = ["cookie", "params"];
 const secretWords = [
   "secret",
   "token",
   "password",
   "passphrase",
-  "cookie",
   "authorization",
   String.raw`api[_-]?key`,
+  ...listWords,
   ...privateDeploymentKeys,
 ];
 const secretName = String.raw`[\w.-]*(?:${secretWords.join("|")})[\w.-]*`;
-const secretLabel = new RegExp(String.raw`("?)(${secretName})\1([ \t]*[:=][ \t]*)`, "giu");
+const separator = String.raw`[ \t]*[:=][ \t]*`;
+const secretLabel = new RegExp(String.raw`("?)(?:${secretName})\1(?:${separator})`, "giu");
 const secretKey = new RegExp(`^${secretName}$`, "iu");
+const listLabel = new RegExp(`(?:${listWords.join("|")})(?:${separator})$`, "iu");
 const quotePattern = /^["']/u;
 const quotes = new Set(['"', "'"]);
 const openers = new Set(["[", "{"]);
 const enclosers = new Set(["]", "}"]);
 const valueEnders = new Set([",", ")", "}", "]", "\n"]);
+const listEnders = new Set(['"', "'", "\\", "\n"]);
 const escapedWidth = 2;
 const placeholder = "[redacted]";
 
@@ -60,24 +64,26 @@ function bracketedEnd(text: string, start: number): number {
   return index;
 }
 
-function bareEnd(text: string, start: number): number {
+function bareEnd(text: string, start: number, enders: ReadonlySet<string>): number {
   let index = start;
-  while (index < text.length && !valueEnders.has(text[index] ?? "")) {
+  while (index < text.length && !enders.has(text[index] ?? "")) {
     index += 1;
   }
   return index;
 }
 
-function valueEnd(text: string, start: number): number {
+function valueEnd(text: string, start: number, enders: ReadonlySet<string>): number {
   const first = text[start] ?? "";
   if (quotes.has(first)) {
     return quotedEnd(text, start);
   }
-  return openers.has(first) ? bracketedEnd(text, start) : bareEnd(text, start);
+  return openers.has(first) ? bracketedEnd(text, start) : bareEnd(text, start, enders);
 }
 
-function maskedValue(text: string, start: number, nameQuote: string): Masked {
-  const end = valueEnd(text, start);
+function maskedValue(text: string, start: number, label: string): Masked {
+  const nameQuote = quotePattern.exec(label)?.[0] ?? "";
+  const listed = nameQuote === "" && listLabel.test(label);
+  const end = valueEnd(text, start, listed ? listEnders : valueEnders);
   const quote = quotePattern.exec(text.slice(start, end))?.[0] ?? nameQuote;
   return { end, value: `${quote}${placeholder}${quote}` };
 }
@@ -87,7 +93,7 @@ function redactSecrets(text: string): string {
   let cursor = 0;
   secretLabel.lastIndex = 0;
   for (let match = secretLabel.exec(text); match !== null; match = secretLabel.exec(text)) {
-    const masked = maskedValue(text, match.index + match[0].length, match[1] ?? "");
+    const masked = maskedValue(text, match.index + match[0].length, match[0]);
     redacted += `${text.slice(cursor, match.index)}${match[0]}${masked.value}`;
     cursor = masked.end;
     secretLabel.lastIndex = cursor;

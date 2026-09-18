@@ -17,6 +17,7 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
+    "@repo/local": "workspace:*",
     "agent-browser": "0.37.1",
     "effect": "catalog:",
     "playwright": "catalog:",
