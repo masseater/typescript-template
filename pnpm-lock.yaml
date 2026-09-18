@@ -340,9 +340,15 @@ importers:
       '@repo/dont-review-it':
         specifier: workspace:*
         version: link:tools/dont-review-it
+      '@repo/lint-rule-authoring':
+        specifier: workspace:*
+        version: link:tools/lint-rule-authoring
       '@repo/monitor':
         specifier: workspace:*
         version: link:libs/monitor
+      '@repo/stop-ai-slop':
+        specifier: workspace:*
+        version: link:tools/stop-ai-slop
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)

@@ -1,9 +1,9 @@
-import type { Page } from "playwright";
-
-import type { Account } from "./accounts.ts";
-import type { MailSink } from "./mail.ts";
 import { appearanceTimeout, field, fill, press, readyButton } from "./screens.ts";
 import { currentTotpCode } from "./totp.ts";
+
+import type { Page } from "playwright";
+import type { Account } from "./accounts.ts";
+import type { MailSink } from "./mail.ts";
 
 interface Enrollment {
   readonly backupCodes: readonly string[];

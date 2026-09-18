@@ -2,8 +2,9 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { isEqual } from "es-toolkit";
 import { useEffect } from "react";
 
-import type { UsersSearch } from "./users-search.ts";
 import { normalizeUsersSearch } from "./users-search.ts";
+
+import type { UsersSearch } from "./users-search.ts";
 
 const route = getRouteApi("/_admin/");
 

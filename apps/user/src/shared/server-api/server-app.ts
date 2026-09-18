@@ -1,5 +1,3 @@
-import { Effect } from "effect";
-
 import { verifySession } from "@repo/auth";
 import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@repo/db";
 import { httpStatus } from "@repo/observability";
@@ -14,6 +12,7 @@ import {
   memberPageSize,
 } from "@repo/runtime/contracts";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { Effect } from "effect";
 
 import { interviewApi } from "./interview-api.ts";
 import { reporting, runtime } from "./runtime.ts";

@@ -1,9 +1,9 @@
-import type { Router } from "@tanstack/react-router";
+import { nonceOptions } from "@repo/ui/shell";
 import { createRouter } from "@tanstack/react-router";
 
-import { nonceOptions } from "@repo/ui/shell";
-
 import { routeTree } from "./routeTree.gen";
+
+import type { Router } from "@tanstack/react-router";
 
 type WikiRouter = Router<typeof routeTree>;
 

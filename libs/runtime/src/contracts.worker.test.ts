@@ -1,9 +1,9 @@
+import { getSchemaShape } from "@repo/db/testing";
 import { describe, expect, it } from "vite-plus/test";
 
-import type { UserRecord } from "@repo/db";
-import { getSchemaShape } from "@repo/db/testing";
-
 import { ProfileView, RoleChanged, SessionView, UserDeleted, UserList } from "./contracts.ts";
+
+import type { UserRecord } from "@repo/db";
 
 type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserRecord, Fields>]
   ? [Pick<UserRecord, Fields>] extends [View]

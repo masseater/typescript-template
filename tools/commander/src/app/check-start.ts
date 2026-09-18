@@ -2,14 +2,14 @@
 import { createServer } from "node:net";
 
 import { NodeServices } from "@effect/platform-node";
-import { Cause, Console, Effect, FileSystem, Schema } from "effect";
-import { chromium } from "playwright";
-import type { Page } from "playwright";
-
 import { loopbackAddress } from "@repo/config";
 import { reportFailed, runCli } from "@repo/config/cli";
+import { Cause, Console, Effect, FileSystem, Schema } from "effect";
+import { chromium } from "playwright";
 
 import { serveCommander } from "./serve.ts";
+
+import type { Page } from "playwright";
 
 class StartCheckFailed extends Schema.TaggedError<StartCheckFailed>()("StartCheckFailed", {
   reason: Schema.String,

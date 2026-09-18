@@ -1,11 +1,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
-import { Cause, Console, Effect, Schema } from "effect";
-
 import { applications, grants } from "@repo/config";
-import type { Application } from "@repo/config";
 import { markFailed, reportFailed, runCli } from "@repo/config/cli";
+import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { hstsSetting } from "./config.ts";
@@ -15,7 +13,6 @@ import {
   compileStack,
   describeCause,
 } from "./inventory.ts";
-import type { StackInventory } from "./inventory.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -24,8 +21,11 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
-import type { StackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { Application } from "@repo/config";
+import type { StackInventory } from "./inventory.ts";
+import type { StackName } from "./stacks.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
 

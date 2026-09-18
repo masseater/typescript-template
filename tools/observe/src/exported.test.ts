@@ -1,9 +1,8 @@
 import { assert, it } from "@effect/vitest";
+import { receiverOrigin } from "@repo/local";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-
-import { receiverOrigin } from "@repo/local";
 
 import { exportedTelemetry } from "./exported.ts";
 

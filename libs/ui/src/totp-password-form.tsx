@@ -1,13 +1,13 @@
-import type { ReactElement, SyntheticEvent } from "react";
-
 import { authClient } from "./client";
-import type { Enrollment, SettingsContext } from "./mfa-types";
-import type { SessionView } from "./protocol";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
 import { useTextInput } from "./use-text-input";
+
+import type { ReactElement, SyntheticEvent } from "react";
+import type { Enrollment, SettingsContext } from "./mfa-types";
+import type { SessionView } from "./protocol";
 
 interface TotpPasswordFormProps {
   readonly context: SettingsContext;

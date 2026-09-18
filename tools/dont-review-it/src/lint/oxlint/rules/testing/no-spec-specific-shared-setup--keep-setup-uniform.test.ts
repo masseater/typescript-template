@@ -7,7 +7,9 @@ import { describe } from "vite-plus/test";
 
 import { noSpecSpecificSharedSetup } from "./no-spec-specific-shared-setup--keep-setup-uniform.ts";
 
-const fixtureDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-no-spec-specific-shared-setup-"));
+const fixtureDir = mkdtempSync(
+  join(realpathSync(tmpdir()), "dont-review-it-no-spec-specific-shared-setup-"),
+);
 rmSync(fixtureDir, { recursive: true, force: true });
 
 mkdirSync(join(fixtureDir, "setup"), { recursive: true });

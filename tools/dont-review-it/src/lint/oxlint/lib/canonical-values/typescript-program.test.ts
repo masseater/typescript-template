@@ -110,7 +110,9 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a configuration sitting above the repository root", () => {
-    const outsideConfigRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-above-"));
+    const outsideConfigRoot = mkdtempSync(
+      join(tmpdir(), "canonical-values-typescript-program-above-"),
+    );
 
     const it = test.extend("unmappedOwnerType", ({}, { onCleanup }) => {
       rmSync(outsideConfigRoot, { force: true, recursive: true });
@@ -149,7 +151,9 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a configuration extending a file outside the repository", () => {
-    const outsideExtendsRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-extends-"));
+    const outsideExtendsRoot = mkdtempSync(
+      join(tmpdir(), "canonical-values-typescript-program-extends-"),
+    );
 
     const it = test.extend("outsideExtendsFailure", ({}, { onCleanup }) => {
       rmSync(outsideExtendsRoot, { force: true, recursive: true });
@@ -182,7 +186,9 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a paths target sitting outside the cache-bounded repository", () => {
-    const outsideTargetRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-target-"));
+    const outsideTargetRoot = mkdtempSync(
+      join(tmpdir(), "canonical-values-typescript-program-target-"),
+    );
 
     const it = test.extend("outsideTargetFailure", ({}, { onCleanup }) => {
       rmSync(outsideTargetRoot, { force: true, recursive: true });
@@ -220,7 +226,9 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a malformed TypeScript configuration", () => {
-    const malformedRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-malformed-"));
+    const malformedRoot = mkdtempSync(
+      join(tmpdir(), "canonical-values-typescript-program-malformed-"),
+    );
 
     const it = test.extend("malformedConfigFailure", ({}, { onCleanup }) => {
       rmSync(malformedRoot, { force: true, recursive: true });

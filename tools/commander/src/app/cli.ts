@@ -2,11 +2,10 @@
 import { parseArgs } from "node:util";
 
 import { NodeServices } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
-import open from "open";
-
 import { loopbackOrigin } from "@repo/config";
 import { runCli } from "@repo/config/cli";
+import { Console, Effect, Schema } from "effect";
+import open from "open";
 
 import { resolveProject } from "./project.ts";
 import { serveCommander } from "./serve.ts";

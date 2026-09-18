@@ -1,10 +1,10 @@
 import { treaty } from "@elysiajs/eden";
-import { Result, Schema } from "effect";
-import type { AnyElysia } from "elysia";
-
 import { httpStatus } from "@repo/observability";
+import { Result, Schema } from "effect";
 
 import { ErrorBody } from "./contracts.ts";
+
+import type { AnyElysia } from "elysia";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 

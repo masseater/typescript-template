@@ -5,14 +5,14 @@ import { open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import type { Application } from "@repo/config";
-
 import { healthy, logTail } from "./app-health.ts";
-import type { Environment } from "./local-database.ts";
 import { loopback, loopbackOrigin } from "./ports.ts";
 import { stopGroup } from "./process-group.ts";
 import { applicationRoot, packageRoot } from "./repository.ts";
 import { deadlineIn, until } from "./waiting.ts";
+
+import type { Application } from "@repo/config";
+import type { Environment } from "./local-database.ts";
 
 const readyTimeout = 300_000;
 const startAttempts = 3;

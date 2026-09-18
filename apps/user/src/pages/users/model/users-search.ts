@@ -1,11 +1,10 @@
-import { Option, Schema } from "effect";
-
 import {
   SearchKeyword,
   absentSearchKey,
   laterPage,
   maximumMemberPage,
 } from "@repo/runtime/contracts";
+import { Option, Schema } from "effect";
 
 const UsersSearchParams = Schema.Struct({
   keyword: Schema.optionalKey(SearchKeyword).pipe(Schema.catchDecoding(absentSearchKey)),

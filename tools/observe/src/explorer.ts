@@ -1,6 +1,5 @@
-import { Effect, Result, Schema } from "effect";
-
 import { loopbackHosts } from "@repo/config";
+import { Effect, Result, Schema } from "effect";
 
 type Row = Record<string, unknown>;
 type LogRow = Row & { readonly event: Row | undefined };

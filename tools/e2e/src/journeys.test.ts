@@ -1,12 +1,9 @@
 import { chromium } from "playwright";
-import type { Browser, Page } from "playwright";
 import { describe, expect, test } from "vite-plus/test";
 
 import { newAccount } from "./accounts.ts";
-import type { Account } from "./accounts.ts";
 import { browserHeaders } from "./client-address.ts";
 import { startJourneyEnvironment } from "./environment.ts";
-import type { JourneyEnvironment } from "./environment.ts";
 import {
   answerTotpChallenge,
   confirmEmail,
@@ -16,7 +13,6 @@ import {
   signOut,
   signUp,
 } from "./flows.ts";
-import type { Enrollment } from "./flows.ts";
 import {
   appearanceTimeout,
   fill,
@@ -26,6 +22,11 @@ import {
   seeHeading,
   seeText,
 } from "./screens.ts";
+
+import type { Browser, Page } from "playwright";
+import type { Account } from "./accounts.ts";
+import type { JourneyEnvironment } from "./environment.ts";
+import type { Enrollment } from "./flows.ts";
 
 interface JourneyFixtures {
   readonly browser: Browser;

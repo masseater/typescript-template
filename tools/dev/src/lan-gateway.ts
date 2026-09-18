@@ -5,14 +5,14 @@ import { mkdir, readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
+import { loopbackAddress } from "@repo/config";
 import { Effect } from "effect";
 
-import { loopbackAddress } from "@repo/config";
-
 import { failure, fileIo } from "./failure.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
 import { privateDirectoryMode } from "./private-files.ts";
+
+import type { LocalCommandFailure } from "./failure.ts";
 
 const proxyPort = 1355;
 const proxyStartTimeoutMilliseconds = 60_000;

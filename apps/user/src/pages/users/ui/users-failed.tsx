@@ -1,9 +1,9 @@
-import { useRouter } from "@tanstack/react-router";
-import type { ReactElement } from "react";
-
 import { Button, Status } from "@repo/ui";
+import { useRouter } from "@tanstack/react-router";
 
 import { UsersBody } from "./users-body.tsx";
+
+import type { ReactElement } from "react";
 
 function UsersFailed(): ReactElement {
   const router = useRouter();

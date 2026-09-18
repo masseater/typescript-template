@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vite-plus/test";
-
 import { httpStatus } from "@repo/observability";
+import { describe, expect, it } from "vite-plus/test";
 
 import { apiRoot, createApi } from "./http.ts";
 

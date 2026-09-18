@@ -1,7 +1,8 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
-import type { ReactElement } from "react";
 
 import { ToastViewport } from "./toast-viewport";
+
+import type { ReactElement } from "react";
 import type { Children } from "./types";
 
 function ToastProvider({ children }: Children): ReactElement {

@@ -5,9 +5,9 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import type { Application } from "@repo/config";
-
 import { applicationRoot } from "./repository.ts";
+
+import type { Application } from "@repo/config";
 
 const fileMode = 0o600;
 const secretBytes = 48;

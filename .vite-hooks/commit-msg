@@ -1,0 +1,3 @@
+mergify_hook="$(dirname "$0")/_/mergify-hooks/commit-msg.sh"
+[ -f "$mergify_hook" ] || exit 0
+sh "$mergify_hook" "$@"

@@ -1,5 +1,8 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": { "types": ["vite-plus/client", "node"] },
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "types": ["vite-plus/client", "node"]
+  },
   "include": ["vite.config.ts", "vitest.mutation.config.ts", "knip.ts", "tools/quality/**/*.ts"]
 }

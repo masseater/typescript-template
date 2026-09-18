@@ -1,8 +1,8 @@
-import type { ReactElement } from "react";
-
 import { ActionStatus } from "./action-status";
 import { Button } from "./shared/ui/button";
 import { useSignOut } from "./use-sign-out";
+
+import type { ReactElement } from "react";
 
 function SignOutButton({
   destination,

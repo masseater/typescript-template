@@ -1,9 +1,10 @@
 import { Effect } from "effect";
-import type { LogLevel } from "effect";
 
 import { annotateLogs } from "./annotations.ts";
-import type { Attributes } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
+
+import type { LogLevel } from "effect";
+import type { Attributes } from "./annotations.ts";
 
 type Severity = Extract<LogLevel.Severity, "Error" | "Info" | "Warn">;
 

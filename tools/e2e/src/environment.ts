@@ -1,16 +1,17 @@
 import { applications } from "@repo/config";
-import type { Application } from "@repo/config";
 
 import { serveApplication } from "./app-servers.ts";
 import { generateAuthSecret, replaceDevVars } from "./dev-vars.ts";
 import { documentPaths } from "./documents.ts";
 import { roleApplications } from "./journey-roles.ts";
-import type { JourneyRole } from "./journey-roles.ts";
 import { startIsolatedDatabase } from "./local-database.ts";
-import type { IsolatedDatabase } from "./local-database.ts";
 import { startMailSink } from "./mail.ts";
-import type { MailSink } from "./mail.ts";
 import { freePort, loopbackOrigin } from "./ports.ts";
+
+import type { Application } from "@repo/config";
+import type { JourneyRole } from "./journey-roles.ts";
+import type { IsolatedDatabase } from "./local-database.ts";
+import type { MailSink } from "./mail.ts";
 
 type Disposer = () => Promise<void>;
 type Collect = (disposer: Disposer) => void;

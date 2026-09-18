@@ -1,9 +1,10 @@
-import type { SubmitEventHandler } from "react";
+import { useAction } from "@repo/ui";
 import { useState } from "react";
 
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import { saveProfile } from "#pages/profile-edit/api/profile.ts";
-import { useAction } from "@repo/ui";
+
+import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import type { SubmitEventHandler } from "react";
 
 interface ProfileForm {
   readonly blocked: boolean;

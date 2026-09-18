@@ -1,12 +1,12 @@
-import type { WorkerObservability } from "alchemy/Cloudflare";
-import { Config, Effect, Schema } from "effect";
-
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
 import { workerCompatibility } from "@repo/config/worker";
 import { otlpSignalUrl } from "@repo/observability";
+import { Config, Effect, Schema } from "effect";
 
-import type { StackName } from "./stacks.ts";
 import { stackNames } from "./stacks.ts";
+
+import type { WorkerObservability } from "alchemy/Cloudflare";
+import type { StackName } from "./stacks.ts";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([

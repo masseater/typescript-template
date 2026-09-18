@@ -1,8 +1,9 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { drizzle } from "drizzle-orm/d1";
 import { Context, Effect, Layer } from "effect";
 
 import { DatabaseFailure } from "./database-failure.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
 
 function connect(binding: D1Database): ReturnType<typeof drizzle> {
   return drizzle(binding);

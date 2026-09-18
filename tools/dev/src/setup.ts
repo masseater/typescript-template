@@ -5,14 +5,11 @@ import { mkdir, stat } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Effect, Schema } from "effect";
-
 import { applicationOrigins, applications, mailpitOrigin } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
+import { Effect, Schema } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
-import type { LocalCommandFailure } from "./failure.ts";
-import type { App, Credentials } from "./local-environment.ts";
 import {
   OriginMode,
   credentialsFile,
@@ -27,6 +24,9 @@ import {
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
+
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App, Credentials } from "./local-environment.ts";
 
 interface SetupReport {
   readonly credentialsFile: string;

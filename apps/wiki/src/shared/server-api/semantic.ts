@@ -1,6 +1,6 @@
+import { Embedder } from "@repo/runtime/wiki";
 import { Effect } from "effect";
 
-import { Embedder } from "@repo/runtime/wiki";
 import type { EmbeddingFailed } from "@repo/runtime/wiki";
 
 interface SemanticDocument {

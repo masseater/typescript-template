@@ -1,5 +1,6 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { CircleAlertIcon, CircleCheckIcon, XIcon } from "lucide-react";
+
 import type { ReactElement } from "react";
 
 type ToastObject = ReturnType<typeof ToastPrimitive.useToastManager>["toasts"][number];

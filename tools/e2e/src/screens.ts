@@ -1,6 +1,6 @@
-import type { Locator, Page } from "playwright";
-
 import { deadlineIn, until } from "./waiting.ts";
+
+import type { Locator, Page } from "playwright";
 
 const hydrationTimeout = 60_000;
 const appearanceTimeout = 60_000;

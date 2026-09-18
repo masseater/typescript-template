@@ -1,9 +1,9 @@
-import type { Visitor } from "vite-plus/lint/plugins";
-
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
-import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
 import { specifierVisitor } from "./module-specifiers.ts";
+
+import type { Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
 
 interface RawD1Checks {
   readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;

@@ -1,16 +1,16 @@
-import { Effect, Layer } from "effect";
-
 import { Auth } from "@repo/auth";
-import type { AuthFailure } from "@repo/auth";
-import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
 import { readConfig, sendVerificationEmail } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
-import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
+import { Effect, Layer } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
 import { DatabaseHealth } from "./database-health.ts";
+
+import type { AuthFailure } from "@repo/auth";
+import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
+import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 
 type AppServices =
   | AppOrigin

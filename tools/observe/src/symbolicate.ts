@@ -3,10 +3,9 @@ import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { Console, Effect, Schema } from "effect";
-
 import { applications } from "@repo/config";
 import { runCli } from "@repo/config/cli";
+import { Console, Effect, Schema } from "effect";
 
 import { symbolicate } from "./source-maps.ts";
 

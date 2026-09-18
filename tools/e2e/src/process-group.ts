@@ -1,9 +1,10 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import type { ChildProcess } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { setTimeout as delay } from "node:timers/promises";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { ChildProcess } from "node:child_process";
 
 const stopTimeout = 30_000;
 

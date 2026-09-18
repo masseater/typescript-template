@@ -1,11 +1,11 @@
-import type { ReactElement } from "react";
-
-import { useView } from "#pages/commander/model/view.ts";
 import { Status } from "@repo/ui";
 
+import { useView } from "#pages/commander/model/view.ts";
 import { ChatPane } from "./chat-pane.tsx";
 import { LedgerMissing } from "./ledger-missing.tsx";
 import { TaskSide } from "./task-side.tsx";
+
+import type { ReactElement } from "react";
 
 function CommanderPage(): ReactElement {
   const view = useView();

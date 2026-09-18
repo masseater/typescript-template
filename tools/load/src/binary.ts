@@ -12,6 +12,7 @@ import { promisify } from "node:util";
 import { Effect, Schema } from "effect";
 
 import { downloadUrl, releases, version } from "./releases.ts";
+
 import type { Release } from "./releases.ts";
 
 class BinaryUnavailable extends Schema.TaggedError<BinaryUnavailable>()("BinaryUnavailable", {

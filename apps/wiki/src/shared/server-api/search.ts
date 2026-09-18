@@ -1,17 +1,17 @@
+import { reportFailure } from "@repo/observability";
+import { Embedder } from "@repo/runtime/wiki";
 import { Cause, Effect } from "effect";
-import type { Context } from "effect";
-import type { SortedResult } from "fumadocs-core/search";
-import type { SearchServer } from "fumadocs-core/search/server";
 import { createFromSource } from "fumadocs-core/search/server";
 import { llms } from "fumadocs-core/source";
 
 import { source } from "#shared/content/index.ts";
-import { reportFailure } from "@repo/observability";
-import { Embedder } from "@repo/runtime/wiki";
-import type { WikiServices } from "@repo/runtime/wiki";
-
-import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
 import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
+
+import type { WikiServices } from "@repo/runtime/wiki";
+import type { Context } from "effect";
+import type { SortedResult } from "fumadocs-core/search";
+import type { SearchServer } from "fumadocs-core/search/server";
+import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
 
 type WikiPage = ReturnType<typeof source.getPages>[number];
 type KeywordResult = Awaited<ReturnType<SearchServer["search"]>>[number];
