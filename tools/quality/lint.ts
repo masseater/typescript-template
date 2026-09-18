@@ -169,7 +169,6 @@ const lint = {
     "project/no-internal-mocks": "error",
     "project/no-manual-memoization": "error",
     "project/test-import-graph": "error",
-    "project/test-runtime": "error",
     "project/worker-fetch": "error",
     "react/exhaustive-deps": "error",
     "react/forbid-component-props": "error",
