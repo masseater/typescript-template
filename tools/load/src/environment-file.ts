@@ -1,5 +1,5 @@
 import { Application, EnvironmentUnusable, writeLoopbackVariables } from "./environment.ts";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 
 const firstUserArgumentIndex = 2;
@@ -10,16 +10,17 @@ NodeRuntime.runMain(
     Effect.mapError(() => new EnvironmentUnusable({ reason: "origin_mismatch" })),
     Effect.flatMap(writeLoopbackVariables),
     Effect.flatMap((origin) =>
-      Effect.sync(() => {
-        process.stdout.write(
-          `${JSON.stringify({ event: "load.environment_ready", ok: true, origin })}\n`,
-        );
-      }),
+      Console.log(JSON.stringify({ event: "load.environment_ready", ok: true, origin })),
     ),
     Effect.catchTag("EnvironmentUnusable", (failure) =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({ event: "load.environment_failed", ok: false, reason: failure.reason, usage })}\n`,
+      Effect.gen(function* announceFailure() {
+        yield* Console.error(
+          JSON.stringify({
+            event: "load.environment_failed",
+            ok: false,
+            reason: failure.reason,
+            usage,
+          }),
         );
         process.exitCode = 1;
       }),

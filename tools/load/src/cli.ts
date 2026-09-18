@@ -1,5 +1,5 @@
 import { Application, requireLoopbackOrigin, targetOrigin } from "./environment.ts";
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { exists, installBinary } from "./binary.ts";
 import type { BinaryUnavailable } from "./binary.ts";
 import type { EnvironmentUnusable } from "./environment.ts";
@@ -34,6 +34,7 @@ const scenarios = fileURLToPath(new URL("../scenarios/", import.meta.url));
 const home = path.join(root, ".local/k6");
 const summaryFile = path.join(home, "summary.json");
 const thresholdsExitCode = 99;
+const standardErrorDescriptor = 2;
 const profiles = {
   peak: { LOAD_HOLD: "40s", LOAD_PEAK_USERS: "20", LOAD_RAMP: "20s" },
   smoke: { LOAD_HOLD: "10s", LOAD_PEAK_USERS: "5", LOAD_RAMP: "5s" },
@@ -58,9 +59,8 @@ function runScenario(
       cwd: root,
       // oxlint-disable-next-line node/no-process-env
       env: { ...process.env, ...environment },
-      stdio: ["ignore", "pipe", "inherit"],
+      stdio: ["ignore", standardErrorDescriptor, "inherit"],
     });
-    child.stdout.pipe(process.stderr);
     child.once("error", () => {
       resume(Effect.fail(new LoadTestFailure({ reason: "scenario_failed" })));
     });
@@ -123,15 +123,15 @@ const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.T
   return measured;
 });
 
-function announce(result: Measured): Effect.Effect<void, LoadTestFailure> {
+const announce = Effect.fn("announce")(function* announce(result: Measured) {
   const { crossed, measured, ...rest } = result;
-  process.stdout.write(
-    `${JSON.stringify({ event: "load.measured", ok: !crossed, ...rest, ...measured })}\n`,
+  yield* Console.log(
+    JSON.stringify({ event: "load.measured", ok: !crossed, ...rest, ...measured }),
   );
-  return crossed
-    ? Effect.fail(new LoadTestFailure({ crossed: measured.crossed, reason: "thresholds_crossed" }))
-    : Effect.void;
-}
+  if (crossed) {
+    return yield* new LoadTestFailure({ crossed: measured.crossed, reason: "thresholds_crossed" });
+  }
+});
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function announceFailure(failure: Failure): Effect.Effect<void> {
@@ -142,9 +142,15 @@ function announceFailure(failure: Failure): Effect.Effect<void> {
           ...(failure.crossed === undefined ? {} : { crossed: failure.crossed }),
         }
       : {};
-  return Effect.sync(() => {
-    process.stderr.write(
-      `${JSON.stringify({ event: "load.run_failed", ok: false, reason: failure.reason, ...details, usage })}\n`,
+  return Effect.gen(function* reportFailure() {
+    yield* Console.error(
+      JSON.stringify({
+        event: "load.run_failed",
+        ok: false,
+        reason: failure.reason,
+        ...details,
+        usage,
+      }),
     );
     process.exitCode = 1;
   });
