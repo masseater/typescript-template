@@ -6,8 +6,8 @@ import {
   hasVerificationAudience,
   markSessionStrong,
   revokeUserSessions,
-} from "@template/db/security";
-import type { Application } from "@template/config";
+} from "@repo/db/security";
+import type { Application } from "@repo/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 

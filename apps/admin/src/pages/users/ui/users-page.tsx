@@ -1,4 +1,4 @@
-import { Heading } from "@template/ui";
+import { Heading } from "@repo/ui";
 import type { ReactElement } from "react";
 import { UserFilters } from "./user-filters.tsx";
 import { UserResults } from "./user-results.tsx";

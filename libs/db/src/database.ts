@@ -9,7 +9,7 @@ function connect(binding: D1Database): ReturnType<typeof drizzle> {
 
 type DrizzleDatabase = ReturnType<typeof connect>;
 
-class Database extends Context.Service<Database, DrizzleDatabase>()("@template/db/Database") {
+class Database extends Context.Service<Database, DrizzleDatabase>()("@repo/db/Database") {
   public static layer(binding: D1Database): Layer.Layer<Database> {
     return Layer.sync(Database, () => connect(binding));
   }

@@ -1,4 +1,4 @@
-import { ButtonLink, TextLink } from "@template/ui";
+import { ButtonLink, TextLink } from "@repo/ui";
 import type { ReactElement } from "react";
 
 function Hero(): ReactElement {

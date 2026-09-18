@@ -1,4 +1,4 @@
-import { applicationPorts, applications } from "@template/config";
+import { applicationPorts, applications } from "@repo/config";
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile } from "node:fs/promises";
@@ -98,7 +98,7 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   );
   yield* fileIo(async () => chmod(log, privateFileMode));
   const vp = JSON.stringify(path.join(root, "node_modules/.bin/vp"));
-  const command = `exec ${vp} run --filter @template/${app} preview >> ${JSON.stringify(log)} 2>&1`;
+  const command = `exec ${vp} run --filter @repo/${app} preview >> ${JSON.stringify(log)} 2>&1`;
   return yield* run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],
