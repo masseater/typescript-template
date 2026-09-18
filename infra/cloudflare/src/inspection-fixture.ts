@@ -76,6 +76,14 @@ function deployedState(zoneId: string = config.zoneId): Effect.Effect<StateServi
     [stackName("database")]: {
       [config.prefix]: { Database: row("Cloudflare.D1Database", { databaseId }) },
     },
+    [stackName("observability")]: {
+      [config.prefix]: {
+        Traces: row("Cloudflare.Workers.ObservabilityDestination", {
+          name: `${config.prefix}-traces`,
+          slug: `${config.prefix}-traces-slug`,
+        }),
+      },
+    },
     ...Object.fromEntries(
       deployedUnits.map(([unit, suffix]: readonly [string, string]) => [
         `template-${unit}`,

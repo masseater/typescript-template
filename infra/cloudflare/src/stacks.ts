@@ -2,7 +2,7 @@ import { providers, state } from "alchemy/Cloudflare";
 
 import type { Application } from "@repo/config";
 
-const application = ["database"] as const;
+const application = ["database", "observability"] as const;
 const stackDependencies = {
   admin: application,
   "budget-monitor": ["tokens"],
@@ -18,6 +18,24 @@ const stackDependencies = {
   Readonly<Record<Application, typeof application>>;
 
 type StackName = keyof typeof stackDependencies;
+
+const applicationReferences = ["database"] as const;
+const stackReferences = {
+  admin: applicationReferences,
+  "budget-monitor": ["tokens"],
+  database: [],
+  email: [],
+  "error-monitor": ["tokens"],
+  "health-monitor": [],
+  observability: [],
+  tokens: [],
+  user: applicationReferences,
+  wiki: applicationReferences,
+} as const satisfies {
+  readonly [Stack in StackName]: readonly (typeof stackDependencies)[Stack][number][];
+};
+
+const traceDestinationStack = "observability" as const satisfies StackName;
 
 const stackNames = [
   "email",
@@ -70,5 +88,7 @@ export {
   stackName,
   stackNames,
   stackOptions,
+  stackReferences,
+  traceDestinationStack,
 };
 export type { StackName };
