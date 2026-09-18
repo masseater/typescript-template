@@ -1,18 +1,13 @@
+import { alertQuotaVerdict, emailBlocked, emailVerdicts } from "./email-guard.ts";
 import {
   attachedService,
-  dnsRecordNames,
   grantedPermissions,
+  recordsPresent,
   secretsStoreCount,
   stateStorePresent,
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import {
-  onboardingVerdict,
-  senderVerdict,
-  sendingRecordNames,
-  verifiedAddresses,
-} from "./email-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
@@ -77,30 +72,6 @@ const domainVerdict = Effect.fn("domainVerdict")(function* domainVerdict(
   );
 });
 
-const recordsPresent = Effect.fn("recordsPresent")(function* recordsPresent(
-  access: AccountAccess,
-  zoneId: string,
-  names: readonly string[],
-) {
-  const found = yield* Effect.forEach(names, (name) => dnsRecordNames(access, zoneId, name));
-  return found.flat().length > 0;
-});
-
-const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVerdict(
-  access: AccountAccess,
-  recipients: readonly string[],
-) {
-  const addresses = yield* verifiedAddresses(access).pipe(
-    Effect.catchTag("CloudflareFailure", () => Effect.succeed("unreadable" as const)),
-  );
-  if (typeof addresses === "string") {
-    return addresses;
-  }
-  return recipients.every((recipient) => addresses.includes(recipient))
-    ? ("free" as const)
-    : ("counted" as const);
-});
-
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
   return yield* grantedPermissions(access).pipe(
     Effect.map((granted) => missingPermissions(granted)),
@@ -118,19 +89,16 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
     Effect.catchCause(() => Effect.succeed<readonly string[]>([])),
   );
-  const onboarding = yield* onboardingVerdict(access, config, store);
+  const email = yield* emailVerdicts(access, config, store);
   return {
     alertQuota: yield* alertQuotaVerdict(access, config.budget.recipients),
     database: yield* databaseVerdict(access, config, store),
     deployToken: yield* tokenVerdict(access),
     dnsRecords: claim(yield* recordsPresent(access, config.zoneId, hostnames(config)), false),
-    emailSending: claim(
-      yield* recordsPresent(access, config.zoneId, sendingRecordNames(config)),
-      onboarding === "owned",
-    ),
+    emailSending: email.emailSending,
     secretsStore: presence((yield* secretsStoreCount(access)) > 0),
-    senderDomain: yield* senderVerdict(access, config),
-    sendingSubdomain: onboarding,
+    senderDomain: email.senderDomain,
+    sendingSubdomain: email.sendingSubdomain,
     stateStore: presence(yield* stateStorePresent(access)),
     workerDomains: yield* domainVerdict(access, config, recorded),
     workerNames: yield* workerVerdict(access, declaredNames(config.prefix), recorded),
@@ -141,18 +109,10 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
 type Inspection = Effect.Success<ReturnType<typeof inspectAccount>>;
 
 function blocked(inspection: Readonly<Inspection>): readonly string[] {
-  const claimed = [
-    "database",
-    "dnsRecords",
-    "emailSending",
-    "sendingSubdomain",
-    "workerDomains",
-    "workerNames",
-  ] as const;
+  const claimed = ["database", "dnsRecords", "workerDomains", "workerNames"] as const;
   return [
     ...claimed.filter((name) => inspection[name] === "taken"),
-    ...(inspection.sendingSubdomain === "unreadable" ? ["sendingSubdomain"] : []),
-    ...(inspection.senderDomain === "dedicated" ? [] : ["senderDomain"]),
+    ...emailBlocked(inspection),
     ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
     ...(inspection.deployToken.length > 0 ? ["deployToken"] : []),
   ];

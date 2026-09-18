@@ -93,6 +93,15 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
   return listed.result.filter((record) => record.name === hostname).map((record) => record.name);
 });
 
+const recordsPresent = Effect.fn("recordsPresent")(function* recordsPresent(
+  access: AccountAccess,
+  zoneId: string,
+  names: readonly string[],
+) {
+  const found = yield* Effect.forEach(names, (name) => dnsRecordNames(access, zoneId, name));
+  return found.flat().length > 0;
+});
+
 const grantedPermissions = Effect.fn("grantedPermissions")(function* grantedPermissions(
   access: AccountAccess,
 ) {
@@ -113,6 +122,7 @@ export {
   attachedService,
   dnsRecordNames,
   grantedPermissions,
+  recordsPresent,
   secretsStoreCount,
   stateStorePresent,
   workerNames,

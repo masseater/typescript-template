@@ -2,12 +2,22 @@ import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from ".
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 import { Effect, Redacted, Schema } from "effect";
 import { assert, it } from "@effect/vitest";
-import { authSecret } from "./settings.ts";
+import { authSecret, settings as deploymentSettings } from "./settings.ts";
+import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 import { describeFailure } from "./secrets.ts";
-import { verificationSettings } from "./verification-fixture.ts";
 
 const accepted = "vrf-3kQ8pZ2mL9xT6bN1hJ4sD7gW0yC5e";
 const settings = verificationSettings;
+
+function environment(
+  overrides: Readonly<Record<string, string>>,
+): ReturnType<typeof fromDotEnvContents> {
+  return fromDotEnvContents(
+    Object.entries({ ...verificationEnvironment, ...overrides })
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n"),
+  );
+}
 
 function rejects(schema: Schema.Codec<unknown, unknown>, value: unknown): Effect.Effect<void> {
   return Schema.decodeUnknownEffect(schema)(value).pipe(Effect.flip, Effect.asVoid, Effect.orDie);
@@ -108,5 +118,23 @@ it.effect("accepts a sender address on the subdomain named by the prefix", () =>
   Effect.gen(function* program() {
     const config = yield* Schema.decodeUnknownEffect(SharedSettings)(settings);
     assert.strictEqual((yield* checkSharedConfig(config)).mailFrom, settings.mailFrom);
+  }),
+);
+
+it.effect("the settings every command reads carry the shared checks", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      (yield* Effect.provideService(deploymentSettings, ConfigProvider, environment({}))).mailFrom,
+      settings.mailFrom,
+    );
+    const failure = yield* Effect.provideService(
+      deploymentSettings,
+      ConfigProvider,
+      environment({ TEMPLATE_MAIL_FROM: "mail@example.com" }),
+    ).pipe(Effect.flip);
+    assert.deepStrictEqual(describeFailure(failure, []), {
+      code: "mail_from_outside_deployment",
+      keys: ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"],
+    });
   }),
 );

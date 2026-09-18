@@ -1,5 +1,5 @@
 import { Console, Effect } from "effect";
-import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
+import type { DeploymentRequest, SharedConfig } from "./config.ts";
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import type { ArtifactMode } from "./artifacts.ts";
@@ -8,15 +8,15 @@ import type { DeploymentSecrets } from "./credentials.ts";
 import type { PlannedStack } from "./plan-confirmation.ts";
 import type { ProgressEvent } from "alchemy/Alchemist";
 import type { StackName } from "./stacks.ts";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { assertStackUnclaimed } from "./stack-guards.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 import { stateStore } from "./deployment-access.ts";
 
 interface Deployment {
   readonly access: { readonly accountId: string; readonly apiToken: string };
+  readonly config: SharedConfig;
   readonly secrets: DeploymentSecrets;
-  readonly target: DeploymentTarget;
 }
 
 const alchemist = layer();
@@ -47,7 +47,7 @@ const planStack = Effect.fn("planStack")(function* planStack(
     target: {
       entrypoint: fileURLToPath(new URL(`${stack}.ts`, import.meta.url)),
       envFile: deployment.secrets.filename,
-      stage: deployment.target.prefix,
+      stage: deployment.config.prefix,
     },
   });
   return { planned: plannedStack(snapshot), snapshot };
@@ -90,13 +90,7 @@ const applyStack = Effect.fn("applyStack")(function* applyStack(
   deployment: Deployment,
 ) {
   const { confirmation, stack } = requested;
-  if (stack === "database") {
-    yield* assertDatabaseUnclaimed(
-      deployment.access,
-      deployment.target,
-      stateStore(deployment.secrets),
-    );
-  }
+  yield* assertStackUnclaimed(stack, deployment, stateStore(deployment.secrets));
   const { planned, snapshot } = yield* planStack(stack, deployment);
   yield* announce(planned, stack);
   yield* acceptPlan(planned, { accountId: deployment.access.accountId, confirmation });

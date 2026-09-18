@@ -20,6 +20,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "plan_removes_bindings",
     "plan_removes_resources",
     "secrets_store_already_present",
+    "sending_domain_unavailable",
     "state_store_name_taken",
   ]),
   keys: Schema.Array(Schema.String),

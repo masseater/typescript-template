@@ -61,14 +61,14 @@ function emptyState(): Effect.Effect<StateService> {
   return InMemoryService({});
 }
 
-function deployedState(): Effect.Effect<StateService> {
+function deployedState(zoneId: string = config.zoneId): Effect.Effect<StateService> {
   return InMemoryService({
     [stackName("email")]: {
       [config.prefix]: {
         Sending: row("Cloudflare.Email.SendingSubdomain", {
           name: sending,
           subdomainId: "sending-tag",
-          zoneId: config.zoneId,
+          zoneId,
         }),
       },
     },
