@@ -1,4 +1,5 @@
 import { cva } from "class-variance-authority";
+
 import type { ReactElement } from "react";
 
 const avatarVariants = cva(

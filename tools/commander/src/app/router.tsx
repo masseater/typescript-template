@@ -1,3 +1,4 @@
+import { nonceOptions } from "@repo/ui/shell";
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
@@ -20,6 +21,7 @@ function getRouter(): ReturnType<typeof createRouter<typeof routeTree>> {
     defaultPreloadStaleTime: 0,
     routeTree,
     scrollRestoration: true,
+    ...nonceOptions(),
   });
   setupRouterSsrQueryIntegration({ queryClient, router });
   return router;

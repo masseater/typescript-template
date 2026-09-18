@@ -1,8 +1,3 @@
-import { EllipsisIcon } from "lucide-react";
-import type { ReactElement } from "react";
-
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +5,12 @@ import {
   DropdownMenuTrigger,
   Icon,
 } from "@repo/ui";
+import { EllipsisIcon } from "lucide-react";
+
+import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+
+import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ReactElement } from "react";
 
 function RowActionMenu({
   disabled,

@@ -1,9 +1,9 @@
-import type { Visitor } from "vite-plus/lint/plugins";
-
-import type { LintContext, Node } from "./lint-context.ts";
 import { importVisitor, reportViolation } from "./lint-context.ts";
-import type { Origin } from "./references.ts";
 import { origins } from "./references.ts";
+
+import type { Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
+import type { Origin } from "./references.ts";
 
 function isApplicationOrLibrary(context: LintContext): boolean {
   return /\/(?:apps|libs)\/[^/]+\//u.test(context.filename.replaceAll("\\", "/"));

@@ -1,9 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Schema } from "effect";
-import type { AnyElysia } from "elysia";
-
 import { cspNonceHeader, strictTransportSecurity } from "@repo/config/security";
 import { Telemetry, httpStatus } from "@repo/observability";
+import { Effect, Layer, Schema } from "effect";
 
 import { ProfileUpdate } from "./contracts.ts";
 import {
@@ -15,6 +13,8 @@ import {
   secureResponse,
 } from "./http.ts";
 import { startRoute, workerRuntime } from "./worker.ts";
+
+import type { AnyElysia } from "elysia";
 
 const origin = "http://localhost:3001";
 const secureOrigin = "https://user.example.test";

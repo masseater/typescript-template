@@ -1,6 +1,5 @@
 import { Duration, Effect, Layer, Logger } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
-import type { HttpClientError, HttpClientResponse } from "effect/unstable/http";
 import {
   OtlpExporter,
   OtlpLogger,
@@ -11,6 +10,8 @@ import {
 import { annotateLogs } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
 import { redactedLogger } from "./structured-logs.ts";
+
+import type { HttpClientError, HttpClientResponse } from "effect/unstable/http";
 
 interface OtlpDestination {
   readonly endpoint: string;

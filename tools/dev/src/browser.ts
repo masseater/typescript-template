@@ -3,14 +3,14 @@ import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Effect } from "effect";
-
 import { applicationReadyPaths } from "@repo/config";
 import { exitWith, markFailed } from "@repo/config/cli";
+import { Effect } from "effect";
 
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
 import { browserConfig, lanOrigin, refreshBrowserConfig, root, run } from "./local-environment.ts";
+
 import type { App } from "./local-environment.ts";
 
 interface BrowserReport {

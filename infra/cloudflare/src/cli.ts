@@ -1,6 +1,5 @@
-import { Effect } from "effect";
-
 import { runCli } from "@repo/config/cli";
+import { Effect } from "effect";
 
 import { parseDeploymentCommand } from "./config.ts";
 import { deploymentAccess } from "./deployment-access.ts";

@@ -1,6 +1,5 @@
-import { createRouter } from "@tanstack/react-router";
-
 import { nonceOptions } from "@repo/ui/shell";
+import { createRouter } from "@tanstack/react-router";
 
 import { routeTree } from "./routeTree.gen";
 

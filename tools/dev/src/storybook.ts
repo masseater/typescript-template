@@ -1,12 +1,12 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { storybookPort } from "@repo/config";
 import { Effect } from "effect";
 
-import { storybookPort } from "@repo/config";
+import { root, run } from "./local-environment.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
-import { root, run } from "./local-environment.ts";
 
 function storybook(): Effect.Effect<void, LocalCommandFailure> {
   return run(

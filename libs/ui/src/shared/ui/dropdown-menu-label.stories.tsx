@@ -1,5 +1,4 @@
 import { noop } from "es-toolkit";
-import type { ReactElement } from "react";
 import { expect, screen, userEvent } from "storybook/test";
 
 import preview from "../../../.storybook/preview";
@@ -8,6 +7,8 @@ import { DropdownMenuContent } from "./dropdown-menu-content";
 import { DropdownMenuItem } from "./dropdown-menu-item";
 import { DropdownMenuLabel } from "./dropdown-menu-label";
 import { DropdownMenuTrigger } from "./dropdown-menu-trigger";
+
+import type { ReactElement } from "react";
 
 const meta = preview.meta({
   args: { children: "taro@example.com" },

@@ -1,17 +1,19 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { Scope } from "effect";
 import { HttpResponse, http } from "msw";
-import type { SetupServer } from "msw/node";
 import { setupServer } from "msw/node";
 
-import type { Database } from "./database.ts";
 import { query } from "./database.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { remoteExecutor } from "./remote-http.ts";
+import { readMigrationStatus } from "./remote-operations.ts";
 import { user } from "./schema.ts";
 import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
+import type { Database } from "./database.ts";
 
 const HEX_ID_LENGTH = 32;
 const REDIRECT_STATUS = 302;
@@ -43,7 +45,9 @@ function mockServer(
   );
 }
 
-function d1Endpoint(binding: D1Database): Effect.Effect<SetupServer, never, Scope.Scope> {
+function d1Endpoint(
+  binding: Effect.Success<typeof TestBinding>,
+): Effect.Effect<SetupServer, never, Scope.Scope> {
   return mockServer(
     http.post(endpoint, async ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${target.apiToken}`) {
@@ -106,6 +110,20 @@ it.effect("remote migrations use the official HTTP batch contract with real D1 e
     assert.strictEqual(migrated.event, "database.remote_migrated");
     const again = yield* runRemoteDatabaseCommand(["migrate", ...execute], target);
     assert.strictEqual("applied" in again && again.applied, 0);
+  }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+);
+
+it.effect("reports an empty database as having every declared migration left to apply", () =>
+  Effect.gen(function* program() {
+    yield* d1Endpoint(yield* TestBinding);
+    const before = yield* readMigrationStatus(target);
+    assert.strictEqual(before.applied, 0);
+    assert.strictEqual(before.pending, before.declared);
+    yield* runRemoteDatabaseCommand(["migrate", ...execute], target);
+    const after = yield* readMigrationStatus(target);
+    assert.strictEqual(after.pending, 0);
+    assert.strictEqual(after.applied, before.declared);
+    assert.notInclude(JSON.stringify(after), target.apiToken);
   }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
 );
 

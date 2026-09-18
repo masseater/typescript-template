@@ -2,6 +2,7 @@ import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 import { Monitor, monitorHandler } from "./index.ts";
+
 import type { MonitorBindings, Notify } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 

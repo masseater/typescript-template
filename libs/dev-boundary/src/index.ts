@@ -5,10 +5,10 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
+import { applications as apps, loopbackAddress } from "@repo/config";
 
 import type { Application as App } from "@repo/config";
-import { applications as apps, loopbackAddress } from "@repo/config";
+import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
 
 interface BoundaryRoots {
   readonly app: App;

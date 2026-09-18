@@ -1,9 +1,9 @@
+import { serveWorker, startRoute } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { Effect } from "effect";
 import { noop } from "es-toolkit";
 
 import { reporting, runtime } from "#shared/server-api/index.ts";
-import { serveWorker, startRoute } from "@repo/runtime/worker";
 
 const worker = serveWorker(runtime, startRoute(handler), reporting);
 const background = {

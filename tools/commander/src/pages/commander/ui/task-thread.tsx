@@ -1,6 +1,5 @@
-import type { ReactElement } from "react";
-
 import type { Task } from "#shared/contract/index.ts";
+import type { ReactElement } from "react";
 
 function TaskThread({ thread }: Readonly<{ thread: (typeof Task.Type)["thread"] }>): ReactElement {
   return (

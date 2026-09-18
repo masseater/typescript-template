@@ -1,11 +1,5 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
-const application = {
-  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["cloudflare"],
-  project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
-};
-
 const load = {
   entry: ["scenarios/*.ts!"],
   ignoreDependencies: ["k6"],
@@ -51,6 +45,10 @@ const workspaces = {
   "tools/ai-native": {
     ignoreBinaries: ["mkfifo"],
   },
+  "tools/e2e": {
+    entry: ["src/**/*.test.ts"],
+    project: ["src/**/*.ts"],
+  },
 };
 
 const cloudflareStacks = [
@@ -72,7 +70,6 @@ const scripts = {
   "infra/budget-monitor": ["src/inspect.ts!"],
   "infra/cloudflare": [
     "src/cli.ts!",
-    "src/check-artifacts.ts!",
     "src/check-stacks.ts!",
     "src/check-account.ts!",
     "src/bootstrap-state.ts!",
@@ -80,33 +77,38 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-  "tools/commander": ["src/app/cli.ts!"],
+  "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
   "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
 
-function commanderWorkspace(
+const application = {
+  entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
+  ignoreDependencies: ["cloudflare"],
+  project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
+};
+
+const commanderWorkspace = (
   only: (...files: readonly string[]) => string[],
-): NonNullable<KnipConfiguration["workspaces"]>[string] {
+): NonNullable<KnipConfiguration["workspaces"]>[string] => {
   return {
     entry: [...application.entry, ...only(...scripts["tools/commander"])],
-    ignoreDependencies: [],
+    ignoreDependencies: only("playwright"),
     ignoreExportsUsedInFile: { interface: true },
   };
-}
+};
 
-function config({
+const config = ({
   production = false,
   strict = false,
 }: Readonly<
   Pick<Parameters<Extract<KnipConfig, (options: never) => unknown>>[0], "production" | "strict">
->): KnipConfiguration {
-  function productionOnly(...files: readonly string[]): string[] {
-    return production || strict ? [...files] : [];
-  }
+>): KnipConfiguration => {
+  const productionOnly = (...files: readonly string[]): string[] =>
+    production || strict ? [...files] : [];
   const app = { ...application, ignore: productionOnly("src/app/routeTree.gen.ts") };
   return {
-    ignoreDependencies: ["vite", "vitest"],
+    ignoreDependencies: ["vite", "vitest", "@repo/stop-ai-slop"],
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
@@ -144,7 +146,6 @@ function config({
       },
     },
   };
-}
+};
 
-// oxlint-disable-next-line import/no-default-export
 export default config satisfies KnipConfig;

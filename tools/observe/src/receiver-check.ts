@@ -2,12 +2,12 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
-import { Cause, Console, Effect, Schedule, Schema } from "effect";
-
 import { runCli } from "@repo/config/cli";
 import { receiverImage } from "@repo/local/image";
+import { Cause, Console, Effect, Schedule, Schema } from "effect";
 
 import { exportedTelemetry } from "./exported.ts";
+
 import type { ReceiverOrigins } from "./exported.ts";
 
 class ReceiverCheckFailure extends Schema.TaggedError<ReceiverCheckFailure>()(

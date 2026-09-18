@@ -1,5 +1,6 @@
 import { createLink } from "@tanstack/react-router";
 import { cva } from "class-variance-authority";
+
 import type { ComponentProps, ReactElement } from "react";
 
 const paginationLinkVariants = cva(

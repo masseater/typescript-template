@@ -3,11 +3,11 @@ import { readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { secretsFile, secretsFileConfigured } from "@repo/config/deployment";
 import { Effect, Schema } from "effect";
 
-import { secretsFile, secretsFileConfigured } from "@repo/config/deployment";
-
 import { deploymentValues } from "./secrets.ts";
+
 import type { DeploymentValue } from "./secrets.ts";
 
 const NOT_FOUND = "ENOENT";

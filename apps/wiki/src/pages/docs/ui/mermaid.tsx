@@ -2,6 +2,7 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import { useTheme } from "fumadocs-ui/provider/base";
 import { useEffect, useId, useRef, useState } from "react";
+
 import type { ReactElement } from "react";
 
 const renderChart = createClientOnlyFn(

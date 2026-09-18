@@ -1,13 +1,10 @@
 # ワーカープロトコル
 
-あなたは bead を 1 つだけ担当するワーカー。以下では担当 bead の ID を `<id>`、あなたの actor 名を `<actor>` と書く（どちらも起動時の指示に書いてある）。
-調整と会話はすべて `bd` コマンドで行う。bd コマンドには必ず `--actor <actor>` を付ける。
-`<scripts>` はこのファイルと同じディレクトリにある `scripts/` の絶対パス。
+あなたは bead を 1 つだけ担当するワーカー。以下では担当 bead の ID を `<id>`、あなたの actor 名を `<actor>` と書く（どちらも起動時の指示に書いてある）。調整と会話はすべて `bd` コマンドで行う。bd コマンドには必ず `--actor <actor>` を付ける。 `<scripts>` はこのファイルと同じディレクトリにある `scripts/` の絶対パス。
 
 ## 1. 読む
 
-`bd show <id>` を読む（notes とコメントも表示される）。notes やコメントに前任者の状態があれば、そこから続ける。前任者が答えないまま残した質問や差し戻しの理由は、最初のチェックポイントの `new_comments` で届く。
-bead にあるのは目的・受け入れ基準・制約だけ。やり方と検証方法はあなたが決める。作業対象のプロジェクトに CLAUDE.md / AGENTS.md があれば、納品の流れはそれに従う。
+`bd show <id>` を読む（notes とコメントも表示される）。notes やコメントに前任者の状態があれば、そこから続ける。前任者が答えないまま残した質問や差し戻しの理由は、最初のチェックポイントの `new_comments` で届く。bead にあるのは目的・受け入れ基準・制約だけ。やり方と検証方法はあなたが決める。作業対象のプロジェクトに CLAUDE.md / AGENTS.md があれば、納品の流れはそれに従う。
 
 ## 2. 作業ループ（必須）
 
@@ -47,8 +44,7 @@ bd create "<題>" -d "<目的>" --acceptance "<観測できる結果>" --deps di
 
 ## 5. ユーザーにしか決められないこと
 
-推測で決めない。`bd update <id> --add-label needs-human --actor <actor>` を実行し、決めてほしいことと選択肢を `needs-human:` で始まるコメントに書く（`bd comments add <id> "needs-human: <質問と選択肢>" --actor <actor>`）。
-その決定が無くても進められる部分は進める。進められないなら「3. 中断」を行う。
+推測で決めない。`bd update <id> --add-label needs-human --actor <actor>` を実行し、決めてほしいことと選択肢を `needs-human:` で始まるコメントに書く（`bd comments add <id> "needs-human: <質問と選択肢>" --actor <actor>`）。その決定が無くても進められる部分は進める。進められないなら「3. 中断」を行う。
 
 ## 6. 完了
 
@@ -58,5 +54,4 @@ bd create "<題>" -d "<目的>" --acceptance "<観測できる結果>" --deps di
 <scripts>/finish.sh <id> <actor> "<受け入れ基準ごとの結果>"
 ```
 
-出力の `next` が `finished` なら終了する。`stop` / `abandon` / `continue` なら「2. 作業ループ」の 3 と同じに扱う。
-bead は close しない（bead に別の指示がある場合を除く）。close はレビューする側が行う。
+出力の `next` が `finished` なら終了する。`stop` / `abandon` / `continue` なら「2. 作業ループ」の 3 と同じに扱う。bead は close しない（bead に別の指示がある場合を除く）。close はレビューする側が行う。

@@ -1,12 +1,12 @@
-import type { ReactElement, SyntheticEvent } from "react";
-
-import type { ActionState } from "./action";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { FormColumn } from "./shared/ui/form-column";
 import { TotpField } from "./totp-field";
 import { useTextInput } from "./use-text-input";
+
+import type { ReactElement, SyntheticEvent } from "react";
+import type { ActionState } from "./action";
 
 interface TotpVerifyFormProps {
   readonly action: ActionState;

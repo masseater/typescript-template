@@ -1,12 +1,12 @@
-import type { ReactElement } from "react";
-
-import type { Members } from "#pages/users/api/load-members.ts";
-import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import { PageNavigation, TextLink } from "@repo/ui";
-import type { PageTarget } from "@repo/ui";
 
 import { MemberCard } from "./member-card.tsx";
 import { MemberPageLink } from "./member-page-link.tsx";
+
+import type { Members } from "#pages/users/api/load-members.ts";
+import type { UsersSearch } from "#pages/users/model/users-search.ts";
+import type { PageTarget } from "@repo/ui";
+import type { ReactElement } from "react";
 
 function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch }>): ReactElement {
   const current = search.page ?? 1;

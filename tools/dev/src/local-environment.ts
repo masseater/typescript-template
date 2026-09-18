@@ -11,14 +11,14 @@ import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
+import { applicationPorts, applications, loopbackHosts, mailpitPort } from "@repo/config";
 import { Effect, Schema } from "effect";
 
-import { applicationPorts, applications, loopbackHosts, mailpitPort } from "@repo/config";
-import type { Application } from "@repo/config";
-
 import { failure, fileIo } from "./failure.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
+
+import type { Application } from "@repo/config";
+import type { LocalCommandFailure } from "./failure.ts";
 
 type App = Application;
 type RouteName = App | "mailpit";

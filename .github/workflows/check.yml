@@ -24,7 +24,11 @@ jobs:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          clean: ${{ vars.CI_RUNNER == '' }}
           fetch-depth: 2
+      - &clean-workspace
+        if: vars.CI_RUNNER != ''
+        run: git clean -ffdx -e node_modules
       - &browser-cache
         if: vars.CI_RUNNER == ''
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -57,9 +61,8 @@ jobs:
           cp -a ~/.cache/vite-task-cache/. node_modules/.vite/task-cache/
       - &premerge
         run: vp run -r premerge
-      - &task-cache-save
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && vars.CI_RUNNER == ''
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && vars.CI_RUNNER == '' && !startsWith(github.head_ref, 'mergify/merge-queue/')
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
@@ -72,12 +75,16 @@ jobs:
       TEST_SCOPE: --changed HEAD^1
     steps:
       - *checkout
+      - *clean-workspace
       - *browser-cache
       - *setup
       - *mise
-      - *task-cache-restore
       - *premerge
-      - *task-cache-save
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.CI_RUNNER == ''
+        with:
+          path: node_modules/.vite/task-cache
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
       - if: vars.CI_RUNNER != ''
         run: |
           rm -rf ~/.cache/vite-task-cache

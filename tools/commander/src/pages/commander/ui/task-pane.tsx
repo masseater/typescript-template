@@ -1,11 +1,11 @@
-import type { ReactElement } from "react";
-import { useState } from "react";
-
-import type { Snapshot } from "#shared/contract/index.ts";
 import { Heading, Status } from "@repo/ui";
+import { useState } from "react";
 
 import { TaskDetail } from "./task-detail.tsx";
 import { TaskGroup } from "./task-group.tsx";
+
+import type { Snapshot } from "#shared/contract/index.ts";
+import type { ReactElement } from "react";
 
 type Tasks = typeof Snapshot.Type;
 

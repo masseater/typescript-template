@@ -1,8 +1,9 @@
-import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
 import { fieldDefinitions, fieldKeys, maximumInterests, readValue } from "./sheet.ts";
+import { understandByRules } from "./understanding.ts";
+
+import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
 import type { InterviewState, MemberUtterance } from "./state.ts";
 import type { UnderstandingData } from "./understanding.ts";
-import { understandByRules } from "./understanding.ts";
 
 const maximumMessages = 100;
 const thanks = "ありがとうございます。";

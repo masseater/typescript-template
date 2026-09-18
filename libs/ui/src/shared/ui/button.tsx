@@ -1,7 +1,8 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import type { MouseEventHandler, ReactElement } from "react";
 
 import { buttonVariants } from "./button-variants";
+
+import type { MouseEventHandler, ReactElement } from "react";
 import type { Children } from "./types";
 
 function Button({

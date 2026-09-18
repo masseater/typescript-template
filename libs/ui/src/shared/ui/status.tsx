@@ -1,8 +1,9 @@
 import { cn } from "cn";
 import { CircleAlertIcon, CircleCheckIcon, InfoIcon } from "lucide-react";
-import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 import { Spinner } from "./spinner";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 type StatusVariant = "error" | "info" | "pending" | "success";
 

@@ -1,6 +1,6 @@
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-
 import { Heading } from "./heading";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function Page({
   title,

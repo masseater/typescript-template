@@ -1,8 +1,9 @@
 import { Outlet, useRouter } from "@tanstack/react-router";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
-import type { ReactElement } from "react";
 
 import { translations } from "#shared/i18n/index.ts";
+
+import type { ReactElement } from "react";
 
 const i18n = { locale: "ja", translations };
 

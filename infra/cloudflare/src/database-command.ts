@@ -1,8 +1,7 @@
-import { layer } from "alchemy/Alchemist";
-import { Console, Effect } from "effect";
-
 import { runCli } from "@repo/config/cli";
 import { runRemoteDatabaseCommand } from "@repo/db/remote";
+import { layer } from "alchemy/Alchemist";
+import { Console, Effect } from "effect";
 
 import { CloudflareFailure } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";

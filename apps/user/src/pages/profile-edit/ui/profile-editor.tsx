@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
-import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import { maximumNameLength, maximumProfileLength } from "@repo/runtime/contracts";
 import { Field, FormColumn } from "@repo/ui";
 
 import { ProfileActions } from "./profile-actions.tsx";
+
+import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import type { ReactElement } from "react";
 
 function ProfileEditor({
   form,
@@ -32,7 +32,7 @@ function ProfileEditor({
         <p className="text-sm leading-normal text-muted-foreground">
           残り {maximumProfileLength - form.profile.length} 文字
         </p>
-        <ProfileActions homeId={homeId} pending={form.pending} />
+        <ProfileActions blocked={form.blocked} homeId={homeId} />
       </FormColumn>
     </form>
   );

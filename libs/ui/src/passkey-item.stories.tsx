@@ -1,8 +1,9 @@
 import { noop } from "es-toolkit";
-import type { ReactElement } from "react";
 
 import preview from "../.storybook/preview";
 import { PasskeyItem } from "./passkey-item";
+
+import type { ReactElement } from "react";
 
 const meta = preview.meta({
   args: { action: { blocked: false, error: undefined, pending: false, run: noop } },

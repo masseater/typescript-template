@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
 import { MFASettings } from "./mfa";
 import { Page } from "./shared/ui/page";
 import { Status } from "./shared/ui/status";
 import { SignOutButton } from "./sign-out-button";
 import { useSession } from "./use-session";
+
+import type { ReactElement } from "react";
 
 function SecurityPage({
   signedOutPath,

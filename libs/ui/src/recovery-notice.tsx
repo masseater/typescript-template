@@ -1,7 +1,7 @@
-import type { ReactElement } from "react";
-
-import type { SessionView } from "./protocol";
 import { Status } from "./shared/ui/status";
+
+import type { ReactElement } from "react";
+import type { SessionView } from "./protocol";
 
 interface RecoveryNoticeProps {
   readonly recovery: string | undefined;

@@ -14,14 +14,14 @@ import {
   Semaphore,
   Stream,
 } from "effect";
-import type { ChildProcessSpawner } from "effect/unstable/process";
+
+import { ChatEntry, applyChat } from "#shared/contract/index.ts";
+import { ChatFailure } from "./chat-failure.ts";
+import { runTurn } from "./claude.ts";
 
 import type { ChatChange, ChatEvent, ChatNotice, ChatState } from "#shared/contract/index.ts";
-import { ChatEntry, applyChat } from "#shared/contract/index.ts";
-
-import { ChatFailure } from "./chat-failure.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import type { CommanderEvent } from "./claude.ts";
-import { runTurn } from "./claude.ts";
 import type { CommanderPrompt } from "./prompt.ts";
 
 type Spawner = ChildProcessSpawner.ChildProcessSpawner;

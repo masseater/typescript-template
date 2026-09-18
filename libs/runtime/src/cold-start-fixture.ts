@@ -1,6 +1,5 @@
-import { Context, Effect, Layer } from "effect";
-
 import { Telemetry } from "@repo/observability";
+import { Context, Effect, Layer } from "effect";
 
 import { workerRuntime } from "./worker-runtime.ts";
 import { serveWorker } from "./worker.ts";

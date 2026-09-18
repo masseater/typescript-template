@@ -1,9 +1,10 @@
-import type { ReactElement } from "react";
+import { Button, Status } from "@repo/ui";
 import { useState } from "react";
 
 import { useComment } from "#pages/commander/model/actions.ts";
 import { MessageBox } from "#shared/ui/index.ts";
-import { Button, Status } from "@repo/ui";
+
+import type { ReactElement } from "react";
 
 function CommentForm({ taskId }: Readonly<{ taskId: string }>): ReactElement {
   const [text, setText] = useState("");

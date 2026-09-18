@@ -4,8 +4,9 @@ import { setTimeout as wait } from "node:timers/promises";
 import { describe, expect, it } from "vite-plus/test";
 
 import { BrowserEventQueue } from "./browser-queue.ts";
-import type { BrowserEvent } from "./events.ts";
 import { randomHex } from "./protocol.ts";
+
+import type { BrowserEvent } from "./events.ts";
 
 const maximumDeliveryAttempts = 3;
 const retryBackoffMilliseconds = 1000;
