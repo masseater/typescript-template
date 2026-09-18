@@ -1,7 +1,7 @@
 import { CardPage } from "#shared/ui/index.ts";
-import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { SignUpForm } from "@template/ui/signup";
+import { TextLink } from "@template/ui";
 import { useState } from "react";
 
 function SignUpPage(): ReactElement {
@@ -15,7 +15,7 @@ function SignUpPage(): ReactElement {
         <p className="text-base leading-normal">
           メールのリンクを開いてメールアドレスの確認を済ませてから、ログインしてください。
         </p>
-        <Link to="/login">ログインへ</Link>
+        <TextLink to="/login">ログインへ</TextLink>
       </CardPage>
     );
   }
@@ -23,7 +23,7 @@ function SignUpPage(): ReactElement {
     <CardPage title="新規登録">
       <SignUpForm onSent={showSent} />
       <p className="text-base leading-normal">
-        アカウントをお持ちの方は<Link to="/login">ログイン</Link>
+        アカウントをお持ちの方は<TextLink to="/login">ログイン</TextLink>
       </p>
     </CardPage>
   );

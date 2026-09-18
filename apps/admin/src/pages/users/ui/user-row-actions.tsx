@@ -1,5 +1,5 @@
 import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
-import { ConfirmDialog } from "@template/ui/ui";
+import { ConfirmDialog } from "@template/ui";
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
 import { RowActionMenu } from "./row-action-menu.tsx";

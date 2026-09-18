@@ -6,7 +6,7 @@ function ToastViewport(): ReactElement {
   const { toasts } = ToastPrimitive.useToastManager();
   return (
     <ToastPrimitive.Portal>
-      <ToastPrimitive.Viewport className="fixed top-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2">
+      <ToastPrimitive.Viewport className="fixed right-4 bottom-4 z-50 flex w-full max-w-toast flex-col gap-2">
         {/* oxlint-disable-next-line typescript/prefer-readonly-parameter-types */}
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} />

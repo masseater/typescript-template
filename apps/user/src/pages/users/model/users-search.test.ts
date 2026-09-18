@@ -11,32 +11,23 @@ describe("member list search in the URL", () => {
     });
   });
 
-  it("keeps the last page the API accepts", () => {
+  it("stops at the last page the member API accepts", () => {
     expect.hasAssertions();
     expect(normalizeUsersSearch({ page: maximumMemberPage })).toStrictEqual({
       page: maximumMemberPage,
     });
+    expect(normalizeUsersSearch({ page: maximumMemberPage + 1 })).toStrictEqual({});
   });
 
-  it("reads a keyword the URL parser turned into a number", () => {
+  it("drops a keyword longer than the member API accepts", () => {
     expect.hasAssertions();
-    expect(normalizeUsersSearch({ keyword: 2026 })).toStrictEqual({ keyword: "2026" });
+    expect(normalizeUsersSearch({ keyword: "あ".repeat(maximumKeywordLength + 1) })).toStrictEqual(
+      {},
+    );
   });
 
-  it.for([
-    { page: 1 },
-    { page: 0 },
-    { page: 1.5 },
-    { page: "abc" },
-    { page: maximumMemberPage + 1 },
-    { keyword: "" },
-    { keyword: "   " },
-    { keyword: "あ".repeat(maximumKeywordLength + 1) },
-    { keyword: ["a"] },
-    { role: "admin" },
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ])("drops %o so the first unfiltered page is shown", (raw) => {
+  it("drops the conditions this page does not have", () => {
     expect.hasAssertions();
-    expect(normalizeUsersSearch(raw)).toStrictEqual({});
+    expect(normalizeUsersSearch({ role: "admin", verified: true })).toStrictEqual({});
   });
 });

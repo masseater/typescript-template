@@ -1,5 +1,5 @@
+import { Icon, NavigationLink } from "@template/ui";
 import { AccountMenu } from "./account-menu.tsx";
-import { Link } from "@tanstack/react-router";
 import { MenuIcon } from "lucide-react";
 import type { ReactElement } from "react";
 import { serviceName } from "#shared/config/index.ts";
@@ -23,14 +23,11 @@ function AdminHeader({
         onClick={onToggleNavigation}
         className="cursor-pointer rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:hidden"
       >
-        <MenuIcon aria-hidden="true" className="size-5" />
+        <Icon icon={MenuIcon} />
       </button>
-      <Link
-        to="/"
-        className="text-lg leading-tight font-bold text-foreground outline-none focus-visible:focus-indicator-outer"
-      >
+      <NavigationLink to="/" variant="brand">
         {serviceName}
-      </Link>
+      </NavigationLink>
       <div className="ml-auto">
         <AccountMenu email={email} />
       </div>

@@ -3,7 +3,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@template/ui/ui";
+  Icon,
+} from "@template/ui";
 import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
 import { EllipsisIcon } from "lucide-react";
 import type { ListedUser } from "#pages/users/model/user-list.ts";
@@ -23,7 +24,7 @@ function RowActionMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label={`${user.email} の操作`} disabled={disabled}>
-        <EllipsisIcon aria-hidden="true" className="size-4" />
+        <Icon icon={EllipsisIcon} size="small" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={onRoleChange}>

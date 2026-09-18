@@ -1,7 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { NavigationLink } from "@template/ui";
 import type { ReactElement } from "react";
 
-const activeProps = { className: "bg-accent font-bold" } as const;
 const activeOptions = { exact: true, includeSearch: false } as const;
 
 function AdminNavigationItem({
@@ -11,15 +10,9 @@ function AdminNavigationItem({
 }: Readonly<{ label: string; onNavigate: () => void; to: "/" | "/security" }>): ReactElement {
   return (
     <li>
-      <Link
-        to={to}
-        activeProps={activeProps}
-        activeOptions={activeOptions}
-        onClick={onNavigate}
-        className="block rounded-md px-2 py-1.5 text-base leading-tight text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator"
-      >
+      <NavigationLink to={to} variant="side" activeOptions={activeOptions} onClick={onNavigate}>
         {label}
-      </Link>
+      </NavigationLink>
     </li>
   );
 }

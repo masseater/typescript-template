@@ -68,17 +68,6 @@ export default defineConfig({
         },
       },
       {
-        files: [
-          "apps/admin/src/pages/users/ui/empty-results.tsx",
-          "apps/admin/src/pages/users/ui/page-link.tsx",
-          "apps/admin/src/pages/users/ui/row-action-menu.tsx",
-          "apps/admin/src/widgets/admin-frame/ui/account-menu.tsx",
-          "apps/admin/src/widgets/admin-frame/ui/admin-header.tsx",
-          "apps/admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
-        ],
-        rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
-      },
-      {
         files: ["infra/cloudflare/src/**"],
         rules: {
           "eslint/new-cap": [
@@ -156,7 +145,7 @@ export default defineConfig({
         {
           paths: [
             {
-              message: "@template/ui/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
               name: "smarthr-ui",
             },
             {

@@ -1,4 +1,4 @@
-import { TableCell, TableRow } from "@template/ui/ui";
+import { TableCell, TableRow } from "@template/ui";
 import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
