@@ -47,6 +47,9 @@ const workspaces = {
   "libs/ui": {
     project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
   },
+  "tools/ai-native": {
+    ignoreBinaries: ["mkfifo"],
+  },
 };
 
 const cloudflareStacks = [
