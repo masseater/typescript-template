@@ -1,11 +1,11 @@
 import { Console, Effect } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { access, readdir } from "node:fs/promises";
 import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readdir } from "node:fs/promises";
 
 interface Diagnosis {
   readonly ok: boolean;
@@ -32,11 +32,8 @@ function areaProjects(area: string): Effect.Effect<string[]> {
 }
 
 function hasProject(project: string): Effect.Effect<boolean> {
-  return Effect.promise(async () =>
-    access(new URL(`../../${project}`, import.meta.url)).then(
-      () => true,
-      () => false,
-    ),
+  return Effect.isSuccess(
+    Effect.tryPromise(async () => access(new URL(`../../${project}`, import.meta.url))),
   );
 }
 
