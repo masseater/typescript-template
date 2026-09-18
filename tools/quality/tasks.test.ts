@@ -1,11 +1,14 @@
-import { blockedByChanges, taskGraphViolations } from "./task-graph.ts";
+import { blockedByChanges, issueViolations, taskGraphViolations } from "./task-graph.ts";
 import { describe, expect, it } from "vite-plus/test";
+import type { Tasks } from "./task-graph.ts";
 import { tasks } from "./tasks.ts";
 
 const first = 1;
 const second = 2;
 const third = 3;
 const unregistered = 9;
+const layers = 30;
+const width = 3;
 
 const graph = {
   first: { blockedBy: [], issue: first },
@@ -13,8 +16,22 @@ const graph = {
   third: { blockedBy: ["first", "second"], issue: third },
 };
 
+function layered(): Tasks<string> {
+  const keys = Array.from({ length: layers }, (_layer, layer) =>
+    Array.from({ length: width }, (_slot, slot) => `task-${layer}-${slot}`),
+  );
+  return Object.fromEntries(
+    keys.flatMap((layer, index) =>
+      layer.map((key, slot) => [
+        key,
+        { blockedBy: keys[index + 1] ?? [], issue: index * width + slot },
+      ]),
+    ),
+  );
+}
+
 describe("task graph", () => {
-  it("keeps the registered tasks free of duplicate issues, shared branches and cycles", () => {
+  it("keeps the registered tasks free of duplicates, unknown blockers and cycles", () => {
     expect.assertions(1);
     expect(taskGraphViolations(tasks)).toStrictEqual([]);
   });
@@ -39,7 +56,16 @@ describe("task graph", () => {
     ).toStrictEqual(["branch feat/shared が複数のタスクに割り当てられています"]);
   });
 
-  it("reports a cycle from each of its members and not from the tasks that only lead into it", () => {
+  it("reports a blocker that is not registered", () => {
+    expect.assertions(1);
+    expect(taskGraphViolations({ first: { blockedBy: ["missing"], issue: first } })).toStrictEqual([
+      "first の blockedBy にある missing は登録されていません",
+    ]);
+  });
+});
+
+describe("task graph cycles", () => {
+  it("reports a cycle once and ignores the tasks that only lead into it", () => {
     expect.assertions(1);
     expect(
       taskGraphViolations({
@@ -47,9 +73,36 @@ describe("task graph", () => {
         second: { blockedBy: ["first"], issue: second },
         third: { blockedBy: ["first"], issue: third },
       }),
+    ).toStrictEqual(["blockedBy が循環しています: first -> second -> first"]);
+  });
+
+  it("reports a task blocked by itself", () => {
+    expect.assertions(1);
+    expect(taskGraphViolations({ first: { blockedBy: ["first"], issue: first } })).toStrictEqual([
+      "blockedBy が循環しています: first -> first",
+    ]);
+  });
+
+  it("visits each task once in a graph whose paths grow exponentially", () => {
+    expect.assertions(1);
+    expect(taskGraphViolations(layered())).toStrictEqual([]);
+  });
+});
+
+describe("registered issues", () => {
+  it("reports an issue GitHub does not list and an issue that is already closed", () => {
+    expect.assertions(1);
+    expect(
+      issueViolations(
+        graph,
+        new Map([
+          [first, { blockedBy: [], closed: true }],
+          [second, { blockedBy: [], closed: false }],
+        ]),
+      ),
     ).toStrictEqual([
-      "blockedBy が循環しています: first -> second -> first",
-      "blockedBy が循環しています: second -> first -> second",
+      "first の Issue #1 は closed です。tasks.ts からこのタスクを消してください",
+      "third の Issue #3 が GitHub にありません",
     ]);
   });
 });
@@ -61,8 +114,9 @@ describe("blocked by synchronization", () => {
       blockedByChanges(
         graph,
         new Map([
-          [first, [unregistered]],
-          [third, [second]],
+          [first, { blockedBy: [unregistered], closed: false }],
+          [second, { blockedBy: [], closed: false }],
+          [third, { blockedBy: [second], closed: false }],
         ]),
       ),
     ).toStrictEqual([
@@ -78,8 +132,9 @@ describe("blocked by synchronization", () => {
       blockedByChanges(
         graph,
         new Map([
-          [second, [first]],
-          [third, [second, first]],
+          [first, { blockedBy: [], closed: false }],
+          [second, { blockedBy: [first], closed: false }],
+          [third, { blockedBy: [second, first], closed: false }],
         ]),
       ),
     ).toStrictEqual([]);

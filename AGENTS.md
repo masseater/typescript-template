@@ -18,14 +18,14 @@ main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の 
 
 ## タスク
 
-タスクと Issue・PR・branch の対応、タスク同士の依存は `tools/quality/tasks.ts` が正本で、GitHub の Issue の blocked by は `vp run tasks:sync` でそこから作る。タスクの内容と引き継ぎ状態は Issue の本文にある。
+タスクと Issue・branch の対応、タスク同士の依存は `tools/quality/tasks.ts` が正本で、main に入るたびに CI が GitHub の Issue の blocked by をそこから作る。タスクの内容と引き継ぎ状態は Issue の本文にある。
 
-- 着手できるのは、Issue が open で、`blockedBy` に挙げたタスクの Issue が全て closed のタスクだけ。
-- 1 つのタスクを main への merge まで終えてから次へ進む。複数の PR を同時に merge queue へ入れない。全ファイルを横断する PR が、queue を待つ間に main が進むたびに衝突し直すため。
+- 着手できるのは `blockedBy` が空のタスクだけ。
+- 1 つのタスクを main への merge まで終えてから次へ進む。複数の PR を同時に merge queue へ入れない。
 - 再開するときは `tasks.ts` の branch をそのまま使う。同じ目的の branch を作り直さない。
-- PR の本文に `Closes #<Issue 番号>` を入れる。
+- タスクを終える PR は、本文に `Closes #<Issue 番号>` を入れ、`tasks.ts` から自分のタスクと、それを指す `blockedBy` を消す。
 - conflict の解消で相手側の変更を捨てない。改名や再整形のような機械的な変更は、main 側を採用してから同じ機械的な変更を掛け直す。
-- タスクを足す・依存を変えるときは、Issue を作り、`tasks.ts` を直して `vp run tasks:sync` を実行する。終わったタスクは `tasks.ts` から消す。
+- タスクを足す・依存を変えるときは、Issue を作って `tasks.ts` を直す。
 
 ## 技術スタック
 
