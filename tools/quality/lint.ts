@@ -107,6 +107,10 @@ export const lint = dontReviewItPreset.lint({
       },
     ],
     "dont-review-it/no-empty-catch--throw-or-handle": LINT_SEVERITY.ERROR,
+    "dont-review-it/no-fixture-forward-subject--yield-sut-output": [
+      LINT_SEVERITY.ERROR,
+      { handlerScopingWrappers: ["runWith"] },
+    ],
     "dont-review-it/no-floating-promise--await-the-result": LINT_SEVERITY.ERROR,
     "dont-review-it/no-non-boundary-double--replace-at-the-external-boundary": [
       LINT_SEVERITY.ERROR,

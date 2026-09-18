@@ -1,12 +1,12 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
+import { APPLICATION, type Application } from "@template/config";
 import { findPasskeyUser } from "@template/db/security";
 import { jwt, twoFactor } from "better-auth/plugins";
 
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
 
-import type { Application } from "@template/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
@@ -28,11 +28,11 @@ const verificationAudiencePlugin = (audience: Application): AuthPlugin => {
   };
 };
 
-const passkeyPlugin = (
-  origin: string,
-  run: Run,
-  audience: Application,
-): ReturnType<typeof passkey> => {
+const passkeyPlugin = ({
+  audience,
+  origin,
+  run,
+}: Readonly<{ audience: Application; origin: string; run: Run }>): ReturnType<typeof passkey> => {
   return passkey({
     authentication: {
       afterVerification: async ({
@@ -45,8 +45,8 @@ const passkeyPlugin = (
         if (!verification.authenticationInfo.userVerified) {
           deny("PASSKEY_UV_REQUIRED");
         }
-        const user = await run(findPasskeyUser(clientData.id, audience));
-        assertEligibleUser(user ?? undefined, audience);
+        const passkeyOwner = await run(findPasskeyUser(clientData.id, audience));
+        assertEligibleUser(passkeyOwner ?? undefined, audience);
       },
     },
     authenticatorSelection: { userVerification: "required" },
@@ -79,8 +79,8 @@ const authPlugins = ({
   return [
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
-    passkeyPlugin(origin, run, audience),
-    ...(audience === "wiki" ? wikiAuthorizationServer(origin) : []),
+    passkeyPlugin({ audience, origin, run }),
+    ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
   ];
 };
 

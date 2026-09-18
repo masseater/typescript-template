@@ -19,7 +19,7 @@ Disallow text written out in the source at the destination argument of a call th
 
 ## Violation
 
-Text written out in the source standing in the destination argument of a call that opens a connection. The destination is the first argument of `fetch(...)`, `<receiver>.fetch(...)`, `navigator.sendBeacon(...)`, `new Request(...)`, `new WebSocket(...)` and `new EventSource(...)`.
+Text written out in the source standing in the destination argument of a call that opens a connection. The destination is the first argument of `fetch(...)`, `<receiver>.fetch(...)`, `navigator.sendBeacon(...)`, `new WebSocket(...)` and `new EventSource(...)`, and of a `new Request(...)` handed straight to `fetch`. A request handed to an in-process handler opens no connection, so it is not read.
 
 The shape of the literal is never read, only where it is handed. An expression counts as written out when it holds a string literal, a non-empty static part of a template, or either side of a `+` concatenation holding one of those — so a configured origin with a path baked onto it is reported, while a destination assembled from values alone is not.
 

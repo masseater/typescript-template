@@ -1,6 +1,5 @@
 /** @canonical-values config.application */
 export const applications = ["user", "admin", "wiki"] as const;
-export type Application = (typeof applications)[number];
 export const APPLICATION = {
   user: applications[0],
   admin: applications[1],
@@ -10,6 +9,7 @@ export const APPLICATION = {
 const USER_PORT = 3001;
 const ADMIN_PORT = 3002;
 const WIKI_PORT = 3003;
+export type Application = (typeof applications)[number];
 export const applicationPorts: Readonly<Record<Application, number>> = {
   admin: ADMIN_PORT,
   user: USER_PORT,
@@ -46,6 +46,7 @@ export const authenticationMethods = [
   ...strongAuthenticationMethods,
   "recovery",
 ] as const;
+export type AuthenticationMethod = (typeof authenticationMethods)[number];
 export const AUTHENTICATION_METHOD = {
   password: authenticationMethods[0],
   passwordTotp: authenticationMethods[1],
@@ -54,6 +55,7 @@ export const AUTHENTICATION_METHOD = {
 } as const;
 
 export const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
+export const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
 
 const STORYBOOK_PORT = 3051;
 export const storybookPort = STORYBOOK_PORT;

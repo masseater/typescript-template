@@ -6,6 +6,7 @@ export {
   applications,
   authenticationMethods,
   grants,
+  loopbackHostSet,
   loopbackHosts,
   roles,
   storybookPort,
@@ -13,6 +14,7 @@ export {
 } from "./applications.ts";
 export type {
   Application,
+  AuthenticationMethod,
   Capability,
   CapabilityOf,
   Role,

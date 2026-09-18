@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mcp": "./src/mcp.ts"
+    "./mcp": "./src/mcp.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -14,12 +15,12 @@
     "@better-auth/passkey": "catalog:",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
+    "@template/observability": "workspace:*",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",

@@ -1,4 +1,4 @@
-import { loopbackHosts } from "@template/config";
+import { loopbackHostSet } from "@template/config";
 import { RequestId } from "@template/observability";
 import { Effect, Result, Schema } from "effect";
 
@@ -20,7 +20,6 @@ class ExplorerFailure extends Schema.TaggedError<ExplorerFailure>()("ExplorerFai
 }) {}
 
 const explorerTimeoutMilliseconds = 15_000;
-const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
 const Columns = Schema.Array(Schema.String);
 const Rows = Schema.Array(Schema.Array(Schema.Unknown));
 const QueryResult = Schema.Struct({ columns: Columns, rows: Rows });

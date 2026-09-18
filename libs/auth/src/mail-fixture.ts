@@ -1,8 +1,10 @@
 import { setupNetwork } from "@msw/cloudflare";
-import { Effect, Layer, Schema } from "effect";
+import { httpStatus } from "@template/observability";
+import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
-const HTTP_BAD_REQUEST = 400;
+type Delivery = { readonly recipient: string; readonly link: string };
+
 const mailConfig = {
   EMAIL_FROM: "no-reply@example.test",
   MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
@@ -14,40 +16,62 @@ const MailpitMessage = Schema.Struct({
   To: Schema.Array(Schema.Struct({ Email: Schema.String })),
 });
 const decodeMail = Schema.decodeUnknownPromise(MailpitMessage);
-const mailbox = new Map<string, string>();
 
-const receiveMail = async ({ request }: { readonly request: Request }): Promise<Response> => {
-  const message = await decodeMail(await request.json());
-  const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
-  if (
-    message.From.Email !== mailConfig.EMAIL_FROM ||
-    message.Subject !== "メールアドレスの確認" ||
-    url === undefined
-  ) {
-    return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: HTTP_BAD_REQUEST });
-  }
-  for (const recipient of message.To) {
-    mailbox.set(recipient.Email, url);
-  }
-  return HttpResponse.json({ ID: crypto.randomUUID() });
+class Mailbox extends Context.Service<Mailbox, Ref.Ref<readonly Delivery[]>>()(
+  "@template/auth/Mailbox",
+) {}
+
+const receiveMail = (deliveries: Mailbox["Service"]) => {
+  return async ({ request }: { readonly request: Request }): Promise<Response> => {
+    const mailpitMessage = await decodeMail(await request.json());
+    const link = mailpitMessage.Text.split("\n").find((line) => line.startsWith("http://"));
+    if (
+      mailpitMessage.From.Email !== mailConfig.EMAIL_FROM ||
+      mailpitMessage.Subject !== "メールアドレスの確認" ||
+      link === undefined
+    ) {
+      return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: httpStatus.badRequest });
+    }
+    const delivered = mailpitMessage.To.map(({ Email }) => ({ link, recipient: Email }));
+    await Effect.runPromise(Ref.update(deliveries, (earlier) => [...earlier, ...delivered]));
+    return HttpResponse.json({ ID: crypto.randomUUID() });
+  };
 };
 
-const mailServer = Layer.effectDiscard(
-  Effect.acquireRelease(
-    Effect.sync(() => {
-      mailbox.clear();
-      const network = setupNetwork();
-      network.configure({ onUnhandledFrame: "error" });
-      network.use(http.post(mailConfig.MAILPIT_SEND_URL, receiveMail));
-      network.enable();
-      return network;
-    }),
+const startNetwork = (deliveries: Mailbox["Service"]): ReturnType<typeof setupNetwork> => {
+  const network = setupNetwork();
+  network.configure({ onUnhandledFrame: "error" });
+  network.use(http.post(mailConfig.MAILPIT_SEND_URL, receiveMail(deliveries)));
+  network.enable();
+  return network;
+};
 
-    (network) =>
-      Effect.sync(() => {
-        network.disable();
-      }),
-  ),
+const stopNetwork = (network: ReturnType<typeof setupNetwork>): Effect.Effect<void> => {
+  return Effect.sync(() => {
+    network.disable();
+  });
+};
+
+const mailServer = Layer.effect(
+  Mailbox,
+  Effect.gen(function* startMailServer() {
+    const deliveries = yield* Ref.make<readonly Delivery[]>([]);
+    yield* Effect.acquireRelease(
+      Effect.sync(() => startNetwork(deliveries)),
+      stopNetwork,
+    );
+    return deliveries;
+  }),
 );
 
-export { mailConfig, mailServer, mailbox };
+const mailRecipients = Effect.gen(function* readRecipients() {
+  const deliveries = yield* Ref.get(yield* Mailbox);
+  return deliveries.map(({ recipient }) => recipient);
+});
+
+const verificationLink = Effect.fn("verificationLink")(function* verificationLink(email: string) {
+  const deliveries = yield* Ref.get(yield* Mailbox);
+  return new URL(deliveries.findLast(({ recipient }) => recipient === email)?.link ?? "");
+});
+
+export { Mailbox, mailConfig, mailRecipients, mailServer, verificationLink };

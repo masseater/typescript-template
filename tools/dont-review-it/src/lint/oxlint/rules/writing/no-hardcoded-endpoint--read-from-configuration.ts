@@ -25,20 +25,29 @@ const isFetchCallee = (callee: ESTree.Expression): boolean => {
   return staticMemberOf(written)?.name === FETCH_NAME;
 };
 
-const CONNECTION_CONSTRUCTOR_NAMES: ReadonlySet<string> = new Set([
-  "EventSource",
-  "Request",
-  "WebSocket",
-]);
+const CONNECTION_CONSTRUCTOR_NAMES: ReadonlySet<string> = new Set(["EventSource", "WebSocket"]);
+
+const REQUEST_CONSTRUCTOR_NAME = "Request";
 
 const isConnectionConstructor = (callee: ESTree.Expression): boolean => {
   const written = callee;
   return written.type === "Identifier" && CONNECTION_CONSTRUCTOR_NAMES.has(written.name);
 };
 
+const isRequestHandedToFetch = (node: ESTree.NewExpression): boolean => {
+  const { callee, parent } = node;
+  return (
+    callee.type === "Identifier" &&
+    callee.name === REQUEST_CONSTRUCTOR_NAME &&
+    parent.type === "CallExpression" &&
+    isFetchCallee(parent.callee) &&
+    parent.arguments[0] === node
+  );
+};
+
 const takesADestination = (node: DestinationTaker): boolean =>
   node.type === "NewExpression"
-    ? isConnectionConstructor(node.callee)
+    ? isConnectionConstructor(node.callee) || isRequestHandedToFetch(node)
     : isFetchCallee(node.callee) || isNavigatorSendBeacon(node.callee);
 
 const writtenOutDestinationOf = (node: DestinationTaker): ESTree.Expression | null => {

@@ -68,6 +68,11 @@ describe("dont-review-it/no-hardcoded-endpoint--read-from-configuration", () => 
         name: "a connection constructed with no argument at all has no destination",
         code: "new Request(target);",
       },
+      {
+        name: "a request handed to an in-process handler opens no connection",
+        documented: true,
+        code: "app.handle(new Request('http://localhost/api/health'));",
+      },
     ],
     invalid: [
       {
@@ -108,8 +113,8 @@ describe("dont-review-it/no-hardcoded-endpoint--read-from-configuration", () => 
         errors: [{ messageId: "hardcodedEndpoint" }],
       },
       {
-        name: "a request built with a written out destination is reported",
-        code: "new Request('https://example.test/catalog');",
+        name: "a request with a written out destination handed straight to fetch is reported",
+        code: "fetch(new Request('https://example.test/catalog'));",
         errors: [{ messageId: "hardcodedEndpoint" }],
       },
       {
