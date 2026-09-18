@@ -24,8 +24,8 @@ function messageParts(message: unknown): readonly unknown[] {
   return Array.isArray(message) ? message : [message];
 }
 
-function serviceLabel(serviceName: Application): string {
-  return `${serviceName}-server`;
+function serviceLabel(name: Application): string {
+  return `${name}-server`;
 }
 
 function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
@@ -45,4 +45,4 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
 }
 
 export { isRecord, serviceLabel, structuredLogs };
-export type { StructuredLogOptions };
+export type { LogSink, StructuredLogOptions };

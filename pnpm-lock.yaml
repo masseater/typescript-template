@@ -987,6 +987,9 @@ importers:
 
   libs/observability:
     dependencies:
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1000,9 +1003,6 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../config
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)

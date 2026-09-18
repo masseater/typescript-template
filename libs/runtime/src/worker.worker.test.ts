@@ -1,80 +1,125 @@
-import { assert, it } from "@effect/vitest";
-import { setupNetwork } from "@msw/cloudflare";
+import { assert, describe, it } from "@effect/vitest";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { Effect, Layer, ManagedRuntime } from "effect";
-import { HttpResponse, http } from "msw";
+import { env } from "cloudflare:workers";
+import { Effect, ManagedRuntime, Schema } from "effect";
+import type { Layer } from "effect";
 
-import { Telemetry } from "@repo/observability";
+import type { Reporting } from "@repo/observability";
+import { httpStatus } from "@repo/observability";
+import { recordingSink } from "@repo/observability/testing";
 
-import { serveWorker } from "./worker.ts";
+import type { AppServices } from "./index.ts";
+import { appLayer } from "./index.ts";
+import { wikiLayer, wikiService } from "./wiki.ts";
+import { serveApp } from "./worker.ts";
 
-interface Exported {
-  readonly logs: readonly unknown[];
-  readonly status: number;
-  readonly traces: readonly unknown[];
+const authSecret = "worker-test-secret-at-least-32-characters";
+const validRoutes = { "/": "home" };
+const ReportedLog = Schema.Record(Schema.String, Schema.String);
+const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
+
+function environment(overrides: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  return {
+    ...env,
+    APP_ORIGIN: "http://localhost:3001",
+    APP_RELEASE: "test",
+    ASSETS: { fetch: async (): Promise<Response> => new Response(undefined) },
+    AUTH_SECRET: authSecret,
+    EMAIL_FROM: "sender@example.test",
+    ...overrides,
+  };
 }
 
-const endpoint = "https://otlp.example.test";
-const noContent = 204;
-
-function discard(): void {
-  return undefined;
-}
-
-const telemetry = Layer.orDie(
-  Telemetry.layer({
-    log: { error: discard, info: discard },
-    otlp: { endpoint },
-    release: "abc123",
-    routes: { "/": "home" },
-    serviceName: "user",
-  }),
-);
-
-function served(): Effect.Effect<Exported> {
-  const seen = { logs: [] as unknown[], traces: [] as unknown[] };
-  function collect(signal: "logs" | "traces"): Parameters<typeof http.post>[1] {
-    return async ({ request }) => {
-      seen[signal].push(await request.json());
-      return HttpResponse.json({});
-    };
-  }
-  async function invoke(): Promise<Exported> {
-    const runtime = ManagedRuntime.make(telemetry);
-    const worker = serveWorker(runtime, () =>
-      Effect.succeed(new Response(undefined, { status: noContent })),
-    );
-    const context = createExecutionContext();
-    const response = await worker.fetch(new Request("http://localhost/"), {}, context);
-    await waitOnExecutionContext(context);
-    const exported = { logs: [...seen.logs], status: response.status, traces: [...seen.traces] };
-    await runtime.dispose();
-    return exported;
-  }
-  return Effect.acquireUseRelease(
-    Effect.sync(() => {
-      const network = setupNetwork();
-      network.configure({ onUnhandledFrame: "error" });
-      network.use(
-        http.post(`${endpoint}/v1/traces`, collect("traces")),
-        http.post(`${endpoint}/v1/logs`, collect("logs")),
-      );
-      network.enable();
-      return network;
-    }),
-    () => Effect.promise(invoke),
-    (network) =>
-      Effect.sync(() => {
-        network.disable();
-      }),
+async function servedUnavailable(
+  layer: () => Layer.Layer<AppServices, unknown>,
+  reporting: Reporting,
+): Promise<{ readonly body: unknown; readonly status: number }> {
+  const worker = serveApp(
+    ManagedRuntime.make(layer()),
+    () => Effect.succeed(new Response("reached the route")),
+    reporting,
   );
+  const context = createExecutionContext();
+  const response = await worker.fetch(new Request("http://localhost:3001/"), {}, context);
+  await waitOnExecutionContext(context);
+  return { body: await response.json(), status: response.status };
 }
 
-it.effect("the fetch handler exports its spans and logs before the invocation ends", () =>
-  Effect.gen(function* program() {
-    const exported = yield* served();
-    assert.strictEqual(exported.status, noContent);
-    assert.strictEqual(exported.traces.length, 1);
-    assert.strictEqual(exported.logs.length, 1);
-  }),
-);
+const brokenLayers = [
+  {
+    fields: '{"_tag":"ConfigurationInvalid","reason":"HTTPS is required outside localhost"}',
+    layer: (): Layer.Layer<AppServices, unknown> =>
+      appLayer(environment({ APP_ORIGIN: "http://wiki.example.test" }), "user", validRoutes),
+    tag: "ConfigurationInvalid",
+  },
+  {
+    fields: '{"_tag":"TelemetryInvalid","reason":"routes"}',
+    layer: (): Layer.Layer<AppServices, unknown> =>
+      appLayer(environment({}), "user", { "bad path": "home" }),
+    tag: "TelemetryInvalid",
+  },
+] as const;
+
+describe("a worker whose layer cannot be built", () => {
+  for (const { fields, layer, tag } of brokenLayers) {
+    it.effect(`answers 503 without exposing ${tag} to the client`, () =>
+      Effect.gen(function* program() {
+        const response = yield* Effect.promise(async () =>
+          servedUnavailable(layer, { log: recordingSink().sink, service: "user" }),
+        );
+        assert.strictEqual(response.status, httpStatus.serviceUnavailable);
+        const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
+        assert.notInclude(error, tag);
+      }),
+    );
+    it.effect(`names ${tag} as the cause of the unavailable response`, () =>
+      Effect.gen(function* program() {
+        const logs = recordingSink();
+        yield* Effect.promise(async () =>
+          servedUnavailable(layer, { log: logs.sink, service: "user" }),
+        );
+        assert.lengthOf(logs.stderr, 1);
+        const {
+          "error.cause": causeSummary,
+          "error.chain": chain,
+          "error.fingerprint": fingerprint,
+          "error.locations": locations,
+          ...reported
+        } = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(Effect.orDie);
+        assert.deepStrictEqual(reported, {
+          "error.fields": fields,
+          "error.tag": tag,
+          "error.type": "Error",
+          event: "application.runtime_unavailable",
+          service: "user-server",
+        });
+        assert.match(fingerprint ?? "", /^[0-9a-f]{8}$/u);
+        assert.include(causeSummary ?? "", tag);
+        assert.strictEqual(chain, "");
+        assert.notInclude(`${causeSummary}${locations}`, authSecret);
+      }),
+    );
+  }
+});
+
+describe("a wiki worker whose database has not been migrated", () => {
+  it.effect("names the missing table that broke the layer", () =>
+    Effect.gen(function* program() {
+      const logs = recordingSink();
+      const response = yield* Effect.promise(async () =>
+        servedUnavailable(() => wikiLayer(environment({}), validRoutes), {
+          log: logs.sink,
+          service: wikiService,
+        }),
+      );
+      assert.strictEqual(response.status, httpStatus.serviceUnavailable);
+      const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
+      assert.notInclude(error, "oauth_resource");
+      const reported = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(
+        Effect.orDie,
+      );
+      assert.deepInclude(reported, { "error.tag": "AuthFailure", service: "wiki-server" });
+      assert.include(reported["error.chain"] ?? "", "no such table: oauth_resource");
+    }),
+  );
+});

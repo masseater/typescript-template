@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(alchemy unsafe*)",
+      "Bash(alchemy destroy*)",
+      "Bash(*/alchemy unsafe*)",
+      "Bash(*/alchemy destroy*)",
+      "Bash(* exec alchemy*)",
+      "Bash(* dlx alchemy*)",
+      "Bash(npx alchemy*)",
+      "Bash(pnpx alchemy*)",
+      "Bash(bunx alchemy*)"
+    ]
+  }
+}

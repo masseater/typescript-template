@@ -22,8 +22,7 @@ function failureTag(error: unknown): string | undefined {
   return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
 }
 
-function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
-  const error = Cause.squash(cause);
+function failureAttributesOf(error: unknown): FailureAttributes {
   const attributes = errorAttributes(error);
   const tag = failureTag(error);
   if (tag === undefined) {
@@ -37,9 +36,8 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
 }
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
-  return Effect.logError("application.error").pipe(
-    Effect.annotateLogs({ ...failureAttributes(cause) }),
-  );
+  const attributes = failureAttributesOf(Cause.squash(cause));
+  return Effect.logError("application.error").pipe(Effect.annotateLogs({ ...attributes }));
 }
 
 function incomingParent(headers: Readonly<Pick<Headers, "get">>): Tracer.ExternalSpan | undefined {
@@ -137,4 +135,4 @@ function observeRequest<Requirements>(
   );
 }
 
-export { observeRequest, reportFailure };
+export { failureAttributesOf, observeRequest, reportFailure };
