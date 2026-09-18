@@ -1,0 +1,1 @@
+レビュー指摘: onFailure を record を返す型にして exit 0 の握りつぶしを型で防ぐ。client-bundle も runCli に寄せ、storybook origin と dev-boundary の loopback も共有値にする
