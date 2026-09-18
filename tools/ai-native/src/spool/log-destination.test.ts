@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,10 +8,7 @@ import { commandIdOf, defaultSpoolRoot, timestampOf } from "./log-destination.ts
 
 describe("defaultSpoolRoot", () => {
   describe("a start directory nested under an ancestor carrying a package manifest", () => {
-    const markedAncestorDirectory = join(
-      tmpdir(),
-      `log-destination-marked-ancestor-${process.pid}`,
-    );
+    const markedAncestorDirectory = mkdtempSync(join(tmpdir(), "log-destination-marked-ancestor-"));
 
     const it = test.extend("spoolRootOfTheNestedStart", ({}, { onCleanup }) => {
       const start = join(markedAncestorDirectory, "a", "b");
@@ -31,7 +28,7 @@ describe("defaultSpoolRoot", () => {
   });
 
   describe("a start directory with no package manifest above it", () => {
-    const unmarkedStartDirectory = join(tmpdir(), `log-destination-unmarked-start-${process.pid}`);
+    const unmarkedStartDirectory = mkdtempSync(join(tmpdir(), "log-destination-unmarked-start-"));
 
     const it = test.extend("spoolRootOfTheUnmarkedStart", ({}, { onCleanup }) => {
       mkdirSync(unmarkedStartDirectory, { recursive: true });
