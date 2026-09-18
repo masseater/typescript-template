@@ -1,12 +1,11 @@
-import { Clock, Duration, Effect } from "effect";
-import type { Exit } from "effect";
+import { Effect } from "effect";
 
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
 import type { EmailVerificationFailed } from "@repo/auth";
-import { checkDatabase } from "@repo/db";
 import { Telemetry, httpStatus, ingestBrowser } from "@repo/observability";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
+import { DatabaseHealth } from "./database-health.ts";
 import type { Failure } from "./failures.ts";
 import { createApi, readJsonBody } from "./http.ts";
 import type { ApiRoutes } from "./http.ts";
@@ -14,28 +13,11 @@ import type { AppServices } from "./index.ts";
 
 const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
 
-const healthCacheWindow = Duration.minutes(1);
-
-type DatabaseCheck = ReturnType<typeof checkDatabase>;
-
-function healthHandler() {
-  const isolate: {
-    check?: Promise<Exit.Exit<Effect.Success<DatabaseCheck>, Effect.Error<DatabaseCheck>>>;
-    expiresAt: number;
-  } = { expiresAt: 0 };
-  return Effect.fn("health")(function* health() {
-    const now = yield* Clock.currentTimeMillis;
-    if (isolate.check === undefined || now >= isolate.expiresAt) {
-      const services = yield* Effect.context<Effect.Services<DatabaseCheck>>();
-      isolate.check = Effect.runPromiseExitWith(services)(checkDatabase());
-      isolate.expiresAt = now + Duration.toMillis(healthCacheWindow);
-    }
-    const { check } = isolate;
-    yield* yield* Effect.promise(async () => check);
-    const telemetry = yield* Telemetry;
-    return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
-  });
-}
+const health = Effect.fn("health")(function* health() {
+  yield* (yield* DatabaseHealth).check;
+  const telemetry = yield* Telemetry;
+  return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
+});
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function emailVerificationFailure(error: EmailVerificationFailed): Failure {
@@ -48,7 +30,7 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
   return createApi("")
     .all("/auth/*", api.raw(handleAuthRequest, unavailable))
     .post("/telemetry", api.raw(ingestBrowser, {}))
-    .get("/health", api.route(HealthView, healthHandler(), unavailable))
+    .get("/health", api.route(HealthView, health, unavailable))
     .get(
       "/session",
       api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),

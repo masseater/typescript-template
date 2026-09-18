@@ -86,6 +86,26 @@ const forbiddenCode = [
     'import { Effect } from "effect"; export const run = (e: never) => Effect.withLogSpan(e, "x");',
     "annotations",
   ],
+  [
+    "apps/user/src/probe.ts",
+    'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const cache = () => Effect.cachedWithTTL(Effect.void, "1 minute");',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { cachedWithTTL } from "effect/Effect"; export const cache = () => cachedWithTTL;',
+    "cross-request-state",
+  ],
+  [
+    "apps/admin/src/probe.ts",
+    'import { RcMap } from "effect"; export const shared = () => RcMap;',
+    "cross-request-state",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [
