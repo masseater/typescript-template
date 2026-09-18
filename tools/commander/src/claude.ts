@@ -1,6 +1,8 @@
 import { Effect, Option, Ref, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { childEnvironment } from "./child-environment.ts";
+
 interface Turn {
   readonly cwd: string;
   readonly executable: string;
@@ -197,20 +199,12 @@ function turnArguments(turn: Turn): readonly string[] {
   ];
 }
 
-function unbilledEnvironment(): Record<string, string> {
-  // oxlint-disable-next-line node/no-process-env
-  const inherited = Object.entries(process.env).flatMap(([name, value]) =>
-    value === undefined || billedCredentials.has(name) ? [] : [[name, value] as const],
-  );
-  return { ...Object.fromEntries(inherited), BEADS_ACTOR: "commander" };
-}
-
 function runTurn(
   turn: Turn,
 ): Stream.Stream<CommanderEvent, never, ChildProcessSpawner.ChildProcessSpawner> {
   const command = ChildProcess.make(turn.executable, turnArguments(turn), {
     cwd: turn.cwd,
-    env: unbilledEnvironment(),
+    env: childEnvironment({ BEADS_ACTOR: "commander" }, billedCredentials),
     extendEnv: false,
     stderr: "inherit",
     stdin: Stream.encodeText(Stream.make(turn.prompt)),

@@ -33,6 +33,7 @@ const call = {
   argv: process.argv.slice(2),
   billed: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"].filter((name) => name in process.env),
   cwd: process.cwd(),
+  repository: ["GIT_DIR", "GIT_WORK_TREE"].filter((name) => name in process.env),
   stdin: fs.readFileSync(0, "utf8"),
 };
 fs.appendFileSync(path.join(home, "calls.jsonl"), JSON.stringify(call) + "\\n");
@@ -50,6 +51,7 @@ const Call = Schema.fromJsonString(
     argv: Schema.Array(Schema.String),
     billed: Schema.Array(Schema.String),
     cwd: Schema.String,
+    repository: Schema.Array(Schema.String),
     stdin: Schema.String,
   }),
 );
@@ -64,6 +66,8 @@ function installRecorder(home: string): Effect.Effect<void, unknown, NodeService
     Object.assign(process.env, {
       ANTHROPIC_API_KEY: "would-be-billed",
       ANTHROPIC_AUTH_TOKEN: "would-be-billed",
+      GIT_DIR: `${home}/another-repository.git`,
+      GIT_WORK_TREE: `${home}/another-repository`,
     });
     yield* files.writeFileString(`${home}/claude`, recorder);
     yield* files.chmod(`${home}/claude`, executableMode);
@@ -235,6 +239,7 @@ it.live(
             argv: turnArguments(["--session-id", sessionId], systemPrompt),
             billed: [],
             cwd: served.directory,
+            repository: [],
             stdin: "今どうなってる？",
           },
           {
@@ -242,6 +247,7 @@ it.live(
             argv: turnArguments(["--resume", sessionId], systemPrompt),
             billed: [],
             cwd: served.directory,
+            repository: [],
             stdin: "続けて",
           },
         ],

@@ -1,8 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
 import { assert, it } from "@effect/vitest";
 import { Effect, FileSystem, Schema } from "effect";
+import type { Scope } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { bd } from "./bd.ts";
+import { childEnvironment } from "./child-environment.ts";
 import type { Task } from "./contract.ts";
 import { addComment, createLedger, locate, snapshot } from "./tasks.ts";
 
@@ -26,6 +29,63 @@ function create(
   return bd({ actor: "commander", directory }, ["create", title], Created).pipe(
     Effect.map(({ id }) => id),
   );
+}
+
+const identity = ["-c", "user.name=commander-test", "-c", "user.email=commander-test@example.com"];
+
+function git(
+  directory: string,
+  args: readonly string[],
+): Effect.Effect<void, unknown, NodeServices.NodeServices> {
+  return Effect.gen(function* ran() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const handle = yield* spawner.spawn(
+      ChildProcess.make("git", [...args], {
+        cwd: directory,
+        env: childEnvironment({}),
+        extendEnv: false,
+        stderr: "ignore",
+        stdin: "ignore",
+      }),
+    );
+    assert.strictEqual(yield* handle.exitCode, 0);
+  }).pipe(Effect.scoped);
+}
+
+function repositoryWithLinkedWorktree(
+  home: string,
+): Effect.Effect<string, unknown, NodeServices.NodeServices> {
+  return Effect.gen(function* prepared() {
+    const files = yield* FileSystem.FileSystem;
+    const other = `${home}/other`;
+    yield* files.makeDirectory(other);
+    yield* git(other, ["init", "-q"]);
+    yield* git(other, [...identity, "commit", "-q", "--allow-empty", "-m", "init"]);
+    yield* git(other, ["worktree", "add", "-q", `${home}/linked`, "-b", "linked"]);
+    return other;
+  });
+}
+
+function hookEnvironment(gitDirectory: string): Effect.Effect<void, never, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.sync(() => {
+      // oxlint-disable-next-line node/no-process-env
+      const previous = process.env["GIT_DIR"];
+      // oxlint-disable-next-line node/no-process-env
+      process.env["GIT_DIR"] = gitDirectory;
+      return previous;
+    }),
+    (previous) =>
+      Effect.sync(() => {
+        if (previous === undefined) {
+          // oxlint-disable-next-line node/no-process-env
+          delete process.env["GIT_DIR"];
+        } else {
+          // oxlint-disable-next-line node/no-process-env
+          process.env["GIT_DIR"] = previous;
+        }
+      }),
+  ).pipe(Effect.asVoid);
 }
 
 function task(id: string, title: string): typeof Task.Type {
@@ -184,6 +244,26 @@ it.effect(
         running: [],
         waiting: [],
       });
+    }).pipe(Effect.provide(NodeServices.layer)),
+  timeout,
+);
+
+it.effect(
+  "a ledger is created in the project even when a git hook points at another repository's worktree",
+  () =>
+    Effect.gen(function* program() {
+      const files = yield* FileSystem.FileSystem;
+      const temporary = yield* files.makeTempDirectoryScoped({ prefix: "commander-hook-" });
+      const home = yield* files.realPath(temporary);
+      const directory = `${home}/project`;
+      yield* files.makeDirectory(directory);
+      const other = yield* repositoryWithLinkedWorktree(home);
+      yield* hookEnvironment(`${other}/.git/worktrees/linked`);
+
+      yield* createLedger(directory);
+
+      assert.deepStrictEqual(yield* locate(directory), { directory, status: "ready" });
+      assert.strictEqual(yield* files.exists(`${other}/.beads`), false);
     }).pipe(Effect.provide(NodeServices.layer)),
   timeout,
 );

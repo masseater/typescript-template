@@ -1,6 +1,8 @@
 import { Effect, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { childEnvironment } from "./child-environment.ts";
+
 class BdFailure extends Schema.TaggedError<BdFailure>()("BdFailure", {
   cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals(["ledger_missing", "process_failed", "output_invalid", "rejected"]),
@@ -36,8 +38,8 @@ function run(
 > {
   const command = ChildProcess.make("bd", [...args], {
     cwd: ledger.directory,
-    env: { BEADS_ACTOR: ledger.actor },
-    extendEnv: true,
+    env: childEnvironment({ BEADS_ACTOR: ledger.actor }),
+    extendEnv: false,
     stderr: "ignore",
     stdin: "ignore",
   });
