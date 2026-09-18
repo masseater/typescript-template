@@ -7,6 +7,7 @@
     "#*": "./src/*"
   },
   "scripts": {
+    "check": "steiger src --fail-on-warnings",
     "dev": "vp dev",
     "preview": "vp preview"
   },
@@ -38,14 +39,13 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
-    "@feature-sliced/steiger-plugin": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@template/config": "workspace:*",
     "@template/dev-boundary": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "steiger": "catalog:",
+    "steiger": "0.6.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",

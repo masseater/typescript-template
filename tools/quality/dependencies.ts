@@ -1,3 +1,5 @@
+import { replacementFor, replacementMessage } from "./retired-packages.ts";
+
 interface WorkspaceManifest {
   readonly area: string;
   readonly file: string;
@@ -56,39 +58,16 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
   );
 }
 
-const retiredPackages: Readonly<Record<string, string>> = {
-  "@pulumi/": "alchemy",
-  "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
-  pulumi: "alchemy",
-  "react-intl": "Paraglide JS",
-  "smarthr-ui": "@template/ui の shadcn/ui (Base UI) 部品",
-  "styled-components": "Tailwind CSS v4 のユーティリティ",
-};
-
-function replacementFor(dependency: string): string | undefined {
-  const matched = Object.keys(retiredPackages).find(
-    (retired) =>
-      dependency === retired || (retired.endsWith("/") && dependency.startsWith(retired)),
-  );
-  return matched === undefined ? undefined : retiredPackages[matched];
-}
-
 function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
   return workspaces.flatMap(({ file, manifest }) =>
     declaredDependencies(manifest).flatMap((dependency) => {
       const replacement = replacementFor(dependency);
       return replacement === undefined
         ? []
-        : [`${file}: ${dependency} は置き換え済みです。${replacement} を使ってください。`];
+        : [`${file}: ${dependency} は置き換え済みです。${replacementMessage(replacement)}`];
     }),
   );
 }
 
-export {
-  applicationDependencyViolations,
-  field,
-  retiredDependencyViolations,
-  retiredPackages,
-  workspaceManifests,
-};
+export { applicationDependencyViolations, field, retiredDependencyViolations, workspaceManifests };
 export type { WorkspaceManifest };
