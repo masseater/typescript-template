@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import type { AnyElysia } from "elysia";
 
 import { cspNonceHeader, strictTransportSecurity } from "@repo/config/security";
@@ -14,7 +14,7 @@ import {
   readJsonBody,
   secureResponse,
 } from "./http.ts";
-import { startRoute } from "./worker.ts";
+import { startRoute, workerRuntime } from "./worker.ts";
 
 const origin = "http://localhost:3001";
 const secureOrigin = "https://user.example.test";
@@ -24,7 +24,7 @@ const created = 201;
 const jsonHeaders = { "content-type": "application/json", origin };
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
-const runtime = ManagedRuntime.make(context);
+const runtime = workerRuntime(() => context);
 const api = apiRoutes(runtime, { service: "user" });
 
 function mutation(headers: Readonly<Record<string, string>>, body: string): Request {

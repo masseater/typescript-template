@@ -1,4 +1,5 @@
-import { Duration, Effect } from "effect";
+import { Clock, Duration, Effect } from "effect";
+import type { Exit } from "effect";
 
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
 import type { EmailVerificationFailed } from "@repo/auth";
@@ -15,11 +16,22 @@ const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" }
 
 const healthCacheWindow = Duration.minutes(1);
 
+type DatabaseCheck = ReturnType<typeof checkDatabase>;
+
 function healthHandler() {
-  const isolate: { cachedDatabaseCheck?: ReturnType<typeof checkDatabase> } = {};
+  const isolate: {
+    check?: Promise<Exit.Exit<Effect.Success<DatabaseCheck>, Effect.Error<DatabaseCheck>>>;
+    expiresAt: number;
+  } = { expiresAt: 0 };
   return Effect.fn("health")(function* health() {
-    isolate.cachedDatabaseCheck ??= yield* Effect.cachedWithTTL(checkDatabase(), healthCacheWindow);
-    yield* isolate.cachedDatabaseCheck;
+    const now = yield* Clock.currentTimeMillis;
+    if (isolate.check === undefined || now >= isolate.expiresAt) {
+      const services = yield* Effect.context<Effect.Services<DatabaseCheck>>();
+      isolate.check = Effect.runPromiseExitWith(services)(checkDatabase());
+      isolate.expiresAt = now + Duration.toMillis(healthCacheWindow);
+    }
+    const { check } = isolate;
+    yield* yield* Effect.promise(async () => check);
     const telemetry = yield* Telemetry;
     return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
   });
