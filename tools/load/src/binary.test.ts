@@ -35,7 +35,6 @@ const tamperedArchives = Effect.acquireRelease(
     server.listen({ onUnhandledRequest: "bypass" });
     return server;
   }),
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (server) =>
     Effect.sync(() => {
       server.close();

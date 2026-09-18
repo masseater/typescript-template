@@ -16,7 +16,6 @@ NodeRuntime.runMain(
         );
       }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("EnvironmentUnusable", (failure) =>
       Effect.sync(() => {
         process.stderr.write(
