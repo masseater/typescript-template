@@ -10,11 +10,13 @@ type ParsedFields = {
 
 type HostMessage = Request | Response;
 
+const jsonMediaType = "application/json";
+
 const parsedBodyOf = async (hostMessage: HostMessage): Promise<unknown> => {
   const bodyText = await hostMessage.clone().text();
   if (bodyText === "") return null;
   const mediaType = hostMessage.headers.get("content-type") ?? "";
-  return mediaType.includes("json") ? (JSON.parse(bodyText) as unknown) : bodyText;
+  return mediaType.startsWith(jsonMediaType) ? (JSON.parse(bodyText) as unknown) : bodyText;
 };
 
 const parsedFieldsOf = async (hostMessage: HostMessage): Promise<ParsedFields> => ({

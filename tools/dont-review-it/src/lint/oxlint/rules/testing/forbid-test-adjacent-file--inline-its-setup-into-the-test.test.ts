@@ -63,10 +63,10 @@ describe("dont-review-it/forbid-test-adjacent-file--inline-its-setup-into-the-te
         errors: [{ messageId: "testAdjacentFile", data: { fileName: "order.mock.ts" } }],
       },
       {
-        name: "a story spelling is reported",
+        name: "a single story spelling is reported",
         code: "export const total = 1;",
-        filename: "/repository/src/order.stories.tsx",
-        errors: [{ messageId: "testAdjacentFile", data: { fileName: "order.stories.tsx" } }],
+        filename: "/repository/src/order.story.tsx",
+        errors: [{ messageId: "testAdjacentFile", data: { fileName: "order.story.tsx" } }],
       },
       {
         name: "a spec marker carrying a further suffix is reported",

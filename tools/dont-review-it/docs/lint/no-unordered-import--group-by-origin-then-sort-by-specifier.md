@@ -58,6 +58,14 @@ import type { Entry } from "./entry.ts";
 ```
 
 ```ts
+// a subpath import sits with the imports of this repository
+import { memoize } from "es-toolkit";
+
+import { routes } from "#telemetry-routes.ts";
+import { report } from "./report.ts";
+```
+
+```ts
 // a side-effect import carries no bindings and is left where its evaluation order puts it
 import "./style.css";
 import heroImage from "./assets/hero.png";
