@@ -7,19 +7,21 @@ import { createServer } from "vite-plus";
 import { describe, expect, test as baseTest } from "vite-plus/test";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { applicationsExcept } from "./private-path.ts";
 
 const okStatus = 200;
 const forbiddenStatus = 403;
+const badRequestStatus = 400;
 const hexRadix = 16;
 const refusalText = "Private development resource denied";
 const administratorDatabaseModulePath = "libs/db/src/admin.ts?raw";
 const administratorDatabaseSource = 'export const label = "private-admin-database";';
 
 describe.each(applications)("the %s development server", (application) => {
-  const foreignApplications = applications.filter((candidate) => candidate !== application);
+  const foreignApplications = applicationsExcept(application);
   const applicationEntrySource = `export const label = "${application}-module";`;
   const servedApplicationEntryModule = `export default ${JSON.stringify(applicationEntrySource)}`;
-  const ownApplicationEntryPoints = ["/", "/@vite/client"];
+  const ownApplicationEntryPoints = ["/", "/@vite/client", "/src/entry.js"];
   const servedOwnApplicationEntryPoints = Object.fromEntries(
     ownApplicationEntryPoints.map((entryPoint) => [entryPoint, okStatus]),
   );
@@ -53,6 +55,13 @@ describe.each(applications)("the %s development server", (application) => {
   ];
   const refusedPrivateModules = Object.fromEntries(
     privateModulePaths.map((privateModule) => [privateModule, forbiddenStatus]),
+  );
+  const undecidablePaths = ["/%", "/src/%E0%A4%A"];
+  const refusedUndecidableRequests = Object.fromEntries(
+    undecidablePaths.map((undecidablePath) => [
+      undecidablePath,
+      `${badRequestStatus} Invalid request`,
+    ]),
   );
 
   const it = baseTest
@@ -157,6 +166,16 @@ describe.each(applications)("the %s development server", (application) => {
         ),
       ),
     )
+    .extend("responsesOfTheUndecidableRequests", async ({ devServerOrigin }) =>
+      Object.fromEntries(
+        await Promise.all(
+          undecidablePaths.map(async (undecidablePath): Promise<readonly [string, string]> => {
+            const served = await fetch(new URL(undecidablePath, devServerOrigin));
+            return [undecidablePath, `${served.status} ${await served.text()}`];
+          }),
+        ),
+      ),
+    )
     .extend("statusesOfThePrivateModules", async ({ devServerOrigin, repositoryRoot }) =>
       Object.fromEntries(
         await Promise.all(
@@ -190,5 +209,9 @@ describe.each(applications)("the %s development server", (application) => {
 
   it("refuses every private module", ({ statusesOfThePrivateModules }) => {
     expect(statusesOfThePrivateModules).toStrictEqual(refusedPrivateModules);
+  });
+
+  it("refuses a request whose path it cannot decode", ({ responsesOfTheUndecidableRequests }) => {
+    expect(responsesOfTheUndecidableRequests).toStrictEqual(refusedUndecidableRequests);
   });
 });

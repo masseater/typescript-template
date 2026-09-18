@@ -7,6 +7,5 @@ export default defineConfig({
     coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
     mockReset: true,
     restoreMocks: true,
-    testTimeout: 60_000,
   },
 });
