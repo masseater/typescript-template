@@ -64,16 +64,11 @@ function readSearchParams<Contract extends Decodable>(
 const apiRoot = "/api";
 
 function createApi<const Prefix extends string>(prefix: Prefix) {
-  return new Elysia({ adapter: CloudflareAdapter, prefix })
+  return new Elysia({ adapter: CloudflareAdapter, aot: false, prefix })
     .onParse(() => unreadBody)
     .onError(({ code }) =>
       code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
     );
-}
-
-function compileApi<App extends AnyElysia>(app: App): App {
-  app.compile();
-  return app;
 }
 
 type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
@@ -84,11 +79,22 @@ function elysiaServer(app: AnyElysia): {
   async function handle(context: ElysiaContext): Promise<Response> {
     return app.fetch(context.request);
   }
+  async function handleHead(context: ElysiaContext): Promise<Response> {
+    const response = await app.fetch(new Request(context.request, { method: "GET" }));
+    const body = await response.arrayBuffer();
+    const headers = new Headers(response.headers);
+    headers.set("content-length", String(body.byteLength));
+    return new Response(undefined, {
+      headers,
+      status: response.status,
+      statusText: response.statusText,
+    });
+  }
   return {
     handlers: {
       DELETE: handle,
       GET: handle,
-      HEAD: handle,
+      HEAD: handleHead,
       OPTIONS: handle,
       PATCH: handle,
       POST: handle,
@@ -164,6 +170,6 @@ export { AppOrigin } from "./app-origin.ts";
 export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
-export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer, readJsonBody, readSearchParams };
+export { apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
 export type { ApiRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

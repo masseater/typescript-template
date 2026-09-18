@@ -1,7 +1,6 @@
 import {
   AppOrigin,
   apiRoutes,
-  compileApi,
   createApi,
   elysiaServer,
   readJsonBody,
@@ -42,7 +41,7 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
 }
 
 async function callApi(app: AnyElysia, request: Request): Promise<Response> {
-  return Effect.runPromise(servedThroughStart(compileApi(app))(request));
+  return Effect.runPromise(servedThroughStart(app)(request));
 }
 
 const rejections = [

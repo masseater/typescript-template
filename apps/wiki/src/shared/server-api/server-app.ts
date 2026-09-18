@@ -1,4 +1,4 @@
-import { apiRoot, apiRoutes, compileApi, createApi, jsonResponse } from "@repo/runtime/http";
+import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
 import { sessionApi, unavailable } from "@repo/runtime/account";
 import { Effect } from "effect";
 import type { WikiServices } from "@repo/runtime/wiki";
@@ -19,13 +19,10 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
     : Effect.succeed(jsonResponse([]));
 }
 
-const app = createApi(apiRoot).use(sessionApi(api)).get("/search", api.raw(search, {}));
+const wikiApi = createApi(apiRoot).use(sessionApi(api)).get("/search", api.raw(search, {}));
 
-const protocol = createApi("")
+const wikiProtocol = createApi("")
   .all("/mcp", api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
-
-const wikiApi = compileApi(app);
-const wikiProtocol = compileApi(protocol);
 
 export { wikiApi, wikiProtocol };

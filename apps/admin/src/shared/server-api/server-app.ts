@@ -7,14 +7,7 @@ import {
   UserListQuery,
 } from "@repo/runtime/contracts";
 import { accountApi, unavailable } from "@repo/runtime/account";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@repo/runtime/http";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
 import { Effect } from "effect";
 import { httpStatus } from "@repo/observability";
@@ -36,7 +29,7 @@ const failures = {
   },
 };
 
-const app = createApi(apiRoot)
+const adminApi = createApi(apiRoot)
   .use(accountApi(api))
   .get(
     "/users",
@@ -77,7 +70,5 @@ const app = createApi(apiRoot)
       failures,
     ),
   );
-
-const adminApi = compileApi(app);
 
 export { adminApi };
