@@ -55,6 +55,11 @@ fetch(config.catalogEndpoint);
 document.body.innerHTML = `<a href="https://vite.dev/" target="_blank">Vite</a>`;
 ```
 
+```ts
+// a request handed to an in-process handler opens no connection
+app.handle(new Request('http://localhost/api/health'));
+```
+
 <!-- END GENERATED examples -->
 
 ### Forbidden bypasses (do not do this)

@@ -21,7 +21,7 @@ export const gitOutput = (
   environment: GitEnvironment,
 ): string | null => {
   const repositoryAgnosticEnv = omitBy(environment.env, (_, environmentName) =>
-    String(environmentName).startsWith("GIT_"),
+    environmentName.startsWith("GIT_"),
   );
   const [unaskableGit, gitStdout] = attempt<string, Error>(() =>
     execFileSync(gitExecutablePath(repositoryAgnosticEnv.PATH), [...gitArguments], {

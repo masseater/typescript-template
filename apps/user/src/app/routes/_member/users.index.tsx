@@ -9,16 +9,18 @@ import {
 
 import { UsersRoute } from "./-users-route.tsx";
 
-type RawSearch = Readonly<Record<string, unknown>>;
-
 // oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/users/")({
   validateSearch: normalizeUsersSearch,
-  loaderDeps: ({ search }: Readonly<{ search: RawSearch }>) => normalizeUsersSearch(search),
+  loaderDeps: ({ search }: Readonly<{ search: Readonly<Record<string, unknown>> }>) =>
+    normalizeUsersSearch(search),
   beforeLoad: ({
     location,
     search,
-  }: Readonly<{ location: Readonly<{ searchStr: string }>; search: RawSearch }>) => {
+  }: Readonly<{
+    location: Readonly<{ searchStr: string }>;
+    search: Readonly<Record<string, unknown>>;
+  }>) => {
     const normalized = normalizeUsersSearch(search);
     if (location.searchStr !== defaultStringifySearch(normalized)) {
       throw redirect({ replace: true, search: normalized, to: "/users" });

@@ -26,14 +26,13 @@ describe("dontReviewItPreset.fmt", () => {
   });
 
   describe("a call that adds ignored paths of its own", () => {
-    const it = test.extend("formatting", () =>
-      dontReviewItPreset.fmt({ ignorePatterns: ["**/generated.ts"] }));
+    const it = test.extend("lastIgnoredPaths", () =>
+      dontReviewItPreset.fmt({ ignorePatterns: ["**/generated.ts"] }).ignorePatterns?.slice(-2));
 
-    it("keeps the paths the preset ignores and adds the caller's after them", ({ formatting }) => {
-      expect(formatting.ignorePatterns?.slice(-2)).toStrictEqual([
-        "**/docs/lint/*.md",
-        "**/generated.ts",
-      ]);
+    it("keeps the paths the preset ignores and adds the caller's after them", ({
+      lastIgnoredPaths,
+    }) => {
+      expect(lastIgnoredPaths).toStrictEqual(["**/docs/lint/*.md", "**/generated.ts"]);
     });
   });
 });
