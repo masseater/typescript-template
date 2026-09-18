@@ -22,8 +22,17 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       build: { command: "vp build", input: [...taskInput, "!dist"] },
+      "check:start": {
+        cache: false,
+        command: "node src/app/check-start.ts",
+        dependsOn: ["build"],
+      },
       start: { cache: false, command: "node src/app/cli.ts", dependsOn: ["build"] },
-      ...lifecycle({ precommit: [], premerge: ["build"], prepush: ["check:effect", "check"] }),
+      ...lifecycle({
+        precommit: [],
+        premerge: ["build", "check:start"],
+        prepush: ["check:effect", "check"],
+      }),
     },
   },
 });

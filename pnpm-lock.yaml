@@ -1337,6 +1337,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
+      playwright:
+        specifier: 'catalog:'
+        version: 1.63.0
       steiger:
         specifier: 0.6.0
         version: 0.6.0(typescript@7.0.2)
