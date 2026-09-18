@@ -1,46 +1,22 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { ViteUserConfigFnObject } from "vite-plus";
-import { appRun } from "@repo/config/vite";
+import { field, workspaceManifests } from "./dependencies.ts";
 import { applications } from "@repo/config";
 import { reported } from "./lint-harness.ts";
 
 const source = "export const value = 1;\n";
 
-const appConfigs: Readonly<Record<string, ViteUserConfigFnObject>> =
-  import.meta.glob<ViteUserConfigFnObject>("../../apps/*/vite.config.ts", {
-    eager: true,
-    import: "default",
-  });
-
-const steigerConfigs: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../apps/*/steiger.config.ts",
-  { eager: true, import: "default" },
-);
-
-function appName(key: string): string {
-  return /\/apps\/(?<app>[^/]+)\//u.exec(key)?.groups?.["app"] ?? "";
-}
-
 describe("steiger coverage", () => {
-  it("runs the shared layer check in every application", () => {
+  it("runs the layer check in every application", () => {
     expect.hasAssertions();
-    expect(
-      Object.keys(appConfigs)
-        .map((key) => appName(key))
+    const checks = workspaceManifests
+      .filter(({ area }) => area === "apps")
+      .map(({ file, manifest }) => `${file}: ${String(field(field(manifest, "scripts"), "check"))}`)
+      .toSorted();
+    expect(checks).toStrictEqual(
+      applications
+        .map((app) => `apps/${app}/package.json: steiger src --fail-on-warnings`)
         .toSorted(),
-    ).toStrictEqual(applications.toSorted());
-    for (const config of Object.values(appConfigs)) {
-      expect(config({ command: "build", mode: "production" }).run).toBe(appRun);
-    }
-  });
-
-  it("gives every application its own steiger config", () => {
-    expect.hasAssertions();
-    expect(
-      Object.keys(steigerConfigs)
-        .map((key) => appName(key))
-        .toSorted(),
-    ).toStrictEqual(applications.toSorted());
+    );
   });
 });
 
