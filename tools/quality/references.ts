@@ -1,40 +1,29 @@
-import { scopeOf } from "./lint-context.ts";
+import {
+  scopeOf,
+  type DeepReadonly,
+  type LintContext,
+  type Node,
+  type NodeOf,
+} from "./lint-context.ts";
 
-import type { Definition, Reference, Scope, Variable } from "vite-plus/lint/plugins";
-import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
+import type { Definition, Reference, Variable } from "vite-plus/lint/plugins";
 
-type Origin = readonly string[];
-type Resolve<Result> = (node: Node) => Result;
+type ScopeLink = {
+  readonly set: { readonly get: (declared: string) => Variable | undefined };
+  readonly upper: ScopeLink | null;
+};
 
-const knownGlobals: ReadonlyMap<string, Origin> = new Map([
-  ["vi", ["vitest", "vi"]],
-  ["vitest", ["vitest", "vi"]],
-  ["jest", ["@jest/globals", "jest"]],
-  ["process", ["node:process"]],
-  ["globalThis", ["global"]],
-  ["global", ["global"]],
-  ["window", ["global"]],
-  ["require", ["require"]],
-]);
+const variableOf = (inspection: LintContext, node: NodeOf<"Identifier">): Variable | undefined => {
+  const declaredIn = (scope: ScopeLink | null): Variable | undefined =>
+    scope === null ? undefined : (scope.set.get(node.name) ?? declaredIn(scope.upper));
+  return declaredIn(scopeOf(inspection, node));
+};
 
-function variableOf(context: LintContext, node: NodeOf<"Identifier">): Variable | undefined {
-  let scope: Scope | null = scopeOf(context, node);
-  while (scope !== null) {
-    const variable = scope.set.get(node.name);
-    if (variable !== undefined) {
-      return variable;
-    }
-    scope = scope.upper;
-  }
-  return undefined;
-}
-
-function extendOrigin(origin: Origin, suffix: readonly string[]): Origin {
-  return [...origin, ...suffix];
-}
-
-function constantInitializer(context: LintContext, node: NodeOf<"Identifier">): Node | undefined {
-  const variable = variableOf(context, node);
+const constantInitializer = (
+  inspection: LintContext,
+  node: NodeOf<"Identifier">,
+): Node | undefined => {
+  const variable = variableOf(inspection, node);
   if (
     variable?.references.some(
       (reference: DeepReadonly<Reference>) => reference.isWrite() && !reference.init,
@@ -44,13 +33,22 @@ function constantInitializer(context: LintContext, node: NodeOf<"Identifier">): 
   }
   const definition = variable?.defs[0]?.node;
   return definition?.type === "VariableDeclarator" && definition.init ? definition.init : undefined;
-}
+};
 
-function derivedText(
-  context: LintContext,
-  node: Node,
-  resolve: Resolve<string | undefined>,
-): string | undefined {
+type Resolve<Resolved> = (node: Node) => Resolved;
+
+const concatenatedText = (
+  left: string | undefined,
+  right: string | undefined,
+): string | undefined => {
+  return left === undefined || right === undefined ? undefined : left + right;
+};
+
+const derivedText = (
+  inspection: LintContext,
+  lookup: { readonly node: Node; readonly resolve: Resolve<string | undefined> },
+): string | undefined => {
+  const { node, resolve } = lookup;
   if (
     node.type === "TSAsExpression" ||
     node.type === "TSSatisfiesExpression" ||
@@ -59,108 +57,121 @@ function derivedText(
     return resolve(node.expression);
   }
   if (node.type === "BinaryExpression" && node.operator === "+") {
-    const left = resolve(node.left);
-    const right = resolve(node.right);
-    return left === undefined || right === undefined ? undefined : left + right;
+    return concatenatedText(resolve(node.left), resolve(node.right));
   }
-  const initializer = node.type === "Identifier" ? constantInitializer(context, node) : undefined;
+  const initializer =
+    node.type === "Identifier" ? constantInitializer(inspection, node) : undefined;
   return initializer === undefined ? undefined : resolve(initializer);
-}
+};
 
-function staticText(
-  context: LintContext,
-  node: Node,
-  seen: Readonly<ReadonlySet<Node>> = new Set(),
-): string | undefined {
-  if (seen.has(node)) {
-    return undefined;
-  }
+const literalText = (node: Node): string | undefined => {
   if (node.type === "Literal") {
     return typeof node.value === "string" ? node.value : undefined;
   }
-  if (node.type === "TemplateLiteral") {
-    return node.expressions.length === 0 ? (node.quasis[0]?.value.cooked ?? undefined) : undefined;
+  if (node.type !== "TemplateLiteral") {
+    return undefined;
   }
-  const next = new Set([...seen, node]);
-  return derivedText(context, node, (child) => staticText(context, child, next));
-}
+  return node.expressions.length === 0 ? (node.quasis[0]?.value.cooked ?? undefined) : undefined;
+};
 
-function propertyName(
-  context: LintContext,
+const staticText = (inspection: LintContext, node: Node): string | undefined => {
+  const textOf = (inspected: Node, visited: Readonly<ReadonlySet<Node>>): string | undefined => {
+    const deepened = new Set([...visited, inspected]);
+    return visited.has(inspected)
+      ? undefined
+      : (literalText(inspected) ??
+          derivedText(inspection, {
+            node: inspected,
+            resolve: (child) => textOf(child, deepened),
+          }));
+  };
+  return textOf(node, new Set());
+};
+
+const propertyName = (
+  inspection: LintContext,
   property: NodeOf<"Property" | "TSPropertySignature">,
-): string | undefined {
+): string | undefined => {
   return !property.computed && property.key.type === "Identifier"
     ? property.key.name
-    : staticText(context, property.key);
-}
+    : staticText(inspection, property.key);
+};
 
-function propertyKey(context: LintContext, node: NodeOf<"MemberExpression">): string | undefined {
-  if (!node.computed && node.property.type === "Identifier") {
-    return node.property.name;
-  }
-  return staticText(context, node.property);
-}
+type Origin = readonly string[];
 
-function propertyBindingPath(
-  context: LintContext,
-  property: NodeOf<"ObjectPattern">["properties"][number],
-  resolve: Resolve<string[] | undefined>,
-): string[] | undefined {
+const extendOrigin = (origin: Origin, suffix: readonly string[]): Origin => {
+  return [...origin, ...suffix];
+};
+
+const destructuredOrigins = (
+  inspection: LintContext,
+  binding: { readonly inputs: readonly Origin[]; readonly pattern: Node },
+): readonly Origin[] => {
+  const spread = (pattern: Node, inputs: readonly Origin[]): readonly Origin[] => {
+    if (pattern.type === "AssignmentPattern") {
+      return spread(pattern.left, inputs);
+    }
+    if (pattern.type !== "ObjectPattern") {
+      return inputs;
+    }
+    return pattern.properties.flatMap((property) => {
+      if (property.type === "RestElement") {
+        return inputs;
+      }
+      const memberName = propertyName(inspection, property);
+      return memberName === undefined
+        ? []
+        : spread(
+            property.value,
+            inputs.map((origin) => extendOrigin(origin, [memberName])),
+          );
+    });
+  };
+  return spread(binding.pattern, binding.inputs);
+};
+
+const propertyBindingPath = (
+  inspection: LintContext,
+  lookup: {
+    readonly property: NodeOf<"ObjectPattern">["properties"][number];
+    readonly resolve: Resolve<string[] | undefined>;
+  },
+): string[] | undefined => {
+  const { property, resolve } = lookup;
   if (property.type === "RestElement") {
     return resolve(property.argument);
   }
   const suffix = resolve(property.value);
-  const key = suffix === undefined ? undefined : propertyName(context, property);
-  return key === undefined || suffix === undefined ? undefined : [key, ...suffix];
-}
+  const memberName = suffix === undefined ? undefined : propertyName(inspection, property);
+  return memberName === undefined || suffix === undefined ? undefined : [memberName, ...suffix];
+};
 
-function bindingPath(context: LintContext, pattern: Node, name: string): string[] | undefined {
-  if (pattern.type === "Identifier") {
-    return pattern.name === name ? [] : undefined;
-  }
-  if (pattern.type !== "ObjectPattern") {
-    return pattern.type === "AssignmentPattern"
-      ? bindingPath(context, pattern.left, name)
+const bindingPath = (
+  inspection: LintContext,
+  binding: { readonly boundName: string; readonly pattern: Node },
+): string[] | undefined => {
+  const pathTo = (pattern: Node): string[] | undefined => {
+    if (pattern.type === "Identifier") {
+      return pattern.name === binding.boundName ? [] : undefined;
+    }
+    if (pattern.type === "AssignmentPattern") {
+      return pathTo(pattern.left);
+    }
+    return pattern.type === "ObjectPattern"
+      ? pattern.properties
+          .map((property) => propertyBindingPath(inspection, { property, resolve: pathTo }))
+          .find((path) => path !== undefined)
       : undefined;
-  }
-  for (const property of pattern.properties) {
-    const path = propertyBindingPath(context, property, (child) =>
-      bindingPath(context, child, name),
-    );
-    if (path !== undefined) {
-      return path;
-    }
-  }
-  return undefined;
-}
+  };
+  return pathTo(binding.pattern);
+};
 
-function destructuredOrigins(
-  context: LintContext,
-  pattern: Node,
-  inputs: readonly Origin[],
-): readonly Origin[] {
-  if (pattern.type === "AssignmentPattern") {
-    return destructuredOrigins(context, pattern.left, inputs);
-  }
-  if (pattern.type !== "ObjectPattern") {
-    return inputs;
-  }
-  return pattern.properties.flatMap((property) => {
-    if (property.type === "RestElement") {
-      return inputs;
-    }
-    const key = propertyName(context, property);
-    return key === undefined
-      ? []
-      : destructuredOrigins(
-          context,
-          property.value,
-          inputs.map((origin) => extendOrigin(origin, [key])),
-        );
-  });
-}
+type OriginLookup<Inspected extends Node = Node> = {
+  readonly node: Inspected;
+  readonly resolve: Resolve<Origin[]>;
+};
 
-function importedOrigin(declaration: Node): Origin | undefined {
+const importedOrigin = (declaration: Node): Origin | undefined => {
   if (
     !["ImportSpecifier", "ImportDefaultSpecifier", "ImportNamespaceSpecifier"].includes(
       declaration.type,
@@ -176,96 +187,130 @@ function importedOrigin(declaration: Node): Origin | undefined {
   return declaration.imported.type === "Identifier"
     ? [source, declaration.imported.name]
     : [source, declaration.imported.value];
-}
+};
 
-function identifierOrigins(
-  context: LintContext,
-  node: NodeOf<"Identifier">,
-  resolve: Resolve<Origin[]>,
-): Origin[] {
-  const variable = variableOf(context, node);
+const definitionOrigins = (
+  inspection: LintContext,
+  lookup: OriginLookup<NodeOf<"Identifier">> & { readonly definition: DeepReadonly<Definition> },
+): Origin[] => {
+  const declaration = lookup.definition.node;
+  const imported = importedOrigin(declaration);
+  if (imported !== undefined) {
+    return [imported];
+  }
+  if (declaration.type !== "VariableDeclarator" || !declaration.init) {
+    return [];
+  }
+  const suffix = bindingPath(inspection, {
+    boundName: lookup.node.name,
+    pattern: declaration.id,
+  });
+  return suffix === undefined
+    ? []
+    : lookup.resolve(declaration.init).map((origin) => extendOrigin(origin, suffix));
+};
+
+const knownGlobals: ReadonlyMap<string, Origin> = new Map([
+  ["vi", ["vitest", "vi"]],
+  ["vitest", ["vitest", "vi"]],
+  ["jest", ["@jest/globals", "jest"]],
+  ["process", ["node:process"]],
+  ["globalThis", ["global"]],
+  ["global", ["global"]],
+  ["window", ["global"]],
+  ["require", ["require"]],
+]);
+
+const identifierOrigins = (
+  inspection: LintContext,
+  lookup: OriginLookup<NodeOf<"Identifier">>,
+): Origin[] => {
+  const variable = variableOf(inspection, lookup.node);
   if (variable === undefined || variable.defs.length === 0) {
-    const known = knownGlobals.get(node.name);
+    const known = knownGlobals.get(lookup.node.name);
     return known === undefined ? [] : [known];
   }
-  const definitions = variable.defs.flatMap((definition: DeepReadonly<Definition>): Origin[] => {
-    const declaration = definition.node;
-    const imported = importedOrigin(declaration);
-    if (imported !== undefined) {
-      return [imported];
-    }
-    if (declaration.type !== "VariableDeclarator" || !declaration.init) {
-      return [];
-    }
-    const suffix = bindingPath(context, declaration.id, node.name);
-    return suffix === undefined
-      ? []
-      : resolve(declaration.init).map((origin) => extendOrigin(origin, suffix));
-  });
+  const definitions = variable.defs.flatMap((definition: DeepReadonly<Definition>) =>
+    definitionOrigins(inspection, { ...lookup, definition }),
+  );
   const assignments = variable.references.flatMap((reference: DeepReadonly<Reference>) =>
     !reference.isWrite() || reference.init || !reference.writeExpr
       ? []
-      : resolve(reference.writeExpr),
+      : lookup.resolve(reference.writeExpr),
   );
   return [...definitions, ...assignments];
-}
+};
 
-function callOrigins(
-  context: LintContext,
-  node: NodeOf<"CallExpression">,
-  resolve: Resolve<Origin[]>,
-): Origin[] {
-  const targets = resolve(node.callee);
+const callOrigins = (
+  inspection: LintContext,
+  lookup: OriginLookup<NodeOf<"CallExpression">>,
+): Origin[] => {
+  const called = lookup.resolve(lookup.node.callee);
   if (
-    targets.some((origin) =>
+    called.some((origin) =>
       ["node:module.createRequire", "module.createRequire"].includes(origin.join(".")),
     )
   ) {
     return [["require"]];
   }
-  if (!targets.some((origin) => origin.length === 1 && origin[0] === "require")) {
+  if (!called.some((origin) => origin.length === 1 && origin[0] === "require")) {
     return [];
   }
-  const [first] = node.arguments;
-  const source = first === undefined ? undefined : staticText(context, first);
+  const [first] = lookup.node.arguments;
+  const source = first === undefined ? undefined : staticText(inspection, first);
   return source === undefined ? [] : [[source]];
-}
+};
 
-function memberOrigins(
-  context: LintContext,
+const propertyKey = (
+  inspection: LintContext,
   node: NodeOf<"MemberExpression">,
-  resolve: Resolve<Origin[]>,
-): Origin[] {
-  const key = propertyKey(context, node);
-  return key === undefined ? [] : resolve(node.object).map((origin) => extendOrigin(origin, [key]));
-}
+): string | undefined => {
+  if (!node.computed && node.property.type === "Identifier") {
+    return node.property.name;
+  }
+  return staticText(inspection, node.property);
+};
 
-function expressionOrigins(context: LintContext, node: Node, resolve: Resolve<Origin[]>): Origin[] {
+const memberOrigins = (
+  inspection: LintContext,
+  lookup: OriginLookup<NodeOf<"MemberExpression">>,
+): Origin[] => {
+  const member = propertyKey(inspection, lookup.node);
+  return member === undefined
+    ? []
+    : lookup.resolve(lookup.node.object).map((origin) => extendOrigin(origin, [member]));
+};
+
+const metaOrigins = (node: NodeOf<"MetaProperty">): Origin[] => {
+  return node.meta.name === "import" && node.property.name === "meta" ? [["import.meta"]] : [];
+};
+
+const importedModuleOrigins = (
+  inspection: LintContext,
+  node: NodeOf<"ImportExpression">,
+): Origin[] => {
+  const source = staticText(inspection, node.source);
+  return source === undefined ? [] : [[source]];
+};
+
+const expressionOrigins = (inspection: LintContext, lookup: OriginLookup): Origin[] => {
+  const { node, resolve } = lookup;
   if (node.type === "MetaProperty") {
-    return node.meta.name === "import" && node.property.name === "meta" ? [["import.meta"]] : [];
+    return metaOrigins(node);
   }
   if (node.type === "MemberExpression") {
-    return memberOrigins(context, node, resolve);
+    return memberOrigins(inspection, { node, resolve });
   }
   if (node.type === "ImportExpression") {
-    const source = staticText(context, node.source);
-    return source === undefined ? [] : [[source]];
+    return importedModuleOrigins(inspection, node);
   }
   if (node.type === "CallExpression") {
-    return callOrigins(context, node, resolve);
+    return callOrigins(inspection, { node, resolve });
   }
-  return node.type === "Identifier" ? identifierOrigins(context, node, resolve) : [];
-}
+  return node.type === "Identifier" ? identifierOrigins(inspection, { node, resolve }) : [];
+};
 
-function origins(
-  context: LintContext,
-  node: Node,
-  seen: Readonly<ReadonlySet<Node>> = new Set(),
-): Origin[] {
-  if (seen.has(node)) {
-    return [];
-  }
-  const next = new Set([...seen, node]);
+const unwrappedOrigin = (node: Node): Node | undefined => {
   if (
     node.type === "TSAsExpression" ||
     node.type === "TSNonNullExpression" ||
@@ -273,17 +318,38 @@ function origins(
     node.type === "TSTypeAssertion" ||
     node.type === "ChainExpression"
   ) {
-    return origins(context, node.expression, next);
+    return node.expression;
   }
-  return node.type === "AwaitExpression"
-    ? origins(context, node.argument, next)
-    : expressionOrigins(context, node, (child) => origins(context, child, next));
-}
+  return node.type === "AwaitExpression" ? node.argument : undefined;
+};
+
+const originsSeenFrom = (
+  inspection: LintContext,
+  traversal: { readonly node: Node; readonly visited: Readonly<ReadonlySet<Node>> },
+): Origin[] => {
+  const { node, visited } = traversal;
+  const deepened = new Set([...visited, node]);
+  const unwrapped = unwrappedOrigin(node);
+  if (visited.has(node)) {
+    return [];
+  }
+  return unwrapped === undefined
+    ? expressionOrigins(inspection, {
+        node,
+        resolve: (child) => originsSeenFrom(inspection, { node: child, visited: deepened }),
+      })
+    : originsSeenFrom(inspection, { node: unwrapped, visited: deepened });
+};
+
+const origins = (inspection: LintContext, node: Node): Origin[] => {
+  return originsSeenFrom(inspection, { node, visited: new Set() });
+};
 
 export {
   bindingPath,
   destructuredOrigins,
   origins,
+  originsSeenFrom,
   propertyKey,
   propertyName,
   staticText,

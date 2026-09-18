@@ -1,43 +1,45 @@
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
-import { filename, reportViolation } from "./lint-context.ts";
+import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { specifierVisitor } from "./module-specifiers.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
-
-interface RawD1Checks {
-  readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;
-  readonly operation: (node: Node) => void;
-}
 
 const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
-const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
+const rawD1Modules = rawD1Adapters.map((adapter) => `libs/db/src/${adapter}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
 
-function rawD1Checks(context: LintContext): RawD1Checks {
-  const allowed = rawD1Pattern.test(filename(context));
+const rawD1Checks = (
+  inspection: LintContext,
+): {
+  readonly destructuring: (
+    reported: Node,
+    destructuring: { readonly input: Node; readonly pattern: Node },
+  ) => void;
+  readonly operation: (node: Node) => void;
+} => {
+  const allowed = rawD1Pattern.test(filename(inspection));
   return {
-    destructuring: (reported, pattern, input) => {
-      if (!allowed && destructuresD1Operation(context, pattern, input)) {
-        reportViolation(context, reported);
+    destructuring: (reported, { input, pattern }) => {
+      if (!allowed && destructuresD1Operation(inspection, { input, pattern })) {
+        reportViolation(inspection, reported);
       }
     },
     operation: (node) => {
-      if (!allowed && isD1Operation(context, node)) {
-        reportViolation(context, node);
+      if (!allowed && isD1Operation(inspection, node)) {
+        reportViolation(inspection, node);
       }
     },
   };
-}
+};
 
-function boundariesVisitor(context: LintContext): Visitor {
-  const specifiers = specifierVisitor(context);
-  const checks = rawD1Checks(context);
+const boundariesVisitor = (inspection: LintContext): Visitor => {
+  const specifiers = specifierVisitor(inspection);
+  const checks = rawD1Checks(inspection);
   return {
     ...specifiers.visitor,
     AssignmentExpression(node: Node): void {
       if (node.type === "AssignmentExpression") {
-        checks.destructuring(node, node.left, node.right);
+        checks.destructuring(node, { input: node.right, pattern: node.left });
       }
     },
     CallExpression(node: Node): void {
@@ -54,15 +56,15 @@ function boundariesVisitor(context: LintContext): Visitor {
     },
     ObjectPattern(node: Node): void {
       if (node.type === "ObjectPattern" && node.typeAnnotation) {
-        checks.destructuring(node, node, node.typeAnnotation);
+        checks.destructuring(node, { input: node.typeAnnotation, pattern: node });
       }
     },
     VariableDeclarator(node: Node): void {
       if (node.type === "VariableDeclarator" && node.init) {
-        checks.destructuring(node, node.id, node.init);
+        checks.destructuring(node, { input: node.init, pattern: node.id });
       }
     },
   };
-}
+};
 
 export { boundariesVisitor, rawD1Modules };

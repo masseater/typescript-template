@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { describe, expect, it } from "vite-plus/test";
@@ -43,7 +40,7 @@ const layouts: readonly Layout[] = [
   { files: [], links: [], name: "nothing", violations: bothMissing },
 ];
 
-async function build(root: string, layout: Layout): Promise<void> {
+const build = async (root: string, layout: Layout): Promise<void> => {
   const target = path.join(root, directory);
   await mkdir(target, { recursive: true });
   await Promise.all(
@@ -52,7 +49,7 @@ async function build(root: string, layout: Layout): Promise<void> {
   await Promise.all(
     layout.links.map(async ([source, name]) => symlink(source, path.join(target, name))),
   );
-}
+};
 
 describe("workspace instruction files", () => {
   it.for(layouts)("counts the violations of a workspace with $name", async (layout) => {

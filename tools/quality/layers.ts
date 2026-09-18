@@ -1,9 +1,8 @@
 import { applications } from "@repo/config";
 
-import { reportViolation } from "./lint-context.ts";
+import { reportViolation, type LintContext, type Node } from "./lint-context.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
 
 const layeredApps: readonly string[] = applications;
 const layers: ReadonlySet<string> = new Set([
@@ -15,24 +14,23 @@ const layers: ReadonlySet<string> = new Set([
   "shared",
 ]);
 
-function isOutsideLayers(current: string): boolean {
-  const groups = /\/apps\/(?<app>[^/]+)\/src\/(?<inside>.+)$/u.exec(current)?.groups;
-  const [layer, ...segments] = groups?.["inside"]?.split("/") ?? [];
+const isOutsideLayers = (inspected: string): boolean => {
+  const matched = /\/apps\/(?<app>[^/]+)\/src\/(?<inside>.+)$/u.exec(inspected)?.groups;
+  const [layer, ...segments] = matched?.inside?.split("/") ?? [];
   return (
-    layeredApps.includes(groups?.["app"] ?? "") &&
-    (segments.length === 0 || !layers.has(layer ?? ""))
+    layeredApps.includes(matched?.app ?? "") && (segments.length === 0 || !layers.has(layer ?? ""))
   );
-}
+};
 
-function layersVisitor(context: LintContext): Visitor {
-  if (!isOutsideLayers(context.filename.replaceAll("\\", "/"))) {
+const layersVisitor = (inspection: LintContext): Visitor => {
+  if (!isOutsideLayers(inspection.filename.replaceAll("\\", "/"))) {
     return {};
   }
   return {
     Program(node: Node): void {
-      reportViolation(context, node);
+      reportViolation(inspection, node);
     },
   };
-}
+};
 
 export { layersVisitor };

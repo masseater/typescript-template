@@ -13,18 +13,18 @@ const dependencyFields = [
   "optionalDependencies",
 ] as const;
 
-function field(manifest: unknown, key: string): unknown {
+const field = (manifest: unknown, key: string): unknown => {
   return typeof manifest === "object" && manifest !== null
     ? Object.getOwnPropertyDescriptor(manifest, key)?.value
     : undefined;
-}
+};
 
 const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../{apps,libs,infra,tools}/*/package.json",
   { eager: true, import: "default" },
 );
 
-function repositoryPath(key: string): string {
+const repositoryPath = (key: string): string => {
   const resolved = ["tools", "quality"];
   for (const segment of key.split("/")) {
     if (segment === "..") {
@@ -34,7 +34,7 @@ function repositoryPath(key: string): string {
     }
   }
   return resolved.join("/");
-}
+};
 
 const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifestModules).map(
   ([key, manifest]: readonly [string, unknown]) => {
@@ -44,21 +44,21 @@ const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifest
   },
 );
 
-function applicationNames(workspaces: readonly WorkspaceManifest[]): string[] {
+const applicationNames = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ area, manifest }) => {
     const name = field(manifest, "name");
     return area === "apps" && typeof name === "string" ? [name] : [];
   });
-}
+};
 
-function declaredDependencies(manifest: unknown): string[] {
+const declaredDependencies = (manifest: unknown): string[] => {
   return dependencyFields.flatMap((key) => {
     const value = field(manifest, key);
     return typeof value === "object" && value !== null ? Object.keys(value) : [];
   });
-}
+};
 
-function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+const applicationDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   const applications = applicationNames(workspaces);
   return workspaces.flatMap(({ file, manifest }) =>
     declaredDependencies(manifest)
@@ -68,9 +68,9 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
           `${file}: ${dependency} はデプロイ単位のアプリです。バッチやコンソールなど他の実行単位と共有する処理は libs/ のパッケージに移し、そちらに依存してください。`,
       ),
   );
-}
+};
 
-function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ file, manifest }) =>
     declaredDependencies(manifest).flatMap((dependency) => {
       const replacement = replacementFor(dependency);
@@ -79,13 +79,13 @@ function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): 
         : [`${file}: ${dependency} は置き換え済みです。${replacementMessage(replacement)}`];
     }),
   );
-}
+};
 
 const rootOnlyPackages: Readonly<Record<string, string>> = {
   "react-doctor": "ルートの vp run check:react",
 };
 
-function rootOnlyDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
+const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
     return Object.entries(rootOnlyPackages)
@@ -95,7 +95,7 @@ function rootOnlyDependencyViolations(workspaces: readonly WorkspaceManifest[]):
           `${file}: ${dependency} はリポジトリ全体の検査なのでルートだけが宣言します。${runner} から実行してください。`,
       );
   });
-}
+};
 
 export {
   applicationDependencyViolations,

@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile, spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { buffer } from "node:stream/consumers";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
 import { Effect, Schema } from "effect";
@@ -32,7 +29,6 @@ const ENTRY_PATTERN = /^\d+ (?<object>[0-9a-f]+) (?<stage>\d+)\t(?<filename>[^]*
 const LIST_INDEX = ["ls-files", "--cached", "--stage", "-z"] as const;
 const READ_BLOBS = ["cat-file", "--batch"] as const;
 
-// oxlint-disable-next-line typescript/strict-void-return
 const run = promisify(execFile);
 
 class StagedUnreadable extends Schema.TaggedError<StagedUnreadable>()("StagedUnreadable", {
@@ -62,25 +58,25 @@ class StagedUnreadable extends Schema.TaggedError<StagedUnreadable>()("StagedUnr
   }
 }
 
-function exitCode(error: unknown): number | undefined {
+const exitCode = (error: unknown): number | undefined => {
   return typeof error === "object" &&
     error !== null &&
     "code" in error &&
     typeof error.code === "number"
     ? error.code
     : undefined;
-}
+};
 
-function commandFailed(args: readonly string[]): (error: unknown) => StagedUnreadable {
+const commandFailed = (args: readonly string[]): ((error: unknown) => StagedUnreadable) => {
   return (error) =>
     new StagedUnreadable({
       command: args.join(" "),
       exitCode: exitCode(error),
       reason: "git-command-failed",
     });
-}
+};
 
-function listIndex(root: string): Effect.Effect<string, StagedUnreadable> {
+const listIndex = (root: string): Effect.Effect<string, StagedUnreadable> => {
   return Effect.tryPromise({
     catch: commandFailed(LIST_INDEX),
     try: async () => {
@@ -91,34 +87,38 @@ function listIndex(root: string): Effect.Effect<string, StagedUnreadable> {
       return listing.stdout;
     },
   });
-}
+};
 
-function merged(
+const merged = (
   entries: readonly IndexEntry[],
-): Effect.Effect<readonly IndexEntry[], StagedUnreadable> {
+): Effect.Effect<readonly IndexEntry[], StagedUnreadable> => {
   const unmerged = entries.filter(({ stage }) => stage !== MERGED_STAGE);
   const files = [...new Set(unmerged.map(({ filename }) => filename))];
   return files.length > 0
     ? Effect.fail(new StagedUnreadable({ files, reason: "unmerged-index" }))
     : Effect.succeed(entries);
-}
+};
 
-function parseEntry(entry: string): Effect.Effect<IndexEntry, StagedUnreadable> {
+const parseEntry = (entry: string): Effect.Effect<IndexEntry, StagedUnreadable> => {
   const groups = ENTRY_PATTERN.exec(entry)?.groups;
-  const filename = groups?.["filename"];
-  const object = groups?.["object"];
-  const stage = groups?.["stage"];
+  const filename = groups?.filename;
+  const object = groups?.object;
+  const stage = groups?.stage;
   return filename === undefined || object === undefined || stage === undefined
     ? Effect.fail(new StagedUnreadable({ entry, reason: "index-entry-unreadable" }))
     : Effect.succeed({ filename, object, stage });
-}
+};
 
-function indexEntries(listing: string): Effect.Effect<readonly IndexEntry[], StagedUnreadable> {
+const indexEntries = (listing: string): Effect.Effect<readonly IndexEntry[], StagedUnreadable> => {
   const listed = listing.split("\0").filter((entry) => entry !== "");
   return Effect.forEach(listed, parseEntry).pipe(Effect.flatMap(merged));
-}
+};
 
-function blobAt(output: Readonly<Buffer>, offset: number, object: string): FramedBlob | undefined {
+const blobAt = (
+  output: Readonly<Buffer>,
+  offset: number,
+  object: string,
+): FramedBlob | undefined => {
   const headerEnd = output.indexOf(NEWLINE, offset);
   const header =
     headerEnd === NOT_FOUND ? [] : output.toString("utf-8", offset, headerEnd).split(" ");
@@ -128,12 +128,12 @@ function blobAt(output: Readonly<Buffer>, offset: number, object: string): Frame
   }
   const start = headerEnd + 1;
   return { content: output.toString("utf-8", start, start + size), end: start + size + 1 };
-}
+};
 
-function blobContents(
+const blobContents = (
   output: Readonly<Buffer>,
   objects: readonly string[],
-): Effect.Effect<ReadonlyMap<string, string>, StagedUnreadable> {
+): Effect.Effect<ReadonlyMap<string, string>, StagedUnreadable> => {
   const framed = Effect.reduce(
     objects,
     () => ({ contents: new Map<string, string>(), offset: 0 }),
@@ -145,12 +145,12 @@ function blobContents(
     },
   );
   return Effect.map(framed, ({ contents }) => contents);
-}
+};
 
-function readBlobs(
+const readBlobs = (
   root: string,
   objects: readonly string[],
-): Effect.Effect<ReadonlyMap<string, string>, StagedUnreadable> {
+): Effect.Effect<ReadonlyMap<string, string>, StagedUnreadable> => {
   const output = Effect.tryPromise({
     catch: commandFailed(READ_BLOBS),
     try: async () => {
@@ -160,7 +160,7 @@ function readBlobs(
     },
   });
   return Effect.flatMap(output, (framed) => blobContents(framed, objects));
-}
+};
 
 const stagedFiles = Effect.fn("stagedFiles")(function* stagedFiles(root: string) {
   const entries = yield* Effect.flatMap(listIndex(root), indexEntries);

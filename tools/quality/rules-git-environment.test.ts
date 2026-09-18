@@ -36,18 +36,18 @@ const declaredEnvironment = [
 describe("git started from a test or a fixture", () => {
   it.for(inheritedEnvironment)("rejects an inherited environment: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("git-environment", testFile, code)).toBe(true);
-    expect(reported("git-environment", fixtureFile, code)).toBe(true);
+    expect(reported("git-environment", { code, filename: testFile })).toBe(true);
+    expect(reported("git-environment", { code, filename: fixtureFile })).toBe(true);
   });
 
   it.for(declaredEnvironment)("allows a declared environment: %s", ([_label, code]) => {
     expect.assertions(1);
-    expect(reported("git-environment", testFile, code)).toBe(false);
+    expect(reported("git-environment", { code, filename: testFile })).toBe(false);
   });
 
   it("leaves the code under test alone, which must honour the hook's own variables", () => {
     expect.assertions(1);
     const code = `${start}execFile("git", ["ls-files"], { cwd: root });`;
-    expect(reported("git-environment", productionFile, code)).toBe(false);
+    expect(reported("git-environment", { code, filename: productionFile })).toBe(false);
   });
 });

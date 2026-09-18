@@ -1,12 +1,8 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, symlink, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 type Fixture = Readonly<Record<string, string>>;
-type Workspace = readonly [string, Readonly<Record<string, string>>];
 
 const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "apps/admin": { ".": "./src/index.ts" },
@@ -26,16 +22,19 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "libs/ui": { ".": "./src/index.ts", "./signup": "./src/signup.tsx" },
   "tools/dev": { ".": "./src/index.ts" },
 };
-const developmentDependencies: Readonly<Record<string, readonly string[]>> = { "libs/ui": ["msw"] };
 const installedPackages = ["drizzle-orm", "miniflare", "msw"];
 
-async function write(root: string, file: string, code: string): Promise<void> {
+const write = async (root: string, file: string, code: string): Promise<void> => {
   const target = path.join(root, file);
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, code);
-}
+};
 
-async function createWorkspace(root: string, [directory, exported]: Workspace): Promise<void> {
+type Workspace = readonly [string, Readonly<Record<string, string>>];
+
+const developmentDependencies: Readonly<Record<string, readonly string[]>> = { "libs/ui": ["msw"] };
+
+const createWorkspace = async (root: string, [directory, exported]: Workspace): Promise<void> => {
   const name = `@repo/${directory.split("/")[1] ?? ""}`;
   const devDependencies = Object.fromEntries(
     (developmentDependencies[directory] ?? []).map((dependency) => [dependency, "*"]),
@@ -51,14 +50,14 @@ async function createWorkspace(root: string, [directory, exported]: Workspace): 
       write(root, path.join(directory, target), "export const value = 1;\n"),
     ),
   );
-}
+};
 
-async function createPackage(root: string, name: string): Promise<void> {
+const createPackage = async (root: string, name: string): Promise<void> => {
   await write(root, `node_modules/${name}/package.json`, JSON.stringify({ name }));
   await write(root, `node_modules/${name}/index.js`, "export const value = 1;\n");
-}
+};
 
-async function createFixture(files: Fixture): Promise<string> {
+const createFixture = async (files: Fixture): Promise<string> => {
   const prefix = path.join(tmpdir(), "template-depcruise-");
   const root = await realpath(await mkdtemp(prefix));
   await mkdir(path.join(root, "node_modules/@repo"), { recursive: true });
@@ -74,7 +73,7 @@ async function createFixture(files: Fixture): Promise<string> {
     ),
   );
   return root;
-}
+};
 
 export { createFixture };
 export type { Fixture };

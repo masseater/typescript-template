@@ -76,11 +76,13 @@ const environmentBypasses = [
 describe("project lint rules on mock and environment bypasses", () => {
   it.for(mockBypasses)("rejects mock bypass: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("no-internal-mocks", "probe.ts", code)).toBe(true);
+    expect(reported("no-internal-mocks", { code, filename: "probe.ts" })).toBe(true);
   });
 
   it.for(environmentBypasses)("rejects environment bypass: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("environment-boundary", "libs/shared/src/probe.ts", code)).toBe(true);
+    expect(reported("environment-boundary", { code, filename: "libs/shared/src/probe.ts" })).toBe(
+      true,
+    );
   });
 });
