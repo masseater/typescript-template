@@ -4,11 +4,11 @@ import { Effect, FileSystem, ManagedRuntime, Option, Schema, Stream } from "effe
 import type { Scope } from "effect";
 
 import { AppState } from "#shared/contract/index.ts";
-import { bundledAssets } from "#shared/playbook/index.ts";
+import { playbookDirectory } from "#shared/playbook/index.ts";
 
 import { bd } from "./bd.ts";
 import { commanderApp } from "./commander-api.ts";
-import { commanderServices } from "./services.ts";
+import { commanderServices, reporting } from "./services.ts";
 import { createLedger } from "./tasks.ts";
 
 const origin = "http://127.0.0.1:3090";
@@ -35,7 +35,7 @@ function serve(): Effect.Effect<Served, unknown, NodeServices.NodeServices | Sco
     const directory = yield* files.realPath(temporary);
     const runtime = ManagedRuntime.make(
       commanderServices({
-        assets: bundledAssets,
+        assets: playbookDirectory,
         directory,
         executable: `${directory}/no-claude`,
         model: undefined,
@@ -44,7 +44,7 @@ function serve(): Effect.Effect<Served, unknown, NodeServices.NodeServices | Sco
       }),
     );
     yield* Effect.addFinalizer(() => runtime.disposeEffect);
-    const app = commanderApp(runtime);
+    const app = commanderApp(runtime, reporting);
     return { directory, fetch: async (request: Request) => app.fetch(request) };
   });
 }

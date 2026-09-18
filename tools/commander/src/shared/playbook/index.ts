@@ -1,1 +1,1 @@
-export { bundledAssets } from "./location.ts";
+export { playbookDirectory } from "./location.ts";

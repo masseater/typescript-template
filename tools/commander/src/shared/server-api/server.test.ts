@@ -14,11 +14,11 @@ import {
 import type { Scope } from "effect";
 
 import { AppState, ChatEvent, applyChat, receiveChat } from "#shared/contract/index.ts";
-import { bundledAssets } from "#shared/playbook/index.ts";
+import { playbookDirectory } from "#shared/playbook/index.ts";
 
 import { bd } from "./bd.ts";
 import { commanderApp } from "./commander-api.ts";
-import { commanderServices } from "./services.ts";
+import { commanderServices, reporting } from "./services.ts";
 import { createLedger } from "./tasks.ts";
 
 const origin = "http://127.0.0.1:3090";
@@ -104,7 +104,7 @@ function appAt(
   return Effect.gen(function* built() {
     const runtime = ManagedRuntime.make(
       commanderServices({
-        assets: bundledAssets,
+        assets: playbookDirectory,
         directory,
         executable: `${home}/claude`,
         model: undefined,
@@ -113,7 +113,7 @@ function appAt(
       }),
     );
     yield* Effect.addFinalizer(() => runtime.disposeEffect);
-    const app = commanderApp(runtime);
+    const app = commanderApp(runtime, reporting);
     return async (request: Request): Promise<Response> => app.fetch(request);
   });
 }
@@ -233,11 +233,11 @@ function turnArguments(session: readonly [string, string], systemPrompt: string)
     "dontAsk",
     "--allowedTools",
     "Bash(bd *)",
-    `Bash(${bundledAssets}/commander/scripts/*)`,
-    `Bash(BEADS_ACTOR=commander ${bundledAssets}/commander/scripts/*)`,
-    `Bash(WORKER_MODEL=haiku ${bundledAssets}/commander/scripts/dispatch.sh *)`,
-    `Bash(WORKER_MODEL=sonnet ${bundledAssets}/commander/scripts/dispatch.sh *)`,
-    `Bash(WORKER_MODEL=opus ${bundledAssets}/commander/scripts/dispatch.sh *)`,
+    `Bash(${playbookDirectory}/commander/scripts/*)`,
+    `Bash(BEADS_ACTOR=commander ${playbookDirectory}/commander/scripts/*)`,
+    `Bash(WORKER_MODEL=haiku ${playbookDirectory}/commander/scripts/dispatch.sh *)`,
+    `Bash(WORKER_MODEL=sonnet ${playbookDirectory}/commander/scripts/dispatch.sh *)`,
+    `Bash(WORKER_MODEL=opus ${playbookDirectory}/commander/scripts/dispatch.sh *)`,
     "Bash(claude agents *)",
     "Bash(claude --bg *)",
     "Bash(jq *)",
@@ -298,13 +298,13 @@ it.live(
       const [first] = yield* calls(served);
       const systemPrompt = first?.argv[systemPromptPosition] ?? "";
       assert.include(systemPrompt, "# commander（司令塔）");
-      assert.include(systemPrompt, `${bundledAssets}/commander/scripts/status.sh`);
+      assert.include(systemPrompt, `${playbookDirectory}/commander/scripts/status.sh`);
       assert.include(
         systemPrompt,
         `claude --bg --name coordinator-project-state --model sonnet "${served.home}/state/coordinator.md を読んで`,
       );
       assert.include(systemPrompt, 'select(.name == "coordinator-project-state")');
-      assert.include(systemPrompt, `S=${bundledAssets}/commander/scripts`);
+      assert.include(systemPrompt, `S=${playbookDirectory}/commander/scripts`);
       assert.notMatch(systemPrompt, /\.claude\/skills\/|\{\{/u);
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   timeout,

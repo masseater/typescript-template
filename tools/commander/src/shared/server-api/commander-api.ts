@@ -4,7 +4,7 @@ import type { ManagedRuntime } from "effect";
 
 import { Done, NoInput, ServerEvent, TextInput } from "#shared/contract/index.ts";
 import { httpStatus, ingestBrowser } from "@repo/observability";
-import type { Telemetry } from "@repo/observability";
+import type { Reporting, Telemetry } from "@repo/observability";
 import { AppOrigin, apiRoot, apiRoutes, createApi, readJsonBody } from "@repo/runtime/http";
 import type { ApiRoutes } from "@repo/runtime/http";
 
@@ -102,8 +102,11 @@ function commanderApi(api: ApiRoutes<Services>) {
     .post("/ledger", api.route(Done, createLedger, failures));
 }
 
-function commanderApp(runtime: ManagedRuntime.ManagedRuntime<Services, unknown>) {
-  return createApi(apiRoot).use(commanderApi(apiRoutes(runtime, { service: "commander" })));
+function commanderApp(
+  runtime: ManagedRuntime.ManagedRuntime<Services, unknown>,
+  reporting: Reporting,
+) {
+  return createApi(apiRoot).use(commanderApi(apiRoutes(runtime, reporting)));
 }
 
 export { commanderApp };

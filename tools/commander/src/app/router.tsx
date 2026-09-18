@@ -11,7 +11,9 @@ declare module "@tanstack/react-router" {
 }
 
 function getRouter(): ReturnType<typeof createRouter<typeof routeTree>> {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { networkMode: "always" }, queries: { networkMode: "always" } },
+  });
   const router = createRouter({
     context: { queryClient },
     defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,

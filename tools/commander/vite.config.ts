@@ -12,7 +12,11 @@ import {
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
-  plugins: [tailwindcss(), ...withoutEnvFileLoader(tanstackStart(startOptions)), reactCompiler()],
+  plugins: [
+    tailwindcss(),
+    ...withoutEnvFileLoader(tanstackStart({ ...startOptions, server: { entry: "app/server.ts" } })),
+    reactCompiler(),
+  ],
   run: {
     tasks: {
       ...effectDiagnostics,

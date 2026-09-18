@@ -88,7 +88,7 @@ function commanderWorkspace(
 ): NonNullable<KnipConfiguration["workspaces"]>[string] {
   return {
     entry: [...application.entry, ...only(...scripts["tools/commander"])],
-    ignoreDependencies: only("@tanstack/react-start"),
+    ignoreDependencies: [],
     ignoreExportsUsedInFile: { interface: true },
   };
 }

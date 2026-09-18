@@ -1,29 +1,19 @@
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
+import { Config, Effect, Layer, ManagedRuntime, Option } from "effect";
 
 import { commanderServices } from "./services.ts";
 
-const Settings = Schema.Struct({
-  COMMANDER_ASSETS: Schema.String,
-  COMMANDER_DIRECTORY: Schema.String,
-  COMMANDER_EXECUTABLE: Schema.String,
-  COMMANDER_MODEL: Schema.optionalKey(Schema.String),
-  COMMANDER_ORIGIN: Schema.String,
-  COMMANDER_STATE: Schema.String,
+const settings = Config.all({
+  assets: Config.string("COMMANDER_ASSETS"),
+  directory: Config.string("COMMANDER_DIRECTORY"),
+  executable: Config.string("COMMANDER_EXECUTABLE"),
+  model: Config.option(Config.string("COMMANDER_MODEL")).pipe(Config.map(Option.getOrUndefined)),
+  origin: Config.string("COMMANDER_ORIGIN"),
+  stateDirectory: Config.string("COMMANDER_STATE"),
 });
 
-// oxlint-disable-next-line node/no-process-env
-const configured = Schema.decodeUnknownEffect(Settings)(process.env).pipe(
-  Effect.map((settings) =>
-    commanderServices({
-      assets: settings.COMMANDER_ASSETS,
-      directory: settings.COMMANDER_DIRECTORY,
-      executable: settings.COMMANDER_EXECUTABLE,
-      model: settings.COMMANDER_MODEL,
-      origin: settings.COMMANDER_ORIGIN,
-      stateDirectory: settings.COMMANDER_STATE,
-    }),
-  ),
-);
+const configured = Effect.gen(function* configured() {
+  return commanderServices(yield* settings);
+});
 const runtime = ManagedRuntime.make(Layer.unwrap(configured));
 
 export { runtime };

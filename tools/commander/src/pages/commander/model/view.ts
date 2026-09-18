@@ -27,8 +27,9 @@ async function* decoded(incoming: AsyncIterable<unknown>): AsyncGenerator<Publis
   }
 }
 
-async function events(): Promise<AsyncIterable<Published>> {
-  const reply = await commanderClient().events.get();
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function events({ signal }: { signal: AbortSignal }): Promise<AsyncIterable<Published>> {
+  const reply = await commanderClient().events.get({ fetch: { signal } });
   return reply.error === null
     ? decoded(reply.data)
     : Promise.reject(new Error("司令塔につながりませんでした。"));
@@ -67,7 +68,8 @@ function useView(): View {
   if (feed.data === undefined || feed.data.status === "connecting") {
     return feed.isError ? { status: "invalid" } : { status: "connecting" };
   }
-  return { app: feed.data.app, connected: feed.fetchStatus === "fetching", status: "live" };
+  const connected = feed.fetchStatus === "fetching" && feed.failureCount === 0;
+  return { app: feed.data.app, connected, status: "live" };
 }
 
 export { feedKey, useView };
