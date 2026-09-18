@@ -1,6 +1,8 @@
 import type { Router } from "@tanstack/react-router";
 import { createRouter } from "@tanstack/react-router";
 
+import { nonceOptions } from "@repo/ui/shell";
+
 import { routeTree } from "./routeTree.gen";
 
 type WikiRouter = Router<typeof routeTree>;
@@ -11,6 +13,7 @@ function getRouter(): WikiRouter {
     defaultPreloadStaleTime: 0,
     routeTree,
     scrollRestoration: true,
+    ...nonceOptions(),
   });
 }
 

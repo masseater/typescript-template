@@ -64,6 +64,7 @@ const cloudflareStacks = [
   "src/user.ts!",
   "src/admin.ts!",
   "src/wiki.ts!",
+  "src/zone.ts!",
   "src/bindings.ts!",
 ];
 
