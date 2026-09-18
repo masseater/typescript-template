@@ -162,6 +162,7 @@ const lint = {
     "oxc/no-optional-chaining": "off",
     "oxc/no-rest-spread-properties": "off",
     "project/boundaries": "error",
+    "project/cross-request-state": "error",
     "project/effect-failures": "error",
     "project/effect-stack": "error",
     "project/environment-boundary": "error",

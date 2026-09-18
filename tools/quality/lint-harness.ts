@@ -4,6 +4,7 @@ import plugin from "./rules.ts";
 
 type RuleName =
   | "boundaries"
+  | "cross-request-state"
   | "effect-failures"
   | "effect-stack"
   | "environment-boundary"
@@ -17,6 +18,7 @@ type RuleName =
 
 const ruleNames: readonly RuleName[] = [
   "boundaries",
+  "cross-request-state",
   "effect-failures",
   "effect-stack",
   "environment-boundary",

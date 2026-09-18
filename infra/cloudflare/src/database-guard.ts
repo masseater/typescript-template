@@ -1,10 +1,12 @@
 import type { StateService } from "alchemy/State";
 import { Effect } from "effect";
 
+import { readRemoteMigrationStatus } from "@repo/db/remote";
+
 import type { AccountAccess } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
 import type { DeploymentTarget } from "./config.ts";
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
+import { databaseName, findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
 import { recordedDatabaseIds } from "./state-ownership.ts";
 
 function nameTaken(): CloudflareFailure {
@@ -45,4 +47,29 @@ const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
   );
 });
 
-export { assertDatabaseUnclaimed, databaseVerdict };
+const assertDatabaseMigrated = Effect.fn("assertDatabaseMigrated")(function* assertDatabaseMigrated(
+  access: AccountAccess,
+  target: DeploymentTarget,
+) {
+  const databaseId = yield* lookupDatabaseId(access, databaseName(target.prefix));
+  const status = yield* readRemoteMigrationStatus({
+    accountId: access.accountId,
+    apiToken: access.apiToken,
+    databaseId,
+  }).pipe(
+    Effect.mapError(
+      (failure) =>
+        new CloudflareFailure({ code: "database_migrations_pending", keys: [failure.code] }),
+    ),
+  );
+  if (status.pending > 0) {
+    return yield* Effect.fail(
+      new CloudflareFailure({
+        code: "database_migrations_pending",
+        keys: [String(status.applied), String(status.declared)],
+      }),
+    );
+  }
+});
+
+export { assertDatabaseMigrated, assertDatabaseUnclaimed, databaseVerdict };

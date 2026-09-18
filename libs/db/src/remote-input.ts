@@ -76,4 +76,4 @@ const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRemoteInpu
   return { execute: mode === "--execute", operation, target };
 });
 
-export { RemoteFailure, fail, parseRemoteInput };
+export { RemoteFailure, RemoteTarget, fail, parseRemoteInput };

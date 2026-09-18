@@ -15,6 +15,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "app_origins_must_differ",
     "budget_has_no_usage_allowance",
     "database_input_invalid",
+    "database_migrations_pending",
     "database_name_taken",
     "database_output_unavailable",
     "deploy_token_permissions_missing",

@@ -39,6 +39,9 @@ const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type 
 const MIGRATIONS_TABLE =
   "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric, name text, applied_at TEXT)";
 
+const MIGRATIONS_TABLE_PRESENT =
+  "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'";
+
 const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRemoteMigrations() {
   const migrations = yield* Effect.try({
     catch: () => new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" }),
@@ -106,6 +109,15 @@ const migrateDatabase = Effect.fn("migrateDatabase")(function* migrateDatabase(
   return migrations.length - applied;
 });
 
+const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
+  executor: DatabaseExecutor,
+  migrations: readonly Migration[],
+) {
+  const [recorded] = yield* executor.batch([{ params: [], sql: MIGRATIONS_TABLE_PRESENT }]);
+  const applied = recorded?.length === 0 ? 0 : yield* readHistory(executor, migrations);
+  return { applied, declared: migrations.length, pending: migrations.length - applied } as const;
+});
+
 const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapDatabase(
   executor: DatabaseExecutor,
   email: typeof EmailAddress.Type,
@@ -133,5 +145,6 @@ export {
   bootstrapDatabase,
   loadRemoteMigrations,
   migrateDatabase,
+  migrationStatus,
 };
 export type { DatabaseExecutor, RemoteQuery };

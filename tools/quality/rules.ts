@@ -25,6 +25,7 @@ const mockSources = new Set([
   "bun:test",
 ]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
+const sharedWaitApis = new Set(["cached", "cachedInvalidateWithTTL", "cachedWithTTL"]);
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -96,6 +97,21 @@ function memoizationVisitor(context: LintContext): Visitor {
   return originVisitor(context, isManualMemoization);
 }
 
+function isCrossRequestState(origin: Origin): boolean {
+  const [source, ...members] = origin;
+  if (source !== "effect") {
+    return false;
+  }
+  return (
+    members[0] === "ManagedRuntime" ||
+    (members[0] === "Effect" && sharedWaitApis.has(members[1] ?? ""))
+  );
+}
+
+function crossRequestStateVisitor(context: LintContext): Visitor {
+  return runsInWorkerRuntime(filename(context)) ? originVisitor(context, isCrossRequestState) : {};
+}
+
 function workerFetchVisitor(context: LintContext): Visitor {
   if (!runsInWorkerRuntime(filename(context))) {
     return {};
@@ -121,6 +137,12 @@ export default definePlugin({
       create: boundariesVisitor,
       meta: metadata(
         `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
+      ),
+    },
+    "cross-request-state": {
+      create: crossRequestStateVisitor,
+      meta: metadata(
+        "Worker で動くコードでは ManagedRuntime と Effect.cached 系を使えません。どちらも未完了の結果を 1 本の fiber や latch にまとめ、後から来たリクエストにそれを待たせます。待たせた継続は作った側のリクエストが終わると捨てられ、応答を返さないまま固まります。libs/runtime/src/isolate.ts の isolateRuntime と isolateCache を使い、確定した結果だけを isolate 全体で共有してください。",
       ),
     },
     "effect-failures": {

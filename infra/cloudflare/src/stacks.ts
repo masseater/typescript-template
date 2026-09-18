@@ -48,6 +48,8 @@ const stackNames = [
   "wiki",
 ] as const satisfies readonly StackName[];
 
+const applicationStacks = ["user", "admin", "wiki"] as const satisfies readonly StackName[];
+
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
   ...monitorStacks,
@@ -77,6 +79,7 @@ function stackName(stack: StackName): string {
 const stackOptions = { providers: providers(), state: state() };
 
 export {
+  applicationStacks,
   applyOrderViolations,
   onboardingStack,
   sendingStacks,

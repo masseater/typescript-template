@@ -66,6 +66,21 @@ const forbiddenCode = [
     'import { Effect } from "effect"; export const run = () => { try { return Effect; } catch { return undefined; } };',
     "effect-failures",
   ],
+  [
+    "apps/user/src/probe.ts",
+    'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const cache = () => Effect.cachedWithTTL(Effect.void, "1 minute");',
+    "cross-request-state",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { Effect as Fx } from "effect"; const { cached } = Fx; export const cache = () => cached(Fx.void);',
+    "cross-request-state",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [
@@ -124,6 +139,11 @@ const validBoundaries = [
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@repo/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@repo/db/testing";'],
+  ["libs/runtime/src/probe.ts", 'import { Effect } from "effect"; export const run = Effect.void;'],
+  [
+    "libs/db/src/remote-probe.ts",
+    'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
+  ],
 ] as const;
 
 const singleReports = [

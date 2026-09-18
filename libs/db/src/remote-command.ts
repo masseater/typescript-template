@@ -1,8 +1,13 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { remoteExecutor } from "./remote-http.ts";
-import { fail, parseRemoteInput } from "./remote-input.ts";
-import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
+import { RemoteFailure, RemoteTarget, fail, parseRemoteInput } from "./remote-input.ts";
+import {
+  bootstrapDatabase,
+  loadRemoteMigrations,
+  migrateDatabase,
+  migrationStatus,
+} from "./remote-operations.ts";
 
 type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
@@ -64,5 +69,19 @@ const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   },
 );
 
+const readRemoteMigrationStatus = Effect.fn("readRemoteMigrationStatus")(
+  function* readRemoteMigrationStatus(input: unknown) {
+    const target = yield* Schema.decodeUnknownEffect(RemoteTarget)(input, {
+      onExcessProperty: "error",
+    }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
+    if (target.apiToken === undefined || target.email !== undefined) {
+      return yield* fail("REMOTE_INPUT_INVALID");
+    }
+    const executor = remoteExecutor({ ...target, apiToken: target.apiToken });
+    const status = yield* migrationStatus(executor, yield* loadRemoteMigrations());
+    return { databaseId: target.databaseId, event: "database.remote_migration_status", ...status };
+  },
+);
+
 export { RemoteFailure } from "./remote-input.ts";
-export { runRemoteDatabaseCommand };
+export { readRemoteMigrationStatus, runRemoteDatabaseCommand };

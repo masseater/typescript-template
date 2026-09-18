@@ -8,7 +8,7 @@ import { setupServer } from "msw/node";
 
 import type { Database } from "./database.ts";
 import { query } from "./database.ts";
-import { runRemoteDatabaseCommand } from "./remote-command.ts";
+import { readRemoteMigrationStatus, runRemoteDatabaseCommand } from "./remote-command.ts";
 import { remoteExecutor } from "./remote-http.ts";
 import { user } from "./schema.ts";
 import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
@@ -106,6 +106,20 @@ it.effect("remote migrations use the official HTTP batch contract with real D1 e
     assert.strictEqual(migrated.event, "database.remote_migrated");
     const again = yield* runRemoteDatabaseCommand(["migrate", ...execute], target);
     assert.strictEqual("applied" in again && again.applied, 0);
+  }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+);
+
+it.effect("reports an empty database as having every declared migration left to apply", () =>
+  Effect.gen(function* program() {
+    yield* d1Endpoint(yield* TestBinding);
+    const before = yield* readRemoteMigrationStatus(target);
+    assert.strictEqual(before.applied, 0);
+    assert.strictEqual(before.pending, before.declared);
+    yield* runRemoteDatabaseCommand(["migrate", ...execute], target);
+    const after = yield* readRemoteMigrationStatus(target);
+    assert.strictEqual(after.pending, 0);
+    assert.strictEqual(after.applied, before.declared);
+    assert.notInclude(JSON.stringify(after), target.apiToken);
   }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
 );
 

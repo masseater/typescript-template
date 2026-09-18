@@ -1,14 +1,18 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { loadRemoteMigrations } from "@repo/db/migrations";
+
 import { mockServer } from "./account-fixture.ts";
 import {
   access,
   accountHandlers,
   config,
   databaseId,
+  deployedDatabases,
   deployedState,
   emptyState,
+  migrationQuery,
   sendingRecords,
 } from "./inspection-fixture.ts";
 import { describeFailure } from "./secrets.ts";
@@ -18,6 +22,9 @@ import { sendingStacks, stackDependencies, traceDestinationStack } from "./stack
 const deployment = { access, config };
 const applications = ["admin", "user", "wiki"] as const;
 const withoutOtlp = { access, config: { ...config, otlp: undefined } };
+const migrations = await Effect.runPromise(loadRemoteMigrations());
+const declaredMigrations = migrations.length;
+const unmigrated = 0;
 
 it.effect("stops the onboarding unit on an account that already holds the sending domain", () =>
   Effect.gen(function* program() {
@@ -58,6 +65,10 @@ it.effect("reads nothing for the units that claim no account-wide name", () =>
 it.effect("refuses an application before the unit that declares its trace destination ran", () =>
   Effect.forEach(applications, (stack) =>
     Effect.gen(function* program() {
+      yield* mockServer(
+        ...accountHandlers({ databases: deployedDatabases }),
+        migrationQuery(declaredMigrations),
+      );
       assert.include(stackDependencies(stack), traceDestinationStack);
       const failure = yield* assertStackReady(stack, deployment, emptyState()).pipe(Effect.flip);
       assert.deepStrictEqual(describeFailure(failure, []), {
@@ -65,16 +76,38 @@ it.effect("refuses an application before the unit that declares its trace destin
         keys: [traceDestinationStack],
       });
       yield* assertStackReady(stack, deployment, deployedState());
-    }),
+    }).pipe(Effect.scoped),
+  ),
+);
+
+it.effect("refuses an application whose database has migrations left to apply", () =>
+  Effect.forEach(applications, (stack) =>
+    Effect.gen(function* program() {
+      yield* mockServer(
+        ...accountHandlers({ databases: deployedDatabases }),
+        migrationQuery(unmigrated),
+      );
+      const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
+      assert.deepStrictEqual(describeFailure(failure, []), {
+        code: "database_migrations_pending",
+        keys: [String(unmigrated), String(declaredMigrations)],
+      });
+    }).pipe(Effect.scoped),
   ),
 );
 
 it.effect("lets an application run without the trace destination unit when OTLP is unset", () =>
   Effect.forEach(applications, (stack) =>
-    assertStackReady(
-      stack,
-      withoutOtlp,
-      Effect.die("no state store is consulted when no destination is declared"),
-    ),
+    Effect.gen(function* program() {
+      yield* mockServer(
+        ...accountHandlers({ databases: deployedDatabases }),
+        migrationQuery(declaredMigrations),
+      );
+      yield* assertStackReady(
+        stack,
+        withoutOtlp,
+        Effect.die("no state store is consulted when no destination is declared"),
+      );
+    }).pipe(Effect.scoped),
   ),
 );
