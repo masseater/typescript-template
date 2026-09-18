@@ -1,5 +1,5 @@
-import { Field, FormColumn } from "@template/ui";
-import { maximumNameLength, maximumProfileLength } from "@template/runtime/contracts";
+import { Field, FormColumn } from "@repo/ui";
+import { maximumNameLength, maximumProfileLength } from "@repo/runtime/contracts";
 import { ProfileActions } from "./profile-actions.tsx";
 import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";

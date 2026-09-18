@@ -10,7 +10,7 @@ import {
   oauthResource,
 } from "./oauth-schema.ts";
 import { session, user } from "./identity-schema.ts";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 import { interview } from "./interview-schema.ts";
 
 const account = sqliteTable(

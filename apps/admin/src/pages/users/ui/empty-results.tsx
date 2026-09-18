@@ -1,4 +1,4 @@
-import { Status, TextLink } from "@template/ui";
+import { Status, TextLink } from "@repo/ui";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import { omit } from "es-toolkit";

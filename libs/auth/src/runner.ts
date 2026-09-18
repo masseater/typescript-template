@@ -1,4 +1,4 @@
-import type { Database } from "@template/db";
+import type { Database } from "@repo/db";
 import type { Effect } from "effect";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

@@ -1,6 +1,6 @@
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import type { SubmitEventHandler } from "react";
-import { errorMessage } from "@template/ui";
+import { errorMessage } from "@repo/ui";
 import { saveProfile } from "#pages/profile-edit/api/profile.ts";
 import { useState } from "react";
 

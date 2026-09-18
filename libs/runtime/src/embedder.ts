@@ -51,6 +51,6 @@ function embedWith(
         );
 }
 
-class Embedder extends Context.Service<Embedder, EmbedderShape>()("@template/runtime/Embedder") {}
+class Embedder extends Context.Service<Embedder, EmbedderShape>()("@repo/runtime/Embedder") {}
 
 export { Embedder, embedWith };

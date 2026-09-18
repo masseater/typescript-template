@@ -306,13 +306,13 @@ importers:
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:libs/config
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:libs/db
-      '@template/monitor':
+      '@repo/monitor':
         specifier: workspace:*
         version: link:libs/monitor
       '@types/node':
@@ -348,19 +348,19 @@ importers:
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.5)(supports-color@10.2.2)
-      '@template/auth':
+      '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@template/observability':
+      '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
-      '@template/runtime':
+      '@repo/runtime':
         specifier: workspace:*
         version: link:../../libs/runtime
-      '@template/ui':
+      '@repo/ui':
         specifier: workspace:*
         version: link:../../libs/ui
       effect:
@@ -388,10 +388,10 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@template/dev-boundary':
+      '@repo/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
       '@types/node':
@@ -427,22 +427,22 @@ importers:
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.5)(supports-color@10.2.2)
-      '@template/auth':
+      '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@template/interview':
+      '@repo/interview':
         specifier: workspace:*
         version: link:../../libs/interview
-      '@template/observability':
+      '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
-      '@template/runtime':
+      '@repo/runtime':
         specifier: workspace:*
         version: link:../../libs/runtime
-      '@template/ui':
+      '@repo/ui':
         specifier: workspace:*
         version: link:../../libs/ui
       effect:
@@ -467,10 +467,10 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@template/dev-boundary':
+      '@repo/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
       '@types/node':
@@ -506,16 +506,16 @@ importers:
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.5)(supports-color@10.2.2)
-      '@template/auth':
+      '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
-      '@template/observability':
+      '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
-      '@template/runtime':
+      '@repo/runtime':
         specifier: workspace:*
         version: link:../../libs/runtime
-      '@template/ui':
+      '@repo/ui':
         specifier: workspace:*
         version: link:../../libs/ui
       effect:
@@ -555,13 +555,13 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@template/dev-boundary':
+      '@repo/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
       '@types/mdx':
@@ -606,7 +606,7 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@template/monitor':
+      '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
       effect:
@@ -622,7 +622,7 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
       '@types/node':
@@ -646,13 +646,13 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@template/monitor':
+      '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
       alchemy:
@@ -668,7 +668,7 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@template/interview':
+      '@repo/interview':
         specifier: workspace:*
         version: link:../../libs/interview
       '@types/node':
@@ -689,7 +689,7 @@ importers:
 
   infra/error-monitor:
     dependencies:
-      '@template/monitor':
+      '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
       effect:
@@ -705,7 +705,7 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
       '@types/node':
@@ -726,7 +726,7 @@ importers:
 
   infra/health-monitor:
     dependencies:
-      '@template/monitor':
+      '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
       effect:
@@ -742,7 +742,7 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
       '@types/node':
@@ -784,10 +784,10 @@ importers:
       '@better-auth/passkey':
         specifier: 'catalog:'
         version: 1.7.5(81b3cbe18f5374c3c4ed708abd4ca80b)
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../db
       better-auth:
@@ -852,7 +852,7 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
       drizzle-orm:
@@ -892,7 +892,7 @@ importers:
 
   libs/dev-boundary:
     dependencies:
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
     devDependencies:
@@ -914,10 +914,10 @@ importers:
       '@tanstack/ai':
         specifier: 0.54.0
         version: 0.54.0(@opentelemetry/api@1.9.1)(zod@4.6.5)
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../db
       effect:
@@ -971,7 +971,7 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
 
@@ -983,16 +983,16 @@ importers:
       '@elysiajs/eden':
         specifier: 1.4.9
         version: 1.4.9(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.0(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@7.0.2))
-      '@template/auth':
+      '@repo/auth':
         specifier: workspace:*
         version: link:../auth
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@template/db':
+      '@repo/db':
         specifier: workspace:*
         version: link:../db
-      '@template/observability':
+      '@repo/observability':
         specifier: workspace:*
         version: link:../observability
       effect:
@@ -1023,10 +1023,10 @@ importers:
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@template/observability':
+      '@repo/observability':
         specifier: workspace:*
         version: link:../observability
-      '@template/runtime':
+      '@repo/runtime':
         specifier: workspace:*
         version: link:../runtime
       better-auth:
@@ -1075,7 +1075,7 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../config
       '@types/react':
@@ -1117,7 +1117,7 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
       agent-browser:
@@ -1145,7 +1145,7 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@template/config':
+      '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
       effect:

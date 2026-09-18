@@ -12,7 +12,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-import { secretsFile } from "@template/config/deployment";
+import { secretsFile } from "@repo/config/deployment";
 
 const MAX_OUTPUT_BYTES = 33_554_432;
 const FAILED_EXIT_CODE = 1;

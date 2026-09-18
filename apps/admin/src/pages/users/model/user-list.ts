@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { UserList } from "@template/runtime/contracts";
+import { UserList } from "@repo/runtime/contracts";
 import type { UsersSearch } from "./users-search.ts";
 import { adminClient } from "#shared/api/index.ts";
-import { apiData } from "@template/runtime/client";
-import { errorMessage } from "@template/ui";
+import { apiData } from "@repo/runtime/client";
+import { errorMessage } from "@repo/ui";
 import { userListQuery } from "./users-search.ts";
 
 const registeredDate = new Intl.DateTimeFormat("ja-JP", {

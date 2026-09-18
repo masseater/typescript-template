@@ -1,5 +1,5 @@
 {
-  "name": "@template/observe",
+  "name": "@repo/observe",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@template/config": "workspace:*",
+    "@repo/config": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

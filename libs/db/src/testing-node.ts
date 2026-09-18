@@ -17,7 +17,7 @@ const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
 const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-class TestBinding extends Context.Service<TestBinding, D1Database>()("@template/db/TestBinding") {}
+class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
 async function executeD1HttpBatch(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

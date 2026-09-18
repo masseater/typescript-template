@@ -1,5 +1,5 @@
 {
-  "name": "@template/ui",
+  "name": "@repo/ui",
   "private": true,
   "type": "module",
   "sideEffects": [
@@ -15,9 +15,9 @@
   "dependencies": {
     "@base-ui/react": "catalog:",
     "@better-auth/passkey": "catalog:",
+    "@repo/observability": "workspace:*",
+    "@repo/runtime": "workspace:*",
     "@tanstack/react-router": "catalog:",
-    "@template/observability": "workspace:*",
-    "@template/runtime": "workspace:*",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
@@ -30,12 +30,12 @@
     "tailwindcss": "catalog:"
   },
   "devDependencies": {
+    "@repo/config": "workspace:*",
     "@storybook/addon-a11y": "10.6.0",
     "@storybook/addon-mcp": "10.6.0",
     "@storybook/addon-vitest": "10.6.0",
     "@storybook/react-vite": "10.6.0",
     "@tailwindcss/vite": "catalog:",
-    "@template/config": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitest/browser-playwright": "catalog:",

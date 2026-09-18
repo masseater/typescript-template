@@ -1,5 +1,5 @@
 import { Logger, References } from "effect";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { Layer } from "effect";
 import type { LogSink } from "./log.ts";
 import { consoleSink } from "./log.ts";

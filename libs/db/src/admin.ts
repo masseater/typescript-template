@@ -5,12 +5,12 @@ import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import type { DatabaseFailure } from "./database-failure.ts";
 import type { DrizzleDatabase } from "./database.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
-import type { Role } from "@template/config";
+import type { Role } from "@repo/config";
 import type { SQL } from "drizzle-orm";
 import { TargetUnavailable } from "./target-unavailable.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { query } from "./database.ts";
-import { roles } from "@template/config";
+import { roles } from "@repo/config";
 
 const MAX_PAGE_SIZE = 100;
 

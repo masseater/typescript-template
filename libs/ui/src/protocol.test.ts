@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { errorMessage, requirePasskeyUV, requireSuccess } from "./protocol";
-import { SessionView } from "@template/runtime/contracts";
-import { decodeJson } from "@template/runtime/client";
+import { SessionView } from "@repo/runtime/contracts";
+import { decodeJson } from "@repo/runtime/client";
 
 function parseSession(input: unknown): typeof SessionView.Type {
   return decodeJson(SessionView, input);

@@ -1,4 +1,4 @@
-import { Card, Heading } from "@template/ui";
+import { Card, Heading } from "@repo/ui";
 import type { ReactElement } from "react";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

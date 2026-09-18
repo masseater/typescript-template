@@ -5,8 +5,8 @@ import {
   UserDeletion,
   UserList,
   UserListQuery,
-} from "@template/runtime/contracts";
-import { accountApi, unavailable } from "@template/runtime/account";
+} from "@repo/runtime/contracts";
+import { accountApi, unavailable } from "@repo/runtime/account";
 import {
   apiRoot,
   apiRoutes,
@@ -14,12 +14,12 @@ import {
   createApi,
   readJsonBody,
   readSearchParams,
-} from "@template/runtime/http";
-import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
+} from "@repo/runtime/http";
+import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
 import { Effect } from "effect";
-import { httpStatus } from "@template/observability";
+import { httpStatus } from "@repo/observability";
 import { runtime } from "./runtime.ts";
-import { verifySession } from "@template/auth";
+import { verifySession } from "@repo/auth";
 
 const api = apiRoutes(runtime);
 const forbidden = { message: "この操作は許可されていません。", status: httpStatus.forbidden };

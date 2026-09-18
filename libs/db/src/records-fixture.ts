@@ -1,4 +1,4 @@
-import type { Application, Role } from "@template/config";
+import type { Application, Role } from "@repo/config";
 import { Effect, Exit } from "effect";
 import {
   account,

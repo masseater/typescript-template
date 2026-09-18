@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, copyFile, lstat, mkdir, readdir } from "node:fs/promises";
 import { fail, io } from "./artifact-io.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";

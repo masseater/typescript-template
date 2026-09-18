@@ -1,14 +1,14 @@
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import { Effect } from "effect";
 import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 import { databaseName } from "./database-lookup.ts";
-import { grants } from "@template/config";
+import { grants } from "@repo/config";
 import { verificationSettings } from "./verification-fixture.ts";
 import { workerModuleGlobs } from "./artifacts.ts";
 

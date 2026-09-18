@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect";
 import { apiData, apiServerClient } from "./client.ts";
 import { assert, describe, it } from "@effect/vitest";
 import { compileApi, createApi } from "./http.ts";
-import { httpStatus } from "@template/observability";
+import { httpStatus } from "@repo/observability";
 
 const View = Schema.Struct({ id: Schema.String });
 const app = compileApi(createApi("/api").get("/view", () => ({ id: "visible" })));

@@ -45,8 +45,8 @@ jobs:
       - run: vp run check
       - run: vp test run $TEST_SCOPE
       - run: vp run build
-      - run: vp run --filter @template/infra-cloudflare verify:artifacts
-      - run: vp run --filter @template/infra-cloudflare verify:stacks
+      - run: vp run --filter @repo/infra-cloudflare verify:artifacts
+      - run: vp run --filter @repo/infra-cloudflare verify:stacks
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:

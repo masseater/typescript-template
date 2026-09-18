@@ -5,7 +5,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { secretsFile } from "@template/config/deployment";
+import { secretsFile } from "@repo/config/deployment";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 

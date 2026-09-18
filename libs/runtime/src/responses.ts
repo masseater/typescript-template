@@ -1,4 +1,4 @@
-import { httpStatus } from "@template/observability";
+import { httpStatus } from "@repo/observability";
 
 const privateHeaders = {
   "cache-control": "no-store",

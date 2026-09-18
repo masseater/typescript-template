@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-import { deploymentKeys, secretsFile } from "@template/config/deployment";
+import { deploymentKeys, secretsFile } from "@repo/config/deployment";
 import { Effect } from "effect";
 import type { Scope } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules

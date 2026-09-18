@@ -1,5 +1,5 @@
 {
-  "name": "@template/infra-cloudflare",
+  "name": "@repo/infra-cloudflare",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,16 +14,16 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@template/config": "workspace:*",
-    "@template/db": "workspace:*",
-    "@template/monitor": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/monitor": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
-    "@template/interview": "workspace:*",
+    "@repo/interview": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

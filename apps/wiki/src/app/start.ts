@@ -1,8 +1,8 @@
 import { Exit, Option } from "effect";
 import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/react-start";
 import { guardAccess, runtime } from "#shared/server-api/index.ts";
-import { httpStatus } from "@template/observability";
-import { jsonResponse } from "@template/runtime/http";
+import { httpStatus } from "@repo/observability";
+import { jsonResponse } from "@repo/runtime/http";
 
 const guard = createMiddleware().server(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

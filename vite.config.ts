@@ -1,7 +1,7 @@
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
-import { taskInput } from "@template/config/vite";
+import { taskInput } from "@repo/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -146,7 +146,7 @@ export default defineConfig({
         {
           paths: [
             {
-              message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              message: "@repo/ui の shadcn/ui (Base UI) 部品を使ってください。",
               name: "smarthr-ui",
             },
             {
@@ -229,10 +229,7 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
-      build: [
-        "vp run -F '!typescript-template' build",
-        "vp run --filter @template/dev private-maps",
-      ],
+      build: ["vp run -F '!typescript-template' build", "vp run --filter @repo/dev private-maps"],
       check: {
         command: [
           "vp check",

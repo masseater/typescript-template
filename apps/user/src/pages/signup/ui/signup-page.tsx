@@ -1,7 +1,7 @@
 import { CardPage } from "#shared/ui/index.ts";
 import type { ReactElement } from "react";
-import { SignUpForm } from "@template/ui/signup";
-import { TextLink } from "@template/ui";
+import { SignUpForm } from "@repo/ui/signup";
+import { TextLink } from "@repo/ui";
 import { useState } from "react";
 
 function SignUpPage(): ReactElement {

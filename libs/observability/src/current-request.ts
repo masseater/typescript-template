@@ -6,7 +6,7 @@ interface RequestContext extends Correlation {
 }
 
 class CurrentRequest extends Context.Service<CurrentRequest, RequestContext>()(
-  "@template/observability/CurrentRequest",
+  "@repo/observability/CurrentRequest",
 ) {}
 
 export { CurrentRequest };

@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
 import { authSession } from "./auth-request.ts";
-import { getSessionSecurity } from "@template/db/security";
+import { getSessionSecurity } from "@repo/db/security";
 import { isStrongMethod } from "./policy.ts";
 
 const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* requireSessionSecurity(

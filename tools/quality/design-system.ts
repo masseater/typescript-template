@@ -106,7 +106,7 @@ const appModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.{ts,tsx}",
 );
 
-const partsImport = '@import "@template/ui/styles.css"';
+const partsImport = '@import "@repo/ui/styles.css"';
 
 const sourcePattern = /@source\s+"(?<directory>[^"]+)"/gu;
 

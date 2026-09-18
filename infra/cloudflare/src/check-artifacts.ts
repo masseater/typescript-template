@@ -2,7 +2,7 @@ import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { Effect } from "effect";
 import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
