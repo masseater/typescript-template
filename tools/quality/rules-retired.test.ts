@@ -12,6 +12,13 @@ const retiredImports = [
   ["auth-react-entry", 'export { createAuthClient } from "better-auth/react";'],
   ["atom-react-subpath", 'export { make } from "@effect/atom-react/ScopedAtom";'],
   ["reactivity-subpath", 'export * as Atom from "effect/unstable/reactivity/Atom";'],
+  ["swr", 'import useSWR from "swr"; export const read = useSWR;'],
+  ["swr-subpath", 'export { default } from "swr/infinite";'],
+  ["legacy-react-query", 'export { useQuery } from "react-query";'],
+  ["urql", 'export { useQuery } from "urql";'],
+  ["apollo", 'export { useQuery } from "@apollo/client";'],
+  ["relay", 'export { useLazyLoadQuery } from "react-relay";'],
+  ["trpc", 'export { createTRPCReact } from "@trpc/react-query";'],
 ] as const;
 
 const allowedImports = [

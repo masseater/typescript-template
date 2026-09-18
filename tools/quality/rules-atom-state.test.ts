@@ -96,6 +96,59 @@ const unmanagedState = [
   ["star-reexport", "libs/ui/src/probe.ts", 'export * from "react";'],
 ] as const;
 
+const serverDataInAtoms = [
+  [
+    "fetch-in-make",
+    "libs/ui/src/probe.ts",
+    'import { Atom } from "effect/unstable/reactivity"; import { Effect } from "effect"; export const a = Atom.make(Effect.promise(() => fetch("/api/session")));',
+  ],
+  [
+    "fetch-in-local-function",
+    "apps/wiki/src/probe.ts",
+    'import { Atom } from "effect/unstable/reactivity"; import { Effect } from "effect"; async function load() { return (await fetch("/x")).json(); } export const a = Atom.make(Effect.promise(load));',
+  ],
+  [
+    "api-segment-in-family",
+    "apps/admin/src/pages/users/model/probe.ts",
+    'import { Atom } from "effect/unstable/reactivity"; import { Effect } from "effect"; import { listUsers } from "#pages/users/api/list-users.ts"; export const a = Atom.family((q: string) => Atom.make(Effect.promise(() => listUsers(q))));',
+  ],
+  [
+    "client-module-in-readable",
+    "libs/ui/src/probe.ts",
+    'import { Atom } from "effect/unstable/reactivity"; import { authClient } from "./client"; export const a = Atom.readable(() => authClient.getSession());',
+  ],
+  [
+    "request-atom-from-ui",
+    "apps/wiki/src/probe.ts",
+    'import { requestAtom } from "@template/ui"; export const a = requestAtom(async () => fetch("/api/session"));',
+  ],
+  [
+    "request-atom-inside-ui",
+    "libs/ui/src/probe.ts",
+    'import { requestAtom } from "./request"; export const a = requestAtom(async () => fetch("/api/session"));',
+  ],
+  [
+    "atom-refresh-hook",
+    "libs/ui/src/probe.ts",
+    'import { useAtomRefresh } from "@effect/atom-react"; export const r = useAtomRefresh;',
+  ],
+  [
+    "atom-refresh-member",
+    "libs/ui/src/probe.ts",
+    'import { Atom } from "effect/unstable/reactivity"; export const r = Atom.refreshOnWindowFocus;',
+  ],
+  [
+    "reactivity-service",
+    "libs/ui/src/probe.ts",
+    'import { Reactivity } from "effect/unstable/reactivity"; export const r = Reactivity;',
+  ],
+  [
+    "atom-http-api",
+    "libs/ui/src/probe.ts",
+    'import { AtomHttpApi } from "effect/unstable/reactivity"; export const r = AtomHttpApi;',
+  ],
+] as const;
+
 const allowedCode = [
   [
     "component-state",
@@ -109,10 +162,23 @@ const allowedCode = [
     "transition",
     'import { useOptimistic, useTransition } from "react"; export const useSaving = () => [useTransition(), useOptimistic(0)];',
   ],
+  [
+    "browser-computation",
+    'import { requestAtom } from "./request"; export const a = requestAtom(async () => (await import("mermaid")).default.render("id", "graph TD"));',
+  ],
+  [
+    "derived-effect",
+    'import { Atom } from "effect/unstable/reactivity"; import { Effect } from "effect"; export const a = Atom.make(Effect.succeed(1));',
+  ],
 ] as const;
 
 describe("atom-state", () => {
   it.for(unmanagedState)("rejects client state outside Effect Atom: %s", ([_label, name, code]) => {
+    expect.hasAssertions();
+    expect(reported("atom-state", name, code)).toBe(true);
+  });
+
+  it.for(serverDataInAtoms)("rejects server data held in atoms: %s", ([_label, name, code]) => {
     expect.hasAssertions();
     expect(reported("atom-state", name, code)).toBe(true);
   });

@@ -40,8 +40,12 @@ function isServerCacheApi(origin: Origin): boolean {
 
 function isAtomConstructor(context: LintContext, callee: Node): boolean {
   return origins(context, callee).some((origin) => {
-    const [source, namespace = "", member = ""] = normalized(origin);
-    return source === reactivity && namespace === "Atom" && atomConstructors.has(member);
+    const [source = "", namespace = "", member = ""] = normalized(origin);
+    return (
+      (source === reactivity && namespace === "Atom" && atomConstructors.has(member)) ||
+      (/^(?:@template\/ui|\.{1,2}\/(?:[^/]+\/)*request)$/u.test(source) &&
+        namespace === "requestAtom")
+    );
   });
 }
 
