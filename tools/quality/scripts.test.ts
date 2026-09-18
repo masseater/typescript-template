@@ -45,6 +45,19 @@ const repositoryTaskViolations = taskFiles.flatMap((file: string) =>
   taskViolations(runs[file]?.tasks ?? {}),
 );
 
+const rootTasks = runs["../../vite.config.ts"]?.tasks ?? {};
+const checkTask = rootTasks["check"];
+const checkCommand =
+  typeof checkTask === "object" && "command" in checkTask ? checkTask.command : checkTask;
+const checkSteps = [checkCommand ?? []]
+  .flat()
+  .filter((entry: string) => entry.startsWith("vp run check:"))
+  .toSorted();
+const checkTaskNames = Object.keys(rootTasks)
+  .filter((name) => name.startsWith("check:"))
+  .map((name) => `vp run ${name}`)
+  .toSorted();
+
 const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,
   import: "default",
@@ -132,6 +145,11 @@ describe("vite task conventions", () => {
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
     expect.assertions(1);
     expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
+  });
+
+  it("the check task runs every check step", () => {
+    expect.hasAssertions();
+    expect(checkSteps).toStrictEqual(checkTaskNames);
   });
 
   it("all repository tasks run through Vite+", () => {

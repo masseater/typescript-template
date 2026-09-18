@@ -84,7 +84,8 @@ function exactMatchesFirst(
     return [...keywordPages];
   }
   const exact = keywordPages.filter((url) => textOf(url).toLowerCase().includes(needle));
-  return [...exact, ...keywordPages.filter((url) => !exact.includes(url))];
+  const matched = new Set(exact);
+  return [...exact, ...keywordPages.filter((url) => !matched.has(url))];
 }
 
 function rankPages(

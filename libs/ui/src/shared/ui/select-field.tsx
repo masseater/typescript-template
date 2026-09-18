@@ -17,7 +17,7 @@ function SelectField({
   value: string;
 }>): ReactElement {
   const select = (
-    <select>
+    <select aria-label={label}>
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}

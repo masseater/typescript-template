@@ -19,6 +19,7 @@
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "5.20260917.0-alpha",
+    "react-doctor": "0.9.14",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

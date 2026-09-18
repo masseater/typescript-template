@@ -139,6 +139,10 @@ const lint = {
     "eslint/no-undefined": "off",
     "eslint/no-underscore-dangle": ["error", { allow: ["_tag"] }],
     "eslint/no-void": ["error", { allowAsStatement: true }],
+    "eslint/no-warning-comments": [
+      "error",
+      { location: "anywhere", terms: ["todo", "fixme", "xxx", "eslint-disable", "react-doctor"] },
+    ],
     "eslint/one-var": ["error", "never"],
     "eslint/require-await": "off",
     "eslint/sort-imports": ["error", { ignoreDeclarationSort: true }],
