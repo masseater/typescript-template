@@ -300,6 +300,9 @@ importers:
       '@effect/tsgo':
         specifier: 0.45.0
         version: 0.45.0
+      '@feature-sliced/steiger-plugin':
+        specifier: 0.7.0
+        version: 0.7.0(typescript@7.0.2)
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
@@ -619,6 +622,9 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -699,6 +705,9 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
+      '@template/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1

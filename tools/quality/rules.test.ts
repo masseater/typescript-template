@@ -109,10 +109,10 @@ const forbiddenCode = [
 const dependencyBypasses = [
   ["static-db-admin", "apps/user/src/probe.ts", 'import "@template/db/admin";'],
   ["user-remote", "apps/user/src/probe.ts", 'export * from "@template/db/remote";'],
-  ["admin-remote", "apps/admin/src/probe.ts", 'export * from "@template/db/remote";'],
+  ["admin-remote", "apps/admin/src/app/probe.ts", 'export * from "@template/db/remote";'],
   [
     "admin-remote-dynamic",
-    "apps/admin/src/probe.ts",
+    "apps/admin/src/app/probe.ts",
     'export const load = () => import("@template/db/remote");',
   ],
   [
@@ -131,7 +131,7 @@ const dependencyBypasses = [
   ],
   [
     "admin-relative-remote",
-    "apps/admin/src/probe.ts",
+    "apps/admin/src/app/probe.ts",
     'export * from "../../../libs/db/src/remote-operations";',
   ],
   [
@@ -141,7 +141,7 @@ const dependencyBypasses = [
   ],
   [
     "admin-relative-bootstrap",
-    "apps/admin/src/probe.ts",
+    "apps/admin/src/app/probe.ts",
     'import "../../../libs/db/src/bootstrap-local";',
   ],
   [
@@ -151,10 +151,10 @@ const dependencyBypasses = [
   ],
   [
     "admin-relative-testing",
-    "apps/admin/src/probe.ts",
+    "apps/admin/src/app/probe.ts",
     'export * from "../../../libs/db/src/testing";',
   ],
-  ["admin-testing-entry", "apps/admin/src/probe.ts", 'import "@template/db/testing";'],
+  ["admin-testing-entry", "apps/admin/src/app/probe.ts", 'import "@template/db/testing";'],
   [
     "type-import",
     "apps/user/src/probe.ts",
@@ -211,18 +211,18 @@ const dependencyBypasses = [
   ["app-driver", "apps/user/src/probe.ts", 'export * from "drizzle-orm";'],
   ["dynamic-driver", "libs/auth/src/probe.ts", 'export const load = () => import("node:sqlite");'],
   ["production-test-entry", "apps/user/src/probe.ts", 'import "@template/db/testing";'],
-  ["admin-signup", "apps/admin/src/probe.ts", 'import "@template/ui/signup";'],
-  ["wiki-database", "apps/wiki/src/probe.ts", 'import "@template/db";'],
+  ["admin-signup", "apps/admin/src/app/probe.ts", 'import "@template/ui/signup";'],
+  ["wiki-database", "apps/wiki/src/app/probe.ts", 'import "@template/db";'],
   [
     "wiki-signup",
-    "apps/wiki/src/probe.ts",
+    "apps/wiki/src/app/probe.ts",
     'export const load = () => import("@template/ui/signup");',
   ],
   ["wiki-app", "apps/user/src/probe.ts", 'import "@template/wiki";'],
 ] as const;
 
 const validBoundaries = [
-  ["apps/admin/src/probe.ts", 'export * from "@template/db/admin";'],
+  ["apps/admin/src/app/probe.ts", 'export * from "@template/db/admin";'],
   ["libs/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
   ["tools/dev/src/probe.ts", 'export * from "@template/db/remote";'],
   ["infra/cloudflare/src/probe.ts", 'export * from "@template/db/remote";'],
@@ -230,7 +230,7 @@ const validBoundaries = [
   ["apps/user/src/app/probe.ts", 'export * from "@template/db";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/ui/signup";'],
   ["apps/wiki/vite.config.ts", 'export { localDatabase } from "@template/db/local";'],
-  ["apps/wiki/src/probe.ts", 'export * from "@template/auth";'],
+  ["apps/wiki/src/app/probe.ts", 'export * from "@template/auth";'],
   ["apps/user/src/app/probe.ts", 'export const load = () => import("./feature");'],
   ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
   ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],
