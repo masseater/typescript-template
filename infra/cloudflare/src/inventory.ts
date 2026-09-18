@@ -23,8 +23,25 @@ interface StackInventory {
 
 class InventoryFailure extends Schema.TaggedError<InventoryFailure>()("InventoryFailure", {
   code: Schema.Literals(["stack_module_invalid", "stack_compilation_failed"]),
+  detail: Schema.String,
   stack: Schema.String,
 }) {}
+
+function describeCause(cause: unknown): string {
+  if (typeof cause === "string") {
+    return cause;
+  }
+  const fields = JSON.stringify(cause);
+  return fields === "{}" ? String(cause) : fields;
+}
+
+function inventoryFailure(
+  code: typeof InventoryFailure.fields.code.Type,
+  stack: string,
+  cause: unknown,
+): InventoryFailure {
+  return new InventoryFailure({ code, detail: describeCause(cause), stack });
+}
 
 const BindingEntry = Schema.Struct({
   data: Schema.Struct({ bindings: Schema.Array(Schema.Unknown) }),
@@ -100,10 +117,12 @@ function describeBinding(entry: typeof BindingEntry.Type): string {
   if (typeof binding !== "object" || binding === null) {
     return `${entry.sid}:deferred`;
   }
+  const type = String(Reflect.get(binding, "type"));
   return [
     entry.sid,
-    String(Reflect.get(binding, "type")),
+    type,
     ...bindingDetails.flatMap((key) => bindingDetail(Reflect.get(binding, key))),
+    ...(type === "plain_text" ? bindingDetail(Reflect.get(binding, "text")) : []),
   ].join(":");
 }
 
@@ -174,17 +193,18 @@ function stackProgram(module: unknown): StackProgram | undefined {
 }
 
 const compileStack = Effect.fn("compileStack")(function* compileStack(stack: StackName) {
-  const invalid = new InventoryFailure({ code: "stack_module_invalid", stack });
   const module: unknown = yield* Effect.tryPromise({
-    catch: () => invalid,
+    catch: (cause) => inventoryFailure("stack_module_invalid", stack, cause),
     try: async (): Promise<unknown> => import(`./${stack}.ts`),
   });
   const program = stackProgram(module);
   if (program === undefined) {
-    return yield* Effect.fail(invalid);
+    return yield* Effect.fail(
+      inventoryFailure("stack_module_invalid", stack, "default export is not an Effect"),
+    );
   }
   const compiled: unknown = yield* Effect.tryPromise({
-    catch: () => new InventoryFailure({ code: "stack_compilation_failed", stack }),
+    catch: (cause) => inventoryFailure("stack_compilation_failed", stack, cause),
     try: async () =>
       Effect.runPromise(
         toEffect(Effect.provideService(program, Stage, verificationSettings.prefix), {
@@ -194,10 +214,12 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
       ),
   });
   const shape = yield* Schema.decodeUnknownEffect(CompiledShape)(compiled).pipe(
-    Effect.mapError(() => new InventoryFailure({ code: "stack_compilation_failed", stack })),
+    Effect.mapError((cause) => inventoryFailure("stack_compilation_failed", stack, cause)),
   );
   if (shape.name !== stackName(stack)) {
-    return yield* Effect.fail(invalid);
+    return yield* Effect.fail(
+      inventoryFailure("stack_module_invalid", stack, `stack is named ${shape.name}`),
+    );
   }
   return inventoryOf(shape);
 });

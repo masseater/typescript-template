@@ -1,18 +1,18 @@
+import { Cause, Effect } from "effect";
+import { applications, grants } from "@template/config";
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { Application } from "@template/config";
-import { Effect } from "effect";
 import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 import { databaseName } from "./database-lookup.ts";
-import { grants } from "@template/config";
 import { verificationSettings } from "./verification-fixture.ts";
-import { workerModuleGlobs } from "./artifacts.ts";
 
-const { accountId, origins, prefix } = verificationSettings;
+const { accountId, budget, mailFrom, origins, prefix } = verificationSettings;
 
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
@@ -20,16 +20,26 @@ const sharedWorker = {
   workersDev: workerSubdomain,
 };
 
-function applicationResource(app: Application): unknown {
+const applicationStacks: ReadonlySet<string> = new Set(applications);
+
+function isApplication(stack: StackName): stack is Application {
+  return applicationStacks.has(stack);
+}
+
+function plainText(name: string, value: number | string): string {
+  return `${name}:plain_text:${value}`;
+}
+
+function applicationResource(app: Application, release: string): unknown {
   return {
     adopt: false,
     bindings: [
-      "APP_ORIGIN:plain_text",
-      "APP_RELEASE:plain_text",
+      plainText("APP_ORIGIN", origins[app]),
+      plainText("APP_RELEASE", release),
       "AUTH_SECRET:secret_text",
       "DB:d1",
-      `EMAIL:send_email:${verificationSettings.mailFrom}`,
-      "EMAIL_FROM:plain_text",
+      `EMAIL:send_email:${mailFrom}`,
+      plainText("EMAIL_FROM", mailFrom),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {
@@ -59,9 +69,9 @@ function monitorResource(options: {
   return {
     adopt: false,
     bindings: [
-      "ALERT_FROM:plain_text",
-      "ALERT_TO:plain_text",
-      `EMAIL:send_email:${[...verificationSettings.budget.recipients].toSorted().join(",")}:${verificationSettings.mailFrom}`,
+      plainText("ALERT_FROM", mailFrom),
+      plainText("ALERT_TO", budget.recipients.join(",")),
+      `EMAIL:send_email:${[...budget.recipients].toSorted().join(",")}:${mailFrom}`,
       `MONITOR:durable_object_namespace:${options.className}`,
       ...options.variables,
     ].toSorted(),
@@ -104,8 +114,14 @@ function declaredStack(stack: StackName, resources: Readonly<Record<string, unkn
   };
 }
 
-const expected: Readonly<Record<StackName, unknown>> = {
-  admin: declaredStack("admin", { Worker: applicationResource("admin") }),
+const applicationStack = Effect.fn("applicationStack")(function* applicationStack(
+  app: Application,
+) {
+  const artifacts = yield* loadArtifacts(repositoryRoot, app);
+  return declaredStack(app, { Worker: applicationResource(app, artifacts.release) });
+});
+
+const staticExpected: Readonly<Record<Exclude<StackName, Application>, unknown>> = {
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
@@ -114,11 +130,11 @@ const expected: Readonly<Record<StackName, unknown>> = {
       name: "budget",
       variables: [
         "BILLING_READ_TOKEN:deferred",
-        "BUDGET_JPY:plain_text",
-        "CLOUDFLARE_ACCOUNT_ID:plain_text",
-        "FIXED_COST_USD:plain_text",
-        "JPY_PER_USD:plain_text",
-        "RESERVE_USD:plain_text",
+        plainText("BUDGET_JPY", budget.budgetJpy),
+        plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
+        plainText("FIXED_COST_USD", budget.fixedCostUsd),
+        plainText("JPY_PER_USD", budget.jpyPerUsd),
+        plainText("RESERVE_USD", budget.reserveUsd),
       ],
     }),
   }),
@@ -137,7 +153,7 @@ const expected: Readonly<Record<StackName, unknown>> = {
       className: "ErrorMonitor",
       cron: "*/5 * * * *",
       name: "errors",
-      variables: ["CLOUDFLARE_ACCOUNT_ID:plain_text", "OBSERVABILITY_TOKEN:deferred"],
+      variables: [plainText("CLOUDFLARE_ACCOUNT_ID", accountId), "OBSERVABILITY_TOKEN:deferred"],
     }),
   }),
   "health-monitor": declaredStack("health-monitor", {
@@ -146,16 +162,22 @@ const expected: Readonly<Record<StackName, unknown>> = {
       className: "HealthMonitor",
       cron: "37 * * * *",
       name: "health",
-      variables: ["ADMIN_ORIGIN:plain_text", "USER_ORIGIN:plain_text", "WIKI_ORIGIN:plain_text"],
+      variables: [
+        plainText("ADMIN_ORIGIN", origins.admin),
+        plainText("USER_ORIGIN", origins.user),
+        plainText("WIKI_ORIGIN", origins.wiki),
+      ],
     }),
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
   }),
-  user: declaredStack("user", { Worker: applicationResource("user") }),
-  wiki: declaredStack("wiki", { Worker: applicationResource("wiki") }),
 };
+
+const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: StackName) {
+  return isApplication(stack) ? yield* applicationStack(stack) : staticExpected[stack];
+});
 
 applyVerificationEnvironment();
 
@@ -171,23 +193,13 @@ function canonical(value: unknown): string {
   );
 }
 
-function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
-  return canonical(inventory) === canonical(expected[stack]);
-}
-
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
-  const inventory = yield* compileStack(stack);
-  const matches = declaredMatches(inventory, stack);
+  const inventory: StackInventory = yield* compileStack(stack);
+  const expected = yield* expectedStack(stack);
+  const matches = canonical(inventory) === canonical(expected);
   if (!matches) {
     // oxlint-disable-next-line no-console
-    console.error(
-      JSON.stringify({
-        actual: inventory,
-        event: "stacks.differs",
-        expected: expected[stack],
-        stack,
-      }),
-    );
+    console.error(JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }));
   }
   return matches;
 });
@@ -206,15 +218,20 @@ NodeRuntime.runMain(
       Effect.sync(() => {
         // oxlint-disable-next-line no-console
         console.error(
-          JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
+          JSON.stringify({
+            code: failure.code,
+            detail: failure.detail,
+            event: "stacks.invalid",
+            stack: failure.stack,
+          }),
         );
         process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
-    Effect.catchCause(() =>
+    Effect.catchCause((cause) =>
       Effect.sync(() => {
         // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "stacks.invalid" }));
+        console.error(JSON.stringify({ detail: Cause.pretty(cause), event: "stacks.invalid" }));
         process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
