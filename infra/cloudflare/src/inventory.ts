@@ -31,6 +31,9 @@ function describeCause(cause: unknown): string {
   if (typeof cause === "string") {
     return cause;
   }
+  if (cause instanceof Error && cause.message !== "") {
+    return String(cause);
+  }
   const fields = JSON.stringify(cause);
   return fields === "{}" ? String(cause) : fields;
 }
@@ -59,27 +62,43 @@ const CompiledShape = Schema.Struct({
   resources: Schema.Record(Schema.String, ResourceShape),
 });
 
-const declaredProperties = [
-  "assets",
-  "bundle",
-  "compatibility",
-  "crons",
-  "domain",
-  "main",
-  "name",
-  "observability",
-  "policies",
-  "rules",
-  "workersDev",
-] as const;
-
+const BINDING_PROPERTY = "env";
 const DIGEST_SEGMENT = /\/[0-9a-f]{64}\//u;
+const REFERENCE_KIND = "RefExpr";
+const CALLABLE_KEYS: ReadonlySet<string> = new Set(["length", "name", "prototype"]);
+
+function traversable(value: unknown): value is object {
+  return value !== null && (typeof value === "object" || typeof value === "function");
+}
+
+function referencePath(value: unknown): string | undefined {
+  if (!traversable(value)) {
+    return undefined;
+  }
+  const kind: unknown = Reflect.get(value, "kind");
+  const inner: unknown = Reflect.get(value, "expr");
+  if (kind === REFERENCE_KIND) {
+    return `${String(Reflect.get(value, "stack"))}.${String(Reflect.get(value, "resourceId"))}`;
+  }
+  if (kind === "PropExpr") {
+    const base = referencePath(inner);
+    return base === undefined ? undefined : `${base}.${String(Reflect.get(value, "identifier"))}`;
+  }
+  return kind === "ApplyExpr" ? referencePath(inner) : undefined;
+}
 
 function declaredValue(value: unknown): unknown {
   if (typeof value === "string") {
     return value.replace(repositoryRoot, "").replace(DIGEST_SEGMENT, "/<digest>/");
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  const reference = referencePath(value);
+  if (reference !== undefined) {
+    return reference;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item: unknown) => declaredValue(item));
+  }
+  if (typeof value !== "object" || value === null) {
     return value;
   }
   return Object.fromEntries(
@@ -96,49 +115,49 @@ function applyVerificationEnvironment(): void {
   }
 }
 
-const bindingDetails = [
-  "className",
-  "destinationAddress",
-  "allowedDestinationAddresses",
-  "allowedSenderAddresses",
-] as const;
+const BINDING_IDENTITY_KEYS: ReadonlySet<string> = new Set(["name", "type"]);
 
-const isBindingDetail = Schema.is(Schema.Union([Schema.String, Schema.Array(Schema.String)]));
+function bindingField(type: string, key: string, value: unknown): boolean {
+  return (
+    value !== undefined &&
+    !BINDING_IDENTITY_KEYS.has(key) &&
+    !(type === "secret_text" && key === "text")
+  );
+}
 
-function bindingDetail(value: unknown): readonly string[] {
-  if (!isBindingDetail(value)) {
-    return [];
+function bindingText(declared: unknown): string {
+  if (Array.isArray(declared)) {
+    return declared.map(String).toSorted().join(",");
   }
-  return [typeof value === "string" ? value : [...value].toSorted().join(",")];
+  return typeof declared === "string" ? declared : JSON.stringify(declared);
+}
+
+function bindingDetail(key: string, value: unknown): string {
+  return `${key}=${bindingText(declaredValue(value))}`;
 }
 
 function describeBinding(entry: typeof BindingEntry.Type): string {
   const [binding] = entry.data.bindings;
-  if (typeof binding !== "object" || binding === null) {
-    return `${entry.sid}:deferred`;
+  if (!traversable(binding) || typeof binding === "function") {
+    return `${entry.sid}:deferred:${referencePath(binding) ?? "unresolved"}`;
   }
   const type = String(Reflect.get(binding, "type"));
   return [
     entry.sid,
     type,
-    ...bindingDetails.flatMap((key) => bindingDetail(Reflect.get(binding, key))),
-    ...(type === "plain_text" ? bindingDetail(Reflect.get(binding, "text")) : []),
+    ...Object.entries(binding)
+      .filter(([key, value]: readonly [string, unknown]) => bindingField(type, key, value))
+      .toSorted(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]: readonly [string, unknown]) => bindingDetail(key, value)),
   ].join(":");
 }
 
 function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
   return Object.fromEntries(
-    declaredProperties.flatMap((property) =>
-      Object.hasOwn(props, property) ? [[property, declaredValue(props[property])]] : [],
-    ),
+    Object.entries(props)
+      .filter(([property]) => property !== BINDING_PROPERTY)
+      .map(([property, value]: readonly [string, unknown]) => [property, declaredValue(value)]),
   );
-}
-
-const REFERENCE_KIND = "RefExpr";
-const CALLABLE_KEYS: ReadonlySet<string> = new Set(["length", "name", "prototype"]);
-
-function traversable(value: unknown): value is object {
-  return value !== null && (typeof value === "object" || typeof value === "function");
 }
 
 function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string>): void {
@@ -224,5 +243,5 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
   return inventoryOf(shape);
 });
 
-export { applyVerificationEnvironment, compileStack };
+export { applyVerificationEnvironment, compileStack, describeCause };
 export type { StackInventory };

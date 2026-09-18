@@ -1,6 +1,6 @@
-import { Cause, Effect } from "effect";
+import { Cause, Effect, Schema } from "effect";
 import { applications, grants } from "@template/config";
-import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import { applyVerificationEnvironment, compileStack, describeCause } from "./inventory.ts";
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
@@ -16,18 +16,19 @@ const { accountId, budget, mailFrom, origins, prefix } = verificationSettings;
 
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
+  isExternal: true,
   observability: workerObservability(verificationSettings.observabilitySampling),
   workersDev: workerSubdomain,
 };
 
-const applicationStacks: ReadonlySet<string> = new Set(applications);
-
-function isApplication(stack: StackName): stack is Application {
-  return applicationStacks.has(stack);
-}
+const isApplication = Schema.is(Schema.Literals(applications));
 
 function plainText(name: string, value: number | string): string {
-  return `${name}:plain_text:${value}`;
+  return `${name}:plain_text:text=${value}`;
+}
+
+function tokenValue(name: string, resource: string): string {
+  return `${name}:deferred:${stackName("tokens")}.${resource}.value`;
 }
 
 function applicationResource(app: Application, release: string): unknown {
@@ -37,8 +38,8 @@ function applicationResource(app: Application, release: string): unknown {
       plainText("APP_ORIGIN", origins[app]),
       plainText("APP_RELEASE", release),
       "AUTH_SECRET:secret_text",
-      "DB:d1",
-      `EMAIL:send_email:${mailFrom}`,
+      `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
+      `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText("EMAIL_FROM", mailFrom),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
@@ -71,8 +72,8 @@ function monitorResource(options: {
     bindings: [
       plainText("ALERT_FROM", mailFrom),
       plainText("ALERT_TO", budget.recipients.join(",")),
-      `EMAIL:send_email:${[...budget.recipients].toSorted().join(",")}:${mailFrom}`,
-      `MONITOR:durable_object_namespace:${options.className}`,
+      `EMAIL:send_email:allowedDestinationAddresses=${[...budget.recipients].toSorted().join(",")}:allowedSenderAddresses=${mailFrom}`,
+      `MONITOR:durable_object_namespace:className=${options.className}`,
       ...options.variables,
     ].toSorted(),
     declared: {
@@ -92,6 +93,7 @@ function accountToken(slug: string, permission: string): unknown {
     adopt: false,
     bindings: [],
     declared: {
+      accountId,
       name: `${prefix}-${slug}`,
       policies: [
         {
@@ -129,7 +131,7 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, unknown>>
       cron: "17 */6 * * *",
       name: "budget",
       variables: [
-        "BILLING_READ_TOKEN:deferred",
+        tokenValue("BILLING_READ_TOKEN", "BillingRead"),
         plainText("BUDGET_JPY", budget.budgetJpy),
         plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
         plainText("FIXED_COST_USD", budget.fixedCostUsd),
@@ -153,7 +155,10 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, unknown>>
       className: "ErrorMonitor",
       cron: "*/5 * * * *",
       name: "errors",
-      variables: [plainText("CLOUDFLARE_ACCOUNT_ID", accountId), "OBSERVABILITY_TOKEN:deferred"],
+      variables: [
+        plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
+        tokenValue("OBSERVABILITY_TOKEN", "ObservabilityQuery"),
+      ],
     }),
   }),
   "health-monitor": declaredStack("health-monitor", {
@@ -230,8 +235,9 @@ NodeRuntime.runMain(
     ),
     Effect.catchCause((cause) =>
       Effect.sync(() => {
+        const detail = describeCause(Cause.squash(cause));
         // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ detail: Cause.pretty(cause), event: "stacks.invalid" }));
+        console.error(JSON.stringify({ detail, event: "stacks.invalid" }));
         process.exitCode = FAILED_EXIT_CODE;
       }),
     ),
