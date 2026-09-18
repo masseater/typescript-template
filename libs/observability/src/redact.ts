@@ -105,4 +105,14 @@ function isSecretKey(key: string): boolean {
   return secretKey.test(key);
 }
 
-export { isSecretKey, placeholder as redactedValue, redactSecrets };
+function redactedField(key: string, value: unknown): unknown {
+  if (isSecretKey(key)) {
+    return placeholder;
+  }
+  if (value instanceof Error) {
+    return { message: value.message, name: value.name };
+  }
+  return typeof value === "string" ? redactSecrets(value) : value;
+}
+
+export { redactSecrets, redactedField };
