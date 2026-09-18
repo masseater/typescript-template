@@ -171,6 +171,7 @@ const lint = {
     "project/effect-stack": "error",
     "project/environment-boundary": "error",
     "project/example-values": "error",
+    "project/git-environment": "error",
     "project/layers": "error",
     "project/no-internal-mocks": "error",
     "project/no-manual-memoization": "error",

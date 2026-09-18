@@ -16,7 +16,7 @@ type GitCommandOptions = Readonly<{
 }>;
 
 const environmentOutsideAnyRepository = (): Readonly<Record<string, string | undefined>> =>
-  omitBy(process.env, (_, spelled) => String(spelled).startsWith("GIT_"));
+  omitBy(process.env, (_, spelled) => spelled.startsWith("GIT_"));
 
 const executeFile = promisify(execFile);
 

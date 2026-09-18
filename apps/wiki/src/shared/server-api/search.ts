@@ -37,8 +37,7 @@ const keyword = createFromSource(source);
 
 function sectionText(page: WikiPageView, heading?: string): string {
   return page.data.structuredData.contents
-    .filter((content) => content.heading === heading)
-    .map((content) => content.content)
+    .flatMap((content) => (content.heading === heading ? [content.content] : []))
     .join(" ");
 }
 

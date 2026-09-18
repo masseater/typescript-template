@@ -18,6 +18,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "database_output_unavailable",
     "deploy_token_permissions_missing",
     "mail_from_outside_deployment",
+    "otlp_enabled_without_endpoint",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
     "plan_removes_bindings",
@@ -25,6 +26,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "secrets_store_already_present",
     "sending_domain_unavailable",
     "state_store_name_taken",
+    "trace_destination_not_applied",
   ]),
   keys: Schema.Array(Schema.String),
 }) {}
@@ -92,6 +94,20 @@ const SharedSettings = Schema.Struct({
 });
 
 type SharedConfig = typeof SharedSettings.Type;
+
+const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSettings(
+  otlp: Readonly<{ enabled: boolean | undefined; endpoint: string | undefined }>,
+) {
+  if (otlp.endpoint === undefined && otlp.enabled !== undefined) {
+    return yield* fail("otlp_enabled_without_endpoint", [
+      "TEMPLATE_OTLP_ENABLED",
+      "TEMPLATE_OTLP_ENDPOINT",
+    ]);
+  }
+  return otlp.endpoint === undefined
+    ? undefined
+    : { enabled: otlp.enabled ?? true, endpoint: otlp.endpoint };
+});
 
 const originKeys = {
   admin: "TEMPLATE_ADMIN_ORIGIN",
@@ -215,6 +231,7 @@ export {
   Prefix,
   Recipients,
   SharedSettings,
+  checkOtlpSettings,
   checkSharedConfig,
   originKeys,
   parseDeploymentCommand,

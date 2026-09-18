@@ -1,12 +1,12 @@
 ---
-description: "Disallow a file whose name carries a test marker other than the two the repository runs, so no file can leave the production scope by the way it is spelled"
+description: "Disallow a file whose name carries a test marker other than the ones the repository runs, so no file can leave the production scope by the way it is spelled"
 ---
 
 # forbid-test-adjacent-file--inline-its-setup-into-the-test
 
 <!-- BEGIN GENERATED rule-header -->
 
-Disallow a file whose name carries a test marker other than the two the repository runs, so no file can leave the production scope by the way it is spelled
+Disallow a file whose name carries a test marker other than the ones the repository runs, so no file can leave the production scope by the way it is spelled
 
 - Tool: `oxlint`
 - Fixable: no
@@ -19,7 +19,7 @@ Disallow a file whose name carries a test marker other than the two the reposito
 
 ## Violation
 
-A file whose name carries a test marker the repository does not run. The markers that put a file outside the production scope are `.fixture.`, `.mock.`, `.test.`, `.spec.`, `.stories.` and `.story.`; of those only `.test.` and `.spec.` name files the runner picks up, so a name carrying any of the others is reported on its Program node.
+A file whose name carries a test marker the repository does not run. The markers that put a file outside the production scope are `.fixture.`, `.mock.`, `.test.`, `.spec.`, `.stories.` and `.story.`; of those only `.test.`, `.spec.` and `.stories.` name files the runner picks up, so a name carrying any of the others is reported on its Program node.
 
 ## Fix
 
@@ -68,7 +68,7 @@ export const total = 1;
 
 | messageId | Text |
 | --- | --- |
-| `testAdjacentFile` | A file name must not carry a test marker other than \`.test.\` or \`.spec.\`. Delete \`{{fileName}}\` and declare what it holds inside each test that uses it. |
+| `testAdjacentFile` | A file name must not carry a test marker other than \`.test.\`, \`.spec.\` or \`.stories.\`. Delete \`{{fileName}}\` and declare what it holds inside each test that uses it. |
 
 <!-- END GENERATED messages -->
 

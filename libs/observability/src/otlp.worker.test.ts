@@ -16,6 +16,7 @@ interface Observed {
 
 const endpoint = "https://otlp.example.test";
 const authorization = "Bearer otlp-test-token";
+const leaked = "otlp-test-value-at-least-32-characters-long";
 const noContent = 204;
 const rejected = 404;
 const exportedTraceIds = /"traceId":"(?<traceId>[0-9a-f]{32})"/gu;
@@ -43,6 +44,7 @@ function accepted(): Response {
 function observed(
   otlp?: OtlpDestination,
   responding: () => Response = accepted,
+  alongside: Effect.Effect<void> = Effect.void,
 ): Effect.Effect<Observed> {
   const seen = { authorization: [] as string[], logs: [] as unknown[], traces: [] as unknown[] };
   const lines: unknown[] = [];
@@ -75,6 +77,7 @@ function observed(
         const response = yield* observeRequest(new Request("http://localhost/"), () =>
           Effect.succeed(new Response(undefined, { status: noContent })),
         );
+        yield* alongside;
         yield* flushTelemetry;
         return { ...seen, lines, traceparent: response.headers.get("traceparent") ?? "" };
       }).pipe(Effect.provide(telemetry), Effect.orDie),
@@ -123,6 +126,25 @@ it.effect("no OTLP destination leaves the structured log line as the only record
     assert.deepStrictEqual([telemetry.logs.length, telemetry.traces.length], [0, 0]);
     assert.containSubset(telemetry.lines, [
       { event: "http.server.request", trace_id: requestTraceId(telemetry.traceparent) },
+    ]);
+  }),
+);
+
+it.effect("a secret an attribute carries reaches neither the endpoint nor the log line", () =>
+  Effect.gen(function* program() {
+    const telemetry = yield* observed(
+      { authorization, endpoint },
+      accepted,
+      Effect.logError("authentication.failed", {
+        cause: { AUTH_SECRET: leaked, reason: "invalid token" },
+      }),
+    );
+    const exported = JSON.stringify(telemetry.logs);
+    assert.notInclude(exported, leaked);
+    assert.include(exported, "authentication.failed");
+    assert.include(exported, "[redacted]");
+    assert.containSubset(telemetry.lines, [
+      { cause: { AUTH_SECRET: "[redacted]", reason: "invalid token" } },
     ]);
   }),
 );
