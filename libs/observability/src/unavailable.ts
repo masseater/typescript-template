@@ -1,6 +1,6 @@
 import { Cause, Console, Effect, Result } from "effect";
 
-import type { Application } from "@repo/config";
+import type { ServiceName } from "@repo/config";
 
 import { isSecretKey, redactSecrets, redactedValue } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
@@ -8,7 +8,7 @@ import { isRecord, serviceLabel } from "./structured-logs.ts";
 import type { LogSink } from "./structured-logs.ts";
 
 interface Reporting {
-  readonly service: Application;
+  readonly service: ServiceName;
   readonly log?: LogSink;
 }
 
@@ -82,7 +82,7 @@ function causeChain(error: unknown): string {
 
 function unavailableLog(
   cause: Readonly<Cause.Cause<unknown>>,
-  service: Application,
+  service: ServiceName,
 ): Record<string, string> {
   const error = Cause.squash(cause);
   return {

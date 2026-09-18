@@ -6,6 +6,7 @@ const MAILPIT_PORT = 8025;
 
 const applications = ["user", "admin", "wiki"] as const;
 type Application = (typeof applications)[number];
+type ServiceName = Application | "commander";
 const applicationPorts: Readonly<Record<Application, number>> = {
   admin: ADMIN_PORT,
   user: USER_PORT,
@@ -52,4 +53,11 @@ export {
   storybookPort,
   strongAuthenticationMethods,
 };
-export type { Application, Capability, CapabilityOf, Role, StrongAuthenticationMethod };
+export type {
+  Application,
+  Capability,
+  CapabilityOf,
+  Role,
+  ServiceName,
+  StrongAuthenticationMethod,
+};
