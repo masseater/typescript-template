@@ -1,9 +1,10 @@
 import { assert, it } from "@effect/vitest";
-import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
-import { TestDatabase } from "./testing.ts";
+
+import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
 import { addUser } from "./records-fixture.ts";
+import { TestDatabase } from "./testing.ts";
 
 const LIMIT = 2;
 const TWICE_STORED = 2;

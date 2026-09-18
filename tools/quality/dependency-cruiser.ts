@@ -1,4 +1,7 @@
+import type { IConfiguration } from "dependency-cruiser";
+
 import { clientReachableModules, serverOnlyPackages } from "@repo/config/vite";
+
 import {
   nodeRuntimePackages,
   testPattern,
@@ -6,7 +9,6 @@ import {
   workerTestPattern,
   workerTestSuffix,
 } from "./test-runtime.ts";
-import type { IConfiguration } from "dependency-cruiser";
 
 function anyOf(values: readonly string[]): string {
   return values.map((value) => value.replaceAll(".", String.raw`\.`)).join("|");

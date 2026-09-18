@@ -1,9 +1,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, realpath, symlink, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
 
 type Fixture = Readonly<Record<string, string>>;
 type Workspace = readonly [string, Readonly<Record<string, string>>];

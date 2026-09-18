@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
 import { Effect } from "effect";
+
+import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
 
 const now = 1_800_000_000_000;
 const staleMilliseconds = 4_000_000;

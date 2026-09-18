@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { isRoutes, parentContext, routeLabel } from "./protocol.ts";
 
 const context = {

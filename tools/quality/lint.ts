@@ -1,5 +1,18 @@
 import type { UserConfig } from "vite-plus";
+
 import { retiredImports } from "./retired-packages.ts";
+
+const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
+
+const linkComponents = [
+  "ButtonLink",
+  "CardLink",
+  "DropdownMenuLinkItem",
+  "Link",
+  "NavigationLink",
+  "PaginationLink",
+  "TextLink",
+];
 
 const lint = {
   categories: {
@@ -11,15 +24,7 @@ const lint = {
     style: "error",
     suspicious: "error",
   },
-  ignorePatterns: [
-    "**/mockServiceWorker.js",
-    "**/routeTree.gen.ts",
-    "**/dist/**",
-    "**/node_modules/**",
-    ".local/**",
-    ".local-agents/**",
-    "**/.wrangler/**",
-  ],
+  ignorePatterns: generatedFiles,
   jsPlugins: [
     "./tools/quality/rules.ts",
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
@@ -106,6 +111,7 @@ const lint = {
   ],
   rules: {
     "eslint/func-style": ["error", "declaration"],
+    "eslint/max-lines": ["error", { max: 500 }],
     "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." }],
     "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
     "eslint/no-magic-numbers": [
@@ -139,6 +145,7 @@ const lint = {
     ],
     "eslint/one-var": ["error", "never"],
     "eslint/require-await": "off",
+    "eslint/sort-imports": ["error", { ignoreDeclarationSort: true }],
     "import/no-cycle": "error",
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",
@@ -233,6 +240,20 @@ const lint = {
     "unicorn/throw-new-error": "off",
     "vite-plus/prefer-vite-plus-imports": "error",
   },
+  settings: {
+    "jsx-a11y": {
+      attributes: { href: ["href", "to"] },
+      components: {
+        ...Object.fromEntries(linkComponents.map((name) => [name, "a"])),
+        Button: "button",
+        Checkbox: "button",
+        DropdownMenuTrigger: "button",
+        Heading: "h2",
+      },
+      polymorphicPropName: "as",
+    },
+    react: { linkComponents: linkComponents.map((name) => ({ attribute: "to", name })) },
+  },
 } satisfies UserConfig["lint"];
 
-export { lint };
+export { generatedFiles, lint };

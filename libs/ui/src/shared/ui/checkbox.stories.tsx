@@ -1,6 +1,7 @@
-import { Checkbox } from "./checkbox";
 import { noop } from "es-toolkit";
+
 import preview from "../../../.storybook/preview";
+import { Checkbox } from "./checkbox";
 
 const meta = preview.meta({
   args: { "aria-label": "通知を受け取る", onCheckedChange: noop },

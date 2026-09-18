@@ -1,5 +1,6 @@
-import { NavigationLink } from "@repo/ui";
 import type { ReactElement } from "react";
+
+import { NavigationLink } from "@repo/ui";
 
 const activeOptions = { exact: true, includeSearch: false } as const;
 
@@ -10,6 +11,7 @@ function AdminNavigationItem({
 }: Readonly<{ label: string; onNavigate: () => void; to: "/" | "/security" }>): ReactElement {
   return (
     <li>
+      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <NavigationLink to={to} variant="side" activeOptions={activeOptions} onClick={onNavigate}>
         {label}
       </NavigationLink>

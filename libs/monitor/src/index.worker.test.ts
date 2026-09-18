@@ -1,5 +1,6 @@
-import { Effect, Exit, Schema } from "effect";
 import { assert, it } from "@effect/vitest";
+import { Effect, Exit, Schema } from "effect";
+
 import { AlertEnvironment } from "./index.ts";
 
 const TOO_MANY_RECIPIENTS = 11;

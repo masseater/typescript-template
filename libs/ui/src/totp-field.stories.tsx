@@ -1,6 +1,7 @@
-import { TotpField } from "./totp-field";
 import { noop } from "es-toolkit";
+
 import preview from "../.storybook/preview";
+import { TotpField } from "./totp-field";
 
 const meta = preview.meta({
   args: { code: { handleChange: noop, value: "" } },

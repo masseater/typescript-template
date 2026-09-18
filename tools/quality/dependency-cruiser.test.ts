@@ -1,11 +1,13 @@
-import { describe, expect, it } from "vite-plus/test";
-import type { Fixture } from "./dependency-cruiser-fixture.ts";
-import type { ICruiseResult } from "dependency-cruiser";
-import configuration from "./dependency-cruiser.ts";
-import { createFixture } from "./dependency-cruiser-fixture.ts";
-import { cruise } from "dependency-cruiser";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { rm } from "node:fs/promises";
+
+import type { ICruiseResult } from "dependency-cruiser";
+import { cruise } from "dependency-cruiser";
+import { describe, expect, it } from "vite-plus/test";
+
+import type { Fixture } from "./dependency-cruiser-fixture.ts";
+import { createFixture } from "./dependency-cruiser-fixture.ts";
+import configuration from "./dependency-cruiser.ts";
 
 type Case = readonly [string, Fixture];
 

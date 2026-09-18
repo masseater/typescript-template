@@ -1,13 +1,16 @@
-import { Effect, Schema } from "effect";
-import { deploymentKeys, secretsFile } from "@repo/config/deployment";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { constants } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { lstat, open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { FileHandle } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
+import { Effect, Schema } from "effect";
+
+import { deploymentKeys, secretsFile } from "@repo/config/deployment";
+
 import { projectName } from "./project.ts";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;

@@ -1,4 +1,5 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
+
 import plugin from "./rules.ts";
 
 type RuleName =

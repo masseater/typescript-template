@@ -1,11 +1,13 @@
-import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-import type { Application } from "./applications.ts";
-import { applicationPorts } from "./applications.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-import react from "@vitejs/plugin-react";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import react from "@vitejs/plugin-react";
+import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
+
+import type { Application } from "./applications.ts";
+import { applicationPorts } from "./applications.ts";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
