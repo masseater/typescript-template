@@ -107,7 +107,10 @@ const taskInput = [
 ] as const;
 
 const appRun = {
-  tasks: { build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] } },
+  tasks: {
+    build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
+    check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
+  },
 } satisfies UserConfig["run"];
 
 const monitorWorker = {
