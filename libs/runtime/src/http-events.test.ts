@@ -1,15 +1,16 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Deferred, Effect, Layer, ManagedRuntime, Queue, Schema, Stream } from "effect";
+import { Deferred, Effect, Layer, Queue, Schema, Stream } from "effect";
 
 import { Telemetry, httpStatus } from "@repo/observability";
 
 import { apiServerClient } from "./client.ts";
 import { AppOrigin, apiRoutes, createApi, elysiaServer, readSearchParams } from "./http.ts";
+import { workerRuntime } from "./worker-runtime.ts";
 
 const origin = "http://localhost:3001";
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
-const runtime = ManagedRuntime.make(context);
+const runtime = workerRuntime(() => context);
 const api = apiRoutes(runtime, { service: "user" });
 
 const Tick = Schema.Struct({
