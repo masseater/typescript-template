@@ -1,97 +1,138 @@
-import { assert } from "@effect/vitest";
-import { sendVerificationEmail } from "@repo/config";
-import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@repo/db/testing";
-import { Context, Effect, Layer, Schema } from "effect";
+import { APPLICATION, sendVerificationEmail, type Application } from "@repo/config";
+import {
+  EmptyTestDatabase,
+  TestDatabase,
+  bootstrapAdmin,
+  getSchemaShape,
+} from "@repo/db/testing";
+import { httpStatus } from "@repo/observability";
+import { getSchema } from "better-auth/db";
+import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { URI } from "otpauth";
+import { test } from "vite-plus/test";
 
+import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
-import { mailConfig, mailServer, mailbox } from "./mail-fixture.ts";
-
-import type { Application } from "@repo/config";
-import type { Database } from "@repo/db";
-import type { Scope } from "effect";
-import type { AuthFailure } from "./auth-failure.ts";
-
-type AuthService = Auth["Service"];
-type TestServices = Layer.Success<typeof TestDatabase>;
+import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
+import { UnexpectedStatus } from "./unexpected-status.ts";
 
 const PASSWORD = "test-password-safe-123";
-const HTTP_OK = 200;
-const HTTP_CREATED = 201;
-const HTTP_FOUND = 302;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_FORBIDDEN = 403;
-const HTTP_NOT_FOUND = 404;
-const TEST_TIMEOUT = { timeout: 60_000 };
 const secret = "integration-test-secret-at-least-32-characters-long";
 const TotpEnrollment = Schema.Struct({
   backupCodes: Schema.Array(Schema.String),
   totpURI: Schema.String,
 });
 
-class Fixture extends Context.Service<
-  Fixture,
-  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
->()("AuthTestFixture") {}
+class AuthApps extends Context.Service<AuthApps, Readonly<Record<Application, Auth["Service"]>>>()(
+  "@repo/auth/AuthApps",
+) {}
 
-function decodeOrDie<Contract extends Schema.Top & { readonly DecodingServices: never }>(
-  contract: Contract,
-  input: unknown,
-): Effect.Effect<Contract["Type"]> {
-  return Schema.decodeUnknownEffect(contract)(input).pipe(Effect.orDie);
-}
+const sequentialIdentifiers = Layer.effect(
+  AuthIdentifiers,
+  Effect.map(
+    Ref.make<Readonly<Partial<Record<string, number>>>>({}),
+    (issued): GenerateId =>
+      ({ model }) =>
+        Effect.runSync(
+          Ref.modify(issued, (issuedCounts) => {
+            const sequence = (issuedCounts[model] ?? 0) + 1;
+            return [`${model}-${sequence}`, { ...issuedCounts, [model]: sequence }];
+          }),
+        ),
+  ),
+);
 
-function authFor(
-  audience: Application,
-): Effect.Effect<AuthService, AuthFailure, Database | Scope.Scope> {
+const authFor = (audience: Application) => {
   const layer = Auth.layer({
     audience,
     baseURL: origins[audience],
     secret,
-    sendVerificationEmail: (message) =>
-      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, message),
+    sendVerificationEmail: (verification) =>
+      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, verification),
   });
-  return Layer.build(layer).pipe(Effect.map((context) => Context.get(context, Auth)));
-}
+  return Layer.build(layer).pipe(Effect.map((built) => Context.get(built, Auth)));
+};
 
-const fixture = Layer.effect(
-  Fixture,
-  Effect.gen(function* buildFixture() {
-    return Fixture.of({
-      admin: yield* authFor("admin"),
-      user: yield* authFor("user"),
-      wiki: yield* authFor("wiki"),
-    });
+const authApps = Layer.effect(
+  AuthApps,
+  Effect.all({
+    admin: authFor(APPLICATION.admin),
+    user: authFor(APPLICATION.user),
+    wiki: authFor(APPLICATION.wiki),
   }),
-).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
+).pipe(Layer.provide(sequentialIdentifiers));
 
-function withAuth<Value>(
-  effect: Effect.Effect<Value, unknown, Fixture | TestServices>,
-): Effect.Effect<Value, unknown> {
-  return effect.pipe(Effect.provide(fixture));
-}
+const authTestLayer = authApps.pipe(
+  Layer.provideMerge(TestDatabase),
+  Layer.provideMerge(mailServer),
+);
 
-function withEmptyDatabase<Value>(
-  effect: Effect.Effect<Value, unknown, TestServices>,
-): Effect.Effect<Value, unknown> {
-  return effect.pipe(Effect.provide(EmptyTestDatabase));
-}
+type AuthTestServices = Layer.Success<typeof authTestLayer>;
 
-const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
-  const { user } = yield* Fixture;
-  const link = new URL(mailbox.get(email) ?? "http://invalid.test/");
-  assert.deepStrictEqual([link.pathname, link.search], ["/verify-email", ""]);
-  const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
-  yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
+const authTest = test.extend("auth", async ({}, { onCleanup }) => {
+  const scope = Scope.makeUnsafe();
+  onCleanup(async () => Effect.runPromise(Scope.close(scope, Exit.void)));
+  return Effect.runPromise(Layer.buildWithScope(authTestLayer, scope));
+});
+
+const runWith = async <Value, Failure>(
+  auth: Context.Context<AuthTestServices>,
+  program: () => Effect.Effect<Value, Failure, AuthTestServices>,
+): Promise<Value> => {
+  return Effect.runPromise(Effect.provideContext(program(), auth));
+};
+
+const audienceOnEmptyDatabase = (audience: Application) => {
+  return Effect.scoped(authFor(audience)).pipe(
+    Effect.match({
+      onFailure: (failure) => failure._tag,
+      onSuccess: (built) => built.audience,
+    }),
+    Effect.provide(Layer.merge(EmptyTestDatabase, sequentialIdentifiers)),
+  );
+};
+
+const requireStatus = Effect.fn("requireStatus")(function* requireStatus(
+  expectedStatus: number,
+  {
+    client,
+    endpoint,
+    jsonFields,
+  }: {
+    readonly client: BrowserClient;
+    readonly endpoint: string;
+    readonly jsonFields?: Readonly<Record<string, unknown>>;
+  },
+) {
+  const receivedStatus = yield* client.status(endpoint, jsonFields);
+  if (receivedStatus !== expectedStatus) {
+    return yield* new UnexpectedStatus({ endpoint, status: receivedStatus });
+  }
+});
+
+const clientOf = Effect.fn("clientOf")(function* clientOf(
+  audience: Application,
+  network: Readonly<Record<string, string>> = {},
+) {
+  return new BrowserClient((yield* AuthApps)[audience], { network });
 });
 
 const register = Effect.fn("register")(function* register(email: string) {
-  const { user } = yield* Fixture;
-  const client = new BrowserClient(user);
-  const signUp = { email, name: email, password: PASSWORD };
-  assert.isTrue((yield* client.request("/sign-up/email", signUp)).ok);
+  const client = yield* clientOf(APPLICATION.user);
+  yield* requireStatus(httpStatus.ok, {
+    client,
+    endpoint: "/sign-up/email",
+    jsonFields: { email, name: email, password: PASSWORD },
+  });
   return client;
+});
+
+const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
+  const { user } = yield* AuthApps;
+  const link = yield* verificationLink(email);
+  const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
+  yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
 });
 
 const registerVerified = Effect.fn("registerVerified")(function* registerVerified(email: string) {
@@ -107,54 +148,139 @@ const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* boo
   yield* bootstrapAdmin(email);
 });
 
-function signIn(client: Readonly<BrowserClient>, email: string): Effect.Effect<Response> {
-  return client.request("/sign-in/email", { email, password: PASSWORD });
-}
+const signIn = (client: BrowserClient, email: string): Effect.Effect<number> => {
+  return client.status("/sign-in/email", { email, password: PASSWORD });
+};
 
 const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application, email: string) {
-  const client = new BrowserClient((yield* Fixture)[audience]);
-  assert.strictEqual((yield* signIn(client, email)).status, HTTP_OK);
+  const client = yield* clientOf(audience);
+  yield* requireStatus(httpStatus.ok, {
+    client,
+    endpoint: "/sign-in/email",
+    jsonFields: { email, password: PASSWORD },
+  });
   return client;
 });
 
-const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: Readonly<BrowserClient>) {
-  const response = yield* client.json("/two-factor/enable", { password: PASSWORD });
-  assert.strictEqual(response.status, HTTP_OK);
-  const enrollment = yield* decodeOrDie(TotpEnrollment, response.body);
+const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: BrowserClient) {
+  const enabled = yield* client.json("/two-factor/enable", { password: PASSWORD });
+  const enrollment = yield* Schema.decodeUnknownEffect(TotpEnrollment)(enabled.body);
   const authenticator = URI.parse(enrollment.totpURI);
-  const code = { code: authenticator.generate() };
-  assert.strictEqual((yield* client.request("/two-factor/verify-totp", code)).status, HTTP_OK);
-  return { authenticator, backupCodes: enrollment.backupCodes };
+  yield* requireStatus(httpStatus.ok, {
+    client,
+    endpoint: "/two-factor/verify-totp",
+    jsonFields: { code: authenticator.generate() },
+  });
+  return { authenticator, backupCodes: enrollment.backupCodes, totpURI: enrollment.totpURI };
 });
 
-function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  effect: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<string, Value, Requirements> {
-  return effect.pipe(
-    Effect.flip,
-    Effect.map((error) => error._tag),
+const sessionBeforeEnrollment = Effect.fn("sessionBeforeEnrollment")(
+  function* sessionBeforeEnrollment({
+    audience,
+    email,
+    enrollOn,
+  }: {
+    readonly audience: Application;
+    readonly email: string;
+    readonly enrollOn: Application;
+  }) {
+    const old = yield* signInAs(audience, email);
+    const enrollment = yield* enableTotp(yield* signInAs(enrollOn, email));
+    return { enrollment, old };
+  },
+);
+
+const SIGN_IN_WINDOW = 4;
+
+const spendSignInWindow = Effect.fn("spendSignInWindow")(function* spendSignInWindow({
+  email,
+  network,
+}: {
+  readonly email: string;
+  readonly network: Readonly<Record<string, string>>;
+}) {
+  yield* registerVerified(email);
+  const client = yield* clientOf(APPLICATION.user, network);
+  return yield* Effect.replicateEffect(signIn(client, email), SIGN_IN_WINDOW);
+});
+
+const pendingSecondFactor = Effect.fn("pendingSecondFactor")(function* pendingSecondFactor(
+  audience: Application,
+  email: string,
+) {
+  const client = yield* clientOf(audience);
+  const challenge = yield* client.json("/sign-in/email", { email, password: PASSWORD });
+  return challenge.status === httpStatus.ok
+    ? client
+    : yield* new UnexpectedStatus({
+        endpoint: "/sign-in/email",
+        status: challenge.status,
+      });
+});
+
+const signInAgainAfterTotp = Effect.fn("signInAgainAfterTotp")(function* signInAgainAfterTotp({
+  audience,
+  email,
+}: {
+  readonly audience: Application;
+  readonly email: string;
+}) {
+  const enrolled = yield* signInAs(audience, email);
+  const { authenticator } = yield* enableTotp(enrolled);
+  yield* requireStatus(httpStatus.ok, { client: enrolled, endpoint: "/sign-out", jsonFields: {} });
+  return { authenticator, client: yield* pendingSecondFactor(audience, email) };
+});
+
+const absentFields = ({
+  columns,
+  fields,
+  model,
+}: {
+  readonly columns: readonly string[];
+  readonly fields: readonly string[];
+  readonly model: string;
+}): string[] => {
+  return fields.filter((field) => !columns.includes(field)).map((field) => `${model}.${field}`);
+};
+
+const missingSchemaFields = Effect.fn("missingSchemaFields")(function* missingSchemaFields(
+  audience: Application,
+) {
+  const betterAuthSchema = getSchema((yield* AuthApps)[audience].instance.options);
+  const columnsByModel = getSchemaShape();
+  return Object.entries(betterAuthSchema).flatMap(([model, description]) =>
+    absentFields({
+      columns: columnsByModel[model] ?? [],
+      fields: Object.keys(description.fields),
+      model,
+    }),
   );
-}
+});
+
+const audienceInputs = Effect.fn("audienceInputs")(function* audienceInputs(audience: Application) {
+  const { passkey, verification } = getSchema((yield* AuthApps)[audience].instance.options);
+  return [passkey?.fields.audience?.input, verification?.fields.audience?.input];
+});
 
 export {
-  Fixture,
-  HTTP_CREATED,
-  HTTP_FORBIDDEN,
-  HTTP_FOUND,
-  HTTP_NOT_FOUND,
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
+  AuthApps,
   PASSWORD,
-  TEST_TIMEOUT,
-  authFor,
+  audienceInputs,
+  audienceOnEmptyDatabase,
+  authTest,
   bootstrapVerifiedAdmin,
-  decodeOrDie,
+  clientOf,
   enableTotp,
-  failureTag,
+  missingSchemaFields,
+  pendingSecondFactor,
   register,
   registerVerified,
+  requireStatus,
+  runWith,
+  sessionBeforeEnrollment,
   signIn,
+  signInAgainAfterTotp,
   signInAs,
-  withAuth,
-  withEmptyDatabase,
+  spendSignInWindow,
+  verifyEmail,
 };

@@ -4,32 +4,31 @@ import { remoteExecutor } from "./remote-http.ts";
 import { fail, parseRemoteInput } from "./remote-input.ts";
 import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 
-type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
-interface PlanReport {
+type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
+
+type PlanReport = {
   readonly databaseId: string;
   readonly event: "database.remote_plan";
   readonly migrations: readonly { readonly hash: string; readonly name: string }[];
   readonly ok: true;
   readonly operation: RemoteInput["operation"];
   readonly remoteStateVerified: false;
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function planReport({ operation, target }: RemoteInput, migrations: Migrations): PlanReport {
+const planReport = ({ operation, target }: RemoteInput, migrations: Migrations): PlanReport => {
   return {
     databaseId: target.databaseId,
     event: "database.remote_plan",
-    migrations: migrations.map((item) => ({ hash: item.hash, name: item.name })),
+    migrations: migrations.map((migration) => ({ hash: migration.hash, name: migration.name })),
     ok: true,
     operation,
     remoteStateVerified: false,
   };
-}
+};
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   { operation, target }: RemoteInput,
   migrations: Migrations,
 ) {
@@ -54,12 +53,13 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
 });
 
 const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
-  function* runRemoteDatabaseCommand(args: readonly string[], input: unknown) {
-    const parsed = yield* parseRemoteInput(args, input);
+  function* runRemoteDatabaseCommand(commandArguments: readonly string[], input: unknown) {
+    const remoteInput = yield* parseRemoteInput(commandArguments, input);
     const migrations = yield* loadRemoteMigrations();
-    const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> = parsed.execute
-      ? yield* executeRemote(parsed, migrations)
-      : planReport(parsed, migrations);
+    const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> =
+      remoteInput.execute
+        ? yield* executeRemote(remoteInput, migrations)
+        : planReport(remoteInput, migrations);
     return report;
   },
 );

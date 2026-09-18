@@ -4,16 +4,21 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./fixture": "./src/monitor-fixture.ts"
+    "./fixture": "./src/monitor-fixture.ts",
+    "./binding": "./src/binding.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@repo/config": "workspace:*",
+    "@repo/observability": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@repo/dont-review-it": "workspace:*",
+    "es-toolkit": "catalog:",
     "typescript": "catalog:"
   }
 }

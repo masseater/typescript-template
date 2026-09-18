@@ -1,12 +1,21 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
   "compilerOptions": {
     "types": [
       "vite-plus/client",
       "node",
       "@cloudflare/workers-types",
       "@cloudflare/vitest-plugin/types"
+    ],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
     ]
   },
-  "include": ["src/**/*.ts", "drizzle.config.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "drizzle.config.ts",
+    "vite.config.ts"
+  ]
 }
