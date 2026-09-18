@@ -16,7 +16,7 @@ describe("local services", () => {
     expect(compose).toBeTypeOf("string");
     const ports = Array.from(
       String(compose).matchAll(published),
-      (match) => `${match[1]}:${match[2]}`,
+      ({ groups }) => `${groups?.["host"]}:${groups?.["container"]}`,
     );
     expect(ports).toStrictEqual(
       expect.arrayContaining(Object.values(receiverPorts).map((port) => `${port}:${port}`)),
