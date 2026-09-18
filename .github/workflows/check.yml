@@ -54,11 +54,14 @@ jobs:
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
-      - &task-cache-reuse
-        if: vars.CI_RUNNER != ''
+      - &task-cache-share
+        if: vars.CI_TASK_CACHE_DIR != ''
+        env:
+          SHARED_TASK_CACHE: ${{ vars.CI_TASK_CACHE_DIR }}
         run: |
-          mkdir -p ~/.cache/vite-task-cache node_modules/.vite/task-cache
-          cp -a ~/.cache/vite-task-cache/. node_modules/.vite/task-cache/
+          mkdir -p "$SHARED_TASK_CACHE" node_modules/.vite
+          rm -rf node_modules/.vite/task-cache
+          ln -s "$SHARED_TASK_CACHE" node_modules/.vite/task-cache
       - &premerge
         run: vp run -r premerge
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -79,14 +82,10 @@ jobs:
       - *browser-cache
       - *setup
       - *mise
+      - *task-cache-share
       - *premerge
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: vars.CI_RUNNER == ''
         with:
           path: node_modules/.vite/task-cache
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
-      - if: vars.CI_RUNNER != ''
-        run: |
-          rm -rf ~/.cache/vite-task-cache
-          mkdir -p ~/.cache
-          cp -a node_modules/.vite/task-cache ~/.cache/vite-task-cache
