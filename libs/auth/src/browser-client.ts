@@ -16,10 +16,15 @@ const origins = {
 class BrowserClient {
   public readonly cookies = new Map<string, string>();
   readonly #auth: Auth["Service"];
+  readonly #network: Readonly<Record<string, string>>;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  public constructor(auth: Auth["Service"]) {
+  public constructor(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    auth: Auth["Service"],
+    network: Readonly<Record<string, string>> = {},
+  ) {
     this.#auth = auth;
+    this.#network = network;
   }
 
   public get origin(): string {
@@ -30,7 +35,7 @@ class BrowserClient {
     const cookie = [...this.cookies]
       .map(([key, value]: readonly [string, string]) => `${key}=${value}`)
       .join("; ");
-    return new Headers({ cookie, origin: this.origin });
+    return new Headers({ ...this.#network, cookie, origin: this.origin });
   }
 
   public request(
