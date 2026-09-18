@@ -16,11 +16,10 @@ const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" }
 const healthCacheWindow = Duration.minutes(1);
 
 function healthHandler() {
-  // oxlint-disable-next-line unicorn/no-null
-  let checkedDatabase: ReturnType<typeof checkDatabase> | null = null;
+  const isolate: { cachedDatabaseCheck?: ReturnType<typeof checkDatabase> } = {};
   return Effect.fn("health")(function* health() {
-    checkedDatabase ??= yield* Effect.cachedWithTTL(checkDatabase(), healthCacheWindow);
-    yield* checkedDatabase;
+    isolate.cachedDatabaseCheck ??= yield* Effect.cachedWithTTL(checkDatabase(), healthCacheWindow);
+    yield* isolate.cachedDatabaseCheck;
     const telemetry = yield* Telemetry;
     return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
   });
