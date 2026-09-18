@@ -6,11 +6,11 @@ import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http"
 import type { WikiServices } from "@repo/runtime/wiki";
 
 import { serveMcp } from "./mcp.ts";
-import { runtime } from "./runtime.ts";
+import { reporting, runtime } from "./runtime.ts";
 import { searchWiki } from "./search.ts";
 
 const maximumQueryLength = 200;
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, reporting);
 
 function search(request: Request): Effect.Effect<Response, never, WikiServices> {
   const query = new URL(request.url).searchParams.get("query")?.trim() ?? "";

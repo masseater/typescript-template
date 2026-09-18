@@ -4,6 +4,7 @@ import { Console, Effect } from "effect";
 import { secretsStoreCount, workerNames } from "./account-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { AlchemyFailure, runAlchemy } from "./alchemy-cli.ts";
+import type { AlchemyCommand } from "./alchemy-cli.ts";
 import { CloudflareFailure } from "./config.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 import { deploymentAccess } from "./deployment-access.ts";
@@ -35,7 +36,13 @@ NodeRuntime.runMain(
       if (!adopting) {
         yield* assertAccountUnused(access);
       }
-      const args = ["provider", "cloudflare", "bootstrap", "--env-file", secrets.filename];
+      const args: AlchemyCommand = [
+        "provider",
+        "cloudflare",
+        "bootstrap",
+        "--env-file",
+        secrets.filename,
+      ];
       if ((yield* runAlchemy(args, confidential)) !== OK_EXIT_CODE) {
         return yield* Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" }));
       }
