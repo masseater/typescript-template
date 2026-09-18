@@ -8,14 +8,7 @@ import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
-const ignoredPaths = [
-  "**/mockServiceWorker.js",
-  "**/routeTree.gen.ts",
-  "**/dist/**",
-  ".local/**",
-  ".local-agents/**",
-  "**/.wrangler/**",
-];
+const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
 const linkComponents = [
   "ButtonLink",
@@ -34,7 +27,7 @@ function textModule(code: string, id: string): string | undefined {
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   fmt: {
-    ignorePatterns: ignoredPaths,
+    ignorePatterns: generatedFiles,
     sortImports: { internalPattern: ["@template/"], newlinesBetween: true },
     sortPackageJson: { sortScripts: true },
     sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
@@ -49,7 +42,7 @@ export default defineConfig({
       style: "error",
       suspicious: "error",
     },
-    ignorePatterns: [...ignoredPaths, "**/node_modules/**"],
+    ignorePatterns: generatedFiles,
     jsPlugins: [
       "./tools/quality/rules.ts",
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
@@ -242,6 +235,8 @@ export default defineConfig({
         components: {
           ...Object.fromEntries(linkComponents.map((name) => [name, "a"])),
           Button: "button",
+          Checkbox: "button",
+          DropdownMenuTrigger: "button",
           Heading: "h2",
         },
         polymorphicPropName: "as",

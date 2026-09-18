@@ -12,6 +12,7 @@ import {
   designSystemComponents,
   designSystemProbe,
   indexedComponents,
+  linkParts,
   linkViolations,
   smarthrTokens,
   sourceViolations,
@@ -28,6 +29,12 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const lint = field(configs["../../vite.config.ts"], "lint");
+
+const lintSettings = field(lint, "settings");
+
+const a11yComponents = field(field(lintSettings, "jsx-a11y"), "components");
+
+const reactLinkComponents = field(field(lintSettings, "react"), "linkComponents");
 
 function restrictedImportNames(): string[] {
   const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
@@ -234,5 +241,22 @@ describe("design system lint", () => {
   it.for(restyled)("%s reports a screen that restyles a part", ([rule, className]) => {
     expect.hasAssertions();
     expect(reports(rule, className)).toBe(true);
+  });
+});
+
+describe("router link parts in jsx-a11y", () => {
+  it("finds the router link parts", () => {
+    expect.hasAssertions();
+    expect(linkParts()).toStrictEqual(expect.arrayContaining(["DropdownMenuLinkItem", "TextLink"]));
+  });
+
+  it.for(linkParts())("checks %s as an anchor", (name) => {
+    expect.hasAssertions();
+    expect(a11yComponents).toHaveProperty(name, "a");
+  });
+
+  it.for(linkParts())("treats the to prop of %s as its link", (name) => {
+    expect.hasAssertions();
+    expect(reactLinkComponents).toContainEqual({ attribute: "to", name });
   });
 });
