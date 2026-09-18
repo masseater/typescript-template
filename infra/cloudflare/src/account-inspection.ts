@@ -11,7 +11,7 @@ import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
-import type { StateStore } from "./state-ownership.ts";
+import type { StateService } from "alchemy/State";
 import { applications } from "@template/config";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
@@ -50,8 +50,7 @@ const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
 >(
   access: AccountAccess,
   config: SharedConfig,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
+  store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   if ((yield* findDatabaseId(access, databaseName(config.prefix))) === undefined) {
     return "free" as const;
@@ -112,8 +111,7 @@ const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: Ac
 const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Failure, Requirements>(
   access: AccountAccess,
   config: SharedConfig,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
+  store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
     Effect.catchCause(() => Effect.succeed<readonly string[]>([])),

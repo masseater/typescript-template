@@ -45,8 +45,7 @@ const record = {
 const now = new Date("2026-09-16T00:00:00Z");
 
 function usageFrom(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  input: Record<string, unknown>,
+  input: Readonly<Record<string, unknown>>,
   accountId: string,
   date: Date,
 ): Effect.Effect<UsageSnapshot, BudgetFailure> {

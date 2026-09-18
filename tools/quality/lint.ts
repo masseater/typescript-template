@@ -88,7 +88,6 @@ const lint = {
       rules: {
         "import/group-exports": "off",
         "import/no-relative-parent-imports": "off",
-        "typescript/prefer-readonly-parameter-types": "off",
       },
     },
   ],
@@ -212,10 +211,11 @@ const lint = {
           },
           {
             from: "package",
-            name: ["Ai", "DurableObjectState"],
+            name: ["Ai", "DurableObjectState", "Request"],
             package: "@cloudflare/workers-types",
           },
           { from: "package", name: ["Column", "DrizzleD1Database"], package: "drizzle-orm" },
+          { from: "package", name: ["AnyElysia"], package: "elysia" },
           { from: "package", name: ["Plan", "ProgressEvent"], package: "alchemy" },
           {
             from: "package",

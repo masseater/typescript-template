@@ -78,7 +78,6 @@ function compileApi<App extends AnyElysia>(app: App): App {
 
 type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function elysiaServer(app: AnyElysia): {
   readonly handlers: Readonly<Record<StartMethod, ElysiaHandler>>;
 } {

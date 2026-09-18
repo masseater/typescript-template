@@ -28,7 +28,6 @@ function mutation(headers: Readonly<Record<string, string>>, body: string): Requ
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
   const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
@@ -42,7 +41,6 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
   });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function callApi(app: AnyElysia, request: Request): Promise<Response> {
   return Effect.runPromise(servedThroughStart(compileApi(app))(request));
 }

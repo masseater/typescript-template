@@ -4,7 +4,6 @@ import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import { loopbackHosts } from "./applications.ts";
 
 interface AssetFetcher {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
 }
 
