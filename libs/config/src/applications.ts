@@ -36,7 +36,6 @@ const storybookPort = STORYBOOK_PORT;
 const mailpitPort = MAILPIT_PORT;
 
 export {
-  applicationCapabilities,
   applicationPorts,
   applications,
   authenticationMethods,

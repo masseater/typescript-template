@@ -123,7 +123,6 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
 export {
-  applicationCapabilities,
   applicationPorts,
   applications,
   authenticationMethods,
