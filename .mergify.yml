@@ -7,10 +7,12 @@ pull_request_rules:
         name: default
 
 merge_queue:
-  max_parallel_checks: 5
+  max_parallel_checks: 1
 
 queue_rules:
   - name: default
+    batch_size: 3
+    checks_timeout: 45 min
     merge_method: merge
     queue_conditions:
       - base = main

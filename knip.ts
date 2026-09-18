@@ -72,7 +72,6 @@ const scripts = {
   "infra/budget-monitor": ["src/inspect.ts!"],
   "infra/cloudflare": [
     "src/cli.ts!",
-    "src/check-artifacts.ts!",
     "src/check-stacks.ts!",
     "src/check-account.ts!",
     "src/bootstrap-state.ts!",
