@@ -1,5 +1,5 @@
 import { Effect, Exit, Schema } from "effect";
-import type { Cause, ManagedRuntime } from "effect";
+import type { Cause } from "effect";
 import { Elysia, status } from "elysia";
 import type { AnyElysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
@@ -11,6 +11,7 @@ import { AppOrigin } from "./app-origin.ts";
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
+import type { IsolateRuntime } from "./isolate.ts";
 import { jsonResponse } from "./responses.ts";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
@@ -147,7 +148,7 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
 }
 
 function apiRoutes<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements, unknown>,
+  runtime: IsolateRuntime<Requirements, unknown>,
   reporting: Reporting,
 ): ApiRoutes<Requirements> {
   async function settle<Value>(

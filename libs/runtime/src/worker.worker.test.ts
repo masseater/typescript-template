@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { Effect, ManagedRuntime, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import type { Layer } from "effect";
 
 import { cspNonceHeader } from "@repo/config/security";
@@ -10,7 +10,7 @@ import { recordingSink } from "@repo/observability/testing";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import type { AppServices } from "./index.ts";
-import { appLayer } from "./index.ts";
+import { appLayer, isolateRuntime } from "./index.ts";
 import { wikiLayer, wikiService } from "./wiki.ts";
 import { serveApp, startRoute } from "./worker.ts";
 
@@ -23,7 +23,7 @@ async function servedUnavailable(
   reporting: Reporting,
 ): Promise<{ readonly body: unknown; readonly policy: string | null; readonly status: number }> {
   const worker = serveApp(
-    ManagedRuntime.make(layer()),
+    isolateRuntime(layer()),
     () => Effect.succeed(new Response("reached the route")),
     reporting,
   );
@@ -119,7 +119,7 @@ describe("a wiki worker whose database has not been migrated", () => {
 async function servedDocument(url: string): Promise<Response> {
   const layer = appLayer(appEnvironment({}), "user", validRoutes);
   const worker = serveApp(
-    ManagedRuntime.make(layer),
+    isolateRuntime(layer),
     startRoute({
       fetch: (rendered: Request): Response =>
         new Response("<!DOCTYPE html>", {

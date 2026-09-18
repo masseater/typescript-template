@@ -1,5 +1,5 @@
 import { Effect, Result } from "effect";
-import type { Cause, ManagedRuntime } from "effect";
+import type { Cause } from "effect";
 
 import { cspNonceHeader } from "@repo/config/security";
 import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
@@ -7,6 +7,7 @@ import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability"
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
+import type { IsolateRuntime } from "./isolate.ts";
 import { createNonce, jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
@@ -38,7 +39,7 @@ async function unavailableResponse(
 }
 
 function serveWorker<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
+  runtime: IsolateRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: WorkerRoute<Requirements>,
   reporting: Reporting,
 ): FetchWorker {
@@ -71,10 +72,7 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 }
 
 function serveApp<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<
-    Assets | Requirements | Telemetry | TelemetryFlusher,
-    unknown
-  >,
+  runtime: IsolateRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: AppRoute<Requirements>,
   reporting: Reporting,
 ): FetchWorker {

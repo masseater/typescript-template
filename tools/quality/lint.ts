@@ -220,7 +220,7 @@ const lint = {
           },
           {
             from: "package",
-            name: ["Codec", "Effect", "Exit", "ManagedRuntime"],
+            name: ["Codec", "Duration", "Effect", "Exit", "Layer"],
             package: "effect",
           },
           {
