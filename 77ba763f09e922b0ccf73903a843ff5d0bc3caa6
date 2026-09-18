@@ -1,1 +1,1 @@
-knip が見つけた未使用の devDependency と未使用の export を外した。
+#218 の tools/commander を awaitingPresetPackages に入れ（607 件、#129 に行を足した）、#218 が knip.ts に足した commanderWorkspace と lint.ts の tools/*-api.ts を取り込み、knip の指摘を直した。
