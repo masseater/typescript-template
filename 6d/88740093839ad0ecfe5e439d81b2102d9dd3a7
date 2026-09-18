@@ -1,0 +1,1 @@
+allow libs/infra/apps test modules to import tools (dont-review-it vitest helpers) under no-runtime-to-tools
