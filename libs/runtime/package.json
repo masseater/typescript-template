@@ -9,7 +9,8 @@
     "./client": "./src/client.ts",
     "./wiki": "./src/wiki.ts",
     "./account": "./src/account.ts",
-    "./contracts": "./src/contracts.ts"
+    "./contracts": "./src/contracts.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "playwright": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

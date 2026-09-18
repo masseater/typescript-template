@@ -1,18 +1,12 @@
-import {
-  apiDocs,
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  jsonResponse,
-} from "@template/runtime/http";
-import { sessionApi, unavailable } from "@template/runtime/account";
+import { apiRoutes, compileApi, createApi, jsonResponse } from "@template/runtime/http";
+import { authUnavailable, databaseUnavailable } from "@template/runtime/account";
 import { Effect } from "effect";
 import type { WikiServices } from "@template/runtime/wiki";
 import { handleAuthRequest } from "@template/auth";
 import { runtime } from "./runtime.ts";
 import { searchWiki } from "./search.ts";
 import { serveMcp } from "./mcp.ts";
+import { wikiRoutes } from "./wiki-api.ts";
 
 const maximumQueryLength = 200;
 const api = apiRoutes(runtime);
@@ -26,14 +20,11 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
     : Effect.succeed(jsonResponse([]));
 }
 
-const app = createApi(apiRoot)
-  .use(apiDocs("wiki"))
-  .use(sessionApi(api))
-  .get("/search", ...api.raw(search, {}));
+const app = wikiRoutes(api).get("/search", ...api.raw(search, {}));
 
 const protocol = createApi("")
-  .all("/mcp", ...api.raw(serveMcp, unavailable))
-  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));
+  .all("/mcp", ...api.raw(serveMcp, databaseUnavailable))
+  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, authUnavailable));
 
 const wikiApi = compileApi(app);
 const wikiProtocol = compileApi(protocol);

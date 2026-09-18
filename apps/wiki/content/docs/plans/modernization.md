@@ -150,6 +150,6 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | ★3     | k6                                      | 負荷試験を行います                                 | 未着手                                                                                |
 | ★2     | Stryker                                 | ミューテーションテストで、テストの検出力を測ります | 未着手                                                                                |
 
-Scalar の画面は各アプリの `/api/docs` にあり、描く OpenAPI の document は Effect Schema の contract から導出します。
-Elysia が OpenAPI を組み立てるときに読むのは route に付けた TypeBox のスキーマですが、このリポジトリは検証も encode も Effect Schema の contract で行うため、そのままでは経路の一覧だけが出て request と response の形が空になります。TypeBox で書き直すと同じ契約が 2 か所に分かれるので、`Schema.toJsonSchemaDocument` が出す encode 後の JSON Schema を route の `detail` に渡し、contract を唯一の正本のままにしています。route の宣言は query か body の contract を response の contract と並べて受け取り、復号した値を handler に渡すので、contract を書く場所は route の宣言 1 か所です。
-Scalar のバンドルはアプリ自身の静的ファイルとして配ります。Elysia の openapi plugin が既定で書き出すのは jsdelivr の URL で、セッションの cookie を持つ origin で版を固定しない第三者のコードが動くことになり、このリポジトリの手元のブラウザ設定もそのドメインを塞いでいます。
+Scalar の画面は各アプリの `/api/docs` に置きます。OpenAPI の document は contract を唯一の正本として導出し、API ドキュメントのための定義を別に持ちません。各経路に載せる status は、その経路が実際に返しうるものだけです。
+Scalar のバンドルはアプリ自身が配り、画面は第三者の origin に通信しません。Scalar のホスト型の機能も使いません。
+画面を開ける範囲は API の利用者に合わせ、user は誰でも、admin と wiki はログインした利用者だけが開けます。

@@ -6,21 +6,27 @@ import type { AppServices } from "@template/runtime";
 import type { Interviewer } from "@template/interview";
 import { createApi } from "@template/runtime/http";
 import { httpStatus } from "@template/observability";
-import { unavailable } from "@template/runtime/account";
+import { sessionFailures } from "@template/runtime/account";
 import { verifySession } from "@template/auth";
 
 const Empty = Schema.Struct({});
-const failures = {
-  ...unavailable,
+const conflictFailures = {
+  ...sessionFailures,
   InterviewConflict: {
     message: "別の画面で会話が進んでいます。読み込み直してください。",
     status: httpStatus.conflict,
   },
+};
+const rejectedFailures = {
+  ...conflictFailures,
+  TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
+};
+const turnFailures = {
+  ...rejectedFailures,
   InterviewLimitReached: {
     message: "今日はこれ以上話せません。スキップと終了は使えます。明日また話しかけてください。",
     status: httpStatus.tooManyRequests,
   },
-  TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
 };
 
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {
@@ -48,18 +54,18 @@ const restart = Effect.fn("interview.api.restart")(function* restart(request: Re
 
 function interviewApi(api: ApiRoutes<AppServices | Interviewer>) {
   return createApi("")
-    .get("/interview", ...api.route({ response: InterviewView }, open, failures))
+    .get("/interview", ...api.route({ response: InterviewView }, open, conflictFailures))
     .post(
       "/interview/turns",
-      ...api.route({ body: Utterance, response: InterviewView }, turn, failures),
+      ...api.route({ body: Utterance, response: InterviewView }, turn, turnFailures),
     )
     .post(
       "/interview/sheet",
-      ...api.route({ body: Empty, response: InterviewView }, saveSheet, failures),
+      ...api.route({ body: Empty, response: InterviewView }, saveSheet, rejectedFailures),
     )
     .post(
       "/interview/restart",
-      ...api.route({ body: Empty, response: InterviewView }, restart, failures),
+      ...api.route({ body: Empty, response: InterviewView }, restart, conflictFailures),
     );
 }
 

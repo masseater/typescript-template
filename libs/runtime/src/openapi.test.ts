@@ -1,4 +1,12 @@
-import { AppOrigin, apiDocs, apiRoot, apiRoutes, compileApi, createApi } from "./http.ts";
+import {
+  AppOrigin,
+  apiDocs,
+  apiRoot,
+  apiRoutes,
+  compileApi,
+  createApi,
+  failureBy,
+} from "./http.ts";
 import { Effect, JsonSchema, Layer, ManagedRuntime, Schema, SchemaRepresentation } from "effect";
 import {
   MemberList,
@@ -10,15 +18,37 @@ import {
 import { Telemetry, httpStatus } from "@template/observability";
 import { assert, describe, it } from "@effect/vitest";
 import type { Cause } from "effect";
+import { SessionRequired } from "@template/auth";
+
+class MemberGone extends Schema.TaggedError<MemberGone>()("MemberGone", {}) {}
+class Throttled extends Schema.TaggedError<Throttled>()("Throttled", { again: Schema.Boolean }) {}
 
 const origin = "http://localhost:3001";
 const page = 3;
+const lastPage = 10;
+const oversizedBody = 16_385;
 const context = Layer.succeed(AppOrigin, origin).pipe(
   Layer.provideMerge(Telemetry.layer({ release: "test", routes: {}, serviceName: "user" })),
 );
 const api = apiRoutes(ManagedRuntime.make(context));
 const stored = { email: "reader@example.test", id: "user-1", name: "reader", profile: "自己紹介" };
 const members = { members: [], pageSize: memberPageSize, total: page } as const;
+const Verification = Schema.Struct({ token: Schema.String });
+const Named = Schema.Struct({
+  name: Schema.String.annotate({ identifier: "Name" }),
+  nickname: Schema.String.annotate({ identifier: "Name" }),
+});
+const loginRequired = { message: "ログインしてください。", status: httpStatus.unauthorized };
+const jsonHeaders = { "content-type": "application/json", origin };
+
+function throttledFailure(error: Throttled): {
+  readonly message: string;
+  readonly status: 400 | 429;
+} {
+  return error.again
+    ? { message: "しばらく待ってください。", status: httpStatus.tooManyRequests }
+    : { message: "確認できません。", status: httpStatus.badRequest };
+}
 
 const app = compileApi(
   createApi(apiRoot)
@@ -28,7 +58,10 @@ const app = compileApi(
       "/members",
       ...api.route(
         { query: MemberListQuery, response: MemberList },
-        (_request, query) => Effect.succeed({ ...members, total: query.page }),
+        (_request, query) =>
+          query.page > lastPage
+            ? Effect.fail(new MemberGone())
+            : Effect.succeed({ ...members, total: query.page }),
         { MemberGone: { message: "見つかりません。", status: httpStatus.conflict } },
       ),
     )
@@ -40,7 +73,56 @@ const app = compileApi(
         {},
       ),
     )
+    .post(
+      "/verify",
+      ...api.route(
+        { body: Verification, response: Verification },
+        (_request, input) =>
+          input.token === "ok"
+            ? Effect.succeed(input)
+            : Effect.fail(new Throttled({ again: input.token === "again" })),
+        {
+          Throttled: failureBy(
+            [httpStatus.tooManyRequests, httpStatus.badRequest],
+            throttledFailure,
+          ),
+        },
+      ),
+    )
+    .post(
+      "/named",
+      ...api.route({ body: Named, response: Named }, (_r, input) => Effect.succeed(input), {}),
+    )
     .post("/telemetry", ...api.raw(() => Effect.succeed(new Response()), {})),
+);
+
+const guardedApp = compileApi(
+  createApi(apiRoot)
+    .use(
+      apiDocs(
+        "admin",
+        api.guard(
+          (request) =>
+            request.headers.get("cookie") === "session=1"
+              ? Effect.void
+              : Effect.fail(new SessionRequired()),
+          { SessionRequired: loginRequired },
+        ),
+      ),
+    )
+    .get("/open", ...api.route({ response: Schema.Struct({}) }, () => Effect.succeed({}), {})),
+);
+
+const unavailableApi = apiRoutes(
+  ManagedRuntime.make(Layer.effect(AppOrigin, Effect.fail("unavailable"))),
+);
+const unavailableApp = compileApi(
+  createApi(apiRoot)
+    .use(apiDocs("user"))
+    .get(
+      "/profile",
+      ...unavailableApi.route({ response: ProfileView }, () => Effect.succeed(stored), {}),
+    ),
 );
 
 const JsonSchemaValue = Schema.Record(Schema.String, Schema.Unknown);
@@ -66,19 +148,29 @@ const Route = Schema.Struct({
 const readDocument = Schema.decodeUnknownEffect(Document);
 const readRoutes = Schema.decodeUnknownEffect(Schema.Array(Route));
 
+type Served = Readonly<{ fetch: (request: Request) => Response | Promise<Response> }>;
+
 function readJson(reply: Response): Effect.Effect<unknown> {
   return Effect.promise(async () => reply.json());
 }
 
-function fetched(path: string): Effect.Effect<Response> {
-  return Effect.promise(async () => app.fetch(new Request(`${origin}${path}`)));
+function fetchedFrom(target: Served, path: string, init?: RequestInit): Effect.Effect<Response> {
+  return Effect.promise(async () => target.fetch(new Request(`${origin}${path}`, init)));
 }
 
-function documented(): Effect.Effect<typeof Document.Type, unknown> {
-  return fetched(`${apiRoot}/docs/json`).pipe(
+function fetched(path: string, init?: RequestInit): Effect.Effect<Response> {
+  return fetchedFrom(app, path, init);
+}
+
+function documentOf(target: Served): Effect.Effect<typeof Document.Type, unknown> {
+  return fetchedFrom(target, `${apiRoot}/docs/json`).pipe(
     Effect.flatMap(readJson),
     Effect.flatMap(readDocument),
   );
+}
+
+function documented(): Effect.Effect<typeof Document.Type, unknown> {
+  return documentOf(app);
 }
 
 function accepts(schema: Readonly<Record<string, unknown>>, value: unknown): boolean {
@@ -100,6 +192,16 @@ function operation(
   return Effect.fromNullishOr(document.paths[path]?.[method]);
 }
 
+function statusesOf(
+  document: typeof Document.Type,
+  path: string,
+  method: string,
+): Effect.Effect<readonly string[], Cause.NoSuchElementError> {
+  return operation(document, path, method).pipe(
+    Effect.map((found) => Object.keys(found.responses).toSorted()),
+  );
+}
+
 function served(): Effect.Effect<readonly string[], unknown> {
   return readRoutes(app.routes).pipe(
     Effect.map((routes) =>
@@ -117,6 +219,10 @@ function listed(document: typeof Document.Type): readonly string[] {
       Object.keys(methods).map((method) => `${method.toUpperCase()} ${path}`),
     )
     .toSorted();
+}
+
+function posted(path: string, headers: Readonly<Record<string, string>>, body: string) {
+  return fetched(path, { body, headers, method: path === "/api/profile" ? "PATCH" : "POST" });
 }
 
 describe("the api reference document", () => {
@@ -140,34 +246,137 @@ describe("the api reference document", () => {
     }),
   );
 
-  it.effect("lists the statuses the route's failure table can answer with", () =>
+  it.effect("lists only the statuses each route can answer with", () =>
     Effect.gen(function* program() {
       const document = yield* documented();
-      const listing = yield* operation(document, "/api/members", "get");
-      assert.deepStrictEqual(Object.keys(listing.responses).toSorted(), [
-        "200",
-        "400",
-        "401",
-        "403",
-        "409",
-        "500",
-      ]);
+      assert.deepStrictEqual(
+        {
+          members: yield* statusesOf(document, "/api/members", "get"),
+          profile: yield* statusesOf(document, "/api/profile", "get"),
+          update: yield* statusesOf(document, "/api/profile", "patch"),
+          verify: yield* statusesOf(document, "/api/verify", "post"),
+        },
+        {
+          members: ["200", "400", "409", "500", "503"],
+          profile: ["200", "500", "503"],
+          update: ["200", "400", "403", "413", "415", "500", "503"],
+          verify: ["200", "400", "403", "413", "415", "429", "500", "503"],
+        },
+      );
+    }),
+  );
+
+  it.effect("documents every status a route actually answers with", () =>
+    Effect.gen(function* program() {
+      const document = yield* documented();
+      const oversized = JSON.stringify({ name: "x".repeat(oversizedBody) });
+      const attempts = [
+        ["/api/profile", "patch", posted("/api/profile", jsonHeaders, "{")],
+        [
+          "/api/profile",
+          "patch",
+          posted("/api/profile", { ...jsonHeaders, "content-type": "text/plain" }, "{}"),
+        ],
+        [
+          "/api/profile",
+          "patch",
+          posted("/api/profile", { ...jsonHeaders, origin: "https://other.example.test" }, "{}"),
+        ],
+        ["/api/profile", "patch", posted("/api/profile", jsonHeaders, oversized)],
+        ["/api/profile", "patch", posted("/api/profile", jsonHeaders, JSON.stringify({ name: 1 }))],
+        [
+          "/api/verify",
+          "post",
+          posted("/api/verify", jsonHeaders, JSON.stringify({ token: "again" })),
+        ],
+        [
+          "/api/verify",
+          "post",
+          posted("/api/verify", jsonHeaders, JSON.stringify({ token: "no" })),
+        ],
+        ["/api/members", "get", fetched(`${apiRoot}/members?page=abc`)],
+        ["/api/members", "get", fetched(`${apiRoot}/members?page=${lastPage + 1}`)],
+      ] as const;
+      const answered = new Set<number>();
+      for (const [path, method, attempt] of attempts) {
+        const reply = yield* attempt;
+        answered.add(reply.status);
+        assert.include(yield* statusesOf(document, path, method), String(reply.status), path);
+      }
+      assert.deepStrictEqual(
+        [...answered].toSorted(),
+        [
+          httpStatus.badRequest,
+          httpStatus.forbidden,
+          httpStatus.conflict,
+          httpStatus.payloadTooLarge,
+          httpStatus.unsupportedMediaType,
+          httpStatus.tooManyRequests,
+        ].toSorted(),
+      );
+    }),
+  );
+
+  it.effect("documents the status a route answers with when its runtime is unavailable", () =>
+    Effect.gen(function* program() {
+      const reply = yield* fetchedFrom(unavailableApp, `${apiRoot}/profile`);
+      const statuses = yield* statusesOf(yield* documentOf(unavailableApp), "/api/profile", "get");
+      assert.strictEqual(reply.status, httpStatus.serviceUnavailable);
+      assert.include(statuses, String(reply.status));
     }),
   );
 
   it.effect("keeps every schema inline so no reference is left dangling", () =>
     Effect.gen(function* program() {
-      assert.notInclude(JSON.stringify(yield* documented()), "#/$defs/");
+      const document = JSON.stringify(yield* documented());
+      assert.notInclude(document, "$defs");
+      assert.notInclude(document, "$ref");
     }),
   );
 
-  it.effect("renders the reference page as html", () =>
+  it.effect("renders the reference page as html that may only reach its own origin", () =>
     Effect.gen(function* program() {
       const reply = yield* fetched(`${apiRoot}/docs`);
       assert.strictEqual(reply.status, httpStatus.ok);
       assert.include(reply.headers.get("content-type") ?? "", "text/html");
+      assert.include(reply.headers.get("content-security-policy") ?? "", "connect-src 'self'");
     }),
   );
+});
+
+describe("a guarded api reference", () => {
+  it.effect("answers the guard's failure to a visitor the guard rejects", () =>
+    Effect.gen(function* program() {
+      const page = yield* fetchedFrom(guardedApp, `${apiRoot}/docs`);
+      const document = yield* fetchedFrom(guardedApp, `${apiRoot}/docs/json`);
+      const open = yield* fetchedFrom(guardedApp, `${apiRoot}/open`);
+      assert.deepStrictEqual(
+        [page.status, document.status, open.status],
+        [httpStatus.unauthorized, httpStatus.unauthorized, httpStatus.ok],
+      );
+    }),
+  );
+
+  it.effect("serves the reference to a visitor the guard lets through", () =>
+    Effect.gen(function* program() {
+      const headers = { cookie: "session=1" };
+      const page = yield* fetchedFrom(guardedApp, `${apiRoot}/docs`, { headers });
+      const document = yield* fetchedFrom(guardedApp, `${apiRoot}/docs/json`, { headers });
+      assert.deepStrictEqual([page.status, document.status], [httpStatus.ok, httpStatus.ok]);
+    }),
+  );
+});
+
+describe("the failure table of a route", () => {
+  it("names exactly the failures its handler can fail with", () => {
+    const handler = () => Effect.fail(new MemberGone());
+    const gone = { message: "見つかりません。", status: httpStatus.conflict };
+    // @ts-expect-error a failure the handler never raises would be documented
+    api.route({ response: Schema.Struct({}) }, handler, { MemberGone: gone, Throttled: gone });
+    // @ts-expect-error a failure the handler raises would be answered as 500 undocumented
+    api.route({ response: Schema.Struct({}) }, handler, {});
+    assert.lengthOf(api.route({ response: Schema.Struct({}) }, handler, { MemberGone: gone }), 2);
+  });
 });
 
 describe("the documented request of a route", () => {
@@ -189,6 +398,16 @@ describe("the documented request of a route", () => {
       const schema = bodySchema(yield* Effect.fromNullishOr(update.requestBody));
       assert.isTrue(accepts(schema, { name: "reader", profile: "" }));
       assert.isFalse(accepts(schema, { name: "reader", role: "admin" }));
+    }),
+  );
+
+  it.effect("inlines a schema that carries an identifier", () =>
+    Effect.gen(function* program() {
+      const document = yield* documented();
+      const named = yield* operation(document, "/api/named", "post");
+      const schema = bodySchema(yield* Effect.fromNullishOr(named.requestBody));
+      assert.isTrue(accepts(schema, { name: "reader", nickname: "r" }));
+      assert.isFalse(accepts(schema, { name: 1, nickname: "r" }));
     }),
   );
 });

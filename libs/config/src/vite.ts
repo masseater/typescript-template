@@ -57,8 +57,8 @@ function scalarReference(): Plugin {
   return {
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
     configureServer(server) {
-      server.middlewares.use(scalarReferencePath, (_request, response) => {
-        void writeScalarReference(response);
+      server.middlewares.use(scalarReferencePath, (_request, response, next) => {
+        writeScalarReference(response).catch(next);
       });
     },
     async generateBundle() {
@@ -152,6 +152,7 @@ export {
   appServer,
   previewDevVars,
   reactCompiler,
+  readScalarReference,
   scalarReference,
   serverOnlyMarkers,
   startOptions,

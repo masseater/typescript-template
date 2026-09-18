@@ -1,8 +1,16 @@
-import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
+import type {
+  AnyFailureTable,
+  ExactFailureTable,
+  Failure,
+  FailureStatus,
+  FailureTable,
+  InputKind,
+  Tagged,
+} from "./failures.ts";
 import { Effect, Exit, Schema } from "effect";
 import { Elysia, status } from "elysia";
-import type { RouteDetail, RouteSpec } from "./openapi.ts";
-import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
+import type { Guard, RouteDetail, RouteSpec } from "./openapi.ts";
+import { failureResponse, inputFailures, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { hidden, routeDetail } from "./openapi.ts";
 import { httpStatus, readJson } from "@template/observability";
 import type { AnyElysia } from "elysia";
@@ -27,14 +35,24 @@ interface ElysiaContext {
 type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
 interface ApiRoutes<Requirements> {
-  readonly raw: <Failures extends Tagged>(
+  readonly guard: <Failures extends Tagged, const Table extends FailureTable<Failures>>(
+    check: Handler<unknown, Failures, Requirements>,
+    failures: ExactFailureTable<Failures, Table>,
+  ) => Guard;
+  readonly raw: <Failures extends Tagged, const Table extends FailureTable<Failures>>(
     handler: Handler<Response, Failures, Requirements>,
-    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+    failures: ExactFailureTable<Failures, Table>,
   ) => readonly [ElysiaHandler, RouteDetail];
-  readonly route: <Input extends Decodable, Value, Encoded, Failures extends Tagged>(
+  readonly route: <
+    Input extends Decodable,
+    Value,
+    Encoded,
+    Failures extends Tagged,
+    const Table extends FailureTable<Failures>,
+  >(
     spec: RouteSpec<Input, Value, Encoded>,
     handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
-    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+    failures: ExactFailureTable<Failures, Table>,
   ) => readonly [(context: ElysiaContext) => Promise<Encoded | Failed>, RouteDetail];
 }
 
@@ -117,18 +135,33 @@ function unavailableStatus(): Failed {
   return failedStatus(runtimeUnavailable());
 }
 
+function passed(): undefined {
+  return undefined;
+}
+
 function respondRaw<Failures extends Tagged, Requirements>(
   handler: Handler<Response, Failures, Requirements>,
-  failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  failures: AnyFailureTable,
 ): (request: Request) => Effect.Effect<Response, never, Requirements> {
   return (request) =>
     handler(request).pipe(Effect.catchCause((cause) => failureResponse(failures, cause)));
 }
 
+function respondGuard<Failures extends Tagged, Requirements>(
+  check: Handler<unknown, Failures, Requirements>,
+  failures: AnyFailureTable,
+): (request: Request) => Effect.Effect<Response | undefined, never, Requirements> {
+  return (request) =>
+    check(request).pipe(
+      Effect.map(passed),
+      Effect.catchCause((cause) => failureResponse(failures, cause)),
+    );
+}
+
 function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
   response: Schema.Codec<Value, Encoded>,
   handler: Handler<Value, Failures, Requirements>,
-  failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  failures: AnyFailureTable,
 ): (request: Request) => Effect.Effect<Encoded | Failed, never, Requirements> {
   const encode = Schema.encodeEffect(response);
   return (request) =>
@@ -136,6 +169,15 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
       Effect.flatMap((value) => Effect.orDie(encode(value))),
       Effect.catchCause((cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus))),
     );
+}
+
+function inputKind<Input extends Decodable, Value, Encoded>(
+  spec: RouteSpec<Input, Value, Encoded>,
+): InputKind {
+  if (spec.body !== undefined) {
+    return "body";
+  }
+  return spec.query === undefined ? "none" : "query";
 }
 
 function withInput<Input extends Decodable, Value, Encoded, Failures, Requirements>(
@@ -166,32 +208,42 @@ function apiRoutes<Requirements>(
     const exit = await runtime.runPromiseExit(program(context.request));
     return Exit.isSuccess(exit) ? exit.value : unavailable();
   }
-  function raw<Failures extends Tagged>(
+  function guard<Failures extends Tagged, const Table extends FailureTable<Failures>>(
+    check: Handler<unknown, Failures, Services>,
+    failures: ExactFailureTable<Failures, Table>,
+  ): Guard {
+    const program = respondGuard(check, failures);
+    return async (context) => settle(context, program, unavailableResponse);
+  }
+  function raw<Failures extends Tagged, const Table extends FailureTable<Failures>>(
     handler: Handler<Response, Failures, Services>,
-    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+    failures: ExactFailureTable<Failures, Table>,
   ): readonly [ElysiaHandler, RouteDetail] {
+    const program = respondRaw(handler, failures);
     return [
-      async (context): Promise<Response> =>
-        settle(context, respondRaw(handler, failures), unavailableResponse),
+      async (context): Promise<Response> => settle(context, program, unavailableResponse),
       hidden,
     ];
   }
-  function route<Input extends Decodable, Value, Encoded, Failures extends Tagged>(
+  function route<
+    Input extends Decodable,
+    Value,
+    Encoded,
+    Failures extends Tagged,
+    const Table extends FailureTable<Failures>,
+  >(
     spec: RouteSpec<Input, Value, Encoded>,
     handler: InputHandler<Input["Type"], Value, Failures, Services>,
-    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+    failures: ExactFailureTable<Failures, Table>,
   ): readonly [(context: ElysiaContext) => Promise<Encoded | Failed>, RouteDetail] {
-    const program = respondValue<Value, Encoded, Failures | CommonFailure, Services>(
-      spec.response,
-      withInput(spec, handler),
-      failures,
-    );
+    const table: AnyFailureTable = { ...inputFailures[inputKind(spec)], ...failures };
+    const program = respondValue(spec.response, withInput(spec, handler), table);
     return [
       async (context): Promise<Encoded | Failed> => settle(context, program, unavailableStatus),
-      routeDetail(spec, failures),
+      routeDetail(spec, table),
     ];
   }
-  return { raw, route };
+  return { guard, raw, route };
 }
 
 export { AppOrigin } from "./app-origin.ts";
@@ -199,6 +251,7 @@ export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
 export { apiDocs } from "./openapi.ts";
-export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer, readJsonBody, readSearchParams };
+export { failureBy } from "./failures.ts";
+export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer };
 export type { ApiRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

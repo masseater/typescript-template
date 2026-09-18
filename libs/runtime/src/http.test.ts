@@ -4,7 +4,6 @@ import {
   compileApi,
   createApi,
   elysiaServer,
-  readJsonBody,
   secureResponse,
 } from "./http.ts";
 import { Effect, Layer, ManagedRuntime, Schema } from "effect";
@@ -12,6 +11,7 @@ import { Telemetry, httpStatus } from "@template/observability";
 import { assert, describe, it } from "@effect/vitest";
 import type { AnyElysia } from "elysia";
 import { ProfileUpdate } from "./contracts.ts";
+import { SessionRequired } from "@template/auth";
 import { startRoute } from "./worker.ts";
 
 const origin = "http://localhost:3001";
@@ -50,55 +50,73 @@ const rejections = [
     body: "{}",
     headers: { ...jsonHeaders, origin: "https://other.example.test" },
     reason: "origin_denied",
+    status: httpStatus.forbidden,
   },
   {
     body: "{}",
     headers: { ...jsonHeaders, "content-type": "text/plain" },
     reason: "json_required",
+    status: httpStatus.unsupportedMediaType,
   },
-  { body: "{", headers: jsonHeaders, reason: "invalid_json" },
-  { body: "x".repeat(oversizedBody), headers: jsonHeaders, reason: "body_too_large" },
+  { body: "{", headers: jsonHeaders, reason: "invalid_json", status: httpStatus.badRequest },
+  {
+    body: "x".repeat(oversizedBody),
+    headers: jsonHeaders,
+    reason: "body_too_large",
+    status: httpStatus.payloadTooLarge,
+  },
 ] as const;
-
-describe("json request bodies", () => {
-  it.effect("reads a bounded same-origin JSON mutation", () =>
-    Effect.gen(function* program() {
-      const body = JSON.stringify({ name: " 利用者 ", profile: "自己紹介です。" });
-      const decoded = yield* readJsonBody(ProfileUpdate, mutation(jsonHeaders, body));
-      assert.deepStrictEqual(decoded, { name: "利用者", profile: "自己紹介です。" });
-    }).pipe(Effect.provide(context)),
-  );
-
-  for (const { headers, body, reason } of rejections) {
-    it.effect(`rejects mutation because of ${reason}`, () =>
-      Effect.gen(function* program() {
-        const failure = yield* readJsonBody(ProfileUpdate, mutation(headers, body)).pipe(
-          Effect.flip,
-        );
-        assert.deepStrictEqual(
-          { reason: "reason" in failure ? failure.reason : undefined, tag: failure._tag },
-          { reason, tag: "RequestRejected" },
-        );
-      }).pipe(Effect.provide(context)),
-    );
-  }
-
-  it.effect("rejects unknown fields such as a self-assigned role", () =>
-    Effect.gen(function* program() {
-      const body = JSON.stringify({ name: "reader", profile: "", role: "admin" });
-      const failure = yield* readJsonBody(ProfileUpdate, mutation(jsonHeaders, body)).pipe(
-        Effect.flip,
-      );
-      assert.strictEqual(failure._tag, "InputInvalid");
-    }).pipe(Effect.provide(context)),
-  );
-});
 
 describe("api routes behind a start server route", () => {
   const echo = api.route(
     { body: ProfileUpdate, response: ProfileUpdate },
     (_request, values) => Effect.succeed(values),
     {},
+  );
+
+  it.effect("decode a bounded same-origin JSON mutation before the handler sees it", () =>
+    Effect.gen(function* program() {
+      const app = createApi("").patch("/api/profile", ...echo);
+      const body = JSON.stringify({ name: " 利用者 ", profile: "自己紹介です。" });
+      const response = yield* Effect.promise(async () => callApi(app, mutation(jsonHeaders, body)));
+      assert.strictEqual(response.status, httpStatus.ok);
+      assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), {
+        name: "利用者",
+        profile: "自己紹介です。",
+      });
+    }),
+  );
+
+  it.effect("reject unknown fields such as a self-assigned role", () =>
+    Effect.gen(function* program() {
+      const app = createApi("").patch("/api/profile", ...echo);
+      const body = JSON.stringify({ name: "reader", profile: "", role: "admin" });
+      const response = yield* Effect.promise(async () => callApi(app, mutation(jsonHeaders, body)));
+      assert.strictEqual(response.status, httpStatus.badRequest);
+    }),
+  );
+
+  it.effect("check the input before the handler asks for a session", () =>
+    Effect.gen(function* program() {
+      const guarded = api.route(
+        { body: ProfileUpdate, response: ProfileUpdate },
+        () => Effect.fail(new SessionRequired()),
+        { SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized } },
+      );
+      const app = createApi("").patch("/api/profile", ...guarded);
+      const invalid = JSON.stringify({ name: 1 });
+      const valid = JSON.stringify({ name: "reader", profile: "" });
+      const statuses = yield* Effect.promise(async () =>
+        Promise.all([
+          callApi(app, mutation(jsonHeaders, invalid)),
+          callApi(app, mutation(jsonHeaders, valid)),
+        ]),
+      );
+      assert.deepStrictEqual(
+        statuses.map((response) => response.status),
+        [httpStatus.badRequest, httpStatus.unauthorized],
+      );
+    }),
   );
 
   it.effect("return validation errors without echoing submitted values", () =>
@@ -114,13 +132,12 @@ describe("api routes behind a start server route", () => {
     }),
   );
 
-  for (const { headers, body, reason } of rejections) {
+  for (const { headers, body, reason, status } of rejections) {
     it.effect(`keeps the request body readable so ${reason} is still rejected`, () =>
       Effect.gen(function* program() {
         const app = createApi("").patch("/api/profile", ...echo);
         const response = yield* Effect.promise(async () => callApi(app, mutation(headers, body)));
-        assert.isAtLeast(response.status, httpStatus.badRequest);
-        assert.isBelow(response.status, httpStatus.internalServerError);
+        assert.strictEqual(response.status, status);
       }),
     );
   }
