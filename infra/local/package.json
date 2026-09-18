@@ -2,6 +2,9 @@
   "name": "@repo/local",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/receiver.ts"
+  },
   "scripts": {
     "config": "node src/compose.ts config",
     "logs": "node src/compose.ts logs",

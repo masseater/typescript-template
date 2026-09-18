@@ -29,9 +29,12 @@ import { verificationSettings } from "./verification-fixture.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
 
-const { accountId, budget, mailFrom, origins, prefix } = verificationSettings;
+const { accountId, budget, mailFrom, origins, otlp, otlpAuthorization, prefix } =
+  verificationSettings;
 
 const sampling = { enabled: true, headSamplingRate: 0.5 };
+
+const traceDestination = `${prefix}-traces`;
 
 const SENDING_SUBDOMAIN = "Cloudflare.Email.SendingSubdomain";
 
@@ -41,7 +44,7 @@ const sharedWorker = {
   observability: {
     ...sampling,
     logs: { ...sampling, invocationLogs: false },
-    traces: sampling,
+    traces: { ...sampling, destinations: [traceDestination], persist: true },
   },
   workersDev: { enabled: false, previewsEnabled: false },
 };
@@ -66,6 +69,9 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText("EMAIL_FROM", mailFrom),
+      "OTLP_AUTHORIZATION:secret_text:text=$TEMPLATE_OTLP_AUTHORIZATION",
+      plainText("OTLP_ENABLED", String(otlp.enabled)),
+      plainText("OTLP_ENDPOINT", otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {
@@ -210,6 +216,21 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
         plainText("WIKI_ORIGIN", origins.wiki),
       ],
     }),
+  }),
+  observability: declaredStack("observability", {
+    Traces: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        enabled: otlp.enabled,
+        headers: { authorization: otlpAuthorization },
+        logpushDataset: "opentelemetry-traces",
+        name: traceDestination,
+        url: `${otlp.endpoint}/v1/traces`,
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Workers.ObservabilityDestination",
+    },
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),

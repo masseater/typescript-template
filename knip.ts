@@ -51,6 +51,7 @@ const workspaces = {
 const cloudflareStacks = [
   "src/database.ts!",
   "src/email.ts!",
+  "src/observability.ts!",
   "src/tokens.ts!",
   "src/budget-monitor.ts!",
   "src/error-monitor.ts!",
