@@ -25,7 +25,14 @@ const mockSources = new Set([
   "bun:test",
 ]);
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
-const annotationApis = new Set(["annotateCurrentSpan", "annotateLogs", "annotateLogsScoped"]);
+const annotationApis = new Set([
+  "annotateCurrentSpan",
+  "annotateLogs",
+  "annotateLogsScoped",
+  "annotateSpans",
+  "withLogSpan",
+]);
+const effectModule = /^effect(?:\/|$)/u;
 const mockMethods = new Set([
   "mock",
   "doMock",
@@ -99,7 +106,12 @@ function memoizationVisitor(context: LintContext): Visitor {
 
 function isRawAnnotation(origin: Origin): boolean {
   const [source, ...members] = origin;
-  return source === "effect" && members[0] === "Effect" && annotationApis.has(members[1] ?? "");
+  if (source === undefined || !effectModule.test(source)) {
+    return false;
+  }
+  return source === "effect"
+    ? members[0] === "Effect" && annotationApis.has(members[1] ?? "")
+    : annotationApis.has(members[0] ?? "");
 }
 
 function annotationVisitor(context: LintContext): Visitor {

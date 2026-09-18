@@ -4,8 +4,10 @@ import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { annotateLogs, annotateSpan } from "./annotations.ts";
+import { httpStatus } from "./http-status.ts";
 import type { OtlpDestination } from "./otlp.ts";
 import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
+import { logAt } from "./severity.ts";
 
 interface Observed {
   readonly authorization: readonly string[];
@@ -150,6 +152,15 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
   }),
 );
 
+const refused = Effect.gen(function* refused() {
+  yield* logAt("Info", "http.client.request", {
+    "http.response.status_code": httpStatus.forbidden,
+  });
+  yield* logAt("Warn", "http.client.request", {
+    "http.response.status_code": httpStatus.badRequest,
+  });
+});
+
 const annotated = Effect.gen(function* annotated() {
   yield* annotateSpan({ "session.cookie": `template-user.session=${leaked}` });
   yield* Effect.logInfo("interview.started").pipe(
@@ -165,6 +176,16 @@ it.effect("a secret an annotation or a span attribute carries reaches no destina
     assert.include(exported, "[redacted]");
     assert.include(JSON.stringify(telemetry.logs), '{"key":"interview_id","value":');
     assert.containSubset(telemetry.lines, [{ auth_token: "[redacted]", interview_id: "abc" }]);
+  }),
+);
+
+it.effect("the endpoint receives the severity the status code asks for", () =>
+  Effect.gen(function* program() {
+    const telemetry = yield* observed({ authorization, endpoint }, accepted, refused);
+    const record = JSON.stringify(telemetry.logs);
+    assert.include(record, '"severityText":"Info"');
+    assert.include(record, '"severityText":"Warn"');
+    assert.notInclude(record, '"severityText":"Error"');
   }),
 );
 

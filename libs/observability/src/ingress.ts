@@ -95,11 +95,9 @@ function kindFields(event: BrowserEvent): LogFields {
 
 function eventSeverity(event: BrowserEvent): Severity {
   if (event.kind === "exception") {
-    return "error";
+    return "Error";
   }
-  return event.kind === "http"
-    ? statusSeverity(event.status === 0 ? undefined : event.status)
-    : "info";
+  return event.kind === "http" ? statusSeverity(event.status) : "Info";
 }
 
 function recordBrowserEvent(serviceName: ServiceName, event: BrowserEvent): Effect.Effect<void> {

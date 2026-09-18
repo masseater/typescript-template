@@ -76,6 +76,16 @@ const forbiddenCode = [
     'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
     "annotations",
   ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { annotateSpans } from "effect/Effect"; export const run = () => annotateSpans;',
+    "annotations",
+  ],
+  [
+    "tools/observe/src/probe.ts",
+    'import { Effect } from "effect"; export const run = (e: never) => Effect.withLogSpan(e, "x");',
+    "annotations",
+  ],
 ] as const;
 
 const opaqueSpecifiers = [

@@ -1,6 +1,4 @@
 export { annotateLogs, annotateSpan } from "./annotations.ts";
-export { logAt, statusSeverity } from "./severity.ts";
-export type { Severity } from "./severity.ts";
 export { CurrentRequest } from "./current-request.ts";
 export { RequestRejected, readJson, rejectionStatus } from "./request.ts";
 export { Telemetry } from "./telemetry.ts";

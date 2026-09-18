@@ -1,5 +1,5 @@
 import { Console, Logger, References } from "effect";
-import type { Layer } from "effect";
+import type { Layer, LogLevel } from "effect";
 
 import type { ServiceName } from "@repo/config";
 
@@ -17,9 +17,14 @@ interface StructuredLogOptions {
   readonly log?: LogSink;
 }
 
-const sinkByLevel: Readonly<Record<string, keyof LogSink>> = {
+const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
+  All: "info",
+  Debug: "info",
   Error: "error",
   Fatal: "error",
+  Info: "info",
+  None: "info",
+  Trace: "info",
   Warn: "warn",
 };
 
@@ -59,7 +64,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
       },
       redactedField,
     );
-    sink[sinkByLevel[logLevel] ?? "info"](line);
+    sink[sinkByLevel[logLevel]](line);
   });
   return Logger.layer([logger]);
 }
