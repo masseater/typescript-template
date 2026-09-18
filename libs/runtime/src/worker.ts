@@ -1,6 +1,6 @@
-import type { CurrentRequest, Telemetry } from "@template/observability";
+import type { CurrentRequest, Telemetry } from "@repo/observability";
 import { Effect, Result } from "effect";
-import { flushTelemetry, httpStatus, observeRequest } from "@template/observability";
+import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
 import { jsonResponse, secureResponse } from "./responses.ts";
 import { Assets } from "./assets.ts";
 import type { ExecutionContext } from "@cloudflare/workers-types";

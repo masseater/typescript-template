@@ -1,5 +1,5 @@
 import type { AIBinding, Assets, D1, Email, InferEnv } from "alchemy/Cloudflare";
-import type { Application, Capability, CapabilityOf } from "@template/config";
+import type { Application, Capability, CapabilityOf } from "@repo/config";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{

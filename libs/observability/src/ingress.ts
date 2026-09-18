@@ -1,6 +1,6 @@
 import { Effect, Result } from "effect";
 import { readJson, rejectionStatus } from "./request.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { BrowserEvent } from "./events.ts";
 import type { JsonRequest } from "./request.ts";
 import { Telemetry } from "./telemetry.ts";

@@ -3,7 +3,7 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
   pulumi: "alchemy",
   "react-intl": "Paraglide JS",
-  "smarthr-ui": "@template/ui の shadcn/ui (Base UI) 部品",
+  "smarthr-ui": "@repo/ui の shadcn/ui (Base UI) 部品",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
 

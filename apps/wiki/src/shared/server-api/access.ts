@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect";
-import { httpStatus } from "@template/observability";
-import { jsonResponse } from "@template/runtime/http";
-import { verifySession } from "@template/auth";
+import { httpStatus } from "@repo/observability";
+import { jsonResponse } from "@repo/runtime/http";
+import { verifySession } from "@repo/auth";
 
 type SessionEffect = ReturnType<typeof verifySession>;
 type SessionServices = Effect.Services<SessionEffect>;

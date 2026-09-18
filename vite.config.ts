@@ -1,7 +1,7 @@
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { lint } from "./tools/quality/lint.ts";
-import { taskInput } from "@template/config/vite";
+import { taskInput } from "@repo/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -28,9 +28,9 @@ export default defineConfig({
     tasks: {
       build: [
         "vp run -F '!typescript-template' build",
-        "vp run --filter @template/dev private-maps",
-        "vp run --filter @template/infra-cloudflare verify:artifacts",
-        "vp run --filter @template/infra-cloudflare verify:stacks",
+        "vp run --filter @repo/dev private-maps",
+        "vp run --filter @repo/infra-cloudflare verify:artifacts",
+        "vp run --filter @repo/infra-cloudflare verify:stacks",
       ],
       check: {
         command: [
@@ -43,8 +43,11 @@ export default defineConfig({
         ],
         input: [...taskInput],
       },
-      "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
-      "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
+      "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
+      "check:effect": {
+        command: "node tools/quality/effect-diagnostics.ts",
+        input: [...taskInput],
+      },
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],

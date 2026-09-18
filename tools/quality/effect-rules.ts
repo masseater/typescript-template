@@ -3,7 +3,7 @@ import { origins, propertyName, staticText } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
 import { reportViolation } from "./lint-context.ts";
 
-const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
+const elysiaServerOrigin = ["@repo/runtime/http", "elysiaServer"];
 
 function filename(context: LintContext): string {
   return context.filename.replaceAll("\\", "/");

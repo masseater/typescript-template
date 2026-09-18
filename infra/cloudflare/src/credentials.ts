@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { deploymentKeys, secretsFile } from "@template/config/deployment";
+import { deploymentKeys, secretsFile } from "@repo/config/deployment";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { lstat, open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules

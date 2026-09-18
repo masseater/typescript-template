@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 import { serviceLabel, structuredLogs } from "./structured-logs.ts";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { OtlpDestination } from "./otlp.ts";
 import type { OtlpExporter } from "effect/unstable/observability";
 import type { StructuredLogOptions } from "./structured-logs.ts";
@@ -20,7 +20,7 @@ interface TelemetryOptions extends StructuredLogOptions {
 }
 
 class Telemetry extends Context.Service<Telemetry, TelemetryShape>()(
-  "@template/observability/Telemetry",
+  "@repo/observability/Telemetry",
 ) {
   public static layer(
     options: TelemetryOptions,

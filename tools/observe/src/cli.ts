@@ -1,7 +1,7 @@
 import { Console, Effect, Schema } from "effect";
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { applicationPorts } from "@template/config";
+import { applicationPorts } from "@repo/config";
 import { exportedTelemetry } from "./exported.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";

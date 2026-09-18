@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { SecurityPage } from "@template/ui/auth";
+import { SecurityPage } from "@repo/ui/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { serviceName } from "#shared/config/index.ts";
 import uiStyles from "#app/auth.css?url";
