@@ -17,7 +17,7 @@ interface IndexEntry {
   readonly object: string;
 }
 
-interface Blob {
+interface FramedBlob {
   readonly content: string;
   readonly end: number;
 }
@@ -33,14 +33,20 @@ const run = promisify(execFile);
 
 function indexEntries(listing: string): IndexEntry[] {
   return listing.split("\0").flatMap((entry) => {
+    if (entry === "") {
+      return [];
+    }
     const groups = ENTRY_PATTERN.exec(entry)?.groups;
     const filename = groups?.["filename"];
     const object = groups?.["object"];
-    return filename === undefined || object === undefined ? [] : [{ filename, object }];
+    if (filename === undefined || object === undefined) {
+      throw new Error(`git ls-files reported an unreadable index entry: ${entry}`);
+    }
+    return [{ filename, object }];
   });
 }
 
-function blobAt(output: Readonly<Buffer>, offset: number, object: string): Blob {
+function blobAt(output: Readonly<Buffer>, offset: number, object: string): FramedBlob {
   const headerEnd = output.indexOf(NEWLINE, offset);
   const header =
     headerEnd === NOT_FOUND ? [] : output.toString("utf-8", offset, headerEnd).split(" ");
@@ -81,10 +87,13 @@ function stagedFiles(root: string): Effect.Effect<StagedFile[], Unstaged> {
       });
       const entries = indexEntries(stdout);
       const contents = await readBlobs(root, [...new Set(entries.map(({ object }) => object))]);
-      return entries.map(({ filename, object }) => ({
-        content: contents.get(object) ?? "",
-        filename,
-      }));
+      return entries.map(({ filename, object }) => {
+        const content = contents.get(object);
+        if (content === undefined) {
+          throw new Error(`git cat-file did not return the blob ${object}`);
+        }
+        return { content, filename };
+      });
     },
   });
 }
