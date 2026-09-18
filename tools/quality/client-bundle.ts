@@ -7,8 +7,10 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
+import { Console, Effect } from "effect";
 import { build } from "vite-plus";
 
+import { markFailed } from "@repo/config/cli";
 import { serverOnlyMarkers } from "@repo/config/vite";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
@@ -90,15 +92,13 @@ for (const [specifier, pattern] of serverOnly) {
 }
 await rm(outDirectory, { force: true, recursive: true });
 
-// oxlint-disable-next-line eslint/no-restricted-properties
-process.stdout.write(
-  `${JSON.stringify({
-    event: "quality.client_bundle",
-    inputs: clientReachable.length + serverOnly.length,
-    ok: unexpected.length === 0,
-    unexpected,
-  })}\n`,
+await Effect.runPromise(
+  Console.log(
+    JSON.stringify({
+      event: "quality.client_bundle",
+      inputs: clientReachable.length + serverOnly.length,
+      ok: unexpected.length === 0,
+      unexpected,
+    }),
+  ).pipe(Effect.andThen(unexpected.length > 0 ? markFailed : Effect.void)),
 );
-if (unexpected.length > 0) {
-  process.exitCode = 1;
-}

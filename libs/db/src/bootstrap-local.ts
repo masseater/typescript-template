@@ -3,6 +3,8 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
 
+import { reportFailed } from "@repo/config/cli";
+
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
 import { Database } from "./database.ts";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
@@ -20,13 +22,7 @@ const platform = Effect.acquireRelease(
 );
 
 function report(error: string): Effect.Effect<void> {
-  return Console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false })).pipe(
-    Effect.andThen(
-      Effect.sync(() => {
-        process.exitCode = 1;
-      }),
-    ),
-  );
+  return reportFailed({ action: "admin_bootstrap", error, success: false });
 }
 
 NodeRuntime.runMain(

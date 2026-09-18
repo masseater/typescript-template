@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 
 import { applicationReadyPaths } from "@repo/config";
+import { exitWith, markFailed } from "@repo/config/cli";
 
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
@@ -23,9 +24,6 @@ interface BrowserReport {
 type ChildExit =
   | { readonly started: false }
   | { readonly started: true; readonly code: number | null };
-
-const FAILED_EXIT_CODE = 1;
-
 function sessionName(app: App): string {
   return `template-local-${app}`;
 }
@@ -94,7 +92,7 @@ const browserCommand = Effect.fn("browserCommand")(function* browserCommand(
     return yield* failure("browser_start_failed");
   }
   if (exit.code !== 0) {
-    process.exitCode = exit.code ?? FAILED_EXIT_CODE;
+    yield* exit.code === null ? markFailed : exitWith(exit.code);
   }
   return exit;
 });

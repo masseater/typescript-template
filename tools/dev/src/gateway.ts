@@ -7,7 +7,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Schema } from "effect";
 import type { Scope } from "effect";
 
-import { reportFailed } from "./failure.ts";
+import { reportFailed } from "@repo/config/cli";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),
