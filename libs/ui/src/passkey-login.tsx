@@ -1,10 +1,11 @@
-import { requireSecureContext, requireSuccess } from "./protocol";
+import type { ReactElement } from "react";
+
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import { Button } from "./shared/ui/button";
-import type { ReactElement } from "react";
-import { Separator } from "./shared/ui/separator";
 import { authClient } from "./client";
+import { requireSecureContext, requireSuccess } from "./protocol";
+import { Button } from "./shared/ui/button";
+import { Separator } from "./shared/ui/separator";
 
 function PasskeyLogin({
   action,

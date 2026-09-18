@@ -1,13 +1,15 @@
-import { Effect, ManagedRuntime, Schema } from "effect";
 import { assert, describe, it } from "@effect/vitest";
-import { wikiLayer, wikiService } from "./wiki.ts";
-import type { AppServices } from "./index.ts";
-import type { Layer } from "effect";
-import type { Reporting } from "@repo/observability";
-import { appLayer } from "./index.ts";
 import { env } from "cloudflare:workers";
+import { Effect, ManagedRuntime, Schema } from "effect";
+import type { Layer } from "effect";
+
+import type { Reporting } from "@repo/observability";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
+
+import type { AppServices } from "./index.ts";
+import { appLayer } from "./index.ts";
+import { wikiLayer, wikiService } from "./wiki.ts";
 import { serveApp } from "./worker.ts";
 
 const authSecret = "worker-test-secret-at-least-32-characters";

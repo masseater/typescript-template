@@ -1,12 +1,13 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { evaluateBudget, shouldNotify } from "./decision.ts";
-import type { BudgetFailure } from "./config.ts";
+import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
+import { HttpResponse, http } from "msw";
+
 import type { UsageSnapshot } from "./billing.ts";
 import { fetchUsage } from "./billing.ts";
+import type { BudgetFailure } from "./config.ts";
 import { parseBudgetConfig } from "./config.ts";
-import { setupNetwork } from "@msw/cloudflare";
+import { evaluateBudget, shouldNotify } from "./decision.ts";
 
 const ACCOUNT_ID_LENGTH = 32;
 const WORKERS_COST_USD = 20;

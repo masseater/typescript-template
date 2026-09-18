@@ -1,3 +1,8 @@
+import type { StateService } from "alchemy/State";
+import { Effect } from "effect";
+
+import { applications } from "@repo/config";
+
 import {
   attachedService,
   dnsRecordNames,
@@ -7,13 +12,10 @@ import {
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
-import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
-import type { StateService } from "alchemy/State";
-import { applications } from "@repo/config";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import { missingPermissions } from "./deploy-token.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
 

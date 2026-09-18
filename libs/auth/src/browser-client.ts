@@ -1,5 +1,6 @@
-import { Auth } from "./auth.ts";
 import { Effect } from "effect";
+
+import { Auth } from "./auth.ts";
 import { verifySession } from "./session.ts";
 
 interface JsonResponse {

@@ -1,9 +1,10 @@
+import { env } from "cloudflare:workers";
 import { Layer, ManagedRuntime } from "effect";
+
+import { routes } from "#shared/telemetry/index.ts";
 import { Interviewer } from "@repo/interview";
 import type { Reporting } from "@repo/observability";
 import { appLayer } from "@repo/runtime";
-import { env } from "cloudflare:workers";
-import { routes } from "#shared/telemetry/index.ts";
 
 const service = "user";
 const reporting: Reporting = { service };

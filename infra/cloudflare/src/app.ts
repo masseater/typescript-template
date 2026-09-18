@@ -1,14 +1,16 @@
-import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
-import { authSecret, settings } from "./settings.ts";
-import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
-import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import type { Application } from "@repo/config";
 import { Effect } from "effect";
 import type { Redacted } from "effect";
+
+import type { Application } from "@repo/config";
+import { grants } from "@repo/config";
+
+import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
+import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
+import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { SharedConfig } from "./config.ts";
 import { databaseRef } from "./database.ts";
-import { grants } from "@repo/config";
+import { authSecret, settings } from "./settings.ts";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {

@@ -1,9 +1,11 @@
 import { Cause, Console, Effect, Result } from "effect";
-import { isRecord, serviceLabel } from "./structured-logs.ts";
-import { isSecretKey, redactSecrets, redactedValue } from "./redact.ts";
+
 import type { Application } from "@repo/config";
-import type { LogSink } from "./structured-logs.ts";
+
+import { isSecretKey, redactSecrets, redactedValue } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
+import { isRecord, serviceLabel } from "./structured-logs.ts";
+import type { LogSink } from "./structured-logs.ts";
 
 interface Reporting {
   readonly service: Application;

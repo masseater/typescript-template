@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { isSecretKey, redactSecrets } from "./redact.ts";
 
 const secret = "worker-test-secret-at-least-32-characters";
