@@ -1,0 +1,1 @@
+Move @repo/config to internal-dashboard dependencies for knip --strict; keep APPLICATION bindings after rename rebase.
