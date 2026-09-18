@@ -26,6 +26,7 @@ const traceId = "0123456789abcdef0123456789abcd01";
 const spanId = "0123456789abcdef";
 const requestId = "11111111-1111-4111-8111-111111111111";
 const serviceName = "user-server";
+const browserService = "user-browser";
 const spanName = "http.server.request";
 const publishedPorts = { logs: 3100, otlp: 4318, ready: 13_133, traces: 3200 } as const;
 
@@ -140,28 +141,31 @@ function spanPayload(stamp: number): string {
   });
 }
 
+function logRecord(nanos: string, attribute: string): Readonly<Record<string, unknown>> {
+  return {
+    attributes: [{ key: attribute, value: { stringValue: requestId } }],
+    body: { stringValue: spanName },
+    observedTimeUnixNano: nanos,
+    severityText: "Info",
+    spanId,
+    timeUnixNano: nanos,
+    traceId,
+  };
+}
+
+function resourceLog(service: string, record: Readonly<Record<string, unknown>>): unknown {
+  return {
+    resource: { attributes: [{ key: "service.name", value: { stringValue: service } }] },
+    scopeLogs: [{ logRecords: [record] }],
+  };
+}
+
 function logPayload(stamp: number): string {
   const nanos = String(stamp * millisecondsPerNanosecond);
   return JSON.stringify({
     resourceLogs: [
-      {
-        resource: { attributes: [{ key: "service.name", value: { stringValue: serviceName } }] },
-        scopeLogs: [
-          {
-            logRecords: [
-              {
-                attributes: [{ key: "request_id", value: { stringValue: requestId } }],
-                body: { stringValue: spanName },
-                observedTimeUnixNano: nanos,
-                severityText: "Info",
-                spanId,
-                timeUnixNano: nanos,
-                traceId,
-              },
-            ],
-          },
-        ],
-      },
+      resourceLog(serviceName, logRecord(nanos, "request_id")),
+      resourceLog(browserService, logRecord(nanos, "browser.request_id")),
     ],
   });
 }
@@ -177,11 +181,12 @@ const readBack = Effect.fn("readBack")(function* readBack(receiver: ReceiverOrig
     Effect.mapError((failure) => new ReceiverCheckFailure({ reason: failure.reason })),
   );
   const span = telemetry.spans.find((found) => found.traceId === traceId);
-  const log = telemetry.logs.find((found) => found.traceId === traceId);
-  if (span === undefined || log === undefined) {
+  const log = telemetry.logs.find((found) => found.service === serviceName);
+  const browser = telemetry.logs.find((found) => found.service === browserService);
+  if (span === undefined || log === undefined || browser === undefined) {
     return yield* Effect.fail(new ReceiverCheckFailure({ reason: "receiver returned no match" }));
   }
-  return { log, span };
+  return { browser, log, span };
 });
 
 type Decoded = Readonly<Effect.Success<ReturnType<typeof readBack>>>;
@@ -192,6 +197,9 @@ const assertDecoded = Effect.fn("assertDecoded")(function* assertDecoded(found: 
   }
   if (found.log.message !== spanName || found.log.requestId !== requestId) {
     return yield* Effect.fail(new ReceiverCheckFailure({ reason: "log decoded unexpectedly" }));
+  }
+  if (found.browser.traceId !== traceId) {
+    return yield* Effect.fail(new ReceiverCheckFailure({ reason: "browser event lost its trace" }));
   }
 });
 

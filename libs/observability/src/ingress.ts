@@ -102,12 +102,12 @@ function eventSeverity(event: BrowserEvent): Severity {
 
 function recordBrowserEvent(serviceName: ServiceName, event: BrowserEvent): Effect.Effect<void> {
   const attributes = {
+    "browser.request_id": event.requestId,
+    "browser.span_id": event.spanId,
     duration_ms: event.duration,
     "http.route": event.route,
     measurement_value: event.value,
-    request_id: event.requestId,
     service: `${serviceName}-browser`,
-    span_id: event.spanId,
     start: new Date(event.start).toISOString(),
     "telemetry.source": "untrusted-browser",
     trace_id: event.traceId,
