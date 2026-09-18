@@ -18,7 +18,7 @@ export default defineConfig({
       },
       preview: {
         cache: false,
-        command: "node src/cli.ts plan",
+        command: "node src/cli.ts plan all",
         dependsOn: stackBuilds,
       },
       "verify:stacks": {
