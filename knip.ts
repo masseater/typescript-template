@@ -45,6 +45,10 @@ const workspaces = {
   "tools/ai-native": {
     ignoreBinaries: ["mkfifo"],
   },
+  "tools/e2e": {
+    entry: ["src/**/*.test.ts"],
+    project: ["src/**/*.ts"],
+  },
 };
 
 const cloudflareStacks = [

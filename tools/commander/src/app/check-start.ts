@@ -59,7 +59,6 @@ function step(name: string, work: () => Promise<unknown>): Effect.Effect<void, S
   }).pipe(Effect.asVoid);
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function used(page: Page, origin: URL): Effect.Effect<readonly string[], StartCheckFailed> {
   return Effect.gen(function* using() {
     const problems: string[] = [];
