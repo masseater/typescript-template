@@ -8,7 +8,9 @@ import {
   reachable,
   scriptNames,
   taskNames,
+  testProjectDirectories,
   workspaceDirectories,
+  workspaceNames,
 } from "./tasks.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob("../../.vite-hooks/pre-*", {
@@ -89,6 +91,27 @@ function slowBeforePush(directory: string): string[] {
     .map((name) => `${directory}: ${name}`);
 }
 
+function ungatedProjects(): string[] {
+  return testProjectDirectories.filter(
+    (directory) => !reachable(directory, ["premerge"]).includes("test"),
+  );
+}
+
+function strayTestTasks(): string[] {
+  return configuredDirectories.filter(
+    (directory) =>
+      directory !== "." &&
+      !testProjectDirectories.includes(directory) &&
+      taskNames(directory).includes("test"),
+  );
+}
+
+function unmatchedProjectNames(): string[] {
+  return testProjectDirectories.filter(
+    (directory) => !(workspaceNames[directory] ?? "").startsWith("@repo/"),
+  );
+}
+
 describe("lifecycle entry points", () => {
   it("each hook runs its lifecycle task in every workspace", () => {
     expect.hasAssertions();
@@ -133,5 +156,24 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
+  });
+});
+
+describe("test ownership", () => {
+  it("every workspace vitest project runs from its own merge gate", () => {
+    expect.hasAssertions();
+    expect(testProjectDirectories.length).toBeGreaterThan(0);
+    expect(ungatedProjects()).toStrictEqual([]);
+  });
+
+  it("keeps a test task only where a workspace vitest project owns it", () => {
+    expect.hasAssertions();
+    expect(strayTestTasks()).toStrictEqual([]);
+  });
+
+  it("leaves the workspace projects out of the root test task", () => {
+    expect.hasAssertions();
+    expect(commands(".", "test")).toStrictEqual(["vp test run --project '!@repo/*' $TEST_SCOPE"]);
+    expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 });
