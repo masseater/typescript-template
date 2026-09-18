@@ -24,7 +24,7 @@ import {
 } from "./wiki-oauth-fixture.ts";
 import { BrowserClient } from "./browser-client.ts";
 import { Effect } from "effect";
-import { runStatement } from "@template/db/testing";
+import { runStatement } from "@repo/db/testing";
 
 const tamperedSuffix = "xx";
 

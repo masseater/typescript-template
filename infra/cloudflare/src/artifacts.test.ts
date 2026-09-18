@@ -12,7 +12,7 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import type { Application } from "@template/config";
+import type { Application } from "@repo/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { Effect } from "effect";
 import type { Scope } from "effect";

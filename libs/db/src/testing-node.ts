@@ -22,7 +22,7 @@ const HttpQuery = Schema.Struct({
 });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-class TestBinding extends Context.Service<TestBinding, D1Database>()("@template/db/TestBinding") {}
+class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
 async function executeD1RawBatch(database: D1Database, body: unknown): Promise<D1RawResponse> {
   const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(body);

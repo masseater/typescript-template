@@ -41,7 +41,7 @@ const rawD1Operations = [
   ],
   [
     "binding-type",
-    'import type { DatabaseBinding as Storage } from "@template/db"; export const load = (db: Storage) => db.exec("SELECT 1");',
+    'import type { DatabaseBinding as Storage } from "@repo/db"; export const load = (db: Storage) => db.exec("SELECT 1");',
   ],
   [
     "value-alias",
@@ -101,23 +101,23 @@ const rawD1Operations = [
   ],
   [
     "orm-client",
-    'import type { Database } from "@template/db"; export const load = (db: Database) => db.$client.exec("SELECT 1");',
+    'import type { Database } from "@repo/db"; export const load = (db: Database) => db.$client.exec("SELECT 1");',
   ],
   [
     "orm-factory-client",
-    'import { createDb } from "@template/db"; export const load = (binding: D1Database) => createDb(binding).$client.exec("SELECT 1");',
+    'import { createDb } from "@repo/db"; export const load = (binding: D1Database) => createDb(binding).$client.exec("SELECT 1");',
   ],
   [
     "config-type",
-    'import type { AppConfig } from "@template/config"; export const load = (config: AppConfig) => config.DB.exec("SELECT 1");',
+    'import type { AppConfig } from "@repo/config"; export const load = (config: AppConfig) => config.DB.exec("SELECT 1");',
   ],
   [
     "config-factory",
-    'import { readConfig as config } from "@template/config"; export const load = (input: unknown) => config(input).DB.exec("SELECT 1");',
+    'import { readConfig as config } from "@repo/config"; export const load = (input: unknown) => config(input).DB.exec("SELECT 1");',
   ],
   [
     "request-context",
-    'import type { AppRequestContext } from "@template/runtime"; export const load = (context: AppRequestContext) => context.runtime.config.DB.exec("SELECT 1");',
+    'import type { AppRequestContext } from "@repo/runtime"; export const load = (context: AppRequestContext) => context.runtime.config.DB.exec("SELECT 1");',
   ],
   [
     "worker-binding",
@@ -175,11 +175,11 @@ const nonD1Operations = [
   ["regexp-DB", 'export const load = (env: { DB: RegExp }) => env.DB.exec("input");'],
   [
     "orm-query",
-    'import type { Database } from "@template/db"; export const load = (db: Database) => db.select().all();',
+    'import type { Database } from "@repo/db"; export const load = (db: Database) => db.select().all();',
   ],
   [
     "binding-injection",
-    'import { createDb } from "@template/db"; export const load = (binding: D1Database) => createDb(binding);',
+    'import { createDb } from "@repo/db"; export const load = (binding: D1Database) => createDb(binding);',
   ],
 ] as const;
 

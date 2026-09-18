@@ -1,5 +1,5 @@
 import { Context } from "effect";
 
-class AppOrigin extends Context.Service<AppOrigin, string>()("@template/runtime/AppOrigin") {}
+class AppOrigin extends Context.Service<AppOrigin, string>()("@repo/runtime/AppOrigin") {}
 
 export { AppOrigin };

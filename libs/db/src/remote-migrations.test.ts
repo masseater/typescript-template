@@ -1,8 +1,15 @@
+import {
+  APPLICATION_TABLES,
+  loadMigrations,
+  migrateD1,
+  migrationsFolder,
+} from "./remote-operations.ts";
 import { EmptyTestDatabase, TestBinding, failureCode, runStatement } from "./testing-node.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { appendFile, cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { assert, it } from "@effect/vitest";
-import { loadMigrations, migrateD1, migrationsFolder } from "./remote-operations.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { DatabaseSync } from "node:sqlite";
 import { Effect } from "effect";
 import type { Scope } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -69,5 +76,44 @@ it.effect(
         "REMOTE_MIGRATION_HISTORY_MISMATCH",
       );
     }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+  { timeout: TEST_TIMEOUT_MS },
+);
+
+it.effect("counts as application tables everything but the Cloudflare and migration tables", () =>
+  Effect.sync(() => {
+    const storage = new DatabaseSync(":memory:");
+    for (const name of [
+      "__drizzle_migrations",
+      "_cf_KV",
+      "_cf_METADATA",
+      "acfxtable",
+      "cf_users",
+      "d1_migrations",
+      "sqlitex_thing",
+      "user",
+    ]) {
+      storage.exec(`CREATE TABLE "${name}" (id TEXT)`);
+    }
+    const names = storage.prepare(APPLICATION_TABLES).all();
+    storage.close();
+    assert.deepStrictEqual(names, [
+      { name: "acfxtable" },
+      { name: "cf_users" },
+      { name: "sqlitex_thing" },
+      { name: "user" },
+    ]);
+  }),
+);
+
+it.effect(
+  "refuses to migrate application tables that have no recorded history",
+  () =>
+    Effect.gen(function* program() {
+      yield* runStatement("CREATE TABLE user (id TEXT PRIMARY KEY)");
+      assert.strictEqual(
+        yield* failureCode(migrateD1(yield* TestBinding)),
+        "REMOTE_MIGRATION_HISTORY_MISSING",
+      );
+    }).pipe(Effect.provide(EmptyTestDatabase)),
   { timeout: TEST_TIMEOUT_MS },
 );

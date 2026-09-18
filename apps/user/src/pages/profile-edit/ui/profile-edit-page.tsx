@@ -1,4 +1,4 @@
-import { Field, FormColumn, Page, Status, useToast } from "@template/ui";
+import { Field, FormColumn, Page, Status, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import { ProfileEditor } from "./profile-editor.tsx";

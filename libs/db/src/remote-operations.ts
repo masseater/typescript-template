@@ -13,14 +13,13 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { sql } from "drizzle-orm";
 
 const migrationsFolder = fileURLToPath(new URL("../migrations/", import.meta.url));
-const historyTable = "__drizzle_migrations";
-const internalTables: ReadonlySet<string> = new Set([
-  historyTable,
-  "_cf_METADATA",
-  "d1_migrations",
-]);
 
-const TableNames = Schema.Array(Schema.Tuple([Schema.String]));
+const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' AND name NOT LIKE '\_cf\_%' ESCAPE '\' AND name NOT IN ('__drizzle_migrations', 'd1_migrations')`;
+
+const HISTORY_TABLE =
+  "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'";
+
+const Names = Schema.Array(Schema.Tuple([Schema.String]));
 const History = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
 const BootstrappedRow = Schema.Tuple([Schema.Unknown, Schema.Unknown, Schema.Unknown]);
 
@@ -37,6 +36,16 @@ function decoded<Type, Encoded>(
 ): Effect.Effect<Type, RemoteFailure> {
   return Schema.decodeUnknownEffect(schema)(input).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+  );
+}
+
+function names(
+  database: SQLiteAsyncDatabase<"async", unknown>,
+  statement: string,
+): Effect.Effect<readonly string[], RemoteFailure> {
+  return queried(async () => database.values(sql.raw(statement))).pipe(
+    Effect.flatMap((rows) => decoded(Names, rows)),
+    Effect.map((rows) => rows.map(([name]) => name)),
   );
 }
 
@@ -57,24 +66,16 @@ const appliedMigrations = Effect.fn("appliedMigrations")(function* appliedMigrat
   database: SQLiteAsyncDatabase<"async", unknown>,
   migrations: readonly MigrationMeta[],
 ) {
-  const tables = (yield* decoded(
-    TableNames,
-    yield* queried(async () =>
-      database.values(sql`SELECT name FROM sqlite_master WHERE type = 'table'`),
-    ),
-  )).map(([name]) => name);
-  const history = tables.includes(historyTable)
-    ? yield* decoded(
-        History,
-        yield* queried(async () =>
-          database.values(sql`SELECT hash, name FROM ${sql.identifier(historyTable)} ORDER BY id`),
-        ),
-      )
-    : [];
-  if (
-    history.length === 0 &&
-    tables.some((name) => !name.startsWith("sqlite_") && !internalTables.has(name))
-  ) {
+  const history =
+    (yield* names(database, HISTORY_TABLE)).length === 0
+      ? []
+      : yield* decoded(
+          History,
+          yield* queried(async () =>
+            database.values(sql`SELECT hash, name FROM __drizzle_migrations ORDER BY id`),
+          ),
+        );
+  if (history.length === 0 && (yield* names(database, APPLICATION_TABLES)).length > 0) {
     return yield* fail("REMOTE_MIGRATION_HISTORY_MISSING");
   }
   if (
@@ -130,6 +131,7 @@ const workerMigrations = Effect.fn("workerMigrations")(function* workerMigration
 });
 
 export {
+  APPLICATION_TABLES,
   bootstrapDatabase,
   loadMigrations,
   migrateD1,
