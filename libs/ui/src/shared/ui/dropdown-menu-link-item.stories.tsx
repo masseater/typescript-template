@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { expect, screen, userEvent } from "storybook/test";
+import { expect, screen, userEvent, waitForElementToBeRemoved } from "storybook/test";
 
 import preview from "../../../.storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
@@ -15,7 +15,7 @@ const meta = preview.meta({
     const item = await screen.findByRole("menuitem", { name: "認証設定" });
     await expect(item).toHaveAttribute("href", "/");
     await userEvent.click(item);
-    await expect(screen.queryByRole("menuitem", { name: "認証設定" })).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(item);
   },
   render: ({ children }): ReactElement => (
     <DropdownMenu>
