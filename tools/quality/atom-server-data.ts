@@ -51,10 +51,7 @@ function isAtomConstructor(context: LintContext, callee: Node): boolean {
 
 function isNode(value: unknown): value is Node {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    typeof value.type === "string"
+    typeof value === "object" && value !== null && "type" in value && typeof value.type === "string"
   );
 }
 

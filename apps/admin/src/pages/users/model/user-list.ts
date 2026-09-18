@@ -17,7 +17,10 @@ function useUserList(
       refresh(userListKey);
     },
     result: useServerQuery(
-      serverQuery([...userListKey, query], request(async () => listUsers(query))),
+      serverQuery(
+        [...userListKey, query],
+        request(async () => listUsers(query)),
+      ),
     ),
   };
 }
