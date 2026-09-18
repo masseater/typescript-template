@@ -25,7 +25,7 @@ main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の 
 - 再開するときは `tasks.ts` の branch をそのまま使う。同じ目的の branch を作り直さない。
 - タスクを終える PR は、本文に `Closes #<Issue 番号>` を入れ、`tasks.ts` から自分のタスクと、それを指す `blockedBy` を消す。
 - conflict の解消で相手側の変更を捨てない。改名や再整形のような機械的な変更は、main 側を採用してから同じ機械的な変更を掛け直す。
-- タスクを足す・依存を変えるときは、Issue を作って `tasks.ts` を直す。
+- タスクを足す・依存を変えるときは、Issue を `gh issue create --project "typescript-template 完成"` で作って `tasks.ts` を直す。
 
 ## 技術スタック
 
