@@ -85,16 +85,17 @@ const detected: readonly Case[] = [
     { "apps/admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
-    "no-database-testing-outside-tests",
+    "no-testing-entry-outside-tests",
     { "libs/auth/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
+  ["no-testing-entry-outside-tests", { "libs/db/src/index.ts": 'export * from "./testing.ts";\n' }],
   [
-    "no-database-testing-outside-tests",
-    { "libs/db/src/index.ts": 'export * from "./testing.ts";\n' },
+    "no-testing-entry-outside-tests",
+    { "tools/dev/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
   [
-    "no-database-testing-outside-tests",
-    { "tools/dev/src/index.ts": 'export * from "@repo/db/testing";\n' },
+    "no-testing-entry-outside-tests",
+    { "libs/runtime/src/index.ts": 'export * from "@repo/observability/testing";\n' },
   ],
   [
     "no-development-dependency-in-shipped-code",
@@ -196,12 +197,16 @@ const accepted: readonly Case[] = [
     { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
-    "no-database-testing-outside-tests",
+    "no-testing-entry-outside-tests",
     { "libs/auth/src/session.test.ts": 'export * from "@repo/db/testing";\n' },
   ],
   [
-    "no-database-testing-outside-tests",
+    "no-testing-entry-outside-tests",
     { "libs/db/src/records-fixture.ts": 'export * from "./testing.ts";\n' },
+  ],
+  [
+    "no-testing-entry-outside-tests",
+    { "libs/runtime/src/index.test.ts": 'export * from "@repo/observability/testing";\n' },
   ],
   [
     "no-development-dependency-in-shipped-code",
