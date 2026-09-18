@@ -40,9 +40,9 @@ function workflowRuns(file: string): string[] {
     throw new Error(`${file} is missing`);
   }
   const step = /^\s*(?:- )?run: /u;
-  return (workflow.match(/^\s*(?:- )?run: .+$/gmu) ?? []).map((line: string) =>
-    line.replace(step, ""),
-  );
+  return (workflow.match(/^\s*(?:- )?run: .+$/gmu) ?? [])
+    .map((line: string) => line.replace(step, ""))
+    .filter((command: string) => command.startsWith("vp "));
 }
 
 const checksOnlyCiRuns = ["vp run check:dev"];
