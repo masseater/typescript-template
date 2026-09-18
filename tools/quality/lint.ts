@@ -1,5 +1,4 @@
 import type { UserConfig } from "vite-plus";
-import { retiredImportPatterns } from "./retired-packages.ts";
 
 const lint = {
   categories: {
@@ -117,19 +116,6 @@ const lint = {
         ignoreEnums: true,
         ignoreNumericLiteralTypes: true,
         ignoreTypeIndexes: true,
-      },
-    ],
-    "eslint/no-restricted-imports": [
-      "error",
-      {
-        paths: [
-          {
-            message:
-              "better-auth/react は nanostores の状態を持ち込みます。better-auth/client を使い、状態は Effect Atom で持ってください。",
-            name: "better-auth/react",
-          },
-        ],
-        patterns: retiredImportPatterns(),
       },
     ],
     "eslint/no-ternary": "off",

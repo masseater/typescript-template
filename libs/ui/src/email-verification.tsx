@@ -1,5 +1,5 @@
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
-import { Effect } from "effect";
+import { requestAtom, resultError } from "./request";
+import { AsyncResult } from "effect/unstable/reactivity";
 import type { ReactElement } from "react";
 import { Status } from "./shared/ui/status";
 import { useAtomValue } from "@effect/atom-react";
@@ -10,33 +10,26 @@ async function verifyEmailToken(): Promise<boolean> {
   if (token === null || token === "") {
     return false;
   }
-  try {
-    const response = await fetch("/api/verify-email", {
-      body: JSON.stringify({ token }),
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      method: "POST",
-    });
-    return response.ok;
-  } catch {
-    return false;
+  const response = await fetch("/api/verify-email", {
+    body: JSON.stringify({ token }),
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    method: "POST",
+  });
+  if (response.ok) {
+    globalThis.location.replace("/login");
   }
+  return response.ok;
 }
 
-function leaveWhenVerified(verified: boolean): Effect.Effect<void> {
-  return verified
-    ? Effect.sync(() => {
-        globalThis.location.replace("/login");
-      })
-    : Effect.void;
-}
-
-const verificationAtom = Atom.make(
-  Effect.promise(verifyEmailToken).pipe(Effect.tap(leaveWhenVerified)),
-).pipe(Atom.withServerValueInitial);
+const verificationAtom = requestAtom(verifyEmailToken);
 
 function EmailVerification(): ReactElement {
   const result = useAtomValue(verificationAtom);
+  const error = resultError(result);
+  if (error !== undefined) {
+    return <Status variant="error">{error}</Status>;
+  }
   return AsyncResult.isSuccess(result) && !result.value ? (
     <Status variant="error">
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。

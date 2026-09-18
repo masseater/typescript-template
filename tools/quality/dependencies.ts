@@ -1,4 +1,4 @@
-import { retiredPackages } from "./retired-packages.ts";
+import { retiredDependency } from "./retired-packages.ts";
 
 interface WorkspaceManifest {
   readonly area: string;
@@ -58,18 +58,10 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
   );
 }
 
-function replacementFor(dependency: string): string | undefined {
-  const matched = Object.keys(retiredPackages).find(
-    (retired) =>
-      dependency === retired || (retired.endsWith("/") && dependency.startsWith(retired)),
-  );
-  return matched === undefined ? undefined : retiredPackages[matched];
-}
-
 function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): string[] {
   return workspaces.flatMap(({ file, manifest }) =>
     declaredDependencies(manifest).flatMap((dependency) => {
-      const replacement = replacementFor(dependency);
+      const replacement = retiredDependency(dependency);
       return replacement === undefined
         ? []
         : [`${file}: ${dependency} は置き換え済みです。${replacement} を使ってください。`];

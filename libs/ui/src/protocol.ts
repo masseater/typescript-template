@@ -22,7 +22,9 @@ const failureReasons: Readonly<Record<string, string>> = {
 };
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
+  return error instanceof Error && error.message !== ""
+    ? error.message
+    : "操作に失敗しました。もう一度お試しください。";
 }
 
 function requireSuccess<TData>(result: AuthResult<TData>): NonNullable<TData> {

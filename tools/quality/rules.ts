@@ -1,7 +1,12 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
-import { atomStateVisitor, effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
+import {
+  atomStateVisitor,
+  effectFailuresVisitor,
+  effectStackVisitor,
+  forbiddenStateList,
+} from "./effect-rules.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { importVisitor, reportViolation } from "./lint-context.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
@@ -207,13 +212,13 @@ export default definePlugin({
     "atom-state": {
       create: atomStateVisitor,
       meta: metadata(
-        "UI の状態は Effect Atom (effect/unstable/reactivity と @effect/atom-react) で持ってください。useState・useReducer・useSyncExternalStore・useRef・createRef・useActionState・useOptimistic・useTransition・useFormStatus・createContext・useContext・use・クラスコンポーネントは、別名や分割代入も含めて使えません。Effect Atom の使い方も揃えます。コンポーネントごとの状態は @template/ui の localState で、利用者の操作で走る非同期処理は useAction で持ち、値から決まる状態はその値を鍵にした Atom.family で持ってください (ScopedAtom の make・useAtomInitialValues・HydrationBoundary・RegistryContext は使えません)。非同期の取得は Atom.make(Effect) の AsyncResult を分岐して描画してください (useAtomSuspense は使えません)。URL の状態は Atom.searchParam ではなく TanStack Router の search に置いてください。DOM への参照は ref コールバックで受けてください。",
+        `クライアントの UI 状態は Effect Atom で持ち、持ち方を揃えてください。${forbiddenStateList} は、別名・分割代入・再 export を含めて使えません。コンポーネントごとの状態は @template/ui の localState、利用者の操作で走る非同期処理の進行と失敗は useAction、値から決まる状態はその値を鍵にした Atom.family、非同期の読み込みは requestAtom の AsyncResult で持ってください。URL の状態は TanStack Router の search に、DOM への参照は ref コールバックで受けてください。`,
       ),
     },
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。`,
+        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@template/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。tools/quality/retired-packages.ts に置き換え済みとして載っているパッケージと入口は、そこに書かれた置き換え先を使ってください。`,
       ),
     },
     "effect-failures": {

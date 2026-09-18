@@ -1,7 +1,6 @@
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
-import { request, resultError } from "./request";
+import { requestAtom, resultError } from "./request";
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { Option } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
 import type { PasskeySummary } from "./mfa-types";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -12,16 +11,16 @@ interface PasskeysState {
   readonly reload: () => void;
 }
 
-const passkeysAtom = Atom.make(
-  request(async () => requireSuccess(await authClient.passkey.listUserPasskeys())),
-).pipe(Atom.withServerValueInitial);
+const passkeysAtom = requestAtom(async () =>
+  requireSuccess(await authClient.passkey.listUserPasskeys()),
+);
 
 function usePasskeys(): PasskeysState {
   const result = useAtomValue(passkeysAtom);
   const reload = useAtomRefresh(passkeysAtom);
   return {
     listError: resultError(result),
-    passkeys: Option.getOrUndefined(AsyncResult.value(result)),
+    passkeys: AsyncResult.isSuccess(result) ? result.value : undefined,
     reload,
   };
 }

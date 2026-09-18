@@ -7,7 +7,7 @@ import type { SessionView } from "./protocol";
 import type { SettingsContext } from "./mfa-types";
 import { TotpSettings } from "./totp-settings";
 import { useAction } from "./action";
-import { useNotice } from "./notice-state";
+import { useNotice } from "./use-notice";
 
 function readRecovery(): string | undefined {
   if (!("location" in globalThis)) {

@@ -1,6 +1,5 @@
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
-import { request, resultError } from "./request";
-import { Option } from "effect";
+import { requestAtom, resultError } from "./request";
+import { AsyncResult } from "effect/unstable/reactivity";
 import { SessionView as SessionContract } from "@template/runtime/contracts";
 import type { SessionView } from "./protocol";
 import { decodeJson } from "@template/runtime/client";
@@ -26,14 +25,14 @@ async function fetchSession(): Promise<SessionView | undefined> {
   return decodeJson(SessionContract, body);
 }
 
-const sessionAtom = Atom.make(request(fetchSession)).pipe(Atom.withServerValueInitial);
+const sessionAtom = requestAtom(fetchSession);
 
 function useSession(): SessionState {
   const result = useAtomValue(sessionAtom);
   return {
     error: resultError(result),
     loading: AsyncResult.isInitial(result),
-    session: Option.getOrUndefined(AsyncResult.value(result)),
+    session: AsyncResult.isSuccess(result) ? result.value : undefined,
   };
 }
 

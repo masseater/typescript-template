@@ -37,7 +37,8 @@
         "@types/react",
         "@types/react-dom",
         "@vitejs/plugin-react",
-        "oxc-transform-react"
+        "oxc-transform-react",
+        "scheduler"
       ]
     },
     {

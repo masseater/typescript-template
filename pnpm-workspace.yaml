@@ -79,7 +79,7 @@ peerDependencyRules:
     - vite
     - vitest
   allowedVersions:
-    "@effect/atom-react>scheduler": 0.28.0
+    "@effect/atom-react>scheduler": ^0.28.0
     vite: "*"
     vitest: "*"
 patchedDependencies:

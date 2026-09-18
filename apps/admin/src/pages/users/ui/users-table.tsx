@@ -1,5 +1,5 @@
 import { Table, TableBody } from "@template/ui";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ListedUser } from "#pages/users/api/list-users.ts";
 import { LoadingRow } from "./loading-row.tsx";
 import type { ReactElement } from "react";
 import { UserRow } from "./user-row.tsx";

@@ -9,13 +9,13 @@ import type { ReactElement } from "react";
 import { TotpVerifyForm } from "./totp-verify-form";
 import { localState } from "./local-state";
 
-const useSaved = localState(false);
-
 interface TotpEnrollmentProps {
   readonly action: ActionState;
   readonly enrollment: Enrollment;
   readonly onVerified: () => void;
 }
+
+const useSaved = localState(false);
 
 function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement {
   const [saved, setSaved] = useSaved();

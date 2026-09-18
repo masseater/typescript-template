@@ -1,42 +1,36 @@
-import { Button, FormColumn, Status, useAction } from "@template/ui";
+import { Button, FormColumn, Status, localState, useAction } from "@template/ui";
 import type { ReactElement } from "react";
-import { Schema } from "effect";
-import { decodeJson } from "@template/runtime/client";
 import { serviceName } from "#shared/config/index.ts";
+import { submitDecision } from "#pages/consent/api/consent.ts";
 
-const Redirect = Schema.Struct({ url: Schema.String });
-
-async function submitDecision(accept: boolean): Promise<void> {
-  const response = await fetch("/api/auth/oauth2/consent", {
-    body: JSON.stringify({ accept, oauth_query: globalThis.location.search.slice(1) }),
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error("連携の許可を処理できませんでした。");
-  }
-  globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
-}
+const useDecided = localState(false);
 
 function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement {
   const action = useAction();
+  const [decided, setDecided] = useDecided();
+  function decide(accept: boolean): void {
+    action.run(async () => {
+      await submitDecision(accept);
+      setDecided(true);
+    });
+  }
   function allow(): void {
-    action.run(async () => submitDecision(true));
+    decide(true);
   }
   function deny(): void {
-    action.run(async () => submitDecision(false));
+    decide(false);
   }
+  const disabled = action.blocked || decided;
   return (
     <FormColumn>
       <p>
         {client} に {serviceName} の閲覧を許可しますか？
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="primary" disabled={action.blocked} onClick={allow}>
+        <Button type="button" variant="primary" disabled={disabled} onClick={allow}>
           許可する
         </Button>
-        <Button type="button" disabled={action.blocked} onClick={deny}>
+        <Button type="button" disabled={disabled} onClick={deny}>
           拒否する
         </Button>
       </div>

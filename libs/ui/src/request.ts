@@ -1,12 +1,12 @@
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { Cause, Effect, Option, Schema } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
 import { errorMessage } from "./protocol";
-
-type Failure = AsyncResult.Failure<unknown, Readonly<{ message: string }>>;
 
 class RequestFailed extends Schema.TaggedError<RequestFailed>()("RequestFailed", {
   message: Schema.String,
 }) {}
+
+type RequestResult<Value> = AsyncResult.AsyncResult<Value, RequestFailed>;
 
 function request<Value>(task: () => Promise<Value>): Effect.Effect<Value, RequestFailed> {
   return Effect.tryPromise({
@@ -15,19 +15,17 @@ function request<Value>(task: () => Promise<Value>): Effect.Effect<Value, Reques
   });
 }
 
+function requestAtom<Value>(task: () => Promise<Value>): Atom.Atom<RequestResult<Value>> {
+  return Atom.make(request(task)).pipe(Atom.withServerValueInitial);
+}
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function failureMessage(failure: Failure): string {
-  return Option.match(AsyncResult.error(failure), {
-    onNone: () => errorMessage(Cause.squash(failure.cause)),
-    onSome: ({ message }) => message,
-  });
+function resultError(result: RequestResult<unknown>): string | undefined {
+  if (!AsyncResult.isFailure(result) || result.waiting || Cause.hasInterruptsOnly(result.cause)) {
+    return undefined;
+  }
+  return Option.getOrThrowWith(AsyncResult.error(result), () => Cause.squash(result.cause)).message;
 }
 
-function resultError(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  result: AsyncResult.AsyncResult<unknown, Readonly<{ message: string }>>,
-): string | undefined {
-  return AsyncResult.isFailure(result) && !result.waiting ? failureMessage(result) : undefined;
-}
-
-export { failureMessage, request, resultError };
+export { request, requestAtom, resultError };
+export type { RequestResult };

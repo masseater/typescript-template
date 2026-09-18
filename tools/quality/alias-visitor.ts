@@ -29,6 +29,18 @@ function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean
         reportViolation(context, node);
       }
     },
+    ExportNamedDeclaration(node: Node): void {
+      if (node.type !== "ExportNamedDeclaration" || !node.source) {
+        return;
+      }
+      for (const specifier of node.specifiers) {
+        const name =
+          specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
+        if (matches([node.source.value, name])) {
+          reportViolation(context, specifier);
+        }
+      }
+    },
     ImportDeclaration(node: Node): void {
       if (node.type !== "ImportDeclaration") {
         return;
