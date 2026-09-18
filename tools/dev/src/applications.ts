@@ -40,18 +40,15 @@ interface StatusReport {
 const statusTimeoutMilliseconds = 3000;
 
 function httpStatus(app: App): Effect.Effect<number | null> {
-  return Effect.tryPromise(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    async (signal) =>
-      fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
-      }),
+  return Effect.tryPromise(async (signal) =>
+    fetch(`http://127.0.0.1:${applicationPorts[app]}${readyPaths[app]}`, {
+      redirect: "manual",
+      signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
+    }),
   ).pipe(
     Effect.match({
       // oxlint-disable-next-line unicorn/no-null
       onFailure: () => null,
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       onSuccess: (response) => response.status,
     }),
   );
@@ -97,7 +94,6 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   yield* Effect.acquireUseRelease(
     fileIo(async () => open(log, "a", privateFileMode)),
     () => Effect.void,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (file) => fileIo(async () => file.close()),
   );
   yield* fileIo(async () => chmod(log, privateFileMode));

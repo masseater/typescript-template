@@ -31,7 +31,6 @@ function remoteExecutor({
       Effect.gen(function* batch() {
         const response = yield* Effect.tryPromise({
           catch: queryFailed,
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           try: async (signal) =>
             fetch(endpoint, {
               body: JSON.stringify({ batch: queries }),

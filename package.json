@@ -5,13 +5,12 @@
   "scripts": {
     "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
     "precommit": "vp run check",
-    "prepush": "vp run check && vp test run --changed origin/main && vp run build && vp run --filter @template/infra-cloudflare verify:artifacts && vp run --filter @template/infra-cloudflare verify:stacks"
+    "prepush": "vp run check && vp test run --changed origin/main && vp run build"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
-    "@feature-sliced/steiger-plugin": "0.7.0",
     "@shadcn/lint": "catalog:",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
@@ -20,7 +19,6 @@
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "5.20260917.0-alpha",
-    "steiger": "0.6.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

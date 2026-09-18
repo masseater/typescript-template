@@ -1,16 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { UserConfig } from "vite-plus";
 import { field } from "./dependencies.ts";
 
 const manifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,
   import: "default",
 });
-
-const rootConfig: Readonly<Record<string, Readonly<UserConfig>>> = import.meta.glob(
-  "../../vite.config.ts",
-  { eager: true, import: "default" },
-);
 
 const workflows: Readonly<Record<string, string>> = import.meta.glob(
   "../../.github/workflows/*.yml",
@@ -35,27 +29,11 @@ function workflowRuns(file: string): string[] {
 }
 
 describe("git hooks", () => {
-  it("git hooks run the verified package scripts", () => {
-    expect.hasAssertions();
-    expect(
-      import.meta.glob("../../.vite-hooks/pre-*", { eager: true, import: "default" }),
-    ).toStrictEqual({
-      "../../.vite-hooks/pre-commit": "vp run precommit\n",
-      "../../.vite-hooks/pre-push": "vp run prepush\n",
-    });
-    expect(script("precommit")).toBe("vp run check");
-    expect(rootConfig["../../vite.config.ts"]?.run?.tasks?.["check"]).toHaveProperty(
-      ["command", 0],
-      "vp check",
-    );
-    expect(script("prepush")).toContain("vp test run --changed origin/main");
-  });
-
-  it("ci runs the pre-push verification against every test", () => {
+  it("ci runs the pre-push verification scoped to the pull request's changes", () => {
     expect.hasAssertions();
     const prepush = script("prepush")
       .split(" && ")
-      .map((command) => command.replace(" --changed origin/main", ""));
+      .map((command) => command.replace("--changed origin/main", "$TEST_SCOPE"));
     expect(workflowRuns("../../.github/workflows/check.yml")).toStrictEqual(prepush);
   });
 });

@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, References, Schema } from "effect";
 import { Stage, inMemoryState } from "alchemy";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 import type { StackName } from "./stacks.ts";
@@ -122,7 +122,6 @@ function traversable(value: unknown): value is object {
   return value !== null && (typeof value === "object" || typeof value === "function");
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string>): void {
   if (!traversable(value) || seen.has(value)) {
     return;
@@ -191,7 +190,7 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
         toEffect(Effect.provideService(program, Stage, verificationSettings.prefix), {
           providers: providers(),
           state: inMemoryState(),
-        }),
+        }).pipe(Effect.provideService(References.MinimumLogLevel, "Warn")),
       ),
   });
   const shape = yield* Schema.decodeUnknownEffect(CompiledShape)(compiled).pipe(
