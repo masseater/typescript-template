@@ -18,14 +18,16 @@ describe("email verification contracts", () => {
     }),
   );
 
-  it.effect.each([{}, { token: "" }, { token: "a".repeat(maximumTokenLength + 1) }])(
-    "rejects the verification request %o",
+  it.effect.each([
+    { input: {}, label: "no token at all" },
+    { input: { token: "" }, label: "an empty token" },
+    { input: { token: "a".repeat(maximumTokenLength + 1) }, label: "a token past the limit" },
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (input) =>
-      Effect.gen(function* program() {
-        const failure = yield* decodeRequest(input).pipe(Effect.flip);
-        assert.strictEqual(failure._tag, "SchemaError");
-      }),
+  ])("rejects a verification request with $label", ({ input }) =>
+    Effect.gen(function* program() {
+      const failure = yield* decodeRequest(input).pipe(Effect.flip);
+      assert.strictEqual(failure._tag, "SchemaError");
+    }),
   );
 
   it.effect("answers a verification only as verified", () =>

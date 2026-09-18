@@ -111,20 +111,26 @@ it.effect("accepts the bindings the worker declares", () =>
   }),
 );
 
+const absent = JSON.parse("null") as unknown;
+
 const brokenBindings = [
-  { ASSETS: {} },
-  { ASSETS: "fetch" },
-  { ASSETS: /x/u.exec("y") },
-  { DB: { prepare: noop } },
-  { DB: { batch: noop } },
-  { DB: { batch: "batch", prepare: noop } },
-  { EMAIL: {} },
+  { broken: { ASSETS: {} }, expected: "Fetcher", label: "an assets binding with no fetch" },
+  { broken: { ASSETS: "fetch" }, expected: "Fetcher", label: "a string where the fetcher goes" },
+  { broken: { ASSETS: absent }, expected: "Fetcher", label: "an absent assets binding" },
+  { broken: { DB: { prepare: noop } }, expected: "D1Database", label: "a database with no batch" },
+  { broken: { DB: { batch: noop } }, expected: "D1Database", label: "a database with no prepare" },
+  {
+    broken: { DB: { batch: "batch", prepare: noop } },
+    expected: "D1Database",
+    label: "a database whose batch is not callable",
+  },
+  { broken: { EMAIL: {} }, expected: "SendEmail", label: "an email binding with no send" },
 ] as const;
 
-for (const broken of brokenBindings) {
-  it.effect(`rejects the binding ${JSON.stringify(broken)}`, () =>
+for (const { broken, expected, label } of brokenBindings) {
+  it.effect(`names the binding it rejects: ${label}`, () =>
     Effect.gen(function* program() {
-      assert.isString(yield* configReason({ ...local, ...bindings, ...broken }));
+      assert.include(yield* configReason({ ...local, ...bindings, ...broken }), expected);
     }),
   );
 }

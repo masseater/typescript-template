@@ -25,7 +25,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vitest": "^5.0.1"
+    "vitest": "catalog:"
   },
   "devEngines": {
     "runtime": {

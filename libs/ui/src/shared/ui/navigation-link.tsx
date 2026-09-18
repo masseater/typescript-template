@@ -9,13 +9,16 @@ const navigationLinkVariants = cva(
     variants: {
       variant: {
         brand: "text-lg leading-tight font-bold",
-        item: "px-3 py-2 text-base leading-tight font-bold hover:bg-card-hover aria-[current=page]:bg-secondary",
+        item: "block px-3 py-2 text-base leading-tight font-bold hover:bg-card-hover aria-[current=page]:bg-secondary",
+        side: "block px-3 py-2 text-base leading-tight font-bold hover:bg-card-hover aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground aria-[current=page]:hover:bg-primary aria-[current=page]:hover:text-primary-foreground",
       },
     },
   },
 );
 
-type NavigationAnchorProps = Readonly<ComponentProps<"a"> & { variant?: "brand" | "item" }>;
+type NavigationAnchorProps = Readonly<
+  ComponentProps<"a"> & { variant?: "brand" | "item" | "side" }
+>;
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function NavigationAnchor({ children, variant, ...anchor }: NavigationAnchorProps): ReactElement {

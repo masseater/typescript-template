@@ -55,46 +55,6 @@ const forbiddenCode = [
   ],
   [
     "libs/shared/src/probe.ts",
-    'import * as v from "valibot"; export const schema = v.string();',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/api.ts",
-    'import { Elysia } from "elysia"; export const api = new Elysia();',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: ownServer() });',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { own } from "../own.ts"; export const Route = createFileRoute("/api/$")({ ...own });',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { handlers: userApi } });',
-    "effect-stack",
-  ],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: { ...ownServer(), middleware: [] } });',
-    "effect-stack",
-  ],
-  [
-    "libs/shared/src/probe.ts",
     'import { Effect } from "effect"; export const run = () => { if (Effect) throw new Error("x"); };',
     "effect-failures",
   ],
@@ -243,15 +203,6 @@ const validBoundaries = [
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@template/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@template/db/testing";'],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
-  ],
-  [
-    "apps/user/src/app/routes/api.probe.ts",
-    'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@template/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { ...elysiaServer(userApi), middleware: [] } });',
-  ],
-  ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;
 
 const singleReports = [

@@ -1,4 +1,4 @@
-import { Button, Status } from "@template/ui/ui";
+import { Button, Status } from "@template/ui";
 import type { ReactElement } from "react";
 
 function FailedResults({

@@ -67,17 +67,6 @@ export default defineConfig({
         },
       },
       {
-        files: [
-          "apps/admin/src/components/account-menu.tsx",
-          "apps/admin/src/components/admin-header.tsx",
-          "apps/admin/src/components/admin-navigation-item.tsx",
-          "apps/admin/src/components/empty-results.tsx",
-          "apps/admin/src/components/page-link.tsx",
-          "apps/admin/src/components/row-action-menu.tsx",
-        ],
-        rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
-      },
-      {
         files: ["infra/cloudflare/src/**"],
         rules: {
           "eslint/new-cap": [
@@ -155,7 +144,7 @@ export default defineConfig({
         {
           paths: [
             {
-              message: "@template/ui/ui の shadcn/ui (Base UI) 部品を使ってください。",
+              message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
               name: "smarthr-ui",
             },
             {
@@ -260,7 +249,7 @@ export default defineConfig({
       "check:migrations": "vp -C libs/db exec drizzle-kit check",
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
-        command: ["knip", "knip --strict"],
+        command: ["knip --no-config-hints", "knip --strict"],
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },

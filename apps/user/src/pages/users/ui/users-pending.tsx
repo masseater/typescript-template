@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { Status } from "@template/ui/ui";
+import { Status } from "@template/ui";
 import { UsersBody } from "./users-body.tsx";
 
 const placeholders = ["first", "second", "third", "fourth", "fifth", "sixth"] as const;

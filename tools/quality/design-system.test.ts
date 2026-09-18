@@ -17,6 +17,7 @@ import { field, workspaceManifests } from "./dependencies.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { AssertionError } from "node:assert";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
+import { hoverViolations } from "./hover-colors.ts";
 import { plugin } from "@shadcn/lint";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
@@ -62,7 +63,7 @@ function reports(rule: RuleName, className: string): boolean {
       invalid: [],
       valid: [
         {
-          code: `import { Button } from "@template/ui/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
+          code: `import { Button } from "@template/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
           filename: designSystemProbe,
           options: [{ allow: ["layout", "spacing"] }],
         },
@@ -93,6 +94,23 @@ describe("smarthr-ui token port", () => {
     expect(tokenViolations(`:root { ${token}: rebeccapurple; }`)).toContainEqual(
       expect.stringContaining(token),
     );
+  });
+
+  it("keeps every hover colour darker than the colour it replaces", () => {
+    expect.hasAssertions();
+    expect(hoverViolations(stylesheetSource())).toStrictEqual([]);
+  });
+
+  it("reports a hover colour that is lighter than the colour it replaces", () => {
+    expect.hasAssertions();
+    expect(
+      hoverViolations(":root { --danger: #e01e5a; --x: var(--danger); --x-hover: #ffffff; }"),
+    ).toHaveLength(1);
+  });
+
+  it("reports a hover colour it cannot resolve to a colour", () => {
+    expect.hasAssertions();
+    expect(hoverViolations(":root { --x: red; --x-hover: blue; }")).toHaveLength(1);
   });
 
   it.for(untouchedTokens)("reports %s when it is redefined", (token) => {
