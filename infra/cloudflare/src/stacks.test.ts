@@ -23,6 +23,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
   "./tokens.ts",
   "./user.ts",
   "./wiki.ts",
+  "./zone.ts",
 ]);
 
 function defaultExport(module: unknown): unknown {

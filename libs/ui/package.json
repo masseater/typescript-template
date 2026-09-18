@@ -15,9 +15,11 @@
   "dependencies": {
     "@base-ui/react": "catalog:",
     "@better-auth/passkey": "catalog:",
+    "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
@@ -30,7 +32,6 @@
     "tailwindcss": "catalog:"
   },
   "devDependencies": {
-    "@repo/config": "workspace:*",
     "@storybook/addon-a11y": "10.6.0",
     "@storybook/addon-mcp": "10.6.0",
     "@storybook/addon-vitest": "10.6.0",

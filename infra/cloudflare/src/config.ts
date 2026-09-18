@@ -1,6 +1,7 @@
 import type { WorkerObservability } from "alchemy/Cloudflare";
 import { Config, Effect, Schema } from "effect";
 
+import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
 import { workerCompatibility } from "@repo/config/worker";
 import { otlpSignalUrl } from "@repo/observability";
 
@@ -113,6 +114,16 @@ const originKeys = {
   admin: "TEMPLATE_ADMIN_ORIGIN",
   user: "TEMPLATE_USER_ORIGIN",
   wiki: "TEMPLATE_WIKI_ORIGIN",
+} as const;
+
+const hstsSetting = {
+  strict_transport_security: {
+    enabled: true,
+    include_subdomains: hstsIncludesSubdomains,
+    max_age: hstsMaxAgeSeconds,
+    nosniff: true,
+    preload: false,
+  },
 } as const;
 
 const workerSubdomain = { enabled: false, previewsEnabled: false };
@@ -233,6 +244,7 @@ export {
   SharedSettings,
   checkOtlpSettings,
   checkSharedConfig,
+  hstsSetting,
   originKeys,
   parseDeploymentCommand,
   sendingDomain,

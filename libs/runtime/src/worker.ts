@@ -1,12 +1,13 @@
 import { Effect, Result } from "effect";
 import type { Cause, ManagedRuntime } from "effect";
 
+import { cspNonceHeader } from "@repo/config/security";
 import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
 import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
-import { jsonResponse, secureResponse } from "./responses.ts";
+import { createNonce, jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;
@@ -28,11 +29,12 @@ type AppRoute<Requirements> = (
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
 async function unavailableResponse(
+  request: Request,
   cause: Readonly<Cause.Cause<unknown>>,
   reporting: Reporting,
 ): Promise<Response> {
   const failure = await Effect.runPromise(runtimeUnavailable(cause, reporting));
-  return jsonResponse({ error: failure.message }, failure.status);
+  return secureResponse(request, jsonResponse({ error: failure.message }, failure.status));
 }
 
 function serveWorker<Requirements>(
@@ -44,7 +46,7 @@ function serveWorker<Requirements>(
     fetch: async (request, _environment, context): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
       if (exit._tag !== "Success") {
-        return unavailableResponse(exit.cause, reporting);
+        return unavailableResponse(request, exit.cause, reporting);
       }
       context.waitUntil(runtime.runPromise(flushTelemetry));
       return exit.value;
@@ -93,7 +95,13 @@ function serveApp<Requirements>(
 }
 
 function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
-  return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
+  return (request) =>
+    Effect.promise(async () => {
+      const nonce = createNonce();
+      const rendered = new Request(request);
+      rendered.headers.set(cspNonceHeader, nonce);
+      return secureResponse(request, await handler.fetch(rendered), nonce);
+    });
 }
 
 export { serveApp, serveWorker, startRoute };

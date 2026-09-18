@@ -3,6 +3,7 @@ import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test"
 import { Effect, ManagedRuntime, Schema } from "effect";
 import type { Layer } from "effect";
 
+import { cspNonceHeader } from "@repo/config/security";
 import type { Reporting } from "@repo/observability";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
@@ -11,7 +12,7 @@ import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.
 import type { AppServices } from "./index.ts";
 import { appLayer } from "./index.ts";
 import { wikiLayer, wikiService } from "./wiki.ts";
-import { serveApp } from "./worker.ts";
+import { serveApp, startRoute } from "./worker.ts";
 
 const validRoutes = { "/": "home" };
 const ReportedLog = Schema.Record(Schema.String, Schema.String);
@@ -20,7 +21,7 @@ const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
 async function servedUnavailable(
   layer: () => Layer.Layer<AppServices, unknown>,
   reporting: Reporting,
-): Promise<{ readonly body: unknown; readonly status: number }> {
+): Promise<{ readonly body: unknown; readonly policy: string | null; readonly status: number }> {
   const worker = serveApp(
     ManagedRuntime.make(layer()),
     () => Effect.succeed(new Response("reached the route")),
@@ -29,7 +30,11 @@ async function servedUnavailable(
   const context = createExecutionContext();
   const response = await worker.fetch(new Request(`${fixtureOrigin}/`), {}, context);
   await waitOnExecutionContext(context);
-  return { body: await response.json(), status: response.status };
+  return {
+    body: await response.json(),
+    policy: response.headers.get("content-security-policy"),
+    status: response.status,
+  };
 }
 
 const brokenLayers = [
@@ -107,6 +112,65 @@ describe("a wiki worker whose database has not been migrated", () => {
       );
       assert.deepInclude(reported, { "error.tag": "AuthFailure", service: "wiki-server" });
       assert.include(reported["error.chain"] ?? "", "no such table: oauth_resource");
+    }),
+  );
+});
+
+async function servedDocument(url: string): Promise<Response> {
+  const layer = appLayer(appEnvironment({}), "user", validRoutes);
+  const worker = serveApp(
+    ManagedRuntime.make(layer),
+    startRoute({
+      fetch: (rendered: Request): Response =>
+        new Response("<!DOCTYPE html>", {
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
+          },
+        }),
+    }),
+    { service: "user" },
+  );
+  const context = createExecutionContext();
+  const response = await worker.fetch(new Request(url), {}, context);
+  await waitOnExecutionContext(context);
+  return response;
+}
+
+describe("a worker serving a rendered document", () => {
+  it.effect("names the nonce it handed the renderer and forbids everything else", () =>
+    Effect.gen(function* program() {
+      const response = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
+      const directives = (response.headers.get("content-security-policy") ?? "").split("; ");
+      const nonce = response.headers.get("x-rendered-nonce") ?? "";
+      assert.match(nonce, /^[\w+/]{22}==$/u);
+      assert.include(directives, "default-src 'none'");
+      assert.include(directives, `script-src 'nonce-${nonce}' 'strict-dynamic'`);
+      assert.notInclude(directives.join("; "), "unsafe-eval");
+    }),
+  );
+
+  it.effect("demands https for a year once the document arrived over https", () =>
+    Effect.gen(function* program() {
+      const secure = yield* Effect.promise(async () =>
+        servedDocument("https://user.example.test/"),
+      );
+      const plain = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
+      assert.strictEqual(
+        secure.headers.get("strict-transport-security"),
+        "max-age=31536000; includeSubDomains",
+      );
+      assert.isNull(plain.headers.get("strict-transport-security"));
+    }),
+  );
+
+  it.effect("forbids every resource when the runtime cannot answer", () =>
+    Effect.gen(function* program() {
+      const response = yield* Effect.promise(async () =>
+        servedUnavailable(brokenLayers[0].layer, { log: recordingSink().sink, service: "user" }),
+      );
+      assert.include(response.policy ?? "", "default-src 'none'");
+      assert.notInclude(response.policy ?? "", "nonce-");
     }),
   );
 });
