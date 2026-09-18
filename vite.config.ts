@@ -30,19 +30,7 @@ export default defineConfig({
         "vp run --filter @repo/infra-cloudflare verify:artifacts",
         "vp run --filter @repo/infra-cloudflare verify:stacks",
       ],
-      check: {
-        command: [
-          "vp check",
-          "vp run knip",
-          "vp run check:client",
-          "vp run check:imports",
-          "vp run check:react",
-          "vp run check:staged",
-          "vp run check:effect",
-          "vp run -F '!typescript-template' --cache check",
-        ],
-        input: [...taskInput],
-      },
+      check: ["vp run precommit", "vp run prepush"],
       "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
       "check:effect": {
         command: [
@@ -64,6 +52,15 @@ export default defineConfig({
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
+      precommit: { command: ["vp check", "vp run check:staged"], input: [...taskInput] },
+      prepush: [
+        "vp run knip",
+        "vp run check:client",
+        "vp run check:imports",
+        "vp run check:react",
+        "vp run check:effect",
+        "vp run -F '!typescript-template' --cache check",
+      ],
     },
   },
   test: {

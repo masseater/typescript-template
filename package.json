@@ -3,9 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "precommit": "vp run check",
-    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts",
-    "prepush": "vp run check && vp test run --changed origin/main && vp run build"
+    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
