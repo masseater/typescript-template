@@ -1,11 +1,12 @@
-import { Effect, Redacted } from "effect";
-import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import { assert, it } from "@effect/vitest";
-import { CONFIRMATION_LENGTH } from "./config.ts";
-import type { Plan } from "alchemy/Plan";
-import type { PlannedStack } from "./plan-confirmation.ts";
 import { ResourceExpr } from "alchemy/Output";
+import type { Plan } from "alchemy/Plan";
+import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
+import { Effect, Redacted } from "effect";
+
+import { CONFIRMATION_LENGTH } from "./config.ts";
+import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+import type { PlannedStack } from "./plan-confirmation.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const { accountId } = verificationSettings;

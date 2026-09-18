@@ -1,10 +1,11 @@
-import { Cause, Console, Effect } from "effect";
-import { browser, browserCommand } from "./browser.ts";
-import { connection, logs, start, status, stop } from "./applications.ts";
-import { failure, reportFailed } from "./failure.ts";
-import type { App } from "./local-environment.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { NodeRuntime } from "@effect/platform-node";
+import { Cause, Console, Effect } from "effect";
+
+import { connection, logs, start, status, stop } from "./applications.ts";
+import { browser, browserCommand } from "./browser.ts";
+import { failure, reportFailed } from "./failure.ts";
+import type { LocalCommandFailure } from "./failure.ts";
+import type { App } from "./local-environment.ts";
 import { application } from "./local-environment.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";

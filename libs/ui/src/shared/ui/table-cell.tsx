@@ -1,5 +1,6 @@
-import type { Children } from "./types";
 import type { ReactElement } from "react";
+
+import type { Children } from "./types";
 
 function TableCell({ children, colSpan }: Children & Readonly<{ colSpan?: number }>): ReactElement {
   return (

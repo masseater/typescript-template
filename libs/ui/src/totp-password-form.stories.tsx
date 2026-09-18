@@ -1,6 +1,7 @@
-import { TotpPasswordForm } from "./totp-password-form";
 import { noop } from "es-toolkit";
+
 import preview from "../.storybook/preview";
+import { TotpPasswordForm } from "./totp-password-form";
 
 const user = {
   email: "taro@example.com",

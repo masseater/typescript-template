@@ -2,8 +2,10 @@
 import { readFileSync, readdirSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createRequire } from "node:module";
-import { field } from "./dependencies.ts";
+
 import { parseSync } from "vite-plus";
+
+import { field } from "./dependencies.ts";
 
 interface A11yRelaxation {
   readonly file: string;

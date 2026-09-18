@@ -1,5 +1,5 @@
-import { Separator } from "./separator";
 import preview from "../../../.storybook/preview";
+import { Separator } from "./separator";
 
 const meta = preview.meta({ component: Separator });
 

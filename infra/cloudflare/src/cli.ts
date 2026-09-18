@@ -1,7 +1,8 @@
-import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { deploymentAccess } from "./deployment-access.ts";
+import { Effect } from "effect";
+
 import { parseDeploymentCommand } from "./config.ts";
+import { deploymentAccess } from "./deployment-access.ts";
 import { reportCause } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 

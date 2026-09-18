@@ -1,9 +1,18 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { AssertionError } from "node:assert";
+
+import { plugin } from "@shadcn/lint";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
+import { describe, expect, it } from "vite-plus/test";
+
+import { field, workspaceManifests } from "./dependencies.ts";
 import {
   appStylesheetViolations,
   coverageViolations,
   designSystemComponents,
   designSystemProbe,
   indexedComponents,
+  linkParts,
   linkViolations,
   smarthrTokens,
   sourceViolations,
@@ -12,13 +21,7 @@ import {
   tokenViolations,
   untouchedTokens,
 } from "./design-system.ts";
-import { describe, expect, it } from "vite-plus/test";
-import { field, workspaceManifests } from "./dependencies.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { AssertionError } from "node:assert";
-import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { hoverViolations } from "./hover-colors.ts";
-import { plugin } from "@shadcn/lint";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
   eager: true,
@@ -26,6 +29,12 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const lint = field(configs["../../vite.config.ts"], "lint");
+
+const lintSettings = field(lint, "settings");
+
+const a11yComponents = field(field(lintSettings, "jsx-a11y"), "components");
+
+const reactLinkComponents = field(field(lintSettings, "react"), "linkComponents");
 
 const restyled = [
   ["no-restyle", "bg-destructive"],
@@ -212,5 +221,22 @@ describe("design system lint", () => {
   it.for(restyled)("%s reports a screen that restyles a part", ([rule, className]) => {
     expect.hasAssertions();
     expect(reports(rule, className)).toBe(true);
+  });
+});
+
+describe("router link parts in jsx-a11y", () => {
+  it("finds the router link parts", () => {
+    expect.hasAssertions();
+    expect(linkParts()).toStrictEqual(expect.arrayContaining(["DropdownMenuLinkItem", "TextLink"]));
+  });
+
+  it.for(linkParts())("checks %s as an anchor", (name) => {
+    expect.hasAssertions();
+    expect(a11yComponents).toHaveProperty(name, "a");
+  });
+
+  it.for(linkParts())("treats the to prop of %s as its link", (name) => {
+    expect.hasAssertions();
+    expect(reactLinkComponents).toContainEqual({ attribute: "to", name });
   });
 });

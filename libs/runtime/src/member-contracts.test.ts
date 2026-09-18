@@ -1,6 +1,7 @@
-import { Effect, Schema } from "effect";
-import { MemberList, MemberListQuery, MemberView, maximumMemberPage } from "./contracts.ts";
 import { assert, describe, it } from "@effect/vitest";
+import { Effect, Schema } from "effect";
+
+import { MemberList, MemberListQuery, MemberView, maximumMemberPage } from "./contracts.ts";
 
 const encode = Schema.encodeUnknownEffect(MemberView);
 

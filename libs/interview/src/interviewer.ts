@@ -1,13 +1,15 @@
+import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
+import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Schema } from "effect";
-import { fieldDefinitions, fieldKeys } from "./sheet.ts";
+
 import type { ConfigurationInvalid } from "@repo/config";
+import { readAi } from "@repo/config";
+
+import { fieldDefinitions, fieldKeys } from "./sheet.ts";
 import type { InterviewState } from "./state.ts";
+import { UnderstandingFailed } from "./understanding-failed.ts";
 import { Understanding } from "./understanding.ts";
 import type { UnderstandingData } from "./understanding.ts";
-import { UnderstandingFailed } from "./understanding-failed.ts";
-import { chat } from "@tanstack/ai";
-import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
-import { readAi } from "@repo/config";
 
 type ModelAccess = Parameters<typeof createWorkersAiChat>[1];
 

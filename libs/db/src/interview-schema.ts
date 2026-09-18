@@ -1,4 +1,5 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
 import { user } from "./identity-schema.ts";
 
 const interview = sqliteTable("interview", {

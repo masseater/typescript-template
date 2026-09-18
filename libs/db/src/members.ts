@@ -1,9 +1,10 @@
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
-import { UserNotFound } from "./user-not-found.ts";
+
 import { containsKeyword } from "./contains-keyword.ts";
 import { query } from "./database.ts";
 import { user } from "./schema.ts";
+import { UserNotFound } from "./user-not-found.ts";
 
 type Member = Readonly<{ id: string; joined: string; name: string; profile: string }>;
 
