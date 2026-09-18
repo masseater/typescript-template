@@ -5,11 +5,11 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
   Icon,
-} from "@template/ui/ui";
+  useSignOut,
+} from "@template/ui";
 import { ChevronDownIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { useSignOut } from "@template/ui";
 
 const profileEditLink = <Link to="/settings/profile" />;
 const securityLink = <Link to="/security" />;

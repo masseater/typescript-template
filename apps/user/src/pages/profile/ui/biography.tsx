@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
+import { TextLink } from "@template/ui";
 
 function Biography({ own, text }: Readonly<{ own: boolean; text: string }>): ReactElement {
   if (text !== "") {
@@ -7,7 +7,7 @@ function Biography({ own, text }: Readonly<{ own: boolean; text: string }>): Rea
   }
   return own ? (
     <p className="text-base leading-normal text-muted-foreground">
-      自己紹介はまだありません。<Link to="/settings/profile">プロフィールを編集</Link>
+      自己紹介はまだありません。<TextLink to="/settings/profile">プロフィールを編集</TextLink>
       して書いてみましょう。
     </p>
   ) : (
