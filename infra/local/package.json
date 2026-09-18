@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/receiver.ts"
+    ".": "./src/receiver.ts",
+    "./image": "./src/receiver-image.ts"
   },
   "scripts": {
     "config": "node src/compose.ts config",

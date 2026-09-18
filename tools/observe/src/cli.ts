@@ -5,6 +5,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
 import { applicationPorts } from "@repo/config";
+import { receiverOrigin } from "@repo/local";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";
@@ -75,7 +76,13 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
   }
   if (input.command === "exported") {
     return required(input.traceId).pipe(
-      Effect.flatMap((traceId) => exportedTelemetry(traceId, input.minutes)),
+      Effect.flatMap((traceId) =>
+        exportedTelemetry(
+          { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
+          traceId,
+          input.minutes,
+        ),
+      ),
     );
   }
   if (input.command === "trace") {
