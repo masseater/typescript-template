@@ -48,7 +48,7 @@ function suppressedFiles(): string[] {
 }
 
 describe("react-doctor integration", () => {
-  it("only the root check task runs react-doctor", () => {
+  it("only the root check:react task runs react-doctor", () => {
     expect.hasAssertions();
     expect({
       scripts: scriptCommands().filter((command) => command.includes("react-doctor")),

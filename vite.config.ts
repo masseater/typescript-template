@@ -1,7 +1,7 @@
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
-import { taskInput } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
 
 import { generatedFiles, importedToolPatterns, lint } from "./tools/quality/lint.ts";
 import { workerTests } from "./tools/quality/test-runtime.ts";
@@ -24,30 +24,9 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
-      build: [
-        "vp run -F '!typescript-template' build",
-        "vp run --filter @repo/dev private-maps",
-        "vp run --filter @repo/infra-cloudflare verify:artifacts",
-        "vp run --filter @repo/infra-cloudflare verify:stacks",
-      ],
-      check: ["vp run precommit", "vp run prepush", "vp run check:dev"],
       "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
-      "check:dev": {
-        command: "node tools/quality/dev-start.ts",
-        input: [
-          ...taskInput,
-          { base: "workspace", pattern: "!.local/**" },
-          { base: "workspace", pattern: "!apps/*/.dev.vars" },
-          { base: "workspace", pattern: "!node_modules/.vite/**" },
-        ],
-      },
-      "check:effect": {
-        command: [
-          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-          "vp run -F '!typescript-template' --cache check:effect",
-        ],
-        input: [...taskInput],
-      },
+      "check:code": { command: "vp check", input: [...taskInput] },
+      ...effectDiagnostics,
       "check:imports":
         "depcruise --config tools/quality/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
@@ -62,15 +41,12 @@ export default defineConfig({
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
-      precommit: { command: ["vp check", "vp run check:staged"], input: [...taskInput] },
-      prepush: [
-        "vp run knip",
-        "vp run check:client",
-        "vp run check:imports",
-        "vp run check:react",
-        "vp run check:effect",
-        "vp run -F '!typescript-template' --cache check",
-      ],
+      test: { cache: false, command: "vp test run $TEST_SCOPE" },
+      ...lifecycle({
+        precommit: ["check:code", "check:staged"],
+        premerge: ["test"],
+        prepush: ["knip", "check:client", "check:imports", "check:react", "check:effect"],
+      }),
     },
   },
   test: {

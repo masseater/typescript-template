@@ -1,9 +1,9 @@
-import type { UserConfig } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field, workspaceManifests } from "./dependencies.ts";
 import type { WorkspaceManifest } from "./dependencies.ts";
 import { scriptViolations, taskViolations } from "./scripts.ts";
+import { configuredDirectories, workspaceTasks } from "./tasks.ts";
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   return manifests.flatMap(({ manifest }) => {
@@ -24,57 +24,9 @@ function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly s
     .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
 }
 
-const configs: Readonly<Record<string, Readonly<UserConfig>>> = import.meta.glob(
-  ["../../vite.config.ts", "../../infra/*/vite.config.ts"],
-  { eager: true, import: "default" },
+const repositoryTaskViolations = configuredDirectories.flatMap((directory) =>
+  taskViolations(workspaceTasks[directory] ?? {}).map((violation) => `${directory}: ${violation}`),
 );
-const appRuns: Readonly<Record<string, UserConfig["run"]>> = import.meta.glob(
-  "../../libs/config/src/vite.ts",
-  { eager: true, import: "appRun" },
-);
-
-const runs: Readonly<Record<string, UserConfig["run"]>> = {
-  ...Object.fromEntries(
-    Object.keys(configs).map((file: string) => [file, configs[file]?.run] as const),
-  ),
-  ...appRuns,
-};
-const taskFiles = Object.keys(runs);
-const taskNames = taskFiles.flatMap((file: string) => Object.keys(runs[file]?.tasks ?? {}));
-const repositoryTaskViolations = taskFiles.flatMap((file: string) =>
-  taskViolations(runs[file]?.tasks ?? {}),
-);
-
-const rootTasks = runs["../../vite.config.ts"]?.tasks ?? {};
-
-function rootTaskCommands(name: string): string[] {
-  const task = rootTasks[name] ?? [];
-  return [typeof task === "object" && "command" in task ? task.command : task].flat();
-}
-
-function referencedTasks(name: string, seen: Set<string>): string[] {
-  if (seen.has(name)) {
-    return [];
-  }
-  seen.add(name);
-  const found: string[] = [];
-  for (const entry of rootTaskCommands(name)) {
-    const referenced = /^vp run (?<task>[\w:-]+)$/u.exec(entry)?.groups?.["task"];
-    if (referenced !== undefined && referenced in rootTasks) {
-      found.push(referenced, ...referencedTasks(referenced, seen));
-    }
-  }
-  return found;
-}
-
-const checkSteps = referencedTasks("check", new Set())
-  .filter((name: string) => name.startsWith("check:"))
-  .map((name: string) => `vp run ${name}`)
-  .toSorted();
-const checkTaskNames = Object.keys(rootTasks)
-  .filter((name) => name.startsWith("check:"))
-  .map((name) => `vp run ${name}`)
-  .toSorted();
 
 const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,
@@ -190,14 +142,9 @@ describe("vite task conventions", () => {
     expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
   });
 
-  it("the check task runs every check step", () => {
-    expect.hasAssertions();
-    expect(checkSteps).toStrictEqual(checkTaskNames);
-  });
-
   it("all repository tasks run through Vite+", () => {
     expect.hasAssertions();
-    expect(taskNames).toStrictEqual(expect.arrayContaining(["build", "check", "knip"]));
+    expect(configuredDirectories).toContain(".");
     expect(repositoryTaskViolations).toStrictEqual([]);
   });
 });

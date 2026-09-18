@@ -1,1 +1,1 @@
-vp run prepush
+vp run -r prepush

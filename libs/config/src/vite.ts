@@ -116,14 +116,47 @@ const effectDiagnostics = {
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
-const effectRun = { tasks: { ...effectDiagnostics } } satisfies UserConfig["run"];
+type RunConfig = NonNullable<UserConfig["run"]>;
+type Tasks = NonNullable<RunConfig["tasks"]>;
+
+const lifecycles = ["precommit", "prepush", "premerge"] as const;
+type Lifecycle = (typeof lifecycles)[number];
+
+function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
+  return Object.fromEntries(
+    lifecycles.map((name, index) => [
+      name,
+      {
+        command: [],
+        dependsOn: [...lifecycles.slice(Math.max(index - 1, 0), index), ...stages[name]],
+      },
+    ]),
+  );
+}
+
+const effectRun = {
+  tasks: {
+    ...effectDiagnostics,
+    ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect"] }),
+  },
+} satisfies RunConfig;
 
 const appRun = {
   tasks: {
     ...effectDiagnostics,
     build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
+    "check:dev": {
+      cache: false,
+      command: "dev-start",
+      dependsOn: ["@repo/dev#setup", "@repo/db#db:migrate:local"],
+    },
+    ...lifecycle({
+      precommit: [],
+      premerge: ["build", "check:dev"],
+      prepush: ["check:effect", "check"],
+    }),
   },
-} satisfies UserConfig["run"];
+} satisfies RunConfig;
 
 export {
   appRun,
@@ -131,6 +164,8 @@ export {
   clientReachableModules,
   effectDiagnostics,
   effectRun,
+  lifecycle,
+  lifecycles,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
@@ -139,3 +174,5 @@ export {
   taskInput,
   withoutEnvFileLoader,
 };
+export { privateSourceMaps } from "./private-source-maps.ts";
+export type { Tasks };
