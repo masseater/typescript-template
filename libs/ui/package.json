@@ -10,8 +10,7 @@
     "./auth": "./src/auth.tsx",
     "./shell": "./src/shell.ts",
     "./signup": "./src/signup.tsx",
-    "./styles.css": "./src/styles.css",
-    "./ui": "./src/shared/ui/index.ts"
+    "./styles.css": "./src/styles.css"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",

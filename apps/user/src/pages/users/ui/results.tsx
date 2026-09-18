@@ -1,9 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { PageNavigation, TextLink } from "@template/ui";
 import { MemberCard } from "./member-card.tsx";
 import { MemberPageLink } from "./member-page-link.tsx";
 import type { Members } from "#pages/users/api/load-members.ts";
-import { PageNavigation } from "@template/ui/ui";
-import type { PageTarget } from "@template/ui/ui";
+import type { PageTarget } from "@template/ui";
 import type { ReactElement } from "react";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 
@@ -16,7 +15,7 @@ function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch
   if (list.total === 0) {
     return (
       <p className="text-base leading-normal">
-        条件に一致するユーザーはいません。<Link to="/users">条件を外す</Link>
+        条件に一致するユーザーはいません。<TextLink to="/users">条件を外す</TextLink>
       </p>
     );
   }
@@ -24,9 +23,12 @@ function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch
     return (
       <p className="text-base leading-normal">
         このページに該当するユーザーはいません。
-        <Link to="/users" search={search.keyword === undefined ? {} : { keyword: search.keyword }}>
+        <TextLink
+          to="/users"
+          search={search.keyword === undefined ? {} : { keyword: search.keyword }}
+        >
           1 ページ目へ
-        </Link>
+        </TextLink>
       </p>
     );
   }
