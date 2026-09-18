@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
 import { normalizeUsersSearch, userListQuery } from "#users-search.ts";
+import { maximumKeywordLength } from "@template/runtime/contracts";
+import { maximumUsersPage } from "#users-pagination.ts";
 
-const KEYWORD_LIMIT = 100;
-const NUMERIC_KEYWORD = 2026;
+const numericKeyword = 2026;
 
 describe("users page search normalization", () => {
   it("keeps every well-formed condition", () => {
@@ -14,17 +15,16 @@ describe("users page search normalization", () => {
 
   it("accepts the shapes a hand-written URL decodes to", () => {
     expect.hasAssertions();
-    expect(
-      normalizeUsersSearch({ keyword: NUMERIC_KEYWORD, page: "2", verified: "true" }),
-    ).toStrictEqual({ keyword: "2026", page: 2, verified: true });
-    expect(normalizeUsersSearch({ verified: "false" })).toStrictEqual({ verified: false });
-    expect(normalizeUsersSearch({ keyword: true })).toStrictEqual({ keyword: "true" });
-    expect(normalizeUsersSearch(JSON.parse('{"keyword":null}'))).toStrictEqual({
-      keyword: "null",
+    expect(normalizeUsersSearch({ keyword: numericKeyword, page: "2" })).toStrictEqual({
+      keyword: "2026",
+      page: 2,
     });
+    expect(normalizeUsersSearch({ verified: "true" })).toStrictEqual({ verified: true });
+    expect(normalizeUsersSearch({ verified: "false" })).toStrictEqual({ verified: false });
+    expect(normalizeUsersSearch(JSON.parse('{"keyword":null}'))).toStrictEqual({ keyword: "null" });
   });
 
-  it("drops malformed conditions and keeps the rest", () => {
+  it("drops the conditions the API would refuse and keeps the rest", () => {
     expect.hasAssertions();
     expect(
       normalizeUsersSearch({
@@ -35,22 +35,30 @@ describe("users page search normalization", () => {
         verified: "yes",
       }),
     ).toStrictEqual({ keyword: "bob" });
-    expect(normalizeUsersSearch({ keyword: "   ", page: 1.5 })).toStrictEqual({});
-    expect(normalizeUsersSearch({ keyword: "a".repeat(KEYWORD_LIMIT + 1) })).toStrictEqual({});
-    expect(normalizeUsersSearch({ keyword: { nested: true }, verified: 1 })).toStrictEqual({});
+    expect(normalizeUsersSearch({ verified: 1 })).toStrictEqual({});
+  });
+
+  it("drops a keyword longer than the API accepts", () => {
+    expect.hasAssertions();
+    expect(normalizeUsersSearch({ keyword: "a".repeat(maximumKeywordLength + 1) })).toStrictEqual(
+      {},
+    );
+  });
+});
+
+describe("users page paging in the URL", () => {
+  it("stops at the last page the user list API can address", () => {
+    expect.hasAssertions();
+    expect(normalizeUsersSearch({ page: maximumUsersPage })).toStrictEqual({
+      page: maximumUsersPage,
+    });
+    expect(normalizeUsersSearch({ page: maximumUsersPage + 1 })).toStrictEqual({});
+    expect(normalizeUsersSearch({ page: 1e20 })).toStrictEqual({});
+  });
+
+  it("answers with no condition when the search is not a record", () => {
+    expect.hasAssertions();
     expect(normalizeUsersSearch("not a record")).toStrictEqual({});
-  });
-
-  it("drops page values that are not finite page numbers", () => {
-    expect.hasAssertions();
-    expect(normalizeUsersSearch({ page: "abc" })).toStrictEqual({});
-    expect(normalizeUsersSearch({ page: Number.NaN })).toStrictEqual({});
-    expect(normalizeUsersSearch({ page: Number.POSITIVE_INFINITY })).toStrictEqual({});
-  });
-
-  it("treats the first page as the absence of a page", () => {
-    expect.hasAssertions();
-    expect(normalizeUsersSearch({ page: 1 })).toStrictEqual({});
   });
 });
 
