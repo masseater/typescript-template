@@ -1,7 +1,7 @@
 import { Console, Effect } from "effect";
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { applications } from "@template/config";
+import { applications } from "@repo/config";
 import { markFailed } from "./secrets.ts";
 
 function report(reason: string): Effect.Effect<void> {

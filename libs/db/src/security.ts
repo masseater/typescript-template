@@ -1,4 +1,4 @@
-import type { Application, StrongAuthenticationMethod } from "@template/config";
+import type { Application, StrongAuthenticationMethod } from "@repo/config";
 import { Effect, Schema } from "effect";
 import { and, count, eq, gt } from "drizzle-orm";
 import {

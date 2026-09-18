@@ -1,5 +1,5 @@
 {
-  "name": "@template/config",
+  "name": "@repo/config",
   "private": true,
   "type": "module",
   "exports": {

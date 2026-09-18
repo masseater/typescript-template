@@ -1,6 +1,6 @@
-import { LoginPage } from "@template/ui/auth";
+import { LoginPage } from "@repo/ui/auth";
 import type { ReactElement } from "react";
-import { redirectTarget } from "@template/ui";
+import { redirectTarget } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 function AdminLogin(): ReactElement {

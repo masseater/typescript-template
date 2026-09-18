@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import type { LocalCommandFailure } from "./failure.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-import { storybookPort } from "@template/config";
+import { storybookPort } from "@repo/config";
 
 function storybook(): Effect.Effect<void, LocalCommandFailure> {
   return run(

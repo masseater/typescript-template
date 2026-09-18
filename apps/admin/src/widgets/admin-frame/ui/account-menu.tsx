@@ -7,7 +7,7 @@ import {
   Icon,
   useSignOut,
   useToast,
-} from "@template/ui";
+} from "@repo/ui";
 import { ChevronDownIcon } from "lucide-react";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
