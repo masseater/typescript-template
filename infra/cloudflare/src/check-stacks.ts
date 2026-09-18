@@ -28,15 +28,6 @@ const { accountId, origins, prefix } = verificationSettings;
 
 const SENDING_SUBDOMAIN = "Cloudflare.Email.SendingSubdomain";
 
-const providerAddedBindings = [
-  "ALCHEMY_CLOUDFLARE_ACCOUNT_ID",
-  "ALCHEMY_PHASE",
-  "ALCHEMY_STACK_NAME",
-  "ALCHEMY_STAGE",
-  "ALCHEMY_WORKER_NAME",
-  "ASSETS",
-];
-
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
   observability: workerObservability(verificationSettings.observabilitySampling),
@@ -214,47 +205,51 @@ function onboards(inventory: StackInventory): boolean {
   return Object.values(inventory.resources).some((resource) => resource.type === SENDING_SUBDOMAIN);
 }
 
+function rolesDiffer(
+  verified: readonly Readonly<{ onboards: boolean; sends: boolean }>[],
+): boolean {
+  const onboarding = stackNames.filter((_stack, index) => verified[index]?.onboards === true);
+  const senders = stackNames.filter((_stack, index) => verified[index]?.sends === true);
+  const violations = applyOrderViolations(stackNames);
+  const differs =
+    violations.length > 0 ||
+    canonical(onboarding) !== canonical([onboardingStack]) ||
+    canonical(senders.toSorted()) !== canonical([...sendingStacks].toSorted());
+  if (differs) {
+    // oxlint-disable-next-line no-console
+    console.error(
+      JSON.stringify({ event: "stacks.roles_differ", onboarding, senders, violations }),
+    );
+  }
+  return differs;
+}
+
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
-  // oxlint-disable-next-line no-console
-  console.log(
-    JSON.stringify({
-      declaration: matches ? "matches" : "differs",
-      event: "stacks.verified",
-      inventory,
-      notCompared: providerAddedBindings,
-    }),
-  );
   if (!matches) {
-    process.exitCode = FAILED_EXIT_CODE;
+    // oxlint-disable-next-line no-console
+    console.error(
+      JSON.stringify({
+        actual: inventory,
+        event: "stacks.differs",
+        expected: expected[stack],
+        stack,
+      }),
+    );
   }
-  return { onboards: onboards(inventory), sends: bindsSendEmail(inventory) };
+  return { matches, onboards: onboards(inventory), sends: bindsSendEmail(inventory) } as const;
 });
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
-    const roles = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
-    const onboarding = stackNames.filter((_stack, index) => roles[index]?.onboards === true);
-    const senders = stackNames.filter((_stack, index) => roles[index]?.sends === true);
-    const violations = applyOrderViolations(stackNames);
-    const declared =
-      violations.length === 0 &&
-      canonical(onboarding) === canonical([onboardingStack]) &&
-      canonical(senders.toSorted()) === canonical([...sendingStacks].toSorted());
-    // oxlint-disable-next-line no-console
-    console.log(
-      JSON.stringify({
-        declaration: declared ? "matches" : "differs",
-        event: "stacks.roles",
-        onboarding,
-        senders,
-        violations,
-      }),
-    );
-    if (!declared) {
+    const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
+    if (rolesDiffer(verified) || verified.some((entry) => !entry.matches)) {
       process.exitCode = FAILED_EXIT_CODE;
+      return;
     }
+    // oxlint-disable-next-line no-console
+    console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
       Effect.sync(() => {
