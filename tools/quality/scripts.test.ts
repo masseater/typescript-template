@@ -86,6 +86,19 @@ const packageManagerCommands = [
   "vp run build || npx knip",
 ];
 
+const alchemyCommands = [
+  "alchemy unsafe nuke",
+  "alchemy unsafe nuke --yes",
+  "alchemy destroy",
+  "vp exec alchemy unsafe nuke",
+  "vp dlx alchemy destroy",
+  "./node_modules/.bin/alchemy unsafe nuke",
+  "alchemy.cmd unsafe nuke",
+  "CI=true alchemy destroy",
+  "vp run deploy && alchemy unsafe nuke",
+  "vp run deploy; alchemy destroy",
+];
+
 const vitePlusCommands = [
   "vp run --filter @repo/dev setup",
   "vp run -r build",
@@ -103,6 +116,13 @@ describe("workspace script conventions", () => {
     expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([
       `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
     ]);
+  });
+
+  it.for(alchemyCommands)("rejects the raw alchemy CLI: %s", (command) => {
+    expect.assertions(1);
+    expect(scriptViolations({ scripts: { probe: command } })).toContain(
+      `probe: alchemy の CLI は unsafe nuke と destroy でアカウント全体を消せるため直接呼べません。infra/cloudflare の src/cli.ts と src/bootstrap-state.ts から実行してください: ${command}`,
+    );
   });
 
   it.for(vitePlusCommands)("allows Vite+ entry points: %s", (command) => {
@@ -143,6 +163,11 @@ describe("workspace script conventions", () => {
 
 describe("vite task conventions", () => {
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
+    expect.assertions(1);
+    expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
+  });
+
+  it.for(alchemyCommands)("rejects the raw alchemy CLI: %s", (command) => {
     expect.assertions(1);
     expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
   });
