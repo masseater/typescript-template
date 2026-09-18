@@ -1,4 +1,5 @@
 import type { UserConfig } from "vite-plus";
+import { retiredImports } from "./retired-packages.ts";
 
 const lint = {
   categories: {
@@ -54,7 +55,7 @@ const lint = {
           {
             capIsNewExceptionPattern:
               "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers)\\.",
-            capIsNewExceptions: ["DurableObject", "Stack", "Worker"],
+            capIsNewExceptions: ["DurableObject", "InMemoryService", "Stack", "Worker"],
           },
         ],
       },
@@ -118,22 +119,7 @@ const lint = {
         ignoreTypeIndexes: true,
       },
     ],
-    "eslint/no-restricted-imports": [
-      "error",
-      {
-        paths: [
-          {
-            message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
-            name: "smarthr-ui",
-          },
-          {
-            message: "Tailwind CSS v4 のユーティリティを使ってください。",
-            name: "styled-components",
-          },
-          { message: "Paraglide JS を使ってください。", name: "react-intl" },
-        ],
-      },
-    ],
+    "eslint/no-restricted-imports": ["error", retiredImports],
     "eslint/no-restricted-properties": [
       "error",
       ...["stdout", "stderr"].map((property) => ({
