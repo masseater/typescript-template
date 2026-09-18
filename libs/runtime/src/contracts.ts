@@ -34,8 +34,16 @@ const ProfileView = Schema.Struct({
 });
 
 const ProfileUpdate = Schema.Struct({
-  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
-  profile: Schema.String.check(Schema.isMaxLength(maximumProfileLength)),
+  name: Schema.Trim.check(
+    Schema.isLengthBetween(1, maximumNameLength, {
+      message: `ユーザー名は 1〜${maximumNameLength} 文字で入力してください。`,
+    }),
+  ),
+  profile: Schema.String.check(
+    Schema.isMaxLength(maximumProfileLength, {
+      message: `自己紹介は ${maximumProfileLength} 文字以内で入力してください。`,
+    }),
+  ),
 });
 
 const MemberQuery = Schema.Struct({ id: Identifier });

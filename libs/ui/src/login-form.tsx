@@ -8,7 +8,6 @@ import { PasskeyLogin } from "./passkey-login";
 import type { ReactElement } from "react";
 import { useAction } from "./action";
 import { useState } from "react";
-import { useTextInput } from "./use-text-input";
 
 function goHome(): void {
   globalThis.location.assign("/");
@@ -17,14 +16,10 @@ function goHome(): void {
 function LoginForm({
   onAuthenticated = goHome,
 }: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement {
-  const email = useTextInput();
-  const password = useTextInput();
   const [challenge, setChallenge] = useState<ChallengeMode>();
   const action = useAction();
   function restart(): void {
     setChallenge(undefined);
-    email.handleChange("");
-    password.handleChange("");
   }
   return (
     <FormColumn>
@@ -32,10 +27,8 @@ function LoginForm({
         <>
           <CredentialsForm
             action={action}
-            email={email}
             onAuthenticated={onAuthenticated}
             onChallenge={setChallenge}
-            password={password}
           />
           <PasskeyLogin action={action} onAuthenticated={onAuthenticated} />
         </>

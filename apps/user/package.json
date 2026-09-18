@@ -11,8 +11,15 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@tanstack/query-db-collection": "1.2.15",
+    "@tanstack/react-db": "0.4.1",
+    "@tanstack/react-form": "1.33.5",
+    "@tanstack/react-pacer": "0.23.0",
+    "@tanstack/react-query": "5.103.1",
     "@tanstack/react-router": "catalog:",
+    "@tanstack/react-router-ssr-query": "1.167.3",
     "@tanstack/react-start": "catalog:",
+    "@tanstack/react-virtual": "3.14.13",
     "@template/auth": "workspace:*",
     "@template/db": "workspace:*",
     "@template/interview": "workspace:*",

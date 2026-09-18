@@ -1,6 +1,6 @@
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState } from "react";
 import { errorMessage } from "./protocol";
-import { noop } from "es-toolkit";
+import { useHydrated } from "./hydrated";
 
 type Task = () => Promise<void>;
 
@@ -9,18 +9,6 @@ interface ActionState {
   readonly error: string | undefined;
   readonly pending: boolean;
   readonly run: (task: Task) => void;
-}
-
-function subscribeNothing(): () => void {
-  return noop;
-}
-
-function clientSnapshot(): boolean {
-  return true;
-}
-
-function serverSnapshot(): boolean {
-  return false;
 }
 
 async function failureOf(task: Task): Promise<string | undefined> {
@@ -35,7 +23,7 @@ async function failureOf(task: Task): Promise<string | undefined> {
 function useAction(): ActionState {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
-  const hydrated = useSyncExternalStore(subscribeNothing, clientSnapshot, serverSnapshot);
+  const hydrated = useHydrated();
   const active = useRef(false);
   function run(task: Task): void {
     if (active.current) {

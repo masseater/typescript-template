@@ -4,7 +4,6 @@ import { Button } from "./shared/ui/button";
 import { ChallengeForm } from "./challenge-form";
 import type { ChallengeMode } from "./challenge-form";
 import type { ReactElement } from "react";
-import { useTextInput } from "./use-text-input";
 
 interface ChallengeLoginProps {
   readonly action: ActionState;
@@ -21,22 +20,16 @@ function ChallengeLogin({
   onModeChange,
   onRestart,
 }: ChallengeLoginProps): ReactElement {
-  const code = useTextInput();
   function toggleMode(): void {
     onModeChange(mode === "backup" ? "totp" : "backup");
-    code.handleChange("");
-  }
-  function restart(): void {
-    onRestart();
-    code.handleChange("");
   }
   return (
     <>
-      <ChallengeForm action={action} code={code} mode={mode} onAuthenticated={onAuthenticated} />
+      <ChallengeForm key={mode} action={action} mode={mode} onAuthenticated={onAuthenticated} />
       <Button type="button" disabled={action.blocked} onClick={toggleMode}>
         {mode === "backup" ? "認証アプリのコードを使う" : "バックアップコードを使う"}
       </Button>
-      <Button type="button" disabled={action.blocked} onClick={restart}>
+      <Button type="button" disabled={action.blocked} onClick={onRestart}>
         ログイン方法を選び直す
       </Button>
     </>

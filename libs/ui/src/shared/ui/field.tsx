@@ -26,8 +26,29 @@ type AutoComplete =
   | "one-time-code"
   | "username";
 
+type FieldProps = Readonly<
+  Pick<
+    ComponentProps<"input">,
+    "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
+  > & {
+    autoComplete?: AutoComplete | undefined;
+    error?: string | undefined;
+    label: string;
+    onValueChange?: ((value: string) => void) | undefined;
+  }
+> &
+  Readonly<
+    | { multiline: true; pattern?: never; type?: never }
+    | {
+        multiline?: false | undefined;
+        pattern?: string | undefined;
+        type?: "email" | "password" | "search" | "text" | undefined;
+      }
+  >;
+
 function Field({
   autoComplete,
+  error,
   inputMode,
   label,
   maxLength,
@@ -40,22 +61,14 @@ function Field({
   required,
   type,
   value,
-}: Readonly<
-  Pick<
-    ComponentProps<"input">,
-    "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
-  > & {
-    autoComplete?: AutoComplete;
-    label: string;
-    onValueChange?: (value: string) => void;
-  }
-> &
-  Readonly<
-    | { multiline: true; pattern?: never; type?: never }
-    | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
-  >): ReactElement {
+}: FieldProps): ReactElement {
   return (
-    <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
+    <FieldPrimitive.Root
+      data-slot="field"
+      validationMode="onBlur"
+      invalid={error === undefined ? undefined : true}
+      className={fieldClassName}
+    >
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
         render={multiline === true ? textarea : undefined}
@@ -72,7 +85,13 @@ function Field({
         onValueChange={onValueChange}
         className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
       />
-      {errors}
+      {error === undefined ? (
+        errors
+      ) : (
+        <FieldPrimitive.Error match className={errorClassName}>
+          {error}
+        </FieldPrimitive.Error>
+      )}
     </FieldPrimitive.Root>
   );
 }

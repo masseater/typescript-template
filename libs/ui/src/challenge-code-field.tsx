@@ -1,24 +1,23 @@
-import { Field } from "./shared/ui/field";
+import { FormTextField } from "./form-text-field";
 import type { ReactElement } from "react";
-import type { TextInput } from "./use-text-input";
+import type { TextFieldApi } from "./form";
 import { TotpField } from "./totp-field";
 
 function ChallengeCodeField({
   backup,
-  code,
-}: Readonly<{ backup: boolean; code: TextInput }>): ReactElement {
+  field,
+}: Readonly<{ backup: boolean; field: TextFieldApi }>): ReactElement {
   return backup ? (
-    <Field
+    <FormTextField
+      field={field}
       label="バックアップコード"
       name="backup-code"
       type="password"
       autoComplete="off"
       required
-      value={code.value}
-      onValueChange={code.handleChange}
     />
   ) : (
-    <TotpField code={code} />
+    <TotpField field={field} />
   );
 }
 

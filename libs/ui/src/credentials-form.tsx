@@ -1,74 +1,44 @@
+import type { Credentials, SignInHandlers } from "./sign-in";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
-import type { AuthenticatedHandler } from "./authenticated-handler";
 import { Button } from "./shared/ui/button";
-import type { ChallengeMode } from "./challenge-form";
-import { Field } from "./shared/ui/field";
-import { FormColumn } from "./shared/ui/form-column";
-import type { TextInput } from "./use-text-input";
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
+import { EmailField } from "./email-field";
+import { PasswordField } from "./password-field";
+import { SignIn } from "./auth-input";
+import type { TextFieldApi } from "./form";
+import { formColumnClassName } from "./form";
+import { signIn } from "./sign-in";
+import { useForm } from "@tanstack/react-form";
 
-interface CredentialsFormProps {
-  readonly action: ActionState;
-  readonly email: TextInput;
-  readonly password: TextInput;
-  readonly onAuthenticated: AuthenticatedHandler;
-  readonly onChallenge: (mode: ChallengeMode) => void;
-}
-
-async function signIn({
-  email,
-  onAuthenticated,
-  onChallenge,
-  password,
-}: Omit<CredentialsFormProps, "action">): Promise<void> {
-  const data = requireSuccess(
-    await authClient.signIn.email({ email: email.value, password: password.value }),
-  );
-  password.handleChange("");
-  if ("twoFactorRedirect" in data && data.twoFactorRedirect === true) {
-    onChallenge("totp");
-    return;
-  }
-  if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
-    globalThis.location.assign("/security?recovery=setup");
-    return;
-  }
-  await onAuthenticated();
-}
+type CredentialsFormProps = SignInHandlers & Readonly<{ action: ActionState }>;
 
 function CredentialsForm(props: CredentialsFormProps): ReactElement {
-  const { action, email, password } = props;
+  const { action } = props;
+  const form = useForm({
+    defaultValues: { email: "", password: "" },
+    onSubmit: ({ value }: Readonly<{ value: Credentials }>): void => {
+      action.run(async () => {
+        await signIn(value, props);
+        form.setFieldValue("password", "");
+      });
+    },
+    validators: { onSubmit: SignIn },
+  });
   function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
     event.preventDefault();
-    action.run(async () => signIn(props));
+    void form.handleSubmit();
   }
   return (
-    <form onSubmit={submit} aria-busy={action.pending}>
-      <FormColumn>
-        <Field
-          label="メールアドレス"
-          name="email"
-          type="email"
-          autoComplete="username"
-          required
-          value={email.value}
-          onValueChange={email.handleChange}
-        />
-        <Field
-          label="パスワード"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password.value}
-          onValueChange={password.handleChange}
-        />
-        <Button type="submit" variant="primary" disabled={action.blocked}>
-          ログイン
-        </Button>
-      </FormColumn>
+    <form onSubmit={submit} noValidate aria-busy={action.pending} className={formColumnClassName}>
+      <form.Field name="email">
+        {(field: TextFieldApi): ReactElement => <EmailField field={field} />}
+      </form.Field>
+      <form.Field name="password">
+        {(field: TextFieldApi): ReactElement => <PasswordField field={field} purpose="current" />}
+      </form.Field>
+      <Button type="submit" variant="primary" disabled={action.blocked}>
+        ログイン
+      </Button>
     </form>
   );
 }

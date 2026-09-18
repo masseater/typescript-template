@@ -1,22 +1,22 @@
-import { Field } from "./shared/ui/field";
+import { FormTextField } from "./form-text-field";
 import type { ReactElement } from "react";
-import type { TextInput } from "./use-text-input";
+import type { TextFieldApi } from "./form";
+import { totpLength } from "./auth-input";
 
-const TOTP_LENGTH = 6;
+const totpPattern = "[0-9]{6}";
 
-function TotpField({ code }: Readonly<{ code: TextInput }>): ReactElement {
+function TotpField({ field }: Readonly<{ field: TextFieldApi }>): ReactElement {
   return (
-    <Field
+    <FormTextField
+      field={field}
       label="認証アプリの確認コード"
       name="totp"
       inputMode="numeric"
       autoComplete="one-time-code"
-      pattern="[0-9]{6}"
-      minLength={TOTP_LENGTH}
-      maxLength={TOTP_LENGTH}
+      pattern={totpPattern}
+      minLength={totpLength}
+      maxLength={totpLength}
       required
-      value={code.value}
-      onValueChange={code.handleChange}
     />
   );
 }
