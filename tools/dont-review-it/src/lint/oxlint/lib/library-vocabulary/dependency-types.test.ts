@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -6,7 +6,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { dependencyTypeEntries } from "./dependency-types.ts";
 
-const FIXTURE_ROOT = join(tmpdir(), "dont-review-it-dependency-types");
+const FIXTURE_ROOT = mkdtempSync(join(tmpdir(), "dont-review-it-dependency-types-"));
 
 describe("dependencyTypeEntries", () => {
   describe("a dependency that names its declarations through its export map", () => {

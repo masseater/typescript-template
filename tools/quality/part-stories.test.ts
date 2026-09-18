@@ -19,9 +19,9 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
   import: "default",
 });
 
-const ports: Readonly<Record<string, unknown>> = import.meta.glob(
+const origins: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../libs/config/src/applications.ts",
-  { eager: true, import: "storybookPort" },
+  { eager: true, import: "storybookOrigin" },
 );
 
 function composedParameters(preview: unknown): unknown {
@@ -78,7 +78,7 @@ describe("part stories", () => {
   it("points the agent configuration at the port this repository owns", () => {
     expect.hasAssertions();
     expect(
-      storybookEndpointViolations(Number(ports["../../libs/config/src/applications.ts"])),
+      storybookEndpointViolations(String(origins["../../libs/config/src/applications.ts"])),
     ).toStrictEqual([]);
   });
 

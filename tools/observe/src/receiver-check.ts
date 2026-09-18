@@ -2,10 +2,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
-import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schedule, Schema } from "effect";
+import { Cause, Console, Effect, Schedule, Schema } from "effect";
 
-import { reportFailed } from "@repo/config/cli";
+import { runCli } from "@repo/config/cli";
 import { receiverImage } from "@repo/local/image";
 
 import { exportedTelemetry } from "./exported.ts";
@@ -225,12 +224,19 @@ const program = Effect.gen(function* program() {
   return image;
 });
 
-NodeRuntime.runMain(
+type FailureReport = Readonly<{ event: string; ok: false; reason: string }>;
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function failureReport(cause: Cause.Cause<ReceiverCheckFailure>): FailureReport {
+  const squashed = Cause.squash(cause);
+  const reason =
+    squashed instanceof ReceiverCheckFailure ? squashed.reason : "the receiver check failed";
+  return { event: EVENT, ok: false, reason };
+}
+
+runCli(
   program.pipe(
     Effect.flatMap((image) => Console.log(JSON.stringify({ event: EVENT, image, ok: true }))),
-    Effect.catchTag("ReceiverCheckFailure", (failure) =>
-      reportFailed({ event: EVENT, ok: false, reason: failure.reason }),
-    ),
   ),
-  { disableErrorReporting: true },
+  failureReport,
 );

@@ -1,4 +1,4 @@
-import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -8,7 +8,7 @@ import { restrictedTargetReachedBy } from "./relayed-reach.ts";
 
 import type { RestrictedTargetEntry } from "./restricted-entries.ts";
 
-const FIXTURE_ROOT = join(realpathSync(tmpdir()), "dont-review-it-relayed-reach");
+const FIXTURE_ROOT = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-relayed-reach-"));
 
 const RETIRED_LIB: RestrictedTargetEntry = {
   module: "retired-lib",

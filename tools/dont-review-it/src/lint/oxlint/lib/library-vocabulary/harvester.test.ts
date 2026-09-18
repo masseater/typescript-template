@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,7 +8,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { createLibraryVocabularyLoader } from "./harvester.ts";
 
-const FIXTURE_ROOT = join(tmpdir(), "dont-review-it-library-vocabulary-harvester");
+const FIXTURE_ROOT = mkdtempSync(join(tmpdir(), "dont-review-it-library-vocabulary-harvester-"));
 
 class RuntimeRefusal extends Error {
   constructor(readonly code: string) {

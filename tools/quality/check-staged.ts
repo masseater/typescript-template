@@ -1,10 +1,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Option } from "effect";
 
-import { markFailed, reportFailed } from "@repo/config/cli";
+import { markFailed, runCli } from "@repo/config/cli";
 
 import { deploymentCredentials } from "./credentials.ts";
 import { prefixScan, secretViolations } from "./secrets.ts";
@@ -27,11 +26,13 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
   return { credentials: credentials.source, failures, scan };
 });
 
-function reportUnchecked(detail: Readonly<Record<string, unknown>>): Effect.Effect<void> {
-  return reportFailed({ event: "quality.staged_secrets_failed", ok: false, ...detail });
+function uncheckedRecord(
+  detail: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  return { event: "quality.staged_secrets_failed", ok: false, ...detail };
 }
 
-NodeRuntime.runMain(
+runCli(
   scanStaged().pipe(
     Effect.flatMap(({ credentials, failures, scan }) =>
       Console.log(
@@ -44,17 +45,16 @@ NodeRuntime.runMain(
         }),
       ).pipe(Effect.andThen(failures.length > 0 ? markFailed : Effect.void)),
     ),
-    Effect.catchCause((cause) => {
-      const failure = Option.getOrUndefined(Cause.findErrorOption(cause));
-      if (failure !== undefined) {
-        return reportUnchecked(failure.report);
-      }
-      const defect: unknown = Cause.squash(cause);
-      return reportUnchecked({
-        error: defect instanceof Error ? defect.name : typeof defect,
-        reason: "unexpected",
-      });
-    }),
   ),
-  { disableErrorReporting: true },
+  (cause) => {
+    const failure = Option.getOrUndefined(Cause.findErrorOption(cause));
+    if (failure !== undefined) {
+      return uncheckedRecord(failure.report);
+    }
+    const defect: unknown = Cause.squash(cause);
+    return uncheckedRecord({
+      error: defect instanceof Error ? defect.name : typeof defect,
+      reason: "unexpected",
+    });
+  },
 );

@@ -125,11 +125,11 @@ function vendoredWorkerViolations(): string[] {
       ];
 }
 
-function storybookEndpointViolations(port: number): string[] {
+function storybookEndpointViolations(origin: string): string[] {
   // oxlint-disable-next-line node/no-sync
   const parsed: unknown = JSON.parse(readFileSync(agentConfigFile, "utf-8"));
   const url: unknown = field(field(field(parsed, "mcpServers"), "storybook"), "url");
-  const expected = `http://localhost:${String(port)}/mcp`;
+  const expected = `${origin}/mcp`;
   return url === expected
     ? []
     : [

@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -6,6 +6,8 @@ import { parseSync } from "oxc-parser";
 import { describe, expect, test } from "vite-plus/test";
 
 import { importedDeclarationOf, moduleDeclarationsOf } from "./module-declarations.ts";
+
+const moduleDeclarationsRoot = mkdtempSync(join(tmpdir(), "dont-review-it-module-declarations-"));
 
 import type { SpecStatement } from "./subject-expressions.ts";
 
@@ -166,7 +168,7 @@ describe("moduleDeclarationsOf", () => {
 describe("importedDeclarationOf", () => {
   describe("a name reached through a dependency", () => {
     const it = test.extend("declarationReachedThroughADependency", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "dependency");
+      const directory = join(moduleDeclarationsRoot, "dependency");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       return importedDeclarationOf({
@@ -183,7 +185,7 @@ describe("importedDeclarationOf", () => {
 
   describe("a module that is not on disk", () => {
     const it = test.extend("declarationReachedThroughAModuleThatIsNotOnDisk", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "absent");
+      const directory = join(moduleDeclarationsRoot, "absent");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       return importedDeclarationOf({
@@ -200,7 +202,7 @@ describe("importedDeclarationOf", () => {
 
   describe("a name the module never declares", () => {
     const it = test.extend("declarationOfANameTheModuleNeverDeclares", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "bare");
+      const directory = join(moduleDeclarationsRoot, "bare");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "bare.ts"), "export const widen = (rows) => rows;\n");
@@ -218,7 +220,7 @@ describe("importedDeclarationOf", () => {
 
   describe("a name declared in the imported module", () => {
     const it = test.extend("readingOfANameDeclaredInTheImportedModule", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "declared");
+      const directory = join(moduleDeclarationsRoot, "declared");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
@@ -235,7 +237,7 @@ describe("importedDeclarationOf", () => {
       expect(readingOfANameDeclaredInTheImportedModule).toStrictEqual([
         {
           kind: "ArrowFunctionExpression",
-          module: join(tmpdir(), "dont-review-it-module-declarations", "declared", "shape.ts"),
+          module: join(moduleDeclarationsRoot, "declared", "shape.ts"),
         },
       ]);
     });
@@ -243,7 +245,7 @@ describe("importedDeclarationOf", () => {
 
   describe("a name exported under an alias", () => {
     const it = test.extend("kindBehindANameExportedUnderAnAlias", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "aliased");
+      const directory = join(moduleDeclarationsRoot, "aliased");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(
@@ -266,7 +268,7 @@ describe("importedDeclarationOf", () => {
 
   describe("a name re-exported from another module", () => {
     const it = test.extend("moduleBehindANameReExportedFromAnotherModule", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "re-exported");
+      const directory = join(moduleDeclarationsRoot, "re-exported");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
@@ -282,14 +284,14 @@ describe("importedDeclarationOf", () => {
 
     it("is followed to that module", ({ moduleBehindANameReExportedFromAnotherModule }) => {
       expect(moduleBehindANameReExportedFromAnotherModule).toStrictEqual([
-        join(tmpdir(), "dont-review-it-module-declarations", "re-exported", "shape.ts"),
+        join(moduleDeclarationsRoot, "re-exported", "shape.ts"),
       ]);
     });
   });
 
   describe("a name that arrives by import and leaves by export", () => {
     const it = test.extend("moduleBehindANameThatArrivesByImportAndLeavesByExport", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "passed-on");
+      const directory = join(moduleDeclarationsRoot, "passed-on");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
@@ -308,14 +310,14 @@ describe("importedDeclarationOf", () => {
 
     it("is followed to its source", ({ moduleBehindANameThatArrivesByImportAndLeavesByExport }) => {
       expect(moduleBehindANameThatArrivesByImportAndLeavesByExport).toStrictEqual([
-        join(tmpdir(), "dont-review-it-module-declarations", "passed-on", "shape.ts"),
+        join(moduleDeclarationsRoot, "passed-on", "shape.ts"),
       ]);
     });
   });
 
   describe("a name forwarded wholesale", () => {
     const it = test.extend("moduleBehindANameForwardedWholesale", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "barrel");
+      const directory = join(moduleDeclarationsRoot, "barrel");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
@@ -334,14 +336,14 @@ describe("importedDeclarationOf", () => {
 
     it("is followed into the forwarded module", ({ moduleBehindANameForwardedWholesale }) => {
       expect(moduleBehindANameForwardedWholesale).toStrictEqual([
-        join(tmpdir(), "dont-review-it-module-declarations", "barrel", "shape.ts"),
+        join(moduleDeclarationsRoot, "barrel", "shape.ts"),
       ]);
     });
   });
 
   describe("a forwarding cycle", () => {
     const it = test.extend("declarationReachedThroughAForwardingCycle", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "looping");
+      const directory = join(moduleDeclarationsRoot, "looping");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "looping.ts"), 'export * from "./looping.ts";\n');
@@ -361,7 +363,7 @@ describe("importedDeclarationOf", () => {
 
   describe("a spelling written as a string in an export clause", () => {
     const it = test.extend("kindBehindASpellingWrittenAsAStringInAnExportClause", () => {
-      const directory = join(tmpdir(), "dont-review-it-module-declarations", "quoted");
+      const directory = join(moduleDeclarationsRoot, "quoted");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       writeFileSync(

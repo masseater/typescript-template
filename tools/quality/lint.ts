@@ -151,6 +151,11 @@ const lint = {
         object: "process",
         property: "exitCode",
       },
+      {
+        message: "@repo/config/cli の runCli で起動してください。",
+        object: "NodeRuntime",
+        property: "runMain",
+      },
     ],
     "eslint/no-ternary": "off",
     "eslint/no-undef": "off",

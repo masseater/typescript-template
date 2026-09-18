@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -10,6 +10,8 @@ import {
   MAX_INLINE_RECORD_LINES,
   recordLineCountOf,
 } from "./snapshot-records.ts";
+
+const snapshotRecordsRoot = mkdtempSync(join(tmpdir(), "dont-review-it-snapshot-records-"));
 
 describe("externalRecordKeyOf", () => {
   describe("a title path and an ordinal", () => {
@@ -25,7 +27,7 @@ describe("externalRecordKeyOf", () => {
 describe("externalRecordOf", () => {
   describe("a record written on one line", () => {
     const it = test.extend("storedSingleLineSnapshot", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "one-line");
+      const directory = join(snapshotRecordsRoot, "one-line");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(join(directory, "__snapshots__"), { recursive: true });
       writeFileSync(
@@ -53,7 +55,7 @@ describe("externalRecordOf", () => {
 
   describe("a record written across lines", () => {
     const it = test.extend("storedMultiLineSnapshot", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "across-lines");
+      const directory = join(snapshotRecordsRoot, "across-lines");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(join(directory, "__snapshots__"), { recursive: true });
       writeFileSync(
@@ -81,7 +83,7 @@ describe("externalRecordOf", () => {
 
   describe("a key the file does not carry", () => {
     const it = test.extend("snapshotForAbsentKey", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "other-key");
+      const directory = join(snapshotRecordsRoot, "other-key");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(join(directory, "__snapshots__"), { recursive: true });
       writeFileSync(
@@ -109,7 +111,7 @@ describe("externalRecordOf", () => {
 
   describe("a spec with no record file", () => {
     const it = test.extend("snapshotForSpecWithoutRecordFile", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "absent");
+      const directory = join(snapshotRecordsRoot, "absent");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(directory, { recursive: true });
       return externalRecordOf(join(directory, "subject.test.ts"), "outer > names a behaviour 1");
@@ -122,7 +124,7 @@ describe("externalRecordOf", () => {
 
   describe("an escaped delimiter inside a record", () => {
     const it = test.extend("snapshotCarryingEscapedDelimiters", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "escaped");
+      const directory = join(snapshotRecordsRoot, "escaped");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(join(directory, "__snapshots__"), { recursive: true });
       writeFileSync(
@@ -152,7 +154,7 @@ describe("externalRecordOf", () => {
 
   describe("a record carrying a decoy key", () => {
     const it = test.extend("snapshotAfterTheDecoy", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "after-decoy");
+      const directory = join(snapshotRecordsRoot, "after-decoy");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(join(directory, "__snapshots__"), { recursive: true });
       writeFileSync(
@@ -180,7 +182,7 @@ describe("externalRecordOf", () => {
 
   describe("the decoy key inside a record", () => {
     const it = test.extend("snapshotForDecoyKey", () => {
-      const directory = join(tmpdir(), "dont-review-it-snapshot-records", "decoy");
+      const directory = join(snapshotRecordsRoot, "decoy");
       rmSync(directory, { recursive: true, force: true });
       mkdirSync(join(directory, "__snapshots__"), { recursive: true });
       writeFileSync(

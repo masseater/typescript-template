@@ -8,7 +8,6 @@
     "verify": "node src/verify.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/local": "workspace:*",
     "effect": "catalog:"

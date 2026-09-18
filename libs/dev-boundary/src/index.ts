@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
 
 import type { Application as App } from "@repo/config";
-import { applications as apps } from "@repo/config";
+import { applications as apps, loopbackAddress } from "@repo/config";
 
 interface BoundaryRoots {
   readonly app: App;
@@ -149,7 +149,7 @@ function devBoundary(
     ) {
       appRoot = config.root;
       canonicalRepository = await realpath(repository);
-      if (!["127.0.0.1", "localhost", "::1"].includes(String(config.server.host))) {
+      if (![loopbackAddress, "localhost", "::1"].includes(String(config.server.host))) {
         throw new Error("DEV_SERVER_MUST_LISTEN_ON_LOOPBACK");
       }
     },

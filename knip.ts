@@ -43,7 +43,7 @@ const workspaces = {
   },
   "libs/runtime": {
     ignoreDependencies: ["cloudflare"],
-    project: ["src/**/*.ts!", "!src/app-fixture.ts!"],
+    project: ["src/**/*.ts!", "!src/*-fixture.ts!"],
   },
   "libs/ui": {
     project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],

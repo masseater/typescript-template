@@ -1,16 +1,15 @@
-import { NodeRuntime } from "@effect/platform-node";
 import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
-import { markFailed } from "@repo/config/cli";
+import { markFailed, runCli } from "@repo/config/cli";
 
 import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
-import { reportCause } from "./secrets.ts";
+import { causeRecord, reportCause } from "./secrets.ts";
 
 const EVENT = "account.rejected";
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const { access, confidential, config, secrets } = yield* deploymentAccess();
     yield* Effect.gen(function* inspected() {
@@ -32,6 +31,6 @@ NodeRuntime.runMain(
       Effect.scoped,
       Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );
-  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
-  { disableErrorReporting: true },
+  }),
+  (cause) => causeRecord(EVENT, cause),
 );

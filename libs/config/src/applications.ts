@@ -37,19 +37,37 @@ type Role = (typeof roles)[number];
 const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
 type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
 const authenticationMethods = ["password", ...strongAuthenticationMethods, "recovery"] as const;
-const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
+const loopbackAddress = "127.0.0.1";
+const loopbackHosts: readonly string[] = ["localhost", loopbackAddress, "[::1]"];
 const storybookPort = STORYBOOK_PORT;
 const mailpitPort = MAILPIT_PORT;
 
+function loopbackOrigin(port: number): string {
+  return `http://${loopbackAddress}:${port}`;
+}
+
+const applicationOrigins: Readonly<Record<Application, string>> = {
+  admin: loopbackOrigin(ADMIN_PORT),
+  user: loopbackOrigin(USER_PORT),
+  wiki: loopbackOrigin(WIKI_PORT),
+};
+const mailpitOrigin = loopbackOrigin(MAILPIT_PORT);
+const storybookOrigin = `http://localhost:${STORYBOOK_PORT}`;
+
 export {
+  applicationOrigins,
   applicationPorts,
   applicationReadyPaths,
   applications,
   authenticationMethods,
   grants,
+  loopbackAddress,
   loopbackHosts,
+  loopbackOrigin,
+  mailpitOrigin,
   mailpitPort,
   roles,
+  storybookOrigin,
   storybookPort,
   strongAuthenticationMethods,
 };

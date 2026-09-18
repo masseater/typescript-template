@@ -13,7 +13,6 @@
     "up": "node src/compose.ts up"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "effect": "catalog:"
   },

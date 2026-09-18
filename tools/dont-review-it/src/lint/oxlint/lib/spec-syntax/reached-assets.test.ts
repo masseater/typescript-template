@@ -1,4 +1,4 @@
-import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -6,10 +6,12 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { assetsReachedBy } from "./reached-assets.ts";
 
+const reachedAssetsRoot = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-reached-assets-"));
+
 describe("assetsReachedBy", () => {
   describe("a specifier naming test data beside the reader", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "beside");
+      const root = join(reachedAssetsRoot, "beside");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       writeFileSync(join(root, "repo", "owner", "order.assets.ts"), "export const rows = [1];\n");
@@ -24,8 +26,7 @@ describe("assetsReachedBy", () => {
     it("reaches that file", ({ reachedFile }) => {
       expect(reachedFile).toBe(
         join(
-          realpathSync(tmpdir()),
-          "dont-review-it-reached-assets",
+          reachedAssetsRoot,
           "beside",
           "repo",
           "owner",
@@ -38,7 +39,7 @@ describe("assetsReachedBy", () => {
   describe("a specifier naming a relay", () => {
     describe("read for the first time", () => {
       const it = test.extend("reachedFile", () => {
-        const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "relay-first");
+        const root = join(reachedAssetsRoot, "relay-first");
         rmSync(root, { recursive: true, force: true });
         mkdirSync(join(root, "repo", "owner"), { recursive: true });
         writeFileSync(join(root, "repo", "owner", "order.assets.ts"), "export const rows = [1];\n");
@@ -57,8 +58,7 @@ describe("assetsReachedBy", () => {
       it("reaches the test data behind it", ({ reachedFile }) => {
         expect(reachedFile).toBe(
           join(
-            realpathSync(tmpdir()),
-            "dont-review-it-reached-assets",
+            reachedAssetsRoot,
             "relay-first",
             "repo",
             "owner",
@@ -70,7 +70,7 @@ describe("assetsReachedBy", () => {
 
     describe("read a second time", () => {
       const it = test.extend("reachedFile", () => {
-        const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "relay-second");
+        const root = join(reachedAssetsRoot, "relay-second");
         rmSync(root, { recursive: true, force: true });
         mkdirSync(join(root, "repo", "owner"), { recursive: true });
         writeFileSync(join(root, "repo", "owner", "order.assets.ts"), "export const rows = [1];\n");
@@ -95,8 +95,7 @@ describe("assetsReachedBy", () => {
       it("reaches the same file", ({ reachedFile }) => {
         expect(reachedFile).toBe(
           join(
-            realpathSync(tmpdir()),
-            "dont-review-it-reached-assets",
+            reachedAssetsRoot,
             "relay-second",
             "repo",
             "owner",
@@ -109,7 +108,7 @@ describe("assetsReachedBy", () => {
 
   describe("a module that holds its own declarations", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "plain");
+      const root = join(reachedAssetsRoot, "plain");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       writeFileSync(join(root, "repo", "owner", "plain.ts"), "export const total = 1;\n");
@@ -128,7 +127,7 @@ describe("assetsReachedBy", () => {
 
   describe("files that forward each other in a circle", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "circle");
+      const root = join(reachedAssetsRoot, "circle");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       writeFileSync(join(root, "repo", "owner", "loop-a.ts"), 'export * from "./loop-b.ts";\n');
@@ -148,7 +147,7 @@ describe("assetsReachedBy", () => {
 
   describe("a file forwarding the reader itself", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "back");
+      const root = join(reachedAssetsRoot, "back");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       writeFileSync(join(root, "repo", "owner", "back.ts"), 'export * from "./reader.test.ts";\n');
@@ -167,7 +166,7 @@ describe("assetsReachedBy", () => {
 
   describe("data files outside the repository", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "outside");
+      const root = join(reachedAssetsRoot, "outside");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       mkdirSync(join(root, "outside"), { recursive: true });
@@ -187,7 +186,7 @@ describe("assetsReachedBy", () => {
 
   describe("data files inside an installed dependency", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "installed");
+      const root = join(reachedAssetsRoot, "installed");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       mkdirSync(join(root, "repo", "node_modules", "dep"), { recursive: true });
@@ -211,7 +210,7 @@ describe("assetsReachedBy", () => {
   describe("a package specifier declared for test data", () => {
     describe("read for the first time", () => {
       const it = test.extend("reachedFile", () => {
-        const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "package-first");
+        const root = join(reachedAssetsRoot, "package-first");
         rmSync(root, { recursive: true, force: true });
         mkdirSync(join(root, "repo", "owner"), { recursive: true });
         mkdirSync(join(root, "repo", "packages", "shared", "src"), { recursive: true });
@@ -243,8 +242,7 @@ describe("assetsReachedBy", () => {
       it("reaches it", ({ reachedFile }) => {
         expect(reachedFile).toBe(
           join(
-            realpathSync(tmpdir()),
-            "dont-review-it-reached-assets",
+            reachedAssetsRoot,
             "package-first",
             "repo",
             "packages",
@@ -259,8 +257,7 @@ describe("assetsReachedBy", () => {
     describe("read a second time", () => {
       const it = test.extend("reachedFile", () => {
         const root = join(
-          realpathSync(tmpdir()),
-          "dont-review-it-reached-assets",
+          reachedAssetsRoot,
           "package-second",
         );
         rmSync(root, { recursive: true, force: true });
@@ -300,8 +297,7 @@ describe("assetsReachedBy", () => {
       it("reaches it on the reading after the first", ({ reachedFile }) => {
         expect(reachedFile).toBe(
           join(
-            realpathSync(tmpdir()),
-            "dont-review-it-reached-assets",
+            reachedAssetsRoot,
             "package-second",
             "repo",
             "packages",
@@ -316,7 +312,7 @@ describe("assetsReachedBy", () => {
 
   describe("a package specifier declared for a module that is absent", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "package-gone");
+      const root = join(reachedAssetsRoot, "package-gone");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       mkdirSync(join(root, "repo", "packages", "shared", "src"), { recursive: true });
@@ -352,7 +348,7 @@ describe("assetsReachedBy", () => {
 
   describe("a path alias standing for a place that holds no module", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "aliased");
+      const root = join(reachedAssetsRoot, "aliased");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "aliased"), { recursive: true });
       writeFileSync(
@@ -374,7 +370,7 @@ describe("assetsReachedBy", () => {
 
   describe("a specifier standing for nothing", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "nowhere");
+      const root = join(reachedAssetsRoot, "nowhere");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       return assetsReachedBy({
@@ -392,7 +388,7 @@ describe("assetsReachedBy", () => {
 
   describe("a relative specifier standing for nothing", () => {
     const it = test.extend("reachedFile", () => {
-      const root = join(realpathSync(tmpdir()), "dont-review-it-reached-assets", "absent");
+      const root = join(reachedAssetsRoot, "absent");
       rmSync(root, { recursive: true, force: true });
       mkdirSync(join(root, "repo", "owner"), { recursive: true });
       return assetsReachedBy({
