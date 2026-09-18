@@ -19,15 +19,32 @@ export const Pending = meta.story({
 });
 
 export const RejectsEmptySubmission = meta.story({
-  play: async ({ canvas, canvasElement }) => {
-    const { page, userEvent } = await import("vite-plus/test/browser/context");
-    const rendered = page.elementLocator(canvasElement);
-    await userEvent.click(rendered.getByRole("button", { name: "ログイン" }));
+  play: async ({ canvas }) => {
+    const { userEvent } = await import("vite-plus/test/browser/context");
+    await userEvent.click(canvas.getByRole("button", { name: "ログイン" }));
     await waitFor(async () => {
       await expect(
         canvas.getByText("メールアドレスの形式で入力してください。"),
       ).toBeInTheDocument();
       await expect(canvas.getByText("パスワードを入力してください。")).toBeInTheDocument();
+    });
+  },
+});
+
+export const ReplacesTheBlurMessageOnSubmit = meta.story({
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("メールアドレス"), "abc");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("正しい形式で入力してください。")).toBeInTheDocument();
+    });
+    await userEvent.click(canvas.getByRole("button", { name: "ログイン" }));
+    await waitFor(async () => {
+      await expect(
+        canvas.getByText("メールアドレスの形式で入力してください。"),
+      ).toBeInTheDocument();
     });
   },
 });

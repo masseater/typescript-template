@@ -85,3 +85,18 @@ export const Missing = meta.story({
     });
   },
 });
+
+export const ExternalError = meta.story({
+  args: {
+    error: "ユーザー名は 1〜100 文字で入力してください。",
+    label: "ユーザー名",
+    name: "name",
+    required: true,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByText("ユーザー名は 1〜100 文字で入力してください。"),
+    ).toBeInTheDocument();
+    await expect(canvas.queryByText("入力してください。")).toBeNull();
+  },
+});
