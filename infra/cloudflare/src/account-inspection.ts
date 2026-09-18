@@ -102,7 +102,6 @@ const dnsVerdict = Effect.fn("dnsVerdict")(function* dnsVerdict(
 
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
   return yield* grantedPermissions(access).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((granted) => missingPermissions(granted)),
     Effect.catchTag("CloudflareFailure", () =>
       Effect.succeed("unreadable_account_owned_token_required" as const),

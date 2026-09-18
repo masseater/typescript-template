@@ -33,7 +33,6 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
   const { handlers } = elysiaServer(app);
   const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
   return startRoute({
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     fetch: async (request: Request): Promise<Response> => {
       const handle = byMethod[request.method];
       return handle === undefined
@@ -98,12 +97,7 @@ describe("json request bodies", () => {
 });
 
 describe("api routes behind a start server route", () => {
-  const echo = api.route(
-    ProfileUpdate,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (request) => readJsonBody(ProfileUpdate, request),
-    {},
-  );
+  const echo = api.route(ProfileUpdate, (request) => readJsonBody(ProfileUpdate, request), {});
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {

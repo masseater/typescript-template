@@ -4,7 +4,6 @@ import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
 type ToastObject = ReturnType<typeof ToastPrimitive.useToastManager>["toasts"][number];
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function ToastItem({ toast }: Readonly<{ toast: ToastObject }>): ReactElement {
   return (
     <ToastPrimitive.Root

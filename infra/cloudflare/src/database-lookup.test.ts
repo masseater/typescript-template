@@ -27,7 +27,6 @@ function mockServer(
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (server) =>
       Effect.sync(() => {
         server.close();
@@ -38,7 +37,6 @@ function mockServer(
 it.effect("resolves the database the stack owns by its declared name", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(endpoint, ({ request }) => {
         const query = new URL(request.url).searchParams;
         assert.strictEqual(query.get("name"), target.name);

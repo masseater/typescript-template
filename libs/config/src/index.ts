@@ -74,7 +74,6 @@ function decode<Decoded extends Schema.Top & { readonly DecodingServices: never 
   input: unknown,
 ): Effect.Effect<Decoded["Type"], ConfigurationInvalid> {
   return Schema.decodeUnknownEffect(schema)(input).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((issue) => invalid(issue.message)),
   );
 }

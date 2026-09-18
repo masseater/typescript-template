@@ -25,7 +25,6 @@ const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, R
   const found = yield* Effect.forEach(stacks, (stack) =>
     readState({ path: `${stackName(stack)}/${prefix}`, recursive: true }).pipe(
       Effect.provideService(State, Effect.succeed(state)),
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.map((entries) => entries.map((entry) => entry.value)),
       Effect.catchTag("InvalidStatePath", () => Effect.succeed<readonly unknown[]>([])),
     ),

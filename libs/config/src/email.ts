@@ -29,7 +29,6 @@ function sendThroughMailpit(
 ): Effect.Effect<void, EmailDeliveryFailed> {
   return Effect.tryPromise({
     catch: () => new EmailDeliveryFailed({ reason: "unreachable" }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     try: async (signal) =>
       fetch(`${mailpit}/api/v1/send`, {
         body: JSON.stringify({
@@ -44,7 +43,6 @@ function sendThroughMailpit(
         signal: AbortSignal.any([signal, AbortSignal.timeout(mailpitTimeoutMilliseconds)]),
       }),
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.flatMap((response) =>
       response.ok ? Effect.void : Effect.fail(new EmailDeliveryFailed({ reason: "rejected" })),
     ),
@@ -52,7 +50,6 @@ function sendThroughMailpit(
 }
 
 function sendThroughBinding(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   binding: SendEmail | undefined,
   email: EmailMessage,
 ): Effect.Effect<void, EmailDeliveryFailed> {
@@ -66,7 +63,6 @@ function sendThroughBinding(
 }
 
 function sendVerificationEmail(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   config: EmailSettings,
   message: VerificationMessage,
 ): Effect.Effect<void, EmailDeliveryFailed> {
