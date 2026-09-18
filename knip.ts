@@ -51,6 +51,8 @@ const workspaces = {
   },
 };
 
+const commander = { project: ["src/**/*.{ts,tsx}!", "src/**/*.css"] };
+
 const cloudflareStacks = [
   "src/database.ts!",
   "src/email.ts!",
@@ -77,6 +79,7 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+  "tools/commander": ["src/cli.ts!"],
   "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
@@ -116,6 +119,7 @@ function config({
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
       },
+      "tools/commander": { ...commander, entry: productionOnly(...scripts["tools/commander"]) },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
         ignoreDependencies: ["playwright"],
