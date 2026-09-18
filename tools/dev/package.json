@@ -7,7 +7,6 @@
     "browser-command": "node src/cli.ts browser-command",
     "connect": "node src/cli.ts connect",
     "logs": "node src/cli.ts logs",
-    "private-maps": "node src/private-maps.ts",
     "setup": "node src/cli.ts setup",
     "start": "node src/cli.ts start",
     "status": "node src/cli.ts status",

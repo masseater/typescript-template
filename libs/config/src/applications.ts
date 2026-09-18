@@ -15,7 +15,7 @@ const applicationPorts: Readonly<Record<Application, number>> = {
 const applicationReadyPaths: Readonly<Record<Application, string>> = {
   admin: "/login",
   user: "/login",
-  wiki: "/",
+  wiki: "/login",
 };
 const capabilities = ["ai"] as const;
 type Capability = (typeof capabilities)[number];

@@ -1,6 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { env } from "cloudflare:workers";
 import { Effect, ManagedRuntime, Schema } from "effect";
 import type { Layer } from "effect";
 
@@ -8,27 +7,15 @@ import type { Reporting } from "@repo/observability";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 
+import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import type { AppServices } from "./index.ts";
 import { appLayer } from "./index.ts";
 import { wikiLayer, wikiService } from "./wiki.ts";
 import { serveApp } from "./worker.ts";
 
-const authSecret = "worker-test-secret-at-least-32-characters";
 const validRoutes = { "/": "home" };
 const ReportedLog = Schema.Record(Schema.String, Schema.String);
 const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
-
-function environment(overrides: Readonly<Record<string, unknown>>): Record<string, unknown> {
-  return {
-    ...env,
-    APP_ORIGIN: "http://localhost:3001",
-    APP_RELEASE: "test",
-    ASSETS: { fetch: async (): Promise<Response> => new Response(undefined) },
-    AUTH_SECRET: authSecret,
-    EMAIL_FROM: "sender@example.test",
-    ...overrides,
-  };
-}
 
 async function servedUnavailable(
   layer: () => Layer.Layer<AppServices, unknown>,
@@ -40,7 +27,7 @@ async function servedUnavailable(
     reporting,
   );
   const context = createExecutionContext();
-  const response = await worker.fetch(new Request("http://localhost:3001/"), {}, context);
+  const response = await worker.fetch(new Request(`${fixtureOrigin}/`), {}, context);
   await waitOnExecutionContext(context);
   return { body: await response.json(), status: response.status };
 }
@@ -49,13 +36,13 @@ const brokenLayers = [
   {
     fields: '{"_tag":"ConfigurationInvalid","reason":"HTTPS is required outside localhost"}',
     layer: (): Layer.Layer<AppServices, unknown> =>
-      appLayer(environment({ APP_ORIGIN: "http://wiki.example.test" }), "user", validRoutes),
+      appLayer(appEnvironment({ APP_ORIGIN: "http://wiki.example.test" }), "user", validRoutes),
     tag: "ConfigurationInvalid",
   },
   {
     fields: '{"_tag":"TelemetryInvalid","reason":"routes"}',
     layer: (): Layer.Layer<AppServices, unknown> =>
-      appLayer(environment({}), "user", { "bad path": "home" }),
+      appLayer(appEnvironment(), "user", { "bad path": "home" }),
     tag: "TelemetryInvalid",
   },
 ] as const;
@@ -96,7 +83,7 @@ describe("a worker whose layer cannot be built", () => {
         assert.match(fingerprint ?? "", /^[0-9a-f]{8}$/u);
         assert.include(causeSummary ?? "", tag);
         assert.strictEqual(chain, "");
-        assert.notInclude(`${causeSummary}${locations}`, authSecret);
+        assert.notInclude(`${causeSummary}${locations}`, fixtureAuthSecret);
       }),
     );
   }
@@ -107,7 +94,7 @@ describe("a wiki worker whose database has not been migrated", () => {
     Effect.gen(function* program() {
       const logs = recordingSink();
       const response = yield* Effect.promise(async () =>
-        servedUnavailable(() => wikiLayer(environment({}), validRoutes), {
+        servedUnavailable(() => wikiLayer(appEnvironment(), validRoutes), {
           log: logs.sink,
           service: wikiService,
         }),

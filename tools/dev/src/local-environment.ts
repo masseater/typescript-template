@@ -36,8 +36,10 @@ const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encod
 const rootHash = Buffer.from(rootDigest).toString("hex").slice(0, ROOT_HASH_LENGTH);
 const socket = `template-${rootHash}`;
 const AppName = Schema.Literals(applications);
+const OriginMode = Schema.Literals(["lan", "loopback"]);
 const CredentialsFile = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(AUTH_SECRET_MINIMUM_LENGTH)),
+  origins: Schema.optionalKey(OriginMode),
 });
 const routes = { ...applicationPorts, mailpit: mailpitPort };
 const routeNames = [...applications, "mailpit"] as const;
@@ -123,6 +125,7 @@ export {
   lanOrigin,
   local,
   logFileUrl,
+  OriginMode,
   readCredentials,
   refreshBrowserConfig,
   root,

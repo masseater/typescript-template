@@ -48,11 +48,13 @@ jobs:
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
-      - &check
-        run: vp run check
-      - run: vp test run $TEST_SCOPE
-      - &build
-        run: vp run build
+      - &task-cache-reuse
+        if: vars.CI_RUNNER != ''
+        run: |
+          mkdir -p ~/.cache/vite-task-cache node_modules/.vite/task-cache
+          cp -a ~/.cache/vite-task-cache/. node_modules/.vite/task-cache/
+      - &premerge
+        run: vp run -r premerge
       - &task-cache-save
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && vars.CI_RUNNER == ''
@@ -63,12 +65,18 @@ jobs:
   cache:
     if: github.event_name == 'push'
     runs-on: *runner
-    timeout-minutes: 15
+    timeout-minutes: 30
+    env:
+      TEST_SCOPE: --changed HEAD^1
     steps:
       - *checkout
       - *browser-cache
       - *setup
       - *task-cache-restore
-      - *check
-      - *build
+      - *premerge
       - *task-cache-save
+      - if: vars.CI_RUNNER != ''
+        run: |
+          rm -rf ~/.cache/vite-task-cache
+          mkdir -p ~/.cache
+          cp -a node_modules/.vite/task-cache ~/.cache/vite-task-cache

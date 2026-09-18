@@ -4,6 +4,7 @@ import { defineConfig } from "vite-plus";
 
 import {
   effectDiagnostics,
+  lifecycle,
   reactCompiler,
   startOptions,
   taskInput,
@@ -22,6 +23,7 @@ export default defineConfig({
       ...effectDiagnostics,
       build: { command: "vp build", input: [...taskInput, "!dist"] },
       start: { cache: false, command: "node src/app/cli.ts", dependsOn: ["build"] },
+      ...lifecycle({ precommit: [], premerge: ["build"], prepush: ["check:effect", "check"] }),
     },
   },
 });

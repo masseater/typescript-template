@@ -43,6 +43,7 @@ const workspaces = {
   },
   "libs/runtime": {
     ignoreDependencies: ["cloudflare"],
+    project: ["src/**/*.ts!", "!src/app-fixture.ts!"],
   },
   "libs/ui": {
     project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
@@ -79,7 +80,7 @@ const scripts = {
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
   "tools/commander": ["src/app/cli.ts!"],
-  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
+  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
 

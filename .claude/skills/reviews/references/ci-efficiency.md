@@ -6,8 +6,8 @@ description: CIの実行時間と実行量を削減する。
 CIは、不要な処理を実行しないことを最優先にして効率化する。
 
 - `.github/workflows` の `paths` / `paths-ignore` による変更ファイル単位のCIフィルタは使わない。
-- リポジトリに導入されている `viteplus` / `pnpm` / `nx` を使い、依存関係やtask graphから変更・影響範囲を求める。
-- PRでは、変更・影響を受ける範囲のlint、typecheck、test、buildだけを実行する。
+- リポジトリに導入されている `viteplus` などを使い、依存関係やtask graphから変更・影響範囲を求める。
+- PRでは、変更・影響を受ける範囲のlint、typecheck、test、buildだけを実行させること。
 - PRごとにリポジトリ全体のテストや重い統合テストを実行しない。
 - task cache、dependency cache、remote cacheなどを活用し、同じ処理を繰り返さない。
 - 独立したtaskは並列化する。
