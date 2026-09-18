@@ -4,6 +4,7 @@ import {
   type CanonicalValuesCatalog,
   type CanonicalValuesEntry,
 } from "./catalog.ts";
+import { ownersVisibleFrom } from "./consumer-package.ts";
 import {
   isKeySelectorArgument,
   isModuleSyntaxPosition,
@@ -93,11 +94,13 @@ export const analyzeCanonicalLiterals = (input: {
     repositoryRoot: input.repositoryRoot,
     sourceText: input.sourceCode.text,
   });
+  const isVisibleOwner = ownersVisibleFrom(input);
   return sourceNodes(input.sourceCode).flatMap(({ ancestors, node }) => {
     const candidate = candidateAt({ ancestors, node });
     if (candidate === null || exemptPosition(ancestors, candidate.node)) return [];
-    const declarations =
-      input.catalog.entriesByValue.get(canonicalValueKey(candidate.spelling)) ?? [];
+    const declarations = (
+      input.catalog.entriesByValue.get(canonicalValueKey(candidate.spelling)) ?? []
+    ).filter(isVisibleOwner);
     if (declarations.length === 0) return [];
     if (ranges.some((range) => rangeContainsCandidate(range, candidate))) return [];
     return [{ entries: declarations, ...candidate }];

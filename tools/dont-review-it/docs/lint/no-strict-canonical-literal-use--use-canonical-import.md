@@ -21,6 +21,8 @@ Disallow writing a value that a declared vocabulary already owns as a literal, s
 
 A literal in a production source spelling a value that a declared vocabulary already owns. The catalog of owners is built from the `@canonical-values` declarations across the repository, and the report names the concepts that own the value.
 
+Only vocabularies the file can import are read: those declared in the package the file belongs to, in a package that package lists among its dependencies, or outside any package. A spelling that matches a vocabulary of an unrelated package names a different concept, because the fix of importing its owner is not open to that file.
+
 Verification files and anything outside the production scope are not read.
 
 ## Fix
