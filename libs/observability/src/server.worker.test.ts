@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import type { Layer } from "effect";
 
 import { httpStatus } from "./http-status.ts";
+import { randomHex, spanIdBytes } from "./protocol.ts";
 import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
 import type { TelemetryInvalid } from "./server.ts";
 import type { LogSink } from "./structured-logs.ts";
@@ -44,7 +45,7 @@ function browserEvent(): Record<string, unknown> {
     name: "http.client.request",
     requestId: crypto.randomUUID(),
     route: "home",
-    spanId,
+    spanId: randomHex(spanIdBytes),
     start: Date.now(),
     status: created,
     traceId,
@@ -63,7 +64,6 @@ function probeEvents(): string {
     duration: 25,
     requestId: "11111111-1111-4111-8111-111111111111",
     route: "home",
-    spanId,
     start: Date.now(),
     traceId,
   };
@@ -74,10 +74,17 @@ function probeEvents(): string {
     locations: "/assets/index-abc.js:1:234",
     method: "GET",
     name: "browser.error",
+    spanId: randomHex(spanIdBytes),
     status: 0,
     value: 1,
   };
-  const request = { ...base, kind: "http", method: "POST", name: "http.client.request" };
+  const request = {
+    ...base,
+    kind: "http",
+    method: "POST",
+    name: "http.client.request",
+    spanId,
+  };
   return JSON.stringify([{ ...request, status: created, value: 0 }, exception]);
 }
 
@@ -171,6 +178,23 @@ describe("browser ingress", () => {
       assert.strictEqual(yield* ingestStatus(forged), httpStatus.badRequest);
     }).pipe(Effect.provide(telemetry)),
   );
+
+  it.effect("accepts a resent batch without recording its events a second time", () => {
+    const logs = recordingSink();
+    const resend = {
+      body: JSON.stringify([browserEvent()]),
+      headers: jsonHeaders,
+      method: "POST",
+    };
+    return Effect.gen(function* program() {
+      const accepted = yield* ingestStatus(resend);
+      const resent = yield* ingestStatus(resend);
+      assert.deepStrictEqual(
+        { accepted, recorded: logs.stdout.length, resent },
+        { accepted: httpStatus.accepted, recorded: 1, resent: httpStatus.accepted },
+      );
+    }).pipe(Effect.provide(recordedTelemetry(logs.sink)));
+  });
 });
 
 describe("structured log lines", () => {

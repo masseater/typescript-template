@@ -1,8 +1,8 @@
 import { Effect, Result } from "effect";
 import type { Cause, ManagedRuntime } from "effect";
 
-import type { CurrentRequest, Reporting, Telemetry } from "@repo/observability";
-import { httpStatus, observeRequest } from "@repo/observability";
+import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
+import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
@@ -12,7 +12,12 @@ interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;
 }
 interface FetchWorker {
-  readonly fetch: (request: Request) => Promise<Response>;
+  readonly fetch: (
+    request: Request,
+    environment: unknown,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    context: ExecutionContext,
+  ) => Promise<Response>;
 }
 type WorkerRoute<Requirements> = (
   request: Request,
@@ -31,14 +36,18 @@ async function unavailableResponse(
 }
 
 function serveWorker<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: WorkerRoute<Requirements>,
   reporting: Reporting,
 ): FetchWorker {
   return {
-    fetch: async (request): Promise<Response> => {
+    fetch: async (request, _environment, context): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      return exit._tag === "Success" ? exit.value : unavailableResponse(exit.cause, reporting);
+      if (exit._tag !== "Success") {
+        return unavailableResponse(exit.cause, reporting);
+      }
+      context.waitUntil(runtime.runPromise(flushTelemetry));
+      return exit.value;
     },
   };
 }
@@ -60,7 +69,10 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 }
 
 function serveApp<Requirements>(
-  runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
+  runtime: ManagedRuntime.ManagedRuntime<
+    Assets | Requirements | Telemetry | TelemetryFlusher,
+    unknown
+  >,
   route: AppRoute<Requirements>,
   reporting: Reporting,
 ): FetchWorker {

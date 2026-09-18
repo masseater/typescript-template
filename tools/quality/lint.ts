@@ -4,6 +4,14 @@ import { retiredImports } from "./retired-packages.ts";
 
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
+const importedToolPatterns = [
+  "tools/ai-native/**",
+  "tools/dont-review-it/**",
+  "tools/lint-rule-authoring/**",
+  "tools/repository-checks/**",
+  "tools/stop-ai-slop/**",
+];
+
 const linkComponents = [
   "ButtonLink",
   "CardLink",
@@ -24,7 +32,7 @@ const lint = {
     style: "error",
     suspicious: "error",
   },
-  ignorePatterns: generatedFiles,
+  ignorePatterns: [...generatedFiles, ...importedToolPatterns],
   jsPlugins: [
     "./tools/quality/rules.ts",
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
@@ -256,4 +264,4 @@ const lint = {
   },
 } satisfies UserConfig["lint"];
 
-export { generatedFiles, lint };
+export { generatedFiles, importedToolPatterns, lint };

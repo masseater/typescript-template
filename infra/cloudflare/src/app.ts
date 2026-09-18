@@ -10,7 +10,7 @@ import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { SharedConfig } from "./config.ts";
 import { databaseRef } from "./database.ts";
-import { authSecret, settings } from "./settings.ts";
+import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
@@ -22,6 +22,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
 ) {
   const config: SharedConfig = yield* Effect.orDie(settings);
   const secret: Redacted.Redacted = yield* authSecret;
+  const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
@@ -38,10 +39,17 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       DB: database,
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
+      ...(config.otlp === undefined
+        ? {}
+        : {
+            OTLP_ENABLED: String(config.otlp.enabled),
+            OTLP_ENDPOINT: config.otlp.endpoint,
+            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+          }),
     }),
     main: artifacts.mainModule,
     name: `${config.prefix}-${target}`,
-    observability: workerObservability(config.observabilitySampling),
+    observability: workerObservability(config),
     rules: [{ globs: workerModuleGlobs }],
     workersDev: workerSubdomain,
   });

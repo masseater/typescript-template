@@ -53,7 +53,7 @@ const monitorProgram = Effect.fn("monitorProgram")(function* monitorProgram(
     },
     main: options.artifact,
     name: `${config.prefix}-${options.name}`,
-    observability: workerObservability(config.observabilitySampling),
+    observability: workerObservability(config),
     workersDev: workerSubdomain,
   });
   return { crons: worker.crons, workerName: worker.workerName };
