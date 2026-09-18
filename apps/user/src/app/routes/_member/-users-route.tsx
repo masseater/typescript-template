@@ -5,8 +5,7 @@ import { getRouteApi } from "@tanstack/react-router";
 const route = getRouteApi("/_member/users/");
 
 function UsersRoute(): ReactElement {
-  const search = normalizeUsersSearch(route.useSearch());
-  return <UsersPage list={route.useLoaderData()} search={search} />;
+  return <UsersPage search={normalizeUsersSearch(route.useSearch())} />;
 }
 
 export { UsersRoute };

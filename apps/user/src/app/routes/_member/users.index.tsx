@@ -1,13 +1,15 @@
 import {
   UsersFailed,
   UsersPending,
-  loadMembers,
+  membersOptions,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import type { RouterContext } from "#app/router-context.ts";
 import { UsersRoute } from "./-users-route.tsx";
 
 type RawSearch = Readonly<Record<string, unknown>>;
+type UsersSearch = ReturnType<typeof normalizeUsersSearch>;
 
 const Route = createFileRoute("/_member/users/")({
   beforeLoad: ({
@@ -21,8 +23,16 @@ const Route = createFileRoute("/_member/users/")({
   },
   component: UsersRoute,
   errorComponent: UsersFailed,
-  loader: async ({ deps }: Readonly<{ deps: ReturnType<typeof normalizeUsersSearch> }>) =>
-    loadMembers(deps),
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  loader: async ({
+    context,
+    deps,
+  }: {
+    context: RouterContext;
+    deps: UsersSearch;
+  }): Promise<void> => {
+    await context.queryClient.infiniteQuery(membersOptions(deps));
+  },
   loaderDeps: ({ search }: Readonly<{ search: RawSearch }>) => normalizeUsersSearch(search),
   pendingComponent: UsersPending,
   validateSearch: normalizeUsersSearch,

@@ -1,15 +1,38 @@
 import { Avatar, CardLink } from "@template/ui";
+import type { Member } from "#pages/users/api/members-api.ts";
 import { MemberSummary } from "./member-summary.tsx";
-import type { Members } from "#pages/users/api/load-members.ts";
 import type { ReactElement } from "react";
+import { useEditedProfile } from "#entities/profile/index.ts";
 
-function MemberCard({ member }: Readonly<{ member: Members["members"][number] }>): ReactElement {
+function MemberCard({
+  index,
+  measure,
+  member,
+  offset,
+}: Readonly<{
+  index: number;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  measure: (node: Element | null) => void;
+  member: Member | undefined;
+  offset: number;
+}>): ReactElement {
+  const edited = useEditedProfile(member?.id ?? "");
   return (
-    <li>
-      <CardLink to="/users/$id" params={{ id: member.id }}>
-        <Avatar name={member.name} />
-        <MemberSummary name={member.name} profile={member.profile} />
-      </CardLink>
+    <li
+      ref={measure}
+      data-index={index}
+      className="absolute top-0 left-0 w-full"
+      style={{ transform: `translateY(${offset}px)` }}
+    >
+      {member !== undefined && (
+        <CardLink to="/users/$id" params={{ id: member.id }}>
+          <Avatar name={edited?.name ?? member.name} />
+          <MemberSummary
+            name={edited?.name ?? member.name}
+            profile={edited?.profile ?? member.profile}
+          />
+        </CardLink>
+      )}
     </li>
   );
 }

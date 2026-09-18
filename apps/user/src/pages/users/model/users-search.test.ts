@@ -1,22 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
-import { maximumKeywordLength, maximumMemberPage } from "@template/runtime/contracts";
+import { maximumKeywordLength } from "@template/runtime/contracts";
 import { normalizeUsersSearch } from "./users-search.ts";
 
-describe("member list search in the URL", () => {
-  it("keeps a trimmed keyword and a later page", () => {
-    expect.hasAssertions();
-    expect(normalizeUsersSearch({ keyword: " 花子 ", page: 3 })).toStrictEqual({
-      keyword: "花子",
-      page: 3,
-    });
-  });
+const laterPage = 3;
 
-  it("stops at the last page the member API accepts", () => {
+describe("member list search in the URL", () => {
+  it("keeps a trimmed keyword", () => {
     expect.hasAssertions();
-    expect(normalizeUsersSearch({ page: maximumMemberPage })).toStrictEqual({
-      page: maximumMemberPage,
-    });
-    expect(normalizeUsersSearch({ page: maximumMemberPage + 1 })).toStrictEqual({});
+    expect(normalizeUsersSearch({ keyword: " 花子 " })).toStrictEqual({ keyword: "花子" });
   });
 
   it("drops a keyword longer than the member API accepts", () => {
@@ -24,6 +15,11 @@ describe("member list search in the URL", () => {
     expect(normalizeUsersSearch({ keyword: "あ".repeat(maximumKeywordLength + 1) })).toStrictEqual(
       {},
     );
+  });
+
+  it("drops the page the list no longer pages through", () => {
+    expect.hasAssertions();
+    expect(normalizeUsersSearch({ page: laterPage })).toStrictEqual({});
   });
 
   it("drops the conditions this page does not have", () => {
