@@ -10,7 +10,7 @@ function AdminNavigationItem({
 }: Readonly<{ label: string; onNavigate: () => void; to: "/" | "/security" }>): ReactElement {
   return (
     <li>
-      <NavigationLink to={to} activeOptions={activeOptions} onClick={onNavigate}>
+      <NavigationLink to={to} variant="side" activeOptions={activeOptions} onClick={onNavigate}>
         {label}
       </NavigationLink>
     </li>
