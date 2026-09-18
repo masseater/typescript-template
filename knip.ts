@@ -36,13 +36,7 @@ const workspaces = {
     ignoreDependencies: ["cloudflare"],
   },
   "libs/ui": {
-    project: [
-      "src/**/*.{ts,tsx}!",
-      "src/**/*.css",
-      ".storybook/*.ts",
-      "!src/story-fixture.ts!",
-      "!src/**/*.stories.tsx!",
-    ],
+    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
   },
 };
 
