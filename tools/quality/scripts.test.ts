@@ -46,12 +46,30 @@ const repositoryTaskViolations = taskFiles.flatMap((file: string) =>
 );
 
 const rootTasks = runs["../../vite.config.ts"]?.tasks ?? {};
-const checkTask = rootTasks["check"];
-const checkCommand =
-  typeof checkTask === "object" && "command" in checkTask ? checkTask.command : checkTask;
-const checkSteps = [checkCommand ?? []]
-  .flat()
-  .filter((entry: string) => entry.startsWith("vp run check:"))
+
+function rootTaskCommands(name: string): string[] {
+  const task = rootTasks[name] ?? [];
+  return [typeof task === "object" && "command" in task ? task.command : task].flat();
+}
+
+function referencedTasks(name: string, seen: Set<string>): string[] {
+  if (seen.has(name)) {
+    return [];
+  }
+  seen.add(name);
+  const found: string[] = [];
+  for (const entry of rootTaskCommands(name)) {
+    const referenced = /^vp run (?<task>[\w:-]+)$/u.exec(entry)?.groups?.["task"];
+    if (referenced !== undefined && referenced in rootTasks) {
+      found.push(referenced, ...referencedTasks(referenced, seen));
+    }
+  }
+  return found;
+}
+
+const checkSteps = referencedTasks("check", new Set())
+  .filter((name: string) => name.startsWith("check:"))
+  .map((name: string) => `vp run ${name}`)
   .toSorted();
 const checkTaskNames = Object.keys(rootTasks)
   .filter((name) => name.startsWith("check:"))
