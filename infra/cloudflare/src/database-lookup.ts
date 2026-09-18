@@ -1,6 +1,6 @@
+import type { AccountAccess, Endpoint } from "./account-read.ts";
 import { Effect, Schema } from "effect";
 import { endpoint, readList } from "./account-read.ts";
-import type { AccountAccess } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
 
 const DatabaseList = Schema.Struct({
@@ -12,7 +12,11 @@ function databaseName(prefix: string): string {
   return `${prefix}-db`;
 }
 
-function unavailable(keys: readonly string[] = []): CloudflareFailure {
+function databaseSource(accountId: string): Endpoint {
+  return endpoint`accounts/${accountId}/d1/database`;
+}
+
+function unavailable(keys: readonly string[]): CloudflareFailure {
   return new CloudflareFailure({ code: "database_output_unavailable", keys });
 }
 
@@ -20,15 +24,14 @@ const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
   access: AccountAccess,
   name: string,
 ) {
-  const listed = yield* readList(
-    access,
-    { query: { name }, source: endpoint`accounts/${access.accountId}/d1/database` },
-    DatabaseList,
+  const source = databaseSource(access.accountId);
+  const listed = yield* readList(access, { filter: { name }, source }, DatabaseList).pipe(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ).pipe(Effect.mapError((failure) => unavailable(failure.keys)));
+    Effect.mapError((failure) => unavailable(failure.keys)),
+  );
   const matches = listed.result.filter((database) => database.name === name);
   if (matches.length > 1) {
-    return yield* Effect.fail(unavailable());
+    return yield* Effect.fail(unavailable([source.shape, "ambiguous_name"]));
   }
   return matches[0]?.uuid;
 });
@@ -39,7 +42,7 @@ const lookupDatabaseId = Effect.fn("lookupDatabaseId")(function* lookupDatabaseI
 ) {
   const found = yield* findDatabaseId(access, name);
   if (found === undefined) {
-    return yield* Effect.fail(unavailable());
+    return yield* Effect.fail(unavailable([databaseSource(access.accountId).shape, "absent"]));
   }
   return found;
 });

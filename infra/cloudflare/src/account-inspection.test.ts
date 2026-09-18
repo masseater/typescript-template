@@ -1,7 +1,7 @@
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { blocked, inspectAccount } from "./account-inspection.ts";
-import { mockServer, pageLimits, pagedCollection, unpaginated } from "./account-fixture.ts";
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect } from "effect";
 import { InMemoryService } from "alchemy/State";
@@ -15,6 +15,9 @@ const access = { accountId: config.accountId, apiToken: "inspection-test-not-a-r
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const zone = `https://api.cloudflare.com/client/v4/zones/${config.zoneId}`;
 const NOT_FOUND_STATUS = 404;
+const SECRETS_STORE_PAGE_LIMIT = 100;
+const RETURNED_PAGE_SIZE = 50;
+const ACCOUNT_DATABASE_COUNT = 5;
 const tokenId = "0123456789abcdef0123456789abcdef";
 const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
@@ -92,6 +95,10 @@ const tokenHandlers = [
   ),
 ];
 
+function page(total: number): Readonly<{ per_page: number; total_count: number }> {
+  return { per_page: RETURNED_PAGE_SIZE, total_count: total };
+}
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function accountHandlers(options: {
   readonly token?: readonly ReturnType<typeof http.get>[];
@@ -103,37 +110,42 @@ function accountHandlers(options: {
 }): Parameters<typeof mockServer> {
   return [
     ...(options.token ?? tokenHandlers),
-    pagedCollection(`${account}/d1/database`, pageLimits.d1Database, () =>
-      HttpResponse.json({ result: options.databases, success: true }),
+    unpagedCollection(`${account}/d1/database`, () =>
+      HttpResponse.json({
+        result: options.databases,
+        result_info: page(ACCOUNT_DATABASE_COUNT),
+        success: true,
+      }),
     ),
     http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
       HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
     ),
-    pagedCollection(`${account}/secrets_store/stores`, pageLimits.secretsStores, () =>
-      HttpResponse.json({ result: Array.from({ length: options.stores }, () => ({ id: "s" })) }),
+    pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
+      HttpResponse.json({
+        result: Array.from({ length: options.stores }, () => ({ id: "s" })),
+        result_info: page(options.stores),
+      }),
     ),
-    pagedCollection(`${account}/workers/scripts`, pageLimits.workersScripts, () =>
-      unpaginated(options.scripts.map((id) => ({ id }))),
+    unpagedCollection(`${account}/workers/scripts`, () =>
+      // oxlint-disable-next-line unicorn/no-null
+      HttpResponse.json({ result: options.scripts.map((id) => ({ id })), result_info: null }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    pagedCollection(`${account}/workers/domains`, pageLimits.workersDomains, ({ request }) => {
-      const hostname = new URL(request.url).searchParams.get("hostname");
-      return HttpResponse.json({
-        result: options.domains.filter((domain) => domain.hostname === hostname),
-      });
+    unpagedCollection(`${account}/workers/domains`, ({ request }) => {
+      const wanted = new URL(request.url).searchParams.get("hostname");
+      const matching = options.domains.filter((domain) => domain.hostname === wanted);
+      return HttpResponse.json({ result: matching, result_info: page(options.domains.length) });
     }),
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    pagedCollection(`${zone}/dns_records`, pageLimits.dnsRecords, ({ request }) => {
-      const name = new URL(request.url).searchParams.get("name");
+    unpagedCollection(`${zone}/dns_records`, ({ request }) => {
+      const wanted = new URL(request.url).searchParams.get("name.exact");
+      const matching = options.records.filter((record) => record === wanted);
       return HttpResponse.json({
-        result: options.records
-          .filter((record) => record === name)
-          .map((record) => ({
-            name: record,
-          })),
+        result: matching.map((name) => ({ name })),
+        result_info: page(options.records.length),
       });
     }),
   ];

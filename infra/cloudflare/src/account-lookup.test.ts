@@ -10,7 +10,7 @@ import {
   workersSubdomain,
 } from "./account-lookup.ts";
 import { deployTokenPermissions, missingPermissions } from "./deploy-token.ts";
-import { mockServer, pageLimits, pagedCollection, unpaginated } from "./account-fixture.ts";
+import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import { Effect } from "effect";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
@@ -24,6 +24,7 @@ const zone = `https://api.cloudflare.com/client/v4/zones/${verificationSettings.
 const { hostname } = new URL(verificationSettings.origins.user);
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
+const SECRETS_STORE_PAGE_LIMIT = 100;
 const tokenId = "0123456789abcdef0123456789abcdef";
 const granted = deployTokenPermissions.map((required) => ({ name: required.satisfiedBy[0].name }));
 const withoutRoutes = granted.filter(
@@ -36,18 +37,21 @@ it.effect("reads an untouched account as free of the names this deployment claim
       http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
         HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
       ),
-      pagedCollection(`${account}/secrets_store/stores`, pageLimits.secretsStores, () =>
-        HttpResponse.json({ result: [] }),
+      pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
+        HttpResponse.json({ result: [], result_info: { per_page: 100, total_count: 0 } }),
       ),
-      pagedCollection(`${account}/workers/scripts`, pageLimits.workersScripts, () =>
-        unpaginated([]),
+      unpagedCollection(`${account}/workers/scripts`, () =>
+        // oxlint-disable-next-line unicorn/no-null
+        HttpResponse.json({ result: [], result_info: null }),
       ),
-      pagedCollection(`${account}/workers/domains`, pageLimits.workersDomains, () =>
-        HttpResponse.json({ result: [] }),
+      unpagedCollection(`${account}/workers/domains`, () =>
+        HttpResponse.json({ result: [], result_info: { per_page: 20, total_count: 0 } }),
       ),
-      pagedCollection(`${zone}/dns_records`, pageLimits.dnsRecords, () =>
-        HttpResponse.json({ result: [] }),
-      ),
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      unpagedCollection(`${zone}/dns_records`, ({ request }) => {
+        assert.strictEqual(new URL(request.url).searchParams.get("name.exact"), hostname);
+        return HttpResponse.json({ result: [], result_info: { per_page: 100, total_count: 0 } });
+      }),
       http.get(`${account}/workers/subdomain`, () =>
         HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
       ),
@@ -61,6 +65,30 @@ it.effect("reads an untouched account as free of the names this deployment claim
       [],
     );
     assert.strictEqual(yield* workersSubdomain(access), "example-subdomain");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("keeps a read honest when the collection ignores the filter it was given", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${zone}/dns_records`, () =>
+        HttpResponse.json({
+          result: [{ name: "mail.example.com" }, { name: "other.example.com" }],
+          result_info: { count: 2, page: 1, per_page: 100, total_count: 2, total_pages: 1 },
+        }),
+      ),
+      http.get(`${account}/workers/domains`, () =>
+        HttpResponse.json({
+          result: [{ hostname: "other.example.com", service: "someone-elses-worker" }],
+          result_info: { count: 1, page: 1, per_page: 20, total_count: 1, total_pages: 1 },
+        }),
+      ),
+    );
+    assert.deepStrictEqual(
+      yield* dnsRecordNames(access, verificationSettings.zoneId, hostname),
+      [],
+    );
+    assert.isUndefined(yield* attachedService(access, hostname));
   }).pipe(Effect.scoped),
 );
 
@@ -82,10 +110,12 @@ it.effect("names the read that failed and why, without naming the zone or the ho
   }).pipe(Effect.scoped),
 );
 
-it.effect("separates a body it cannot decode from a page it did not receive in full", () =>
+it.effect("refuses rows that do not carry the fields the read declares", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(`${account}/secrets_store/stores`, () => HttpResponse.json({ result: [{}] })),
+      http.get(`${account}/secrets_store/stores`, () =>
+        HttpResponse.json({ result: [{}], result_info: { per_page: 100, total_count: 1 } }),
+      ),
     );
     const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
     assert.deepStrictEqual(failure.keys, ["accounts/{}/secrets_store/stores", "decode_failed"]);
@@ -98,8 +128,11 @@ it.effect("reports an account another project already bootstrapped", () =>
       http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
         HttpResponse.json({ result: { id: "alchemy-state-store" } }),
       ),
-      http.get(`${account}/secrets_store/stores`, () =>
-        HttpResponse.json({ result: [{ id: "store" }] }),
+      pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
+        HttpResponse.json({
+          result: [{ id: "store" }],
+          result_info: { per_page: 100, total_count: 1 },
+        }),
       ),
     );
     assert.isTrue(yield* stateStorePresent(access));
@@ -166,19 +199,6 @@ it.effect("requires every permission the deployment actually exercises", () =>
   }),
 );
 
-it.effect("refuses a page that does not carry every row Cloudflare counted", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      http.get(`${account}/workers/scripts`, () =>
-        HttpResponse.json({ result: [{ id: "one" }], result_info: { total_count: 2 } }),
-      ),
-    );
-    const failure = yield* workerNames(access).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "account_read_unavailable");
-    assert.deepStrictEqual(failure.keys, ["accounts/{}/workers/scripts", "truncated"]);
-  }).pipe(Effect.scoped),
-);
-
 it.effect("asks for the worker a single hostname is attached to", () =>
   Effect.gen(function* program() {
     yield* mockServer(
@@ -198,13 +218,7 @@ it.effect("names the deploy token permissions the account token does not carry",
       http.get(`${account}/tokens/verify`, () => HttpResponse.json({ result: { id: tokenId } })),
       http.get(`${account}/tokens/${tokenId}`, () =>
         HttpResponse.json({
-          result: {
-            policies: [
-              {
-                permission_groups: withoutRoutes,
-              },
-            ],
-          },
+          result: { policies: [{ permission_groups: withoutRoutes }] },
         }),
       ),
     );
@@ -244,5 +258,9 @@ it.effect("treats a token the account does not own as unreadable, not as unrestr
     );
     const failure = yield* grantedPermissions(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
+    assert.deepStrictEqual(failure.keys, [
+      "accounts/{}/tokens/verify",
+      `status_${NOT_FOUND_STATUS}`,
+    ]);
   }).pipe(Effect.scoped),
 );

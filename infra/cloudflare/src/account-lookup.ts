@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { endpoint, readList, readResource, unreadable } from "./account-read.ts";
+import { endpoint, readList, readRequired, readResource } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 
@@ -40,7 +40,7 @@ const secretsStoreCount = Effect.fn("secretsStoreCount")(function* secretsStoreC
   const listed = yield* readList(
     access,
     {
-      query: { per_page: String(SECRETS_STORE_PAGE_SIZE) },
+      pageSize: SECRETS_STORE_PAGE_SIZE,
       source: endpoint`accounts/${access.accountId}/secrets_store/stores`,
     },
     Stores,
@@ -63,7 +63,7 @@ const attachedService = Effect.fn("attachedService")(function* attachedService(
 ) {
   const listed = yield* readList(
     access,
-    { query: { hostname }, source: endpoint`accounts/${access.accountId}/workers/domains` },
+    { filter: { hostname }, source: endpoint`accounts/${access.accountId}/workers/domains` },
     Domains,
   );
   return listed.result.find((domain) => domain.hostname === hostname)?.service;
@@ -87,25 +87,25 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
 ) {
   const listed = yield* readList(
     access,
-    { query: { name: hostname }, source: endpoint`zones/${zoneId}/dns_records` },
+    { filter: { "name.exact": hostname }, source: endpoint`zones/${zoneId}/dns_records` },
     Records,
   );
-  return listed.result.map((record) => record.name);
+  return listed.result.filter((record) => record.name === hostname).map((record) => record.name);
 });
 
 const grantedPermissions = Effect.fn("grantedPermissions")(function* grantedPermissions(
   access: AccountAccess,
 ) {
-  const verification = endpoint`accounts/${access.accountId}/tokens/verify`;
-  const verified = yield* readResource(access, verification, VerifiedToken);
-  if (verified === undefined) {
-    return yield* Effect.fail(unreadable(verification, "status_404"));
-  }
-  const token = endpoint`accounts/${access.accountId}/tokens/${verified.result.id}`;
-  const detail = yield* readResource(access, token, TokenDetail);
-  if (detail === undefined) {
-    return yield* Effect.fail(unreadable(token, "status_404"));
-  }
+  const verified = yield* readRequired(
+    access,
+    endpoint`accounts/${access.accountId}/tokens/verify`,
+    VerifiedToken,
+  );
+  const detail = yield* readRequired(
+    access,
+    endpoint`accounts/${access.accountId}/tokens/${verified.result.id}`,
+    TokenDetail,
+  );
   return detail.result.policies.flatMap((policy) => policy.permission_groups);
 });
 

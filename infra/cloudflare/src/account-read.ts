@@ -3,16 +3,23 @@ import { CloudflareFailure } from "./config.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const NOT_FOUND_STATUS = 404;
+const MISSING_REASON = `status_${NOT_FOUND_STATUS}`;
 
 interface AccountAccess {
   readonly accountId: string;
   readonly apiToken: string;
 }
 
-type Query = Readonly<Record<string, string>>;
-type Endpoint = Readonly<{ path: string; shape: string }>;
+const cloudflareEndpoint = Symbol("cloudflareEndpoint");
 
-const PageInfo = Schema.Struct({ total_count: Schema.Number });
+type Query = Readonly<Record<string, string>>;
+type Endpoint = Readonly<{ marker: typeof cloudflareEndpoint; path: string; shape: string }>;
+type Collection = Readonly<{ filter?: Query; pageSize?: number; source: Endpoint }>;
+
+const PageInfo = Schema.Struct({
+  per_page: Schema.optional(Schema.Number),
+  total_count: Schema.optional(Schema.Number),
+});
 const Paged = Schema.Struct({
   result: Schema.Array(Schema.Unknown),
   result_info: Schema.optional(Schema.NullOr(PageInfo)),
@@ -20,7 +27,11 @@ const Paged = Schema.Struct({
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function endpoint(parts: TemplateStringsArray, ...values: readonly string[]): Endpoint {
-  return { path: String.raw(parts, ...values), shape: parts.join("{}") };
+  return {
+    marker: cloudflareEndpoint,
+    path: String.raw(parts, ...values),
+    shape: parts.join("{}"),
+  };
 }
 
 function unreadable(source: Endpoint, reason: string): CloudflareFailure {
@@ -31,6 +42,25 @@ function requestReason(error: unknown): string {
   return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
     ? "timeout"
     : "request_failed";
+}
+
+function listedQuery(collection: Collection): Query {
+  return collection.pageSize === undefined
+    ? { ...collection.filter }
+    : { ...collection.filter, per_page: String(collection.pageSize) };
+}
+
+function overflowed(
+  rows: number,
+  info:
+    | Readonly<{ per_page?: number | undefined; total_count?: number | undefined }>
+    | null
+    | undefined,
+  collection: Collection,
+): boolean {
+  const page = info?.per_page ?? collection.pageSize;
+  const counted = collection.filter === undefined ? info?.total_count : undefined;
+  return (page !== undefined && rows >= page) || (counted !== undefined && counted !== rows);
 }
 
 const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
@@ -86,23 +116,35 @@ const readResource = Effect.fn("readResource")(function* readResource<Shape, Enc
   return reading.found ? yield* decodeBody(source, shape, reading.body) : undefined;
 });
 
-const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
+const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Encoded>(
   access: AccountAccess,
-  collection: Readonly<{ query?: Query; source: Endpoint }>,
+  source: Endpoint,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shape: Schema.Codec<Shape, Encoded>,
 ) {
-  const reading = yield* fetchJson(access.apiToken, collection.source, collection.query ?? {});
+  const found = yield* readResource(access, source, shape);
+  if (found === undefined) {
+    return yield* Effect.fail(unreadable(source, MISSING_REASON));
+  }
+  return found;
+});
+
+const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
+  access: AccountAccess,
+  collection: Collection,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shape: Schema.Codec<Shape, Encoded>,
+) {
+  const reading = yield* fetchJson(access.apiToken, collection.source, listedQuery(collection));
   if (!reading.found) {
-    return yield* Effect.fail(unreadable(collection.source, `status_${NOT_FOUND_STATUS}`));
+    return yield* Effect.fail(unreadable(collection.source, MISSING_REASON));
   }
   const paged = yield* decodeBody(collection.source, Paged, reading.body);
-  const total = paged.result_info?.total_count;
-  if (total !== undefined && total !== paged.result.length) {
+  if (overflowed(paged.result.length, paged.result_info, collection)) {
     return yield* Effect.fail(unreadable(collection.source, "truncated"));
   }
   return yield* decodeBody(collection.source, shape, reading.body);
 });
 
-export { decodeBody, endpoint, readList, readResource, unreadable };
-export type { AccountAccess };
+export { decodeBody, endpoint, readList, readRequired, readResource, requestReason };
+export type { AccountAccess, Endpoint };

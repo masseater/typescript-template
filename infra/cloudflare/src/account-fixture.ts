@@ -3,17 +3,10 @@ import { Effect } from "effect";
 import type { HttpResponseResolver } from "msw";
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
+import { assert } from "@effect/vitest";
 import { setupServer } from "msw/node";
 
 const INVALID_PAGE_SIZE_STATUS = 400;
-
-const pageLimits = {
-  d1Database: 10_000,
-  dnsRecords: 5_000_000,
-  secretsStores: 100,
-  workersDomains: 0,
-  workersScripts: 0,
-} as const;
 
 function mockServer(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -51,9 +44,16 @@ function pagedCollection(
   return http.get(url, guard);
 }
 
-function unpaginated(result: readonly unknown[]): Response {
-  // oxlint-disable-next-line unicorn/no-null
-  return HttpResponse.json({ result, result_info: null });
+function unpagedCollection(
+  url: string,
+  resolver: HttpResponseResolver,
+): ReturnType<typeof http.get> {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  function guard(info: Parameters<HttpResponseResolver>[0]): ReturnType<HttpResponseResolver> {
+    assert.isNull(new URL(info.request.url).searchParams.get("per_page"));
+    return resolver(info);
+  }
+  return http.get(url, guard);
 }
 
-export { mockServer, pageLimits, pagedCollection, unpaginated };
+export { mockServer, pagedCollection, unpagedCollection };
