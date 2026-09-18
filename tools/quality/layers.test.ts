@@ -31,7 +31,7 @@ describe("feature-sliced layers", () => {
     "apps/wiki/src/start.ts",
   ])("rejects %s outside the layers", (name) => {
     expect.hasAssertions();
-    expect(reported("layers", name, source)).toBe(true);
+    expect(reported("layers", { code: source, filename: name })).toBe(true);
   });
 
   it.for([
@@ -42,6 +42,6 @@ describe("feature-sliced layers", () => {
     "apps/wiki/src/shared/content/source.ts",
   ])("allows %s", (name) => {
     expect.hasAssertions();
-    expect(reported("layers", name, source)).toBe(false);
+    expect(reported("layers", { code: source, filename: name })).toBe(false);
   });
 });

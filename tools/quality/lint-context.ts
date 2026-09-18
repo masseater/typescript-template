@@ -1,28 +1,33 @@
-import type { Context, ESTree, Scope, Visitor } from "vite-plus/lint/plugins";
+import type { Context, ESTree, Scope, Variable, Visitor } from "vite-plus/lint/plugins";
 
 type DeepReadonly<Type> = unknown extends Type
   ? Type
   : Type extends (...parameters: readonly never[]) => unknown
     ? Type
     : { readonly [Key in keyof Type]: DeepReadonly<Type[Key]> };
+
+type Node = DeepReadonly<ESTree.Node>;
+type NodeOf<Type extends Node["type"]> = Extract<Node, { type: Type }>;
+
 type LintContext = Readonly<
   Pick<Context, "filename" | "report"> & {
     sourceCode: Readonly<Pick<Context["sourceCode"], "getDeclaredVariables" | "getScope">>;
   }
 >;
-type Node = DeepReadonly<ESTree.Node>;
-type NodeOf<Type extends Node["type"]> = Extract<Node, { type: Type }>;
 
-function filename(context: LintContext): string {
-  return context.filename.replaceAll("\\", "/");
-}
+const filename = (inspection: LintContext): string => {
+  return inspection.filename.replaceAll("\\", "/");
+};
 
-function scopeOf(context: LintContext, node: Node): Scope {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-  return context.sourceCode.getScope(node as ESTree.Node);
-}
+const scopeOf = (inspection: LintContext, node: Node): Scope => {
+  return inspection.sourceCode.getScope(node as ESTree.Node);
+};
 
-function importVisitor(checkSource: (node: Node) => void): Visitor {
+const declaredVariablesOf = (inspection: LintContext, node: Node): readonly Variable[] => {
+  return inspection.sourceCode.getDeclaredVariables(node as ESTree.Node);
+};
+
+const importVisitor = (checkSource: (node: Node) => void): Visitor => {
   return {
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
@@ -55,11 +60,11 @@ function importVisitor(checkSource: (node: Node) => void): Visitor {
       }
     },
   };
-}
+};
 
-function reportViolation(context: LintContext, node: Node): void {
-  context.report({ messageId: "violation", node: { range: [node.range[0], node.range[1]] } });
-}
+const reportViolation = (inspection: LintContext, node: Node): void => {
+  inspection.report({ messageId: "violation", node: { range: [node.range[0], node.range[1]] } });
+};
 
-export { filename, importVisitor, reportViolation, scopeOf };
+export { declaredVariablesOf, filename, importVisitor, reportViolation, scopeOf };
 export type { DeepReadonly, LintContext, Node, NodeOf };

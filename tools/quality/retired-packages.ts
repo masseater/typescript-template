@@ -9,20 +9,20 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
 
-function isPrefix(retired: string): boolean {
+const isPrefix = (retired: string): boolean => {
   return retired.endsWith("/");
-}
+};
 
-function replacementMessage(replacement: string): string {
-  return `${replacement}を使ってください。`;
-}
-
-function replacementFor(dependency: string): string | undefined {
+const replacementFor = (dependency: string): string | undefined => {
   const matched = Object.keys(retiredPackages).find(
     (retired) => dependency === retired || (isPrefix(retired) && dependency.startsWith(retired)),
   );
   return matched === undefined ? undefined : retiredPackages[matched];
-}
+};
+
+const replacementMessage = (replacement: string): string => {
+  return `${replacement}を使ってください。`;
+};
 
 const retiredImports = {
   patterns: Object.entries(retiredPackages).map(([retired, replacement]) => ({

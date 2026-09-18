@@ -191,23 +191,26 @@ const nonD1Operations = [
 describe("project lint rules on raw D1 access", () => {
   it.for(rawD1Operations)("rejects raw D1 operation: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("boundaries", "apps/user/src/probe.ts", code)).toBe(true);
+    expect(reported("boundaries", { code, filename: "apps/user/src/probe.ts" })).toBe(true);
   });
 
   it.for(rawD1OutsideAdapter)("rejects raw D1 outside the adapter in %s", ([name, code]) => {
     expect.hasAssertions();
-    expect(reported("boundaries", name, code)).toBe(true);
+    expect(reported("boundaries", { code, filename: name })).toBe(true);
   });
 
   it.for(nonD1Operations)("allows non-D1 operation: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reportedRules("libs/shared/src/probe.ts", code)).toStrictEqual([]);
+    expect(reportedRules({ code, filename: "libs/shared/src/probe.ts" })).toStrictEqual([]);
   });
 
   it.for(rawD1Adapters)("allows raw D1 in the %s adapter", ([name]) => {
     expect.hasAssertions();
     expect(
-      reportedRules(name, 'export const load = (db: D1Database) => db.exec("SELECT 1");'),
+      reportedRules({
+        code: 'export const load = (db: D1Database) => db.exec("SELECT 1");',
+        filename: name,
+      }),
     ).toStrictEqual([]);
   });
 });

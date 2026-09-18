@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { markFailed, runCli } from "@repo/config/cli";
@@ -47,10 +45,9 @@ const Rules = Schema.fromJsonString(
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/react-doctor", import.meta.url));
 
-function scan(args: readonly string[]): Effect.Effect<Scan> {
+const scan = (args: readonly string[]): Effect.Effect<Scan> => {
   return Effect.promise(
     async () =>
-      // oxlint-disable-next-line promise/avoid-new
       new Promise<Scan>((resolve) => {
         execFile(
           executable,
@@ -62,17 +59,17 @@ function scan(args: readonly string[]): Effect.Effect<Scan> {
         );
       }),
   );
-}
+};
 
-function findingsOf(entry: typeof Project.Type): string[] {
+const findingsOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
   return entry.diagnostics.map((diagnostic) => {
     const at = diagnostic.line === undefined ? "" : `:${diagnostic.line}`;
     return `${diagnostic.severity} ${diagnostic.rule} ${name}/${diagnostic.filePath}${at} ${diagnostic.message}`;
   });
-}
+};
 
-function skippedOf(entry: typeof Project.Type): string[] {
+const skippedOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
   return [
     ...(entry.complete ? [] : [`${name} incomplete`]),
@@ -81,7 +78,7 @@ function skippedOf(entry: typeof Project.Type): string[] {
       ([check, reason]) => `${name} ${check} ${reason}`,
     ),
   ];
-}
+};
 
 const unclassifiedRules = Effect.fn("unclassifiedRules")(function* unclassifiedRules(listed: Scan) {
   if (listed.failed && listed.stderr !== "") {

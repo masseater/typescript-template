@@ -50,21 +50,21 @@ const inGraphDependencies = [
 describe("project lint rules on the test import graph", () => {
   it.for(outOfGraphDependencies)("rejects out-of-graph test dependency: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("test-import-graph", testFile, code)).toBe(true);
+    expect(reported("test-import-graph", { code, filename: testFile })).toBe(true);
   });
 
   it.for(inGraphDependencies)("allows import-graph test dependency: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reportedRules(testFile, code)).toStrictEqual([]);
+    expect(reportedRules({ code, filename: testFile })).toStrictEqual([]);
   });
 
   it("allows out-of-graph dependencies outside tests", () => {
     expect.hasAssertions();
     expect(
-      reportedRules(
-        "tools/dev/src/cli.ts",
-        'import { spawn } from "node:child_process"; spawn(new URL(".", import.meta.url));',
-      ),
+      reportedRules({
+        code: 'import { spawn } from "node:child_process"; spawn(new URL(".", import.meta.url));',
+        filename: "tools/dev/src/cli.ts",
+      }),
     ).toStrictEqual([]);
   });
 });
