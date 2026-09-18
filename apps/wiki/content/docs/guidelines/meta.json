@@ -3,6 +3,7 @@
   "pages": [
     "principles",
     "writing-code",
+    "client-state",
     "tests",
     "documents",
     "enforcement",
