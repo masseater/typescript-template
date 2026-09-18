@@ -1,164 +1,163 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 
 const secret = "worker-test-secret-at-least-32-characters";
 
-describe("secret redaction", () => {
-  it("hides the value bound to a secret name in every serialization a log line carries", () => {
-    expect.hasAssertions();
-    expect([
-      redactSecrets(JSON.stringify({ AUTH_SECRET: secret })),
-      redactSecrets(`AUTH_SECRET=${secret}`),
-      redactSecrets(`TEMPLATE_AUTH_SECRET: ${secret}`),
-      redactSecrets(JSON.stringify({ CLOUDFLARE_API_TOKEN: secret })),
-      redactSecrets(`set-cookie: template-user.session=${secret}; HttpOnly`),
-      redactSecrets(`cookie: theme=dark; template-user.session=${secret}`),
-      redactSecrets(`authorization: Bearer ${secret}`),
-      redactSecrets(JSON.stringify({ clientSecret: secret, password: secret })),
-      redactSecrets(JSON.stringify({ AUTH_SECRET: `pre"${secret}` })),
-      redactSecrets(`CLOUDFLARE_ACCOUNT_ID=${secret}`),
-    ]).toStrictEqual([
-      '{"AUTH_SECRET":"[redacted]"}',
-      "AUTH_SECRET=[redacted]",
-      "TEMPLATE_AUTH_SECRET: [redacted]",
-      '{"CLOUDFLARE_API_TOKEN":"[redacted]"}',
-      "set-cookie: [redacted]",
-      "cookie: [redacted]",
-      "authorization: [redacted]",
-      '{"clientSecret":"[redacted]","password":"[redacted]"}',
-      '{"AUTH_SECRET":"[redacted]"}',
-      "CLOUDFLARE_ACCOUNT_ID=[redacted]",
-    ]);
+describe.for([
+  [
+    "a secret name in JSON",
+    JSON.stringify({ AUTH_SECRET: secret }),
+    '{"AUTH_SECRET":"[redacted]"}',
+  ],
+  ["a secret name in an assignment", `AUTH_SECRET=${secret}`, "AUTH_SECRET=[redacted]"],
+  [
+    "a prefixed secret name after a colon",
+    `TEMPLATE_AUTH_SECRET: ${secret}`,
+    "TEMPLATE_AUTH_SECRET: [redacted]",
+  ],
+  [
+    "a deployment token in JSON",
+    JSON.stringify({ CLOUDFLARE_API_TOKEN: secret }),
+    '{"CLOUDFLARE_API_TOKEN":"[redacted]"}',
+  ],
+  [
+    "a cookie a response sets",
+    `set-cookie: template-user.session=${secret}; HttpOnly`,
+    "set-cookie: [redacted]",
+  ],
+  [
+    "a cookie a request carries",
+    `cookie: theme=dark; template-user.session=${secret}`,
+    "cookie: [redacted]",
+  ],
+  ["a bearer credential", `authorization: Bearer ${secret}`, "authorization: [redacted]"],
+  [
+    "two secret names in one object",
+    JSON.stringify({ clientSecret: secret, password: secret }),
+    '{"clientSecret":"[redacted]","password":"[redacted]"}',
+  ],
+  [
+    "a quote inside the secret value",
+    JSON.stringify({ AUTH_SECRET: `pre"${secret}` }),
+    '{"AUTH_SECRET":"[redacted]"}',
+  ],
+  ["an account identifier", `CLOUDFLARE_ACCOUNT_ID=${secret}`, "CLOUDFLARE_ACCOUNT_ID=[redacted]"],
+  [
+    "a secret name holding a value that is not a string",
+    '{"hasSecret":true,"reason":"boom","other":"keep"}',
+    '{"hasSecret":"[redacted]","reason":"boom","other":"keep"}',
+  ],
+  [
+    "an unterminated quoted secret",
+    `AUTH_SECRET="${secret}\nnext line "stays"`,
+    'AUTH_SECRET="[redacted]"\nnext line "stays"',
+  ],
+  [
+    "a secret name inside a longer name",
+    '{"tokenCount":12,"reason":"boom"}',
+    '{"tokenCount":"[redacted]","reason":"boom"}',
+  ],
+  [
+    "a secret name quoted inside a message",
+    'Expected a value with a length of at least 32\n  at ["AUTH_SECRET"]',
+    'Expected a value with a length of at least 32\n  at ["AUTH_SECRET"]',
+  ],
+  [
+    "a message carrying no secret",
+    "D1_ERROR: no such table: jwks",
+    "D1_ERROR: no such table: jwks",
+  ],
+  [
+    "a cookie list a comma joins",
+    `set-cookie: theme=dark; Path=/, template-user.session=${secret}; HttpOnly`,
+    "set-cookie: [redacted]",
+  ],
+  [
+    "a cookie list a request joins",
+    `Cookie: theme=dark, template-user.session=${secret}`,
+    "Cookie: [redacted]",
+  ],
+  [
+    "a cookie list followed by another line",
+    `set-cookie: theme=dark, template-user.session=${secret}\nstatus: 500`,
+    "set-cookie: [redacted]\nstatus: 500",
+  ],
+  [
+    "a name that only looks like a list",
+    '{"paramsCount":2,"hasCookie":true,"reason":"boom"}',
+    '{"paramsCount":"[redacted]","hasCookie":"[redacted]","reason":"boom"}',
+  ],
+  [
+    "query parameters a failed statement reports",
+    `Failed query: select 1 from user where name = ?\nparams: alpha,${secret}`,
+    "Failed query: select 1 from user where name = ?\nparams: [redacted]",
+  ],
+  [
+    "query parameters followed by a stack frame",
+    `Failed query: select 1\nparams: ${secret}\n    at run (file.ts:1:1)`,
+    "Failed query: select 1\nparams: [redacted]\n    at run (file.ts:1:1)",
+  ],
+  [
+    "a cookie list inside an encoded message",
+    JSON.stringify({ headers: `set-cookie: a=1, session=${secret}`, reason: "boom" }),
+    '{"headers":"set-cookie: [redacted]","reason":"boom"}',
+  ],
+  [
+    "query parameters inside an encoded message",
+    JSON.stringify({
+      message: `Failed query: select 1\nparams: ${secret}\n    at run`,
+      name: "Error",
+    }),
+    JSON.stringify({
+      message: "Failed query: select 1\nparams: [redacted]\n    at run",
+      name: "Error",
+    }),
+  ],
+  [
+    "an object a secret name holds",
+    '{"secret":{"x":1,"value":"LEAK"},"reason":"boom"}',
+    '{"secret":"[redacted]","reason":"boom"}',
+  ],
+  [
+    "a list a secret name holds",
+    '{"tokens":["a","LEAK"],"reason":"boom"}',
+    '{"tokens":"[redacted]","reason":"boom"}',
+  ],
+  [
+    "an empty list a secret name holds",
+    '{"tokens":[],"reason":"boom"}',
+    '{"tokens":"[redacted]","reason":"boom"}',
+  ],
+] as const)("%s", ([, written, expectedLine]) => {
+  const it = test.extend("redactedLine", () => redactSecrets(written));
+
+  it("leaves the line readable with the secret hidden", ({ redactedLine }) => {
+    expect(redactedLine).toBe(expectedLine);
   });
 });
 
-describe("secret redaction boundaries", () => {
-  it("keeps JSON parseable when a secret name holds a value that is not a string", () => {
-    expect.hasAssertions();
-    const redacted = redactSecrets('{"hasSecret":true,"reason":"boom","other":"keep"}');
-    expect([redacted, JSON.parse(redacted)]).toStrictEqual([
-      '{"hasSecret":"[redacted]","reason":"boom","other":"keep"}',
-      { hasSecret: "[redacted]", other: "keep", reason: "boom" },
-    ]);
-  });
+describe.for([
+  ["an environment secret", "AUTH_SECRET", "[redacted]"],
+  ["a camel-cased secret", "clientSecret", "[redacted]"],
+  ["a prefixed secret", "TEMPLATE_PREFIX", "[redacted]"],
+  ["a reason", "reason", { nested: secret }],
+  ["a query", "query", { nested: secret }],
+] as const)("a field named after %s", ([, fieldName, expectedValue]) => {
+  const it = test.extend("redactedValue", () => redactedField(fieldName, { nested: secret }));
 
-  it("masks only the line that holds an unterminated quoted secret", () => {
-    expect.hasAssertions();
-    expect(redactSecrets(`AUTH_SECRET="${secret}\nnext line "stays"`)).toBe(
-      'AUTH_SECRET="[redacted]"\nnext line "stays"',
-    );
-  });
-
-  it("leaves the rest of the line readable so the failing setting stays diagnosable", () => {
-    expect.hasAssertions();
-    expect([
-      redactSecrets('{"tokenCount":12,"reason":"boom"}'),
-      redactSecrets('Expected a value with a length of at least 32\n  at ["AUTH_SECRET"]'),
-      redactSecrets("D1_ERROR: no such table: jwks"),
-    ]).toStrictEqual([
-      '{"tokenCount":"[redacted]","reason":"boom"}',
-      'Expected a value with a length of at least 32\n  at ["AUTH_SECRET"]',
-      "D1_ERROR: no such table: jwks",
-    ]);
-  });
-
-  it("recognizes a secret by its key alone", () => {
-    expect.hasAssertions();
-    expect(
-      ["AUTH_SECRET", "clientSecret", "TEMPLATE_PREFIX", "reason", "query"].map((key) =>
-        redactedField(key, { nested: secret }),
-      ),
-    ).toStrictEqual([
-      "[redacted]",
-      "[redacted]",
-      "[redacted]",
-      { nested: secret },
-      { nested: secret },
-    ]);
+  it("is settled by the name alone", ({ redactedValue }) => {
+    expect(redactedValue).toStrictEqual(expectedValue);
   });
 });
 
-describe("the field rule every log line is written through", () => {
-  it("keeps the name and the message of an error a field holds, minus the secret", () => {
-    expect.hasAssertions();
-    expect(
-      JSON.stringify({ cause: new Error(`AUTH_SECRET="${secret}" is rejected`) }, redactedField),
-    ).toBe(
+describe("an error a field holds", () => {
+  const it = test.extend("encodedError", () =>
+    JSON.stringify({ cause: new Error(`AUTH_SECRET="${secret}" is rejected`) }, redactedField));
+
+  it("keeps the name and the message, minus the secret", ({ encodedError }) => {
+    expect(encodedError).toBe(
       String.raw`{"cause":{"message":"AUTH_SECRET=\"[redacted]\" is rejected","name":"Error"}}`,
     );
-  });
-});
-
-describe("cookies a header joins with a comma", () => {
-  it("hides every cookie a header carries, not only the one before the first comma", () => {
-    expect.hasAssertions();
-    expect([
-      redactSecrets(`set-cookie: theme=dark; Path=/, template-user.session=${secret}; HttpOnly`),
-      redactSecrets(`Cookie: theme=dark, template-user.session=${secret}`),
-      redactSecrets(`set-cookie: theme=dark, template-user.session=${secret}\nstatus: 500`),
-    ]).toStrictEqual([
-      "set-cookie: [redacted]",
-      "Cookie: [redacted]",
-      "set-cookie: [redacted]\nstatus: 500",
-    ]);
-  });
-
-  it("stops at the comma when the name only looks like a list, so JSON stays parseable", () => {
-    expect.hasAssertions();
-    const redacted = redactSecrets('{"paramsCount":2,"hasCookie":true,"reason":"boom"}');
-    expect([redacted, JSON.parse(redacted)]).toStrictEqual([
-      '{"paramsCount":"[redacted]","hasCookie":"[redacted]","reason":"boom"}',
-      { hasCookie: "[redacted]", paramsCount: "[redacted]", reason: "boom" },
-    ]);
-  });
-});
-
-describe("query parameters a failed statement reports", () => {
-  it("hides every query parameter, keeping the statement readable", () => {
-    expect.hasAssertions();
-    expect([
-      redactSecrets(`Failed query: select 1 from user where name = ?\nparams: alpha,${secret}`),
-      redactSecrets(`Failed query: select 1\nparams: ${secret}\n    at run (file.ts:1:1)`),
-    ]).toStrictEqual([
-      "Failed query: select 1 from user where name = ?\nparams: [redacted]",
-      "Failed query: select 1\nparams: [redacted]\n    at run (file.ts:1:1)",
-    ]);
-  });
-});
-
-describe("lists a log line carries JSON encoded", () => {
-  it("keeps JSON parseable when the list sits inside an encoded message", () => {
-    expect.hasAssertions();
-    const header = redactSecrets(
-      JSON.stringify({ headers: `set-cookie: a=1, session=${secret}`, reason: "boom" }),
-    );
-    const query = redactSecrets(
-      JSON.stringify({
-        message: `Failed query: select 1\nparams: ${secret}\n    at run`,
-        name: "Error",
-      }),
-    );
-    expect([header, JSON.parse(header), JSON.parse(query)]).toStrictEqual([
-      '{"headers":"set-cookie: [redacted]","reason":"boom"}',
-      { headers: "set-cookie: [redacted]", reason: "boom" },
-      { message: "Failed query: select 1\nparams: [redacted]\n    at run", name: "Error" },
-    ]);
-  });
-});
-
-describe("secrets held by a structured value", () => {
-  it("hides the whole object or array a secret name holds, not just up to its first comma", () => {
-    expect.hasAssertions();
-    const nested = redactSecrets('{"secret":{"x":1,"value":"LEAK"},"reason":"boom"}');
-    const list = redactSecrets('{"tokens":["a","LEAK"],"reason":"boom"}');
-    const empty = redactSecrets('{"tokens":[],"reason":"boom"}');
-    expect([nested, list, empty, JSON.parse(nested), JSON.parse(list)]).toStrictEqual([
-      '{"secret":"[redacted]","reason":"boom"}',
-      '{"tokens":"[redacted]","reason":"boom"}',
-      '{"tokens":"[redacted]","reason":"boom"}',
-      { reason: "boom", secret: "[redacted]" },
-      { reason: "boom", tokens: "[redacted]" },
-    ]);
   });
 });
