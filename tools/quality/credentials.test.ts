@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect } from "effect";
@@ -13,7 +10,6 @@ import { deploymentCredentials } from "./credentials.ts";
 const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 const project = "template-project";
 
-// oxlint-disable-next-line node/no-process-env
 const environment = process.env;
 
 interface Fixture {
@@ -21,18 +17,17 @@ interface Fixture {
   readonly root: string;
 }
 
-function restore(entries: Readonly<Record<string, string | undefined>>): void {
+const restore = (entries: Readonly<Record<string, string | undefined>>): void => {
   for (const [name, value] of Object.entries(entries)) {
-    // oxlint-disable-next-line typescript/no-dynamic-delete
     delete environment[name];
     Object.assign(environment, value === undefined ? {} : { [name]: value });
   }
-}
+};
 
-async function withFixture(scenario: (fixture: Fixture) => Promise<void>): Promise<void> {
+const withFixture = async (scenario: (fixture: Fixture) => Promise<void>): Promise<void> => {
   const previous = {
-    TEMPLATE_CLOUDFLARE_ENV_FILE: environment["TEMPLATE_CLOUDFLARE_ENV_FILE"],
-    XDG_CONFIG_HOME: environment["XDG_CONFIG_HOME"],
+    TEMPLATE_CLOUDFLARE_ENV_FILE: environment.TEMPLATE_CLOUDFLARE_ENV_FILE,
+    XDG_CONFIG_HOME: environment.XDG_CONFIG_HOME,
   };
   const root = await mkdtemp(path.join(tmpdir(), "template-credentials-"));
   const home = await mkdtemp(path.join(tmpdir(), "template-config-"));
@@ -45,17 +40,17 @@ async function withFixture(scenario: (fixture: Fixture) => Promise<void>): Promi
     await rm(root, { force: true, recursive: true });
     await rm(home, { force: true, recursive: true });
   }
-}
+};
 
-async function writeCredentials(filename: string, contents: string): Promise<void> {
+const writeCredentials = async (filename: string, contents: string): Promise<void> => {
   await mkdir(path.dirname(filename), { recursive: true });
   await writeFile(filename, contents);
-}
+};
 
-async function report(root: string): Promise<Readonly<Record<string, unknown>>> {
+const report = async (root: string): Promise<Readonly<Record<string, unknown>>> => {
   const failure = await Effect.runPromise(Effect.flip(deploymentCredentials(root)));
   return failure.report;
-}
+};
 
 describe("deployment credentials the staged-diff check scans for", () => {
   it("reports no credentials configured when the default file was never created", async () => {

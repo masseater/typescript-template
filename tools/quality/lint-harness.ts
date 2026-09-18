@@ -1,23 +1,8 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 
-import plugin from "./rules.ts";
+import plugin from "./plugin.ts";
 
-type RuleName =
-  | "annotations"
-  | "boundaries"
-  | "cross-request-state"
-  | "effect-failures"
-  | "effect-stack"
-  | "environment-boundary"
-  | "example-values"
-  | "git-environment"
-  | "layers"
-  | "no-internal-mocks"
-  | "no-manual-memoization"
-  | "test-import-graph"
-  | "worker-fetch";
-
-const ruleNames: readonly RuleName[] = [
+const ruleNames = [
   "annotations",
   "boundaries",
   "cross-request-state",
@@ -31,11 +16,13 @@ const ruleNames: readonly RuleName[] = [
   "no-manual-memoization",
   "test-import-graph",
   "worker-fetch",
-];
+] as const;
 
-function runImmediately(_text: string, run: () => void): void {
+type RuleName = (typeof ruleNames)[number];
+
+const runImmediately = (_title: string, run: () => void): void => {
   run();
-}
+};
 
 RuleTester.describe = runImmediately;
 RuleTester.it = runImmediately;
@@ -43,30 +30,36 @@ const tester = new RuleTester({ cwd: "/project" });
 
 const errorCountPattern = /^Should have no errors but had (?<count>\d+)/u;
 
-function reportCount(name: RuleName, filename: string, code: string): number {
-  const rule = plugin.rules[name];
+const reportCount = (
+  ruleName: RuleName,
+  probe: { readonly code: string; readonly filename: string },
+): number => {
+  const rule = plugin.rules[ruleName];
   if (rule === undefined) {
-    throw new Error(`Unknown rule ${name}`);
+    throw new Error(`Unknown rule ${ruleName}`);
   }
   try {
-    tester.run(name, rule, { invalid: [], valid: [{ code, filename }] });
+    tester.run(ruleName, rule, { invalid: [], valid: [probe] });
     return 0;
-  } catch (error) {
-    const count =
-      error instanceof Error ? errorCountPattern.exec(error.message)?.groups?.["count"] : undefined;
-    if (count === undefined) {
-      throw error;
+  } catch (caught) {
+    const reportedCount =
+      caught instanceof Error ? errorCountPattern.exec(caught.message)?.groups?.count : undefined;
+    if (reportedCount === undefined) {
+      throw caught;
     }
-    return Number(count);
+    return Number(reportedCount);
   }
-}
+};
 
-function reported(name: RuleName, filename: string, code: string): boolean {
-  return reportCount(name, filename, code) > 0;
-}
+const reported = (
+  ruleName: RuleName,
+  probe: { readonly code: string; readonly filename: string },
+): boolean => {
+  return reportCount(ruleName, probe) > 0;
+};
 
-function reportedRules(filename: string, code: string): RuleName[] {
-  return ruleNames.filter((rule) => reported(rule, filename, code));
-}
+const reportedRules = (probe: { readonly code: string; readonly filename: string }): RuleName[] => {
+  return ruleNames.filter((ruleName) => reported(ruleName, probe));
+};
 
 export { reportCount, reported, reportedRules, ruleNames };

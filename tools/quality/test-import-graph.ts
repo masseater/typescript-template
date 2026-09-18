@@ -1,10 +1,10 @@
 import { aliasChecker, aliasVisitor } from "./alias-visitor.ts";
-import { reportViolation } from "./lint-context.ts";
-import { origins, propertyName, staticText } from "./references.ts";
+import { reportViolation, type LintContext, type Node, type NodeOf } from "./lint-context.ts";
+import { origins, propertyName, staticText, type Origin } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
-import type { Origin } from "./references.ts";
+
+const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
 
 type SourceCheck = (node: Node) => void;
 
@@ -14,78 +14,85 @@ const outOfGraphModules: ReadonlySet<string> = new Set([
   "node:worker_threads",
   "worker_threads",
 ]);
-const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
-const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
-const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
 
-function isOutOfGraph(origin: Origin): boolean {
-  const [source = "", first = "", second = ""] = origin;
-  return (
-    outOfGraphModules.has(source) ||
-    (source === "import.meta" && metaPaths.has(first)) ||
-    ((source === "node:process" || source === "process") && first === "cwd") ||
-    (source === "global" && first === "process" && second === "cwd")
-  );
-}
-
-function sourceChecker(context: LintContext): SourceCheck {
+const sourceChecker = (inspection: LintContext): SourceCheck => {
   return (node) => {
-    const source = staticText(context, node) ?? "";
+    const source = staticText(inspection, node) ?? "";
     if (outOfGraphModules.has(source) || source.includes("?")) {
-      reportViolation(context, node);
+      reportViolation(inspection, node);
     }
   };
-}
+};
 
-function hasQueryOption(context: LintContext, options: Node): boolean {
-  if (options.type !== "ObjectExpression") {
+const hasQueryOption = (inspection: LintContext, globOption: Node): boolean => {
+  if (globOption.type !== "ObjectExpression") {
     return true;
   }
-  return options.properties.some(
-    (property) => property.type !== "Property" || propertyName(context, property) === "query",
+  return globOption.properties.some(
+    (property) => property.type !== "Property" || propertyName(inspection, property) === "query",
   );
-}
+};
 
-function checkGlob(
-  context: LintContext,
-  node: NodeOf<"CallExpression">,
-  checkSource: SourceCheck,
-): void {
-  const [patterns, options] = node.arguments;
-  const list = patterns?.type === "ArrayExpression" ? patterns.elements : [patterns];
-  for (const pattern of list) {
+const checkGlob = (
+  inspection: LintContext,
+  glob: { readonly checkSource: SourceCheck; readonly node: NodeOf<"CallExpression"> },
+): void => {
+  const [patterns, globOption] = glob.node.arguments;
+  const globbed = patterns?.type === "ArrayExpression" ? patterns.elements : [patterns];
+  for (const pattern of globbed) {
     if (pattern && pattern.type !== "SpreadElement") {
-      checkSource(pattern);
+      glob.checkSource(pattern);
     }
   }
-  if (options !== undefined && hasQueryOption(context, options)) {
-    reportViolation(context, options);
+  if (globOption !== undefined && hasQueryOption(inspection, globOption)) {
+    reportViolation(inspection, globOption);
   }
-}
+};
 
-function callVisitor(context: LintContext, checkSource: SourceCheck): Visitor {
+const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
+
+const callVisitor = (inspection: LintContext, checkSource: SourceCheck): Visitor => {
   return {
     CallExpression(node: Node): void {
       if (node.type !== "CallExpression") {
         return;
       }
-      const callee = origins(context, node.callee).map((origin) => origin.join("."));
+      const callee = origins(inspection, node.callee).map((origin) => origin.join("."));
       if (callee.includes("import.meta.glob")) {
-        checkGlob(context, node, checkSource);
+        checkGlob(inspection, { checkSource, node });
       }
       const [argument] = node.arguments;
       if (
         argument !== undefined &&
-        callee.some((name) => name === "require" || builtinModuleLoader.test(name))
+        callee.some((called) => called === "require" || builtinModuleLoader.test(called))
       ) {
         checkSource(argument);
       }
     },
   };
-}
+};
 
-function moduleVisitor(context: LintContext, checkSource: SourceCheck): Visitor {
-  const checkAlias = aliasChecker(context, isOutOfGraph);
+const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
+
+const isProcessCwd = (origin: Origin): boolean => {
+  const [source = "", first = "", second = ""] = origin;
+  return (
+    ((source === "node:process" || source === "process") && first === "cwd") ||
+    (source === "global" && first === "process" && second === "cwd")
+  );
+};
+
+const isOutOfGraph = (origin: Origin): boolean => {
+  const [source = "", first = ""] = origin;
+  return (
+    outOfGraphModules.has(source) ||
+    (source === "import.meta" && metaPaths.has(first)) ||
+    isProcessCwd(origin)
+  );
+};
+
+const moduleVisitor = (inspection: LintContext, checkSource: SourceCheck): Visitor => {
+  const checkAlias = aliasChecker(inspection, isOutOfGraph);
   return {
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
@@ -112,55 +119,55 @@ function moduleVisitor(context: LintContext, checkSource: SourceCheck): Visitor 
       }
     },
   };
-}
+};
 
-function testImportGraphVisitor(context: LintContext): Visitor {
-  if (!testFile.test(context.filename.replaceAll("\\", "/"))) {
+const testImportGraphVisitor = (inspection: LintContext): Visitor => {
+  if (!testFile.test(inspection.filename.replaceAll("\\", "/"))) {
     return {};
   }
-  const checkSource = sourceChecker(context);
+  const checkSource = sourceChecker(inspection);
   return {
-    ...aliasVisitor(context, isOutOfGraph),
-    ...moduleVisitor(context, checkSource),
-    ...callVisitor(context, checkSource),
+    ...aliasVisitor(inspection, isOutOfGraph),
+    ...moduleVisitor(inspection, checkSource),
+    ...callVisitor(inspection, checkSource),
   };
-}
+};
 
 const fixtureOrTestFile = /(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$/u;
 const gitExecutable = /(?:^|\/)git(?:\.exe)?$/u;
 
-function startsGit(context: LintContext, node: NodeOf<"CallExpression">): boolean {
+const startsGit = (inspection: LintContext, node: NodeOf<"CallExpression">): boolean => {
   const [command] = node.arguments;
   if (command === undefined || command.type === "SpreadElement") {
     return false;
   }
-  const text = staticText(context, command);
-  return text !== undefined && gitExecutable.test(text);
-}
+  const executable = staticText(inspection, command);
+  return executable !== undefined && gitExecutable.test(executable);
+};
 
-function declaresEnvironment(context: LintContext, node: Node): boolean {
+const declaresEnvironment = (inspection: LintContext, node: Node): boolean => {
   return (
     node.type === "ObjectExpression" &&
     node.properties.some(
-      (property) => property.type === "Property" && propertyName(context, property) === "env",
+      (property) => property.type === "Property" && propertyName(inspection, property) === "env",
     )
   );
-}
+};
 
-function gitEnvironmentVisitor(context: LintContext): Visitor {
-  if (!fixtureOrTestFile.test(context.filename.replaceAll("\\", "/"))) {
+const gitEnvironmentVisitor = (inspection: LintContext): Visitor => {
+  if (!fixtureOrTestFile.test(inspection.filename.replaceAll("\\", "/"))) {
     return {};
   }
   return {
     CallExpression(node: Node): void {
-      if (node.type !== "CallExpression" || !startsGit(context, node)) {
+      if (node.type !== "CallExpression" || !startsGit(inspection, node)) {
         return;
       }
-      if (!node.arguments.some((argument) => declaresEnvironment(context, argument))) {
-        reportViolation(context, node);
+      if (!node.arguments.some((argument) => declaresEnvironment(inspection, argument))) {
+        reportViolation(inspection, node);
       }
     },
   };
-}
+};
 
 export { gitEnvironmentVisitor, testImportGraphVisitor };

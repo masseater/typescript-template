@@ -24,7 +24,7 @@ const configuration = {
     "tools/quality/lint-context.ts",
     "tools/quality/module-specifiers.ts",
     "tools/quality/references.ts",
-    "tools/quality/rules.ts",
+    "tools/quality/plugin.ts",
     "tools/quality/scripts.ts",
     "tools/quality/secrets.ts",
     "tools/quality/test-import-graph.ts",
@@ -39,5 +39,4 @@ const configuration = {
   vitest: { configFile: "vitest.mutation.config.ts" },
 };
 
-// oxlint-disable-next-line import/no-default-export
 export default configuration;

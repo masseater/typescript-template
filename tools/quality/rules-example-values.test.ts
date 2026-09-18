@@ -49,11 +49,11 @@ const allowed = [
 describe("example values in tests and fixtures", () => {
   it.for(forbidden)("rejects a value that could be real: %s", ([_label, name, code]) => {
     expect.hasAssertions();
-    expect(reported("example-values", name, code)).toBe(true);
+    expect(reported("example-values", { code, filename: name })).toBe(true);
   });
 
   it.for(allowed)("leaves self-declaring example values alone: %s", ([name, code]) => {
     expect.hasAssertions();
-    expect(reportedRules(name, code)).toStrictEqual([]);
+    expect(reportedRules({ code, filename: name })).toStrictEqual([]);
   });
 });

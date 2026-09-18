@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { markFailed, runCli } from "@repo/config/cli";
@@ -6,9 +5,7 @@ import { Cause, Console, Effect, Option } from "effect";
 
 import { deploymentCredentials } from "./credentials.ts";
 import { prefixScan, secretViolations } from "./secrets.ts";
-import { stagedFiles } from "./staged.ts";
-
-import type { StagedFile } from "./staged.ts";
+import { stagedFiles, type StagedFile } from "./staged.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -26,11 +23,11 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
   return { credentials: credentials.source, failures, scan };
 });
 
-function uncheckedRecord(
+const uncheckedRecord = (
   detail: Readonly<Record<string, unknown>>,
-): Readonly<Record<string, unknown>> {
+): Readonly<Record<string, unknown>> => {
   return { event: "quality.staged_secrets_failed", ok: false, ...detail };
-}
+};
 
 runCli(
   scanStaged().pipe(

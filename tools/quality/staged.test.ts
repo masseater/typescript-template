@@ -12,13 +12,13 @@ import { blobContents, stagedFiles } from "./staged.ts";
 
 const GIT_USAGE_EXIT_CODE = 128;
 
-function batch(blobs: readonly (readonly [string, string])[]): Buffer {
+const batch = (blobs: readonly (readonly [string, string])[]): Buffer => {
   return Buffer.concat(
     blobs.map(([object, content]: readonly [string, string]) =>
       Buffer.from(`${object} blob ${String(Buffer.byteLength(content))}\n${content}\n`),
     ),
   );
-}
+};
 
 const blobs = [
   ["1111111111111111111111111111111111111111", "hello\n"],
@@ -28,18 +28,18 @@ const blobs = [
   ["5555555555555555555555555555555555555555", "tail without newline"],
 ] as const;
 
-async function unreadable(
+const unreadable = async (
   framed: Readonly<Buffer>,
   objects: readonly string[],
-): Promise<Readonly<Record<string, unknown>>> {
+): Promise<Readonly<Record<string, unknown>>> => {
   const failure = await Effect.runPromise(Effect.flip(blobContents(framed, objects)));
   return failure.report;
-}
+};
 
-async function report(root: string): Promise<Readonly<Record<string, unknown>>> {
+const report = async (root: string): Promise<Readonly<Record<string, unknown>>> => {
   const failure = await Effect.runPromise(Effect.flip(stagedFiles(root)));
   return failure.report;
-}
+};
 
 describe("git cat-file batch output", () => {
   it("frames every blob by its byte length", async () => {
