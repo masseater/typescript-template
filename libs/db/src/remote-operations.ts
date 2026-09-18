@@ -125,5 +125,11 @@ const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapData
   );
 });
 
-export { MigrationFiles, bootstrapDatabase, loadRemoteMigrations, migrateDatabase };
+export {
+  APPLICATION_TABLES,
+  MigrationFiles,
+  bootstrapDatabase,
+  loadRemoteMigrations,
+  migrateDatabase,
+};
 export type { DatabaseExecutor, RemoteQuery };

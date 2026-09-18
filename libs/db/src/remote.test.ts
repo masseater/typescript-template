@@ -1,14 +1,15 @@
 import {
-  CloudflareInternalTestDatabase,
-  EmptyTestDatabase,
-  TestBinding,
-  d1Executor,
-  runStatement,
-} from "./testing-node.ts";
+  APPLICATION_TABLES,
+  bootstrapDatabase,
+  loadRemoteMigrations,
+  migrateDatabase,
+} from "./remote-operations.ts";
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
 import { assert, it } from "@effect/vitest";
-import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
 import type { Database } from "./database.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { DatabaseSync } from "node:sqlite";
 import { Effect } from "effect";
 import type { RemoteFailure } from "./remote-input.ts";
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
@@ -224,20 +225,30 @@ it.effect(
   { timeout: TEST_TIMEOUT_MS },
 );
 
-it.effect(
-  "migrates a database that holds only the Cloudflare internal tables",
-  () =>
-    Effect.gen(function* program() {
-      const internal = yield* runStatement(
-        "SELECT name FROM sqlite_master WHERE name = ?",
-        "_cf_KV",
-      );
-      assert.deepStrictEqual(internal.results, [{ name: "_cf_KV" }]);
-      const executor = d1Executor(yield* TestBinding);
-      const migrations = yield* loadRemoteMigrations();
-      assert.strictEqual(yield* migrateDatabase(executor, migrations), migrations.length);
-    }).pipe(Effect.provide(CloudflareInternalTestDatabase)),
-  { timeout: TEST_TIMEOUT_MS },
+it.effect("counts as application tables everything but the Cloudflare and migration tables", () =>
+  Effect.sync(() => {
+    const storage = new DatabaseSync(":memory:");
+    for (const name of [
+      "__drizzle_migrations",
+      "_cf_KV",
+      "_cf_METADATA",
+      "acfxtable",
+      "cf_users",
+      "d1_migrations",
+      "sqlitex_thing",
+      "user",
+    ]) {
+      storage.exec(`CREATE TABLE "${name}" (id TEXT)`);
+    }
+    const names = storage.prepare(APPLICATION_TABLES).all();
+    storage.close();
+    assert.deepStrictEqual(names, [
+      { name: "acfxtable" },
+      { name: "cf_users" },
+      { name: "sqlitex_thing" },
+      { name: "user" },
+    ]);
+  }),
 );
 
 it.effect(
