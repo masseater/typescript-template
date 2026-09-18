@@ -21,7 +21,11 @@ import {
 } from "./artifact-io.ts";
 import type { ArtifactFailure } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
-import { archiveSourceMaps } from "./source-maps.ts";
+import {
+  archiveSourceMaps,
+  requireClientSourceMaps,
+  retainArchivedSourceMaps,
+} from "./source-maps.ts";
 import { stageFiles } from "./staging.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -34,7 +38,6 @@ function monitorArtifact(unit: string): string {
 
 const RELEASE_LENGTH = 16;
 const STAGED_DIGESTS_KEPT = 1;
-const ARCHIVED_RELEASES_KEPT = 5;
 
 type ArtifactMode = "describe" | "publish" | "stage";
 
@@ -235,6 +238,13 @@ const materialize = Effect.fn("materialize")(function* materialize(
   if (mode === "describe") {
     return;
   }
+  yield* requireClientSourceMaps(
+    place.repository,
+    place.target,
+    artifacts.clientFiles
+      .filter((file) => /\.m?js$/u.test(file))
+      .map((file) => path.relative(output.client, file)),
+  );
   yield* Effect.all([
     stageFiles(output.client, artifacts.clientDirectory, artifacts.clientFiles),
     stageFiles(
@@ -253,11 +263,7 @@ const materialize = Effect.fn("materialize")(function* materialize(
       artifacts.uploaded,
       STAGED_DIGESTS_KEPT,
     ),
-    retainGenerations(
-      path.join(place.repository, ".local", "source-maps", place.target, "releases"),
-      artifacts.release,
-      ARCHIVED_RELEASES_KEPT,
-    ),
+    retainArchivedSourceMaps(place.repository, place.target, artifacts.release),
   ]);
 });
 

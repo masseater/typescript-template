@@ -6,8 +6,6 @@
     "bootstrap:state": "node src/bootstrap-state.ts",
     "db:bootstrap:remote": "node src/database-command.ts bootstrap",
     "db:migrate:remote": "node src/database-command.ts migrate",
-    "deploy": "node src/cli.ts deploy",
-    "preview": "node src/cli.ts plan",
     "verify:account": "node src/check-account.ts"
   },
   "dependencies": {

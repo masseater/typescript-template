@@ -10,8 +10,8 @@ import { serve } from "srvx";
 import { staticMiddleware } from "srvx/static";
 
 import { playbookDirectory } from "#shared/playbook/index.ts";
+import { reportFailed } from "@repo/config/cli";
 
-import { reportFailed } from "./failure.ts";
 import { resolveProject } from "./project.ts";
 
 const host = "127.0.0.1";

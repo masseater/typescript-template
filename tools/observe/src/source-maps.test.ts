@@ -8,6 +8,8 @@ import path from "node:path";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { sourceMapDirectories } from "@repo/config/source-maps";
+
 import { symbolicate } from "./source-maps.ts";
 
 const release = "0123456789abcdef";
@@ -27,7 +29,7 @@ async function createTemporaryRoot(): Promise<string> {
 }
 
 async function writeReleaseMaps(root: string): Promise<void> {
-  const directory = path.join(root, ".local/source-maps/user/releases", release);
+  const directory = path.join(sourceMapDirectories(root, "user").releases, release);
   await mkdir(path.join(directory, "client/assets"), { recursive: true });
   await mkdir(path.join(directory, "server/assets"), { recursive: true });
   await writeFile(
