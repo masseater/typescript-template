@@ -94,4 +94,3 @@ async function serveApplication(
 }
 
 export { serveApplication };
-export type { ApplicationServer, ServedApplication };
