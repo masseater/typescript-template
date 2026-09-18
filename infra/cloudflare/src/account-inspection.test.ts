@@ -134,7 +134,6 @@ function accountHandlers(options: {
       // oxlint-disable-next-line unicorn/no-null
       HttpResponse.json({ result: options.scripts.map((id) => ({ id })), result_info: null }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     unpagedCollection(`${account}/workers/domains`, ({ request }) => {
       const wanted = new URL(request.url).searchParams.get("hostname");
       const matching = options.domains.filter((domain) => domain.hostname === wanted);
@@ -143,7 +142,6 @@ function accountHandlers(options: {
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     unpagedCollection(`${zone}/dns_records`, ({ request }) => {
       const wanted = new URL(request.url).searchParams.get("name.exact");
       const matching = options.records.filter((record) => record === wanted);

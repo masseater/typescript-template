@@ -26,11 +26,9 @@ function isPublic(path: string): boolean {
 }
 
 function currentSession(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ): Effect.Effect<Option.Option<{ readonly strong: boolean }>, SessionUnavailable, SessionServices> {
   return verifySession(request.headers, true).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((session) => Option.some(session)),
     Effect.catchTags({
       AdminMfaRequired: () => Effect.succeed(Option.none()),
@@ -51,11 +49,7 @@ function denied(path: string, signedIn: boolean): Response {
   });
 }
 
-const guardAccess = Effect.fn("guardAccess")(function* guardAccess(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  request: Request,
-  path: string,
-) {
+const guardAccess = Effect.fn("guardAccess")(function* guardAccess(request: Request, path: string) {
   if (isPublic(path)) {
     return Option.none<Response>();
   }
