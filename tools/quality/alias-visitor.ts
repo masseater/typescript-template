@@ -1,33 +1,37 @@
-import { reportViolation } from "./lint-context.ts";
-import { destructuredOrigins, origins } from "./references.ts";
+import {
+  declaredVariablesOf,
+  reportViolation,
+  type LintContext,
+  type Node,
+} from "./lint-context.ts";
+import { destructuredOrigins, origins, type Origin } from "./references.ts";
 
-import type { ESTree, Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
-import type { Origin } from "./references.ts";
+import type { Visitor } from "vite-plus/lint/plugins";
 
-function aliasChecker(
-  context: LintContext,
+const aliasChecker = (
+  inspection: LintContext,
   matches: (origin: Origin) => boolean,
-): (node: Node) => void {
+): ((node: Node) => void) => {
   return (node) => {
-    if (origins(context, node).some((origin) => matches(origin))) {
-      reportViolation(context, node);
+    if (origins(inspection, node).some((origin) => matches(origin))) {
+      reportViolation(inspection, node);
     }
   };
-}
+};
 
-function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean): Visitor {
-  const check = aliasChecker(context, matches);
+const aliasVisitor = (inspection: LintContext, matches: (origin: Origin) => boolean): Visitor => {
+  const check = aliasChecker(inspection, matches);
   return {
     AssignmentExpression(node: Node): void {
       if (
         node.type === "AssignmentExpression" &&
         node.left.type === "ObjectPattern" &&
-        destructuredOrigins(context, node.left, origins(context, node.right)).some((origin) =>
-          matches(origin),
-        )
+        destructuredOrigins(inspection, {
+          inputs: origins(inspection, node.right),
+          pattern: node.left,
+        }).some((origin) => matches(origin))
       ) {
-        reportViolation(context, node);
+        reportViolation(inspection, node);
       }
     },
     ImportDeclaration(node: Node): void {
@@ -39,33 +43,32 @@ function aliasVisitor(context: LintContext, matches: (origin: Origin) => boolean
       }
     },
     MemberExpression: check,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    VariableDeclarator(node: ESTree.Node): void {
+    VariableDeclarator(node: Node): void {
       if (node.type !== "VariableDeclarator" || node.id.type !== "ObjectPattern") {
         return;
       }
-      for (const variable of context.sourceCode.getDeclaredVariables(node)) {
+      for (const variable of declaredVariablesOf(inspection, node)) {
         for (const identifier of variable.identifiers) {
           check(identifier);
         }
       }
     },
   };
-}
+};
 
-function originVisitor(context: LintContext, matches: (origin: Origin) => boolean): Visitor {
+const originVisitor = (inspection: LintContext, matches: (origin: Origin) => boolean): Visitor => {
   return {
-    ...aliasVisitor(context, matches),
+    ...aliasVisitor(inspection, matches),
     CallExpression(node: Node): void {
       if (
         node.type === "CallExpression" &&
         node.callee.type !== "MemberExpression" &&
-        origins(context, node.callee).some((origin) => matches(origin))
+        origins(inspection, node.callee).some((origin) => matches(origin))
       ) {
-        reportViolation(context, node.callee);
+        reportViolation(inspection, node.callee);
       }
     },
   };
-}
+};
 
 export { aliasChecker, aliasVisitor, originVisitor };

@@ -27,17 +27,17 @@ const sources: Readonly<Record<string, unknown>> = import.meta.glob(
 const scripts = field(rootManifests["../../package.json"], "scripts");
 const runStep = /^\s*- run: (?<command>.+)$/gmu;
 
-function workflowRuns(): string[] {
+const workflowRuns = (): string[] => {
   return Object.values(workflows).flatMap((workflow) =>
-    [...workflow.matchAll(runStep)].map((match) => match.groups?.["command"] ?? ""),
+    [...workflow.matchAll(runStep)].map((match) => match.groups?.command ?? ""),
   );
-}
+};
 
-function scriptCommands(): string[] {
+const scriptCommands = (): string[] => {
   return typeof scripts === "object" && scripts !== null ? Object.values(scripts).map(String) : [];
-}
+};
 
-function suppressedFiles(): string[] {
+const suppressedFiles = (): string[] => {
   const suppressed: string[] = [];
   for (const [file, config] of Object.entries(workspaceConfigs)) {
     const workspace = file.replace(/\/doctor\.config\.json$/u, "");
@@ -46,7 +46,7 @@ function suppressedFiles(): string[] {
     }
   }
   return suppressed;
-}
+};
 
 describe("react-doctor integration", () => {
   it("only the root check:react task runs react-doctor", () => {

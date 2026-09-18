@@ -1,64 +1,66 @@
-import { reportViolation } from "./lint-context.ts";
+import {
+  filename,
+  reportViolation,
+  type LintContext,
+  type Node,
+  type NodeOf,
+} from "./lint-context.ts";
 import { origins, propertyName, staticText } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 
-const elysiaServerOrigin = ["@repo/runtime/http", "elysiaServer"];
-
-function filename(context: LintContext): string {
-  return context.filename.replaceAll("\\", "/");
-}
-
-function definesFileRoute(context: LintContext, node: Node): boolean {
+const definesFileRoute = (inspection: LintContext, node: Node): boolean => {
   return (
     node.type === "CallExpression" &&
     node.callee.type === "CallExpression" &&
-    origins(context, node.callee.callee).some((origin) => origin[1] === "createFileRoute")
+    origins(inspection, node.callee.callee).some((origin) => origin[1] === "createFileRoute")
   );
-}
+};
 
-function routeOptions(node: Node): NodeOf<"ObjectExpression">["properties"] {
-  const [options] = node.type === "CallExpression" ? node.arguments : [];
-  return options?.type === "ObjectExpression" ? options.properties : [];
-}
+const routeOptions = (node: Node): NodeOf<"ObjectExpression">["properties"] => {
+  const [routeOption] = node.type === "CallExpression" ? node.arguments : [];
+  return routeOption?.type === "ObjectExpression" ? routeOption.properties : [];
+};
 
-function servesElysia(context: LintContext, node: Node): boolean {
+const elysiaServerOrigin = ["@repo/runtime/http", "elysiaServer"];
+
+const servesElysia = (inspection: LintContext, node: Node): boolean => {
   if (node.type === "ObjectExpression") {
     return node.properties.some(
-      (property) => property.type === "SpreadElement" && servesElysia(context, property.argument),
+      (property) =>
+        property.type === "SpreadElement" && servesElysia(inspection, property.argument),
     );
   }
   return (
     node.type === "CallExpression" &&
-    origins(context, node.callee).some(
+    origins(inspection, node.callee).some(
       (origin) => origin.join(".") === elysiaServerOrigin.join("."),
     )
   );
-}
+};
 
-function reportForeignServer(context: LintContext, node: Node): void {
-  if (!definesFileRoute(context, node)) {
+const reportForeignServer = (inspection: LintContext, node: Node): void => {
+  if (!definesFileRoute(inspection, node)) {
     return;
   }
   for (const property of routeOptions(node)) {
     if (property.type !== "Property") {
-      reportViolation(context, property);
+      reportViolation(inspection, property);
     } else if (
-      propertyName(context, property) === "server" &&
-      !servesElysia(context, property.value)
+      propertyName(inspection, property) === "server" &&
+      !servesElysia(inspection, property.value)
     ) {
-      reportViolation(context, property);
+      reportViolation(inspection, property);
     }
   }
-}
+};
 
-function effectStackVisitor(context: LintContext): Visitor {
-  const current = filename(context);
-  const elysiaFactory = current.endsWith("/libs/runtime/src/http.ts");
-  const startRoute = /\/apps\/[^/]+\/src\/(?:[^/]+\/)*routes\//u.test(current);
-  function check(node: Node, typeOnly: boolean): void {
-    const source = staticText(context, node);
+const effectStackVisitor = (inspection: LintContext): Visitor => {
+  const inspected = filename(inspection);
+  const elysiaFactory = inspected.endsWith("/libs/runtime/src/http.ts");
+  const startRoute = /\/apps\/[^/]+\/src\/(?:[^/]+\/)*routes\//u.test(inspected);
+  const check = (node: Node, typeOnly: boolean): void => {
+    const source = staticText(inspection, node);
     if (source === undefined) {
       return;
     }
@@ -66,13 +68,13 @@ function effectStackVisitor(context: LintContext): Visitor {
       /^valibot(?:\/|$)/u.test(source) ||
       (/^elysia(?:\/|$)/u.test(source) && !elysiaFactory && !typeOnly)
     ) {
-      reportViolation(context, node);
+      reportViolation(inspection, node);
     }
-  }
+  };
   return {
     CallExpression(node: Node): void {
       if (startRoute) {
-        reportForeignServer(context, node);
+        reportForeignServer(inspection, node);
       }
     },
     ExportAllDeclaration(node: Node): void {
@@ -96,48 +98,58 @@ function effectStackVisitor(context: LintContext): Visitor {
       }
     },
   };
-}
+};
 
-function isEffectScope(current: string): boolean {
+const isEffectScope = (inspected: string): boolean => {
   return (
-    /\/(?:apps|libs|infra|tools)\/[^/]+\/src\//u.test(current) &&
+    /\/(?:apps|libs|infra|tools)\/[^/]+\/src\//u.test(inspected) &&
     !/\/libs\/ui\/|\/libs\/runtime\/src\/client\.ts$|\/libs\/observability\/src\/browser\.ts$|\.tsx$/u.test(
-      current,
+      inspected,
     )
   );
-}
+};
 
-function isApiErrorThrow(node: Node): boolean {
+const isApiErrorThrow = (node: Node): boolean => {
   return (
     node.type === "ThrowStatement" &&
     node.argument.type === "NewExpression" &&
     node.argument.callee.type === "Identifier" &&
     node.argument.callee.name === "APIError"
   );
-}
+};
 
-function effectFailuresVisitor(context: LintContext): Visitor {
-  if (!isEffectScope(filename(context))) {
+const enclosingProgram = (node: Node): Node => {
+  const { parent } = node;
+  return parent ? enclosingProgram(parent) : node;
+};
+
+const importsEffect = (node: Node): boolean => {
+  const program = enclosingProgram(node);
+  return (
+    program.type === "Program" &&
+    program.body.some(
+      (statement) =>
+        statement.type === "ImportDeclaration" && /^effect(?:\/|$)/u.test(statement.source.value),
+    )
+  );
+};
+
+const effectFailuresVisitor = (inspection: LintContext): Visitor => {
+  if (!isEffectScope(filename(inspection))) {
     return {};
   }
-  let usesEffect = false;
   return {
-    ImportDeclaration(node: Node): void {
-      if (node.type === "ImportDeclaration" && /^effect(?:\/|$)/u.test(node.source.value)) {
-        usesEffect = true;
-      }
-    },
     ThrowStatement(node: Node): void {
-      if (usesEffect && !isApiErrorThrow(node)) {
-        reportViolation(context, node);
+      if (importsEffect(node) && !isApiErrorThrow(node)) {
+        reportViolation(inspection, node);
       }
     },
     TryStatement(node: Node): void {
-      if (usesEffect) {
-        reportViolation(context, node);
+      if (importsEffect(node)) {
+        reportViolation(inspection, node);
       }
     },
   };
-}
+};
 
 export { effectFailuresVisitor, effectStackVisitor };

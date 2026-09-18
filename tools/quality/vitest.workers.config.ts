@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
@@ -17,10 +16,8 @@ const mailRecorder = "MailRecorder";
 const probeMonitor = "ProbeMonitor";
 
 const loaded = await Effect.runPromise(Effect.orDie(loadRemoteMigrations()));
-// oxlint-disable-next-line oxc/no-map-spread
 const migrations = loaded.map((migration) => ({ ...migration, sql: [...migration.sql] }));
 
-// oxlint-disable-next-line import/no-default-export
 export default defineProject({
   plugins: [
     cloudflareTest({

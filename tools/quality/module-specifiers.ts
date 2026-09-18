@@ -1,40 +1,40 @@
-import { importVisitor, reportViolation } from "./lint-context.ts";
-import { origins } from "./references.ts";
+import { importVisitor, reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import { origins, type Origin } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
-import type { Origin } from "./references.ts";
 
-function isApplicationOrLibrary(context: LintContext): boolean {
-  return /\/(?:apps|libs)\/[^/]+\//u.test(context.filename.replaceAll("\\", "/"));
-}
+const isApplicationOrLibrary = (inspection: LintContext): boolean => {
+  return /\/(?:apps|libs)\/[^/]+\//u.test(inspection.filename.replaceAll("\\", "/"));
+};
 
-function isCommonJsLoader(origin: Origin): boolean {
+const isCommonJsLoader = (origin: Origin): boolean => {
   const [source, ...members] = origin;
   return (
     (source === "require" && members.length === 0) ||
     ((source === "node:module" || source === "module") && members[0] === "createRequire")
   );
-}
+};
 
-function specifierVisitor(context: LintContext): {
+const specifierVisitor = (
+  inspection: LintContext,
+): {
   readonly commonJs: (node: Node) => void;
   readonly loaderCall: (callee: Node) => boolean;
   readonly visitor: Visitor;
-} {
-  const shipped = isApplicationOrLibrary(context);
-  function commonJs(node: Node): void {
+} => {
+  const shipped = isApplicationOrLibrary(inspection);
+  const commonJs = (node: Node): void => {
     if (shipped) {
-      reportViolation(context, node);
+      reportViolation(inspection, node);
     }
-  }
+  };
   return {
     commonJs,
-    loaderCall: (callee) => origins(context, callee).some((origin) => isCommonJsLoader(origin)),
+    loaderCall: (callee) => origins(inspection, callee).some((origin) => isCommonJsLoader(origin)),
     visitor: {
       ...importVisitor((node: Node) => {
         if (shipped && (node.type !== "Literal" || typeof node.value !== "string")) {
-          reportViolation(context, node);
+          reportViolation(inspection, node);
         }
       }),
       TSExternalModuleReference(node: Node): void {
@@ -44,6 +44,6 @@ function specifierVisitor(context: LintContext): {
       },
     },
   };
-}
+};
 
 export { specifierVisitor };

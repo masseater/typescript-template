@@ -10,9 +10,9 @@ import {
 
 import type { IConfiguration } from "dependency-cruiser";
 
-function anyOf(values: readonly string[]): string {
+const anyOf = (values: readonly string[]): string => {
   return values.map((value) => value.replaceAll(".", String.raw`\.`)).join("|");
-}
+};
 
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
@@ -186,5 +186,4 @@ const configuration: IConfiguration = {
   },
 };
 
-// oxlint-disable-next-line import/no-default-export
 export default configuration;

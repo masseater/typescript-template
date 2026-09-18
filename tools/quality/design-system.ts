@@ -1,11 +1,7 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFileSync, statSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { project } from "@shadcn/lint";
-
-const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
 
 const smarthrTokens: Readonly<Record<string, string>> = {
   "--danger": "#e01e5a",
@@ -57,7 +53,7 @@ const untouchedTokens = ["--spacing"] as const;
 
 const declarationPattern = /(?<name>--[\w-]+)\s*:\s*(?<value>[^;}]+)[;}]/gu;
 
-function declarations(css: string): Map<string, string> {
+const declarations = (css: string): Map<string, string> => {
   const found = new Map<string, string>();
   for (const match of css.matchAll(declarationPattern)) {
     const { name, value } = match.groups ?? {};
@@ -66,42 +62,43 @@ function declarations(css: string): Map<string, string> {
     }
   }
   return found;
-}
+};
 
-function read(file: string): string {
-  // oxlint-disable-next-line node/no-sync
+const read = (file: string): string => {
   return readFileSync(file, "utf-8");
-}
+};
 
-function stylesheetPath(): string {
+const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
+
+const stylesheetPath = (): string => {
   return project.themeFileFor(designSystemProbe) ?? "";
-}
+};
 
-function stylesheetSource(): string {
+const stylesheetSource = (): string => {
   const file = stylesheetPath();
   return file === "" ? "" : read(file);
-}
+};
+
+const indexedComponents = (): string[] => {
+  return [...project.componentsFor(designSystemProbe).files.keys()].toSorted();
+};
 
 const storySuffix = ".stories.tsx";
 
-function indexedComponents(): string[] {
-  return [...project.componentsFor(designSystemProbe).files.keys()].toSorted();
-}
-
-function designSystemComponents(): string[] {
+const designSystemComponents = (): string[] => {
   return [...project.componentsFor(designSystemProbe).files.entries()]
     .filter((entry: readonly [string, string]) => !entry[1].endsWith(storySuffix))
     .map((entry: readonly [string, string]) => entry[0])
     .toSorted();
-}
+};
 
-function partsDirectory(): string {
+const partsDirectory = (): string => {
   return project.componentsFor(designSystemProbe).dir ?? "";
-}
+};
 
 const linkPartPattern = /^const (?<name>\w+) = createLink\(/gmu;
 
-function linkParts(): string[] {
+const linkParts = (): string[] => {
   const found: string[] = [];
   for (const file of project.componentsFor(designSystemProbe).files.values()) {
     for (const match of read(file).matchAll(linkPartPattern)) {
@@ -112,7 +109,7 @@ function linkParts(): string[] {
     }
   }
   return found.toSorted();
-}
+};
 
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.css",
@@ -126,22 +123,7 @@ const partsImport = '@import "@repo/ui/styles.css"';
 
 const sourcePattern = /@source\s+"(?<directory>[^"]+)"/gu;
 
-function appFiles(files: Readonly<Record<string, unknown>>, app: string): string[] {
-  return Object.keys(files)
-    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
-    .filter((file) => file.startsWith(`${app}/`));
-}
-
-function isDirectory(target: string): boolean {
-  try {
-    // oxlint-disable-next-line node/no-sync
-    return statSync(target).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-function declaredSources(css: string): string[] {
+const declaredSources = (css: string): string[] => {
   const found: string[] = [];
   for (const match of css.matchAll(sourcePattern)) {
     const { directory } = match.groups ?? {};
@@ -150,15 +132,23 @@ function declaredSources(css: string): string[] {
     }
   }
   return found;
-}
+};
 
-function scannedDirectories(file: string, css: string): string[] {
+const scannedDirectories = (file: string, css: string): string[] => {
   return declaredSources(css).map((directory) =>
     path.normalize(path.join(path.dirname(file), directory)),
   );
-}
+};
 
-function sourceViolations(app: string, file: string, css: string): string[] {
+const isDirectory = (target: string): boolean => {
+  try {
+    return statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
+};
+
+const sourceViolations = (app: string, file: string, css: string): string[] => {
   const declared = declaredSources(css);
   if (declared.length === 0) {
     return [`${file}: @source がありません。このアプリのクラスだけ生成されません。`];
@@ -174,15 +164,21 @@ function sourceViolations(app: string, file: string, css: string): string[] {
       ? []
       : [`${file}: @source "${directory}" のディレクトリがありません。`];
   });
-}
+};
 
-function styledFiles(app: string): string[] {
+const appFiles = (files: Readonly<Record<string, unknown>>, app: string): string[] => {
+  return Object.keys(files)
+    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
+    .filter((file) => file.startsWith(`${app}/`));
+};
+
+const styledFiles = (app: string): string[] => {
   return appFiles(appModules, app).filter(
     (file) => file.endsWith(".tsx") && read(file).includes("className"),
   );
-}
+};
 
-function coverageViolations(app: string, scanned: readonly string[]): string[] {
+const coverageViolations = (app: string, scanned: readonly string[]): string[] => {
   return styledFiles(app).flatMap((file) =>
     scanned.some((directory) => file === directory || file.startsWith(`${directory}/`))
       ? []
@@ -190,16 +186,16 @@ function coverageViolations(app: string, scanned: readonly string[]): string[] {
           `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
         ],
   );
-}
+};
 
-function linkViolations(app: string, file: string): string[] {
+const linkViolations = (app: string, file: string): string[] => {
   const link = `${file.slice(`${app}/src/`.length)}?url`;
   return appFiles(appModules, app).some((module) => read(module).includes(link))
     ? []
     : [`${file}: ${app} のソースから ${link} で読み込まれていません。`];
-}
+};
 
-function entryViolations(app: string, entries: readonly string[]): string[] {
+const entryViolations = (app: string, entries: readonly string[]): string[] => {
   const violations: string[] = [];
   const scanned: string[] = [];
   for (const file of entries) {
@@ -207,9 +203,9 @@ function entryViolations(app: string, entries: readonly string[]): string[] {
     scanned.push(...scannedDirectories(file, read(file)));
   }
   return [...violations, ...coverageViolations(app, scanned)];
-}
+};
 
-function appStylesheetViolations(apps: readonly string[]): string[] {
+const appStylesheetViolations = (apps: readonly string[]): string[] => {
   return apps.flatMap((app) => {
     const entries = appFiles(appStylesheets, app).filter((file) =>
       read(file).includes(partsImport),
@@ -218,9 +214,9 @@ function appStylesheetViolations(apps: readonly string[]): string[] {
       ? [`${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`]
       : entryViolations(app, entries);
   });
-}
+};
 
-function tokenViolations(css: string): string[] {
+const tokenViolations = (css: string): string[] => {
   const declared = declarations(css);
   const drifted = Object.keys(smarthrTokens).flatMap((name) =>
     declared.get(name) === smarthrTokens[name]
@@ -235,7 +231,7 @@ function tokenViolations(css: string): string[] {
       : [],
   );
   return [...drifted, ...redefined];
-}
+};
 
 export {
   appStylesheetViolations,
