@@ -1,6 +1,7 @@
 import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 
+import { loopbackHosts } from "@repo/config";
 import type { Application } from "@repo/config";
 import {
   getSessionSecurity,
@@ -43,7 +44,6 @@ const factorEnrollmentPaths = new Set([
 ]);
 const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-passkey"]);
 const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
-const loopbackHosts: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function currentSessionOf(ctx: HookContext): ReturnType<typeof getSessionFromCtx> {
@@ -74,7 +74,7 @@ async function revokeSessionsAfterFactorChange({ ctx, run }: HookScope): Promise
 
 function isLoopbackHttpRedirect(value: unknown): boolean {
   const url = typeof value === "string" ? URL.parse(value) : undefined;
-  return url?.protocol === "http:" && loopbackHosts.has(url.hostname);
+  return url?.protocol === "http:" && loopbackHosts.includes(url.hostname);
 }
 
 function registersLoopbackClient(path: string, fields: object): boolean {

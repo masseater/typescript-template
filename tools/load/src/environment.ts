@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect, Schedule, Schema } from "effect";
 
-import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
+import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
   reason: Schema.Literals([
@@ -27,10 +27,6 @@ const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;
 const readinessChecks = 120;
 const readinessInterval = "500 millis";
 const loadAverageDigits = 2;
-
-function targetOrigin(app: typeof Application.Type): string {
-  return `http://127.0.0.1:${applicationPorts[app]}`;
-}
 
 function oneMinuteLoadAverage(): number {
   const [average = 0] = loadavg();
@@ -52,7 +48,7 @@ function builtVariables(app: typeof Application.Type): Effect.Effect<string, Env
 const requireLoopbackOrigin = Effect.fn("requireLoopbackOrigin")(function* requireLoopbackOrigin(
   app: typeof Application.Type,
 ) {
-  const origin = targetOrigin(app);
+  const origin = applicationOrigins[app];
   const variables = yield* builtVariables(app);
   if (appOrigin.exec(variables)?.groups?.["origin"] !== origin) {
     return yield* new EnvironmentUnusable({ reason: "origin_mismatch" });
@@ -81,7 +77,7 @@ function isSuccessful(status: number): boolean {
 }
 
 function awaitReady(app: typeof Application.Type): Effect.Effect<void, EnvironmentUnusable> {
-  return answeredStatus(`${targetOrigin(app)}${applicationReadyPaths[app]}`, "GET").pipe(
+  return answeredStatus(`${applicationOrigins[app]}${applicationReadyPaths[app]}`, "GET").pipe(
     Effect.flatMap((status) =>
       isSuccessful(status)
         ? Effect.void
@@ -111,5 +107,4 @@ export {
   clearTraces,
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
-  targetOrigin,
 };

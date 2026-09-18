@@ -1,13 +1,12 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Console, Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 
-import { applications } from "@repo/config";
+import { applicationOrigins, applications } from "@repo/config";
+import { runCli } from "@repo/config/cli";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
-import { reportFailed } from "./failure.ts";
 
 interface Verified {
   readonly logs: number;
@@ -127,19 +126,8 @@ const verify = Effect.fn("verify")(function* verify() {
   };
 });
 
-NodeRuntime.runMain(
-  verify().pipe(
-    Effect.flatMap((report) => Console.log(JSON.stringify(report))),
-    Effect.catchCause((cause) =>
-      Cause.hasInterruptsOnly(cause)
-        ? Effect.failCause(cause)
-        : reportFailed({
-            event: "observability.verification_failed",
-            ok: false,
-            remediation:
-              "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
-          }),
-    ),
-  ),
-  { disableErrorReporting: true },
-);
+runCli(verify().pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), {
+  event: "observability.verification_failed",
+  ok: false,
+  remediation: `Specify --app with a running local app origin such as ${applicationOrigins.user}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+});

@@ -3,11 +3,11 @@ import { connect, createServer } from "node:net";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Server } from "node:net";
 
-import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Console, Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 import type { Scope } from "effect";
 
-import { reportFailed } from "./failure.ts";
+import { loopbackAddress } from "@repo/config";
+import { runCli } from "@repo/config/cli";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),
@@ -23,7 +23,7 @@ function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Sco
   return Effect.acquireRelease(
     Effect.callback<ReturnType<typeof createServer>, GatewayFailure>((resume) => {
       const server = createServer((client) => {
-        const upstream = connect(target, "127.0.0.1");
+        const upstream = connect(target, loopbackAddress);
         client.pipe(upstream).pipe(client);
         client.on("error", () => {
           upstream.destroy();
@@ -43,7 +43,7 @@ function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Sco
   );
 }
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const target = yield* Schema.decodeUnknownEffect(ProxyPort)(Number(process.argv[2])).pipe(
       Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
@@ -51,13 +51,6 @@ NodeRuntime.runMain(
     yield* listen(target);
     yield* Console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
     return yield* Effect.never;
-  }).pipe(
-    Effect.scoped,
-    Effect.catchCause((cause) =>
-      Cause.hasInterruptsOnly(cause)
-        ? Effect.failCause(cause)
-        : reportFailed({ event: "local.gateway_failed" }),
-    ),
-  ),
-  { disableErrorReporting: true },
+  }).pipe(Effect.scoped),
+  { event: "local.gateway_failed" },
 );

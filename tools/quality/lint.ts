@@ -146,6 +146,16 @@ const lint = {
         object: "process",
         property,
       })),
+      {
+        message: "@repo/config/cli の reportFailed / markFailed / exitWith を使ってください。",
+        object: "process",
+        property: "exitCode",
+      },
+      {
+        message: "@repo/config/cli の runCli で起動してください。",
+        object: "NodeRuntime",
+        property: "runMain",
+      },
     ],
     "eslint/no-ternary": "off",
     "eslint/no-undef": "off",

@@ -1,14 +1,13 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
-import { applicationPorts } from "@repo/config";
+import { applicationOrigins } from "@repo/config";
+import { runCli } from "@repo/config/cli";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";
-import { reportFailed } from "./failure.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
@@ -37,7 +36,7 @@ type Query = typeof QueryInput.Type;
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    app: { default: `http://127.0.0.1:${applicationPorts.user}/`, type: "string" },
+    app: { default: `${applicationOrigins.user}/`, type: "string" },
     help: { default: false, type: "boolean" },
     level: { type: "string" },
     limit: { default: "100", type: "string" },
@@ -142,15 +141,8 @@ const query = Effect.fn("query")(function* query() {
   return data;
 });
 
-NodeRuntime.runMain(
-  (values.help ? help : query()).pipe(
-    Effect.catchCause(() =>
-      reportFailed({
-        event: "observability.query_failed",
-        ok: false,
-        remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
-      }),
-    ),
-  ),
-  { disableErrorReporting: true },
-);
+runCli(values.help ? help : query(), {
+  event: "observability.query_failed",
+  ok: false,
+  remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
+});

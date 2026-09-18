@@ -5,12 +5,12 @@ import { Effect, Schema } from "effect";
 import type { Scope } from "effect";
 
 import { playbookDirectory } from "#shared/playbook/index.ts";
+import { loopbackAddress, loopbackOrigin } from "@repo/config";
 
 import { nodeServer } from "./node-server.ts";
 
 interface Served {
   readonly directory: string;
-  readonly hostname: string;
   readonly model: string | undefined;
   readonly port: number;
   readonly stateDirectory: string;
@@ -78,7 +78,7 @@ function serveCommander(served: Served): Effect.Effect<URL, StartupFailed, Scope
       COMMANDER_DIRECTORY: served.directory,
       COMMANDER_EXECUTABLE: "claude",
       COMMANDER_MODEL: served.model,
-      COMMANDER_ORIGIN: `http://${served.hostname}:${served.port}`,
+      COMMANDER_ORIGIN: loopbackOrigin(served.port),
       COMMANDER_STATE: served.stateDirectory,
     });
     const fetch = yield* builtServer();
@@ -86,7 +86,7 @@ function serveCommander(served: Served): Effect.Effect<URL, StartupFailed, Scope
       Effect.sync(() =>
         nodeServer({
           fetch,
-          hostname: served.hostname,
+          hostname: loopbackAddress,
           port: served.port,
           staticDirectory: path.join(workspace, "dist/client"),
         }),

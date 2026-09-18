@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
+    "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
@@ -26,7 +27,6 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@repo/config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

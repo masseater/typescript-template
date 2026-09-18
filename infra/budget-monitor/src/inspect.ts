@@ -1,11 +1,12 @@
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
+
+import { runCli } from "@repo/config/cli";
 
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
 import { evaluateBudget } from "./decision.ts";
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     // oxlint-disable-next-line node/no-process-env
     const config = yield* parseBudgetConfig(process.env);
@@ -16,16 +17,6 @@ NodeRuntime.runMain(
     );
     const decision = yield* evaluateBudget(usage, config);
     yield* Console.log(JSON.stringify({ event: "budget.inspected", ...decision }));
-  }).pipe(
-    Effect.catchCause(() =>
-      Console.error(JSON.stringify({ event: "budget.inspect_failed" })).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      ),
-    ),
-  ),
-  { disableErrorReporting: true },
+  }),
+  { event: "budget.inspect_failed" },
 );

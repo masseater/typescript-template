@@ -7,8 +7,9 @@ import { access } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
+
+import { runCli } from "@repo/config/cli";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
@@ -60,24 +61,8 @@ const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly s
   });
 });
 
-NodeRuntime.runMain(
-  composeArguments(action).pipe(
-    Effect.flatMap(runCompose),
-    Effect.catchCause(() =>
-      Console.error(
-        JSON.stringify({
-          event: "local.services_command_failed",
-          ok: false,
-          remediation: "Check the Docker daemon, then retry the requested action.",
-        }),
-      ).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      ),
-    ),
-  ),
-  { disableErrorReporting: true },
-);
+runCli(composeArguments(action).pipe(Effect.flatMap(runCompose)), {
+  event: "local.services_command_failed",
+  ok: false,
+  remediation: "Check the Docker daemon, then retry the requested action.",
+});

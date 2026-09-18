@@ -1,18 +1,15 @@
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
 
 import { applications } from "@repo/config";
+import { reportFailed, runCli } from "@repo/config/cli";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import { markFailed } from "./secrets.ts";
 
 function report(reason: string): Effect.Effect<void> {
-  return Console.error(JSON.stringify({ event: "artifacts.invalid", reason })).pipe(
-    Effect.andThen(markFailed),
-  );
+  return reportFailed({ event: "artifacts.invalid", reason });
 }
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     for (const target of applications) {
       yield* loadArtifacts(repositoryRoot, target);
@@ -20,9 +17,6 @@ NodeRuntime.runMain(
     yield* Console.log(
       JSON.stringify({ event: "artifacts.verified", targets: applications.length }),
     );
-  }).pipe(
-    Effect.catchTag("ArtifactFailure", (failure) => report(failure.code)),
-    Effect.catchCause(() => report("artifact_check_failed")),
-  ),
-  { disableErrorReporting: true },
+  }).pipe(Effect.catchTag("ArtifactFailure", (failure) => report(failure.code))),
+  { event: "artifacts.invalid", reason: "artifact_check_failed" },
 );

@@ -6,7 +6,7 @@
     "inspect": "node src/inspect.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
+    "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
     "effect": "catalog:"
   },
@@ -14,7 +14,6 @@
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
-    "@repo/config": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

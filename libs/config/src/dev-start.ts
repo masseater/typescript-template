@@ -2,11 +2,11 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
 
-import { applicationReadyPaths, applications } from "./applications.ts";
+import { applicationReadyPaths, applications, loopbackAddress } from "./applications.ts";
+import { reportFailed, runCli } from "./cli.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,
@@ -27,7 +27,7 @@ const devServer = Effect.acquireRelease(
     try: async () =>
       createServer({
         logLevel: "silent",
-        server: { host: "127.0.0.1", port: 0, strictPort: false },
+        server: { host: loopbackAddress, port: 0, strictPort: false },
       }),
   }),
   (server) => Effect.promise(async () => server.close()),
@@ -69,20 +69,16 @@ function probe(origin: string, pathname: string): Effect.Effect<number, DevStart
   );
 }
 
-function report(
-  app: string,
-  record: Readonly<{ ok: boolean; reasons?: readonly string[] }>,
-): Effect.Effect<void> {
-  const line = JSON.stringify({ app, event: "quality.dev_start", ...record });
-  return record.ok
-    ? Console.log(line)
-    : Console.error(line).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      );
+const line = { app: path.basename(process.cwd()), event: "quality.dev_start" };
+
+function failed(...reasons: readonly string[]): Readonly<Record<string, unknown>> {
+  return { ...line, ok: false, reasons };
+}
+
+function report(reasons: readonly string[]): Effect.Effect<void> {
+  return reasons.length === 0
+    ? Console.log(JSON.stringify({ ...line, ok: true }))
+    : reportFailed(failed(...reasons));
 }
 
 const program = Effect.gen(function* program() {
@@ -98,7 +94,7 @@ const program = Effect.gen(function* program() {
   const reasons = results.flatMap((result) =>
     Result.isFailure(result) ? [result.failure.reason] : [],
   );
-  yield* report(app, reasons.length === 0 ? { ok: true } : { ok: false, reasons });
+  yield* report(reasons);
 }).pipe(
   Effect.scoped,
   Effect.timeoutOrElse({
@@ -108,14 +104,9 @@ const program = Effect.gen(function* program() {
   }),
 );
 
-NodeRuntime.runMain(
+runCli(
   program.pipe(
-    Effect.catchTag("DevStartFailure", (failure) =>
-      report(path.basename(process.cwd()), { ok: false, reasons: [failure.reason] }),
-    ),
-    Effect.catchCause((cause) =>
-      report(path.basename(process.cwd()), { ok: false, reasons: [Cause.pretty(cause)] }),
-    ),
+    Effect.catchTag("DevStartFailure", (failure) => reportFailed(failed(failure.reason))),
   ),
-  { disableErrorReporting: true },
+  (cause) => failed(Cause.pretty(cause)),
 );

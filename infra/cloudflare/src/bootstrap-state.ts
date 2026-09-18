@@ -1,5 +1,6 @@
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
+
+import { runCli } from "@repo/config/cli";
 
 import { secretsStoreCount, workerNames } from "./account-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
@@ -8,7 +9,7 @@ import type { AlchemyCommand } from "./alchemy-cli.ts";
 import { CloudflareFailure } from "./config.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 import { deploymentAccess } from "./deployment-access.ts";
-import { OK_EXIT_CODE, reportCause } from "./secrets.ts";
+import { OK_EXIT_CODE, causeRecord, reportCause } from "./secrets.ts";
 
 const ADOPT_FLAG = "--adopt-account-state";
 const EVENT = "cloudflare.state_store_rejected";
@@ -28,7 +29,7 @@ const assertAccountUnused = Effect.fn("assertAccountUnused")(function* assertAcc
   }
 });
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const adopting = process.argv.includes(ADOPT_FLAG);
     const { access, confidential, secrets } = yield* deploymentAccess();
@@ -50,6 +51,6 @@ NodeRuntime.runMain(
         JSON.stringify({ adopted: adopting, event: "cloudflare.state_store_ready" }),
       );
     }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)));
-  }).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause))),
-  { disableErrorReporting: true },
+  }),
+  (cause) => causeRecord(EVENT, cause),
 );

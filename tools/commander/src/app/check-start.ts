@@ -1,10 +1,13 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createServer } from "node:net";
 
-import { NodeRuntime, NodeServices } from "@effect/platform-node";
+import { NodeServices } from "@effect/platform-node";
 import { Cause, Console, Effect, FileSystem, Schema } from "effect";
 import { chromium } from "playwright";
 import type { Page } from "playwright";
+
+import { loopbackAddress } from "@repo/config";
+import { reportFailed, runCli } from "@repo/config/cli";
 
 import { serveCommander } from "./serve.ts";
 
@@ -12,7 +15,6 @@ class StartCheckFailed extends Schema.TaggedError<StartCheckFailed>()("StartChec
   reason: Schema.String,
 }) {}
 
-const hostname = "127.0.0.1";
 const stepTimeout = 60_000;
 const checkTimeout = "4 minutes";
 
@@ -26,7 +28,7 @@ const freePort = Effect.callback<number, StartCheckFailed>((resume) => {
     const failure = new StartCheckFailed({ reason: `no free port: ${describe(error)}` });
     resume(Effect.fail(failure));
   });
-  probe.listen(0, hostname, () => {
+  probe.listen(0, loopbackAddress, () => {
     const address = probe.address();
     probe.close(() => {
       resume(
@@ -78,19 +80,8 @@ function used(page: Page, origin: URL): Effect.Effect<readonly string[], StartCh
   });
 }
 
-function report(
-  record: Readonly<{ ok: boolean; reasons?: readonly string[] }>,
-): Effect.Effect<void> {
-  const line = JSON.stringify({ event: "quality.commander_start", ...record });
-  return record.ok
-    ? Console.log(line)
-    : Console.error(line).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      );
+function failed(reasons: readonly string[]): Readonly<Record<string, unknown>> {
+  return { event: "quality.commander_start", ok: false, reasons };
 }
 
 const program = Effect.gen(function* program() {
@@ -99,13 +90,14 @@ const program = Effect.gen(function* program() {
   const port = yield* freePort;
   const origin = yield* serveCommander({
     directory,
-    hostname,
     model: undefined,
     port,
     stateDirectory: `${directory}/.state`,
   });
   const problems = yield* used(yield* browserPage, origin);
-  yield* report(problems.length === 0 ? { ok: true } : { ok: false, reasons: problems });
+  yield* problems.length === 0
+    ? Console.log(JSON.stringify({ event: "quality.commander_start", ok: true }))
+    : reportFailed(failed(problems));
 }).pipe(
   Effect.scoped,
   Effect.timeoutOrElse({
@@ -116,12 +108,9 @@ const program = Effect.gen(function* program() {
   Effect.provide(NodeServices.layer),
 );
 
-NodeRuntime.runMain(
+runCli(
   program.pipe(
-    Effect.catchTag("StartCheckFailed", (failure) =>
-      report({ ok: false, reasons: [failure.reason] }),
-    ),
-    Effect.catchCause((cause) => report({ ok: false, reasons: [Cause.pretty(cause)] })),
+    Effect.catchTag("StartCheckFailed", (failure) => reportFailed(failed([failure.reason]))),
   ),
-  { disableErrorReporting: true },
+  (cause) => failed([Cause.pretty(cause)]),
 );

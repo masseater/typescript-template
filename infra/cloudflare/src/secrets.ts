@@ -1,12 +1,10 @@
-import { Cause, Console, Effect, Option, Predicate, Schema } from "effect";
+import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
+
+import { reportFailed } from "@repo/config/cli";
 
 const OK_EXIT_CODE = 0;
 const FAILED_EXIT_CODE = 1;
-
-const markFailed = Effect.sync(() => {
-  process.exitCode = FAILED_EXIT_CODE;
-});
 
 const FailureKeys = Schema.Array(Schema.String);
 const isCoded = Schema.is(
@@ -70,22 +68,28 @@ function describeCause(
     : { code: "defect", ...counted, ...described };
 }
 
-function reportCause(
+function causeRecord(
   event: string,
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[] = [],
+): Readonly<Record<string, unknown>> {
+  return { event, ...describeCause(cause, confidential) };
+}
+
+function reportCause(
+  event: string,
+  cause: Cause.Cause<unknown>,
+  confidential: readonly Confidential[],
 ): Effect.Effect<void> {
-  return Console.error(JSON.stringify({ event, ...describeCause(cause, confidential) })).pipe(
-    Effect.andThen(markFailed),
-  );
+  return reportFailed(causeRecord(event, cause, confidential));
 }
 
 export {
   FAILED_EXIT_CODE,
+  causeRecord,
   OK_EXIT_CODE,
   describeCause,
   describeFailure,
-  markFailed,
   redact,
   reportCause,
   withVerifiedSecrets,

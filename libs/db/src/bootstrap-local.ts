@@ -1,7 +1,8 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
+
+import { reportFailed, runCli } from "@repo/config/cli";
 
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
 import { Database } from "./database.ts";
@@ -19,17 +20,11 @@ const platform = Effect.acquireRelease(
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
-function report(error: string): Effect.Effect<void> {
-  return Console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false })).pipe(
-    Effect.andThen(
-      Effect.sync(() => {
-        process.exitCode = 1;
-      }),
-    ),
-  );
+function failed(error: string): Readonly<Record<string, unknown>> {
+  return { action: "admin_bootstrap", error, success: false };
 }
 
-NodeRuntime.runMain(
+runCli(
   Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
     const { env } = yield* platform;
@@ -44,9 +39,8 @@ NodeRuntime.runMain(
   }).pipe(
     Effect.scoped,
     Effect.catchTag("BootstrapUnavailable", () =>
-      report("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN"),
+      reportFailed(failed("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN")),
     ),
-    Effect.catchCause(() => report("LOCAL_BOOTSTRAP_FAILED")),
   ),
-  { disableErrorReporting: true },
+  failed("LOCAL_BOOTSTRAP_FAILED"),
 );

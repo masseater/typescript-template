@@ -1,17 +1,18 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { NodeRuntime, NodeServices } from "@effect/platform-node";
+import { NodeServices } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 import open from "open";
 
-import { reportFailed } from "./failure.ts";
+import { loopbackOrigin } from "@repo/config";
+import { runCli } from "@repo/config/cli";
+
 import { resolveProject } from "./project.ts";
 import { serveCommander } from "./serve.ts";
 
-const hostname = "127.0.0.1";
 const port = 3090;
-const origin = `http://${hostname}:${port}`;
+const origin = loopbackOrigin(port);
 
 const Input = Schema.Struct({
   directory: Schema.optional(Schema.String),
@@ -45,7 +46,7 @@ const start = Effect.fn("start")(function* start() {
     model: values.model,
   });
   const project = yield* resolveProject(input.directory, process.cwd());
-  yield* serveCommander({ ...project, hostname, model: input.model, port });
+  yield* serveCommander({ ...project, model: input.model, port });
   yield* Console.log(JSON.stringify({ ...project, event: "commander.started", url: origin }));
   if (values.open) {
     yield* Effect.promise(async () => open(origin));
@@ -53,18 +54,15 @@ const start = Effect.fn("start")(function* start() {
   return yield* Effect.never;
 });
 
-function startFailed(cause: unknown): Effect.Effect<void> {
-  return reportFailed({
+function startFailed(cause: unknown): Readonly<Record<string, unknown>> {
+  return {
     cause: String(cause),
     event: "commander.start_failed",
     ok: false,
     remediation: `Check that ${origin} is free, that bd and claude are installed, and that the workspace was built (vp run @repo/commander#start builds first).`,
-  });
+  };
 }
 
-const main = Effect.scoped(start()).pipe(
-  Effect.provide(NodeServices.layer),
-  Effect.catchCause((cause) => startFailed(cause)),
-);
+const main = Effect.scoped(start()).pipe(Effect.provide(NodeServices.layer));
 
-NodeRuntime.runMain(values.help ? help : main, { disableErrorReporting: true });
+runCli(values.help ? help : main, startFailed);

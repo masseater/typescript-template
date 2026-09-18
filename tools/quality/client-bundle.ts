@@ -7,13 +7,14 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
+import { Console, Effect } from "effect";
 import { build } from "vite-plus";
 
+import { markFailed, runCli } from "@repo/config/cli";
 import { serverOnlyMarkers } from "@repo/config/vite";
 
 const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
-const outDirectory = await mkdtemp(path.join(tmpdir(), "template-client-bundle-"));
 
 const clientReachable: readonly string[] = [
   "@repo/runtime/client",
@@ -31,7 +32,7 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
 
-async function clientBuild(specifiers: readonly string[]): Promise<string> {
+async function clientBuild(specifiers: readonly string[], outDirectory: string): Promise<string> {
   try {
     await build({
       build: { outDir: outDirectory },
@@ -62,7 +63,7 @@ async function clientBuild(specifiers: readonly string[]): Promise<string> {
   }
 }
 
-async function bundledMarkers(): Promise<readonly string[]> {
+async function bundledMarkers(outDirectory: string): Promise<readonly string[]> {
   const entries = await readdir(outDirectory, { recursive: true });
   const sources = await Promise.all(
     entries
@@ -72,33 +73,54 @@ async function bundledMarkers(): Promise<readonly string[]> {
   return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
 }
 
-const unexpected: string[] = [];
-
-const reachableDenial = await clientBuild(clientReachable);
-if (reachableDenial !== "") {
-  unexpected.push(`${clientReachable.join(" ")} denied by ${reachableDenial}`);
-}
-for (const marker of await bundledMarkers()) {
-  unexpected.push(`${marker} reached the client bundle`);
-}
-for (const [specifier, pattern] of serverOnly) {
-  // oxlint-disable-next-line no-await-in-loop
-  const denial = await clientBuild([specifier]);
-  if (denial !== pattern) {
-    unexpected.push(`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`);
-  }
-}
-await rm(outDirectory, { force: true, recursive: true });
-
-// oxlint-disable-next-line eslint/no-restricted-properties
-process.stdout.write(
-  `${JSON.stringify({
-    event: "quality.client_bundle",
-    inputs: clientReachable.length + serverOnly.length,
-    ok: unexpected.length === 0,
-    unexpected,
-  })}\n`,
+const temporaryOutput = Effect.acquireRelease(
+  Effect.promise(async () => mkdtemp(path.join(tmpdir(), "template-client-bundle-"))),
+  (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
 );
-if (unexpected.length > 0) {
-  process.exitCode = 1;
+
+function serverOnlyProblems(
+  outDirectory: string,
+  [specifier, pattern]: readonly [string, string],
+): Effect.Effect<readonly string[]> {
+  return Effect.promise(async () => clientBuild([specifier], outDirectory)).pipe(
+    Effect.map((denial) =>
+      denial === pattern
+        ? []
+        : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`],
+    ),
+  );
 }
+
+const inspect = Effect.gen(function* inspect() {
+  const outDirectory = yield* temporaryOutput;
+  const reachableDenial = yield* Effect.promise(async () =>
+    clientBuild(clientReachable, outDirectory),
+  );
+  const markers = yield* Effect.promise(async () => bundledMarkers(outDirectory));
+  const denials = yield* Effect.forEach(serverOnly, (entry) =>
+    serverOnlyProblems(outDirectory, entry),
+  );
+  return [
+    ...(reachableDenial === ""
+      ? []
+      : [`${clientReachable.join(" ")} denied by ${reachableDenial}`]),
+    ...markers.map((marker) => `${marker} reached the client bundle`),
+    ...denials.flat(),
+  ];
+}).pipe(Effect.scoped);
+
+runCli(
+  inspect.pipe(
+    Effect.flatMap((unexpected) =>
+      Console.log(
+        JSON.stringify({
+          event: "quality.client_bundle",
+          inputs: clientReachable.length + serverOnly.length,
+          ok: unexpected.length === 0,
+          unexpected,
+        }),
+      ).pipe(Effect.andThen(unexpected.length > 0 ? markFailed : Effect.void)),
+    ),
+  ),
+  { event: "quality.client_bundle_failed", ok: false },
+);
