@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema, SchemaGetter } from "effect";
 import { applications, roles } from "@template/config";
 
 const maximumIdentifierLength = 256;
@@ -6,6 +6,7 @@ const maximumNameLength = 100;
 const maximumProfileLength = 2000;
 const maximumTokenLength = 4096;
 const maximumKeywordLength = 100;
+const secondPage = 2;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
 
@@ -65,6 +66,27 @@ function pageNumber(
 
 const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
 const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
+
+const JsonScalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null]);
+const ScalarText = JsonScalar.pipe(
+  Schema.decodeTo(Schema.String, {
+    decode: SchemaGetter.transform<string, string | number | boolean | null>(String),
+    encode: SchemaGetter.transform((text: string) => text),
+  }),
+);
+
+const SearchKeyword = ScalarText.pipe(Schema.decodeTo(UserKeyword));
+
+function laterPage(maximum: number): Schema.Codec<number, number | string> {
+  return Schema.Union([Schema.Number, Schema.NumberFromString]).check(
+    Schema.isInt(),
+    Schema.isBetween({ maximum, minimum: secondPage }),
+  );
+}
+
+function absentSearchKey(): Effect.Effect<Option.Option<never>> {
+  return Effect.succeed(Option.none());
+}
 
 const memberPageSize = 24;
 const maximumMemberPage = 1_000_000;
@@ -129,12 +151,15 @@ export {
   Role,
   RoleChange,
   RoleChanged,
+  SearchKeyword,
   SessionView,
   UserDeleted,
   UserDeletion,
   UserKeyword,
   UserList,
   UserListQuery,
+  absentSearchKey,
+  laterPage,
   maximumKeywordLength,
   maximumMemberPage,
   memberPageSize,

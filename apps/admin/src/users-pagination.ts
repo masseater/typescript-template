@@ -1,4 +1,4 @@
 const usersPageSize = 50;
-const secondPage = 2;
+const maximumUsersPage = Math.floor(Number.MAX_SAFE_INTEGER / usersPageSize);
 
-export { secondPage, usersPageSize };
+export { maximumUsersPage, usersPageSize };

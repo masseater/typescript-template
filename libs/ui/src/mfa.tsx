@@ -1,5 +1,5 @@
 import { ActionStatus } from "./action-status";
-import { Heading } from "./shared/ui";
+import { Heading } from "./shared/ui/heading";
 import { PasskeySettings } from "./passkey-settings";
 import type { ReactElement } from "react";
 import { RecoveryNotice } from "./recovery-notice";

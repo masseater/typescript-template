@@ -1,4 +1,4 @@
-import { Page, Status } from "@template/ui/ui";
+import { Page, Status } from "@template/ui";
 import { useEffect, useState } from "react";
 import { ConsentActions } from "./consent-actions.tsx";
 import type { ReactElement } from "react";

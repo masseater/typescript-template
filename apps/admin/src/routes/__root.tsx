@@ -1,7 +1,7 @@
 import { AppShell, appHead } from "@template/ui/shell";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { ToastProvider } from "@template/ui/ui";
+import { ToastProvider } from "@template/ui";
 import { routes } from "#telemetry-routes.ts";
 import styles from "#styles.css?url";
 

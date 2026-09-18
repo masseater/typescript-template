@@ -1,4 +1,4 @@
-import { Avatar, CardLink } from "@template/ui/ui";
+import { Avatar, CardLink } from "@template/ui";
 import { MemberSummary } from "./member-summary.tsx";
 import type { Members } from "#pages/users/api/load-members.ts";
 import type { ReactElement } from "react";
