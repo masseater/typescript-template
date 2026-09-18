@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,7 +17,7 @@ const REASSIGN_RULE = "no-reassign--use-spread-or-iife";
 
 const HOST_PATH = "packages/cart/src/total.ts";
 
-const FIXTURE_ROOT = join(tmpdir(), "dont-review-it-suppression-approvals");
+const FIXTURE_ROOT = mkdtempSync(join(tmpdir(), "dont-review-it-suppression-approvals-"));
 
 const FULL_ROW: SuppressionApproval = {
   path: HOST_PATH,

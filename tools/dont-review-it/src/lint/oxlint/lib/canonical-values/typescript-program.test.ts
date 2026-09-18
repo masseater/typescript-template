@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,7 +17,7 @@ const OWNER_SOURCE =
 
 describe("createCanonicalValuesTypeScriptProgram", () => {
   describe("sibling source directories under one repository configuration", () => {
-    const siblingRoot = join(tmpdir(), "canonical-values-typescript-program-sibling");
+    const siblingRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-sibling-"));
 
     const it = test.extend("siblingConfigPaths", ({}, { onCleanup }) => {
       rmSync(siblingRoot, { force: true, recursive: true });
@@ -43,7 +43,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a nested configuration standing beside the repository configuration", () => {
-    const nestedRoot = join(tmpdir(), "canonical-values-typescript-program-nested");
+    const nestedRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-nested-"));
 
     const it = test.extend("nestedConfigPaths", ({}, { onCleanup }) => {
       rmSync(nestedRoot, { force: true, recursive: true });
@@ -71,7 +71,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a paths mapping declared by the nearest repository configuration", () => {
-    const mappingRoot = join(tmpdir(), "canonical-values-typescript-program-mapping");
+    const mappingRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-mapping-"));
 
     const it = test.extend("mappedOwnerType", ({}, { onCleanup }) => {
       rmSync(mappingRoot, { force: true, recursive: true });
@@ -110,7 +110,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a configuration sitting above the repository root", () => {
-    const outsideConfigRoot = join(tmpdir(), "canonical-values-typescript-program-above");
+    const outsideConfigRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-above-"));
 
     const it = test.extend("unmappedOwnerType", ({}, { onCleanup }) => {
       rmSync(outsideConfigRoot, { force: true, recursive: true });
@@ -149,7 +149,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a configuration extending a file outside the repository", () => {
-    const outsideExtendsRoot = join(tmpdir(), "canonical-values-typescript-program-extends");
+    const outsideExtendsRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-extends-"));
 
     const it = test.extend("outsideExtendsFailure", ({}, { onCleanup }) => {
       rmSync(outsideExtendsRoot, { force: true, recursive: true });
@@ -182,7 +182,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a paths target sitting outside the cache-bounded repository", () => {
-    const outsideTargetRoot = join(tmpdir(), "canonical-values-typescript-program-target");
+    const outsideTargetRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-target-"));
 
     const it = test.extend("outsideTargetFailure", ({}, { onCleanup }) => {
       rmSync(outsideTargetRoot, { force: true, recursive: true });
@@ -220,7 +220,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a malformed TypeScript configuration", () => {
-    const malformedRoot = join(tmpdir(), "canonical-values-typescript-program-malformed");
+    const malformedRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-malformed-"));
 
     const it = test.extend("malformedConfigFailure", ({}, { onCleanup }) => {
       rmSync(malformedRoot, { force: true, recursive: true });
@@ -249,7 +249,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a tsx source override", () => {
-    const tsxRoot = join(tmpdir(), "canonical-values-typescript-program-tsx");
+    const tsxRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-tsx-"));
 
     const it = test.extend("tsxOverrideSyntaxErrors", ({}, { onCleanup }) => {
       rmSync(tsxRoot, { force: true, recursive: true });
@@ -277,7 +277,7 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
   });
 
   describe("a ts source override", () => {
-    const tsRoot = join(tmpdir(), "canonical-values-typescript-program-ts");
+    const tsRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-ts-"));
 
     const it = test.extend("tsOverrideSyntaxErrors", ({}, { onCleanup }) => {
       rmSync(tsRoot, { force: true, recursive: true });

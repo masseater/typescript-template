@@ -7,9 +7,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { readJsonFile } from "./read-json-file.ts";
 
-const TRUNCATED_JSON_DIRECTORY = join(tmpdir(), "read-json-file-truncated");
+const TRUNCATED_JSON_DIRECTORY = mkdtempSync(join(tmpdir(), "read-json-file-truncated-"));
 
-const FOREIGN_TEXT_DIRECTORY = join(tmpdir(), "read-json-file-foreign-text");
+const FOREIGN_TEXT_DIRECTORY = mkdtempSync(join(tmpdir(), "read-json-file-foreign-text-"));
 
 describe("readJsonFile", () => {
   describe("a manifest that parses", () => {
