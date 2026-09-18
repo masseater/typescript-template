@@ -213,7 +213,7 @@ export default definePlugin({
     "effect-failures": {
       create: effectFailuresVisitor,
       meta: metadata(
-        "effect を使うファイルでは throw と try/catch を使えません。失敗は Schema.TaggedError で型に載せ、Effect.fail・Effect.try・Effect.tryPromise・Result.try で扱ってください。better-auth のフックが要求する APIError だけは throw できます。",
+        "effect を使うファイルでは throw と try/catch を使えません。失敗は Schema.TaggedError で型に載せ、Effect.fail・Effect.try・Effect.tryPromise・Result.try で扱ってください。better-auth のフックが要求する APIError だけは throw できます。出力は process.stdout / process.stderr ではなく effect の Console で書いてください。",
       ),
     },
     "effect-stack": {

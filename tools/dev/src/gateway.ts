@@ -5,6 +5,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import type { Scope } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Server } from "node:net";
+import { reportFailed } from "./failure.ts";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),
@@ -56,13 +57,7 @@ NodeRuntime.runMain(
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
-        : Console.error(JSON.stringify({ event: "local.gateway_failed" })).pipe(
-            Effect.andThen(
-              Effect.sync(() => {
-                process.exitCode = 1;
-              }),
-            ),
-          ),
+        : reportFailed({ event: "local.gateway_failed" }),
     ),
   ),
   { disableErrorReporting: true },

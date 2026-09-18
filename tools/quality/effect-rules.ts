@@ -115,12 +115,33 @@ function isApiErrorThrow(node: Node): boolean {
   );
 }
 
+function writesStandardStream(node: Node): boolean {
+  if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression") {
+    return false;
+  }
+  const { object, property } = node.callee;
+  return (
+    property.type === "Identifier" &&
+    property.name === "write" &&
+    object.type === "MemberExpression" &&
+    object.object.type === "Identifier" &&
+    object.object.name === "process" &&
+    object.property.type === "Identifier" &&
+    (object.property.name === "stdout" || object.property.name === "stderr")
+  );
+}
+
 function effectFailuresVisitor(context: LintContext): Visitor {
   if (!isEffectScope(filename(context))) {
     return {};
   }
   let usesEffect = false;
   return {
+    CallExpression(node: Node): void {
+      if (usesEffect && writesStandardStream(node)) {
+        reportViolation(context, node);
+      }
+    },
     ImportDeclaration(node: Node): void {
       if (node.type === "ImportDeclaration" && /^effect(?:\/|$)/u.test(node.source.value)) {
         usesEffect = true;

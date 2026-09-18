@@ -188,11 +188,10 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
   yield* matches
-    ? Console.log(JSON.stringify({ declaration: "matches", event: "stacks.verified", stack }))
+    ? Console.log(JSON.stringify({ event: "stacks.verified", stack }))
     : Console.error(
         JSON.stringify({
-          declaration: "differs",
-          event: "stacks.verified",
+          event: "stacks.differs",
           inventory,
           notCompared: providerAddedBindings,
           stack,

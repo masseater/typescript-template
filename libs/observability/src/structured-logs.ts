@@ -1,8 +1,7 @@
-import { Logger, References } from "effect";
+import { Console, Logger, References } from "effect";
 import type { Application } from "@template/config";
 import type { Layer } from "effect";
 import type { LogSink } from "./log.ts";
-import { consoleSink } from "./log.ts";
 
 interface StructuredLogOptions {
   readonly serviceName: Application;
@@ -21,9 +20,9 @@ function messageParts(message: unknown): readonly unknown[] {
 }
 
 function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
-  const sink = options.log ?? consoleSink;
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   const logger = Logger.make(({ fiber, logLevel, message }) => {
+    const sink = options.log ?? fiber.getRef(Console.Console);
     const [event, attributes] = messageParts(message);
     const line = JSON.stringify({
       event: typeof event === "string" ? event : "application.log",

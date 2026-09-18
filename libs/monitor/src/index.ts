@@ -98,7 +98,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
           }),
         ),
       ),
-      Effect.as(Response.json({ ok: true, ...result })),
+      Effect.map(() => Response.json({ ok: true, ...result })),
     );
   }
 

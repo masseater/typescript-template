@@ -10,6 +10,7 @@ import { execFile } from "node:child_process";
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
+import { reportFailed } from "./failure.ts";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
   "PrepareBrowserFailure",
@@ -83,16 +84,6 @@ NodeRuntime.runMain(
         playwrightBrowser: PLAYWRIGHT_BROWSER,
       }),
     );
-  }).pipe(
-    Effect.catchCause(() =>
-      Console.error(JSON.stringify({ event: "local.browser_cli_prepare_failed" })).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      ),
-    ),
-  ),
+  }).pipe(Effect.catchCause(() => reportFailed({ event: "local.browser_cli_prepare_failed" }))),
   { disableErrorReporting: true },
 );

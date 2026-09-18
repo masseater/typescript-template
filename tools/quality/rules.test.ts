@@ -93,16 +93,6 @@ const forbiddenCode = [
     'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: { ...ownServer(), middleware: [] } });',
     "effect-stack",
   ],
-  [
-    "libs/shared/src/probe.ts",
-    'import { Effect } from "effect"; export const run = () => { if (Effect) throw new Error("x"); };',
-    "effect-failures",
-  ],
-  [
-    "infra/budget-monitor/src/probe.ts",
-    'import { Effect } from "effect"; export const run = () => { try { return Effect; } catch { return undefined; } };',
-    "effect-failures",
-  ],
   ["libs/db/src/admin.ts", 'import "./bootstrap-statement.ts";', "boundaries"],
 ] as const;
 

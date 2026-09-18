@@ -5,6 +5,7 @@ import { applications } from "@template/config";
 import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
+import { reportFailed } from "./failure.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
@@ -62,15 +63,7 @@ const resolveFrames = Effect.gen(function* resolveFrames() {
 
 NodeRuntime.runMain(
   (values.help ? help : resolveFrames).pipe(
-    Effect.catchCause(() =>
-      Console.error(JSON.stringify({ event: "observe.symbolicate_failed" })).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      ),
-    ),
+    Effect.catchCause(() => reportFailed({ event: "observe.symbolicate_failed" })),
   ),
   { disableErrorReporting: true },
 );
