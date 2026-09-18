@@ -2,7 +2,8 @@ import type { StateService } from "alchemy/State";
 import { Effect } from "effect";
 
 import { recordsPresent } from "./account-lookup.ts";
-import type { AccountAccess } from "./account-read.ts";
+import { isUnreadable, readVerdict, unreadableVerdict } from "./account-read.ts";
+import type { AccountAccess, Unreadable } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
 import type { SharedConfig } from "./config.ts";
 import {
@@ -14,9 +15,15 @@ import {
 
 type Onboarding = Effect.Success<ReturnType<typeof onboardingVerdict>>;
 
-function recordClaim(present: boolean, onboarding: Onboarding): "free" | "owned" | "taken" {
+function recordClaim(
+  present: boolean,
+  onboarding: Onboarding,
+): "free" | "owned" | "taken" | Unreadable {
   if (!present) {
     return "free";
+  }
+  if (isUnreadable(onboarding)) {
+    return onboarding;
   }
   return onboarding === "owned" ? "owned" : "taken";
 }
@@ -26,14 +33,13 @@ const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVer
   recipients: readonly string[],
 ) {
   const addresses = yield* verifiedAddresses(access).pipe(
-    Effect.catchTag("CloudflareFailure", () => Effect.succeed("unreadable" as const)),
+    Effect.catchTag("CloudflareFailure", unreadableVerdict),
   );
-  if (typeof addresses === "string") {
-    return addresses;
-  }
-  return recipients.every((recipient) => addresses.includes(recipient))
-    ? ("free" as const)
-    : ("counted" as const);
+  return readVerdict(addresses, (verified) =>
+    recipients.every((recipient) => verified.includes(recipient))
+      ? ("free" as const)
+      : ("counted" as const),
+  );
 });
 
 const emailVerdicts = Effect.fn("emailVerdicts")(function* emailVerdicts<Failure, Requirements>(
@@ -42,10 +48,14 @@ const emailVerdicts = Effect.fn("emailVerdicts")(function* emailVerdicts<Failure
   store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   const onboarding = yield* onboardingVerdict(access, config, store);
-  const present = yield* recordsPresent(access, config.zoneId, sendingRecordNames(config));
+  const present = yield* recordsPresent(access, config.zoneId, sendingRecordNames(config)).pipe(
+    Effect.catchTag("CloudflareFailure", unreadableVerdict),
+  );
   return {
-    emailSending: recordClaim(present, onboarding),
-    senderDomain: yield* senderVerdict(access, config),
+    emailSending: readVerdict(present, (found) => recordClaim(found, onboarding)),
+    senderDomain: yield* senderVerdict(access, config).pipe(
+      Effect.catchTag("CloudflareFailure", unreadableVerdict),
+    ),
     sendingSubdomain: onboarding,
   };
 });
@@ -54,7 +64,9 @@ type EmailVerdicts = Effect.Success<ReturnType<typeof emailVerdicts>>;
 
 function emailBlocked(verdicts: Readonly<EmailVerdicts>): readonly string[] {
   return [
-    ...(verdicts.emailSending === "taken" ? ["emailSending"] : []),
+    ...(verdicts.emailSending === "taken" || isUnreadable(verdicts.emailSending)
+      ? ["emailSending"]
+      : []),
     ...(verdicts.senderDomain === "dedicated" ? [] : ["senderDomain"]),
     ...(verdicts.sendingSubdomain === "free" || verdicts.sendingSubdomain === "owned"
       ? []

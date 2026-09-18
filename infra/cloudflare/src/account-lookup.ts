@@ -2,11 +2,9 @@ import { Effect, Schema } from "effect";
 
 import { endpoint, readList, readRequired, readResource } from "./account-read.ts";
 import type { AccountAccess } from "./account-read.ts";
-import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 
 const SECRETS_STORE_PAGE_SIZE = 100;
 
-const Script = Schema.Struct({ result: Schema.Struct({ id: Schema.String }) });
 const Scripts = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
 const Stores = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
 const Domains = Schema.Struct({
@@ -23,17 +21,6 @@ const Group = Schema.Struct({
 });
 const Policy = Schema.Struct({ permission_groups: Schema.Array(Group) });
 const TokenDetail = Schema.Struct({ result: Schema.Struct({ policies: Schema.Array(Policy) }) });
-
-const stateStorePresent = Effect.fn("stateStorePresent")(function* stateStorePresent(
-  access: AccountAccess,
-) {
-  const found = yield* readResource(
-    access,
-    endpoint`accounts/${access.accountId}/workers/scripts/${STATE_STORE_SCRIPT_NAME}`,
-    Script,
-  );
-  return found !== undefined;
-});
 
 const secretsStoreCount = Effect.fn("secretsStoreCount")(function* secretsStoreCount(
   access: AccountAccess,
@@ -125,7 +112,6 @@ export {
   grantedPermissions,
   recordsPresent,
   secretsStoreCount,
-  stateStorePresent,
   workerNames,
   workersSubdomain,
 };

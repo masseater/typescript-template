@@ -172,9 +172,6 @@ function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
         success: true,
       }),
     ),
-    http.get(`${account}/workers/scripts/alchemy-state-store`, () =>
-      HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
-    ),
     pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>
       HttpResponse.json({
         result: Array.from({ length: options.stores ?? 0 }, () => ({ id: "s" })),
