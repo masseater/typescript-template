@@ -208,7 +208,11 @@ const lint = {
             name: ["Ai", "DurableObjectState", "Request"],
             package: "@cloudflare/workers-types",
           },
-          { from: "package", name: ["Column", "DrizzleD1Database"], package: "drizzle-orm" },
+          {
+            from: "package",
+            name: ["Column", "DrizzleD1Database", "MigrationMeta", "SQLiteAsyncDatabase"],
+            package: "drizzle-orm",
+          },
           { from: "package", name: ["AnyElysia"], package: "elysia" },
           { from: "package", name: ["Plan", "ProgressEvent"], package: "alchemy" },
           {

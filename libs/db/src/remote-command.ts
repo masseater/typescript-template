@@ -1,10 +1,10 @@
-import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
+import { bootstrapDatabase, loadMigrations, migrateDatabase } from "./remote-operations.ts";
 import { fail, parseRemoteInput } from "./remote-input.ts";
 import { Effect } from "effect";
-import { remoteExecutor } from "./remote-http.ts";
+import { remoteDatabase } from "./remote-http.ts";
 
 type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
-type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
+type Migrations = Effect.Success<ReturnType<typeof loadMigrations>>;
 
 interface PlanReport {
   readonly databaseId: string;
@@ -29,15 +29,17 @@ function planReport({ operation, target }: RemoteInput, migrations: Migrations):
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  { operation, target }: RemoteInput,
-  migrations: Migrations,
+  {
+    operation,
+    target,
+  }: RemoteInput,
 ) {
   if (target.apiToken === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  const executor = remoteExecutor({ ...target, apiToken: target.apiToken });
+  const { apply, database } = remoteDatabase({ ...target, apiToken: target.apiToken });
   if (operation === "migrate") {
-    const applied = yield* migrateDatabase(executor, migrations);
+    const applied = yield* migrateDatabase(database, apply);
     return {
       applied,
       databaseId: target.databaseId,
@@ -48,17 +50,16 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
   if (target.email === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  yield* bootstrapDatabase(executor, target.email);
+  yield* bootstrapDatabase(database, target.email);
   return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
 });
 
 const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   function* runRemoteDatabaseCommand(args: readonly string[], input: unknown) {
     const parsed = yield* parseRemoteInput(args, input);
-    const migrations = yield* loadRemoteMigrations();
     const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> = parsed.execute
-      ? yield* executeRemote(parsed, migrations)
-      : planReport(parsed, migrations);
+      ? yield* executeRemote(parsed)
+      : planReport(parsed, yield* loadMigrations());
     return report;
   },
 );

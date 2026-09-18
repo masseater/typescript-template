@@ -1,4 +1,4 @@
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
+import { EmptyTestDatabase, TestBinding, executeD1RawBatch } from "./testing-node.ts";
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import type { D1Database } from "@cloudflare/workers-types";
@@ -7,7 +7,6 @@ import { Effect } from "effect";
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
 import { query } from "./database.ts";
-import { remoteExecutor } from "./remote-http.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { setupServer } from "msw/node";
 import { user } from "./schema.ts";
@@ -22,7 +21,7 @@ const target = {
   apiToken: "test-private-token-at-least-20-characters",
   databaseId: "92b705e4-7b3b-42a9-9de3-700a33fa609c",
 };
-const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database/${target.databaseId}/query`;
+const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database/${target.databaseId}/raw`;
 const execute = ["--execute", "--confirm-database", target.databaseId];
 
 function mockServer(
@@ -48,7 +47,7 @@ function d1Endpoint(binding: D1Database): Effect.Effect<SetupServer, never, Scop
       if (request.headers.get("authorization") !== `Bearer ${target.apiToken}`) {
         return HttpResponse.json({ error: "unauthorized" }, { status: UNAUTHORIZED_STATUS });
       }
-      return HttpResponse.json(await executeD1HttpBatch(binding, await request.json()));
+      return HttpResponse.json(await executeD1RawBatch(binding, await request.json()));
     }),
   );
 }
@@ -132,9 +131,10 @@ for (const mode of ["http", "partial", "invalid", "redirect"] as const) {
   it.effect(`sanitizes ${mode} failure without returning provider bodies or secrets`, () =>
     Effect.gen(function* program() {
       yield* mockServer(http.post(endpoint, () => failureResponse(mode)));
-      const executor = remoteExecutor(target);
-      const failure = yield* executor.batch([{ params: [], sql: "SELECT 1" }]).pipe(Effect.flip);
-      assert.deepStrictEqual(failure.code, "REMOTE_QUERY_FAILED");
+      const failure = yield* runRemoteDatabaseCommand(["migrate", ...execute], target).pipe(
+        Effect.flip,
+      );
+      assert.deepStrictEqual("code" in failure && failure.code, "REMOTE_QUERY_FAILED");
       assert.notInclude(JSON.stringify(failure), target.apiToken);
     }).pipe(Effect.scoped),
   );

@@ -4,28 +4,47 @@ import { Database } from "./database.ts";
 import { Miniflare } from "miniflare";
 import type { RemoteFailure } from "./remote-input.ts";
 import { localDatabase } from "./local.ts";
-import { prepareBatch } from "./migrate-d1.ts";
 
 const miniflareCompatibilityDate = "2026-07-30";
 
-interface D1HttpBatchResponse {
-  readonly result: D1Result[];
+interface D1RawResponse {
+  readonly result: readonly {
+    readonly results: { readonly rows: readonly unknown[][] };
+    readonly success: true;
+  }[];
   readonly success: true;
 }
 
 const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
-const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
+const HttpQuery = Schema.Struct({
+  params: Schema.optionalKey(Schema.Array(HttpParam)),
+  sql: Schema.String,
+});
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@template/db/TestBinding") {}
 
-async function executeD1HttpBatch(
-  database: D1Database,
-  body: unknown,
-): Promise<D1HttpBatchResponse> {
+async function executeD1RawBatch(database: D1Database, body: unknown): Promise<D1RawResponse> {
   const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(body);
-  const result = await database.batch(prepareBatch(database, batch));
-  return { result, success: true };
+  const results = await database.batch<Record<string, unknown>>(
+    batch.map(({ params = [], sql }) => database.prepare(sql).bind(...params)),
+  );
+  return {
+    result: results.map(({ results: rows }) => ({
+      results: { rows: rows.map((row) => Object.values(row)) },
+      success: true,
+    })),
+    success: true,
+  };
+}
+
+function failureCode<Value, Requirements>(
+  effect: Effect.Effect<Value, RemoteFailure, Requirements>,
+): Effect.Effect<RemoteFailure["code"], Value, Requirements> {
+  return effect.pipe(
+    Effect.flip,
+    Effect.map((failure) => failure.code),
+  );
 }
 
 function runStatement(
@@ -65,5 +84,4 @@ const EmptyTestDatabase = Layer.unwrap(
   }),
 ).pipe(Layer.provideMerge(testBinding));
 
-export { d1Executor } from "./migrate-d1.ts";
-export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, runStatement };
+export { EmptyTestDatabase, TestBinding, executeD1RawBatch, failureCode, runStatement };

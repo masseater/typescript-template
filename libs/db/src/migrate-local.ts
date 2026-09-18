@@ -3,7 +3,7 @@ import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import type { D1Database } from "@cloudflare/workers-types";
 import { NodeRuntime } from "@effect/platform-node";
 import { getPlatformProxy } from "wrangler";
-import { migrateD1 } from "./migrate-d1.ts";
+import { migrateD1 } from "./remote-operations.ts";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>

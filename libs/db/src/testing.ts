@@ -1,12 +1,11 @@
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
-import { Effect, Layer, Schema } from "effect";
-import { MigrationFiles, migrateDatabase } from "./remote-operations.ts";
+import { Effect, Layer } from "effect";
+import { applyD1Migrations, reset } from "cloudflare:test";
+import type { D1Migration } from "cloudflare:test";
 import { Database } from "./database.ts";
 import { DatabaseFailure } from "./database-failure.ts";
-import { d1Executor } from "./migrate-d1.ts";
 import { env } from "cloudflare:workers";
 import { getColumns } from "drizzle-orm";
-import { reset } from "cloudflare:test";
 import { schema } from "./schema.ts";
 
 declare global {
@@ -14,12 +13,10 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;
-      readonly TEST_MIGRATIONS: unknown;
+      readonly TEST_MIGRATIONS: D1Migration[];
     }
   }
 }
-
-const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
 function getSchemaShape(): Record<string, string[]> {
   return Object.fromEntries(
@@ -45,7 +42,7 @@ function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
     Effect.gen(function* database() {
       yield* Effect.promise(async () => reset());
       if (migrated) {
-        yield* migrateDatabase(d1Executor(env.DB), yield* migrations(env.TEST_MIGRATIONS));
+        yield* Effect.promise(async () => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
       }
       return Database.layer(env.DB);
     }),
