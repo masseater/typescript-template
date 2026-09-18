@@ -3,7 +3,7 @@ import { providers, state } from "alchemy/Cloudflare";
 import type { Application } from "@repo/config";
 
 const application = ["database"] as const;
-const stackDependencies = {
+const stackReferences = {
   admin: application,
   "budget-monitor": ["tokens"],
   database: [],
@@ -17,7 +17,19 @@ const stackDependencies = {
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<Record<Application, typeof application>>;
 
-type StackName = keyof typeof stackDependencies;
+type StackName = keyof typeof stackReferences;
+
+const traceDestinationStack = "observability" as const satisfies StackName;
+
+const dependenciesByName: Readonly<Partial<Record<StackName, readonly StackName[]>>> = {
+  admin: [traceDestinationStack],
+  user: [traceDestinationStack],
+  wiki: [traceDestinationStack],
+} satisfies Readonly<Record<Application, readonly StackName[]>>;
+
+function stackDependencies(stack: StackName): readonly StackName[] {
+  return [...stackReferences[stack], ...(dependenciesByName[stack] ?? [])];
+}
 
 const stackNames = [
   "email",
@@ -51,7 +63,7 @@ function applyOrderViolations(order: readonly StackName[]): readonly StackName[]
   }
   return order.filter(
     (stack) =>
-      !stackDependencies[stack].every((dependency) => runsAfter(stack, dependency)) ||
+      !stackDependencies(stack).every((dependency) => runsAfter(stack, dependency)) ||
       (sendingStacks.some((sender) => sender === stack) && !runsAfter(stack, onboardingStack)),
   );
 }
@@ -70,5 +82,7 @@ export {
   stackName,
   stackNames,
   stackOptions,
+  stackReferences,
+  traceDestinationStack,
 };
 export type { StackName };

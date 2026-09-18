@@ -7,21 +7,22 @@ import {
   accountHandlers,
   config,
   databaseId,
+  deployedState,
   emptyState,
   sendingRecords,
 } from "./inspection-fixture.ts";
 import { describeFailure } from "./secrets.ts";
-import { assertStackUnclaimed } from "./stack-guards.ts";
-import { sendingStacks } from "./stacks.ts";
+import { assertStackReady } from "./stack-guards.ts";
+import { sendingStacks, stackDependencies, traceDestinationStack } from "./stacks.ts";
 
 const deployment = { access, config };
+const applications = ["admin", "user", "wiki"] as const;
+const withoutOtlp = { access, config: { ...config, otlp: undefined } };
 
 it.effect("stops the onboarding unit on an account that already holds the sending domain", () =>
   Effect.gen(function* program() {
     yield* mockServer(...accountHandlers({ records: sendingRecords }));
-    const failure = yield* assertStackUnclaimed("email", deployment, emptyState()).pipe(
-      Effect.flip,
-    );
+    const failure = yield* assertStackReady("email", deployment, emptyState()).pipe(Effect.flip);
     assert.deepStrictEqual(describeFailure(failure, []), {
       code: "sending_domain_unavailable",
       keys: ["emailSending"],
@@ -34,9 +35,7 @@ it.effect("stops the database unit on a name another project created", () =>
     yield* mockServer(
       ...accountHandlers({ databases: [{ name: `${config.prefix}-db`, uuid: databaseId }] }),
     );
-    const failure = yield* assertStackUnclaimed("database", deployment, emptyState()).pipe(
-      Effect.flip,
-    );
+    const failure = yield* assertStackReady("database", deployment, emptyState()).pipe(Effect.flip);
     assert.deepStrictEqual(describeFailure(failure, []), {
       code: "database_name_taken",
       keys: ["TEMPLATE_PREFIX"],
@@ -45,11 +44,37 @@ it.effect("stops the database unit on a name another project created", () =>
 );
 
 it.effect("reads nothing for the units that claim no account-wide name", () =>
-  Effect.forEach(sendingStacks, (stack) =>
-    assertStackUnclaimed(
+  Effect.forEach(
+    sendingStacks.filter((stack) => !applications.some((app) => app === stack)),
+    (stack) =>
+      assertStackReady(
+        stack,
+        deployment,
+        Effect.die("no state store is consulted for a unit without a guard"),
+      ),
+  ),
+);
+
+it.effect("refuses an application before the unit that declares its trace destination ran", () =>
+  Effect.forEach(applications, (stack) =>
+    Effect.gen(function* program() {
+      assert.include(stackDependencies(stack), traceDestinationStack);
+      const failure = yield* assertStackReady(stack, deployment, emptyState()).pipe(Effect.flip);
+      assert.deepStrictEqual(describeFailure(failure, []), {
+        code: "trace_destination_not_applied",
+        keys: [traceDestinationStack],
+      });
+      yield* assertStackReady(stack, deployment, deployedState());
+    }),
+  ),
+);
+
+it.effect("lets an application run without the trace destination unit when OTLP is unset", () =>
+  Effect.forEach(applications, (stack) =>
+    assertStackReady(
       stack,
-      deployment,
-      Effect.die("no state store is consulted for a unit without a guard"),
+      withoutOtlp,
+      Effect.die("no state store is consulted when no destination is declared"),
     ),
   ),
 );
