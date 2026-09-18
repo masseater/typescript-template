@@ -47,7 +47,12 @@ const lint = {
   },
   overrides: [
     {
-      files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts", "libs/runtime/src/account.ts"],
+      files: [
+        "apps/*/src/**/api.ts",
+        "apps/*/src/**/*-api.ts",
+        "tools/*/src/**/*-api.ts",
+        "libs/runtime/src/account.ts",
+      ],
       rules: {
         "typescript/explicit-function-return-type": "off",
         "typescript/explicit-module-boundary-types": "off",

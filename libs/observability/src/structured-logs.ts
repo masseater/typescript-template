@@ -1,7 +1,7 @@
 import { Console, Logger, References } from "effect";
 import type { Layer } from "effect";
 
-import type { Application } from "@repo/config";
+import type { ServiceName } from "@repo/config";
 
 import { redactedField } from "./redact.ts";
 
@@ -12,7 +12,7 @@ interface LogSink {
 }
 
 interface StructuredLogOptions {
-  readonly serviceName: Application;
+  readonly serviceName: ServiceName;
   readonly release: string;
   readonly log?: LogSink;
 }
@@ -31,7 +31,7 @@ function messageParts(message: unknown): readonly unknown[] {
   return Array.isArray(message) ? message : [message];
 }
 
-function serviceLabel(name: Application): string {
+function serviceLabel(name: ServiceName): string {
   return `${name}-server`;
 }
 
