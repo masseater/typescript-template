@@ -11,5 +11,11 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@template/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

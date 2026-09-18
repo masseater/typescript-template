@@ -83,7 +83,7 @@ const config: KnipConfig = {
       project: ["src/**/*.ts!"],
     },
     "tools/load": {
-      entry: ["src/cli.ts!", "scenarios/*.ts!"],
+      entry: ["src/cli.ts!", "src/prepare.ts!", "scenarios/*.ts!"],
       ignoreDependencies: ["k6"],
       project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
     },

@@ -3,16 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "load": "node src/cli.ts"
+    "load": "node src/cli.ts",
+    "prepare": "node src/prepare.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@template/config": "workspace:*",
+    "@template/runtime": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@types/k6": "1.7.0",
+    "@effect/vitest": "catalog:",
+    "@types/k6": "2.2.1",
     "@types/node": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:"
   }
 }

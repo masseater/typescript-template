@@ -4,16 +4,16 @@ import type { Params } from "k6/http";
 import http from "k6/http";
 
 const ok = 200;
-const memberPageSize = 24;
 const mailAttempts = 20;
 const mailWaitSeconds = 0.5;
-const peakUsers = 20;
-const rampSeconds = "20s";
-const holdSeconds = "40s";
 const password = "Load-Test-Passw0rd!";
 const keyword = encodeURIComponent("負荷");
 
 const target = __ENV["LOAD_TARGET_ORIGIN"] ?? "";
+const memberPageSize = Number(__ENV["LOAD_MEMBER_PAGE_SIZE"] ?? "0");
+const peakUsers = Number(__ENV["LOAD_PEAK_USERS"] ?? "0");
+const rampSeconds = __ENV["LOAD_RAMP"] ?? "0s";
+const holdSeconds = __ENV["LOAD_HOLD"] ?? "0s";
 const mail = __ENV["LOAD_MAILPIT_ORIGIN"] ?? "";
 
 const options: Options = {
@@ -31,17 +31,23 @@ const options: Options = {
   thresholds: {
     checks: ["rate==1"],
     "http_req_duration{name:login-page}": ["p(95)<1000"],
+    "http_req_duration{name:member-page}": ["p(95)<1000"],
     "http_req_duration{name:members-search}": ["p(95)<1000"],
     "http_req_duration{name:members}": ["p(95)<1000"],
     "http_req_duration{name:profile}": ["p(95)<1000"],
     "http_req_duration{name:session}": ["p(95)<1000"],
+    "http_req_duration{name:users-page}": ["p(95)<1000"],
     http_req_failed: ["rate<0.01"],
   },
 };
 
-type Session = Readonly<Record<string, string>>;
+interface Session {
+  readonly cookies: Readonly<Record<string, string>>;
+  readonly id: string;
+}
 
 const jar = new http.CookieJar();
+const anonymous = new http.CookieJar();
 
 function json(): Readonly<Record<string, string>> {
   return { "content-type": "application/json", origin: target };
@@ -93,6 +99,19 @@ function register(email: string): void {
   }
 }
 
+function setCookies(response: {
+  readonly cookies: Readonly<Record<string, readonly { readonly value: string }[]>>;
+}): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  for (const [name, values] of Object.entries(response.cookies)) {
+    const value = values[0]?.value;
+    if (value !== undefined) {
+      cookies[name] = value;
+    }
+  }
+  return cookies;
+}
+
 function signIn(email: string): Session {
   const response = http.post(
     `${target}/api/auth/sign-in/email`,
@@ -102,14 +121,9 @@ function signIn(email: string): Session {
   if (response.status !== ok) {
     fail(`sign-in answered ${response.status}`);
   }
-  const session: Record<string, string> = {};
-  for (const [name, values] of Object.entries(response.cookies)) {
-    const value = values[0]?.value;
-    if (value !== undefined) {
-      session[name] = value;
-    }
-  }
-  return session;
+  const found = response.json("user.id");
+  const id = typeof found === "string" ? found : fail("sign-in answered without a user id");
+  return { cookies: setCookies(response), id };
 }
 
 function setup(): Session {
@@ -163,12 +177,28 @@ function searchMembers(): void {
 }
 
 function readLoginPage(): void {
-  const response = http.get(`${target}/login`, read("login-page"));
+  const response = http.get(`${target}/login`, {
+    jar: anonymous,
+    redirects: 0,
+    tags: { name: "login-page" },
+  });
   const { status } = response;
-  check(response, { "login page answers 200": () => status === ok });
+  check(response, { "login page answers 200 to a visitor": () => status === ok });
 }
 
-function memberScreens(): void {
+function readMemberDirectory(): void {
+  const response = http.get(`${target}/users`, { ...read("users-page"), redirects: 0 });
+  const { status } = response;
+  check(response, { "member directory answers 200": () => status === ok });
+}
+
+function readMemberHome(id: string): void {
+  const response = http.get(`${target}/users/${id}`, { ...read("member-page"), redirects: 0 });
+  const { status } = response;
+  check(response, { "member home answers 200": () => status === ok });
+}
+
+function memberApis(): void {
   readSession();
   readProfile();
   readMembers();
@@ -179,13 +209,17 @@ let restored = false;
 
 function journey(session: Session): void {
   if (!restored) {
-    for (const [name, value] of Object.entries(session)) {
+    for (const [name, value] of Object.entries(session.cookies)) {
       jar.set(target, name, value);
     }
     restored = true;
   }
   group("public", readLoginPage);
-  group("member", memberScreens);
+  group("member screens", () => {
+    readMemberDirectory();
+    readMemberHome(session.id);
+  });
+  group("member api", memberApis);
 }
 
 // oxlint-disable-next-line import/no-default-export

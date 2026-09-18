@@ -78,6 +78,20 @@
     {
       "groupName": "local observability services",
       "matchManagers": ["docker-compose"]
+    },
+    {
+      "groupName": "k6",
+      "matchPackageNames": ["@types/k6", "grafana/k6"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^tools/load/src/releases\\.ts$/"],
+      "matchStrings": ["const version = \"(?<currentValue>[^\"]+)\";"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "grafana/k6",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ]
 }
