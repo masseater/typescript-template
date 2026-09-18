@@ -40,6 +40,22 @@ const workersRoutesWrite = {
 } as const;
 const dnsWrite = { id: "4755a26eedb94da69e1066d98aa820be", name: "DNS Write" } as const;
 const dnsRead = { id: "82e64a83756745bbbb1c9c2701bf816b", name: "DNS Read" } as const;
+const emailSendingWrite = {
+  id: "5df633d6b41c42bcaf5b4a62b9d14b64",
+  name: "Email Sending Write",
+} as const;
+const routingAddressesWrite = {
+  id: "e4589eb09e63436686cd64252a3aebeb",
+  name: "Email Routing Addresses Write",
+} as const;
+const routingAddressesRead = {
+  id: "5272e56105d04b5897466995b9bd4643",
+  name: "Email Routing Addresses Read",
+} as const;
+const zoneSettingsWrite = {
+  id: "3030687196b94b638145a3953da2b699",
+  name: "Zone Settings Write",
+} as const;
 
 const deployTokenPermissions = [
   {
@@ -74,11 +90,26 @@ const deployTokenPermissions = [
     scope: "account",
   },
   {
+    dashboard: "Account / Email Sending / Write",
+    satisfiedBy: [emailSendingWrite],
+    scope: "account",
+  },
+  {
+    dashboard: "Account / Email Routing Addresses / Read",
+    satisfiedBy: [routingAddressesRead, routingAddressesWrite],
+    scope: "account",
+  },
+  {
     dashboard: "Zone / Workers Routes / Edit",
     satisfiedBy: [workersRoutesWrite],
     scope: "zone",
   },
   { dashboard: "Zone / DNS / Read", satisfiedBy: [dnsRead, dnsWrite], scope: "zone" },
+  {
+    dashboard: "Zone / Zone Settings / Edit",
+    satisfiedBy: [zoneSettingsWrite],
+    scope: "zone",
+  },
 ] as const satisfies readonly RequiredPermission[];
 
 function missingPermissions(granted: readonly PermissionGroup[]): readonly string[] {

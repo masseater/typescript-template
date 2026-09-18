@@ -47,6 +47,7 @@ const workspaces = {
 
 const cloudflareStacks = [
   "src/database.ts!",
+  "src/email.ts!",
   "src/tokens.ts!",
   "src/budget-monitor.ts!",
   "src/error-monitor.ts!",
@@ -97,7 +98,7 @@ function config({
       "infra/cloudflare": {
         entry: [...cloudflareStacks, ...productionOnly(...scripts["infra/cloudflare"])],
         ignoreExportsUsedInFile: true,
-        project: ["src/**/*.ts!", "!src/account-fixture.ts!"],
+        project: ["src/**/*.ts!", "!src/account-fixture.ts!", "!src/inspection-fixture.ts!"],
       },
       "infra/local": {
         entry: productionOnly(...scripts["infra/local"]),
