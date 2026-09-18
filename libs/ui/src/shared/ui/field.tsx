@@ -16,8 +16,6 @@ const errors = validationMessages.map(([match, message]) => (
   </FieldPrimitive.Error>
 ));
 
-const textarea = <textarea />;
-
 type AutoComplete =
   | "current-password"
   | "name"
@@ -58,7 +56,7 @@ function Field({
     <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
-        render={multiline === true ? textarea : undefined}
+        render={multiline === true ? <textarea aria-label={label} /> : undefined}
         type={type}
         name={name}
         value={value}
