@@ -19,7 +19,6 @@ const ProxyPort = Schema.Number.check(
 function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Scope> {
   return Effect.acquireRelease(
     Effect.callback<ReturnType<typeof createServer>, GatewayFailure>((resume) => {
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       const server = createServer((client) => {
         const upstream = connect(target, "127.0.0.1");
         client.pipe(upstream).pipe(client);
@@ -35,7 +34,6 @@ function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Sco
         resume(Effect.succeed(server));
       });
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (server) => Effect.sync(() => server.close()),
   );
 }
@@ -51,7 +49,6 @@ NodeRuntime.runMain(
     return yield* Effect.never;
   }).pipe(
     Effect.scoped,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
