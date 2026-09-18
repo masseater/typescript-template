@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { collectRun, root } from "./collect.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { constants, hostname, tmpdir } from "node:os";
@@ -38,9 +38,7 @@ const EXPORT_TIMEOUT_MILLISECONDS = 10_000;
 const forwardedSignals: readonly NodeJS.Signals[] = ["SIGTERM", "SIGHUP"];
 
 function report(event: Readonly<Record<string, unknown>>): Effect.Effect<void> {
-  return Effect.sync(() => {
-    process.stderr.write(`${JSON.stringify(event)}\n`);
-  });
+  return Console.error(JSON.stringify(event));
 }
 
 function post(endpoint: string, body: string, timeout: number): Effect.Effect<string | undefined> {

@@ -1,5 +1,7 @@
-import type { SpanContext } from "@opentelemetry/api";
-import { parseTraceParent } from "@opentelemetry/core";
+interface SpanContext {
+  readonly spanId: string;
+  readonly traceId: string;
+}
 
 type Attributes = Readonly<
   Record<string, boolean | number | string | readonly string[] | undefined>
@@ -27,6 +29,8 @@ const SPAN_ID_BYTES = 8;
 const HEX_RADIX = 16;
 const HEX_BYTE_WIDTH = 2;
 const processRecordSuffix = ".process.json";
+const traceparentPattern =
+  /^00-(?<traceId>(?!0{32})[\da-f]{32})-(?<spanId>(?!0{16})[\da-f]{16})-[\da-f]{2}$/u;
 
 function randomHex(bytes: number): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
@@ -47,7 +51,10 @@ function traceparent(traceId: string, spanId: string): string {
 }
 
 function parseTraceparent(value: string | undefined): SpanContext | undefined {
-  return value === undefined ? undefined : (parseTraceParent(value.trim()) ?? undefined);
+  const groups = traceparentPattern.exec(value?.trim() ?? "")?.groups;
+  const traceId = groups?.["traceId"];
+  const spanId = groups?.["spanId"];
+  return traceId === undefined || spanId === undefined ? undefined : { spanId, traceId };
 }
 
 function contextFileName(pid: number): string {

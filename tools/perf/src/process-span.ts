@@ -24,6 +24,7 @@ type ProcessMeasurement = Omit<
 >;
 
 function reportDropped(event: string, directory: string): void {
+  // oxlint-disable-next-line eslint/no-restricted-properties
   process.stderr.write(`${JSON.stringify({ directory, event, ok: false, pid: process.pid })}\n`);
 }
 

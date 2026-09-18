@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Effect, Option, Schema } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { TempoTrace, measure, summarize } from "./analysis.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { RunMeasurement } from "./analysis.ts";
@@ -86,20 +86,33 @@ const report = Effect.gen(function* report() {
   );
   const runs = measurements.flatMap((measurement) => Option.toArray(measurement));
   const skippedTraces = measurements.length - runs.length;
-  process.stdout.write(
-    `${JSON.stringify({ event: "perf.report", groups: summarize(runs), ok: skippedTraces === 0, skippedTraces })}\n`,
+  yield* Console.log(
+    JSON.stringify({
+      event: "perf.report",
+      groups: summarize(runs),
+      ok: skippedTraces === 0,
+      skippedTraces,
+    }),
   );
 });
 
 NodeRuntime.runMain(
   report.pipe(
     Effect.catchTag("ReportFailure", (failure) =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({ event: "perf.report_failed", ok: false, reason: failure.reason, tempo: values.tempo })}\n`,
-        );
-        process.exitCode = 1;
-      }),
+      Console.error(
+        JSON.stringify({
+          event: "perf.report_failed",
+          ok: false,
+          reason: failure.reason,
+          tempo: values.tempo,
+        }),
+      ).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = 1;
+          }),
+        ),
+      ),
     ),
   ),
   { disableErrorReporting: true },

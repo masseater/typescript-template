@@ -1,3 +1,4 @@
+import { Console, Effect } from "effect";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
@@ -48,18 +49,18 @@ function browserTelemetry(): {
 }
 
 async function passThrough(request: Readonly<Request>): Promise<Response> {
-  try {
-    return await fetch(request.url, {
-      body: await request.arrayBuffer(),
-      headers: request.headers,
-      method: request.method,
-    });
-  } catch {
-    process.stderr.write(
-      `${JSON.stringify({ event: "perf.telemetry_export_failed", ok: false, url: request.url })}\n`,
-    );
-    return new Response(undefined, { status: SERVICE_UNAVAILABLE });
-  }
+  const failed = Console.error(
+    JSON.stringify({ event: "perf.telemetry_export_failed", ok: false, url: request.url }),
+  ).pipe(Effect.as(new Response(undefined, { status: SERVICE_UNAVAILABLE })));
+  return Effect.runPromise(
+    Effect.tryPromise(async () =>
+      fetch(request.url, {
+        body: await request.arrayBuffer(),
+        headers: request.headers,
+        method: request.method,
+      }),
+    ).pipe(Effect.catchCause(() => failed)),
+  );
 }
 
 function forwardTelemetry(request: Readonly<Request>): Promise<Response> | undefined {

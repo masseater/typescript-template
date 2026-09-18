@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Config, Effect, Schema } from "effect";
+import { Config, Console, Effect, Schema } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { traceCommand } from "./runner.ts";
 
@@ -33,12 +33,15 @@ const main = Effect.gen(function* main() {
 NodeRuntime.runMain(
   main.pipe(
     Effect.catchCause((cause) =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({ event: "perf.trace_failed", failure: String(cause), ok: false })}\n`,
-        );
-        process.exitCode = 1;
-      }),
+      Console.error(
+        JSON.stringify({ event: "perf.trace_failed", failure: String(cause), ok: false }),
+      ).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = 1;
+          }),
+        ),
+      ),
     ),
   ),
   { disableErrorReporting: true },
