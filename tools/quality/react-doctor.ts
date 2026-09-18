@@ -1,4 +1,5 @@
-import { Result, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -26,58 +27,63 @@ const Project = Schema.Struct({
   skippedCheckReasons: Schema.optionalKey(Reasons),
   skippedChecks: Checks,
 });
-const Report = Schema.Struct({ projects: Schema.Array(Project) });
+const Report = Schema.fromJsonString(Schema.Struct({ projects: Schema.Array(Project) }));
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/react-doctor", import.meta.url));
 
-async function scan(): Promise<Scan> {
-  // oxlint-disable-next-line promise/avoid-new
-  return new Promise<Scan>((resolve) => {
-    execFile(
-      executable,
-      ["--json"],
-      { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
-      (failure, stdout) => {
-        resolve({ failed: failure !== null, output: stdout });
-      },
-    );
+function scan(): Effect.Effect<Scan> {
+  return Effect.promise(
+    async () =>
+      // oxlint-disable-next-line promise/avoid-new
+      new Promise<Scan>((resolve) => {
+        execFile(
+          executable,
+          ["--json"],
+          { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
+          (failure, stdout) => {
+            resolve({ failed: failure !== null, output: stdout });
+          },
+        );
+      }),
+  );
+}
+
+function findingsOf(entry: typeof Project.Type): string[] {
+  const name = entry.project.projectName;
+  return entry.diagnostics.map((diagnostic) => {
+    const at = diagnostic.line === undefined ? "" : `:${diagnostic.line}`;
+    return `${diagnostic.severity} ${diagnostic.rule} ${name}/${diagnostic.filePath}${at} ${diagnostic.message}`;
   });
 }
 
-const { failed, output } = await scan();
-const report = Schema.decodeUnknownResult(Report)(JSON.parse(output));
-if (Result.isFailure(report)) {
-  throw new Error("react-doctor のレポートを解釈できませんでした。");
-}
-
-const findings: string[] = [];
-const skipped: string[] = [];
-for (const entry of report.success.projects) {
+function skippedOf(entry: typeof Project.Type): string[] {
   const name = entry.project.projectName;
-  for (const diagnostic of entry.diagnostics) {
-    const at = diagnostic.line === undefined ? "" : `:${diagnostic.line}`;
-    findings.push(
-      `${diagnostic.severity} ${diagnostic.rule} ${name}/${diagnostic.filePath}${at} ${diagnostic.message}`,
-    );
-  }
-  for (const check of entry.skippedChecks) {
-    skipped.push(`${name} ${check}`);
-  }
-  for (const [check, reason] of Object.entries(entry.skippedCheckReasons ?? {})) {
-    skipped.push(`${name} ${check} ${reason}`);
-  }
+  return [
+    ...entry.skippedChecks.map((check) => `${name} ${check}`),
+    ...Object.entries(entry.skippedCheckReasons ?? {}).map(
+      ([check, reason]) => `${name} ${check} ${reason}`,
+    ),
+  ];
 }
 
-process.stdout.write(
-  `${JSON.stringify({
-    event: "quality.react_doctor",
-    findings,
-    ok: !failed && skipped.length === 0,
-    projects: report.success.projects.length,
-    skipped,
-  })}\n`,
+const inspect = Effect.fn("inspect")(function* inspect() {
+  const { failed, output } = yield* scan();
+  const { projects } = yield* Schema.decodeUnknownEffect(Report)(output);
+  const findings = projects.flatMap((entry) => findingsOf(entry));
+  const skipped = projects.flatMap((entry) => skippedOf(entry));
+  return { findings, ok: !failed && skipped.length === 0, projects: projects.length, skipped };
+});
+
+NodeRuntime.runMain(
+  inspect().pipe(
+    Effect.flatMap((result) =>
+      Effect.gen(function* report() {
+        yield* Console.log(JSON.stringify({ event: "quality.react_doctor", ...result }));
+        if (!result.ok) {
+          process.exitCode = 1;
+        }
+      }),
+    ),
+  ),
 );
-if (failed || skipped.length > 0) {
-  process.exitCode = 1;
-}
