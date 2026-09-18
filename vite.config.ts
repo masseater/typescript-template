@@ -61,6 +61,7 @@ export default defineConfig({
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
+      mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
       precommit: { command: ["vp check", "vp run check:staged"], input: [...taskInput] },
       prepush: [
         "vp run knip",
