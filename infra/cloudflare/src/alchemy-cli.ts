@@ -37,7 +37,9 @@ function runAlchemy(
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
+    // oxlint-disable-next-line eslint/no-restricted-properties
     forward(child.stdout, process.stdout, confidential);
+    // oxlint-disable-next-line eslint/no-restricted-properties
     forward(child.stderr, process.stderr, confidential);
     child.on("error", () => {
       resume(Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" })));

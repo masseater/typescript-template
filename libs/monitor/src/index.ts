@@ -1,4 +1,4 @@
-import { Effect, Exit, Schema, SchemaGetter } from "effect";
+import { Console, Effect, Exit, Schema, SchemaGetter } from "effect";
 import { MonitorFailure } from "./failure.ts";
 
 interface Alert {
@@ -87,25 +87,23 @@ abstract class Monitor<Bindings extends MonitorBindings> {
 
   private reportSuccess(result: object, started: number): Effect.Effect<Response> {
     return Effect.promise(async () => this.ctx.storage.delete("failureNotifiedDay")).pipe(
-      Effect.map(() => {
-        // oxlint-disable-next-line no-console
-        console.log(
+      Effect.andThen(() =>
+        Console.log(
           JSON.stringify({
             event: `${this.event}.checked`,
             ...result,
             durationMs: Date.now() - started,
           }),
-        );
-        return Response.json({ ok: true, ...result });
-      }),
+        ),
+      ),
+      Effect.map(() => Response.json({ ok: true, ...result })),
     );
   }
 
   private reportFailure(notify: Notify, started: number): Effect.Effect<Response> {
     const { ctx, event, failure } = this;
     return Effect.gen(function* reportFailure() {
-      // oxlint-disable-next-line no-console
-      console.error(
+      yield* Console.error(
         JSON.stringify({ durationMs: Date.now() - started, event: `${event}.check_failed` }),
       );
       const day = new Date(started).toISOString().slice(0, ISO_DATE_LENGTH);
