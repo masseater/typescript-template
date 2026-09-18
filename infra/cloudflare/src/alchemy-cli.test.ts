@@ -2,8 +2,9 @@ import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { runAlchemy } from "./alchemy-cli.ts";
-import type { AlchemyCommand } from "./alchemy-cli.ts";
 import { describeFailure } from "./secrets.ts";
+
+import type { AlchemyCommand } from "./alchemy-cli.ts";
 
 const destructiveCommands = [
   ["unsafe", "nuke"],

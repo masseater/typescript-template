@@ -1,6 +1,6 @@
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-
 import { serviceName } from "#shared/config/index.ts";
+
+import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function PublicFrame({
   children,

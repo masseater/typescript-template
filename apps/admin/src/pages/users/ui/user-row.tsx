@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
-import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
-import type { ListedUser } from "#pages/users/model/user-list.ts";
 import { TableCell, TableRow } from "@repo/ui";
 
+import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
 import { UserRowActions } from "./user-row-actions.tsx";
+
+import type { ListedUser } from "#pages/users/model/user-list.ts";
+import type { ReactElement } from "react";
 
 function UserRow({
   onChanged,

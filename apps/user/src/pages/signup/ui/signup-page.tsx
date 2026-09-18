@@ -1,9 +1,10 @@
-import type { ReactElement } from "react";
+import { TextLink } from "@repo/ui";
+import { SignUpForm } from "@repo/ui/signup";
 import { useState } from "react";
 
 import { CardPage } from "#shared/ui/index.ts";
-import { TextLink } from "@repo/ui";
-import { SignUpForm } from "@repo/ui/signup";
+
+import type { ReactElement } from "react";
 
 function SignUpPage(): ReactElement {
   const [sent, setSent] = useState(false);

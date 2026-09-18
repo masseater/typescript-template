@@ -1,7 +1,8 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
-import type { ReactElement } from "react";
 
 import { ToastItem } from "./toast-item";
+
+import type { ReactElement } from "react";
 
 function ToastViewport(): ReactElement {
   const { toasts } = ToastPrimitive.useToastManager();

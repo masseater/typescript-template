@@ -1,4 +1,3 @@
-import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { definePlugin } from "vite-plus/lint/plugins";
 
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
@@ -6,12 +5,14 @@ import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
-import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
 import { propertyName, staticText } from "./references.ts";
-import type { Origin } from "./references.ts";
 import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
+
+import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
+import type { Origin } from "./references.ts";
 
 const mockSources = new Set([
   "vitest",

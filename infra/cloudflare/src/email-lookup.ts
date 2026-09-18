@@ -1,4 +1,3 @@
-import type { StateService } from "alchemy/State";
 import { Effect, Schema } from "effect";
 
 import {
@@ -11,10 +10,12 @@ import {
   unreadableState,
   unreadableVerdict,
 } from "./account-read.ts";
-import type { AccountAccess } from "./account-read.ts";
-import type { SharedConfig } from "./config.ts";
 import { sendingDomain } from "./config.ts";
 import { recordedSendingDomains } from "./state-ownership.ts";
+
+import type { StateService } from "alchemy/State";
+import type { AccountAccess } from "./account-read.ts";
+import type { SharedConfig } from "./config.ts";
 
 const ADDRESS_PAGE_SIZE = 50;
 const WILDCARD = "*.";

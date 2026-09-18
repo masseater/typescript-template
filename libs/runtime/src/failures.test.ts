@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Cause, Effect } from "effect";
-
 import { RequestRejected, httpStatus } from "@repo/observability";
+import { Cause, Effect } from "effect";
 
 import { failureResponse } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";

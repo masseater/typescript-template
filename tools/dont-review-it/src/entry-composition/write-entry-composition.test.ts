@@ -14,7 +14,9 @@ const WORKSPACE_PREFIX = "spool -- ";
 
 const WORKSPACE_DEFINITION = "packages:\n  - packages/*\n";
 
-const UNWRITABLE_REPOSITORY_ROOT = mkdtempSync(join(tmpdir(), "write-entry-composition-unwritable-"));
+const UNWRITABLE_REPOSITORY_ROOT = mkdtempSync(
+  join(tmpdir(), "write-entry-composition-unwritable-"),
+);
 
 describe("writeEntryComposition", () => {
   describe("a scripts section that does not hold the required entry", () => {

@@ -1,8 +1,9 @@
-import type { ReactElement } from "react";
+import { Button, Status } from "@repo/ui";
 
 import { useChatForm } from "#pages/commander/model/use-chat-form.ts";
 import { MessageBox } from "#shared/ui/index.ts";
-import { Button, Status } from "@repo/ui";
+
+import type { ReactElement } from "react";
 
 function ChatForm({ busy }: Readonly<{ busy: boolean }>): ReactElement {
   const form = useChatForm();

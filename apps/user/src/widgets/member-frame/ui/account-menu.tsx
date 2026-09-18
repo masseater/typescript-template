@@ -1,6 +1,3 @@
-import { ChevronDownIcon } from "lucide-react";
-import type { ReactElement } from "react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +7,9 @@ import {
   Icon,
   useSignOut,
 } from "@repo/ui";
+import { ChevronDownIcon } from "lucide-react";
+
+import type { ReactElement } from "react";
 
 function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
   const { action, signOut } = useSignOut("/");

@@ -1,7 +1,6 @@
+import { reportFailed } from "@repo/config/cli";
 import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
-
-import { reportFailed } from "@repo/config/cli";
 
 const OK_EXIT_CODE = 0;
 const FAILED_EXIT_CODE = 1;

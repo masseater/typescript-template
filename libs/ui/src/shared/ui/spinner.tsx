@@ -1,4 +1,5 @@
 import { Loader2Icon } from "lucide-react";
+
 import type { ReactElement } from "react";
 
 function Spinner(): ReactElement {

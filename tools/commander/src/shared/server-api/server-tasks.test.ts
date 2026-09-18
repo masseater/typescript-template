@@ -1,16 +1,16 @@
 import { NodeServices } from "@effect/platform-node";
 import { assert, it } from "@effect/vitest";
+import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, FileSystem, Option, Schema, Stream } from "effect";
-import type { Scope } from "effect";
 
 import { AppState } from "#shared/contract/index.ts";
 import { playbookDirectory } from "#shared/playbook/index.ts";
-import { workerRuntime } from "@repo/runtime/worker";
-
 import { bd } from "./bd.ts";
 import { commanderApp } from "./commander-api.ts";
 import { commanderServices, reporting } from "./services.ts";
 import { createLedger } from "./tasks.ts";
+
+import type { Scope } from "effect";
 
 const origin = "http://127.0.0.1:3090";
 const timeout = 120_000;

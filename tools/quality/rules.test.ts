@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
 import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
+import { configuredLintRules } from "./lint.ts";
 import plugin from "./rules.ts";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
@@ -182,7 +183,7 @@ describe("project lint rules on dependency boundaries", () => {
   it("every project rule is tested and enabled", () => {
     expect.hasAssertions();
     expect(Object.keys(plugin.rules).toSorted()).toStrictEqual([...ruleNames].toSorted());
-    expect(field(field(configs["../../vite.config.ts"], "lint"), "rules")).toMatchObject(
+    expect(configuredLintRules).toMatchObject(
       Object.fromEntries(ruleNames.map((rule) => [`project/${rule}`, "error"])),
     );
   });

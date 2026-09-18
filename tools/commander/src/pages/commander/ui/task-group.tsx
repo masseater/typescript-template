@@ -1,9 +1,9 @@
-import type { ReactElement } from "react";
-
-import type { Task } from "#shared/contract/index.ts";
 import { Heading } from "@repo/ui";
 
 import { TaskRow } from "./task-row.tsx";
+
+import type { Task } from "#shared/contract/index.ts";
+import type { ReactElement } from "react";
 
 type TaskView = typeof Task.Type;
 type Kind = "done" | "needsHuman" | "ready" | "review" | "running" | "waiting";

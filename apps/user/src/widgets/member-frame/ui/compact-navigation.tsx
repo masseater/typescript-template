@@ -1,6 +1,3 @@
-import { MenuIcon } from "lucide-react";
-import type { ReactElement } from "react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +5,9 @@ import {
   DropdownMenuTrigger,
   Icon,
 } from "@repo/ui";
+import { MenuIcon } from "lucide-react";
+
+import type { ReactElement } from "react";
 
 function CompactNavigation({ userId }: Readonly<{ userId: string }>): ReactElement {
   return (

@@ -1,13 +1,14 @@
 import { assert, it } from "@effect/vitest";
 import { ResourceExpr } from "alchemy/Output";
-import type { Plan } from "alchemy/Plan";
-import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
 import { Effect, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH } from "./config.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
-import type { PlannedStack } from "./plan-confirmation.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { Plan } from "alchemy/Plan";
+import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
+import type { PlannedStack } from "./plan-confirmation.ts";
 
 const { accountId } = verificationSettings;
 const otherAccountId = verificationSettings.zoneId;

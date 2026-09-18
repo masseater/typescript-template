@@ -1,8 +1,8 @@
-import type { Visitor } from "vite-plus/lint/plugins";
-
-import type { LintContext, Node } from "./lint-context.ts";
 import { filename, reportViolation } from "./lint-context.ts";
 import { propertyName, staticText } from "./references.ts";
+
+import type { Visitor } from "vite-plus/lint/plugins";
+import type { LintContext, Node } from "./lint-context.ts";
 
 const fixtureFile = /(?:\.test\.tsx?|-fixture\.ts)$/u;
 const exampleLabels: readonly string[] = [

@@ -1,10 +1,9 @@
-import type { ReactElement } from "react";
+import { Results } from "./results.tsx";
+import { UsersBody } from "./users-body.tsx";
 
 import type { Members } from "#pages/users/api/load-members.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
-
-import { Results } from "./results.tsx";
-import { UsersBody } from "./users-body.tsx";
+import type { ReactElement } from "react";
 
 function UsersPage({
   list,

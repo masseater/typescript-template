@@ -1,7 +1,8 @@
 import { check, fail, group, sleep } from "k6";
 import exec from "k6/execution";
-import type { Params } from "k6/http";
 import http from "k6/http";
+
+import type { Params } from "k6/http";
 import type { Options } from "k6/options";
 
 const ok = 200;

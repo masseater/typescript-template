@@ -27,7 +27,9 @@ const MIXED_ASSET_STYLES_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-a
 
 const MIXED_ASSET_MARKUP_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-markup-"));
 
-const MIXED_ASSET_MANIFESTS_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-manifests-"));
+const MIXED_ASSET_MANIFESTS_ROOT = mkdtempSync(
+  join(tmpdir(), "source-files-mixed-assets-manifests-"),
+);
 
 describe("listRepositoryFiles", () => {
   describe("an entry the directory lists but the file system cannot reach", () => {

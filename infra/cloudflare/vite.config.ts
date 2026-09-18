@@ -1,7 +1,6 @@
-import { defineConfig } from "vite-plus";
-
 import { applications } from "@repo/config";
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
+import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/monitors.ts";
 

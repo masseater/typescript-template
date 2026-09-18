@@ -1,3 +1,4 @@
+import { decodeJson } from "@repo/runtime/client";
 import {
   queryOptions,
   experimental_streamedQuery as streamedQuery,
@@ -6,8 +7,8 @@ import {
 
 import { commanderClient } from "#shared/api/index.ts";
 import { ServerEvent, receiveChat } from "#shared/contract/index.ts";
+
 import type { AppState } from "#shared/contract/index.ts";
-import { decodeJson } from "@repo/runtime/client";
 
 type App = typeof AppState.Type;
 type Published = typeof ServerEvent.Type;

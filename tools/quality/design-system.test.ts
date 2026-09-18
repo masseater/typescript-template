@@ -22,6 +22,7 @@ import {
   untouchedTokens,
 } from "./design-system.ts";
 import { hoverViolations } from "./hover-colors.ts";
+import { configuredLintRules } from "./lint.ts";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
   eager: true,
@@ -210,7 +211,7 @@ describe("design system lint", () => {
   it("enables every design system rule", () => {
     expect.hasAssertions();
     expect(field(lint, "jsPlugins")).toStrictEqual(expect.arrayContaining(["@shadcn/lint"]));
-    expect(field(lint, "rules")).toMatchObject({
+    expect(configuredLintRules).toMatchObject({
       "shadcn/no-arbitrary-values": "error",
       "shadcn/no-raw-colors": "error",
       "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
