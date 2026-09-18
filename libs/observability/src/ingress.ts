@@ -15,6 +15,7 @@ type LogFields = Readonly<Record<string, string | number | boolean>>;
 interface IngressWindow {
   start: number;
   count: number;
+  readonly recorded: Set<string>;
 }
 
 const maximumBodyBytes = 32_768;
@@ -31,19 +32,46 @@ function emptyResponse(
   return new Response(undefined, { headers, status });
 }
 
-function admit(serviceName: Application, count: number): boolean {
+function currentWindow(serviceName: Application): IngressWindow {
   const now = Date.now();
-  const window = ingressWindows.get(serviceName) ?? { count: 0, start: now };
+  const window = ingressWindows.get(serviceName) ?? { count: 0, recorded: new Set(), start: now };
   if (now - window.start > rateWindowMilliseconds) {
     window.start = now;
     window.count = 0;
+    window.recorded.clear();
   }
   ingressWindows.set(serviceName, window);
-  if (window.count + count > maximumEventsPerWindow) {
-    return false;
+  return window;
+}
+
+function unrecorded(
+  recorded: ReadonlySet<string>,
+  events: readonly BrowserEvent[],
+): readonly BrowserEvent[] {
+  const batch = new Set<string>();
+  return events.filter((event) => {
+    if (recorded.has(event.spanId) || batch.has(event.spanId)) {
+      return false;
+    }
+    batch.add(event.spanId);
+    return true;
+  });
+}
+
+function admitUnrecorded(
+  serviceName: Application,
+  events: readonly BrowserEvent[],
+): readonly BrowserEvent[] | undefined {
+  const window = currentWindow(serviceName);
+  const fresh = unrecorded(window.recorded, events);
+  if (window.count + fresh.length > maximumEventsPerWindow) {
+    return undefined;
   }
-  window.count += count;
-  return true;
+  window.count += fresh.length;
+  for (const event of fresh) {
+    window.recorded.add(event.spanId);
+  }
+  return fresh;
 }
 
 function kindFields(event: BrowserEvent): LogFields {
@@ -99,25 +127,28 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(request: Ingress
   return events.success;
 });
 
+function recordUnseen(
+  serviceName: Application,
+  events: readonly BrowserEvent[],
+): Effect.Effect<Response> {
+  const fresh = admitUnrecorded(serviceName, events);
+  if (fresh === undefined) {
+    return Effect.succeed(
+      emptyResponse(httpStatus.tooManyRequests, { ...noStore, "retry-after": retryAfterSeconds }),
+    );
+  }
+  return Effect.forEach(fresh, (event) => recordBrowserEvent(serviceName, event), {
+    discard: true,
+  }).pipe(Effect.as(emptyResponse(httpStatus.accepted)));
+}
+
 const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(request: IngressRequest) {
   if (request.method !== "POST") {
     return emptyResponse(httpStatus.methodNotAllowed, { ...noStore, allow: "POST" });
   }
   const { serviceName } = yield* Telemetry;
   const events = yield* readEvents(request);
-  if (events instanceof Response) {
-    return events;
-  }
-  if (!admit(serviceName, events.length)) {
-    return emptyResponse(httpStatus.tooManyRequests, {
-      ...noStore,
-      "retry-after": retryAfterSeconds,
-    });
-  }
-  yield* Effect.forEach(events, (event) => recordBrowserEvent(serviceName, event), {
-    discard: true,
-  });
-  return emptyResponse(httpStatus.accepted);
+  return events instanceof Response ? events : yield* recordUnseen(serviceName, events);
 });
 
 export { ingestBrowser };
