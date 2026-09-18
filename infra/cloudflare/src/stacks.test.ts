@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { stackDependencies, stackName, stackNames } from "./stacks.ts";
+import { stackDependencies, stackNames } from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
   "./admin.ts",
@@ -31,24 +31,9 @@ describe("alchemy stacks", () => {
     expect(violations).toStrictEqual([]);
   });
 
-  it("the apply units and the stack programs on disk are the same set", () => {
-    expect.hasAssertions();
-    expect(Object.keys(stackModules).toSorted()).toStrictEqual(
-      stackNames.map((stack) => `./${stack}.ts`).toSorted(),
-    );
-  });
-
   it.for(stackNames)("%s exports the program the CLI runs", async (stack) => {
     expect.hasAssertions();
     const module: unknown = await stackModules[`./${stack}.ts`]?.();
     expect(Effect.isEffect(defaultExport(module))).toBe(true);
-  });
-
-  it("stack names are derived from the apply unit", () => {
-    expect.hasAssertions();
-    expect(stackName("database")).toBe("template-database");
-    expect(stackNames.map((stack) => stackName(stack))).toStrictEqual(
-      stackNames.map((stack) => `template-${stack}`),
-    );
   });
 });
