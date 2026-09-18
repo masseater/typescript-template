@@ -24,9 +24,11 @@ type MonitorSchedule = Readonly<{
   MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">>;
 }>;
 
+const monitorBinding = "MONITOR";
 const MAX_ALERT_RECIPIENTS = 10;
 const ISO_DATE_LENGTH = 10;
 const NOT_FOUND_STATUS = 404;
+const CHECK_FAILED_STATUS = 500;
 
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, MAX_ALERT_RECIPIENTS));
@@ -101,7 +103,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
     );
   }
 
-  private reportFailure(notify: Notify, started: number): Effect.Effect<never> {
+  private reportFailure(notify: Notify, started: number): Effect.Effect<Response> {
     const { ctx, event, failure } = this;
     return Effect.gen(function* reportFailure() {
       // oxlint-disable-next-line no-console
@@ -115,7 +117,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
         yield* notify(failure);
         yield* Effect.promise(async () => ctx.storage.put("failureNotifiedDay", day));
       }
-      return yield* Effect.die(`${event}_check_failed`);
+      return Response.json({ ok: false }, { status: CHECK_FAILED_STATUS });
     });
   }
 
@@ -139,5 +141,5 @@ function monitorHandler(event: string): MonitorHandler {
   };
 }
 
-export { AlertEnvironment, Monitor, monitorHandler };
+export { AlertEnvironment, Monitor, monitorBinding, monitorHandler };
 export type { Alert, MonitorBindings, Notify };

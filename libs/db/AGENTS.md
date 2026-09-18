@@ -14,7 +14,7 @@ DB 接続と操作: src/index.ts
 モデル: src/schema.ts
 認可とセッション: src/admin.ts, src/security.ts
 マイグレーション: migrations/, drizzle.config.ts
-実 DB テスト基盤: src/testing.ts
+実 DB テスト基盤: src/testing.ts (workerd), src/testing-node.ts (Node)
 認証アダプター: ../auth/src/index.ts
 接続設定: ../config/src/index.ts
 ローカルサービス: ../../infra/local/
