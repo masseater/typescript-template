@@ -176,16 +176,11 @@ describe("the application tables of a database holding Cloudflare and migration 
     }
     const listed = storage.prepare(APPLICATION_TABLES).all();
     storage.close();
-    return listed;
+    return listed.map((listedTable) => String(Object.values(listedTable)[0]));
   });
 
   it("leave out the Cloudflare and migration tables", ({ applicationTables }) => {
-    expect(applicationTables).toStrictEqual([
-      { name: "acfxtable" },
-      { name: "cf_users" },
-      { name: "sqlitex_thing" },
-      { name: "user" },
-    ]);
+    expect(applicationTables).toStrictEqual(["acfxtable", "cf_users", "sqlitex_thing", "user"]);
   });
 });
 
