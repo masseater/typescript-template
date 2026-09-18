@@ -27,7 +27,6 @@ function mockServer(
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (server) =>
       Effect.sync(() => {
         server.close();
@@ -38,15 +37,17 @@ function mockServer(
 it.effect("resolves the database the stack owns by its declared name", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       http.get(endpoint, ({ request }) => {
-        assert.strictEqual(new URL(request.url).searchParams.get("name"), target.name);
+        const query = new URL(request.url).searchParams;
+        assert.strictEqual(query.get("name"), target.name);
+        assert.isNull(query.get("per_page"));
         assert.strictEqual(request.headers.get("authorization"), `Bearer ${target.apiToken}`);
         return HttpResponse.json({
           result: [
             { name: `${target.name}-preview`, uuid: "00000000-0000-0000-0000-000000000000" },
             { name: target.name, uuid: databaseId },
           ],
+          result_info: { count: 2, page: 1, per_page: 100, total_count: 5, total_pages: 1 },
           success: true,
         });
       }),
@@ -57,7 +58,15 @@ it.effect("resolves the database the stack owns by its declared name", () =>
 
 it.effect("reports an unused name so a first deploy is not silently adopted", () =>
   Effect.gen(function* program() {
-    yield* mockServer(http.get(endpoint, () => HttpResponse.json({ result: [], success: true })));
+    yield* mockServer(
+      http.get(endpoint, () =>
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 100, total_count: 5, total_pages: 1 },
+          success: true,
+        }),
+      ),
+    );
     assert.isUndefined(yield* findDatabaseId(access, target.name));
   }).pipe(Effect.scoped),
 );
@@ -66,18 +75,51 @@ it.effect("reports a name already taken by an unrelated database", () =>
   Effect.gen(function* program() {
     yield* mockServer(
       http.get(endpoint, () =>
-        HttpResponse.json({ result: [{ name: target.name, uuid: databaseId }], success: true }),
+        HttpResponse.json({
+          result: [{ name: target.name, uuid: databaseId }],
+          result_info: { count: 1, page: 1, per_page: 100, total_count: 5, total_pages: 1 },
+          success: true,
+        }),
       ),
     );
     assert.strictEqual(yield* findDatabaseId(access, target.name), databaseId);
   }).pipe(Effect.scoped),
 );
 
+it.effect("refuses to pick between two databases carrying the declared name", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(endpoint, () =>
+        HttpResponse.json({
+          result: [
+            { name: target.name, uuid: databaseId },
+            { name: target.name, uuid: "11111111-2222-3333-4444-555555555555" },
+          ],
+          result_info: { count: 2, page: 1, per_page: 100, total_count: 5, total_pages: 1 },
+          success: true,
+        }),
+      ),
+    );
+    const failure = yield* findDatabaseId(access, target.name).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "database_output_unavailable");
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/d1/database", "ambiguous_name"]);
+  }).pipe(Effect.scoped),
+);
+
 it.effect("refuses to guess when the account exposes no matching database", () =>
   Effect.gen(function* program() {
-    yield* mockServer(http.get(endpoint, () => HttpResponse.json({ result: [], success: true })));
+    yield* mockServer(
+      http.get(endpoint, () =>
+        HttpResponse.json({
+          result: [],
+          result_info: { count: 0, page: 1, per_page: 100, total_count: 5, total_pages: 1 },
+          success: true,
+        }),
+      ),
+    );
     const failure = yield* lookupDatabaseId(access, target.name).pipe(Effect.flip);
     assert.strictEqual(failure.code, "database_output_unavailable");
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/d1/database", "absent"]);
   }).pipe(Effect.scoped),
 );
 
@@ -88,5 +130,6 @@ it.effect("reports a refused token instead of continuing", () =>
     );
     const failure = yield* lookupDatabaseId(access, target.name).pipe(Effect.flip);
     assert.strictEqual(failure.code, "database_output_unavailable");
+    assert.deepStrictEqual(failure.keys, ["accounts/{}/d1/database", `status_${FORBIDDEN_STATUS}`]);
   }).pipe(Effect.scoped),
 );

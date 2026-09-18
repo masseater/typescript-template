@@ -22,7 +22,6 @@ describe("email verification contracts", () => {
     { input: {}, label: "no token at all" },
     { input: { token: "" }, label: "an empty token" },
     { input: { token: "a".repeat(maximumTokenLength + 1) }, label: "a token past the limit" },
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ])("rejects a verification request with $label", ({ input }) =>
     Effect.gen(function* program() {
       const failure = yield* decodeRequest(input).pipe(Effect.flip);

@@ -111,6 +111,7 @@ function createAdvancedOptions(audience: Application, origin: string): AdvancedO
   return {
     cookiePrefix: `template-${audience}`,
     crossSubDomainCookies: { enabled: false },
+    ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     useSecureCookies: origin.startsWith("https:"),
   };
 }
@@ -148,12 +149,7 @@ function createEmailAndPassword(audience: Application): EmailAndPasswordOptions 
   };
 }
 
-function createAuth(
-  options: AuthOptions,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  database: DrizzleDatabase,
-  run: Run,
-) {
+function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
   const { audience } = options;
   const { origin } = new URL(options.baseURL);
   return betterAuth({

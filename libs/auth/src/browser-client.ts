@@ -16,10 +16,15 @@ const origins = {
 class BrowserClient {
   public readonly cookies = new Map<string, string>();
   readonly #auth: Auth["Service"];
+  readonly #network: Readonly<Record<string, string>>;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  public constructor(auth: Auth["Service"]) {
+  public constructor(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    auth: Auth["Service"],
+    network: Readonly<Record<string, string>> = {},
+  ) {
     this.#auth = auth;
+    this.#network = network;
   }
 
   public get origin(): string {
@@ -30,7 +35,7 @@ class BrowserClient {
     const cookie = [...this.cookies]
       .map(([key, value]: readonly [string, string]) => `${key}=${value}`)
       .join("; ");
-    return new Headers({ cookie, origin: this.origin });
+    return new Headers({ ...this.#network, cookie, origin: this.origin });
   }
 
   public request(
@@ -54,7 +59,6 @@ class BrowserClient {
     return this.send(new Request(url, { headers, redirect: "manual" }));
   }
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public send(request: Request): Effect.Effect<Response> {
     return Effect.promise(async () => {
       const response = await this.#auth.instance.handler(request);
@@ -70,7 +74,6 @@ class BrowserClient {
     body?: Readonly<Record<string, unknown>>,
   ): Effect.Effect<JsonResponse> {
     return this.request(endpoint, body).pipe(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.flatMap((response) =>
         Effect.promise(async (): Promise<JsonResponse> => ({
           body: await response.json(),

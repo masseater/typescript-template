@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "cloudflare-observability": {
+    "cloudflare": {
       "type": "http",
-      "url": "https://observability.mcp.cloudflare.com/mcp"
+      "url": "https://mcp.cloudflare.com/mcp"
     },
     "storybook": {
       "type": "http",

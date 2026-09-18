@@ -73,7 +73,6 @@ describe("member list query", () => {
     { keyword: "" },
     { keyword: "   " },
     { limit: "500" },
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ])("rejects the query %o", (input) =>
     Effect.gen(function* program() {
       const failure = yield* decodeQuery(input).pipe(Effect.flip);

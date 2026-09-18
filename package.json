@@ -11,6 +11,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
+    "@feature-sliced/steiger-plugin": "0.7.0",
     "@shadcn/lint": "catalog:",
     "@stryker-mutator/core": "10.0.0",
     "@stryker-mutator/vitest-runner": "10.0.0",
