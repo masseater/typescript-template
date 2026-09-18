@@ -1,14 +1,14 @@
-import type { ReactElement } from "react";
-
-import type { ListedUsers } from "#pages/users/model/user-list.ts";
-import { usersPageSize } from "#pages/users/model/users-pagination.ts";
-import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import { PageNavigation } from "@repo/ui";
-import type { PageTarget } from "@repo/ui";
 
+import { usersPageSize } from "#pages/users/model/users-pagination.ts";
 import { EmptyResults } from "./empty-results.tsx";
 import { UserPageLink } from "./user-page-link.tsx";
 import { UsersTable } from "./users-table.tsx";
+
+import type { ListedUsers } from "#pages/users/model/user-list.ts";
+import type { UsersSearch } from "#pages/users/model/users-search.ts";
+import type { PageTarget } from "@repo/ui";
+import type { ReactElement } from "react";
 
 function LoadedResults({
   list,

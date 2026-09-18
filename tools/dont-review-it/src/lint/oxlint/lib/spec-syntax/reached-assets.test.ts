@@ -6,7 +6,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { assetsReachedBy } from "./reached-assets.ts";
 
-const reachedAssetsRoot = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-reached-assets-"));
+const reachedAssetsRoot = mkdtempSync(
+  join(realpathSync(tmpdir()), "dont-review-it-reached-assets-"),
+);
 
 describe("assetsReachedBy", () => {
   describe("a specifier naming test data beside the reader", () => {
@@ -25,13 +27,7 @@ describe("assetsReachedBy", () => {
 
     it("reaches that file", ({ reachedFile }) => {
       expect(reachedFile).toBe(
-        join(
-          reachedAssetsRoot,
-          "beside",
-          "repo",
-          "owner",
-          "order.assets.ts",
-        ),
+        join(reachedAssetsRoot, "beside", "repo", "owner", "order.assets.ts"),
       );
     });
   });
@@ -57,13 +53,7 @@ describe("assetsReachedBy", () => {
 
       it("reaches the test data behind it", ({ reachedFile }) => {
         expect(reachedFile).toBe(
-          join(
-            reachedAssetsRoot,
-            "relay-first",
-            "repo",
-            "owner",
-            "order.assets.ts",
-          ),
+          join(reachedAssetsRoot, "relay-first", "repo", "owner", "order.assets.ts"),
         );
       });
     });
@@ -94,13 +84,7 @@ describe("assetsReachedBy", () => {
 
       it("reaches the same file", ({ reachedFile }) => {
         expect(reachedFile).toBe(
-          join(
-            reachedAssetsRoot,
-            "relay-second",
-            "repo",
-            "owner",
-            "order.assets.ts",
-          ),
+          join(reachedAssetsRoot, "relay-second", "repo", "owner", "order.assets.ts"),
         );
       });
     });
@@ -256,10 +240,7 @@ describe("assetsReachedBy", () => {
 
     describe("read a second time", () => {
       const it = test.extend("reachedFile", () => {
-        const root = join(
-          reachedAssetsRoot,
-          "package-second",
-        );
+        const root = join(reachedAssetsRoot, "package-second");
         rmSync(root, { recursive: true, force: true });
         mkdirSync(join(root, "repo", "owner"), { recursive: true });
         mkdirSync(join(root, "repo", "packages", "shared", "src"), { recursive: true });

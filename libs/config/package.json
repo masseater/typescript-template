@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./cli": "./src/cli.ts",
     "./deployment": "./src/deployment.ts",
+    "./local-database-path": "./src/local-database-path.ts",
     "./security": "./src/security.ts",
     "./source-maps": "./src/source-maps.ts",
     "./deployment-keys": "./src/deployment-keys.ts",

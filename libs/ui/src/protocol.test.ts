@@ -1,7 +1,6 @@
-import { describe, expect, it } from "vite-plus/test";
-
 import { decodeJson } from "@repo/runtime/client";
 import { SessionView } from "@repo/runtime/contracts";
+import { describe, expect, it } from "vite-plus/test";
 
 import { errorMessage, requirePasskeyUV, requireSuccess } from "./protocol";
 

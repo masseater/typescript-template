@@ -1,7 +1,6 @@
+import { workerCompatibility } from "@repo/config/worker";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 import { unstable_dev } from "wrangler";
-
-import { workerCompatibility } from "@repo/config/worker";
 
 import { coldStartFixturePath } from "./cold-start-fixture.ts";
 

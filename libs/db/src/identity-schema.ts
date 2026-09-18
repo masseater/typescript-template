@@ -1,8 +1,7 @@
+import { applications, authenticationMethods, roles } from "@repo/config";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/effect-schema";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-
-import { applications, authenticationMethods, roles } from "@repo/config";
 
 const user = sqliteTable(
   "user",

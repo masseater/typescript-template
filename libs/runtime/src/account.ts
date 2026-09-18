@@ -1,13 +1,13 @@
-import { Effect } from "effect";
-
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
-import type { EmailVerificationFailed } from "@repo/auth";
 import { Telemetry, httpStatus, ingestBrowser } from "@repo/observability";
+import { Effect } from "effect";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import type { Failure } from "./failures.ts";
 import { createApi, readJsonBody } from "./http.ts";
+
+import type { EmailVerificationFailed } from "@repo/auth";
+import type { Failure } from "./failures.ts";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 

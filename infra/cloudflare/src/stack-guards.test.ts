@@ -1,8 +1,7 @@
 import { assert, it } from "@effect/vitest";
+import { loadRemoteMigrations } from "@repo/db/migrations";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
-
-import { loadRemoteMigrations } from "@repo/db/migrations";
 
 import { mockServer } from "./account-fixture.ts";
 import {

@@ -1,5 +1,3 @@
-import { Effect } from "effect";
-
 import { verifySession } from "@repo/auth";
 import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
 import { httpStatus } from "@repo/observability";
@@ -13,6 +11,7 @@ import {
   UserListQuery,
 } from "@repo/runtime/contracts";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { Effect } from "effect";
 
 import { reporting, runtime } from "./runtime.ts";
 

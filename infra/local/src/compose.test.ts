@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vite-plus/test";
-
 import { mailpitPort } from "@repo/config";
+import { describe, expect, it } from "vite-plus/test";
 
 const files: Readonly<Record<string, string>> = import.meta.glob("../compose.yaml", {
   eager: true,

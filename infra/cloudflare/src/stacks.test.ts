@@ -10,6 +10,7 @@ import {
   stackReferences,
   traceDestinationStack,
 } from "./stacks.ts";
+
 import type { StackName } from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([

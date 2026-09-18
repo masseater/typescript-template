@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { DeploymentValue, PrefixScan } from "./secrets.ts";
 import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
+
+import type { DeploymentValue, PrefixScan } from "./secrets.ts";
 
 const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 

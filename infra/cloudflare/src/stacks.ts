@@ -1,9 +1,9 @@
+import { applications } from "@repo/config";
 import { providers, state } from "alchemy/Cloudflare";
 
-import { applications } from "@repo/config";
-import type { Application } from "@repo/config";
-
 import { monitorStacks } from "./monitors.ts";
+
+import type { Application } from "@repo/config";
 import type { MonitorStack } from "./monitors.ts";
 
 const application = ["database"] as const;

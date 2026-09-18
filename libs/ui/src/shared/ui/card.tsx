@@ -1,5 +1,4 @@
 import type { ReactElement } from "react";
-
 import type { Children } from "./types";
 
 function Card({ children }: Children): ReactElement {

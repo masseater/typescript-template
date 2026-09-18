@@ -7,7 +7,9 @@ import { describe } from "vite-plus/test";
 
 import { forbidRestrictedTargetRelay } from "./forbid-restricted-target-relay--delete-the-relay.ts";
 
-const fixtureDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-forbid-restricted-target-relay-"));
+const fixtureDir = mkdtempSync(
+  join(realpathSync(tmpdir()), "dont-review-it-forbid-restricted-target-relay-"),
+);
 rmSync(fixtureDir, { recursive: true, force: true });
 
 const STAR_FORWARD_TO_RETIRED_LIB = 'export * from "retired-lib";\n';

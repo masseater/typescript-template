@@ -1,15 +1,15 @@
 import { NodeServices } from "@effect/platform-node";
+import { Telemetry } from "@repo/observability";
+import { AppOrigin } from "@repo/runtime/http";
 import { Layer } from "effect";
 
 import { routes } from "#shared/telemetry/index.ts";
-import { Telemetry } from "@repo/observability";
-import type { Reporting, TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
-import { AppOrigin } from "@repo/runtime/http";
+import { commanderLayer } from "./commander.ts";
 
+import type { Reporting, TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 import type { BdFailure } from "./bd.ts";
 import type { ChatFailure } from "./chat-failure.ts";
 import type { Services } from "./commander-api.ts";
-import { commanderLayer } from "./commander.ts";
 import type { CommanderOptions } from "./commander.ts";
 import type { PromptFailure } from "./prompt.ts";
 

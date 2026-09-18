@@ -1,7 +1,5 @@
 import { assert, it } from "@effect/vitest";
 import { InMemoryService } from "alchemy/State";
-import type { StateService } from "alchemy/State";
-import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
@@ -10,6 +8,9 @@ import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { describeCause, describeFailure } from "./secrets.ts";
 import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { StateService } from "alchemy/State";
+import type { CreatedResourceState } from "alchemy/State/ResourceState";
 
 const target = { accountId: verificationSettings.accountId, prefix: verificationSettings.prefix };
 const access = { accountId: target.accountId, apiToken: "guard-test-not-a-real-token" };

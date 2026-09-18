@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
-import type { Task } from "#shared/contract/index.ts";
 import { Heading, Status } from "@repo/ui";
 
 import { CommentForm } from "./comment-form.tsx";
 import { TaskThread } from "./task-thread.tsx";
+
+import type { Task } from "#shared/contract/index.ts";
+import type { ReactElement } from "react";
 
 function TaskDetail({ task }: Readonly<{ task: typeof Task.Type }>): ReactElement {
   return (

@@ -1,6 +1,5 @@
-import { Config, Effect, Layer, Option } from "effect";
-
 import { workerRuntime } from "@repo/runtime/worker";
+import { Config, Effect, Layer, Option } from "effect";
 
 import { commanderServices } from "./services.ts";
 

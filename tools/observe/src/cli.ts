@@ -1,10 +1,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { Console, Effect, Schema } from "effect";
-
 import { applicationOrigins } from "@repo/config";
 import { runCli } from "@repo/config/cli";
+import { Console, Effect, Schema } from "effect";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";

@@ -5,9 +5,10 @@ import { toEffect } from "alchemy/Test/Core";
 import { Effect, References, Result, Schema } from "effect";
 
 import { repositoryRoot } from "./artifacts.ts";
-import type { StackName } from "./stacks.ts";
 import { stackName } from "./stacks.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
+
+import type { StackName } from "./stacks.ts";
 
 interface ResourceInventory {
   readonly adopt: boolean;

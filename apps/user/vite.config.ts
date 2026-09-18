@@ -1,9 +1,4 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
-import tailwindcss from "@tailwindcss/vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import type { ConfigEnv, UserConfig } from "vite-plus";
-import { defineConfig } from "vite-plus";
-
 import {
   appRun,
   appServer,
@@ -16,6 +11,11 @@ import {
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase, localDatabasePersistence } from "@repo/db/local";
 import { devBoundary } from "@repo/dev-boundary";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { defineConfig } from "vite-plus";
+
+import type { ConfigEnv, UserConfig } from "vite-plus";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({

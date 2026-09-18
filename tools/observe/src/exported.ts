@@ -1,6 +1,5 @@
-import { Effect, Schema } from "effect";
-
 import { receiverOrigin } from "@repo/local";
+import { Effect, Schema } from "effect";
 
 interface ExportedSpan {
   readonly name: string;

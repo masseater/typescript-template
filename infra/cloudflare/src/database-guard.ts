@@ -1,13 +1,13 @@
-import type { StateService } from "alchemy/State";
+import { readMigrationStatus } from "@repo/db/migrations";
 import { Effect } from "effect";
 
-import { readMigrationStatus } from "@repo/db/migrations";
-
-import type { AccountAccess } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
-import type { DeploymentTarget } from "./config.ts";
 import { databaseName, findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
 import { recordedDatabaseIds } from "./state-ownership.ts";
+
+import type { StateService } from "alchemy/State";
+import type { AccountAccess } from "./account-read.ts";
+import type { DeploymentTarget } from "./config.ts";
 
 function nameTaken(): CloudflareFailure {
   return new CloudflareFailure({ code: "database_name_taken", keys: ["TEMPLATE_PREFIX"] });

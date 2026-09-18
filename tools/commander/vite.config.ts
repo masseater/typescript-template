@@ -1,7 +1,3 @@
-import tailwindcss from "@tailwindcss/vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import { defineConfig } from "vite-plus";
-
 import {
   effectDiagnostics,
   lifecycle,
@@ -10,6 +6,9 @@ import {
   taskInput,
   withoutEnvFileLoader,
 } from "@repo/config/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { defineConfig } from "vite-plus";
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
@@ -22,8 +21,17 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       build: { command: "vp build", input: [...taskInput, "!dist"] },
+      "check:start": {
+        cache: false,
+        command: "node src/app/check-start.ts",
+        dependsOn: ["build"],
+      },
       start: { cache: false, command: "node src/app/cli.ts", dependsOn: ["build"] },
-      ...lifecycle({ precommit: [], premerge: ["build"], prepush: ["check:effect", "check"] }),
+      ...lifecycle({
+        precommit: [],
+        premerge: ["build", "check:start"],
+        prepush: ["check:effect", "check"],
+      }),
     },
   },
 });

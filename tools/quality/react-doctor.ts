@@ -3,9 +3,8 @@ import { execFile } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Console, Effect, Schema } from "effect";
-
 import { markFailed, runCli } from "@repo/config/cli";
+import { Console, Effect, Schema } from "effect";
 
 interface Scan {
   readonly failed: boolean;

@@ -1,15 +1,15 @@
-import type { NodeServices } from "@effect/platform-node";
 import { Context, Effect, Layer, PubSub, Stream } from "effect";
 
-import type { ServerEvent } from "#shared/contract/index.ts";
-
-import type { BdFailure } from "./bd.ts";
 import { makeBoard } from "./board.ts";
-import type { ChatFailure } from "./chat-failure.ts";
 import { makeChat } from "./chat.ts";
 import { commanderPrompt } from "./prompt.ts";
-import type { PromptFailure } from "./prompt.ts";
 import { briefing, makeWatch } from "./watch.ts";
+
+import type { ServerEvent } from "#shared/contract/index.ts";
+import type { NodeServices } from "@effect/platform-node";
+import type { BdFailure } from "./bd.ts";
+import type { ChatFailure } from "./chat-failure.ts";
+import type { PromptFailure } from "./prompt.ts";
 
 interface CommanderOptions {
   readonly assets: string;

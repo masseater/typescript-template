@@ -1,12 +1,13 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import type { DatabaseFailure } from "./database-failure.ts";
-import type { Database } from "./database.ts";
 import { query } from "./database.ts";
 import { listMembers } from "./members.ts";
 import { user } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
+
+import type { DatabaseFailure } from "./database-failure.ts";
+import type { Database } from "./database.ts";
 
 interface Seed {
   readonly createdAt: string;

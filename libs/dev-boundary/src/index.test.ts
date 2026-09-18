@@ -5,15 +5,15 @@ import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import type { HttpServer } from "vite-plus";
+import { applications as apps } from "@repo/config";
 import { createServer } from "vite-plus";
 import { test as baseTest, describe, expect } from "vite-plus/test";
-import type { TestAPI } from "vite-plus/test";
-
-import type { Application as App } from "@repo/config";
-import { applications as apps } from "@repo/config";
 
 import { devBoundary } from "./index.ts";
+
+import type { Application as App } from "@repo/config";
+import type { HttpServer } from "vite-plus";
+import type { TestAPI } from "vite-plus/test";
 
 interface DevServer {
   readonly origin: string;

@@ -1,7 +1,8 @@
-import type { SendEmail } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 
 import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
+
+import type { SendEmail } from "@cloudflare/workers-types";
 
 interface EmailSettings {
   readonly APP_ORIGIN: string;

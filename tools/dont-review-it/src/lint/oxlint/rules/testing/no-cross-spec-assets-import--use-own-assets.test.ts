@@ -7,7 +7,9 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { noCrossSpecAssetsImport } from "./no-cross-spec-assets-import--use-own-assets.ts";
 
-const fixtureDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-no-cross-spec-assets-import-"));
+const fixtureDir = mkdtempSync(
+  join(realpathSync(tmpdir()), "dont-review-it-no-cross-spec-assets-import-"),
+);
 rmSync(fixtureDir, { recursive: true, force: true });
 
 const optionsSchema = noCrossSpecAssetsImport.meta.schema;

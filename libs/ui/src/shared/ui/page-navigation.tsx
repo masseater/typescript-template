@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
-
 import { pageItems } from "./page-items";
+
+import type { ReactElement } from "react";
 
 interface PageTarget {
   readonly current: boolean;

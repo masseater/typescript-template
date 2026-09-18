@@ -2,14 +2,16 @@
 import { parseArgs } from "node:util";
 
 import { NodeServices } from "@effect/platform-node";
+import { loopbackOrigin } from "@repo/config";
+import { runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 import open from "open";
 
-import { playbookDirectory } from "#shared/playbook/index.ts";
-import { runCli } from "@repo/config/cli";
-
-import { listen, origin } from "./listen.ts";
 import { resolveProject } from "./project.ts";
+import { serveCommander } from "./serve.ts";
+
+const port = 3090;
+const origin = loopbackOrigin(port);
 
 const Input = Schema.Struct({
   directory: Schema.optional(Schema.String),
@@ -37,30 +39,13 @@ const help = Console.log(
   }),
 );
 
-function configure(settings: Readonly<Record<string, string | undefined>>): void {
-  for (const [name, value] of Object.entries(settings)) {
-    if (value !== undefined) {
-      // oxlint-disable-next-line node/no-process-env
-      process.env[name] = value;
-    }
-  }
-}
-
 const start = Effect.fn("start")(function* start() {
   const input = yield* Schema.decodeUnknownEffect(Input)({
     directory: positionals[0],
     model: values.model,
   });
   const project = yield* resolveProject(input.directory, process.cwd());
-  configure({
-    COMMANDER_ASSETS: playbookDirectory,
-    COMMANDER_DIRECTORY: project.directory,
-    COMMANDER_EXECUTABLE: "claude",
-    COMMANDER_MODEL: input.model,
-    COMMANDER_ORIGIN: origin,
-    COMMANDER_STATE: project.stateDirectory,
-  });
-  yield* listen();
+  yield* serveCommander({ ...project, model: input.model, port });
   yield* Console.log(JSON.stringify({ ...project, event: "commander.started", url: origin }));
   if (values.open) {
     yield* Effect.promise(async () => open(origin));
