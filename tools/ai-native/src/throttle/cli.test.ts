@@ -207,12 +207,12 @@ describe("cli", () => {
         await untilEnqueued();
         child.kill("SIGTERM");
         await once(child, "exit");
-        const untilDrained = async (pollsLeft: number): Promise<void> => {
-          if (pollsLeft === 0 || ownEntries().length === 0) return;
+        const untilDrained = async (): Promise<void> => {
+          if (ownEntries().length === 0) return;
           await delay(100);
-          return untilDrained(pollsLeft - 1);
+          return untilDrained();
         };
-        await untilDrained(100);
+        await untilDrained();
         return ownEntries();
       });
 
