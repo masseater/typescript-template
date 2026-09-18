@@ -19,6 +19,7 @@ const access = {
 };
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const NOT_FOUND_STATUS = 404;
+const FORBIDDEN_STATUS = 403;
 const tokenId = "0123456789abcdef0123456789abcdef";
 const granted = deployTokenPermissions.map((required) => ({ name: required.satisfiedBy[0].name }));
 const withoutRoutes = granted.filter(
@@ -65,12 +66,51 @@ it.effect("refuses a collection it cannot reach instead of reading it as empty",
   Effect.gen(function* program() {
     yield* mockServer(
       http.get(`${account}/secrets_store/stores`, () =>
-        HttpResponse.json({ success: false }, { status: NOT_FOUND_STATUS }),
+        HttpResponse.json({ result: [], success: true }, { status: NOT_FOUND_STATUS }),
       ),
     );
     const failure = yield* secretsStoreCount(access).pipe(Effect.flip);
     assert.strictEqual(failure.code, "account_read_unavailable");
   }).pipe(Effect.scoped),
+);
+
+it.effect("refuses a collection the token is not allowed to see", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(`${account}/workers/scripts`, () =>
+        HttpResponse.json({ result: [], success: false }, { status: FORBIDDEN_STATUS }),
+      ),
+    );
+    const failure = yield* workerNames(access).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "account_read_unavailable");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("requires every permission the deployment actually exercises", () =>
+  Effect.sync(() => {
+    const required = deployTokenPermissions.map((permission) => permission.dashboard);
+    assert.includeMembers(required, [
+      "Account / Workers Scripts / Edit",
+      "Account / D1 / Edit",
+      "Account / Secrets Store / Edit",
+      "Account / API Tokens / Edit",
+      "Account / API Tokens / Read",
+      "Account / Billing / Read",
+      "Account / Workers Observability / Write",
+      "Zone / Workers Routes / Edit",
+      "Zone / DNS / Read",
+    ]);
+    assert.deepStrictEqual(missingPermissions([{ name: "DNS Read" }]).toSorted(), [
+      "Account / API Tokens / Edit",
+      "Account / API Tokens / Read",
+      "Account / Billing / Read",
+      "Account / D1 / Edit",
+      "Account / Secrets Store / Edit",
+      "Account / Workers Observability / Write",
+      "Account / Workers Scripts / Edit",
+      "Zone / Workers Routes / Edit",
+    ]);
+  }),
 );
 
 it.effect("refuses a page that does not carry every row Cloudflare counted", () =>
