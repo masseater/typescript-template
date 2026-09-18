@@ -128,4 +128,4 @@ function observeRequest<Requirements>(
   });
 }
 
-export { observeRequest, reportFailure };
+export { failureAttributes, observeRequest, reportFailure };

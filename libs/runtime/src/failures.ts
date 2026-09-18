@@ -1,7 +1,14 @@
-import { Cause, Effect, Option, Schema } from "effect";
-import { httpStatus, rejectionStatus, reportFailure } from "@template/observability";
+import { Cause, Effect, Option, Result, Schema } from "effect";
+import type { LogSink, RequestRejected } from "@template/observability";
+import {
+  consoleSink,
+  failureAttributes,
+  httpStatus,
+  redactSecrets,
+  rejectionStatus,
+  reportFailure,
+} from "@template/observability";
 import type { InputInvalid } from "./input-invalid.ts";
-import type { RequestRejected } from "@template/observability";
 import { jsonResponse } from "./responses.ts";
 
 interface Tagged {
@@ -41,6 +48,7 @@ type CommonFailure =
   | { readonly _tag: "AdminRequired" }
   | { readonly _tag: "AdminMfaRequired" };
 
+const summaryLength = 512;
 const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
 const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
@@ -98,9 +106,40 @@ function failureResponse(
   );
 }
 
-function runtimeUnavailable(): Failure {
-  // oxlint-disable-next-line no-console
-  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
+function bounded(value: string): string {
+  return redactSecrets(value).slice(0, summaryLength);
+}
+
+function serializableField(key: string, value: unknown): unknown {
+  if (key === "_tag") {
+    return undefined;
+  }
+  return key !== "" && value instanceof Error
+    ? { message: value.message, name: value.name }
+    : value;
+}
+
+function errorFields(error: unknown): string {
+  const encoded = Result.try(() => JSON.stringify(error, serializableField));
+  return Result.isSuccess(encoded) ? bounded(encoded.success) : "";
+}
+
+function unavailableLog(cause: Readonly<Cause.Cause<unknown>>): Record<string, string> {
+  const error = Cause.squash(cause);
+  return {
+    ...failureAttributes(cause),
+    "error.cause": bounded(Cause.pretty(cause)),
+    "error.fields": errorFields(error),
+    "error.message": bounded(error instanceof Error ? error.message : String(error)),
+    event: "application.runtime_unavailable",
+  };
+}
+
+function runtimeUnavailable(
+  cause: Readonly<Cause.Cause<unknown>>,
+  log: LogSink = consoleSink,
+): Failure {
+  log.error(JSON.stringify(unavailableLog(cause)));
   return { message: unexpectedMessage, status: httpStatus.serviceUnavailable };
 }
 
