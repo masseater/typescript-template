@@ -1,7 +1,9 @@
-import { decodeSummary, traces } from "./spans.ts";
 import { describe, expect, it } from "vite-plus/test";
+import { Option } from "effect";
 import type { ProcessRecord } from "./protocol.ts";
 import type { RootRun } from "./spans.ts";
+import { decodeSummary } from "./summary.ts";
+import { traces } from "./spans.ts";
 
 type ExportedSpan = ReturnType<
   typeof traces
@@ -10,19 +12,9 @@ type ExportedSpan = ReturnType<
 const ROOT = "/work/repo";
 const TRACE_ID = "0af7651916cd43dd8448eb211c80319c";
 const STATUS_ERROR = 2;
-const run: RootRun = {
-  argv: ["vp", "run", "check"],
-  cwd: ROOT,
-  endMilliseconds: 1_700_000_010_000.5,
-  exitCode: 1,
-  resource: { "service.name": "vp", "vcs.worktree.dirty": false },
-  root: ROOT,
-  spanId: "b7ad6b7169203331",
-  startMilliseconds: 1_700_000_000_000,
-  traceId: TRACE_ID,
-};
-const summary = decodeSummary(
-  JSON.parse(`{
+const tasks = Option.getOrThrow(
+  decodeSummary(
+    JSON.parse(`{
     "exit_code": 1,
     "tasks": [
       { "package_name": "repo", "task_name": "check", "command": "vp check", "cwd": "",
@@ -36,7 +28,26 @@ const summary = decodeSummary(
         "result": { "Spawned": { "cache_status": "Disabled", "outcome": { "Failed": { "exit_code": 1 } } } } }
     ]
   }`),
+  ),
 );
+const run: RootRun = {
+  argv: ["vp", "run", "check"],
+  cwd: ROOT,
+  endMilliseconds: 1_700_000_010_000.5,
+  exitCode: 1,
+  resource: { "service.name": "vp", "vcs.worktree.dirty": false },
+  root: ROOT,
+  spanId: "b7ad6b7169203331",
+  startMilliseconds: 1_700_000_000_000,
+  summary: { state: "read", tasks },
+  traceId: TRACE_ID,
+  unreadableProcesses: 0,
+};
+const executables = new Map([
+  [`${ROOT}/node_modules/vite-plus/bin/vp`, "vp"],
+  [`${ROOT}/node_modules/.pnpm/knip@6/node_modules/knip/bin/knip.js`, "knip"],
+  [`${ROOT}/libs/db/node_modules/drizzle-kit/bin.cjs`, "drizzle-kit"],
+]);
 const taskEvents = [
   {
     "vp.task": "repo#check",
@@ -72,6 +83,7 @@ function processRecord(argv: readonly string[], overrides: Partial<ProcessRecord
     endMilliseconds: 1_700_000_002_000,
     exitCode: 0,
     maxRssKilobytes: 1024,
+    parentSource: "process",
     parentSpanId: run.spanId,
     pid: 2,
     ppid: 1,
@@ -97,7 +109,7 @@ const processes = [
 ];
 
 function exported(records: readonly ProcessRecord[]): readonly ExportedSpan[] {
-  return traces(run, records, summary).resourceSpans[0]?.scopeSpans[0]?.spans ?? [];
+  return traces(run, records, executables).resourceSpans[0]?.scopeSpans[0]?.spans ?? [];
 }
 
 function attributeValue(value: ExportedSpan["attributes"][number]["value"]): unknown {
@@ -144,9 +156,25 @@ describe("otlp spans", () => {
       "process.working_directory": "libs/db",
     });
   });
+});
 
-  it("ignores a summary it cannot read", () => {
+describe("run completeness", () => {
+  it("counts processes whose parent never reported", () => {
     expect.hasAssertions();
-    expect(decodeSummary({ tasks: "none" })).toStrictEqual([]);
+    const spans = exported([
+      processRecord([`${ROOT}/tools/quality/check-staged.ts`], {
+        parentSpanId: "9999999999999999",
+      }),
+    ]);
+    expect(spans.map((span) => attributeMap(span.attributes))[0]).toMatchObject({
+      "perf.process.orphaned": 1,
+      "perf.process.unreadable": 0,
+      "perf.summary": "read",
+    });
+  });
+
+  it("rejects a summary it cannot read", () => {
+    expect.hasAssertions();
+    expect(Option.isNone(decodeSummary({ tasks: "none" }))).toBe(true);
   });
 });

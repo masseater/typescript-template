@@ -31,7 +31,11 @@ function composedParameters(preview: unknown): unknown {
 
 function storybookProjects(): unknown[] {
   const projects: unknown = field(field(configs["../../vite.config.ts"], "test"), "projects");
-  return Array.isArray(projects) ? projects : [];
+  return Array.isArray(projects)
+    ? projects.map((project: unknown) =>
+        typeof project === "string" ? project : field(project, "extends"),
+      )
+    : [];
 }
 
 const acceptedA11yViolations = [

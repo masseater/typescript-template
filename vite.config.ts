@@ -1,11 +1,12 @@
+import { browserTelemetry, nodeTelemetry, workerdTelemetry } from "@template/perf/vitest";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { lint } from "./tools/quality/lint.ts";
-import { nodeTelemetry } from "@template/perf/vitest";
 import { taskInput } from "@template/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
+const browser = browserTelemetry();
 
 function textModule(code: string, id: string): string | undefined {
   return textModulePattern.test(id) ? `export default ${JSON.stringify(code)};` : undefined;
@@ -86,8 +87,15 @@ export default defineConfig({
           name: "node",
         },
       },
-      "./tools/quality/vitest.workers.config.ts",
-      "./libs/ui/.storybook/vitest.config.ts",
+      {
+        extends: "./tools/quality/vitest.workers.config.ts",
+        test: { experimental: { openTelemetry: workerdTelemetry() } },
+      },
+      {
+        define: browser.define,
+        extends: "./libs/ui/.storybook/vitest.config.ts",
+        test: { experimental: { openTelemetry: browser.openTelemetry } },
+      },
     ],
     restoreMocks: false,
     testTimeout: 30_000,

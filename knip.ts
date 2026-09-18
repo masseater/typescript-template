@@ -46,7 +46,7 @@ const workspaces = {
     ],
   },
   "tools/perf": {
-    entry: ["src/hook.ts!", "src/report.ts!", "src/trace.ts!", "src/vitest.ts"],
+    entry: ["src/{hook,workerd-sdk}.ts!", "src/{node,browser}-sdk.ts"],
     project: ["src/**/*.ts!"],
   },
 };

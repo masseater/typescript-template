@@ -1,18 +1,19 @@
-import type { Attributes, RootRun } from "./spans.ts";
-import { Effect, Schema } from "effect";
-import { contextFileName, processRecordSuffix, spanIdBytes, traceIdBytes } from "./protocol.ts";
-import { decodeSummary, traces } from "./spans.ts";
+import { Effect, Option, Schema } from "effect";
+import { collectRun, root } from "./collect.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { constants, hostname, tmpdir } from "node:os";
+import { contextFileName, newSpanId, newTraceId, traceparent } from "./protocol.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { execFile, spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { hostname, tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
-import type { ProcessRecord } from "./protocol.ts";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import type { RootRun } from "./spans.ts";
+import { instrumentationBundles } from "./bundle.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { randomBytes } from "node:crypto";
+import { pathToFileURL } from "node:url";
+import { traces } from "./spans.ts";
 
 class TraceFailure extends Schema.TaggedError<TraceFailure>()("TraceFailure", {
   reason: Schema.Literals(["command_missing", "spawn_failed"]),
@@ -23,37 +24,18 @@ interface TraceSettings {
   readonly environment: Readonly<Record<string, string | undefined>>;
 }
 
-interface RunFiles {
+interface TracedRun {
+  readonly bundles: Awaited<ReturnType<typeof instrumentationBundles>>;
   readonly directory: string;
+  readonly settings: TraceSettings;
   readonly spanId: string;
   readonly traceId: string;
-  readonly traceparent: string;
 }
 
 const SIGNAL_EXIT_BASE = 128;
 const RECEIVER_PROBE_MILLISECONDS = 1000;
 const EXPORT_TIMEOUT_MILLISECONDS = 10_000;
-const signalNumbers: Readonly<Record<string, number>> = { SIGINT: 2, SIGTERM: 15 };
-const root = path.resolve(import.meta.dirname, "../../..");
-const summaryDirectory = path.join(root, "node_modules/.vite/task-cache");
-const ProcessRecordJson = Schema.fromJsonString(
-  Schema.Struct({
-    argv: Schema.Array(Schema.String),
-    cpuSystemMilliseconds: Schema.Number,
-    cpuUserMilliseconds: Schema.Number,
-    cwd: Schema.String,
-    endMilliseconds: Schema.Number,
-    exitCode: Schema.Number,
-    maxRssKilobytes: Schema.Number,
-    parentSpanId: Schema.String,
-    pid: Schema.Number,
-    ppid: Schema.Number,
-    spanId: Schema.String,
-    startMilliseconds: Schema.Number,
-    traceId: Schema.String,
-  }),
-);
-const UnknownJson = Schema.fromJsonString(Schema.Unknown);
+const forwardedSignals: readonly NodeJS.Signals[] = ["SIGTERM", "SIGHUP"];
 
 function report(event: Readonly<Record<string, unknown>>): Effect.Effect<void> {
   return Effect.sync(() => {
@@ -61,24 +43,24 @@ function report(event: Readonly<Record<string, unknown>>): Effect.Effect<void> {
   });
 }
 
-function post(endpoint: string, body: string, timeout: number): Effect.Effect<boolean> {
+function post(endpoint: string, body: string, timeout: number): Effect.Effect<string | undefined> {
   return Effect.tryPromise(async () =>
-    fetch(`${endpoint.replace(/\/$/u, "")}/v1/traces`, {
+    fetch(`${endpoint}/v1/traces`, {
       body,
       headers: { "content-type": "application/json" },
       method: "POST",
       signal: AbortSignal.timeout(timeout),
     }),
   ).pipe(
-    Effect.map((response) => response.ok),
-    Effect.orElseSucceed(() => false),
+    Effect.map((response) => (response.ok ? undefined : `status_${String(response.status)}`)),
+    Effect.orElseSucceed(() => "unreachable"),
   );
 }
 
-function git(args: readonly string[]): Effect.Effect<string> {
-  return Effect.callback<string>((resume) => {
+function git(args: readonly string[]): Effect.Effect<string | undefined> {
+  return Effect.callback<string | undefined>((resume) => {
     execFile("git", [...args], { cwd: root }, (failure, stdout) => {
-      resume(Effect.succeed(failure === null ? stdout.trim() : ""));
+      resume(Effect.succeed(failure === null ? stdout.trim() : undefined));
     });
   });
 }
@@ -92,15 +74,18 @@ const resource = Effect.gen(function* resource() {
     ],
     { concurrency: "unbounded" },
   );
-  const attributes: Attributes = {
+  return {
     "host.name": hostname(),
     "service.name": "vp",
     "vcs.ref.head.name": branch,
     "vcs.ref.head.revision": revision,
-    "vcs.worktree.dirty": status !== "",
+    "vcs.worktree.dirty": status === undefined ? undefined : status !== "",
   };
-  return attributes;
 });
+
+function signalExitCode(signal: NodeJS.Signals | null): number {
+  return SIGNAL_EXIT_BASE + (signal === null ? 0 : constants.signals[signal]);
+}
 
 function execute(
   argv: readonly string[],
@@ -115,160 +100,136 @@ function execute(
     function forward(signal: NodeJS.Signals): void {
       child.kill(signal);
     }
-    process.on("SIGINT", forward);
-    process.on("SIGTERM", forward);
+    for (const signal of forwardedSignals) {
+      process.on(signal, forward);
+    }
     child.once("error", () => {
       resume(Effect.fail(new TraceFailure({ reason: "spawn_failed" })));
     });
     child.once("exit", (code, signal) => {
-      process.off("SIGINT", forward);
-      process.off("SIGTERM", forward);
-      resume(Effect.succeed(code ?? SIGNAL_EXIT_BASE + (signalNumbers[signal ?? ""] ?? 0)));
+      for (const forwarded of forwardedSignals) {
+        process.off(forwarded, forward);
+      }
+      resume(Effect.succeed(code ?? signalExitCode(signal)));
     });
   });
 }
 
-function readJson<Decoded>(
-  schema: Schema.Codec<Decoded, string>,
-  file: string,
-): Effect.Effect<readonly Decoded[]> {
-  return Effect.tryPromise(async () => readFile(file, "utf-8")).pipe(
-    Effect.flatMap(Schema.decodeUnknownEffect(schema)),
-    Effect.map((decoded) => [decoded]),
-    Effect.orElseSucceed((): readonly Decoded[] => []),
-  );
-}
+const runDirectory = Effect.acquireRelease(
+  Effect.promise(async () => mkdtemp(path.join(tmpdir(), "vp-otel-"))),
+  (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
+);
 
-function processRecords(directory: string): Effect.Effect<readonly ProcessRecord[]> {
-  return Effect.promise(async () => readdir(directory)).pipe(
-    Effect.flatMap((names) =>
-      Effect.all(
-        names
-          .filter((name) => name.endsWith(processRecordSuffix))
-          .map((name) => readJson(ProcessRecordJson, path.join(directory, name))),
-      ),
-    ),
-    Effect.map((records) => records.flat()),
-  );
-}
-
-function modifiedAt(file: string): Effect.Effect<number> {
-  return Effect.tryPromise(async () => stat(file)).pipe(
-    Effect.map((stats) => stats.mtimeMs),
-    Effect.orElseSucceed(() => 0),
-  );
-}
-
-function runSummary(since: number): Effect.Effect<unknown> {
-  return Effect.tryPromise(async () => readdir(summaryDirectory)).pipe(
-    Effect.orElseSucceed((): readonly string[] => []),
-    Effect.map((versions) =>
-      versions.map((version) => path.join(summaryDirectory, version, "last-summary.json")),
-    ),
-    Effect.flatMap((files) =>
-      Effect.forEach(files, (file) =>
-        Effect.map(modifiedAt(file), (modified) => ({ file, modified })),
-      ),
-    ),
-    Effect.map((candidates) =>
-      candidates
-        .filter((candidate) => candidate.modified >= since)
-        .toSorted((left, right) => right.modified - left.modified),
-    ),
-    Effect.flatMap(([latest]) =>
-      latest === undefined ? Effect.succeed([]) : readJson(UnknownJson, latest.file),
-    ),
-    Effect.map(([summary]) => summary),
-  );
-}
-
-const prepareRun = Effect.gen(function* prepareRun() {
-  const directory = yield* Effect.promise(async () => mkdtemp(path.join(tmpdir(), "vp-otel-")));
-  const traceId = randomBytes(traceIdBytes).toString("hex");
-  const spanId = randomBytes(spanIdBytes).toString("hex");
-  const traceparent = `00-${traceId}-${spanId}-01`;
-  yield* Effect.promise(async () =>
-    writeFile(path.join(directory, contextFileName(process.pid)), traceparent),
-  );
-  const files: RunFiles = { directory, spanId, traceId, traceparent };
-  return files;
-});
-
-function instrumentedEnvironment(
-  files: RunFiles,
-  settings: TraceSettings,
-): TraceSettings["environment"] {
-  const hook = new URL("hook.ts", import.meta.url);
-  hook.searchParams.set("run", files.directory);
-  hook.searchParams.set("endpoint", settings.endpoint);
-  const nodeOptions = [settings.environment["NODE_OPTIONS"], `--import=${hook.href}`]
-    .filter(Boolean)
-    .join(" ");
-  return { ...settings.environment, NODE_OPTIONS: nodeOptions, TRACEPARENT: files.traceparent };
+function instrumentedEnvironment(run: TracedRun): TraceSettings["environment"] {
+  const hook = pathToFileURL(run.bundles.hook);
+  hook.searchParams.set("run", run.directory);
+  hook.searchParams.set("endpoint", run.settings.endpoint);
+  hook.searchParams.set("workerd", run.bundles.workerdSdk);
+  const { environment } = run.settings;
+  return {
+    ...environment,
+    NODE_OPTIONS: [environment["NODE_OPTIONS"], `--import=${hook.href}`].filter(Boolean).join(" "),
+    TRACEPARENT: traceparent(run.traceId, run.spanId),
+  };
 }
 
 const exportRun = Effect.fn("exportRun")(function* exportRun(
-  run: RootRun,
-  settings: TraceSettings,
-  files: RunFiles,
+  run: TracedRun,
+  measured: Omit<RootRun, "summary" | "unreadableProcesses">,
 ) {
-  const [records, summary] = yield* Effect.all([
-    processRecords(files.directory),
-    runSummary(run.startMilliseconds),
-  ]);
-  const body = JSON.stringify(traces(run, records, decodeSummary(summary)));
-  const exported = yield* post(settings.endpoint, body, EXPORT_TIMEOUT_MILLISECONDS);
-  yield* report(
-    exported
-      ? { event: "perf.trace_exported", ok: true, processes: records.length, traceId: run.traceId }
-      : {
-          endpoint: settings.endpoint,
-          event: "perf.trace_export_failed",
-          ok: false,
-          traceId: run.traceId,
-        },
+  const collected = yield* collectRun(run.directory, measured.startMilliseconds);
+  const body = traces({ ...measured, ...collected }, collected.records, collected.executables);
+  const failure = yield* post(
+    run.settings.endpoint,
+    JSON.stringify(body),
+    EXPORT_TIMEOUT_MILLISECONDS,
   );
+  yield* report({
+    event: failure === undefined ? "perf.trace_exported" : "perf.trace_export_failed",
+    ok:
+      failure === undefined &&
+      collected.unreadableProcesses === 0 &&
+      collected.summary.state !== "unreadable",
+    processes: collected.records.length,
+    reason: failure,
+    summary: collected.summary.state,
+    traceId: run.traceId,
+    unreadableProcesses: collected.unreadableProcesses,
+  });
+});
+
+const openRun = Effect.fn("openRun")(function* openRun(
+  settings: TraceSettings,
+  bundles: TracedRun["bundles"],
+) {
+  const directory = yield* runDirectory;
+  const run: TracedRun = {
+    bundles,
+    directory,
+    settings,
+    spanId: newSpanId(),
+    traceId: newTraceId(),
+  };
+  yield* Effect.promise(async () =>
+    writeFile(
+      path.join(directory, contextFileName(process.pid)),
+      traceparent(run.traceId, run.spanId),
+    ),
+  );
+  return run;
 });
 
 const traced = Effect.fn("traced")(function* traced(
   argv: readonly string[],
   settings: TraceSettings,
+  bundles: TracedRun["bundles"],
 ) {
-  const files = yield* prepareRun;
+  const run = yield* openRun(settings, bundles);
   const attributes = yield* resource;
   const startMilliseconds = Date.now();
-  const exitCode = yield* execute(argv, instrumentedEnvironment(files, settings));
-  const run: RootRun = {
+  const exitCode = yield* execute(argv, instrumentedEnvironment(run));
+  yield* exportRun(run, {
     argv,
     cwd: process.cwd(),
     endMilliseconds: Date.now(),
     exitCode,
     resource: attributes,
     root,
-    spanId: files.spanId,
+    spanId: run.spanId,
     startMilliseconds,
-    traceId: files.traceId,
-  };
-  yield* exportRun(run, settings, files);
-  yield* Effect.promise(async () => rm(files.directory, { force: true, recursive: true }));
+    traceId: run.traceId,
+  });
   return exitCode;
+}, Effect.scoped);
+
+const untraced = Effect.fn("untraced")(function* untraced(
+  argv: readonly string[],
+  settings: TraceSettings,
+  reason: string,
+) {
+  yield* report({ endpoint: settings.endpoint, event: "perf.trace_skipped", ok: false, reason });
+  return yield* execute(argv, settings.environment);
 });
 
 const traceCommand = Effect.fn("traceCommand")(function* traceCommand(
   argv: readonly string[],
   settings: TraceSettings,
 ) {
-  const probe = JSON.stringify({ resourceSpans: [] });
-  if (yield* post(settings.endpoint, probe, RECEIVER_PROBE_MILLISECONDS)) {
-    return yield* traced(argv, settings);
+  const probe = yield* post(
+    settings.endpoint,
+    JSON.stringify({ resourceSpans: [] }),
+    RECEIVER_PROBE_MILLISECONDS,
+  );
+  if (probe !== undefined) {
+    return yield* untraced(argv, settings, `receiver_${probe}`);
   }
-  yield* report({
-    endpoint: settings.endpoint,
-    event: "perf.trace_skipped",
-    ok: false,
-    reason: "receiver_unreachable",
+  const bundles = yield* Effect.tryPromise(async () =>
+    instrumentationBundles(settings.endpoint),
+  ).pipe(Effect.option);
+  return yield* Option.match(bundles, {
+    onNone: () => untraced(argv, settings, "instrumentation_unbuildable"),
+    onSome: (built) => traced(argv, settings, built),
   });
-  return yield* execute(argv, settings.environment);
-});
+}, Effect.uninterruptible);
 
 export { traceCommand };

@@ -42,9 +42,10 @@ type Totals = Readonly<Record<string, number>>;
 
 interface RunMeasurement {
   readonly command: string;
+  readonly complete: boolean;
   readonly cpuMilliseconds: Totals;
   readonly durationMilliseconds: number;
-  readonly exitCode: number;
+  readonly exitCode: ReturnType<typeof attribute>;
   readonly revision: string;
   readonly selfMilliseconds: Totals;
   readonly startupMilliseconds: Totals;
@@ -164,6 +165,10 @@ function measure(traceId: string, trace: typeof TempoTrace.Type): RunMeasurement
   const measured = spans.filter((span) => span !== root);
   return {
     command: root.key.slice(root.service.length + 1),
+    complete:
+      attribute(root.attributes, "perf.process.unreadable") === 0 &&
+      attribute(root.attributes, "perf.process.orphaned") === 0 &&
+      attribute(root.attributes, "perf.summary") !== "unreadable",
     cpuMilliseconds: totals(
       measured.flatMap((span) => {
         const cpu = cpuMilliseconds(span);
@@ -171,7 +176,7 @@ function measure(traceId: string, trace: typeof TempoTrace.Type): RunMeasurement
       }),
     ),
     durationMilliseconds: root.end - root.start,
-    exitCode: Number(attribute(root.attributes, "process.exit.code") ?? 0),
+    exitCode: attribute(root.attributes, "process.exit.code"),
     revision: revisionOf(trace),
     ...parentTotals(measured),
     traceId,
@@ -197,9 +202,11 @@ function metric(
   name: string,
   select: (run: RunMeasurement) => Totals,
 ): Distribution | undefined {
-  return group.some((run) => select(run)[name] !== undefined)
-    ? distribution(group.map((run) => select(run)[name] ?? 0))
-    : undefined;
+  const values = group.flatMap((run) => {
+    const value = select(run)[name];
+    return value === undefined ? [] : [value];
+  });
+  return values.length === 0 ? undefined : distribution(values);
 }
 
 function spanDistributions(group: readonly RunMeasurement[]): readonly unknown[] {
@@ -208,17 +215,22 @@ function spanDistributions(group: readonly RunMeasurement[]): readonly unknown[]
     .map((name) => ({
       cpu: metric(group, name, (run) => run.cpuMilliseconds),
       name,
+      runs: group.filter((run) => run.wallMilliseconds[name] !== undefined).length,
       self: metric(group, name, (run) => run.selfMilliseconds),
       startup: metric(group, name, (run) => run.startupMilliseconds),
-      wall: distribution(group.map((run) => run.wallMilliseconds[name] ?? 0)),
+      wall: metric(group, name, (run) => run.wallMilliseconds),
     }))
-    .toSorted((left, right) => right.wall.median - left.wall.median);
+    .toSorted((left, right) => (right.wall?.median ?? 0) - (left.wall?.median ?? 0));
 }
 
 function summarize(runs: readonly RunMeasurement[]): readonly unknown[] {
-  const groups = Map.groupBy(runs, (run) => `${run.command} ${run.revision} ${run.exitCode}`);
+  const groups = Map.groupBy(
+    runs,
+    (run) => `${run.command} ${run.revision} ${String(run.exitCode)} ${String(run.complete)}`,
+  );
   return [...groups.values()].map((group) => ({
     command: group[0]?.command,
+    complete: group[0]?.complete,
     duration: distribution(group.map((run) => run.durationMilliseconds)),
     exitCode: group[0]?.exitCode,
     revision: group[0]?.revision,

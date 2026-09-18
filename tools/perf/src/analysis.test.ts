@@ -40,6 +40,7 @@ function processRecord({ argv, parentSpanId, spanId, window }: Process): Process
     endMilliseconds: START + window[1],
     exitCode: 0,
     maxRssKilobytes: 1,
+    parentSource: "process",
     parentSpanId,
     pid: 1,
     ppid: 1,
@@ -67,12 +68,30 @@ function tempoTrace(
       root: ROOT,
       spanId: "aaaaaaaaaaaaaaaa",
       startMilliseconds: START,
+      summary: { state: "absent", tasks: [] },
       traceId: TRACE_ID,
+      unreadableProcesses: 0,
     },
     processes.map((entry) => processRecord(entry)),
-    [],
+    new Map([[VP[0] ?? "", "vp"]]),
   );
   return Schema.decodeUnknownEffect(TempoTrace)({ trace: exported });
+}
+
+function repeatedRun(seconds: number): readonly Process[] {
+  const vp: Process = {
+    argv: VP,
+    parentSpanId: "aaaaaaaaaaaaaaaa",
+    spanId: "bbbbbbbbbbbbbbbb",
+    window: [0, seconds * SECOND],
+  };
+  const knip: Process = {
+    argv: KNIP,
+    parentSpanId: "aaaaaaaaaaaaaaaa",
+    spanId: "cccccccccccccccc",
+    window: FIRST_TASK,
+  };
+  return seconds === 1 ? [vp, knip] : [vp];
 }
 
 function measured(trace: typeof TempoTrace.Type): readonly RunMeasurement[] {
@@ -100,6 +119,7 @@ it.effect("separates the time vp spends before and between its tasks", () =>
     assert.deepStrictEqual(measured(trace), [
       {
         command: "vp run check",
+        complete: true,
         cpuMilliseconds: { "vp:knip": 1000, "vp:vp run": 500 },
         durationMilliseconds: RUN_MILLISECONDS,
         exitCode: 0,
@@ -116,26 +136,29 @@ it.effect("separates the time vp spends before and between its tasks", () =>
 it.effect("groups runs by command and revision into distributions", () =>
   Effect.gen(function* program() {
     const runs = yield* Effect.forEach(REPEATS, (seconds) =>
-      tempoTrace("0123456789abcdef", [
-        {
-          argv: VP,
-          parentSpanId: "aaaaaaaaaaaaaaaa",
-          spanId: "bbbbbbbbbbbbbbbb",
-          window: [0, seconds * SECOND],
-        },
-      ]),
+      tempoTrace("0123456789abcdef", repeatedRun(seconds)),
     );
     assert.deepInclude(summarize(runs.flatMap((trace) => measured(trace)))[0], {
       command: "vp run check",
+      complete: true,
       revision: "0123456789ab+dirty",
       runs: REPEATS.length,
       spans: [
         {
           cpu: { max: 500, median: 500, min: 500, p95: 500 },
           name: "vp:vp run",
+          runs: 3,
           self: undefined,
           startup: undefined,
           wall: { max: 3000, median: 2000, min: 1000, p95: 3000 },
+        },
+        {
+          cpu: { max: 500, median: 500, min: 500, p95: 500 },
+          name: "vp:knip",
+          runs: 1,
+          self: undefined,
+          startup: undefined,
+          wall: { max: 2000, median: 2000, min: 2000, p95: 2000 },
         },
       ],
     });

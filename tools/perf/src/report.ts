@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Effect, Option, Schema } from "effect";
 import { TempoTrace, measure, summarize } from "./analysis.ts";
 import { NodeRuntime } from "@effect/platform-node";
@@ -61,14 +62,14 @@ function searchPath(): string {
   return `/api/search?${search.toString()}`;
 }
 
-function measuredTrace(traceId: string): Effect.Effect<readonly RunMeasurement[], ReportFailure> {
+function measuredTrace(
+  traceId: string,
+): Effect.Effect<Option.Option<RunMeasurement>, ReportFailure> {
   return tempoJson(`/api/v2/traces/${traceId}`).pipe(
-    Effect.map((json) => Schema.decodeUnknownOption(TempoTrace)(json)),
-    Effect.map((trace) =>
-      Option.toArray(trace).flatMap((decoded) => {
-        const run = measure(traceId, decoded);
-        return run === undefined ? [] : [run];
-      }),
+    Effect.map((json) =>
+      Option.flatMap(Schema.decodeUnknownOption(TempoTrace)(json), (trace) =>
+        Option.fromUndefinedOr(measure(traceId, trace)),
+      ),
     ),
   );
 }
@@ -83,8 +84,11 @@ const report = Effect.gen(function* report() {
     ({ traceID }) => measuredTrace(traceID),
     { concurrency: FETCH_CONCURRENCY },
   );
-  const groups = summarize(measurements.flat());
-  process.stdout.write(`${JSON.stringify({ event: "perf.report", groups, ok: true })}\n`);
+  const runs = measurements.flatMap((measurement) => Option.toArray(measurement));
+  const skippedTraces = measurements.length - runs.length;
+  process.stdout.write(
+    `${JSON.stringify({ event: "perf.report", groups: summarize(runs), ok: skippedTraces === 0, skippedTraces })}\n`,
+  );
 });
 
 NodeRuntime.runMain(

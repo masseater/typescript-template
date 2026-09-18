@@ -1097,9 +1097,6 @@ importers:
       '@template/config':
         specifier: workspace:*
         version: link:../config
-      '@template/perf':
-        specifier: workspace:*
-        version: link:../../tools/perf
       '@types/react':
         specifier: 'catalog:'
         version: 19.3.0

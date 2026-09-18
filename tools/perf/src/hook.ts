@@ -5,10 +5,11 @@ import { isMainThread } from "node:worker_threads";
 const parameters = new URL(import.meta.url).searchParams;
 const directory = parameters.get("run");
 const endpoint = parameters.get("endpoint");
+const workerdSdk = parameters.get("workerd");
 const microsecondsPerMillisecond = 1000;
 
 const span =
-  directory === null || !isMainThread
+  directory === null || endpoint === null || workerdSdk === null || !isMainThread
     ? undefined
     : await beginProcessSpan({
         directory,
@@ -20,11 +21,12 @@ const span =
 
 if (span !== undefined) {
   // oxlint-disable-next-line node/no-process-env
-  process.env["TRACEPARENT"] = span.traceparent;
-  if (endpoint !== null) {
-    // oxlint-disable-next-line node/no-process-env
-    process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint;
-  }
+  Object.assign(process.env, {
+    OTEL_EXPORTER_OTLP_ENDPOINT: endpoint,
+    PERF_TRACE_DIRECTORY: directory,
+    PERF_WORKERD_SDK: workerdSdk,
+    TRACEPARENT: span.traceparent,
+  });
   process.once("exit", (code) => {
     const cpu = process.cpuUsage();
     endProcessSpan(span, {

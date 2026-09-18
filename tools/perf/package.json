@@ -1,9 +1,13 @@
 {
   "name": "@template/perf",
   "private": true,
+  "bin": {
+    "vp-trace": "./src/trace.ts",
+    "vp-trace-report": "./src/report.ts"
+  },
   "type": "module",
   "exports": {
-    "./vitest": "./src/vitest-config.ts"
+    "./vitest": "./src/vitest.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

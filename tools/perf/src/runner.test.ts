@@ -12,8 +12,11 @@ const UNREACHABLE_EXIT = 7;
 const STATUS_ERROR = 2;
 const TRACED_PROCESSES = 2;
 
-const ExitCode = Schema.Struct({ doubleValue: Schema.optionalKey(Schema.Number) });
-const Attribute = Schema.Struct({ key: Schema.String, value: ExitCode });
+const AttributeValue = Schema.Struct({
+  doubleValue: Schema.optionalKey(Schema.Number),
+  stringValue: Schema.optionalKey(Schema.String),
+});
+const Attribute = Schema.Struct({ key: Schema.String, value: AttributeValue });
 const Span = Schema.Struct({
   attributes: Schema.Array(Attribute),
   name: Schema.String,
@@ -38,7 +41,13 @@ function receiver(reachable: boolean): Effect.Effect<readonly string[], never, S
           return reachable ? HttpResponse.json({}) : HttpResponse.error();
         }),
       );
-      server.listen({ onUnhandledRequest: "error" });
+      server.listen({
+        onUnhandledRequest: (request, print) => {
+          if (new URL(request.url).pathname !== "/v1/traces") {
+            print.error();
+          }
+        },
+      });
       return server;
     }),
     (server) =>
@@ -60,38 +69,53 @@ function exportedSpans(
   );
 }
 
-function exitCodeOf(span: ExportedSpan | undefined): number | undefined {
-  return span?.attributes.find(({ key }) => key === "process.exit.code")?.value.doubleValue;
+function attributeOf(span: ExportedSpan | undefined, key: string): number | string | undefined {
+  const value = span?.attributes.find((attribute) => attribute.key === key)?.value;
+  return value?.doubleValue ?? value?.stringValue;
 }
 
+const grandchild = `${process.execPath} -e 'process.exitCode = ${String(GRANDCHILD_EXIT)}'; true`;
 const nestedCommand = [
   process.execPath,
   "-e",
-  `require("node:child_process").spawnSync(process.execPath, ["-e", "process.exitCode = ${GRANDCHILD_EXIT}"]); process.exitCode = ${CHILD_EXIT}`,
+  `require("node:child_process").spawnSync("/bin/sh", ["-c", ${JSON.stringify(grandchild)}]); process.exitCode = ${String(CHILD_EXIT)}`,
 ];
 
-it.effect("exports the process tree of the command it ran", () =>
-  Effect.gen(function* program() {
-    const bodies = yield* receiver(true);
-    const exitCode = yield* traceCommand(nestedCommand, { endpoint: ENDPOINT, environment: {} });
-    const [root, ...processes] = yield* exportedSpans(bodies.at(-1));
-    const child = processes.find((span) => span.parentSpanId === root?.spanId);
-    const grandchild = processes.find((span) => span.parentSpanId === child?.spanId);
-    assert.strictEqual(exitCode, CHILD_EXIT);
-    assert.strictEqual(root?.status.code, STATUS_ERROR);
-    assert.strictEqual(processes.length, TRACED_PROCESSES);
-    assert.deepStrictEqual(
-      [exitCodeOf(child), exitCodeOf(grandchild)],
-      [CHILD_EXIT, GRANDCHILD_EXIT],
-    );
-  }),
+it.effect(
+  "exports the process tree of the command it ran",
+  () =>
+    Effect.gen(function* program() {
+      const bodies = yield* receiver(true);
+      const exitCode = yield* traceCommand(nestedCommand, { endpoint: ENDPOINT, environment: {} });
+      const [root, ...processes] = yield* exportedSpans(bodies.at(-1));
+      const child = processes.find((span) => span.parentSpanId === root?.spanId);
+      const descendant = processes.find((span) => span.parentSpanId === child?.spanId);
+      assert.strictEqual(exitCode, CHILD_EXIT);
+      assert.strictEqual(root?.status.code, STATUS_ERROR);
+      assert.strictEqual(processes.length, TRACED_PROCESSES);
+      assert.deepStrictEqual(
+        [child, descendant].map((span) => [
+          attributeOf(span, "process.exit.code"),
+          attributeOf(span, "perf.parent_source"),
+        ]),
+        [
+          [CHILD_EXIT, "process"],
+          [GRANDCHILD_EXIT, "environment"],
+        ],
+      );
+      assert.deepStrictEqual(
+        [attributeOf(root, "perf.process.orphaned"), attributeOf(root, "perf.process.unreadable")],
+        [0, 0],
+      );
+    }),
+  { timeout: 60_000 },
 );
 
 it.effect("runs the command untraced when the receiver is unreachable", () =>
   Effect.gen(function* program() {
     const bodies = yield* receiver(false);
     const exitCode = yield* traceCommand(
-      [process.execPath, "-e", `process.exitCode = ${UNREACHABLE_EXIT}`],
+      [process.execPath, "-e", `process.exitCode = ${String(UNREACHABLE_EXIT)}`],
       { endpoint: ENDPOINT, environment: {} },
     );
     assert.strictEqual(exitCode, UNREACHABLE_EXIT);

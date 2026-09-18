@@ -1,12 +1,10 @@
-import { BatchSpanProcessor, WebTracerProvider } from "@opentelemetry/sdk-trace-web";
+import { BatchSpanProcessor, NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 
-declare const PERF_OTLP_TRACES_URL: string;
-
-const provider = new WebTracerProvider({
+const provider = new NodeTracerProvider({
   resource: resourceFromAttributes({ "service.name": "vitest" }),
-  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter({ url: PERF_OTLP_TRACES_URL }))],
+  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
 });
 provider.register();
 

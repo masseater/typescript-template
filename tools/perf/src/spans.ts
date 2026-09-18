@@ -1,8 +1,6 @@
-import { Option, Schema } from "effect";
-import type { ProcessRecord } from "./protocol.ts";
-
-type AttributeValue = boolean | number | string | readonly string[];
-type Attributes = Readonly<Record<string, AttributeValue | undefined>>;
+import type { Attributes, ProcessRecord } from "./protocol.ts";
+import type { Task } from "./summary.ts";
+import { taskAttributes } from "./summary.ts";
 
 interface OtlpKeyValue {
   readonly key: string;
@@ -48,35 +46,20 @@ interface RootRun {
   readonly root: string;
   readonly spanId: string;
   readonly startMilliseconds: number;
+  readonly summary: {
+    readonly state: "absent" | "read" | "unreadable";
+    readonly tasks: readonly Task[];
+  };
   readonly traceId: string;
+  readonly unreadableProcesses: number;
 }
 
-const CacheMiss = Schema.Struct({ Miss: Schema.Unknown });
-const SpawnedCacheStatus = Schema.Union([Schema.Literal("Disabled"), CacheMiss]);
-const SpawnedResult = Schema.Struct({
-  Spawned: Schema.Struct({ cache_status: SpawnedCacheStatus, outcome: Schema.Unknown }),
-});
-const CacheHitResult = Schema.Struct({
-  CacheHit: Schema.Struct({ saved_duration_ms: Schema.Number }),
-});
-const TaskSummary = Schema.Struct({
-  command: Schema.String,
-  cwd: Schema.String,
-  package_name: Schema.String,
-  result: Schema.Unknown,
-  task_name: Schema.String,
-});
-const RunSummary = Schema.Struct({ tasks: Schema.Array(TaskSummary) });
-type Task = typeof TaskSummary.Type;
+type Executables = ReadonlyMap<string, string>;
 
-const ModifiedPath = Schema.NullOr(Schema.String);
-const SuccessDetails = Schema.Struct({
-  infra_error: Schema.optionalKey(Schema.Unknown),
-  input_modified_path: Schema.optionalKey(ModifiedPath),
-  tool_disabled_cache: Schema.optionalKey(Schema.Boolean),
-  tracking_incomplete: Schema.optionalKey(Schema.Boolean),
-});
-const SuccessOutcome = Schema.Struct({ Success: SuccessDetails });
+interface SpanContext {
+  readonly executables: Executables;
+  readonly run: RootRun;
+}
 
 const microsecondsPerMillisecond = 1000;
 const nanosecondsPerMicrosecond = 1000n;
@@ -87,69 +70,6 @@ const packageMarker = "/node_modules/";
 const FIRST_ARGUMENT_INDEX = 2;
 const scopeName = "@template/perf";
 
-function variantName(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-  return typeof value === "object" && value !== null ? (Object.keys(value)[0] ?? "") : "";
-}
-
-function skippedReason(details: typeof SuccessDetails.Type): string | undefined {
-  const modified = details.input_modified_path;
-  const infraError = details.infra_error;
-  return [
-    typeof modified === "string" ? `input_modified:${modified}` : undefined,
-    details.tool_disabled_cache === true ? "tool_disabled_cache" : undefined,
-    details.tracking_incomplete === true ? "tracking_incomplete" : undefined,
-    infraError === undefined || infraError === null
-      ? undefined
-      : `infra_error:${variantName(infraError)}`,
-  ].find((reason) => reason !== undefined);
-}
-
-function cacheUpdateSkipped(outcome: unknown): string | undefined {
-  return Option.getOrUndefined(
-    Option.map(Schema.decodeUnknownOption(SuccessOutcome)(outcome), ({ Success }) =>
-      skippedReason(Success),
-    ),
-  );
-}
-
-function taskAttributes(task: Task): Attributes {
-  const identity = {
-    "vp.task": `${task.package_name}#${task.task_name}`,
-    "vp.task.command": task.command,
-    "vp.task.cwd": task.cwd,
-  };
-  const hit = Schema.decodeUnknownOption(CacheHitResult)(task.result);
-  if (Option.isSome(hit)) {
-    return {
-      ...identity,
-      "vp.task.cache": "hit",
-      "vp.task.cache.saved_ms": hit.value.CacheHit.saved_duration_ms,
-    };
-  }
-  const spawned = Schema.decodeUnknownOption(SpawnedResult)(task.result);
-  if (Option.isNone(spawned)) {
-    return { ...identity, "vp.task.cache": variantName(task.result) };
-  }
-  const { cache_status: status, outcome } = spawned.value.Spawned;
-  return {
-    ...identity,
-    "vp.task.cache": status === "Disabled" ? "disabled" : "miss",
-    "vp.task.cache.miss_reason": status === "Disabled" ? undefined : variantName(status.Miss),
-    "vp.task.cache.update_skipped": cacheUpdateSkipped(outcome),
-    "vp.task.outcome": variantName(outcome),
-  };
-}
-
-function decodeSummary(json: unknown): readonly Task[] {
-  return Option.match(Schema.decodeUnknownOption(RunSummary)(json), {
-    onNone: () => [],
-    onSome: (summary) => summary.tasks,
-  });
-}
-
 function relative(root: string, target: string): string {
   if (target === root) {
     return "";
@@ -157,26 +77,30 @@ function relative(root: string, target: string): string {
   return target.startsWith(`${root}/`) ? target.slice(root.length + 1) : target;
 }
 
-function executable(argv: readonly string[], root: string): readonly string[] {
+function packageName(script: string): string | undefined {
+  const packageIndex = script.lastIndexOf(packageMarker);
+  if (packageIndex === -1) {
+    return undefined;
+  }
+  const [first = "", second = ""] = script.slice(packageIndex + packageMarker.length).split("/");
+  return first.startsWith("@") ? `${first}/${second}` : first;
+}
+
+function executable(argv: readonly string[], context: SpanContext): readonly string[] {
   const [, script] = argv;
   if (script === undefined) {
     return ["node"];
   }
-  const packageIndex = script.lastIndexOf(packageMarker);
-  if (packageIndex === -1) {
-    return ["node", relative(root, script)];
-  }
-  const [first = "", second = ""] = script.slice(packageIndex + packageMarker.length).split("/");
-  const name = first.startsWith("@") ? `${first}/${second}` : first;
-  return [name === "vite-plus" ? "vp" : name];
+  const name = context.executables.get(script) ?? packageName(script);
+  return name === undefined ? ["node", relative(context.run.root, script)] : [name];
 }
 
-function commandLine(argv: readonly string[], root: string): string {
-  return [...executable(argv, root), ...argv.slice(FIRST_ARGUMENT_INDEX)].join(" ");
+function commandLine(argv: readonly string[], context: SpanContext): string {
+  return [...executable(argv, context), ...argv.slice(FIRST_ARGUMENT_INDEX)].join(" ");
 }
 
-function spanName(argv: readonly string[], root: string): string {
-  const [name = "node", ...rest] = executable(argv, root);
+function spanName(argv: readonly string[], context: SpanContext): string {
+  const [name = "node", ...rest] = executable(argv, context);
   if (name === "vp") {
     return ["vp", argv[FIRST_ARGUMENT_INDEX] ?? ""].join(" ").trim();
   }
@@ -209,20 +133,18 @@ function keyValues(attributes: Attributes): readonly OtlpKeyValue[] {
   });
 }
 
-function taskForProcess(
-  record: ProcessRecord,
-  run: RootRun,
-  tasks: readonly Task[],
-): Task | undefined {
-  const line = commandLine(record.argv, run.root);
-  const cwd = relative(run.root, record.cwd);
-  return tasks.find((task) => task.cwd === cwd && task.command === line);
+function taskForProcess(record: ProcessRecord, context: SpanContext): Task | undefined {
+  const line = commandLine(record.argv, context);
+  const cwd = relative(context.run.root, record.cwd);
+  return context.run.summary.tasks.find((task) => task.cwd === cwd && task.command === line);
 }
 
-function processSpan(record: ProcessRecord, run: RootRun, tasks: readonly Task[]): OtlpSpan {
-  const task = taskForProcess(record, run, tasks);
+function processSpan(record: ProcessRecord, context: SpanContext): OtlpSpan {
+  const { run } = context;
+  const task = taskForProcess(record, context);
   return {
     attributes: keyValues({
+      "perf.parent_source": record.parentSource,
       "process.command_args": record.argv.map((argument) => relative(run.root, argument)),
       "process.cpu.system_ms": record.cpuSystemMilliseconds,
       "process.cpu.user_ms": record.cpuUserMilliseconds,
@@ -236,7 +158,7 @@ function processSpan(record: ProcessRecord, run: RootRun, tasks: readonly Task[]
     endTimeUnixNano: nanoseconds(record.endMilliseconds),
     events: [],
     kind: spanKindInternal,
-    name: spanName(record.argv, run.root),
+    name: spanName(record.argv, context),
     parentSpanId: record.parentSpanId,
     spanId: record.spanId,
     startTimeUnixNano: nanoseconds(record.startMilliseconds),
@@ -245,16 +167,24 @@ function processSpan(record: ProcessRecord, run: RootRun, tasks: readonly Task[]
   };
 }
 
-function rootSpan(run: RootRun, tasks: readonly Task[]): OtlpSpan {
+function orphanedProcesses(run: RootRun, records: readonly ProcessRecord[]): number {
+  const spanIds = new Set([run.spanId, ...records.map((record) => record.spanId)]);
+  return records.filter((record) => !spanIds.has(record.parentSpanId)).length;
+}
+
+function rootSpan(run: RootRun, records: readonly ProcessRecord[]): OtlpSpan {
   const end = nanoseconds(run.endMilliseconds);
   return {
     attributes: keyValues({
+      "perf.process.orphaned": orphanedProcesses(run, records),
+      "perf.process.unreadable": run.unreadableProcesses,
+      "perf.summary": run.summary.state,
       "process.command_args": run.argv,
       "process.exit.code": run.exitCode,
       "process.working_directory": relative(run.root, run.cwd),
     }),
     endTimeUnixNano: end,
-    events: tasks.map((task) => ({
+    events: run.summary.tasks.map((task) => ({
       attributes: keyValues(taskAttributes(task)),
       name: "vp.task",
       timeUnixNano: end,
@@ -272,8 +202,9 @@ function rootSpan(run: RootRun, tasks: readonly Task[]): OtlpSpan {
 function traces(
   run: RootRun,
   records: readonly ProcessRecord[],
-  summary: readonly Task[],
+  executables: Executables,
 ): OtlpTraces {
+  const context: SpanContext = { executables, run };
   return {
     resourceSpans: [
       {
@@ -282,8 +213,8 @@ function traces(
           {
             scope: { name: scopeName },
             spans: [
-              rootSpan(run, summary),
-              ...records.map((record) => processSpan(record, run, summary)),
+              rootSpan(run, records),
+              ...records.map((record) => processSpan(record, context)),
             ],
           },
         ],
@@ -292,5 +223,5 @@ function traces(
   };
 }
 
-export { decodeSummary, traces };
-export type { Attributes, RootRun };
+export { traces };
+export type { Executables, RootRun };
