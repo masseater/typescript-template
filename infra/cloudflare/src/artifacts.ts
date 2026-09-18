@@ -35,7 +35,7 @@ const ARCHIVED_RELEASES_KEPT = 5;
 
 type ArtifactMode = "describe" | "publish" | "stage";
 
-const ArtifactWrites = Context.Reference<ArtifactMode>("template/cloudflare/ArtifactWrites", {
+const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/ArtifactWrites", {
   defaultValue: (): ArtifactMode => "describe",
 });
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
