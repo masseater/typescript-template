@@ -2,9 +2,9 @@ import { NodeServices } from "@effect/platform-node";
 import { Console, Effect, Layer, ManagedRuntime, PubSub, Schema, Stream } from "effect";
 
 import type { RequestRejected } from "@repo/observability";
-import { httpStatus } from "@repo/observability";
-import { AppOrigin, apiRoutes, createApi, jsonResponse, readJsonBody } from "@repo/runtime/http";
-import type { Failure, InputInvalid } from "@repo/runtime/http";
+import { httpStatus, rejectionStatus } from "@repo/observability";
+import { AppOrigin, createApi, jsonResponse, readJsonBody } from "@repo/runtime/http";
+import type { InputInvalid } from "@repo/runtime/http";
 
 import type { BdFailure } from "./bd.ts";
 import type { BoardEvent } from "./board.ts";
@@ -43,10 +43,15 @@ function frame(event: string, data: unknown): string {
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function ledgerFailure(failure: BdFailure): Failure {
-  return failure.reason === "rejected"
-    ? { message: "見つかりませんでした。", status: httpStatus.notFound }
-    : { message: "bd を実行できませんでした。", status: httpStatus.internalServerError };
+function refused(failure: BdFailure | BodyFailure): Response {
+  if (failure._tag === "BdFailure") {
+    return failure.reason === "rejected"
+      ? jsonResponse({ error: "見つかりませんでした。" }, httpStatus.notFound)
+      : jsonResponse({ error: "bd を実行できませんでした。" }, httpStatus.internalServerError);
+  }
+  return failure._tag === "InputInvalid" || failure.reason === "invalid_json"
+    ? jsonResponse({ error: "入力内容を確認してください。" }, httpStatus.badRequest)
+    : jsonResponse({ error: "この操作は許可されていません。" }, rejectionStatus[failure.reason]);
 }
 
 function accepted(): Response {
@@ -163,13 +168,22 @@ const makeApp = Effect.fn("makeApp")(function* makeApp(options: AppOptions) {
   const services = Layer.merge(Layer.succeed(AppOrigin, options.origin), NodeServices.layer);
   const runtime = ManagedRuntime.make(services);
   yield* Effect.addFinalizer(() => runtime.disposeEffect);
-  const api = apiRoutes(runtime);
+  function route(
+    handler: (request: Request) => Reply<BdFailure | BodyFailure>,
+  ): (context: Readonly<{ request: Request }>) => Promise<Response> {
+    return async ({ request }) =>
+      runtime.runPromise(
+        handler(request).pipe(
+          Effect.match({ onFailure: refused, onSuccess: (response) => response }),
+        ),
+      );
+  }
   const app = createApi("/api")
-    .get("/events", api.raw(handlers.events, {}))
-    .post("/chat", api.raw(handlers.say, {}))
-    .post("/chat/stop", api.raw(handlers.stop, {}))
-    .post("/tasks/:id/comments", api.raw(handlers.comment, { BdFailure: ledgerFailure }))
-    .post("/ledger", api.raw(handlers.create, { BdFailure: ledgerFailure }));
+    .get("/events", route(handlers.events))
+    .post("/chat", route(handlers.say))
+    .post("/chat/stop", route(handlers.stop))
+    .post("/tasks/:id/comments", route(handlers.comment))
+    .post("/ledger", route(handlers.create));
   return {
     fetch: async (request: Request): Promise<Response> =>
       trusted(request, options.origin)
