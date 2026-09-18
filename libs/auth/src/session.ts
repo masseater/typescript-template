@@ -38,15 +38,19 @@ const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(checked: {
   }
 });
 
-const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProgram(
+export const verifySession = Effect.fn("verifySession")(function* verifySessionProgram(
   headers: Headers,
-  allowEnrollment: boolean,
+  allowEnrollment?: boolean,
 ) {
   const { audience } = yield* Auth;
   const liveSession = yield* requireSessionSecurity(headers);
   const strong = isStrongMethod(liveSession.session.authenticationMethod);
   if (audience !== APPLICATION.user) {
-    yield* verifyAdmin({ allowEnrollment, role: liveSession.user.role, strong });
+    yield* verifyAdmin({
+      allowEnrollment: allowEnrollment === true,
+      role: liveSession.user.role,
+      strong,
+    });
   }
   const { email, id, name, role, twoFactorEnabled } = liveSession.user;
   return {
@@ -55,7 +59,3 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
     user: { email, id, name, role, twoFactorEnabled },
   };
 });
-
-export const verifySession = (headers: Headers, allowEnrollment = false) => {
-  return verifySessionWith(headers, allowEnrollment);
-};

@@ -98,7 +98,13 @@ class BrowserClient {
     );
   }
 
-  public verify(allowEnrollment = false) {
+  public verify(
+    allowEnrollment?: boolean,
+  ): Effect.Effect<
+    Effect.Success<ReturnType<typeof verifySession>>,
+    Effect.Error<ReturnType<typeof verifySession>>,
+    Exclude<Effect.Services<ReturnType<typeof verifySession>>, Auth>
+  > {
     return verifySession(this.cookieHeaders(), allowEnrollment).pipe(
       Effect.provideService(Auth, this.#auth),
     );

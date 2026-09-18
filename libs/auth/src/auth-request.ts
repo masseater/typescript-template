@@ -23,17 +23,16 @@ const authPromise = <Value>(
   });
 };
 
-const classifyDenial = (
-  failure: AuthFailure,
-): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired => {
-  const denial = failure.cause instanceof APIError ? failure.cause.body?.message : undefined;
+const deniedBy = (
+  denial: string | undefined,
+): SessionInvalid | AdminRequired | AdminMfaRequired | undefined => {
   if (denial === "SESSION_INVALID") {
     return new SessionInvalid();
   }
   if (denial === "ADMIN_REQUIRED") {
     return new AdminRequired();
   }
-  return denial === "ADMIN_MFA_REQUIRED" ? new AdminMfaRequired() : failure;
+  return denial === "ADMIN_MFA_REQUIRED" ? new AdminMfaRequired() : undefined;
 };
 
 type AuthSession = Awaited<ReturnType<BetterAuthInstance["api"]["getSession"]>>;
@@ -47,7 +46,13 @@ export const authSession = (
 > => {
   return authPromise(async (betterAuthInstance): Promise<AuthSession> =>
     betterAuthInstance.api.getSession({ headers, query: { disableCookieCache: true } }),
-  ).pipe(Effect.mapError(classifyDenial));
+  ).pipe(
+    Effect.mapError(
+      (failure) =>
+        deniedBy(failure.cause instanceof APIError ? failure.cause.body?.message : undefined) ??
+        failure,
+    ),
+  );
 };
 
 export const handleAuthRequest = (

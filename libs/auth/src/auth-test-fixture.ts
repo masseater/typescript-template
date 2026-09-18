@@ -12,6 +12,9 @@ import { BrowserClient, origins } from "./browser-client.ts";
 import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
+import type { Database } from "@repo/db";
+import type { AuthFailure } from "./auth-failure.ts";
+
 const PASSWORD = "test-password-safe-123";
 const secret = "integration-test-secret-at-least-32-characters-long";
 const TotpEnrollment = Schema.Struct({
@@ -38,7 +41,9 @@ const sequentialIdentifiers = Layer.effect(
   ),
 );
 
-const authFor = (audience: Application) => {
+const authFor = (
+  audience: Application,
+): Effect.Effect<Auth["Service"], AuthFailure, Database | Scope.Scope> => {
   const layer = Auth.layer({
     audience,
     baseURL: origins[audience],
@@ -78,7 +83,9 @@ const runWith = async <Value, Failure>(
   return Effect.runPromise(Effect.provideContext(program(), auth));
 };
 
-const audienceOnEmptyDatabase = (audience: Application) => {
+const audienceOnEmptyDatabase = (
+  audience: Application,
+): Effect.Effect<"AuthFailure" | Application, unknown> => {
   return Effect.scoped(authFor(audience)).pipe(
     Effect.match({
       onFailure: (failure) => failure._tag,

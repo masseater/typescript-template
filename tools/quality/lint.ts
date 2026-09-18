@@ -176,11 +176,32 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           {
             allow: [
-              { from: "lib", name: ["Request", "RequestInit", "Response", "URL", "Uint8Array"] },
+              {
+                from: "lib",
+                name: [
+                  "Error",
+                  "Headers",
+                  "Request",
+                  "RequestInit",
+                  "Response",
+                  "URL",
+                  "Uint8Array",
+                ],
+              },
               {
                 from: "package",
-                name: ["Codec", "Effect", "Exit", "ManagedRuntime"],
+                name: ["Codec", "Effect", "Exit", "ManagedRuntime", "Queue", "Ref"],
                 package: "effect",
+              },
+              {
+                from: "package",
+                name: ["Auth", "BetterAuthOptions", "GenericEndpointContext"],
+                package: "better-auth",
+              },
+              {
+                from: "package",
+                name: ["MiddlewareContext", "MiddlewareOptions"],
+                package: "better-call",
               },
               {
                 from: "package",
