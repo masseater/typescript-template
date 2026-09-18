@@ -14,7 +14,7 @@ function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement 
   }
   return (
     <search>
-      <form onSubmit={search} className="flex w-full max-w-xl items-end gap-2">
+      <form onSubmit={search} className="flex w-full max-w-search items-end gap-2">
         <Field
           label="名前で検索"
           name="keyword"

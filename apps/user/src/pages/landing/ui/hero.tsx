@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 
 function Hero(): ReactElement {
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4 py-20 text-center">
+    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4 py-20 text-center">
       <h1 className="text-2xl leading-tight font-bold text-foreground">
         プロフィールでつながる、あたらしい居場所
       </h1>
