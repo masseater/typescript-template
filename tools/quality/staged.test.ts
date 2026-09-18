@@ -4,10 +4,9 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   CONFLICTED_FILE,
   conflict,
-  discard,
-  emptyDirectory,
-  repository,
   stage,
+  withEmptyDirectory,
+  withRepository,
 } from "./staged-fixture.ts";
 import { blobContents, stagedFiles } from "./staged.ts";
 
@@ -28,18 +27,6 @@ const blobs = [
   ["4444444444444444444444444444444444444444", "null \0 byte\0"],
   ["5555555555555555555555555555555555555555", "tail without newline"],
 ] as const;
-
-async function withDirectory(
-  create: () => Promise<string>,
-  scenario: (root: string) => Promise<void>,
-): Promise<void> {
-  const root = await create();
-  try {
-    await scenario(root);
-  } finally {
-    await discard(root);
-  }
-}
 
 async function unreadable(
   framed: Readonly<Buffer>,
@@ -81,7 +68,7 @@ describe("git cat-file batch output", () => {
 describe("staged file reading", () => {
   it("reads what the index holds for every staged file", async () => {
     expect.assertions(1);
-    await withDirectory(repository, async (root) => {
+    await withRepository(async (root) => {
       await stage(root, "added.txt", "added\n");
       await expect(Effect.runPromise(stagedFiles(root))).resolves.toStrictEqual([
         { content: "added\n", filename: "added.txt" },
@@ -92,7 +79,7 @@ describe("staged file reading", () => {
 
   it("refuses to scan an index left unmerged by a conflict, naming the files", async () => {
     expect.assertions(1);
-    await withDirectory(repository, async (root) => {
+    await withRepository(async (root) => {
       await conflict(root);
       await expect(report(root)).resolves.toStrictEqual({
         files: [CONFLICTED_FILE],
@@ -103,7 +90,7 @@ describe("staged file reading", () => {
 
   it("reports the exit code when git cannot read the index at all", async () => {
     expect.assertions(1);
-    await withDirectory(emptyDirectory, async (root) => {
+    await withEmptyDirectory(async (root) => {
       await expect(report(root)).resolves.toStrictEqual({
         command: "ls-files --cached --stage -z",
         exitCode: GIT_USAGE_EXIT_CODE,

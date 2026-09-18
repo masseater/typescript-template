@@ -13,13 +13,25 @@ import { promisify } from "node:util";
 const run = promisify(execFile);
 
 const CONFLICTED_FILE = "conflicted.txt";
+const GIT_VARIABLE = "GIT_";
+
+// oxlint-disable-next-line node/no-process-env
+const environment = process.env;
+
+type Scenario = (root: string) => Promise<void>;
+
+function takeGitEnvironment(): Readonly<Record<string, string | undefined>> {
+  const inherited = Object.keys(environment).filter((name) => name.startsWith(GIT_VARIABLE));
+  const taken = Object.fromEntries(inherited.map((name) => [name, environment[name]]));
+  for (const name of inherited) {
+    // oxlint-disable-next-line typescript/no-dynamic-delete
+    delete environment[name];
+  }
+  return taken;
+}
 
 async function git(root: string, ...args: readonly string[]): Promise<void> {
   await run("git", [...args], { cwd: root });
-}
-
-async function emptyDirectory(): Promise<string> {
-  return mkdtemp(path.join(tmpdir(), "template-index-"));
 }
 
 async function stage(root: string, filename: string, content: string): Promise<void> {
@@ -32,15 +44,13 @@ async function commit(root: string, content: string): Promise<void> {
   await git(root, "commit", "-m", content.trim());
 }
 
-async function repository(): Promise<string> {
-  const root = await emptyDirectory();
+async function initialize(root: string): Promise<void> {
   await git(root, "init", "-b", "main");
   await git(root, "config", "user.email", "quality@example.test");
   await git(root, "config", "user.name", "quality");
   await git(root, "config", "commit.gpgsign", "false");
   await git(root, "config", "core.hooksPath", path.join(root, "absent-hooks"));
   await commit(root, "base\n");
-  return root;
 }
 
 async function unmergedIndex(root: string): Promise<boolean> {
@@ -59,8 +69,26 @@ async function conflict(root: string): Promise<void> {
   }
 }
 
-async function discard(root: string): Promise<void> {
-  await rm(root, { force: true, recursive: true });
+async function withDirectory(scenario: Scenario, initialized: boolean): Promise<void> {
+  const inherited = takeGitEnvironment();
+  const root = await mkdtemp(path.join(tmpdir(), "template-index-"));
+  try {
+    if (initialized) {
+      await initialize(root);
+    }
+    await scenario(root);
+  } finally {
+    Object.assign(environment, inherited);
+    await rm(root, { force: true, recursive: true });
+  }
 }
 
-export { CONFLICTED_FILE, conflict, discard, emptyDirectory, repository, stage };
+async function withRepository(scenario: Scenario): Promise<void> {
+  await withDirectory(scenario, true);
+}
+
+async function withEmptyDirectory(scenario: Scenario): Promise<void> {
+  await withDirectory(scenario, false);
+}
+
+export { CONFLICTED_FILE, conflict, stage, withEmptyDirectory, withRepository };
