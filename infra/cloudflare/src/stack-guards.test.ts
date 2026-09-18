@@ -27,7 +27,7 @@ const applications = ["admin", "user", "wiki"] as const;
 const withoutOtlp = { access, config: { ...config, otlp: undefined } };
 const migrations = await Effect.runPromise(loadRemoteMigrations());
 const declaredMigrations = migrations.length;
-const unmigrated = 0;
+const noMigrationsApplied = 0;
 
 it.effect("stops the onboarding unit on an account that already holds the sending domain", () =>
   Effect.gen(function* program() {
@@ -83,6 +83,22 @@ it.effect("refuses an application before the unit that declares its trace destin
   ),
 );
 
+it.effect("separates a database whose tables were made without a recorded history", () =>
+  Effect.forEach(applications, (stack) =>
+    Effect.gen(function* program() {
+      yield* mockServer(
+        ...accountHandlers({ databases: deployedDatabases }),
+        migrationQuery(noMigrationsApplied, ["user"]),
+      );
+      const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
+      assert.deepStrictEqual(describeFailure(failure, []), {
+        code: "database_migration_history_missing",
+        keys: [String(declaredMigrations)],
+      });
+    }).pipe(Effect.scoped),
+  ),
+);
+
 it.effect("names the read as the reason when the migration history cannot be read", () =>
   Effect.forEach(applications, (stack) =>
     Effect.gen(function* program() {
@@ -106,12 +122,12 @@ it.effect("refuses an application whose database has migrations left to apply", 
     Effect.gen(function* program() {
       yield* mockServer(
         ...accountHandlers({ databases: deployedDatabases }),
-        migrationQuery(unmigrated),
+        migrationQuery(noMigrationsApplied),
       );
       const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
       assert.deepStrictEqual(describeFailure(failure, []), {
         code: "database_migrations_pending",
-        keys: [String(unmigrated), String(declaredMigrations)],
+        keys: [String(noMigrationsApplied), String(declaredMigrations)],
       });
     }).pipe(Effect.scoped),
   ),

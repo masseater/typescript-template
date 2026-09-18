@@ -4,7 +4,11 @@ import type { CreatedResourceState } from "alchemy/State/ResourceState";
 import { Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
-import { MIGRATIONS_TABLE_PRESENT, loadRemoteMigrations } from "@repo/db/migrations";
+import {
+  APPLICATION_TABLES,
+  MIGRATIONS_TABLE_PRESENT,
+  loadRemoteMigrations,
+} from "@repo/db/migrations";
 
 import { pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import type { mockServer } from "./account-fixture.ts";
@@ -173,13 +177,19 @@ function batchResult(results: readonly unknown[]): Response {
 
 const Batch = Schema.Struct({ batch: Schema.Array(Schema.Struct({ sql: Schema.String })) });
 
-function migrationQuery(applied: number): ReturnType<typeof http.post> {
+function migrationQuery(
+  applied: number,
+  tables: readonly string[] = [],
+): ReturnType<typeof http.post> {
   return http.post(`${account}/d1/database/${databaseId}/query`, async ({ request }) => {
     const sent = await Effect.runPromise(
       Schema.decodeUnknownEffect(Batch)(await request.json()).pipe(Effect.orDie),
     );
     if (sent.batch.some((query) => query.sql === MIGRATIONS_TABLE_PRESENT)) {
       return batchResult(applied === 0 ? [] : [{ name: "__drizzle_migrations" }]);
+    }
+    if (sent.batch.some((query) => query.sql === APPLICATION_TABLES)) {
+      return batchResult(tables.map((name) => ({ name })));
     }
     return batchResult(await migrationRows(applied));
   });

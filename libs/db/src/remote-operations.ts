@@ -111,6 +111,16 @@ const migrateDatabase = Effect.fn("migrateDatabase")(function* migrateDatabase(
   return migrations.length - applied;
 });
 
+const applicationTables = Effect.fn("applicationTables")(function* applicationTables(
+  executor: DatabaseExecutor,
+) {
+  const [rows] = yield* executor.batch([{ params: [], sql: APPLICATION_TABLES }]);
+  if (rows === undefined) {
+    return yield* fail("REMOTE_RESPONSE_INVALID");
+  }
+  return rows.length;
+});
+
 const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
   executor: DatabaseExecutor,
   migrations: readonly Migration[],
@@ -120,7 +130,14 @@ const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
     return yield* fail("REMOTE_RESPONSE_INVALID");
   }
   const applied = recorded.length === 0 ? 0 : yield* readHistory(executor, migrations);
-  return { applied, declared: migrations.length, pending: migrations.length - applied } as const;
+  const declared = migrations.length;
+  const unrecorded = applied === 0 && (yield* applicationTables(executor)) > 0;
+  return {
+    applied,
+    declared,
+    pending: declared - applied,
+    state: unrecorded ? ("unrecorded" as const) : ("recorded" as const),
+  } as const;
 });
 
 const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(

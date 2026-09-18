@@ -125,6 +125,22 @@ it.effect("reports an empty database as having every declared migration left to 
   }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
 );
 
+it.effect("separates a database whose tables were made without a recorded history", () =>
+  Effect.gen(function* program() {
+    const binding = yield* TestBinding;
+    yield* d1Endpoint(binding);
+    const executor = remoteExecutor(target);
+    yield* executor.batch([{ params: [], sql: "CREATE TABLE made_by_hand (id TEXT)" }]);
+    const status = yield* readMigrationStatus(target);
+    assert.strictEqual(status.state, "unrecorded");
+    assert.strictEqual(status.applied, 0);
+    const refused = yield* runRemoteDatabaseCommand(["migrate", ...execute], target).pipe(
+      Effect.flip,
+    );
+    assert.strictEqual(refused.code, "REMOTE_MIGRATION_HISTORY_MISSING");
+  }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+);
+
 it.effect("remote bootstrap promotes the verified user through the HTTP batch contract", () =>
   Effect.gen(function* program() {
     yield* d1Endpoint(yield* TestBinding);
