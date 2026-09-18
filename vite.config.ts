@@ -2,6 +2,7 @@ import { applications } from "@template/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { lint } from "./tools/quality/lint.ts";
+import { nodeTelemetry } from "@template/perf/vitest";
 import { taskInput } from "@template/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
@@ -56,6 +57,9 @@ export default defineConfig({
   },
   test: {
     clearMocks: false,
+    experimental: {
+      openTelemetry: nodeTelemetry(),
+    },
     forceRerunTriggers: [
       "**/package.json",
       "**/tsconfig*.json",
@@ -77,6 +81,7 @@ export default defineConfig({
             "apps/**/*.test.ts",
             "tools/quality/**/*.test.ts",
             "tools/observe/**/*.test.ts",
+            "tools/perf/**/*.test.ts",
             "infra/**/*.test.ts",
           ],
           name: "node",

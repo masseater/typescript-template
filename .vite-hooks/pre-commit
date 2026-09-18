@@ -1,1 +1,1 @@
-vp run precommit
+node tools/perf/src/trace.ts vp run precommit

@@ -16,6 +16,7 @@
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",
     "@template/monitor": "workspace:*",
+    "@template/perf": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",
     "knip": "6.35.1",

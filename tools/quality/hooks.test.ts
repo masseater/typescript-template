@@ -45,8 +45,8 @@ describe("git hooks", () => {
     expect(
       import.meta.glob("../../.vite-hooks/pre-*", { eager: true, import: "default" }),
     ).toStrictEqual({
-      "../../.vite-hooks/pre-commit": "vp run precommit\n",
-      "../../.vite-hooks/pre-push": "vp run prepush\n",
+      "../../.vite-hooks/pre-commit": "node tools/perf/src/trace.ts vp run precommit\n",
+      "../../.vite-hooks/pre-push": "node tools/perf/src/trace.ts vp run prepush\n",
     });
     expect(script("precommit")).toBe("vp run check");
     expect(rootConfig["../../vite.config.ts"]?.run?.tasks?.["check"]).toHaveProperty(

@@ -1,1 +1,1 @@
-vp run prepush
+node tools/perf/src/trace.ts vp run prepush

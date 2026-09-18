@@ -36,6 +36,7 @@
     "@storybook/react-vite": "10.6.0",
     "@tailwindcss/vite": "catalog:",
     "@template/config": "workspace:*",
+    "@template/perf": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitest/browser-playwright": "catalog:",

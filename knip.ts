@@ -42,6 +42,10 @@ const workspaces = {
       "!src/**/*.stories.tsx!",
     ],
   },
+  "tools/perf": {
+    entry: ["src/hook.ts!", "src/report.ts!", "src/trace.ts!", "src/vitest.ts"],
+    project: ["src/**/*.ts!"],
+  },
 };
 
 const cloudflareStacks = [
