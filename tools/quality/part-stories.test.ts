@@ -9,7 +9,7 @@ import { field } from "./dependencies.ts";
 import { partsDirectory } from "./design-system.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/.storybook/preview.ts",
+  "../../libs/ui/.storybook/preview.tsx",
   { eager: true, import: "default" },
 );
 
@@ -65,7 +65,7 @@ describe("part stories", () => {
 
   it("fails a story on an accessibility violation", () => {
     expect.hasAssertions();
-    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.ts"]);
+    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.tsx"]);
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 
