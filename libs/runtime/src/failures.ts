@@ -1,7 +1,7 @@
 import { Cause, Effect, Option, Schema } from "effect";
 
-import { httpStatus, rejectionStatus, reportFailure } from "@repo/observability";
-import type { RequestRejected } from "@repo/observability";
+import { httpStatus, rejectionStatus, reportFailure, reportUnavailable } from "@repo/observability";
+import type { Reporting, RequestRejected } from "@repo/observability";
 
 import type { InputInvalid } from "./input-invalid.ts";
 import { jsonResponse } from "./responses.ts";
@@ -100,10 +100,13 @@ function failureResponse(
   );
 }
 
-function runtimeUnavailable(): Failure {
-  // oxlint-disable-next-line no-console
-  console.error(JSON.stringify({ event: "application.runtime_unavailable" }));
-  return { message: unexpectedMessage, status: httpStatus.serviceUnavailable };
+function runtimeUnavailable(
+  cause: Readonly<Cause.Cause<unknown>>,
+  reporting: Reporting,
+): Effect.Effect<Failure> {
+  return reportUnavailable(cause, reporting).pipe(
+    Effect.as({ message: unexpectedMessage, status: httpStatus.serviceUnavailable }),
+  );
 }
 
 export { failureResponse, reportedFailure, runtimeUnavailable };

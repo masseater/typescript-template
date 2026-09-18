@@ -14,9 +14,9 @@ import {
 } from "@repo/runtime/contracts";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 
-import { runtime } from "./runtime.ts";
+import { reporting, runtime } from "./runtime.ts";
 
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, reporting);
 const forbidden = { message: "この操作は許可されていません。", status: httpStatus.forbidden };
 const failures = {
   ...unavailable,
