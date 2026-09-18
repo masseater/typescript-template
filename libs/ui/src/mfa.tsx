@@ -7,7 +7,7 @@ import type { SessionView } from "./protocol";
 import type { SettingsContext } from "./mfa-types";
 import { TotpSettings } from "./totp-settings";
 import { useAction } from "./action";
-import { useState } from "react";
+import { useNotice } from "./notice-state";
 
 function readRecovery(): string | undefined {
   if (!("location" in globalThis)) {
@@ -17,15 +17,12 @@ function readRecovery(): string | undefined {
 }
 
 function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElement {
-  const [notice, setNotice] = useState<string>();
+  const { clearNotice, notice, showNotice } = useNotice();
   const recovery = readRecovery();
   const action = useAction();
-  function clearNotice(): void {
-    setNotice(undefined);
-  }
   const context: SettingsContext = {
     action,
-    onNotice: setNotice,
+    onNotice: showNotice,
     onNoticeClear: clearNotice,
     recovery,
     session,

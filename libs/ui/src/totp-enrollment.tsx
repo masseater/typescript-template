@@ -7,7 +7,9 @@ import { FormColumn } from "./shared/ui/form-column";
 import { Heading } from "./shared/ui/heading";
 import type { ReactElement } from "react";
 import { TotpVerifyForm } from "./totp-verify-form";
-import { useState } from "react";
+import { localState } from "./local-state";
+
+const useSaved = localState(false);
 
 interface TotpEnrollmentProps {
   readonly action: ActionState;
@@ -16,7 +18,7 @@ interface TotpEnrollmentProps {
 }
 
 function TotpEnrollment({ action, enrollment, onVerified }: TotpEnrollmentProps): ReactElement {
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useSaved();
   return (
     <FormColumn>
       <Field multiline label="認証アプリ登録用 URI" readOnly value={enrollment.totpURI} />

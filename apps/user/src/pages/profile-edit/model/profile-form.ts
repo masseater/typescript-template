@@ -1,47 +1,50 @@
+import { Atom } from "effect/unstable/reactivity";
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import type { SubmitEventHandler } from "react";
-import { errorMessage } from "@template/ui";
 import { saveProfile } from "#pages/profile-edit/api/profile.ts";
-import { useState } from "react";
+import { useAction } from "@template/ui";
+import { useAtom } from "@effect/atom-react";
 
-interface ProfileForm {
+interface ProfileFields {
+  readonly name: string;
+  readonly profile: string;
+}
+
+interface ProfileForm extends ProfileFields {
   readonly error: string;
   readonly handleNameChange: (value: string) => void;
   readonly handleProfileChange: (value: string) => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly name: string;
   readonly pending: boolean;
-  readonly profile: string;
 }
 
+const fieldsAtom = Atom.family((initial: Profile) =>
+  Atom.make<ProfileFields>({ name: initial.name, profile: initial.profile }),
+);
+
 function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>): ProfileForm {
-  const [name, setName] = useState(initial.name);
-  const [profile, setProfile] = useState(initial.profile);
-  const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState("");
-  async function save(): Promise<void> {
-    try {
-      await saveProfile(name, profile);
-      await onSaved();
-    } catch (error) {
-      setFailure(errorMessage(error));
-    }
-    setPending(false);
-  }
+  const [fields, setFields] = useAtom(fieldsAtom(initial));
+  const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    setPending(true);
-    setFailure("");
-    void save();
+    action.run(async () => {
+      await saveProfile(fields.name, fields.profile);
+      await onSaved();
+    });
+  }
+  function handleNameChange(name: string): void {
+    setFields((current) => ({ ...current, name }));
+  }
+  function handleProfileChange(profile: string): void {
+    setFields((current) => ({ ...current, profile }));
   }
   return {
-    error: failure,
-    handleNameChange: setName,
-    handleProfileChange: setProfile,
+    ...fields,
+    error: action.error ?? "",
+    handleNameChange,
+    handleProfileChange,
     handleSubmit,
-    name,
-    pending,
-    profile,
+    pending: action.pending,
   };
 }
 

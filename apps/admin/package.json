@@ -11,6 +11,7 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@effect/atom-react": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@template/auth": "workspace:*",
@@ -22,7 +23,8 @@
     "es-toolkit": "1.52.0",
     "lucide-react": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "scheduler": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",

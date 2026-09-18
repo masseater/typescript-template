@@ -5,7 +5,7 @@ import { useSearch } from "@tanstack/react-router";
 
 function SearchForm(): ReactElement {
   const keyword = normalizeUsersSearch(useSearch({ strict: false })).keyword ?? "";
-  return <SearchFields key={keyword} keyword={keyword} />;
+  return <SearchFields keyword={keyword} />;
 }
 
 export { SearchForm };

@@ -22,6 +22,10 @@
       "matchPackageNames": ["wrangler", "miniflare", "workerd", "@cloudflare/**"]
     },
     {
+      "groupName": "effect",
+      "matchPackageNames": ["effect", "@effect/**", "!@effect/tsgo"]
+    },
+    {
       "groupName": "tanstack",
       "matchPackageNames": ["@tanstack/**"]
     },

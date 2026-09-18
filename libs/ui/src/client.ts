@@ -1,4 +1,4 @@
-import { createAuthClient } from "better-auth/react";
+import { createAuthClient } from "better-auth/client";
 import { passkeyClient } from "@better-auth/passkey/client";
 import { requirePasskeyUV } from "./protocol";
 import { twoFactorClient } from "better-auth/client/plugins";

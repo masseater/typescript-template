@@ -1,17 +1,15 @@
-import { useEffect, useState } from "react";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
+import { request, resultError } from "./request";
+import { Option } from "effect";
 import { SessionView as SessionContract } from "@template/runtime/contracts";
 import type { SessionView } from "./protocol";
 import { decodeJson } from "@template/runtime/client";
-import { errorMessage } from "./protocol";
+import { useAtomValue } from "@effect/atom-react";
 
-interface SessionSnapshot {
+interface SessionState {
   readonly error: string | undefined;
   readonly loading: boolean;
   readonly session: SessionView | undefined;
-}
-
-interface SessionState extends SessionSnapshot {
-  readonly refresh: () => Promise<void>;
 }
 
 const HTTP_UNAUTHORIZED = 401;
@@ -28,30 +26,15 @@ async function fetchSession(): Promise<SessionView | undefined> {
   return decodeJson(SessionContract, body);
 }
 
-async function loadSession(): Promise<SessionSnapshot> {
-  try {
-    return { error: undefined, loading: false, session: await fetchSession() };
-  } catch (error) {
-    return { error: errorMessage(error), loading: false, session: undefined };
-  }
-}
+const sessionAtom = Atom.make(request(fetchSession)).pipe(Atom.withServerValueInitial);
 
 function useSession(): SessionState {
-  const [snapshot, setSnapshot] = useState<SessionSnapshot>({
-    error: undefined,
-    loading: true,
-    session: undefined,
-  });
-  async function refresh(): Promise<void> {
-    setSnapshot(await loadSession());
-  }
-  useEffect(() => {
-    async function load(): Promise<void> {
-      setSnapshot(await loadSession());
-    }
-    void load();
-  }, []);
-  return { ...snapshot, refresh };
+  const result = useAtomValue(sessionAtom);
+  return {
+    error: resultError(result),
+    loading: AsyncResult.isInitial(result),
+    session: Option.getOrUndefined(AsyncResult.value(result)),
+  };
 }
 
 export { useSession };

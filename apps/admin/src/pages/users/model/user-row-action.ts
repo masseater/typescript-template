@@ -1,10 +1,12 @@
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { RoleChanged, UserDeleted } from "@template/runtime/contracts";
-import { errorMessage, useToast } from "@template/ui";
+import { failureMessage, request, useToast } from "@template/ui";
 import type { ListedUser } from "./user-list.ts";
+import { Option } from "effect";
 import { adminClient } from "#shared/api/index.ts";
 import { apiData } from "@template/runtime/client";
 import { nextRoles } from "./user-labels.ts";
-import { useState } from "react";
+import { useAtom } from "@effect/atom-react";
 
 type RowOperation = "delete" | "role";
 
@@ -17,7 +19,12 @@ interface UserRowAction {
   readonly pending: boolean;
 }
 
-async function perform(user: ListedUser, operation: RowOperation): Promise<string> {
+interface Operation {
+  readonly operation: RowOperation;
+  readonly user: ListedUser;
+}
+
+async function perform({ operation, user }: Operation): Promise<string> {
   const { users } = adminClient();
   if (operation === "delete") {
     apiData(UserDeleted, await users.delete({ id: user.id }));
@@ -28,45 +35,51 @@ async function perform(user: ListedUser, operation: RowOperation): Promise<strin
   return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
 }
 
+const confirmingAtom = Atom.family((_userId: string) => Atom.make(Option.none<RowOperation>()));
+
+const operationAtom = Atom.family((_userId: string) =>
+  Atom.fn((operation: Operation) => request(async () => perform(operation))),
+);
+
 function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowAction {
   const notify = useToast();
-  const [confirming, setConfirming] = useState<RowOperation>();
-  const [pending, setPending] = useState(false);
+  const [confirming, setConfirming] = useAtom(confirmingAtom(user.id));
+  const [operationResult, run] = useAtom(operationAtom(user.id), { mode: "promiseExit" });
   function handleRoleChange(): void {
-    setConfirming("role");
+    setConfirming(Option.some("role"));
   }
   function handleDelete(): void {
-    setConfirming("delete");
+    setConfirming(Option.some("delete"));
   }
   function handleOpenChange(open: boolean): void {
     if (!open) {
-      setConfirming(undefined);
+      setConfirming(Option.none());
+    }
+  }
+  async function execute(operation: RowOperation): Promise<void> {
+    const exit = await run({ operation, user });
+    const result = AsyncResult.fromExit(exit);
+    if (AsyncResult.isSuccess(result)) {
+      notify("success", result.value);
+      onChanged();
+    } else {
+      notify("error", failureMessage(result));
     }
   }
   function handleConfirm(): void {
-    if (confirming === undefined) {
+    if (Option.isNone(confirming)) {
       return;
     }
-    setConfirming(undefined);
-    setPending(true);
-    async function run(operation: RowOperation): Promise<void> {
-      try {
-        notify("success", await perform(user, operation));
-        onChanged();
-      } catch (error) {
-        notify("error", errorMessage(error));
-      }
-      setPending(false);
-    }
-    void run(confirming);
+    setConfirming(Option.none());
+    void execute(confirming.value);
   }
   return {
-    confirming,
+    confirming: Option.getOrUndefined(confirming),
     handleConfirm,
     handleDelete,
     handleOpenChange,
     handleRoleChange,
-    pending,
+    pending: operationResult.waiting,
   };
 }
 

@@ -1,7 +1,37 @@
 import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { origins, propertyName, staticText } from "./references.ts";
+import type { Origin } from "./references.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
+import { originVisitor } from "./alias-visitor.ts";
 import { reportViolation } from "./lint-context.ts";
+
+const forbiddenStateApis: Readonly<Record<string, ReadonlySet<string>>> = {
+  "@effect/atom-react": new Set([
+    "HydrationBoundary",
+    "RegistryContext",
+    "make",
+    "useAtomInitialValues",
+    "useAtomSuspense",
+  ]),
+  "effect/unstable/reactivity": new Set(["searchParam"]),
+  "effect/unstable/reactivity/Atom": new Set(["searchParam"]),
+  react: new Set([
+    "Component",
+    "PureComponent",
+    "createContext",
+    "createRef",
+    "use",
+    "useActionState",
+    "useContext",
+    "useOptimistic",
+    "useReducer",
+    "useRef",
+    "useState",
+    "useSyncExternalStore",
+    "useTransition",
+  ]),
+  "react-dom": new Set(["useFormStatus"]),
+};
 
 const elysiaServerOrigin = ["@template/runtime/http", "elysiaServer"];
 
@@ -139,4 +169,14 @@ function effectFailuresVisitor(context: LintContext): Visitor {
   };
 }
 
-export { effectFailuresVisitor, effectStackVisitor };
+function isForbiddenState(origin: Origin): boolean {
+  const [source = "", ...members] = origin;
+  const apis = forbiddenStateApis[source];
+  return apis !== undefined && members.some((member) => apis.has(member));
+}
+
+function atomStateVisitor(context: LintContext): Visitor {
+  return originVisitor(context, isForbiddenState);
+}
+
+export { atomStateVisitor, effectFailuresVisitor, effectStackVisitor };

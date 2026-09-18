@@ -10,6 +10,7 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@effect/atom-react": "catalog:",
     "@modelcontextprotocol/server": "2.0.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
@@ -25,6 +26,7 @@
     "mermaid": "12.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "scheduler": "catalog:",
     "zod": "4.6.5"
   },
   "devDependencies": {

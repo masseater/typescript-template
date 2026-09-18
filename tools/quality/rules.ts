@@ -1,8 +1,8 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
+import { atomStateVisitor, effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
-import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { importVisitor, reportViolation } from "./lint-context.ts";
 import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
 import {
@@ -204,6 +204,12 @@ function workerFetchVisitor(context: LintContext): Visitor {
 export default definePlugin({
   meta: { name: "project" },
   rules: {
+    "atom-state": {
+      create: atomStateVisitor,
+      meta: metadata(
+        "UI の状態は Effect Atom (effect/unstable/reactivity と @effect/atom-react) で持ってください。useState・useReducer・useSyncExternalStore・useRef・createRef・useActionState・useOptimistic・useTransition・useFormStatus・createContext・useContext・use・クラスコンポーネントは、別名や分割代入も含めて使えません。Effect Atom の使い方も揃えます。コンポーネントごとの状態は @template/ui の localState で、利用者の操作で走る非同期処理は useAction で持ち、値から決まる状態はその値を鍵にした Atom.family で持ってください (ScopedAtom の make・useAtomInitialValues・HydrationBoundary・RegistryContext は使えません)。非同期の取得は Atom.make(Effect) の AsyncResult を分岐して描画してください (useAtomSuspense は使えません)。URL の状態は Atom.searchParam ではなく TanStack Router の search に置いてください。DOM への参照は ref コールバックで受けてください。",
+      ),
+    },
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(

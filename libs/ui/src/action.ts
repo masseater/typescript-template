@@ -1,6 +1,7 @@
-import { useRef, useState, useSyncExternalStore } from "react";
-import { errorMessage } from "./protocol";
-import { noop } from "es-toolkit";
+import { request, resultError } from "./request";
+import { useAtom, useAtomValue } from "@effect/atom-react";
+import { Atom } from "effect/unstable/reactivity";
+import { useId } from "react";
 
 type Task = () => Promise<void>;
 
@@ -11,50 +12,23 @@ interface ActionState {
   readonly run: (task: Task) => void;
 }
 
-function subscribeNothing(): () => void {
-  return noop;
-}
+const hydratedAtom = Atom.make(true).pipe(Atom.withServerValue(() => false));
 
-function clientSnapshot(): boolean {
-  return true;
-}
-
-function serverSnapshot(): boolean {
-  return false;
-}
-
-async function failureOf(task: Task): Promise<string | undefined> {
-  try {
-    await task();
-  } catch (error) {
-    return errorMessage(error);
-  }
-  return undefined;
-}
+const actionAtom = Atom.family((_key: string) =>
+  Atom.fn(({ task }: Readonly<{ task: Task }>) => request(task)),
+);
 
 function useAction(): ActionState {
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
-  const hydrated = useSyncExternalStore(subscribeNothing, clientSnapshot, serverSnapshot);
-  const active = useRef(false);
+  const [result, perform] = useAtom(actionAtom(useId()));
+  const hydrated = useAtomValue(hydratedAtom);
+  const pending = result.waiting;
+  const blocked = pending || !hydrated;
   function run(task: Task): void {
-    if (active.current) {
-      return;
+    if (!blocked) {
+      perform({ task });
     }
-    active.current = true;
-    setPending(true);
-    setError(undefined);
-    async function perform(): Promise<void> {
-      const failure = await failureOf(task);
-      if (failure !== undefined) {
-        setError(failure);
-      }
-      active.current = false;
-      setPending(false);
-    }
-    void perform();
   }
-  return { blocked: pending || !hydrated, error, pending, run };
+  return { blocked, error: resultError(result), pending, run };
 }
 
 export { useAction };

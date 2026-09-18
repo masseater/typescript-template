@@ -1,11 +1,12 @@
+import { TextLink, localState } from "@template/ui";
 import { CardPage } from "#shared/ui/index.ts";
 import type { ReactElement } from "react";
 import { SignUpForm } from "@template/ui/signup";
-import { TextLink } from "@template/ui";
-import { useState } from "react";
+
+const useSent = localState(false);
 
 function SignUpPage(): ReactElement {
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useSent();
   function showSent(): void {
     setSent(true);
   }

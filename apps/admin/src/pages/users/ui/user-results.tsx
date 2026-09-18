@@ -1,22 +1,25 @@
+import { AsyncResult } from "effect/unstable/reactivity";
 import { FailedResults } from "./failed-results.tsx";
 import { LoadedResults } from "./loaded-results.tsx";
 import type { ReactElement } from "react";
-import type { UserListState } from "#pages/users/model/user-list.ts";
+import type { UserListResult } from "#pages/users/model/user-list.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import { UsersTable } from "./users-table.tsx";
+import { failureMessage } from "@template/ui";
 
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function UserResults({
   onReload,
+  result,
   search,
-  state,
-}: Readonly<{ onReload: () => void; search: UsersSearch; state: UserListState }>): ReactElement {
-  if (state.status === "failed") {
-    return <FailedResults message={state.message} onReload={onReload} />;
-  }
-  if (state.status === "loading") {
+}: Readonly<{ onReload: () => void; result: UserListResult; search: UsersSearch }>): ReactElement {
+  if (result.waiting || AsyncResult.isInitial(result)) {
     return <UsersTable users={undefined} onChanged={onReload} />;
   }
-  return <LoadedResults list={state.list} search={search} onReload={onReload} />;
+  if (AsyncResult.isFailure(result)) {
+    return <FailedResults message={failureMessage(result)} onReload={onReload} />;
+  }
+  return <LoadedResults list={result.value} search={search} onReload={onReload} />;
 }
 
 export { UserResults };

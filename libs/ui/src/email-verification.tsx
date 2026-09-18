@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
+import { Effect } from "effect";
 import type { ReactElement } from "react";
 import { Status } from "./shared/ui/status";
+import { useAtomValue } from "@effect/atom-react";
 
 async function verifyEmailToken(): Promise<boolean> {
   const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
@@ -21,19 +23,21 @@ async function verifyEmailToken(): Promise<boolean> {
   }
 }
 
-function EmailVerification(): ReactElement {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    async function verify(): Promise<void> {
-      if (await verifyEmailToken()) {
+function leaveWhenVerified(verified: boolean): Effect.Effect<void> {
+  return verified
+    ? Effect.sync(() => {
         globalThis.location.replace("/login");
-        return;
-      }
-      setFailed(true);
-    }
-    void verify();
-  }, []);
-  return failed ? (
+      })
+    : Effect.void;
+}
+
+const verificationAtom = Atom.make(
+  Effect.promise(verifyEmailToken).pipe(Effect.tap(leaveWhenVerified)),
+).pipe(Atom.withServerValueInitial);
+
+function EmailVerification(): ReactElement {
+  const result = useAtomValue(verificationAtom);
+  return AsyncResult.isSuccess(result) && !result.value ? (
     <Status variant="error">
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
     </Status>

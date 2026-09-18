@@ -1,66 +1,54 @@
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
-import { useEffect, useId, useRef, useState } from "react";
+import { request, resultError } from "@template/ui";
 import type { ReactElement } from "react";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { useAtomValue } from "@effect/atom-react";
+import { useId } from "react";
 import { useTheme } from "fumadocs-ui/provider/base";
 
-const renderChart = createClientOnlyFn(
-  async (id: string, chart: string, dark: boolean): Promise<DocumentFragment> => {
-    const { default: mermaid } = await import("mermaid");
-    mermaid.initialize({
-      fontFamily: "inherit",
-      securityLevel: "strict",
-      startOnLoad: false,
-      theme: dark ? "dark" : "default",
-    });
-    await mermaid.parse(chart);
-    const { svg } = await mermaid.render(id, chart);
-    return document.createRange().createContextualFragment(svg);
-  },
+interface Diagram {
+  readonly chart: string;
+  readonly dark: boolean;
+  readonly id: string;
+}
+
+const renderChart = createClientOnlyFn(async ({ chart, dark, id }: Diagram): Promise<string> => {
+  const { default: mermaid } = await import("mermaid");
+  mermaid.initialize({
+    fontFamily: "inherit",
+    securityLevel: "strict",
+    startOnLoad: false,
+    theme: dark ? "dark" : "default",
+  });
+  await mermaid.parse(chart);
+  const { svg } = await mermaid.render(id, chart);
+  return svg;
+});
+
+const diagramAtom = Atom.family((diagram: Diagram) =>
+  Atom.make(request(async () => renderChart(diagram))).pipe(Atom.withServerValueInitial),
 );
 
 function Mermaid({ chart }: Readonly<{ chart: string }>): ReactElement {
   const id = `mermaid-${useId()}`;
   const { resolvedTheme } = useTheme();
-  const container = useRef<HTMLDivElement>(null);
-  const [rendering, setRendering] = useState<
-    | { readonly status: "failed"; readonly message: string }
-    | { readonly status: "pending" | "rendered" }
-  >({ status: "pending" });
-  useEffect(() => {
-    const controller = { active: true };
-    async function render(): Promise<void> {
-      try {
-        const diagram = await renderChart(id, chart, resolvedTheme === "dark");
-        if (controller.active) {
-          container.current?.replaceChildren(diagram);
-          setRendering({ status: "rendered" });
-        }
-      } catch (error) {
-        if (controller.active) {
-          setRendering({
-            message: error instanceof Error ? error.message : String(error),
-            status: "failed",
-          });
-        }
-      }
+  const result = useAtomValue(diagramAtom({ chart, dark: resolvedTheme === "dark", id }));
+  const svg = AsyncResult.isSuccess(result) ? result.value : undefined;
+  const failure = resultError(result);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  function place(container: HTMLDivElement | null): void {
+    if (container !== null && svg !== undefined) {
+      container.replaceChildren(document.createRange().createContextualFragment(svg));
     }
-    void render();
-    return (): void => {
-      controller.active = false;
-    };
-  }, [chart, id, resolvedTheme]);
+  }
   return (
-    <figure className="my-6" aria-busy={rendering.status === "pending"}>
-      <div
-        ref={container}
-        className="flex justify-center"
-        hidden={rendering.status !== "rendered"}
-      />
-      {rendering.status === "failed" && (
-        <figcaption role="alert">図を描画できませんでした: {rendering.message}</figcaption>
+    <figure className="my-6" aria-busy={svg === undefined && failure === undefined}>
+      <div ref={place} className="flex justify-center" hidden={svg === undefined} />
+      {failure !== undefined && (
+        <figcaption role="alert">図を描画できませんでした: {failure}</figcaption>
       )}
-      {rendering.status !== "rendered" && (
+      {svg === undefined && (
         <CodeBlock title="mermaid">
           <Pre>{chart}</Pre>
         </CodeBlock>

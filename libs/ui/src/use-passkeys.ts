@@ -1,41 +1,29 @@
-import { errorMessage, requireSuccess } from "./protocol";
-import { useEffect, useState } from "react";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
+import { request, resultError } from "./request";
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { Option } from "effect";
 import type { PasskeySummary } from "./mfa-types";
 import { authClient } from "./client";
+import { requireSuccess } from "./protocol";
 
-interface PasskeyListing {
-  readonly passkeys: readonly PasskeySummary[] | undefined;
+interface PasskeysState {
   readonly listError: string | undefined;
+  readonly passkeys: readonly PasskeySummary[] | undefined;
+  readonly reload: () => void;
 }
 
-interface PasskeysState extends PasskeyListing {
-  readonly reload: () => Promise<void>;
-}
-
-async function fetchPasskeys(): Promise<PasskeyListing> {
-  try {
-    const result = await authClient.passkey.listUserPasskeys();
-    return { listError: undefined, passkeys: requireSuccess(result) };
-  } catch (error) {
-    return { listError: errorMessage(error), passkeys: undefined };
-  }
-}
+const passkeysAtom = Atom.make(
+  request(async () => requireSuccess(await authClient.passkey.listUserPasskeys())),
+).pipe(Atom.withServerValueInitial);
 
 function usePasskeys(): PasskeysState {
-  const [listing, setListing] = useState<PasskeyListing>({
-    listError: undefined,
-    passkeys: undefined,
-  });
-  async function reload(): Promise<void> {
-    setListing(await fetchPasskeys());
-  }
-  useEffect(() => {
-    async function load(): Promise<void> {
-      setListing(await fetchPasskeys());
-    }
-    void load();
-  }, []);
-  return { listError: listing.listError, passkeys: listing.passkeys, reload };
+  const result = useAtomValue(passkeysAtom);
+  const reload = useAtomRefresh(passkeysAtom);
+  return {
+    listError: resultError(result),
+    passkeys: Option.getOrUndefined(AsyncResult.value(result)),
+    reload,
+  };
 }
 
 export { usePasskeys };

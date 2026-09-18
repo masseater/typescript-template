@@ -1,13 +1,15 @@
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 import { AdminHeader } from "./admin-header.tsx";
 import { AdminNavigation } from "./admin-navigation.tsx";
-import { useState } from "react";
+import { localState } from "@template/ui";
+
+const useNavigationOpen = localState(false);
 
 function AdminFrame({
   children,
   email,
 }: Readonly<{ children: Readonly<Exclude<ReactNode, ReactPortal>>; email: string }>): ReactElement {
-  const [navigationOpen, setNavigationOpen] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useNavigationOpen();
   function toggleNavigation(): void {
     setNavigationOpen((open) => !open);
   }

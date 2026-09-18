@@ -2,6 +2,7 @@ import { RuleTester } from "vite-plus/lint/plugins-dev";
 import plugin from "./rules.ts";
 
 type RuleName =
+  | "atom-state"
   | "boundaries"
   | "effect-failures"
   | "effect-stack"
@@ -14,6 +15,7 @@ type RuleName =
   | "worker-fetch";
 
 const ruleNames: readonly RuleName[] = [
+  "atom-state",
   "boundaries",
   "effect-failures",
   "effect-stack",

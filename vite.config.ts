@@ -1,6 +1,7 @@
 import { applications } from "@template/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { retiredImportPatterns } from "./tools/quality/retired-packages.ts";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -145,15 +146,12 @@ export default defineConfig({
         {
           paths: [
             {
-              message: "@template/ui の shadcn/ui (Base UI) 部品を使ってください。",
-              name: "smarthr-ui",
+              message:
+                "better-auth/react は nanostores の状態を持ち込みます。better-auth/client を使い、状態は Effect Atom で持ってください。",
+              name: "better-auth/react",
             },
-            {
-              message: "Tailwind CSS v4 のユーティリティを使ってください。",
-              name: "styled-components",
-            },
-            { message: "Paraglide JS を使ってください。", name: "react-intl" },
           ],
+          patterns: retiredImportPatterns(),
         },
       ],
       "eslint/no-ternary": "off",
@@ -170,6 +168,7 @@ export default defineConfig({
       "oxc/no-async-await": "off",
       "oxc/no-optional-chaining": "off",
       "oxc/no-rest-spread-properties": "off",
+      "project/atom-state": "error",
       "project/boundaries": "error",
       "project/effect-failures": "error",
       "project/effect-stack": "error",

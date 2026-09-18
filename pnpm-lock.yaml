@@ -179,6 +179,9 @@ catalogs:
     '@cloudflare/workers-types':
       specifier: 5.20260916.1
       version: 5.20260916.1
+    '@effect/atom-react':
+      specifier: 4.0.0-rc.112
+      version: 4.0.0-rc.112
     '@effect/platform-node':
       specifier: 4.0.0-rc.112
       version: 4.0.0-rc.112
@@ -254,6 +257,9 @@ catalogs:
     react-dom:
       specifier: 19.3.0
       version: 19.3.0
+    scheduler:
+      specifier: 0.28.0
+      version: 0.28.0
     shadcn:
       specifier: 4.21.0
       version: 4.21.0
@@ -342,6 +348,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@effect/atom-react':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.3.0)(scheduler@0.28.0)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -378,6 +387,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
+      scheduler:
+        specifier: 'catalog:'
+        version: 0.28.0
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
@@ -421,6 +433,9 @@ importers:
 
   apps/user:
     dependencies:
+      '@effect/atom-react':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.3.0)(scheduler@0.28.0)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -457,6 +472,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
+      scheduler:
+        specifier: 'catalog:'
+        version: 0.28.0
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
@@ -497,6 +515,9 @@ importers:
 
   apps/wiki:
     dependencies:
+      '@effect/atom-react':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.3.0)(scheduler@0.28.0)
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
@@ -542,6 +563,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
+      scheduler:
+        specifier: 'catalog:'
+        version: 0.28.0
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -1014,6 +1038,9 @@ importers:
       '@better-auth/passkey':
         specifier: 'catalog:'
         version: 1.7.5(9359504eefc9dbc89409745cfc9421d0)
+      '@effect/atom-react':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.3.0)(scheduler@0.28.0)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1047,6 +1074,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
+      scheduler:
+        specifier: 'catalog:'
+        version: 0.28.0
       shadcn:
         specifier: 'catalog:'
         version: 4.21.0(supports-color@5.5.0)(typescript@7.0.2)
@@ -1825,6 +1855,13 @@ packages:
 
   '@drizzle-team/brocli@0.12.1':
     resolution: {integrity: sha512-yHwomvolVafvUXhy5TdiJVkuNCxXn+bKOs2aWiWEQh/5YaV97Oa/abJz3dmx7lxgIUsUlS1Jl4mEfvJPo3YsVw==}
+
+  '@effect/atom-react@4.0.0-rc.112':
+    resolution: {integrity: sha512-Ksf90KQa6D4UDnMj4M84arlVKNIuwxxF2GvgXBzuaYi2LsgririsUhKQ5SYaK1euf8oIYeamEuthoZSbUQmIhw==}
+    peerDependencies:
+      effect: 4.0.0-rc.112
+      react: '>=19.0.0 <20.0.0'
+      scheduler: '>=0.25.0 <0.28.0'
 
   '@effect/platform-node-shared@4.0.0-rc.112':
     resolution: {integrity: sha512-ttjz0xKamFN7vL8pNDYVwddJLjZvqKePc05djlz2VcdaKbLsnYbtMnL1rbOfHgEnIUSHGh7FkjaN4DM1Ov81sQ==}
@@ -10902,6 +10939,12 @@ snapshots:
   '@dotenvx/primitives@0.8.0': {}
 
   '@drizzle-team/brocli@0.12.1': {}
+
+  '@effect/atom-react@4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.3.0)(scheduler@0.28.0)':
+    dependencies:
+      effect: 4.0.0-rc.112
+      react: 19.3.0
+      scheduler: 0.28.0
 
   '@effect/platform-node-shared@4.0.0-rc.112(effect@4.0.0-rc.112)':
     dependencies:

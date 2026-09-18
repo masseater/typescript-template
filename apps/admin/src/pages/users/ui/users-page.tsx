@@ -7,14 +7,14 @@ import { useUsersSearch } from "#pages/users/model/users-search-state.ts";
 
 function UsersPage(): ReactElement {
   const search = useUsersSearch();
-  const { reload, state } = useUserList(search);
+  const { reload, result } = useUserList(search);
   return (
     <main className="flex flex-col gap-4 p-4">
       <Heading as="h1" size="page">
         ユーザー一覧
       </Heading>
-      <UserFilters key={JSON.stringify(search)} search={search} />
-      <UserResults search={search} state={state} onReload={reload} />
+      <UserFilters search={search} />
+      <UserResults search={search} result={result} onReload={reload} />
     </main>
   );
 }

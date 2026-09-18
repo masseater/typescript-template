@@ -9,7 +9,7 @@ import { useTextInput } from "./use-text-input";
 
 interface PasskeyRegisterFormProps {
   readonly context: SettingsContext;
-  readonly onRegistered: () => Promise<void>;
+  readonly onRegistered: () => void;
 }
 
 const REGISTERED_NOTICE =
@@ -28,7 +28,7 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
       );
       name.handleChange("");
       onNotice(REGISTERED_NOTICE);
-      await onRegistered();
+      onRegistered();
     });
   }
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";

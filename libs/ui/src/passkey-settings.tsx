@@ -7,14 +7,11 @@ import { usePasskeys } from "./use-passkeys";
 
 function PasskeySettings({ context }: Readonly<{ context: SettingsContext }>): ReactElement {
   const { listError, passkeys, reload } = usePasskeys();
-  function refresh(): void {
-    void reload();
-  }
   return (
     <>
       <PasskeyRegisterForm context={context} onRegistered={reload} />
       <PasskeyList action={context.action} listError={listError} passkeys={passkeys} />
-      <Button type="button" disabled={context.action.blocked} onClick={refresh}>
+      <Button type="button" disabled={context.action.blocked} onClick={reload}>
         パスキー一覧を更新
       </Button>
     </>

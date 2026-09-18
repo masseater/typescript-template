@@ -1,3 +1,5 @@
+import { retiredPackages } from "./retired-packages.ts";
+
 interface WorkspaceManifest {
   readonly area: string;
   readonly file: string;
@@ -56,15 +58,6 @@ function applicationDependencyViolations(workspaces: readonly WorkspaceManifest[
   );
 }
 
-const retiredPackages: Readonly<Record<string, string>> = {
-  "@pulumi/": "alchemy",
-  "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
-  pulumi: "alchemy",
-  "react-intl": "Paraglide JS",
-  "smarthr-ui": "@template/ui の shadcn/ui (Base UI) 部品",
-  "styled-components": "Tailwind CSS v4 のユーティリティ",
-};
-
 function replacementFor(dependency: string): string | undefined {
   const matched = Object.keys(retiredPackages).find(
     (retired) =>
@@ -84,11 +77,5 @@ function retiredDependencyViolations(workspaces: readonly WorkspaceManifest[]): 
   );
 }
 
-export {
-  applicationDependencyViolations,
-  field,
-  retiredDependencyViolations,
-  retiredPackages,
-  workspaceManifests,
-};
+export { applicationDependencyViolations, field, retiredDependencyViolations, workspaceManifests };
 export type { WorkspaceManifest };
