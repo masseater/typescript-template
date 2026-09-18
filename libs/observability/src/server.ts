@@ -7,5 +7,4 @@ export { httpStatus } from "./http-status.ts";
 export { ingestBrowser } from "./ingress.ts";
 export { observeRequest, reportFailure } from "./request-span.ts";
 export type { Correlation } from "./protocol.ts";
-export type { LogSink } from "./log.ts";
 export type { RequestContext } from "./current-request.ts";

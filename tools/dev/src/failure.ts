@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 
 class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("LocalCommandFailure", {
   reason: Schema.Literals([
@@ -25,4 +25,14 @@ function fileIo<Value>(operation: () => Promise<Value>): Effect.Effect<Value, Lo
   return Effect.tryPromise({ catch: () => failure("file_io_failed"), try: operation });
 }
 
-export { LocalCommandFailure, failure, fileIo };
+function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
+  return Console.error(JSON.stringify(record)).pipe(
+    Effect.andThen(
+      Effect.sync(() => {
+        process.exitCode = 1;
+      }),
+    ),
+  );
+}
+
+export { LocalCommandFailure, failure, fileIo, reportFailed };

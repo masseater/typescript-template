@@ -6,6 +6,7 @@
     "#*": "./src/*"
   },
   "scripts": {
+    "check": "steiger src --fail-on-warnings",
     "dev": "vp dev",
     "preview": "vp preview"
   },
@@ -40,6 +41,7 @@
     "@types/react-dom": "catalog:",
     "remark": "15.0.1",
     "remark-mdx": "3.1.1",
+    "steiger": "0.6.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

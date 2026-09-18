@@ -1,3 +1,4 @@
+import { Console, Effect } from "effect";
 import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
 import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import {
@@ -7,26 +8,16 @@ import {
   workerSubdomain,
 } from "./config.ts";
 import type { Application } from "@template/config";
-import { Effect } from "effect";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 import { databaseName } from "./database-lookup.ts";
 import { grants } from "@template/config";
+import { markFailed } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 import { workerModuleGlobs } from "./artifacts.ts";
 
 const { accountId, origins, prefix } = verificationSettings;
-
-const providerAddedBindings = [
-  "ALCHEMY_CLOUDFLARE_ACCOUNT_ID",
-  "ALCHEMY_PHASE",
-  "ALCHEMY_STACK_NAME",
-  "ALCHEMY_STAGE",
-  "ALCHEMY_WORKER_NAME",
-  "ASSETS",
-];
 
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
@@ -206,15 +197,16 @@ function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
-  // oxlint-disable-next-line no-console
-  console.log(
-    JSON.stringify({
-      declaration: matches ? "matches" : "differs",
-      event: "stacks.verified",
-      inventory,
-      notCompared: providerAddedBindings,
-    }),
-  );
+  if (!matches) {
+    yield* Console.error(
+      JSON.stringify({
+        actual: inventory,
+        event: "stacks.differs",
+        expected: expected[stack],
+        stack,
+      }),
+    );
+  }
   return matches;
 });
 
@@ -222,24 +214,18 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
-      process.exitCode = FAILED_EXIT_CODE;
+      yield* markFailed;
+      return;
     }
+    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(
-          JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
-        );
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(
+        JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
+      ).pipe(Effect.andThen(markFailed)),
     ),
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        // oxlint-disable-next-line no-console
-        console.error(JSON.stringify({ event: "stacks.invalid" }));
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(JSON.stringify({ event: "stacks.invalid" })).pipe(Effect.andThen(markFailed)),
     ),
   ),
   { disableErrorReporting: true },
