@@ -37,6 +37,7 @@ export default defineConfig({
           "vp check",
           "vp run knip",
           "vp run check:client",
+          "vp run check:react",
           "vp run check:staged",
           "vp run check:effect",
           "vp run -F '!typescript-template' --cache check",
@@ -47,6 +48,11 @@ export default defineConfig({
       "check:effect": {
         command: "node tools/quality/effect-diagnostics.ts",
         input: [...taskInput],
+      },
+      "check:react": {
+        command: "node tools/quality/react-doctor.ts",
+        input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+        output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
