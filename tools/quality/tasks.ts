@@ -32,7 +32,7 @@ const work = defineTasks({
   "email-deploy": { blockedBy: ["email-onboard"], issue: 114 },
   "email-onboard": { blockedBy: ["fmt-sort"], branch: "feat/email-sending", issue: 113 },
   "feature-flags": { blockedBy: ["effect-cf", "tanstack-query"], issue: 133 },
-  "fmt-sort": { blockedBy: ["react-doctor"], branch: "chore/fmt-sort-a11y", issue: 110 },
+  "fmt-sort": { blockedBy: [], branch: "chore/fmt-sort-a11y", issue: 110 },
   "frontend-placement": { blockedBy: ["libs-colocation", "preset-root"], issue: 159 },
   "inp-telemetry-burst": { blockedBy: [], issue: 151 },
   "japanese-font": { blockedBy: ["preset-root"], issue: 142 },
@@ -64,7 +64,6 @@ const work = defineTasks({
   "private-maps-plugin": { blockedBy: ["preset-root"], issue: 155 },
   queues: { blockedBy: ["effect-cf"], issue: 134 },
   r2: { blockedBy: ["effect-cf"], issue: 136 },
-  "react-doctor": { blockedBy: [], branch: "chore/react-doctor", issue: 108 },
   "runtime-unavailable": {
     blockedBy: ["fmt-sort"],
     branch: "fix/runtime-unavailable-cause",
