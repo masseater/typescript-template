@@ -1,12 +1,12 @@
 import path from "node:path";
 
-import { applications, type Application } from "@repo/config";
+import { APPLICATION, applications, type Application } from "@repo/config";
 
 const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);
 
 const privateAdminPath = (slashedPath: string, application: Application): boolean =>
-  application !== "admin" &&
+  application !== APPLICATION.admin &&
   (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
     /@repo\/db\/admin(?:\/|$)/u.test(slashedPath));
 

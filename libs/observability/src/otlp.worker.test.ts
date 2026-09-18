@@ -29,7 +29,7 @@ const traceIdPattern = /^[0-9a-f]{32}$/u;
 
 const listening: { current?: ReturnType<typeof setupNetwork> } = {};
 
-function network(): ReturnType<typeof setupNetwork> {
+const network = function network(): ReturnType<typeof setupNetwork> {
   const { current } = listening;
   if (current !== undefined) {
     return current;
@@ -39,13 +39,13 @@ function network(): ReturnType<typeof setupNetwork> {
   started.enable();
   listening.current = started;
   return started;
-}
+};
 
-function accepted(): Response {
+const accepted = function accepted(): Response {
   return HttpResponse.json({});
-}
+};
 
-function observed(
+const observed = function observed(
   otlp?: OtlpDestination,
   responding: () => Response = accepted,
   alongside: Effect.Effect<void> = Effect.void,
@@ -90,24 +90,24 @@ function observed(
         network().resetHandlers();
       }),
   );
-}
+};
 
-function traceIds(payload: readonly unknown[]): readonly string[] {
+const traceIds = function traceIds(payload: readonly unknown[]): readonly string[] {
   const matches = JSON.stringify(payload).matchAll(exportedTraceIds);
   return Array.from(matches, (match) => match.groups?.["traceId"] ?? "");
-}
+};
 
-function assertLogAttributes(logs: readonly unknown[]): void {
+const assertLogAttributes = function assertLogAttributes(logs: readonly unknown[]): void {
   const record = JSON.stringify(logs);
   for (const attribute of ["duration_ms", "request_id", "route", "status"]) {
     assert.include(record, `{"key":"${attribute}","value":`);
   }
   assert.include(record, '"body":{"stringValue":"http.server.request"}');
-}
+};
 
-function requestTraceId(traceparent: string): string {
+const requestTraceId = function requestTraceId(traceparent: string): string {
   return traceparentTraceId.exec(traceparent)?.groups?.["traceId"] ?? "";
-}
+};
 
 it.effect("spans, logs and the response share one trace id at the OTLP endpoint", () =>
   Effect.gen(function* program() {
@@ -139,9 +139,12 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
     const telemetry = yield* observed(
       { authorization, endpoint },
       accepted,
-      logAt("Error", "authentication.failed", {
-        AUTH_SECRET: leaked,
-        reason: "invalid token",
+      logAt("Error", {
+        attributes: {
+          AUTH_SECRET: leaked,
+          reason: "invalid token",
+        },
+        eventName: "authentication.failed",
       }),
     );
     const exported = JSON.stringify(telemetry.logs);
@@ -153,17 +156,26 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
 );
 
 const refused = Effect.gen(function* refused() {
-  yield* logAt("Info", "http.client.request", {
-    "http.response.status_code": httpStatus.forbidden,
+  yield* logAt("Info", {
+    attributes: {
+      "http.response.status_code": httpStatus.forbidden,
+    },
+    eventName: "http.client.request",
   });
-  yield* logAt("Warn", "http.client.request", {
-    "http.response.status_code": httpStatus.badRequest,
+  yield* logAt("Warn", {
+    attributes: {
+      "http.response.status_code": httpStatus.badRequest,
+    },
+    eventName: "http.client.request",
   });
 });
 
 const annotated = Effect.gen(function* annotated() {
   yield* annotateSpan({ "session.cookie": `template-user.session=${leaked}` });
-  yield* logAt("Info", "interview.started", { auth_token: leaked, interview_id: "abc" });
+  yield* logAt("Info", {
+    attributes: { auth_token: leaked, interview_id: "abc" },
+    eventName: "interview.started",
+  });
 });
 
 const spanned = Effect.void.pipe(
@@ -205,10 +217,10 @@ it.effect("the endpoint receives the severity the status code asks for", () =>
 
 it.effect("a secret the cause of a failure carries reaches no destination", () =>
   Effect.gen(function* program() {
-    const failing = logCause(
-      "application.error",
-      Cause.fail(new Error(`no such table: jwks (AUTH_SECRET=${leaked})`)),
-    );
+    const failing = logCause({
+      cause: Cause.fail(new Error(`no such table: jwks (AUTH_SECRET=${leaked})`)),
+      eventName: "application.error",
+    });
     const telemetry = yield* observed({ authorization, endpoint }, accepted, failing);
     const exported = JSON.stringify(telemetry.logs);
     assert.notInclude(exported, leaked);

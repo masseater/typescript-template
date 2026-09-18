@@ -1,3 +1,4 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
 import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -32,7 +33,7 @@ const signIn = async ({
     onChallenge(CHALLENGE_MODE.totp);
     return;
   }
-  if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
+  if (new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) === "setup") {
     globalThis.location.assign("/security?recovery=setup");
     return;
   }

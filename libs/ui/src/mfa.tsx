@@ -1,4 +1,5 @@
-import { useState, type ReactElement } from "react";
+import { AUTHENTICATION_METHOD } from "@repo/config";
+import { useState } from "react";
 
 import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
@@ -7,24 +8,27 @@ import { RecoveryNotice } from "./recovery-notice";
 import { Heading } from "./shared/ui/heading";
 import { TotpSettings } from "./totp-settings";
 
+import type { ReactElement } from "react";
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";
 
-const readRecovery = (): string | undefined => {
+function readRecovery(): string | undefined {
   if (!("location" in globalThis)) {
     return undefined;
   }
-  return new URLSearchParams(globalThis.location.search).get("recovery") ?? undefined;
-};
+  return (
+    new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) ?? undefined
+  );
+}
 
-const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElement => {
+function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElement {
   const [notice, setNotice] = useState<string>();
   const recovery = readRecovery();
   const action = useAction();
-  const clearNotice = (): void => {
+  function clearNotice(): void {
     setNotice(undefined);
-  };
-  const settingsContext: SettingsContext = {
+  }
+  const context: SettingsContext = {
     action,
     onNotice: setNotice,
     onNoticeClear: clearNotice,
@@ -35,12 +39,12 @@ const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElem
     <div className="flex w-full flex-col gap-4">
       <Heading>認証アプリとパスキー</Heading>
       <RecoveryNotice recovery={recovery} role={session.user.role} />
-      <TotpSettings context={settingsContext} />
+      <TotpSettings context={context} />
       <Heading>パスキー</Heading>
-      <PasskeySettings context={settingsContext} />
+      <PasskeySettings context={context} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
     </div>
   );
-};
+}
 
 export { MFASettings };

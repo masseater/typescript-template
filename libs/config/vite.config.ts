@@ -2,5 +2,11 @@ import { defineConfig } from "vite-plus";
 
 import { effectRun } from "./src/vite.ts";
 
-// oxlint-disable-next-line import/no-default-export
-export default defineConfig({ run: effectRun });
+export default defineConfig({
+  run: effectRun,
+  test: {
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    mockReset: true,
+    restoreMocks: true,
+  },
+});

@@ -1,3 +1,4 @@
+import { ROLE } from "@repo/config";
 import { STATUS_VARIANT, StatusMessage, loginPath, useSession } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
@@ -12,7 +13,7 @@ function AdminLayout(): ReactElement {
   const { error, loading, session } = useSession();
   const { href, pathname } = useLocation();
   const navigate = useNavigate();
-  const strong = session?.strong === true && session.user.role === "admin";
+  const strong = session?.strong === true && session.user.role === ROLE.administrator;
   const allowed = session !== undefined && (strong || pathname === SECURITY);
   useEffect(() => {
     if (loading || error !== undefined || allowed) {

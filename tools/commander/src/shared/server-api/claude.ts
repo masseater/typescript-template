@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import { Effect, Option, Ref, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
@@ -90,7 +91,7 @@ const decodeEnvelope = Schema.decodeUnknownOption(Envelope);
 const decodeStreamEnvelope = Schema.decodeUnknownOption(StreamEnvelope);
 const decodeStreamDeltaKind = Schema.decodeUnknownOption(StreamDeltaKind);
 const decodeBlockDelta = Schema.decodeUnknownOption(BlockDelta);
-const contracted: ReadonlySet<string> = new Set(["assistant", "user", "result", "stream_event"]);
+const contracted: ReadonlySet<string> = new Set(["assistant", APPLICATION.user, "result", "stream_event"]);
 const invalid: readonly CommanderEvent[] = [{ reason: "output_invalid", type: "failed" }];
 const processFailed: CommanderEvent = { reason: "process_failed", type: "failed" };
 const spawnFailed: CommanderEvent = { reason: "spawn_failed", type: "failed" };
@@ -138,7 +139,7 @@ function translate(line: typeof Line.Type): readonly CommanderEvent[] {
       "id" in block ? [{ id: block.id, input: block.input, name: block.name, type: "tool" }] : [],
     );
   }
-  if (line.type === "user") {
+  if (line.type === APPLICATION.user) {
     return typeof line.message.content === "string"
       ? []
       : line.message.content.flatMap((block) =>

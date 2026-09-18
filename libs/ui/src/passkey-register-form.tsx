@@ -1,3 +1,5 @@
+import { ROLE } from "@repo/config";
+
 import { authClient } from "./client";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
@@ -8,32 +10,32 @@ import { useTextInput } from "./use-text-input";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { SettingsContext } from "./mfa-types";
 
+interface PasskeyRegisterFormProps {
+  readonly context: SettingsContext;
+  readonly onRegistered: () => Promise<void>;
+}
+
 const REGISTERED_NOTICE =
   "パスキーを登録しました。強認証への切り替えにはパスキーでログインし直してください。";
 
-const PasskeyRegisterForm = ({
-  context,
-  onRegistered,
-}: {
-  readonly context: SettingsContext;
-  readonly onRegistered: () => Promise<void>;
-}): ReactElement => {
+function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps): ReactElement {
   const { action, onNotice, onNoticeClear, recovery, session } = context;
-  const passkeyName = useTextInput();
-  const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
-    submitEvent.preventDefault();
+  const name = useTextInput();
+  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
+    event.preventDefault();
     action.run(async () => {
       onNoticeClear();
       requireSecureContext();
       requireSuccess(
-        await authClient.passkey.addPasskey({ createSession: false, name: passkeyName.value }),
+        await authClient.passkey.addPasskey({ createSession: false, name: name.value }),
       );
-      passkeyName.handleChange("");
+      name.handleChange("");
       onNotice(REGISTERED_NOTICE);
       await onRegistered();
     });
-  };
-  const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
+  }
+  const recoveringAdmin =
+    session.user.role === ROLE.administrator && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
       <FormColumn>
@@ -42,8 +44,8 @@ const PasskeyRegisterForm = ({
           name="passkey-name"
           maxLength={100}
           required
-          value={passkeyName.value}
-          onValueChange={passkeyName.handleChange}
+          value={name.value}
+          onValueChange={name.handleChange}
         />
         <Button type="submit" disabled={action.blocked || recoveringAdmin}>
           パスキーを登録
@@ -51,6 +53,6 @@ const PasskeyRegisterForm = ({
       </FormColumn>
     </form>
   );
-};
+}
 
 export { PasskeyRegisterForm };

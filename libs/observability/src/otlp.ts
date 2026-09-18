@@ -1,5 +1,10 @@
 import { Duration, Effect, Layer, Logger } from "effect";
-import { FetchHttpClient, HttpClient } from "effect/unstable/http";
+import {
+  FetchHttpClient,
+  HttpClient,
+  type HttpClientError,
+  type HttpClientResponse,
+} from "effect/unstable/http";
 import {
   OtlpExporter,
   OtlpLogger,
@@ -11,40 +16,33 @@ import { httpStatus } from "./http-status.ts";
 import { logAt } from "./severity.ts";
 import { redactedLogger } from "./structured-logs.ts";
 
-import type { HttpClientError, HttpClientResponse } from "effect/unstable/http";
-
-interface OtlpDestination {
+type OtlpDestination = {
   readonly endpoint: string;
   readonly authorization?: string | undefined;
-}
-interface OtlpOptions {
-  readonly otlp?: OtlpDestination | undefined;
-  readonly release: string;
-  readonly service: string;
-}
+};
 
 type TelemetryFlusher = OtlpExporter.Flusher;
 
 const trailingSlashes = /\/+$/u;
 const flushTelemetry = Effect.flatMap(OtlpExporter.Flusher, (flusher) => flusher.flush);
 
-function otlpSignalUrl(endpoint: string, signal: "logs" | "traces"): string {
-  return `${endpoint.replace(trailingSlashes, "")}/v1/${signal}`;
-}
+const otlpSignalUrl = (endpoint: string, signal: "logs" | "traces"): string =>
+  `${endpoint.replace(trailingSlashes, "")}/v1/${signal}`;
 
-function reportRejection(
-  response: Readonly<Pick<HttpClientResponse.HttpClientResponse, "status">>,
-): Effect.Effect<void> {
-  return response.status >= httpStatus.badRequest
-    ? logAt("Warn", "otlp.export_failed", { "otlp.status": response.status })
+const reportRejection = (
+  answered: Readonly<Pick<HttpClientResponse.HttpClientResponse, "status">>,
+): Effect.Effect<void> =>
+  answered.status >= httpStatus.badRequest
+    ? logAt("Warn", {
+        eventName: "otlp.export_failed",
+        attributes: { "otlp.status": answered.status },
+      })
     : Effect.void;
-}
 
-function reportFailure(
-  error: Readonly<Pick<HttpClientError.HttpClientError, "_tag">>,
-): Effect.Effect<void> {
-  return logAt("Warn", "otlp.export_failed", { "otlp.error": error._tag });
-}
+const reportFailure = (
+  refused: Readonly<Pick<HttpClientError.HttpClientError, "_tag">>,
+): Effect.Effect<void> =>
+  logAt("Warn", { eventName: "otlp.export_failed", attributes: { "otlp.error": refused._tag } });
 
 const reportedHttpClient = Layer.effect(
   HttpClient.HttpClient,
@@ -55,15 +53,19 @@ const reportedHttpClient = Layer.effect(
 
 const transport = Layer.merge(OtlpSerialization.layerJson, reportedHttpClient);
 
-function otlpExport(options: OtlpOptions): Layer.Layer<TelemetryFlusher> {
-  const { otlp } = options;
+const otlpExport = (exported: {
+  readonly otlp?: OtlpDestination | undefined;
+  readonly release: string;
+  readonly service: string;
+}): Layer.Layer<TelemetryFlusher> => {
+  const { otlp } = exported;
   if (otlp === undefined) {
     return OtlpExporter.layerFlusher;
   }
   const shared = {
     exportInterval: Duration.infinity,
     headers: otlp.authorization === undefined ? undefined : { authorization: otlp.authorization },
-    resource: { serviceName: options.service, serviceVersion: options.release },
+    resource: { serviceName: exported.service, serviceVersion: exported.release },
   };
   const logs = Effect.map(
     OtlpLogger.make({ ...shared, url: otlpSignalUrl(otlp.endpoint, "logs") }),
@@ -75,7 +77,7 @@ function otlpExport(options: OtlpOptions): Layer.Layer<TelemetryFlusher> {
       Layer.provideMerge(OtlpExporter.layerFlusher),
     ),
   ).pipe(Layer.provide(transport));
-}
+};
 
 export { flushTelemetry, otlpExport, otlpSignalUrl };
 export type { OtlpDestination, TelemetryFlusher };

@@ -1,3 +1,5 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
+
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
@@ -62,8 +64,8 @@ const SignUpFields = ({
         />
         <Field
           label="パスワード（12文字以上）"
-          name="password"
-          type="password"
+          name={AUTHENTICATION_METHOD.password}
+          type={AUTHENTICATION_METHOD.password}
           autoComplete="new-password"
           minLength={12}
           maxLength={128}

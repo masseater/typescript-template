@@ -1,15 +1,16 @@
+import { ROLE } from "@repo/config";
+
 import { StatusMessage } from "./shared/ui/status";
 
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol";
 
-const RecoveryNotice = ({
-  recovery,
-  role,
-}: {
+interface RecoveryNoticeProps {
   readonly recovery: string | undefined;
   readonly role: SessionView["user"]["role"];
-}): ReactElement | undefined => {
+}
+
+function RecoveryNotice({ recovery, role }: RecoveryNoticeProps): ReactElement | undefined {
   if (recovery === "setup") {
     return <StatusMessage>新しい認証アプリを登録してください。</StatusMessage>;
   }
@@ -19,7 +20,7 @@ const RecoveryNotice = ({
   return (
     <>
       <StatusMessage>バックアップコードでログインしました。</StatusMessage>
-      {role === "admin" ? (
+      {role === ROLE.administrator ? (
         <StatusMessage>
           復旧コードでは管理者操作はできません。ログアウト後、登録済みのパスキーまたは認証アプリで
           ログインしてください。どちらも使えない場合は、この画面から管理者の認証設定を復旧できません。
@@ -32,6 +33,6 @@ const RecoveryNotice = ({
       )}
     </>
   );
-};
+}
 
 export { RecoveryNotice };

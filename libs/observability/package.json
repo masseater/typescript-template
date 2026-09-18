@@ -6,17 +6,21 @@
     ".": "./src/server.ts",
     "./browser": "./src/browser.ts",
     "./testing": "./src/testing.ts",
-    "./http-status": "./src/http-status.ts"
+    "./http-status": "./src/http-status.ts",
+    "./otlp-testing": "./src/otlp-fixture.ts"
   },
   "scripts": {},
   "dependencies": {
     "@repo/config": "workspace:*",
     "effect": "catalog:",
-    "web-vitals": "6.2.2"
+    "web-vitals": "6.2.2",
+    "@msw/cloudflare": "catalog:",
+    "msw": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
-    "msw": "catalog:"
+    "msw": "catalog:",
+    "@repo/dont-review-it": "workspace:*"
   }
 }
