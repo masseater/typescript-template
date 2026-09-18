@@ -24,6 +24,8 @@ const valueEnders = new Set([",", ")", "}", "]", "\n"]);
 const listEnders = new Set(['"', "'", "\\", "\n"]);
 const escapedWidth = 2;
 const placeholder = "[redacted]";
+const positionKeys: ReadonlySet<string> = new Set(["error.locations"]);
+const digitsOnly = /^\d+(?::\d+)*$/u;
 
 interface Masked {
   readonly end: number;
@@ -80,20 +82,32 @@ function valueEnd(text: string, start: number, enders: ReadonlySet<string>): num
   return openers.has(first) ? bracketedEnd(text, start) : bareEnd(text, start, enders);
 }
 
-function maskedValue(text: string, start: number, label: string): Masked {
+function maskedValue(
+  text: string,
+  found: Readonly<{ keepNumbers: boolean; label: string; start: number }>,
+): Masked {
+  const { keepNumbers, label, start } = found;
   const nameQuote = quotePattern.exec(label)?.[0] ?? "";
   const listed = nameQuote === "" && listLabel.test(label);
   const end = valueEnd(text, start, listed ? listEnders : valueEnders);
-  const quote = quotePattern.exec(text.slice(start, end))?.[0] ?? nameQuote;
+  const value = text.slice(start, end);
+  if (keepNumbers && digitsOnly.test(value)) {
+    return { end, value };
+  }
+  const quote = quotePattern.exec(value)?.[0] ?? nameQuote;
   return { end, value: `${quote}${placeholder}${quote}` };
 }
 
-function redactSecrets(text: string): string {
+function redactSecrets(text: string, keepNumbers = false): string {
   let redacted = "";
   let cursor = 0;
   secretLabel.lastIndex = 0;
   for (let match = secretLabel.exec(text); match !== null; match = secretLabel.exec(text)) {
-    const masked = maskedValue(text, match.index + match[0].length, match[0]);
+    const masked = maskedValue(text, {
+      keepNumbers,
+      label: match[0],
+      start: match.index + match[0].length,
+    });
     redacted += `${text.slice(cursor, match.index)}${match[0]}${masked.value}`;
     cursor = masked.end;
     secretLabel.lastIndex = cursor;
@@ -112,7 +126,7 @@ function redactedField(key: string, value: unknown): unknown {
   if (value instanceof Error) {
     return { message: value.message, name: value.name };
   }
-  return typeof value === "string" ? redactSecrets(value) : value;
+  return typeof value === "string" ? redactSecrets(value, positionKeys.has(key)) : value;
 }
 
 export { redactSecrets, redactedField };

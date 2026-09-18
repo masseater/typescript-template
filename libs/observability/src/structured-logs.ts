@@ -1,9 +1,9 @@
-import { Console, Logger, References } from "effect";
+import { Cause, Console, Logger, References } from "effect";
 import type { Layer, LogLevel } from "effect";
 
 import type { ServiceName } from "@repo/config";
 
-import { redactedField } from "./redact.ts";
+import { redactSecrets, redactedField } from "./redact.ts";
 
 interface LogSink {
   readonly error: (line: string) => void;
@@ -44,14 +44,31 @@ function redactedMessage(message: unknown): unknown {
   return JSON.parse(JSON.stringify(messageParts(message), redactedField));
 }
 
+function causeField(cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> {
+  return cause.reasons.length === 0 ? {} : { "error.cause": redactSecrets(Cause.pretty(cause)) };
+}
+
+function withCause(message: unknown, cause: Readonly<Cause.Cause<unknown>>): unknown {
+  const reported = causeField(cause);
+  if (Object.keys(reported).length === 0) {
+    return message;
+  }
+  const [event, attributes] = messageParts(message);
+  return [event, { ...(isRecord(attributes) ? attributes : {}), ...reported }];
+}
+
 function redactedLogger(logger: Logger.Logger<unknown, void>): Logger.Logger<unknown, void> {
   return Logger.make((options) => {
-    logger.log({ ...options, message: redactedMessage(options.message) });
+    logger.log({
+      ...options,
+      cause: Cause.empty,
+      message: redactedMessage(withCause(options.message, options.cause)),
+    });
   });
 }
 
 function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
-  const logger = Logger.make(({ fiber, logLevel, message }) => {
+  const logger = Logger.make(({ cause, fiber, logLevel, message }) => {
     const sink = options.log ?? fiber.getRef(Console.Console);
     const [event, attributes] = messageParts(message);
     const line = JSON.stringify(
@@ -61,6 +78,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
         service: serviceLabel(options.serviceName),
         ...fiber.getRef(References.CurrentLogAnnotations),
         ...(isRecord(attributes) ? attributes : {}),
+        ...causeField(cause),
       },
       redactedField,
     );

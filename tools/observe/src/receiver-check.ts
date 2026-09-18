@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schedule, Schema } from "effect";
 
+import { reportFailed } from "@repo/config/cli";
 import { receiverImage } from "@repo/local/image";
 
 import { exportedTelemetry } from "./exported.ts";
@@ -228,13 +229,7 @@ NodeRuntime.runMain(
   program.pipe(
     Effect.flatMap((image) => Console.log(JSON.stringify({ event: EVENT, image, ok: true }))),
     Effect.catchTag("ReceiverCheckFailure", (failure) =>
-      Console.error(JSON.stringify({ event: EVENT, ok: false, reason: failure.reason })).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      ),
+      reportFailed({ event: EVENT, ok: false, reason: failure.reason }),
     ),
   ),
   { disableErrorReporting: true },
