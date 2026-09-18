@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 import { useSyncExternalStore } from "react";
 
-import { AppState, ChatEvent, LedgerState, Snapshot, applyChat } from "#contract.ts";
+import { AppState, ChatEvent, LedgerState, Snapshot, receiveChat } from "#contract.ts";
 
 type App = typeof AppState.Type;
 type View =
@@ -19,6 +19,7 @@ const decoders = {
 const listeners = new Set<() => void>();
 const sources: EventSource[] = [];
 const current: { view: View } = { view: { status: "connecting" } };
+const retryDelay = 3000;
 
 function show(next: View): void {
   current.view = next;
@@ -49,7 +50,7 @@ function receive<Value>(
 
 const handlers = {
   chat: receive(decoders.chat, (event) => {
-    change((app) => ({ ...app, chat: applyChat(app.chat, event) }));
+    change((app) => ({ ...app, chat: receiveChat(app.chat, event) }));
   }),
   ledger: receive(decoders.ledger, (ledger) => {
     change((app) => ({ ...app, ledger }));
@@ -62,26 +63,27 @@ const handlers = {
   }),
 };
 
-function disconnected(): void {
-  if (current.view.status === "live") {
-    show({ ...current.view, connected: false });
-  }
-}
-
-function connect(): EventSource {
+function connect(): void {
   const events = new EventSource("/api/events");
   events.addEventListener("state", handlers.state);
   events.addEventListener("tasks", handlers.tasks);
   events.addEventListener("ledger", handlers.ledger);
   events.addEventListener("chat", handlers.chat);
-  events.addEventListener("error", disconnected);
-  return events;
+  events.addEventListener("error", () => {
+    if (current.view.status === "live") {
+      show({ ...current.view, connected: false });
+    }
+    if (events.readyState === EventSource.CLOSED) {
+      setTimeout(connect, retryDelay);
+    }
+  });
+  sources.splice(0, sources.length, events);
 }
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   if (sources.length === 0) {
-    sources.push(connect());
+    connect();
   }
   return () => {
     listeners.delete(listener);

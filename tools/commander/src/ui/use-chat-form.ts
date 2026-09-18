@@ -2,20 +2,13 @@ import { useState } from "react";
 
 import { usePost } from "./use-post.ts";
 
-type KeyPress = Readonly<{
-  key: string;
-  nativeEvent: Readonly<{ isComposing: boolean }>;
-  preventDefault: () => void;
-  shiftKey: boolean;
-}>;
-
 interface ChatFormState {
   readonly failed: boolean;
-  readonly handleChange: (event: Readonly<{ target: Readonly<{ value: string }> }>) => void;
-  readonly handleKeyDown: (event: KeyPress) => void;
+  readonly handleSend: () => void;
   readonly handleStop: () => void;
   readonly handleSubmit: (event: Readonly<{ preventDefault: () => void }>) => void;
   readonly sendable: boolean;
+  readonly handleText: (text: string) => void;
   readonly stoppable: boolean;
   readonly text: string;
 }
@@ -34,14 +27,8 @@ function useChatForm(): ChatFormState {
 
   return {
     failed: message.failed || stop.failed,
-    handleChange: (event) => {
-      setText(event.target.value);
-    },
-    handleKeyDown: (event) => {
-      if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-        event.preventDefault();
-        void submit();
-      }
+    handleSend: () => {
+      void submit();
     },
     handleStop: () => {
       void stop.send({});
@@ -50,6 +37,7 @@ function useChatForm(): ChatFormState {
       event.preventDefault();
       void submit();
     },
+    handleText: setText,
     sendable: !message.pending && text.trim() !== "",
     stoppable: !stop.pending,
     text,

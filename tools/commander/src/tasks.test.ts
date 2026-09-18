@@ -56,6 +56,7 @@ it.effect(
         done: [],
         needsHuman: [],
         ready: [task(inserted, "B")],
+        review: [],
         running: [],
         waiting: [{ ...task(first, "A"), assignee: "w-1", blockedBy: [inserted] }],
       });
@@ -70,6 +71,7 @@ it.effect(
         done: [{ ...task(inserted, "B"), closeReason: "終わった" }],
         needsHuman: [],
         ready: [],
+        review: [],
         running: [{ ...task(first, "A"), assignee: "w-1" }],
         waiting: [],
       });
@@ -178,9 +180,38 @@ it.effect(
         done: [],
         needsHuman: [],
         ready: [],
+        review: [],
         running: [],
         waiting: [],
       });
+    }).pipe(Effect.provide(NodeServices.layer)),
+  timeout,
+);
+
+it.effect(
+  "finished work waiting for the commander's review is listed apart from running work, even while blocked",
+  () =>
+    Effect.gen(function* program() {
+      const directory = yield* project;
+      const finished = yield* create(directory, "A");
+      const blocker = yield* create(directory, "B");
+      const finish = ["update", finished, "--claim", "--add-label", "needs-review"];
+      yield* bd({ actor: "w-1", directory }, finish, Schema.Unknown);
+      const { tasks } = yield* snapshot(directory, noThreads);
+      assert.deepStrictEqual(
+        { review: tasks.review.map(({ id }) => id), running: tasks.running },
+        { review: [finished], running: [] },
+      );
+      yield* bd(
+        { actor: "commander", directory },
+        ["dep", "add", finished, blocker],
+        Schema.Unknown,
+      );
+      const blocked = yield* snapshot(directory, noThreads);
+      assert.deepStrictEqual(
+        { review: blocked.tasks.review.map(({ id }) => id), waiting: blocked.tasks.waiting },
+        { review: [finished], waiting: [] },
+      );
     }).pipe(Effect.provide(NodeServices.layer)),
   timeout,
 );

@@ -1,8 +1,9 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { Button, Field, Status } from "@repo/ui";
+import { Button, Status } from "@repo/ui";
 
+import { MessageBox } from "./message-box.tsx";
 import { usePost } from "./use-post.ts";
 
 function CommentForm({ taskId }: Readonly<{ taskId: string }>): ReactElement {
@@ -16,6 +17,10 @@ function CommentForm({ taskId }: Readonly<{ taskId: string }>): ReactElement {
     }
   }
 
+  function handleSend(): void {
+    void submit();
+  }
+
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
     void submit();
@@ -23,9 +28,9 @@ function CommentForm({ taskId }: Readonly<{ taskId: string }>): ReactElement {
 
   return (
     <form aria-label="ワーカーへ伝える" onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <Field label="コメント" name="text" multiline value={text} onValueChange={setText} />
+      <MessageBox label="コメント" value={text} onValueChange={setText} onSend={handleSend} />
       <p className="text-sm text-muted-foreground">
-        届くのは次のチェックポイント（最長 10 分）です。返事もここに出ます。
+        ワーカーが読むのは次のチェックポイントです。返事もここに出ます。
       </p>
       <Button type="submit" variant="primary" disabled={comment.pending || text.trim() === ""}>
         ワーカーへ伝える

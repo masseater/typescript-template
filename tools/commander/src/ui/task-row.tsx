@@ -25,7 +25,7 @@ function TaskRow({
         className="flex w-full cursor-pointer flex-col rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-card-hover aria-pressed:border-primary"
       >
         <span className="text-foreground">{task.title}</span>
-        <span className="text-sm text-muted-foreground">
+        <span className="line-clamp-2 text-sm text-muted-foreground">
           {note === "" ? task.id : `${task.id}・${note}`}
         </span>
       </button>

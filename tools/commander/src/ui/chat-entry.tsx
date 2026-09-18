@@ -10,7 +10,9 @@ const notices: Readonly<Record<ChatNotice, string>> = {
   failed: "司令塔を実行できませんでした。もう一度送ってください。",
   session_restarted: "前の会話を引き継げなかったので、新しい会話で始め直しました。",
   stopped: "止めました。",
+  woken: "タスクに動きがあったので、司令塔が確認しています。",
 };
+const calm: ReadonlySet<ChatNotice> = new Set(["stopped", "woken"]);
 
 function ChatEntry({ body }: Readonly<{ body: Body }>): ReactElement {
   if (body.kind === "user") {
@@ -26,9 +28,7 @@ function ChatEntry({ body }: Readonly<{ body: Body }>): ReactElement {
   if (body.kind === "tool") {
     return <p className="truncate text-sm text-muted-foreground">› {body.summary}</p>;
   }
-  return (
-    <Status variant={body.notice === "stopped" ? "info" : "error"}>{notices[body.notice]}</Status>
-  );
+  return <Status variant={calm.has(body.notice) ? "info" : "error"}>{notices[body.notice]}</Status>;
 }
 
 export { ChatEntry };

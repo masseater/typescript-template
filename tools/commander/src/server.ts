@@ -3,23 +3,17 @@ import { Console, Effect, Layer, ManagedRuntime, PubSub, Schema, Stream } from "
 
 import type { RequestRejected } from "@repo/observability";
 import { httpStatus } from "@repo/observability";
-import {
-  AppOrigin,
-  apiRoutes,
-  compileApi,
-  createApi,
-  jsonResponse,
-  readJsonBody,
-} from "@repo/runtime/http";
+import { AppOrigin, apiRoutes, createApi, jsonResponse, readJsonBody } from "@repo/runtime/http";
 import type { Failure, InputInvalid } from "@repo/runtime/http";
 
 import type { BdFailure } from "./bd.ts";
 import type { BoardEvent } from "./board.ts";
 import { makeBoard } from "./board.ts";
 import { makeChat } from "./chat.ts";
-import type { ChatChange } from "./contract.ts";
+import type { ChatEvent } from "./contract.ts";
 import { TextInput } from "./contract.ts";
 import { bundledAssets, commanderPrompt } from "./prompt.ts";
+import { briefing, makeWatch } from "./watch.ts";
 
 interface AppOptions {
   readonly directory: string;
@@ -29,7 +23,7 @@ interface AppOptions {
   readonly stateDirectory: string;
 }
 
-type ServerEvent = BoardEvent | { readonly data: ChatChange; readonly event: "chat" };
+type ServerEvent = BoardEvent | { readonly data: typeof ChatEvent.Type; readonly event: "chat" };
 type Services = AppOrigin | NodeServices.NodeServices;
 type BodyFailure = InputInvalid | RequestRejected;
 type Reply<Failures> = Effect.Effect<Response, Failures, Services>;
@@ -122,30 +116,66 @@ class Handlers {
     );
 }
 
-const makeApp = Effect.fn("makeApp")(function* makeApp(options: AppOptions) {
+function turnEnded(event: ServerEvent): boolean {
+  return event.event === "chat" && event.data.change.type === "busy" && !event.data.change.busy;
+}
+
+function trusted(request: Request, origin: string): boolean {
+  const { port } = new URL(origin);
+  const host = request.headers.get("host") ?? new URL(request.url).host;
+  return host === new URL(origin).host || host === `localhost:${port}`;
+}
+
+const makeParts = Effect.fn("makeParts")(function* makeParts(options: AppOptions) {
   const hub = yield* PubSub.unbounded<ServerEvent>();
+  const changes = yield* PubSub.subscribe(hub);
   const board = yield* makeBoard(options.directory, (event) => PubSub.publish(hub, event));
   const chat = yield* makeChat({
+    briefing: board.state.pipe(Effect.map(({ tasks }) => briefing(tasks))),
     directory: options.directory,
     executable: options.executable,
     model: options.model,
-    prompt: yield* commanderPrompt(bundledAssets, options.stateDirectory),
+    prompt: yield* commanderPrompt({
+      assets: bundledAssets,
+      directory: options.directory,
+      stateDirectory: options.stateDirectory,
+    }),
     publish: (data) => PubSub.publish(hub, { data, event: "chat" }),
     stateDirectory: options.stateDirectory,
-    turnEnded: board.refresh,
   });
+  const watch = yield* makeWatch((text) => chat.wake(text));
+  const current = board.state.pipe(Effect.flatMap(({ tasks }) => watch(tasks)));
+  const settled = board.refresh.pipe(Effect.andThen(current));
+  const observed = Stream.fromSubscription(changes).pipe(
+    Stream.runForEach((event) => {
+      if (event.event === "tasks") {
+        return watch(event.data);
+      }
+      return turnEnded(event) ? settled : Effect.void;
+    }),
+  );
+  yield* Effect.forkScoped(observed);
+  return { board, chat, hub } satisfies Parts;
+});
+
+const makeApp = Effect.fn("makeApp")(function* makeApp(options: AppOptions) {
+  const handlers = new Handlers(yield* makeParts(options));
   const services = Layer.merge(Layer.succeed(AppOrigin, options.origin), NodeServices.layer);
   const runtime = ManagedRuntime.make(services);
   yield* Effect.addFinalizer(() => runtime.disposeEffect);
   const api = apiRoutes(runtime);
-  const handlers = new Handlers({ board, chat, hub });
   const app = createApi("/api")
     .get("/events", api.raw(handlers.events, {}))
     .post("/chat", api.raw(handlers.say, {}))
     .post("/chat/stop", api.raw(handlers.stop, {}))
     .post("/tasks/:id/comments", api.raw(handlers.comment, { BdFailure: ledgerFailure }))
     .post("/ledger", api.raw(handlers.create, { BdFailure: ledgerFailure }));
-  return compileApi(app);
+  return {
+    fetch: async (request: Request): Promise<Response> =>
+      trusted(request, options.origin)
+        ? app.fetch(request)
+        : jsonResponse({ error: "このアドレスからは使えません。" }, httpStatus.forbidden),
+  };
 });
 
 export { makeApp };

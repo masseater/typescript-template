@@ -89,7 +89,8 @@ function classify(listing: Listing): typeof Snapshot.Type {
     listing.open.filter((issue) => issue.status === "in_progress").map((issue) => issue.id),
   );
   const tasks = listing.open.map((issue) => view(issue, listing)).toSorted(byPriority);
-  const rest = tasks.filter((task) => !task.labels.includes(needsHuman));
+  const decided = tasks.filter((task) => !task.labels.includes(needsHuman));
+  const rest = decided.filter((task) => !task.labels.includes(needsReview));
   const flowing = rest.filter((task) => task.blockedBy.length === 0);
   return {
     done: listing.closed
@@ -98,12 +99,9 @@ function classify(listing: Listing): typeof Snapshot.Type {
       .map((issue) => view(issue, listing)),
     needsHuman: tasks.filter((task) => task.labels.includes(needsHuman)),
     ready: flowing.filter(
-      (task) =>
-        readyIds.has(task.id) &&
-        !claimed.has(task.id) &&
-        task.assignee === undefined &&
-        !task.labels.includes(needsReview),
+      (task) => readyIds.has(task.id) && !claimed.has(task.id) && task.assignee === undefined,
     ),
+    review: decided.filter((task) => task.labels.includes(needsReview)),
     running: flowing.filter((task) => claimed.has(task.id)),
     waiting: rest.filter((task) => task.blockedBy.length > 0),
   };

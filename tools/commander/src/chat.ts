@@ -1,26 +1,38 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { Effect, Exit, Fiber, FileSystem, Option, Queue, Ref, Schema, Stream } from "effect";
+import {
+  Console,
+  Effect,
+  Exit,
+  Fiber,
+  FileSystem,
+  Option,
+  Queue,
+  Ref,
+  Schema,
+  Semaphore,
+  Stream,
+} from "effect";
 import type { ChildProcessSpawner } from "effect/unstable/process";
 
 import { ChatFailure } from "./chat-failure.ts";
 import type { CommanderEvent } from "./claude.ts";
 import { runTurn } from "./claude.ts";
-import type { ChatChange, ChatNotice, ChatState } from "./contract.ts";
+import type { ChatChange, ChatEvent, ChatNotice, ChatState } from "./contract.ts";
 import { ChatEntry, applyChat } from "./contract.ts";
 import type { CommanderPrompt } from "./prompt.ts";
 
 type Spawner = ChildProcessSpawner.ChildProcessSpawner;
 
 interface ChatOptions {
+  readonly briefing: Effect.Effect<string>;
   readonly directory: string;
   readonly executable: string;
   readonly model: string | undefined;
   readonly prompt: CommanderPrompt;
-  readonly publish: (event: ChatChange) => Effect.Effect<void>;
+  readonly publish: (event: typeof ChatEvent.Type) => Effect.Effect<void>;
   readonly stateDirectory: string;
-  readonly turnEnded: Effect.Effect<void, never, Spawner>;
 }
 
 interface Session {
@@ -28,13 +40,19 @@ interface Session {
   readonly started: boolean;
 }
 
+interface Prompt {
+  readonly from: "queue" | "user" | "watch";
+  readonly text: string;
+}
+
 interface Parts {
   readonly chat: Ref.Ref<ChatState>;
   readonly current: Ref.Ref<Option.Option<Fiber.Fiber<void>>>;
   readonly files: FileSystem.FileSystem;
   readonly options: ChatOptions;
+  readonly order: Semaphore.Semaphore;
   readonly pending: Ref.Ref<number>;
-  readonly prompts: Queue.Queue<string>;
+  readonly prompts: Queue.Queue<Prompt>;
   readonly session: Ref.Ref<Session>;
 }
 
@@ -84,7 +102,7 @@ class Conversation {
   public get next(): Effect.Effect<void, never, Spawner> {
     const { current, prompts } = this.parts;
     const stopped = this.notify("stopped");
-    const settled = this.settle();
+    const { settled } = this;
     const started = Queue.take(prompts).pipe(
       Effect.flatMap((prompt) => Effect.forkChild(this.turn(prompt))),
     );
@@ -102,19 +120,44 @@ class Conversation {
 
   public send(text: string): Effect.Effect<void> {
     const { pending, prompts } = this.parts;
-    return Ref.update(pending, (count) => count + 1).pipe(
-      Effect.andThen(this.emit({ entry: { kind: "user", text }, type: "entry" })),
+    const direct = this.emit({ entry: { kind: "user", text }, type: "entry" }).pipe(
       Effect.andThen(this.emit({ busy: true, type: "busy" })),
-      Effect.andThen(this.save()),
-      Effect.andThen(Queue.offer(prompts, text)),
+      Effect.andThen(Queue.offer(prompts, { from: "user", text })),
+    );
+    const ahead = this.emit({ text, type: "queued" }).pipe(
+      Effect.andThen(Queue.offer(prompts, { from: "queue", text })),
+    );
+    return Ref.modify(pending, (count) => [count > 0, count + 1] as const).pipe(
+      Effect.flatMap((busy) => (busy ? ahead : direct)),
       Effect.asVoid,
     );
   }
 
-  private emit(event: ChatChange): Effect.Effect<void> {
-    return Ref.update(this.parts.chat, (state) => applyChat(state, event)).pipe(
-      Effect.andThen(this.parts.options.publish(event)),
+  public wake(text: string): Effect.Effect<boolean> {
+    const { pending, prompts } = this.parts;
+    const claimed = Ref.modify(pending, (count) =>
+      count === 0 ? ([true, 1] as const) : ([false, count] as const),
     );
+    const started = this.emit({ busy: true, type: "busy" }).pipe(
+      Effect.andThen(Queue.offer(prompts, { from: "watch", text })),
+    );
+    return claimed.pipe(Effect.tap((idle) => (idle ? started : Effect.void)));
+  }
+
+  private get settled(): Effect.Effect<void> {
+    const idle = this.emit({ busy: false, type: "busy" });
+    return this.save().pipe(
+      Effect.andThen(Ref.updateAndGet(this.parts.pending, (count) => count - 1)),
+      Effect.flatMap((left) => (left === 0 ? idle : Effect.void)),
+    );
+  }
+
+  private emit(change: ChatChange): Effect.Effect<void> {
+    const { chat, options, order } = this.parts;
+    const applied = Ref.updateAndGet(chat, (state) => applyChat(state, change)).pipe(
+      Effect.flatMap(({ version }) => options.publish({ change, version })),
+    );
+    return order.withPermit(applied);
   }
 
   private notify(notice: ChatNotice): Effect.Effect<void> {
@@ -132,17 +175,11 @@ class Conversation {
       yield* files.writeFileString(path.join(options.stateDirectory, stateFile), text);
     }).pipe(
       Effect.mapError((cause) => new ChatFailure({ cause, reason: "state_unwritable" })),
-      Effect.orDie,
-    );
-  }
-
-  private settle(): Effect.Effect<void, never, Spawner> {
-    const { options, pending } = this.parts;
-    const idle = this.emit({ busy: false, type: "busy" });
-    return Ref.updateAndGet(pending, (count) => count - 1).pipe(
-      Effect.flatMap((left) => (left === 0 ? idle : Effect.void)),
-      Effect.andThen(this.save()),
-      Effect.andThen(options.turnEnded),
+      Effect.catchTag("ChatFailure", (failure) =>
+        Console.error(
+          JSON.stringify({ event: "commander.state_unwritable", reason: failure.reason }),
+        ),
+      ),
     );
   }
 
@@ -208,12 +245,24 @@ class Conversation {
     return Effect.suspend(() => Ref.set(session, { id: crypto.randomUUID(), started: false }));
   }
 
-  private turn(prompt: string): Effect.Effect<void, never, Spawner> {
-    const { session } = this.parts;
-    const attempt = this.attempt(prompt);
+  private opened(from: Prompt["from"]): Effect.Effect<void> {
+    if (from === "user") {
+      return Effect.void;
+    }
+    return from === "queue" ? this.emit({ type: "taken" }) : this.notify("woken");
+  }
+
+  private turn(prompt: Prompt): Effect.Effect<void, never, Spawner> {
+    const { options, session } = this.parts;
+    const opened = this.opened(prompt.from).pipe(Effect.andThen(this.save()));
+    const briefed = options.briefing.pipe(
+      Effect.map((briefing) => (briefing === "" ? prompt.text : `${briefing}\n\n${prompt.text}`)),
+    );
+    const attempt = briefed.pipe(Effect.flatMap((text) => this.attempt(text)));
     const renew = this.renew();
     const restarted = this.notify("session_restarted");
     return Effect.gen(function* runPrompt() {
+      yield* opened;
       if (yield* attempt) {
         yield* renew;
         yield* restarted;
@@ -241,12 +290,18 @@ const restore = Effect.fn("restore")(function* restore(stateDirectory: string) {
 const makeChat = Effect.fn("makeChat")(function* makeChat(options: ChatOptions) {
   const stored = yield* restore(options.stateDirectory);
   const conversation = new Conversation({
-    chat: yield* Ref.make<ChatState>({ busy: false, entries: stored.entries }),
+    chat: yield* Ref.make<ChatState>({
+      busy: false,
+      entries: stored.entries,
+      queued: [],
+      version: 0,
+    }),
     current: yield* Ref.make(Option.none<Fiber.Fiber<void>>()),
     files: yield* FileSystem.FileSystem,
     options,
+    order: yield* Semaphore.make(1),
     pending: yield* Ref.make(0),
-    prompts: yield* Queue.unbounded<string>(),
+    prompts: yield* Queue.unbounded<Prompt>(),
     session: yield* Ref.make<Session>({ id: stored.sessionId, started: stored.started }),
   });
   yield* Effect.forkScoped(Effect.forever(conversation.next));

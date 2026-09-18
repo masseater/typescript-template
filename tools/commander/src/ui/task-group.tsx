@@ -6,15 +6,18 @@ import { Heading } from "@repo/ui";
 import { TaskRow } from "./task-row.tsx";
 
 type TaskView = typeof Task.Type;
-type Kind = "done" | "needsHuman" | "ready" | "running" | "waiting";
+type Kind = "done" | "needsHuman" | "ready" | "review" | "running" | "waiting";
 
 function note(task: TaskView, kind: Kind, titles: ReadonlyMap<string, string>): string {
   if (kind === "waiting") {
     const blockers = task.blockedBy.map((id) => titles.get(id) ?? id).join("、");
     return task.assignee === undefined ? `${blockers} 待ち` : `${blockers} 待ち・停止予定`;
   }
-  if (kind === "running" && task.labels.includes("needs-review")) {
-    return "レビュー待ち";
+  if (kind === "review") {
+    return task.labels.includes("reviewing") ? "別のワーカーが確認中" : "司令塔の確認待ち";
+  }
+  if (kind === "running" || kind === "needsHuman") {
+    return task.thread.at(-1)?.text ?? "";
   }
   return kind === "done" ? (task.closeReason ?? "") : "";
 }

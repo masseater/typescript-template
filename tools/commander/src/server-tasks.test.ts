@@ -104,15 +104,16 @@ it.effect(
   () =>
     Effect.gen(function* program() {
       const served = yield* serve();
+      const chat = { busy: false, entries: [], queued: [], version: 0 };
       assert.deepStrictEqual(yield* state(served), {
-        chat: { busy: false, entries: [] },
+        chat,
         ledger: { directory: served.directory, status: "missing" },
       });
       assert.strictEqual(yield* post(served, "/api/ledger", {}), ok);
       assert.deepStrictEqual(yield* state(served), {
-        chat: { busy: false, entries: [] },
+        chat,
         ledger: { directory: served.directory, status: "ready" },
-        tasks: { done: [], needsHuman: [], ready: [], running: [], waiting: [] },
+        tasks: { done: [], needsHuman: [], ready: [], review: [], running: [], waiting: [] },
       });
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   timeout,

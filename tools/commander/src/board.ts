@@ -31,6 +31,7 @@ interface Parts {
 }
 
 const pollInterval = "5 seconds";
+const unwatchedInterval = "30 seconds";
 
 class Board {
   private readonly parts: Parts;
@@ -64,11 +65,10 @@ class Board {
   }
 
   public get poll(): Effect.Effect<void, never, Spawner> {
-    const { refresh } = this;
-    return Ref.get(this.parts.viewers).pipe(
-      Effect.flatMap((count) => (count > 0 ? refresh : Effect.void)),
-      Effect.andThen(Effect.sleep(pollInterval)),
+    const watched = Ref.get(this.parts.viewers).pipe(
+      Effect.flatMap((count) => Effect.sleep(count > 0 ? pollInterval : unwatchedInterval)),
     );
+    return this.refresh.pipe(Effect.andThen(watched));
   }
 
   public get viewing(): Effect.Effect<void, never, Scope.Scope | Spawner> {

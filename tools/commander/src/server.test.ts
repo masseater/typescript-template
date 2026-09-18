@@ -3,7 +3,8 @@ import { assert, it } from "@effect/vitest";
 import { Deferred, Effect, Fiber, FileSystem, Option, Schedule, Schema, Stream } from "effect";
 import type { Scope } from "effect";
 
-import { AppState, ChatEvent } from "./contract.ts";
+import { bd } from "./bd.ts";
+import { AppState, ChatEvent, applyChat, receiveChat } from "./contract.ts";
 import { bundledAssets } from "./prompt.ts";
 import { makeApp } from "./server.ts";
 import { createLedger } from "./tasks.ts";
@@ -11,7 +12,9 @@ import { createLedger } from "./tasks.ts";
 const origin = "http://127.0.0.1:3090";
 const executableMode = 0o755;
 const timeout = 120_000;
+const ok = 200;
 const accepted = 202;
+const Created = Schema.Struct({ id: Schema.String });
 const badRequest = 400;
 const forbidden = 403;
 const dataPrefix = "data: ";
@@ -28,6 +31,7 @@ const home = path.dirname(process.argv[1]);
 const call = {
   actor: process.env.BEADS_ACTOR,
   argv: process.argv.slice(2),
+  billed: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"].filter((name) => name in process.env),
   cwd: process.cwd(),
   stdin: fs.readFileSync(0, "utf8"),
 };
@@ -44,6 +48,7 @@ const Call = Schema.fromJsonString(
   Schema.Struct({
     actor: Schema.String,
     argv: Schema.Array(Schema.String),
+    billed: Schema.Array(Schema.String),
     cwd: Schema.String,
     stdin: Schema.String,
   }),
@@ -52,22 +57,42 @@ const decodeCall = Schema.decodeUnknownEffect(Call);
 const decodeState = Schema.decodeUnknownEffect(Schema.fromJsonString(AppState));
 const decodeChat = Schema.decodeUnknownOption(Schema.fromJsonString(ChatEvent));
 
+function installRecorder(home: string): Effect.Effect<void, unknown, NodeServices.NodeServices> {
+  return Effect.gen(function* installed() {
+    const files = yield* FileSystem.FileSystem;
+    // oxlint-disable-next-line node/no-process-env
+    Object.assign(process.env, {
+      ANTHROPIC_API_KEY: "would-be-billed",
+      ANTHROPIC_AUTH_TOKEN: "would-be-billed",
+    });
+    yield* files.writeFileString(`${home}/claude`, recorder);
+    yield* files.chmod(`${home}/claude`, executableMode);
+  });
+}
+
 interface Served {
   readonly directory: string;
   readonly fetch: (request: Request) => Promise<Response>;
   readonly home: string;
 }
 
-function serve(): Effect.Effect<Served, unknown, NodeServices.NodeServices | Scope.Scope> {
+function withoutLedger(): Effect.Effect<void> {
+  return Effect.void;
+}
+
+function serve(
+  prepare: (
+    directory: string,
+  ) => Effect.Effect<unknown, unknown, NodeServices.NodeServices> = withoutLedger,
+): Effect.Effect<Served, unknown, NodeServices.NodeServices | Scope.Scope> {
   return Effect.gen(function* served() {
     const files = yield* FileSystem.FileSystem;
     const temporary = yield* files.makeTempDirectoryScoped({ prefix: "commander-" });
     const home = yield* files.realPath(temporary);
     const directory = `${home}/project`;
     yield* files.makeDirectory(directory);
-    yield* files.writeFileString(`${home}/claude`, recorder);
-    yield* files.chmod(`${home}/claude`, executableMode);
-    yield* createLedger(directory);
+    yield* installRecorder(home);
+    yield* prepare(directory);
     const app = yield* makeApp({
       directory,
       executable: `${home}/claude`,
@@ -118,18 +143,31 @@ function state(served: Served): Effect.Effect<typeof AppState.Type, unknown> {
   );
 }
 
-function exchange(
-  served: Served,
-  text: string,
-  entries: number,
-): Effect.Effect<typeof AppState.Type, unknown> {
-  const settled = state(served).pipe(
+function settled(served: Served, entries: number): Effect.Effect<typeof AppState.Type, unknown> {
+  return state(served).pipe(
     Effect.repeat({
       schedule: Schedule.spaced("100 millis"),
       until: ({ chat }) => !chat.busy && chat.entries.length >= entries,
     }),
   );
-  return send(served, post("/api/chat", { text })).pipe(Effect.andThen(settled));
+}
+
+function exchange(
+  served: Served,
+  text: string,
+  entries: number,
+): Effect.Effect<typeof AppState.Type, unknown> {
+  return send(served, post("/api/chat", { text })).pipe(Effect.andThen(settled(served, entries)));
+}
+
+function finishedWork(directory: string): Effect.Effect<void, unknown, NodeServices.NodeServices> {
+  return Effect.gen(function* finished() {
+    const worker = { actor: "w-1", directory };
+    yield* createLedger(directory);
+    const { id } = yield* bd(worker, ["create", "A"], Created);
+    yield* bd(worker, ["update", id, "--claim"], Schema.Unknown);
+    yield* bd(worker, ["update", id, "--add-label", "needs-review"], Schema.Unknown);
+  });
 }
 
 function calls(
@@ -157,12 +195,18 @@ function turnArguments(session: readonly [string, string], systemPrompt: string)
     "--tools",
     "Bash,Read,Grep,Glob",
     "--strict-mcp-config",
+    "--setting-sources",
+    "",
     "--disable-slash-commands",
     "--permission-mode",
     "dontAsk",
     "--allowedTools",
     "Bash(bd *)",
     `Bash(${bundledAssets}/commander/scripts/*)`,
+    `Bash(BEADS_ACTOR=commander ${bundledAssets}/commander/scripts/*)`,
+    `Bash(WORKER_MODEL=haiku ${bundledAssets}/commander/scripts/dispatch.sh *)`,
+    `Bash(WORKER_MODEL=sonnet ${bundledAssets}/commander/scripts/dispatch.sh *)`,
+    `Bash(WORKER_MODEL=opus ${bundledAssets}/commander/scripts/dispatch.sh *)`,
     "Bash(claude agents *)",
     "Bash(claude --bg *)",
     "Bash(jq *)",
@@ -189,12 +233,14 @@ it.live(
           {
             actor: "commander",
             argv: turnArguments(["--session-id", sessionId], systemPrompt),
+            billed: [],
             cwd: served.directory,
             stdin: "今どうなってる？",
           },
           {
             actor: "commander",
             argv: turnArguments(["--resume", sessionId], systemPrompt),
+            billed: [],
             cwd: served.directory,
             stdin: "続けて",
           },
@@ -220,7 +266,11 @@ it.live(
       const systemPrompt = first?.argv[systemPromptPosition] ?? "";
       assert.include(systemPrompt, "# commander（司令塔）");
       assert.include(systemPrompt, `${bundledAssets}/commander/scripts/status.sh`);
-      assert.include(systemPrompt, `${served.home}/state/coordinator.md`);
+      assert.include(
+        systemPrompt,
+        `claude --bg --name coordinator-project-state --model sonnet "${served.home}/state/coordinator.md を読んで`,
+      );
+      assert.include(systemPrompt, 'select(.name == "coordinator-project-state")');
       assert.notInclude(systemPrompt, ".claude/skills/");
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   timeout,
@@ -255,7 +305,7 @@ it.effect(
       const watching = lines(served).pipe(
         Stream.tap(() => Deferred.succeed(connected, true)),
         Stream.flatMap((line) => Stream.fromIterable(Option.toArray(decodeChat(line)))),
-        Stream.takeUntil((event) => event.type === "busy" && !event.busy),
+        Stream.takeUntil(({ change }) => change.type === "busy" && !change.busy),
         Stream.runCollect,
       );
       const watcher = yield* Effect.forkChild(watching);
@@ -263,11 +313,97 @@ it.effect(
       const status = yield* send(served, post("/api/chat", { text: "README に 1 行足しといて" }));
       assert.strictEqual(status, accepted);
       assert.deepStrictEqual(yield* Fiber.join(watcher), [
-        { entry: { kind: "user", text: "README に 1 行足しといて" }, type: "entry" },
-        { busy: true, type: "busy" },
-        { text: "了解", type: "delta" },
-        { busy: false, type: "busy" },
+        {
+          change: { entry: { kind: "user", text: "README に 1 行足しといて" }, type: "entry" },
+          version: 1,
+        },
+        { change: { busy: true, type: "busy" }, version: 2 },
+        { change: { text: "了解", type: "delta" }, version: 3 },
+        { change: { busy: false, type: "busy" }, version: 4 },
       ]);
+    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  timeout,
+);
+
+it.live(
+  "messages typed ahead wait their turn, so each reply follows its own message",
+  () =>
+    Effect.gen(function* program() {
+      const served = yield* serve();
+      yield* send(served, post("/api/chat", { text: "1 つ目" }));
+      const { chat } = yield* exchange(served, "2 つ目", twoExchanges);
+      assert.deepStrictEqual(
+        chat.entries.map(({ body }) => body),
+        [
+          { kind: "user", text: "1 つ目" },
+          { kind: "commander", text: "了解" },
+          { kind: "user", text: "2 つ目" },
+          { kind: "commander", text: "了解" },
+        ],
+      );
+      assert.deepStrictEqual(chat.queued, []);
+    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  timeout,
+);
+
+it.effect("a viewer that already has a change ignores its replay and applies only newer ones", () =>
+  Effect.sync(() => {
+    const seen = applyChat(
+      { busy: false, entries: [], queued: [], version: 0 },
+      { text: "了", type: "delta" },
+    );
+    const replayed = receiveChat(seen, { change: { text: "了", type: "delta" }, version: 1 });
+    const next = receiveChat(replayed, { change: { text: "解", type: "delta" }, version: 2 });
+    assert.deepStrictEqual(next, {
+      busy: false,
+      entries: [{ body: { kind: "commander", text: "了解" }, id: 0 }],
+      queued: [],
+      version: 2,
+    });
+  }),
+);
+
+it.live(
+  "finished work wakes the commander without anyone typing, once per bead",
+  () =>
+    Effect.gen(function* program() {
+      const served = yield* serve(finishedWork);
+      const { chat, tasks } = yield* settled(served, oneExchange);
+      const id = tasks?.review[0]?.id ?? "";
+      assert.deepStrictEqual(
+        chat.entries.map(({ body }) => body),
+        [
+          { kind: "notice", notice: "woken" },
+          { kind: "commander", text: "了解" },
+        ],
+      );
+      yield* exchange(served, "ただいま", twoExchanges);
+      const stdins = (yield* calls(served)).map(({ stdin }) => stdin);
+      const briefed = `（アプリが見ている台帳の現況: レビュー待ち ${id}。`;
+      assert.deepStrictEqual(
+        stdins.map((stdin) => [
+          stdin.startsWith(briefed),
+          stdin.includes("アプリの見張りからの呼び出し"),
+          stdin.endsWith("\n\nただいま"),
+        ]),
+        [
+          [true, true, false],
+          [true, false, true],
+        ],
+      );
+    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  timeout,
+);
+
+it.effect(
+  "a request that names another host is refused before it can read the conversation",
+  () =>
+    Effect.gen(function* program() {
+      const served = yield* serve();
+      const foreign = new Request(`${origin}/api/events`, { headers: { host: "evil.example" } });
+      const local = new Request(`${origin}/api/events`, { headers: { host: "localhost:3090" } });
+      assert.strictEqual(yield* send(served, foreign), forbidden);
+      assert.strictEqual(yield* send(served, local), ok);
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   timeout,
 );

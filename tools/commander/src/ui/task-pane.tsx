@@ -11,6 +11,7 @@ type Tasks = typeof Snapshot.Type;
 
 const groups: readonly (readonly [keyof Tasks, string])[] = [
   ["needsHuman", "要判断"],
+  ["review", "レビュー待ち"],
   ["running", "実行中"],
   ["waiting", "待ち"],
   ["ready", "準備OK"],

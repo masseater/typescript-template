@@ -38,7 +38,7 @@ const help = Console.log(
   JSON.stringify({
     arguments: ["[project directory: defaults to the repository containing the current directory]"],
     flags: [
-      "--model <model passed to claude: defaults to the claude default>",
+      "--model <model passed to claude: defaults to the claude default; use sonnet or better, haiku skips the review step>",
       "--no-open: do not open the browser",
     ],
     serves: origin,

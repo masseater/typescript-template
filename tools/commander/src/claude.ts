@@ -149,10 +149,18 @@ function read(text: string): readonly CommanderEvent[] {
   return Option.isSome(line) ? translate(line.value) : unrecognized(json.value);
 }
 
+const workerModels = ["haiku", "sonnet", "opus"] as const;
+const billedCredentials: ReadonlySet<string> = new Set([
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+]);
+
 function allowedTools(scripts: string): readonly string[] {
   return [
     "Bash(bd *)",
     `Bash(${scripts}/*)`,
+    `Bash(BEADS_ACTOR=commander ${scripts}/*)`,
+    ...workerModels.map((model) => `Bash(WORKER_MODEL=${model} ${scripts}/dispatch.sh *)`),
     "Bash(claude agents *)",
     "Bash(claude --bg *)",
     "Bash(jq *)",
@@ -178,6 +186,8 @@ function turnArguments(turn: Turn): readonly string[] {
     "--tools",
     "Bash,Read,Grep,Glob",
     "--strict-mcp-config",
+    "--setting-sources",
+    "",
     "--disable-slash-commands",
     "--permission-mode",
     "dontAsk",
@@ -187,13 +197,21 @@ function turnArguments(turn: Turn): readonly string[] {
   ];
 }
 
+function unbilledEnvironment(): Record<string, string> {
+  // oxlint-disable-next-line node/no-process-env
+  const inherited = Object.entries(process.env).flatMap(([name, value]) =>
+    value === undefined || billedCredentials.has(name) ? [] : [[name, value] as const],
+  );
+  return { ...Object.fromEntries(inherited), BEADS_ACTOR: "commander" };
+}
+
 function runTurn(
   turn: Turn,
 ): Stream.Stream<CommanderEvent, never, ChildProcessSpawner.ChildProcessSpawner> {
   const command = ChildProcess.make(turn.executable, turnArguments(turn), {
     cwd: turn.cwd,
-    env: { BEADS_ACTOR: "commander" },
-    extendEnv: true,
+    env: unbilledEnvironment(),
+    extendEnv: false,
     stderr: "inherit",
     stdin: Stream.encodeText(Stream.make(turn.prompt)),
   });
