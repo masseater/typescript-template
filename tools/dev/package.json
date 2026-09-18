@@ -7,6 +7,7 @@
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/local": "workspace:*",
+    "@repo/observability": "workspace:*",
     "agent-browser": "0.37.1",
     "better-auth": "catalog:",
     "effect": "catalog:",

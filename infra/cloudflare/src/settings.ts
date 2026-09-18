@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import { Config, Effect, Option, Redacted } from "effect";
 
 import {
@@ -52,9 +53,9 @@ const settings = Config.all({
     Config.withDefault(FULL_SAMPLING),
   ),
   origins: Config.all({
-    "internal-dashboard": Config.schema(Origin, originKeys["internal-dashboard"]),
-    "service-admin": Config.schema(Origin, originKeys["service-admin"]),
-    "service-member": Config.schema(Origin, originKeys["service-member"]),
+    [APPLICATION.wiki]: Config.schema(Origin, originKeys[APPLICATION.wiki]),
+    [APPLICATION.admin]: Config.schema(Origin, originKeys[APPLICATION.admin]),
+    [APPLICATION.user]: Config.schema(Origin, originKeys[APPLICATION.user]),
   }),
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),

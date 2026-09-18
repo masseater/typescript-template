@@ -1,7 +1,6 @@
 import { effectDiagnostics, lifecycle } from "@repo/config/vite";
 import { defineConfig } from "vite-plus";
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   run: {
     tasks: {
@@ -21,5 +20,10 @@ export default defineConfig({
         prerelease: [],
       }),
     },
+  },
+  test: {
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    mockReset: true,
+    restoreMocks: true,
   },
 });

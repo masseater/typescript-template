@@ -3,18 +3,19 @@ import { Effect, Schema } from "effect";
 import { ErrorLocations, errorTypes } from "./errors.ts";
 import { RequestId, SpanId, TraceId, httpMethods } from "./protocol.ts";
 
-const maximumBatchSize = 32;
-const maximumMeasurement = 600_000;
+export const maximumBatchSize = 32;
 const maximumClockSkew = 60_000;
 const maximumEventAge = 3_600_000;
 const maximumStatus = 599;
 const minimumHttpStatus = 100;
 
+export const maximumMeasurement = 600_000;
+
 const Measurement = Schema.Number.check(
   Schema.isFinite(),
   Schema.isBetween({ maximum: maximumMeasurement, minimum: 0 }),
 );
-const fields = {
+const sharedFields = {
   duration: Measurement,
   method: Schema.Literals(httpMethods),
   requestId: RequestId,
@@ -28,65 +29,56 @@ const HttpStatus = Schema.Int.check(
   Schema.isBetween({ maximum: maximumStatus, minimum: minimumHttpStatus }),
 );
 const Unsent = Schema.Literal(0);
-const HttpEvent = Schema.Struct({
-  ...fields,
-  kind: Schema.Literal("http"),
-  name: Schema.Literal("http.client.request"),
-  status: Schema.Union([Unsent, HttpStatus]),
-});
-const ExceptionEvent = Schema.Struct({
-  ...fields,
-  errorType: Schema.Literals(errorTypes),
-  kind: Schema.Literal("exception"),
-  locations: ErrorLocations,
-  name: Schema.Literals(["browser.error", "browser.unhandledrejection"]),
-  status: Unsent,
-});
-const VitalEvent = Schema.Struct({
-  ...fields,
-  kind: Schema.Literal("vital"),
-  name: Schema.Literals(["CLS", "INP", "LCP", "FCP", "TTFB"]),
-  status: Unsent,
-});
-const BrowserEventSchema = Schema.Union([HttpEvent, ExceptionEvent, VitalEvent]);
-const BrowserEvents = Schema.Array(BrowserEventSchema).check(
-  Schema.isLengthBetween(1, maximumBatchSize),
+const BrowserEventSchema = Schema.Union([
+  Schema.Struct({
+    ...sharedFields,
+    kind: Schema.Literal("http"),
+    name: Schema.Literal("http.client.request"),
+    status: Schema.Union([Unsent, HttpStatus]),
+  }),
+  Schema.Struct({
+    ...sharedFields,
+    errorType: Schema.Literals(errorTypes),
+    kind: Schema.Literal("exception"),
+    locations: ErrorLocations,
+    name: Schema.Literals(["browser.error", "browser.unhandledrejection"]),
+    status: Unsent,
+  }),
+  Schema.Struct({
+    ...sharedFields,
+    kind: Schema.Literal("vital"),
+    name: Schema.Literals(["CLS", "INP", "LCP", "FCP", "TTFB"]),
+    status: Unsent,
+  }),
+]);
+const decodeEvents = Schema.decodeUnknownEffect(
+  Schema.Array(BrowserEventSchema).check(Schema.isLengthBetween(1, maximumBatchSize)),
+  { onExcessProperty: "error" },
 );
-const decodeEvents = Schema.decodeUnknownEffect(BrowserEvents, { onExcessProperty: "error" });
 
-type BrowserEvent = typeof BrowserEventSchema.Type;
+export type BrowserEvent = typeof BrowserEventSchema.Type;
 
 class BrowserEventsInvalid extends Schema.TaggedError<BrowserEventsInvalid>()(
   "BrowserEventsInvalid",
   {},
 ) {}
 
-function placed(
-  events: readonly BrowserEvent[],
-  labels: Readonly<ReadonlySet<string>>,
-  now: number,
-): boolean {
-  return events.every(
-    (event) =>
-      labels.has(event.route) &&
-      event.start >= now - maximumEventAge &&
-      event.start <= now + maximumClockSkew,
-  );
-}
-
-function parseBrowserEvents(
-  input: unknown,
-  labels: Readonly<ReadonlySet<string>>,
-  now: number,
-): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> {
-  return decodeEvents(input).pipe(
+export const parseBrowserEvents = (received: {
+  readonly body: unknown;
+  readonly routeLabels: Readonly<ReadonlySet<string>>;
+  readonly receivedAt: number;
+}): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> => {
+  return decodeEvents(received.body).pipe(
     Effect.mapError(() => new BrowserEventsInvalid()),
     Effect.filterOrFail(
-      (events) => placed(events, labels, now),
+      (browserEvents) =>
+        browserEvents.every(
+          (browserEvent) =>
+            received.routeLabels.has(browserEvent.route) &&
+            browserEvent.start >= received.receivedAt - maximumEventAge &&
+            browserEvent.start <= received.receivedAt + maximumClockSkew,
+        ),
       () => new BrowserEventsInvalid(),
     ),
   );
-}
-
-export { maximumBatchSize, maximumMeasurement, parseBrowserEvents };
-export type { BrowserEvent };
+};

@@ -5,9 +5,9 @@ import { DatabaseFailure } from "./database-failure.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 
-function connect(binding: D1Database): ReturnType<typeof drizzle> {
+const connect = (binding: D1Database): ReturnType<typeof drizzle> => {
   return drizzle(binding);
-}
+};
 
 type DrizzleDatabase = ReturnType<typeof connect>;
 
@@ -17,9 +17,9 @@ class Database extends Context.Service<Database, DrizzleDatabase>()("@repo/db/Da
   }
 }
 
-function query<Value>(
+const query = <Value>(
   run: (database: DrizzleDatabase) => PromiseLike<Value>,
-): Effect.Effect<Value, DatabaseFailure, Database> {
+): Effect.Effect<Value, DatabaseFailure, Database> => {
   return Effect.gen(function* runQuery() {
     const database = yield* Database;
     return yield* Effect.tryPromise({
@@ -27,7 +27,7 @@ function query<Value>(
       try: async () => run(database),
     });
   });
-}
+};
 
 export { Database, query };
 export type { DrizzleDatabase };

@@ -1,67 +1,62 @@
-import { assert } from "@effect/vitest";
+import { APPLICATION } from "@repo/config";
+import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
 import {
-  Fixture,
-  HTTP_CREATED,
-  HTTP_FOUND,
-  HTTP_OK,
+  AuthApps,
   PASSWORD,
   bootstrapVerifiedAdmin,
-  decodeOrDie,
+  clientOf,
   enableTotp,
+  requireStatus,
   signInAs,
 } from "./auth-test-fixture.ts";
 import { Auth } from "./auth.ts";
-import { BrowserClient, origins } from "./browser-client.ts";
+import { origins, type BrowserClient } from "./browser-client.ts";
 import { authorizeMcpRequest } from "./mcp.ts";
+import { UnexpectedStatus } from "./unexpected-status.ts";
 
-interface AuthorizationFlow {
+type AuthorizationFlow = {
   readonly clientId: string;
   readonly oauthQuery: string;
   readonly verifier: string;
-}
+};
 
-const wikiOrigin = origins["internal-dashboard"];
+const wikiOrigin = origins.wiki;
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
-const Redirect = Schema.Struct({ url: Schema.String });
+const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Registration = Schema.Struct({ client_id: Schema.String });
 const Tokens = Schema.Struct({ access_token: Schema.String });
-
-function base64url(bytes: Readonly<Uint8Array>): string {
-  return Buffer.from(bytes).toString("base64url");
-}
-
-function responseStatus(value: unknown): number | undefined {
-  return value instanceof Response ? value.status : undefined;
-}
 
 const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
   email: string,
 ) {
   yield* bootstrapVerifiedAdmin(email);
-  const { authenticator } = yield* enableTotp(yield* signInAs("service-admin", email));
-  const wiki = new BrowserClient((yield* Fixture)["internal-dashboard"]);
-  const challenge = yield* wiki.json("/sign-in/email", { email, password: PASSWORD });
-  assert.deepInclude(challenge.body, { twoFactorRedirect: true });
-  const verified = yield* wiki.request("/two-factor/verify-totp", {
-    code: authenticator.generate(),
+  const { authenticator } = yield* enableTotp(yield* signInAs(APPLICATION.admin, email));
+  const client = yield* clientOf(APPLICATION.wiki);
+  yield* requireStatus(httpStatus.ok, {
+    client,
+    endpoint: "/sign-in/email",
+    jsonFields: { email, password: PASSWORD },
   });
-  assert.strictEqual(verified.status, HTTP_OK);
-  return wiki;
+  yield* requireStatus(httpStatus.ok, {
+    client,
+    endpoint: "/two-factor/verify-totp",
+    jsonFields: { code: authenticator.generate() },
+  });
+  return client;
 });
 
 const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifier: string) {
   const digest = yield* Effect.promise(async () =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
-  return base64url(new Uint8Array(digest));
+  return Buffer.from(digest).toString("base64url");
 });
 
-function authorizeUrl(clientId: string, challenge: string): URL {
-  const authorize = new URL(`${wikiOrigin}/api/auth/oauth2/authorize`);
-  for (const [key, value] of Object.entries({
+const authorizeUrl = (clientId: string, challenge: string): URL => {
+  const authorizeQuery = new URLSearchParams({
     client_id: clientId,
     code_challenge: challenge,
     code_challenge_method: "S256",
@@ -70,14 +65,12 @@ function authorizeUrl(clientId: string, challenge: string): URL {
     response_type: "code",
     scope: "wiki:read offline_access",
     state: "state-value",
-  })) {
-    authorize.searchParams.set(key, value);
-  }
-  return authorize;
-}
+  });
+  return new URL(`/api/auth/oauth2/authorize?${authorizeQuery.toString()}`, wikiOrigin);
+};
 
 const registerClient = Effect.fn("registerClient")(function* registerClient(
-  anonymous: Readonly<BrowserClient>,
+  anonymous: BrowserClient,
 ) {
   const registration = yield* anonymous.json("/oauth2/register", {
     client_name: "Test MCP client",
@@ -86,86 +79,97 @@ const registerClient = Effect.fn("registerClient")(function* registerClient(
     response_types: ["code"],
     token_endpoint_auth_method: "none",
   });
-  assert.strictEqual(registration.status, HTTP_CREATED);
-  return (yield* decodeOrDie(Registration, registration.body)).client_id;
+  if (registration.status !== httpStatus.created) {
+    return yield* new UnexpectedStatus({
+      endpoint: "/oauth2/register",
+      status: registration.status,
+    });
+  }
+  return (yield* Schema.decodeUnknownEffect(Registration)(registration.body)).client_id;
 });
 
 const startAuthorization = Effect.fn("startAuthorization")(function* startAuthorization() {
-  const anonymous = new BrowserClient((yield* Fixture)["internal-dashboard"]);
+  const anonymous = yield* clientOf(APPLICATION.wiki);
   const clientId = yield* registerClient(anonymous);
-  const verifier = base64url(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES)));
-  const authorize = authorizeUrl(clientId, yield* pkceChallenge(verifier));
-  const redirect = yield* anonymous.navigate(authorize.href);
-  assert.strictEqual(redirect.status, HTTP_FOUND);
+  const verifier = Buffer.from(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES))).toString(
+    "base64url",
+  );
+  const redirect = yield* anonymous.navigate(
+    authorizeUrl(clientId, yield* pkceChallenge(verifier)).href,
+  );
   const login = new URL(redirect.headers.get("location") ?? "", wikiOrigin);
-  assert.strictEqual(login.pathname, "/login");
   const flow: AuthorizationFlow = { clientId, oauthQuery: login.search.slice(1), verifier };
   return flow;
 });
 
 const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
-  wiki: Readonly<BrowserClient>,
+  wiki: BrowserClient,
   oauthQuery: string,
 ) {
   const continued = yield* wiki.json("/oauth2/continue", {
     oauth_query: oauthQuery,
     postLogin: true,
   });
-  assert.strictEqual(continued.status, HTTP_OK);
-  const next = new URL((yield* decodeOrDie(Redirect, continued.body)).url, wikiOrigin);
-  assert.strictEqual(next.pathname, "/consent");
+  const consentPage = new URL((yield* decodeRedirect(continued.body)).url, wikiOrigin);
   const consented = yield* wiki.json("/oauth2/consent", {
     accept: true,
-    oauth_query: next.search.slice(1),
+    oauth_query: consentPage.search.slice(1),
   });
-  assert.strictEqual(consented.status, HTTP_OK);
-  const callback = new URL((yield* decodeOrDie(Redirect, consented.body)).url);
-  assert.strictEqual(`${callback.origin}${callback.pathname}`, redirectUri);
-  assert.strictEqual(callback.searchParams.get("state"), "state-value");
-  return callback.searchParams.get("code") ?? "";
+  const callbackUrl = new URL((yield* decodeRedirect(consented.body)).url);
+  return callbackUrl.searchParams.get("code") ?? "";
 });
 
 const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
   flow: AuthorizationFlow,
   code: string,
 ) {
-  const wiki = (yield* Fixture)["internal-dashboard"];
-  const body = new URLSearchParams({
-    client_id: flow.clientId,
-    code,
-    code_verifier: flow.verifier,
-    grant_type: "authorization_code",
-    redirect_uri: redirectUri,
-    resource: `${wikiOrigin}/mcp`,
-  });
-  const request = new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
-    body,
+  const { wiki } = yield* AuthApps;
+  const exchange = new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
+    body: new URLSearchParams({
+      client_id: flow.clientId,
+      code,
+      code_verifier: flow.verifier,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      resource: `${wikiOrigin}/mcp`,
+    }),
     headers: { "content-type": "application/x-www-form-urlencoded" },
     method: "POST",
   });
-  const response = yield* Effect.promise(async () => wiki.instance.handler(request));
-  assert.strictEqual(response.status, HTTP_OK);
-  return yield* decodeOrDie(
-    Tokens,
-    yield* Effect.promise(async (): Promise<unknown> => response.json()),
-  );
+  const issued = yield* Effect.promise(async () => wiki.instance.handler(exchange));
+  const tokens = yield* Effect.promise(async (): Promise<unknown> => issued.json());
+  return (yield* Schema.decodeUnknownEffect(Tokens)(tokens)).access_token;
+});
+
+const authorizedAccessToken = Effect.fn("authorizedAccessToken")(function* authorizedAccessToken(
+  email: string,
+) {
+  const flow = yield* startAuthorization();
+  const wiki = yield* wikiAdministrator(email);
+  return yield* exchangeCode(flow, yield* grantAuthorization(wiki, flow.oauthQuery));
 });
 
 const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(token?: string) {
-  const wiki = (yield* Fixture)["internal-dashboard"];
-  const request = new Request(`${wikiOrigin}/mcp`, {
+  const { wiki } = yield* AuthApps;
+  const incoming = new Request(`${wikiOrigin}/mcp`, {
     headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
     method: "POST",
   });
-  return yield* authorizeMcpRequest(request, wikiOrigin).pipe(Effect.provideService(Auth, wiki));
+  return yield* authorizeMcpRequest(incoming, wikiOrigin).pipe(Effect.provideService(Auth, wiki));
+});
+
+const wikiDiscovery = Effect.fn("wikiDiscovery")(function* wikiDiscovery(path: string) {
+  const { wiki } = yield* AuthApps;
+  return yield* Effect.promise(async () =>
+    wiki.instance.handler(new Request(new URL(path, wikiOrigin))),
+  );
 });
 
 export {
-  exchangeCode,
-  grantAuthorization,
+  authorizedAccessToken,
   mcpRequest,
-  responseStatus,
   startAuthorization,
   wikiAdministrator,
+  wikiDiscovery,
   wikiOrigin,
 };

@@ -1,3 +1,4 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
 import {
   type ActionState,
   Button,
@@ -66,8 +67,8 @@ const SignUpFields = ({
         />
         <Field
           label="パスワード（12文字以上）"
-          name="password"
-          type="password"
+          name={AUTHENTICATION_METHOD.password}
+          type={AUTHENTICATION_METHOD.password}
           autoComplete="new-password"
           minLength={12}
           maxLength={128}

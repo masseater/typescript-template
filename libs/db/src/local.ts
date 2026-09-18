@@ -1,18 +1,21 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { localDatabase, localDatabasePersistence } from "@repo/config/local-database-path";
+import { localDatabaseDirectory } from "@repo/config/local-database-path";
+import { privateDirectoryMode, privateFileMode } from "@repo/config/private-files";
 import { workerCompatibility } from "@repo/config/worker";
 
-const OWNER_ONLY_DIRECTORY_MODE = 0o700;
-const OWNER_ONLY_FILE_MODE = 0o600;
+const localDatabase = {
+  binding: "DB",
+  database_id: "00000000-0000-0000-0000-000000000001",
+  database_name: "template-shared",
+};
 
+const localDatabasePersistence = localDatabaseDirectory();
 const localDatabaseStore = path.join(localDatabasePersistence, "v3");
 
-async function writeLocalDatabaseConfig(): Promise<string> {
-  await mkdir(localDatabasePersistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
+const writeLocalDatabaseConfig = async (): Promise<string> => {
+  await mkdir(localDatabasePersistence, { mode: privateDirectoryMode, recursive: true });
   const file = path.join(localDatabasePersistence, "wrangler.generated.json");
   const config = {
     compatibility_date: workerCompatibility.date,
@@ -20,8 +23,8 @@ async function writeLocalDatabaseConfig(): Promise<string> {
     d1_databases: [localDatabase],
     name: "template-local-database",
   };
-  await writeFile(file, `${JSON.stringify(config)}\n`, { mode: OWNER_ONLY_FILE_MODE });
+  await writeFile(file, `${JSON.stringify(config)}\n`, { mode: privateFileMode });
   return file;
-}
+};
 
 export { localDatabase, localDatabasePersistence, localDatabaseStore, writeLocalDatabaseConfig };

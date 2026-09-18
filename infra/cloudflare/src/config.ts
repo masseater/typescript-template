@@ -1,3 +1,4 @@
+import { APPLICATION, CloudflareId, Email } from "@repo/config";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
 import { workerCompatibility } from "@repo/config/worker";
 import { otlpSignalUrl } from "@repo/observability";
@@ -48,10 +49,8 @@ const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 
-const Id = Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u));
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
-const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
 const Origin = Schema.String.check(
   Schema.makeFilter((value: string) => URL.canParse(value)),
@@ -81,7 +80,7 @@ const AuthSecret = Schema.String.check(
 );
 
 const SharedSettings = Schema.Struct({
-  accountId: Id,
+  accountId: CloudflareId,
   budget: Schema.Struct({
     budgetJpy: Positive,
     fixedCostUsd: Nonnegative,
@@ -98,7 +97,7 @@ const SharedSettings = Schema.Struct({
   }),
   otlp: Schema.UndefinedOr(Schema.Struct({ enabled: Schema.Boolean, endpoint: HttpsUrl })),
   prefix: Prefix,
-  zoneId: Id,
+  zoneId: CloudflareId,
 });
 
 type SharedConfig = typeof SharedSettings.Type;
@@ -200,9 +199,9 @@ function sendingDomain(mailFrom: string): string {
 
 function duplicatedOrigins(config: SharedConfig): readonly string[] {
   const origins = [
-    [originKeys["service-admin"], config.origins["service-admin"]],
-    [originKeys["service-member"], config.origins["service-member"]],
-    [originKeys["internal-dashboard"], config.origins["internal-dashboard"]],
+    [originKeys[APPLICATION.admin], config.origins[APPLICATION.admin]],
+    [originKeys[APPLICATION.user], config.origins[APPLICATION.user]],
+    [originKeys[APPLICATION.wiki], config.origins[APPLICATION.wiki]],
   ] as const;
   return origins.flatMap(([key, origin]) =>
     origins.some(([other, value]) => other !== key && value === origin) ? [key] : [],
@@ -242,7 +241,7 @@ export {
   CloudflareFailure,
   Email,
   HttpsUrl,
-  Id,
+  CloudflareId,
   Nonnegative,
   Origin,
   Positive,

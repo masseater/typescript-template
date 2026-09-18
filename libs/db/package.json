@@ -11,13 +11,15 @@
     "./testing": "./src/testing.ts",
     "./remote": "./src/remote-command.ts",
     "./migrations": "./src/remote-operations.ts",
-    "./local": "./src/local.ts"
+    "./local": "./src/local.ts",
+    "./testing-node": "./src/testing-node.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
+    "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "miniflare": "catalog:",
@@ -26,7 +28,6 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
-    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
     "msw": "catalog:",

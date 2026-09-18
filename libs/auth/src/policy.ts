@@ -1,28 +1,12 @@
-import { strongAuthenticationMethods } from "@repo/config";
+import {
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  strongAuthenticationMethods,
+  type Application,
+  type AuthenticationMethod,
+} from "@repo/config";
 import { APIError } from "better-auth/api";
-
-import type { Application } from "@repo/config";
-
-type AuthenticationMethod = "passkey_uv" | "password" | "password_totp" | "recovery";
-
-interface EligibleUser {
-  readonly emailVerified: boolean;
-  readonly role: string;
-}
-
-interface SessionSecurityRecord {
-  readonly session: {
-    readonly audience: Application;
-    readonly expiresAt: Date;
-    readonly securityVersion: number;
-  };
-  readonly user: {
-    readonly emailVerified: boolean;
-    readonly securityVersion: number;
-  };
-}
-
-const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const enrollmentPaths = new Set([
   "/get-session",
@@ -36,44 +20,56 @@ const enrollmentPaths = new Set([
   "/passkey/verify-authentication",
 ]);
 
+const deny = (denial: string): never => {
+  throw new APIError("FORBIDDEN", { message: denial });
+};
+
+const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
+
+const isStrongMethod = (method: string): boolean => strongMethods.has(method);
+
+const sessionIsLive = (
+  sessionRecord: {
+    readonly session: {
+      readonly audience: Application;
+      readonly expiresAt: Date;
+      readonly securityVersion: number;
+    };
+    readonly user: {
+      readonly emailVerified: boolean;
+      readonly securityVersion: number;
+    };
+  },
+  audience: Application,
+): boolean =>
+  sessionRecord.session.expiresAt > new Date() &&
+  sessionRecord.session.audience === audience &&
+  sessionRecord.session.securityVersion === sessionRecord.user.securityVersion &&
+  sessionRecord.user.emailVerified;
+
 const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
-  ["/passkey/verify-authentication", "passkey_uv"],
-  ["/two-factor/verify-totp", "password_totp"],
-  ["/two-factor/verify-backup-code", "recovery"],
+  ["/passkey/verify-authentication", AUTHENTICATION_METHOD.passkey],
+  ["/two-factor/verify-totp", AUTHENTICATION_METHOD.passwordTotp],
+  ["/two-factor/verify-backup-code", AUTHENTICATION_METHOD.recovery],
 ]);
 
-function deny(message: string): never {
-  throw new APIError("FORBIDDEN", { message });
-}
+const authenticationMethodFor = (path: string | undefined): AuthenticationMethod =>
+  (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
+  AUTHENTICATION_METHOD.password;
 
-function isStrongMethod(method: string): boolean {
-  return strongMethods.has(method);
-}
-
-function sessionIsLive(current: SessionSecurityRecord, audience: Application): boolean {
-  return (
-    current.session.expiresAt > new Date() &&
-    current.session.audience === audience &&
-    current.session.securityVersion === current.user.securityVersion &&
-    current.user.emailVerified === true
-  );
-}
-
-function authenticationMethodFor(path: string | undefined): AuthenticationMethod {
-  return (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ?? "password";
-}
-
-function assertEligibleUser<TUser extends EligibleUser>(
-  user: TUser | undefined,
+const assertEligibleUser: <
+  TUser extends { readonly emailVerified: boolean; readonly role: string },
+>(
+  eligibleUser: TUser | undefined,
   audience: Application,
-): asserts user is TUser {
-  if (user?.emailVerified !== true) {
+) => asserts eligibleUser is TUser = (eligibleUser, audience) => {
+  if (eligibleUser === undefined || !eligibleUser.emailVerified) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }
-  if (audience !== "service-member" && user.role !== "admin") {
+  if (audience !== APPLICATION.user && eligibleUser.role !== ROLE.administrator) {
     deny("ADMIN_REQUIRED");
   }
-}
+};
 
 export {
   assertEligibleUser,

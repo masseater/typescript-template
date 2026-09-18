@@ -1,3 +1,4 @@
+import { AUTHENTICATION_METHOD, ROLE } from "@repo/config";
 import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
 
 import { CHALLENGE_MODE } from "./challenge-modes.ts";
@@ -9,7 +10,7 @@ import type { Enrollment, SettingsContext } from "./mfa-types";
 
 const adminLocked = (session: SessionView, recovery: string | undefined): boolean => {
   return (
-    session.user.role === "admin" &&
+    session.user.role === ROLE.administrator &&
     (session.user.twoFactorEnabled || (recovery === "1" && !session.strong))
   );
 };
@@ -60,8 +61,8 @@ const TotpPasswordForm = ({
         />
         <Field
           label="設定変更を確認するパスワード"
-          name="password"
-          type="password"
+          name={AUTHENTICATION_METHOD.password}
+          type={AUTHENTICATION_METHOD.password}
           autoComplete="current-password"
           required
           value={password.value}

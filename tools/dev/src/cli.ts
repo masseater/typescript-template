@@ -29,14 +29,14 @@ const operator = Effect.fn("operator")(function* operator(_args: readonly string
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["ci-runner", ciRunner],
   ["connect", connection],
-  ["operator", operator],
+  ["operator", operator as (args: readonly string[]) => Command],
   ["setup", setup],
   ["status", status],
   ["storybook", storybook],
 ]);
 
 const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
-  ["authenticate", authenticate],
+  ["authenticate", authenticate as (app: App, args: readonly string[]) => Command],
   ["browser", browser],
   ["browser-command", browserCommand],
   ["logs", logs],
@@ -62,9 +62,14 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), (cause) =>
-  causeRecord("local.application_command_failed", cause, {
-    remediation:
-      "Check vp run --filter @repo/dev setup, vp run --filter @repo/db db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-  }),
+runCli(
+  selectCommand(action, args).pipe(Effect.flatMap(writeReport)) as Effect.Effect<
+    unknown,
+    LocalCommandFailure
+  >,
+  (cause) =>
+    causeRecord("local.application_command_failed", cause, {
+      remediation:
+        "Check vp run --filter @repo/dev setup, vp run --filter @repo/db db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+    }),
 );
