@@ -12,6 +12,7 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 - ヘッダー
   - 左にサービス名を置き、LP へのリンクにする
   - 右に「ログイン」と「新規登録」を置く。いま表示しているページ自身へのリンクは出さない
+  - ログインしているときは、右に「ホーム」だけを置く
 - 本体
   - LP は画面幅いっぱいを使う
   - それ以外は 1 つの作業だけを中央のカードに置く
@@ -28,9 +29,11 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | 利用規約                         | `/terms`        |
 | プライバシーポリシー             | `/privacy`      |
 
+- ログインしている利用者が `/contact` を開いたときは、会員向けのお問い合わせ（`/support`）へ移る
+
 ## 登録の枠
 
-メールアドレスの確認を済ませた後の、初めてのログインで通る。ナビゲーションを持たず、1 つの作業だけを中央に置き、どこまで進んだかを上に示す。
+メールアドレスを確認した後の、初めてのログインで通る。ナビゲーションを持たず、1 つの作業だけを中央に置き、どこまで進んだかを上に示す。
 
 | ページ                     | パス                 |
 | -------------------------- | -------------------- |
@@ -54,7 +57,8 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
   - 左に細い列を置き、上にサービス名、下に自分のアイコンを置く
   - 本体は中央の 1 列に置く
 - タブと左の列には同じ項目を並べ、いま表示しているページの項目を選択状態にする
-- 有料の項目は無料の利用者にも見せて「有料」の印を付け、押したら有料の案内へ移る
+- 有料の項目は無料の利用者にも見せて「有料」の印を付け、無料の利用者が押したら有料の案内へ移る
+- ほかの利用者に最初のメッセージを送るのは有料で、無料の利用者が送ろうとしたら有料の案内へ移る。届いたメッセージへの返信は無料でできる
 - メッセージと通知の項目には、未読の件数を出す
 - 自分のアイコンを押すと、自分のプロフィール・設定・お問い合わせ・ログアウトのメニューが開く
 - 操作の結果は本体の上に重ねる通知で知らせ、見出しや一覧の位置を動かさない
@@ -67,20 +71,20 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | メッセージ         | `/messages`      |      |
 | 通知               | `/notifications` |      |
 
-| ページ                                 | パス                        | 入り方                             |
-| -------------------------------------- | --------------------------- | ---------------------------------- |
-| ホーム（フォローしている利用者の動き） | `/home`                     | タブ                               |
-| 探す                                   | `/search`                   | タブ                               |
-| 有料の案内と契約                       | `/upgrade`                  | 有料の項目                         |
-| 掲示板                                 | `/board`                    | タブ                               |
-| スレッド                               | `/board/{id}`               | 掲示板・通知                       |
-| メッセージ（1 対 1 とグループ）        | `/messages`                 | タブ                               |
-| 会話                                   | `/messages/{id}`            | メッセージ・プロフィール・通知     |
-| グループの情報と参加                   | `/groups/{id}`              | 会話・招待のリンク                 |
-| 通知                                   | `/notifications`            | タブ                               |
-| プロフィール                           | `/users/{id}`               | ホーム・探す・共有されたリンク     |
-| お問い合わせ                           | `/support`・`/support/{id}` | アイコンのメニュー・設定           |
-| 規約の再同意                           | `/agreement`                | 規約の改定の後、ほかのページより先 |
+| ページ                                 | パス                        | 入り方                                                             |
+| -------------------------------------- | --------------------------- | ------------------------------------------------------------------ |
+| ホーム（フォローしている利用者の動き） | `/home`                     | タブ                                                               |
+| 探す                                   | `/search`                   | タブ                                                               |
+| 有料の案内と契約                       | `/upgrade`                  | 有料の項目・最初のメッセージ                                       |
+| 掲示板                                 | `/board`                    | タブ                                                               |
+| スレッド                               | `/board/{id}`               | 掲示板・通知                                                       |
+| メッセージ（1 対 1 とグループ）        | `/messages`                 | タブ                                                               |
+| 会話                                   | `/messages/{id}`            | メッセージ・プロフィール・通知                                     |
+| グループの情報と参加                   | `/groups/{id}`              | 会話・グループの招待のリンク                                       |
+| 通知                                   | `/notifications`            | タブ                                                               |
+| プロフィール                           | `/users/{id}`               | ホーム・探す・スレッド・通知・アイコンのメニュー・共有されたリンク |
+| お問い合わせ                           | `/support`・`/support/{id}` | アイコンのメニュー・設定                                           |
+| 規約の再同意                           | `/agreement`                | 規約の改定の後、ほかのページより先                                 |
 
 ## 設定
 
@@ -88,7 +92,9 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 
 - 「プランと解約」と「退会」は、一覧にほかの項目と同じ見た目で並べ、「その他」や「詳細設定」の奥に置かない
 - 解約は、契約したときと同じ手数で終える。引き止めのページを挟まない
-- 確認のダイアログには何が起きるかだけを書き、解約・退会のボタンもほかの操作と同じ大きさと色の濃さにする
+- 確認のダイアログには何が起きるかだけを書く
+- 解約・退会のボタンは、ほかの操作のボタンと同じ大きさと色の濃さにする
+- 公開範囲と検索への掲載は、プロフィールの設定に置く
 - 通知・AI に許す操作・検索への掲載は、既定を「オフ」「許可しない」にする
 
 | 項目            | パス                      |
@@ -101,6 +107,7 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | AI と API       | `/settings/ai`            |
 | プランと解約    | `/settings/plan`          |
 | 退会            | `/settings/leave`         |
+| お問い合わせ    | `/support`                |
 
 ## 枠へ入る条件
 
@@ -116,10 +123,14 @@ flowchart TD
   signedIn -- いいえ --> login["/login?redirect=開こうとしたパス"]
   login -- ログインに成功 --> open
   signedIn -- はい --> onboarded{"登録の段階を終えている"}
-  onboarded -- いいえ --> welcome["終えていない段階のページ"]
-  onboarded -- はい --> agreed{"最新の規約に同意している"}
-  agreed -- いいえ --> agreement["/agreement"]
-  agreed -- はい --> show
+  onboarded -- いいえ --> step["終えていない段階のページを表示する"]
+  onboarded -- はい --> isWelcome{"登録の枠のページか"}
+  isWelcome -- はい --> home
+  isWelcome -- いいえ --> agreed{"最新の規約に同意している"}
+  agreed -- いいえ --> agreement["/agreement を表示する"]
+  agreed -- はい --> isAgreement{"/agreement か"}
+  isAgreement -- はい --> home
+  isAgreement -- いいえ --> show
 ```
 
 - `redirect` に置けるのは利用者アプリ内のパスだけで、それ以外の値はホームとして扱う
@@ -136,13 +147,14 @@ flowchart TD
   lp --> contact["/contact"]
   signup <--> login
   signup -- 確認メールのリンク --> verify["/verify-email"]
-  verify -- 成功 --> agree["/welcome/agreement"]
+  verify -- 成功 --> login
+  login -- 登録の途中 --> step["終えていない段階のページ"]
+  step --> agree["/welcome/agreement"]
   agree --> choose{"/welcome"}
   choose -- 自分で入力する --> basic["/welcome/profile"]
   choose -- AI にインタビューしてもらう --> interview["/welcome/interview"]
   basic --> home["/home"]
   interview -- "保存・スキップ" --> home
-  login -- 登録の途中 --> agree
   login -- 登録を終えている --> home
 ```
 
@@ -151,11 +163,11 @@ flowchart TD
 ```mermaid
 flowchart TD
   nav(["タブ・左の列"]) --> home["/home"]
-  nav --> search["/search"]
+  nav -- 有料の利用者 --> search["/search"]
+  nav -- 無料の利用者の「探す」 --> upgrade["/upgrade"]
   nav --> board["/board"]
   nav --> messages["/messages"]
   nav --> notifications["/notifications"]
-  search -- 無料の利用者 --> upgrade["/upgrade"]
   home --> profile["/users/{id}"]
   search --> profile
   board --> thread["/board/{id}"]
@@ -164,13 +176,15 @@ flowchart TD
   profile -- 無料の利用者が最初のメッセージを送る --> upgrade
   messages --> conversation
   conversation --> group["/groups/{id}"]
+  groupInvite(["グループの招待のリンク"]) --> group
   notifications --> conversation
   notifications --> thread
   notifications --> profile
   menu(["自分のアイコンのメニュー"]) --> me["/users/自分の id"]
   menu --> settings["/settings"]
   menu --> support["/support"]
+  settings --> support
   menu -- ログアウト --> lp["/ LP"]
 ```
 
-`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[ユーザー一覧](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。
+`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/user-lp)、[新規登録](/pages/user-signup)、[ログイン](/pages/user-login)、[プロフィール](/pages/user-profile)、[探す](/pages/user-users)、[AI インタビュー](/pages/user-interview) が持つ。
