@@ -19,8 +19,15 @@ const deploymentKeys = [
   "TEMPLATE_WIKI_ORIGIN",
 ] as const;
 
-const privateDeploymentKeys: readonly string[] = deploymentKeys.filter(
-  (key) => !budgetKeys.some((budget) => budget === key),
-);
+const optionalDeploymentKeys = [
+  "TEMPLATE_OTLP_AUTHORIZATION",
+  "TEMPLATE_OTLP_ENABLED",
+  "TEMPLATE_OTLP_ENDPOINT",
+] as const;
+
+const privateDeploymentKeys: readonly string[] = [
+  ...deploymentKeys.filter((key) => !budgetKeys.some((budget) => budget === key)),
+  ...optionalDeploymentKeys,
+];
 
 export { deploymentKeys, privateDeploymentKeys };
