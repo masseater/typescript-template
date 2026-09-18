@@ -2,6 +2,7 @@
 import { readFileSync, statSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+
 import { project } from "@shadcn/lint";
 
 const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
@@ -96,6 +97,21 @@ function designSystemComponents(): string[] {
 
 function partsDirectory(): string {
   return project.componentsFor(designSystemProbe).dir ?? "";
+}
+
+const linkPartPattern = /^const (?<name>\w+) = createLink\(/gmu;
+
+function linkParts(): string[] {
+  const found: string[] = [];
+  for (const file of project.componentsFor(designSystemProbe).files.values()) {
+    for (const match of read(file).matchAll(linkPartPattern)) {
+      const { name } = match.groups ?? {};
+      if (name !== undefined) {
+        found.push(name);
+      }
+    }
+  }
+  return found.toSorted();
 }
 
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
@@ -228,6 +244,7 @@ export {
   designSystemComponents,
   declarations,
   designSystemProbe,
+  linkParts,
   linkViolations,
   partsDirectory,
   smarthrTokens,

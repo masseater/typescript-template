@@ -1,10 +1,11 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
-import { findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
 import { Effect } from "effect";
 import type { Scope } from "effect";
+import { HttpResponse, http } from "msw";
 import type { SetupServer } from "msw/node";
 import { setupServer } from "msw/node";
+
+import { findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
 
 const HEX_ID_LENGTH = 32;
 const FORBIDDEN_STATUS = 403;

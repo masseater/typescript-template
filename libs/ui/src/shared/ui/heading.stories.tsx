@@ -1,5 +1,5 @@
-import { Heading } from "./heading";
 import preview from "../../../.storybook/preview";
+import { Heading } from "./heading";
 
 const meta = preview.meta({ component: Heading });
 

@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { DocsPage } from "#pages/docs/index.ts";
 import { createServerFn } from "@tanstack/react-start";
+
+import { DocsPage } from "#pages/docs/index.ts";
 import { source } from "#shared/content/index.ts";
 
 const loadPage = createServerFn({ method: "GET" })

@@ -1,10 +1,12 @@
-import type { CurrentRequest, Telemetry } from "@repo/observability";
 import { Effect, Result } from "effect";
-import { httpStatus, observeRequest } from "@repo/observability";
-import { jsonResponse, secureResponse } from "./responses.ts";
-import { Assets } from "./assets.ts";
 import type { ManagedRuntime } from "effect";
+
+import type { CurrentRequest, Telemetry } from "@repo/observability";
+import { httpStatus, observeRequest } from "@repo/observability";
+
+import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
+import { jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;

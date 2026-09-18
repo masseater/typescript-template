@@ -1,5 +1,6 @@
-import { decideNotifications, formatMessage } from "./decision.ts";
 import { describe, expect, it } from "vite-plus/test";
+
+import { decideNotifications, formatMessage } from "./decision.ts";
 
 const now = Date.parse("2026-09-17T12:00:00Z");
 const hour = 3_600_000;

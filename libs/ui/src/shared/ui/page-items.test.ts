@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { pageItems } from "./page-items";
 
 describe("pagination items without gaps", () => {

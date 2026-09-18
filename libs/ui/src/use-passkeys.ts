@@ -1,7 +1,8 @@
-import { errorMessage, requireSuccess } from "./protocol";
 import { useEffect, useState } from "react";
-import type { PasskeySummary } from "./mfa-types";
+
 import { authClient } from "./client";
+import type { PasskeySummary } from "./mfa-types";
+import { errorMessage, requireSuccess } from "./protocol";
 
 interface PasskeyListing {
   readonly passkeys: readonly PasskeySummary[] | undefined;

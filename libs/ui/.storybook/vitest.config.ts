@@ -1,7 +1,8 @@
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { defineConfig } from "vite-plus";
 import { playwright } from "vite-plus/test/browser-playwright";
+
 import { storybookPort } from "@repo/config";
-import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 
 const storybook = await storybookTest({
   configDir: import.meta.dirname,
