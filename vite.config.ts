@@ -37,7 +37,7 @@ export default defineConfig({
           "vp run check:client",
           "vp run check:staged",
           "vp run check:effect",
-          "vp run -F '!typescript-template' check",
+          "vp run -F '!typescript-template' --cache check",
         ],
         input: [...taskInput],
       },
