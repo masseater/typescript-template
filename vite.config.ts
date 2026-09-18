@@ -27,7 +27,12 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
-      build: ["vp run -F '!typescript-template' build", "vp run --filter @repo/dev private-maps"],
+      build: [
+        "vp run -F '!typescript-template' build",
+        "vp run --filter @repo/dev private-maps",
+        "vp run --filter @repo/infra-cloudflare verify:artifacts",
+        "vp run --filter @repo/infra-cloudflare verify:stacks",
+      ],
       check: {
         command: [
           "vp check",
