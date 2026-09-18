@@ -1,6 +1,6 @@
-import { httpStatus, logError, logInfo } from "@template/observability";
+import { httpStatus } from "@template/observability";
 import { DurableObject } from "cloudflare:workers";
-import { Effect, Exit, Schema } from "effect";
+import { Console, Effect, Exit, Schema } from "effect";
 
 import { AlertEnvironment } from "./alert-environment.ts";
 import { MonitorFailure } from "./failure.ts";
@@ -62,14 +62,16 @@ export abstract class Monitor<Bindings extends MonitorBindings> extends DurableO
     const { storage } = this.ctx;
     const { eventName } = this;
     return Effect.promise(async () => storage.delete(failureNotifiedDayKey)).pipe(
-      Effect.map(() => {
-        logInfo({
-          event: `${eventName}.checked`,
-          ...checkSummary,
-          durationMs: Date.now() - started,
-        });
-        return Response.json({ ok: true, ...checkSummary });
-      }),
+      Effect.andThen(() =>
+        Console.log(
+          JSON.stringify({
+            event: `${eventName}.checked`,
+            ...checkSummary,
+            durationMs: Date.now() - started,
+          }),
+        ),
+      ),
+      Effect.map(() => Response.json({ ok: true, ...checkSummary })),
     );
   }
 
@@ -77,7 +79,9 @@ export abstract class Monitor<Bindings extends MonitorBindings> extends DurableO
     const { eventName, failure } = this;
     const { storage } = this.ctx;
     return Effect.gen(function* reportFailure() {
-      logError({ durationMs: Date.now() - started, event: `${eventName}.check_failed` });
+      yield* Console.error(
+        JSON.stringify({ durationMs: Date.now() - started, event: `${eventName}.check_failed` }),
+      );
       const day = new Date(started).toISOString().slice(0, ISO_DATE_LENGTH);
       const notifiedDay = yield* Effect.promise(async () =>
         storage.get<string>(failureNotifiedDayKey),

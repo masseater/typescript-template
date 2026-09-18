@@ -1,25 +1,18 @@
-import { NodeRuntime } from "@effect/platform-node";
-import { grants, type Application } from "@template/config";
-import { Effect } from "effect";
-
-import { workerModuleGlobs } from "./artifacts.ts";
+import { Console, Effect } from "effect";
+import { applyVerificationEnvironment, compileStack } from "./inventory.ts";
+import { stackDependencies, stackName, stackNames } from "./stacks.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import type { Application } from "@template/config";
+import { NodeRuntime } from "@effect/platform-node";
+import type { StackInventory } from "./inventory.ts";
+import type { StackName } from "./stacks.ts";
 import { databaseName } from "./database-lookup.ts";
-import { applyVerificationEnvironment, compileStack, type StackInventory } from "./inventory.ts";
-import { FAILED_EXIT_CODE } from "./secrets.ts";
-import { stackDependencies, stackName, stackNames, type StackName } from "./stacks.ts";
+import { grants } from "@template/config";
+import { markFailed } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+import { workerModuleGlobs } from "./artifacts.ts";
 
 const { accountId, origins, prefix } = verificationSettings;
-
-const providerAddedBindings = [
-  "ALCHEMY_CLOUDFLARE_ACCOUNT_ID",
-  "ALCHEMY_PHASE",
-  "ALCHEMY_STACK_NAME",
-  "ALCHEMY_STAGE",
-  "ALCHEMY_WORKER_NAME",
-  "ASSETS",
-];
 
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
@@ -27,7 +20,7 @@ const sharedWorker = {
   workersDev: workerSubdomain,
 };
 
-const applicationResource = (app: Application): unknown => {
+function applicationResource(app: Application): unknown {
   return {
     adopt: false,
     bindings: [
@@ -54,15 +47,15 @@ const applicationResource = (app: Application): unknown => {
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
   };
-};
+}
 
-const monitorResource = (options: {
+function monitorResource(options: {
   readonly artifact: string;
   readonly className: string;
   readonly cron: string;
   readonly name: string;
   readonly variables: readonly string[];
-}): unknown => {
+}): unknown {
   return {
     adopt: false,
     bindings: [
@@ -82,9 +75,9 @@ const monitorResource = (options: {
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
   };
-};
+}
 
-const accountToken = (slug: string, permission: string): unknown => {
+function accountToken(slug: string, permission: string): unknown {
   return {
     adopt: false,
     bindings: [],
@@ -101,15 +94,15 @@ const accountToken = (slug: string, permission: string): unknown => {
     removalPolicy: "destroy",
     type: "Cloudflare.ApiToken.AccountApiToken",
   };
-};
+}
 
-const declaredStack = (stack: StackName, resources: Readonly<Record<string, unknown>>): unknown => {
+function declaredStack(stack: StackName, resources: Readonly<Record<string, unknown>>): unknown {
   return {
     dependencies: stackDependencies[stack].map((dependency) => stackName(dependency)).toSorted(),
     name: stackName(stack),
     resources,
   };
-};
+}
 
 const expected: Readonly<Record<StackName, unknown>> = {
   admin: declaredStack("admin", { Worker: applicationResource("admin") }),
@@ -166,34 +159,35 @@ const expected: Readonly<Record<StackName, unknown>> = {
 
 applyVerificationEnvironment();
 
-const byKey = (left: readonly [string, unknown], right: readonly [string, unknown]): number => {
+function byKey(left: readonly [string, unknown], right: readonly [string, unknown]): number {
   return left[0].localeCompare(right[0]);
-};
+}
 
-const canonical = (value: unknown): string => {
+function canonical(value: unknown): string {
   return JSON.stringify(value, (_key: string, nested: unknown) =>
     typeof nested === "object" && nested !== null && !Array.isArray(nested)
       ? Object.fromEntries(Object.entries(nested).toSorted(byKey))
       : nested,
   );
-};
+}
 
-const declaredMatches = (inventory: StackInventory, stack: StackName): boolean => {
+function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
   return canonical(inventory) === canonical(expected[stack]);
-};
+}
 
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
-
-  console.log(
-    JSON.stringify({
-      declaration: matches ? "matches" : "differs",
-      event: "stacks.verified",
-      inventory,
-      notCompared: providerAddedBindings,
-    }),
-  );
+  if (!matches) {
+    yield* Console.error(
+      JSON.stringify({
+        actual: inventory,
+        event: "stacks.differs",
+        expected: expected[stack],
+        stack,
+      }),
+    );
+  }
   return matches;
 });
 
@@ -201,22 +195,18 @@ NodeRuntime.runMain(
   Effect.gen(function* program() {
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
-      process.exitCode = FAILED_EXIT_CODE;
+      yield* markFailed;
+      return;
     }
+    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
-      Effect.sync(() => {
-        console.error(
-          JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
-        );
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(
+        JSON.stringify({ code: failure.code, event: "stacks.invalid", stack: failure.stack }),
+      ).pipe(Effect.andThen(markFailed)),
     ),
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        console.error(JSON.stringify({ event: "stacks.invalid" }));
-        process.exitCode = FAILED_EXIT_CODE;
-      }),
+      Console.error(JSON.stringify({ event: "stacks.invalid" })).pipe(Effect.andThen(markFailed)),
     ),
   ),
   { disableErrorReporting: true },

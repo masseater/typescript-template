@@ -1,21 +1,21 @@
-import { parseArgs } from "node:util";
-
+import { Cause, Console, Effect, Schema } from "effect";
+import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
-import { Cause, Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
+import { reportFailed } from "./failure.ts";
 
-import { explorerOrigin, requestTelemetry } from "./explorer.ts";
-
-type Verified = {
+interface Verified {
   readonly logs: number;
   readonly spans: number;
-};
+}
 
-type VerificationTarget = {
+interface VerificationTarget {
   readonly app: string;
   readonly requestId: string;
   readonly service: string;
-};
+}
 
 type Fields = Readonly<Record<string, unknown>>;
 
@@ -45,30 +45,30 @@ const { values } = parseArgs({
   },
 });
 
-const fail = (reason: VerificationFailure["reason"]): VerificationFailure => {
+function fail(reason: VerificationFailure["reason"]): VerificationFailure {
   return new VerificationFailure({ reason });
-};
+}
 
 const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {
   const telemetry = yield* requestTelemetry(target.app, target.requestId);
   const logged = telemetry.logs.some(
     ({ event }: Readonly<{ event: Fields | undefined }>) =>
-      event?.event === "http.server.request" &&
-      event.service === target.service &&
-      event.request_id === target.requestId,
+      event?.["event"] === "http.server.request" &&
+      event["service"] === target.service &&
+      event["request_id"] === target.requestId,
   );
   const traced = telemetry.spans.some(
-    (span: Fields) => span.parent_id === null && span.duration_ms !== null,
+    (span: Fields) => span["parent_id"] === null && span["duration_ms"] !== null,
   );
   const verified: Verified | undefined =
     logged && traced ? { logs: telemetry.logs.length, spans: telemetry.spans.length } : undefined;
   return verified;
 });
 
-const waitForCorrelation = (
+function waitForCorrelation(
   target: VerificationTarget,
   deadline: number,
-): Effect.Effect<Verified, VerificationFailure | Effect.Error<ReturnType<typeof correlated>>> => {
+): Effect.Effect<Verified, VerificationFailure | Effect.Error<ReturnType<typeof correlated>>> {
   if (Date.now() >= deadline) {
     return Effect.fail(fail("telemetry_not_correlated"));
   }
@@ -81,12 +81,11 @@ const waitForCorrelation = (
         : Effect.succeed(verified),
     ),
   );
-};
+}
 
 const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<URL>) {
   const response = yield* Effect.tryPromise({
     catch: () => fail("request_failed"),
-
     try: async (signal) =>
       fetch(app, {
         method: "GET",
@@ -128,25 +127,15 @@ const verify = Effect.fn("verify")(function* verify() {
 
 NodeRuntime.runMain(
   verify().pipe(
-    Effect.flatMap((report) =>
-      Effect.sync(() => {
-        process.stdout.write(`${JSON.stringify(report)}\n`);
-      }),
-    ),
-
+    Effect.flatMap((report) => Console.log(JSON.stringify(report))),
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
-        : Effect.sync(() => {
-            process.stderr.write(
-              `${JSON.stringify({
-                event: "observability.verification_failed",
-                ok: false,
-                remediation:
-                  "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
-              })}\n`,
-            );
-            process.exitCode = 1;
+        : reportFailed({
+            event: "observability.verification_failed",
+            ok: false,
+            remediation:
+              "Specify --app with a running local app origin such as http://127.0.0.1:3001/. The request must appear in Local Explorer as a structured log and a completed trace.",
           }),
     ),
   ),

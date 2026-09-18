@@ -1,10 +1,10 @@
-import { parseArgs } from "node:util";
-
+import { Console, Effect, Schema } from "effect";
+import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { applicationPorts } from "@template/config";
-import { Effect, Schema } from "effect";
-
-import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
+import { reportFailed } from "./failure.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),
@@ -43,15 +43,15 @@ const { values, positionals } = parseArgs({
   },
 });
 
-const argumentsInvalid = (): QueryFailure => {
+function argumentsInvalid(): QueryFailure {
   return new QueryFailure({ reason: "arguments_invalid" });
-};
+}
 
-const required = (value: string | undefined): Effect.Effect<string, QueryFailure> => {
+function required(value: string | undefined): Effect.Effect<string, QueryFailure> {
   return value === undefined ? Effect.fail(argumentsInvalid()) : Effect.succeed(value);
-};
+}
 
-const queryLogs = (app: string, input: Query, since: number): Effect.Effect<unknown, unknown> => {
+function queryLogs(app: string, input: Query, since: number): Effect.Effect<unknown, unknown> {
   const levelFilter = input.level === undefined ? "" : " AND level = ?";
   const params =
     input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
@@ -60,9 +60,9 @@ const queryLogs = (app: string, input: Query, since: number): Effect.Effect<unkn
     `SELECT trace_id, span_id, ts_ms, level, message FROM logs WHERE ts_ms >= ?${levelFilter} ORDER BY ts_ms DESC LIMIT ?`,
     params,
   ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
-};
+}
 
-const runQuery = (app: string, input: Query): Effect.Effect<unknown, unknown> => {
+function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
   const since = Date.now() - input.minutes * millisecondsPerMinute;
   if (input.command === "request") {
     return required(input.requestId).pipe(
@@ -88,18 +88,16 @@ const runQuery = (app: string, input: Query): Effect.Effect<unknown, unknown> =>
     );
   }
   return queryLogs(app, input, since);
-};
+}
 
-const help = Effect.sync(() => {
-  process.stdout.write(
-    `${JSON.stringify({
-      commands,
-      flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
-      readOnly: true,
-      source: "Cloudflare Local Explorer of the running app",
-    })}\n`,
-  );
-});
+const help = Console.log(
+  JSON.stringify({
+    commands,
+    flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
+    readOnly: true,
+    source: "Cloudflare Local Explorer of the running app",
+  }),
+);
 
 const query = Effect.fn("query")(function* query() {
   const input = yield* Schema.decodeUnknownEffect(QueryInput)({
@@ -114,8 +112,13 @@ const query = Effect.fn("query")(function* query() {
     return yield* argumentsInvalid();
   }
   const data = yield* runQuery(values.app, input);
-  process.stdout.write(
-    `${JSON.stringify({ command: input.command, data, observedAt: new Date().toISOString(), ok: true })}\n`,
+  yield* Console.log(
+    JSON.stringify({
+      command: input.command,
+      data,
+      observedAt: new Date().toISOString(),
+      ok: true,
+    }),
   );
   return data;
 });
@@ -123,16 +126,11 @@ const query = Effect.fn("query")(function* query() {
 NodeRuntime.runMain(
   (values.help ? help : query()).pipe(
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({
-            event: "observability.query_failed",
-            ok: false,
-            remediation:
-              "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
-          })}\n`,
-        );
-        process.exitCode = 1;
+      reportFailed({
+        event: "observability.query_failed",
+        ok: false,
+        remediation:
+          "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
       }),
     ),
   ),

@@ -1,7 +1,11 @@
-import { connect, createServer, type Server } from "node:net";
-
+import { Cause, Console, Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { connect, createServer } from "node:net";
 import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Effect, Schema, type Scope } from "effect";
+import type { Scope } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { Server } from "node:net";
+import { reportFailed } from "./failure.ts";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),
@@ -13,16 +17,18 @@ const ProxyPort = Schema.Number.check(
   Schema.isGreaterThan(HIGHEST_PRIVILEGED_PORT),
 );
 
-const listen = (target: number): Effect.Effect<Server, GatewayFailure, Scope.Scope> => {
+function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Scope> {
   return Effect.acquireRelease(
     Effect.callback<ReturnType<typeof createServer>, GatewayFailure>((resume) => {
       const server = createServer((client) => {
         const upstream = connect(target, "127.0.0.1");
         client.pipe(upstream).pipe(client);
-
-        client.on("error", () => upstream.destroy());
-
-        upstream.on("error", () => client.destroy());
+        client.on("error", () => {
+          upstream.destroy();
+        });
+        upstream.on("error", () => {
+          client.destroy();
+        });
       });
       server.once("error", () => {
         resume(Effect.fail(new GatewayFailure({ reason: "listen_failed" })));
@@ -31,10 +37,9 @@ const listen = (target: number): Effect.Effect<Server, GatewayFailure, Scope.Sco
         resume(Effect.succeed(server));
       });
     }),
-
     (server) => Effect.sync(() => server.close()),
   );
-};
+}
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
@@ -42,19 +47,14 @@ NodeRuntime.runMain(
       Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
     );
     yield* listen(target);
-
-    console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
+    yield* Console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
     return yield* Effect.never;
   }).pipe(
     Effect.scoped,
-
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
-        : Effect.sync(() => {
-            console.error(JSON.stringify({ event: "local.gateway_failed" }));
-            process.exitCode = 1;
-          }),
+        : reportFailed({ event: "local.gateway_failed" }),
     ),
   ),
   { disableErrorReporting: true },

@@ -1,29 +1,30 @@
-import { chmod, open, readFile, stat, type FileHandle } from "node:fs/promises";
-
+// oxlint-disable-next-line import/no-nodejs-modules
+import { chmod, open, readFile, stat } from "node:fs/promises";
+import { failure, fileIo } from "./failure.ts";
 import { Effect } from "effect";
-
-import { failure, fileIo, type LocalCommandFailure } from "./failure.ts";
-
-const privateFileMode = 0o600;
-const privateDirectoryMode = 0o700;
-
-const isErrorCode = (error: unknown, code: string): boolean => {
-  return typeof error === "object" && error !== null && "code" in error && error.code === code;
-};
-
-const closeFile = (file: FileHandle): Effect.Effect<void, LocalCommandFailure> => {
-  return fileIo(async () => file.close());
-};
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { FileHandle } from "node:fs/promises";
+import type { LocalCommandFailure } from "./failure.ts";
 
 type FileLocation = Readonly<URL>;
 
+const privateFileMode = 0o600;
+const privateDirectoryMode = 0o700;
 const groupAndOtherPermissions = 0o077;
+
+function isErrorCode(error: unknown, code: string): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
+function closeFile(file: FileHandle): Effect.Effect<void, LocalCommandFailure> {
+  return fileIo(async () => file.close());
+}
 
 const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
   location: FileLocation,
 ) {
   const entry = yield* fileIo(async () => stat(location));
-
+  // oxlint-disable-next-line no-bitwise
   if ((entry.mode & groupAndOtherPermissions) !== 0) {
     return yield* failure("credentials_permissions_invalid");
   }
@@ -36,7 +37,6 @@ const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePriv
 ) {
   yield* Effect.acquireUseRelease(
     fileIo(async () => open(location, "w", privateFileMode)),
-
     (file) => fileIo(async () => file.writeFile(content)),
     closeFile,
   );
@@ -53,7 +53,6 @@ const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFil
         failure(isErrorCode(error, "EEXIST") ? "configuration_exists" : "file_io_failed"),
       try: async () => open(location, "wx", privateFileMode),
     }),
-
     (file) => fileIo(async () => file.writeFile(content)),
     closeFile,
   ).pipe(

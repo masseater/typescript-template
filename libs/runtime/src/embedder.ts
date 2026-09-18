@@ -1,15 +1,13 @@
 import { Context, Effect, Schema } from "effect";
-
+import type { Ai } from "@cloudflare/workers-types";
 import { EmbeddingFailed } from "./embedding-failed.ts";
 
-import type { Ai } from "@cloudflare/workers-types";
-
-type EmbedderShape = {
+interface EmbedderShape {
   readonly available: boolean;
   readonly embed: (
     texts: readonly string[],
   ) => Effect.Effect<readonly (readonly number[])[], EmbeddingFailed>;
-};
+}
 
 const embeddingModel = "@cf/baai/bge-m3";
 const embeddingBatch = 32;
@@ -30,20 +28,20 @@ const embedBatch = Effect.fn("embedBatch")(function* embedBatch(ai: Ai, text: re
   return data;
 });
 
-const batches = (texts: readonly string[]): readonly (readonly string[])[] => {
+function batches(texts: readonly string[]): readonly (readonly string[])[] {
   return Array.from({ length: Math.ceil(texts.length / embeddingBatch) }, (_unused, index) =>
     texts.slice(index * embeddingBatch, (index + 1) * embeddingBatch),
   );
-};
+}
 
-const embedWith = (ai: Ai | undefined): EmbedderShape["embed"] => {
+function embedWith(ai: Ai | undefined): EmbedderShape["embed"] {
   return (texts) =>
     ai === undefined
       ? Effect.fail(new EmbeddingFailed({ reason: "unavailable" }))
       : Effect.forEach(batches(texts), (text) => embedBatch(ai, text)).pipe(
           Effect.map((vectors) => vectors.flat()),
         );
-};
+}
 
 class Embedder extends Context.Service<Embedder, EmbedderShape>()("@template/runtime/Embedder") {}
 

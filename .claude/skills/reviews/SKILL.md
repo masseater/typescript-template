@@ -11,3 +11,4 @@ description: 実装完了前に、このリポジトリのコードレビュー�
 4. `./references/simplify.md`
 5. `./references/remove-useless-tests.md`
 6. `./references/no-silent-fallback.md`
+7. `./references/agents-md.md`

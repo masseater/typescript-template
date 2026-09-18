@@ -10,6 +10,7 @@ overrides:
   drizzle-orm@*: "catalog:"
   drizzle-kit@*: "catalog:"
   "@effect/platform-node-shared@*": 4.0.0-rc.112
+  steiger>cosmiconfig: 10.0.1
 allowBuilds:
   esbuild: true
   workerd: true
@@ -49,6 +50,7 @@ catalog:
   "@oxlint/plugins": 1.82.0
   "@effect/platform-node": 4.0.0-rc.112
   "@effect/vitest": 4.0.0-rc.112
+  "@feature-sliced/steiger-plugin": 0.7.0
   "@shadcn/lint": 0.1.0
   "@tailwindcss/vite": 4.3.3
   "@tanstack/intent": 0.3.6
@@ -76,6 +78,7 @@ catalog:
   react: 19.3.0
   react-dom: 19.3.0
   shadcn: 4.21.0
+  steiger: 0.6.0
   tailwindcss: 4.3.3
   typescript: 7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@0.3.2

@@ -1,15 +1,16 @@
-import { assert, it } from "@effect/vitest";
-import { Effect, type Scope } from "effect";
-import { HttpResponse, http } from "msw";
-import { setupServer, type SetupServer } from "msw/node";
-
-import { query, type Database } from "./database.ts";
-import { runRemoteDatabaseCommand } from "./remote-command.ts";
-import { remoteExecutor } from "./remote-http.ts";
-import { user } from "./schema.ts";
 import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
-
+import { HttpResponse, http } from "msw";
+import { assert, it } from "@effect/vitest";
 import type { D1Database } from "@cloudflare/workers-types";
+import type { Database } from "./database.ts";
+import { Effect } from "effect";
+import type { Scope } from "effect";
+import type { SetupServer } from "msw/node";
+import { query } from "./database.ts";
+import { remoteExecutor } from "./remote-http.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
+import { setupServer } from "msw/node";
+import { user } from "./schema.ts";
 
 const HEX_ID_LENGTH = 32;
 const REDIRECT_STATUS = 302;
@@ -24,24 +25,24 @@ const target = {
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database/${target.databaseId}/query`;
 const execute = ["--execute", "--confirm-database", target.databaseId];
 
-const mockServer = (
+function mockServer(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<typeof setupServer>
-): Effect.Effect<SetupServer, never, Scope.Scope> => {
+): Effect.Effect<SetupServer, never, Scope.Scope> {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const server = setupServer(...handlers);
       server.listen({ onUnhandledRequest: "error" });
       return server;
     }),
-
     (server) =>
       Effect.sync(() => {
         server.close();
       }),
   );
-};
+}
 
-const d1Endpoint = (binding: D1Database): Effect.Effect<SetupServer, never, Scope.Scope> => {
+function d1Endpoint(binding: D1Database): Effect.Effect<SetupServer, never, Scope.Scope> {
   return mockServer(
     http.post(endpoint, async ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${target.apiToken}`) {
@@ -50,9 +51,9 @@ const d1Endpoint = (binding: D1Database): Effect.Effect<SetupServer, never, Scop
       return HttpResponse.json(await executeD1HttpBatch(binding, await request.json()));
     }),
   );
-};
+}
 
-const insertVerifiedUser = (): Effect.Effect<void, unknown, Database> => {
+function insertVerifiedUser(): Effect.Effect<void, unknown, Database> {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),
@@ -63,9 +64,9 @@ const insertVerifiedUser = (): Effect.Effect<void, unknown, Database> => {
       updatedAt: new Date(),
     });
   });
-};
+}
 
-const failureResponse = (mode: "http" | "partial" | "invalid" | "redirect"): Response => {
+function failureResponse(mode: "http" | "partial" | "invalid" | "redirect"): Response {
   if (mode === "redirect") {
     return HttpResponse.redirect("https://untrusted.example.test/", REDIRECT_STATUS);
   }
@@ -79,7 +80,7 @@ const failureResponse = (mode: "http" | "partial" | "invalid" | "redirect"): Res
     });
   }
   return HttpResponse.text(target.apiToken);
-};
+}
 
 it.effect("plan never accesses the network or discloses credentials and bootstrap identity", () =>
   Effect.gen(function* program() {
@@ -121,7 +122,6 @@ it.effect("remote bootstrap promotes the verified user through the HTTP batch co
       event: "database.remote_admin_bootstrapped",
       ok: true,
     });
-
     const [first] = yield* query(async (database) => database.select().from(user));
     assert.strictEqual(first?.role, "admin");
     assert.strictEqual(first?.securityVersion, 1);

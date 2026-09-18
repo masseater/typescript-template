@@ -1,17 +1,16 @@
 import { Effect, Option, Schema } from "effect";
-
 import type { Application as HealthService } from "@template/config";
 
-type HealthTarget = {
+interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
-};
+}
 
-type ProbeResult = {
+interface ProbeResult {
   readonly service: HealthService;
   readonly healthy: boolean;
   readonly detail: string;
-};
+}
 
 type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
 
@@ -23,7 +22,11 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-const requestHealth = (target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> => {
+function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
+  return { detail, healthy, service: target.service };
+}
+
+function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
   return Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
     fetch(`${target.origin}/api/health`, {
       headers: { accept: "application/json" },
@@ -31,11 +34,7 @@ const requestHealth = (target: HealthTarget): Effect.Effect<Option.Option<ProbeR
       signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
     }),
   ).pipe(Effect.option);
-};
-
-const probeResult = (target: HealthTarget, healthy: boolean, detail: string): ProbeResult => {
-  return { detail, healthy, service: target.service };
-};
+}
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   target: HealthTarget,

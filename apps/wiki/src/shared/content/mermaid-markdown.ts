@@ -1,6 +1,5 @@
-import { Schema } from "effect";
-
 import type { LLMsOptions } from "fumadocs-core/mdx-plugins";
+import { Schema } from "effect";
 
 const isChartAttribute = Schema.is(
   Schema.Struct({
@@ -11,6 +10,7 @@ const isChartAttribute = Schema.is(
 );
 
 const processedMarkdown: LLMsOptions = {
+  // oxlint-disable-next-line max-params
   stringify(node, parent, state, info) {
     const chart =
       node.type === "mdxJsxFlowElement" && node.name === "Mermaid"

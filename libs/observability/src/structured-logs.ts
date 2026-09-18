@@ -1,8 +1,11 @@
-import { Logger, References, type Layer } from "effect";
-
-import { consoleSink, type LogSink } from "./log.ts";
+import { Console, Logger, References, type Layer } from "effect";
 
 import type { Application } from "@template/config";
+
+export type LogSink = {
+  readonly error: (line: string) => void;
+  readonly info: (line: string) => void;
+};
 
 export type StructuredLogOptions = {
   readonly serviceName: Application;
@@ -17,8 +20,8 @@ export const isRecord = (candidate: unknown): candidate is Readonly<Record<strin
 };
 
 export const structuredLogs = (logOptions: StructuredLogOptions): Layer.Layer<never> => {
-  const sink = logOptions.log ?? consoleSink;
   const logger = Logger.make(({ fiber, logLevel, message: logged }) => {
+    const sink = logOptions.log ?? fiber.getRef(Console.Console);
     const logParts: readonly unknown[] = Array.isArray(logged) ? logged : [logged];
     const [eventName, attributes] = logParts;
     const line = JSON.stringify({

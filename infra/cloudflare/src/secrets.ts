@@ -1,28 +1,31 @@
-import { Cause, Effect, Option, Predicate, Schema } from "effect";
+import { Cause, Console, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
 const OK_EXIT_CODE = 0;
 const FAILED_EXIT_CODE = 1;
+
+const markFailed = Effect.sync(() => {
+  process.exitCode = FAILED_EXIT_CODE;
+});
 
 const FailureKeys = Schema.Array(Schema.String);
 const isCoded = Schema.is(
   Schema.Struct({ code: Schema.String, keys: Schema.optional(FailureKeys) }),
 );
 
-const withVerifiedSecrets = <Value, Failure, Requirements>(
-  secrets: Readonly<{ contents: string }>,
-
-  program: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<Value, Failure, Requirements> => {
-  return Effect.provideService(program, ConfigProvider, fromDotEnvContents(secrets.contents));
-};
-
-type Confidential = {
+interface Confidential {
   readonly key: string;
   readonly value: string;
-};
+}
 
-const redact = (text: string, confidential: readonly Confidential[]): string => {
+function withVerifiedSecrets<Value, Failure, Requirements>(
+  secrets: Readonly<{ contents: string }>,
+  program: Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<Value, Failure, Requirements> {
+  return Effect.provideService(program, ConfigProvider, fromDotEnvContents(secrets.contents));
+}
+
+function redact(text: string, confidential: readonly Confidential[]): string {
   let masked = text;
   for (const { key, value } of confidential) {
     if (value !== "") {
@@ -30,12 +33,12 @@ const redact = (text: string, confidential: readonly Confidential[]): string => 
     }
   }
   return masked;
-};
+}
 
-const describeFailure = (
+function describeFailure(
   failure: unknown,
   confidential: readonly Confidential[],
-): Readonly<Record<string, unknown>> => {
+): Readonly<Record<string, unknown>> {
   if (isCoded(failure)) {
     return {
       code: failure.code,
@@ -46,12 +49,12 @@ const describeFailure = (
   return typeof reason === "string"
     ? { reason: redact(reason, confidential) }
     : { code: "unknown_failure" };
-};
+}
 
-const describeCause = (
+function describeCause(
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[],
-): Readonly<Record<string, unknown>> => {
+): Readonly<Record<string, unknown>> {
   const failure = Option.getOrUndefined(Cause.findErrorOption(cause));
   if (failure !== undefined) {
     return describeFailure(failure, confidential);
@@ -65,25 +68,24 @@ const describeCause = (
   return "code" in described
     ? { ...described, ...counted, defect: true }
     : { code: "defect", ...counted, ...described };
-};
+}
 
-const reportCause = (
+function reportCause(
   event: string,
-
   cause: Cause.Cause<unknown>,
   confidential: readonly Confidential[] = [],
-): Effect.Effect<void> => {
-  return Effect.sync(() => {
-    console.error(JSON.stringify({ event, ...describeCause(cause, confidential) }));
-    process.exitCode = FAILED_EXIT_CODE;
-  });
-};
+): Effect.Effect<void> {
+  return Console.error(JSON.stringify({ event, ...describeCause(cause, confidential) })).pipe(
+    Effect.andThen(markFailed),
+  );
+}
 
 export {
   FAILED_EXIT_CODE,
   OK_EXIT_CODE,
   describeCause,
   describeFailure,
+  markFailed,
   redact,
   reportCause,
   withVerifiedSecrets,

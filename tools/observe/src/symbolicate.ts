@@ -1,10 +1,11 @@
-import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
-
+import { Console, Effect, Schema } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
-import { Effect, Schema } from "effect";
-
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseArgs } from "node:util";
+import { reportFailed } from "./failure.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
@@ -28,15 +29,13 @@ const { values, positionals } = parseArgs({
   },
 });
 
-const help = Effect.sync(() => {
-  console.info(
-    JSON.stringify({
-      locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
-      readOnly: true,
-      usage: `vp run --filter @template/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
-    }),
-  );
-});
+const help = Console.info(
+  JSON.stringify({
+    locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
+    readOnly: true,
+    usage: `vp run --filter @template/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
+  }),
+);
 
 const resolveFrames = Effect.gen(function* resolveFrames() {
   const input = yield* Schema.decodeUnknownEffect(SymbolicateInput)({
@@ -52,26 +51,19 @@ const resolveFrames = Effect.gen(function* resolveFrames() {
     },
     input.locations,
   );
-  yield* Effect.sync(() => {
-    console.info(
-      JSON.stringify({
-        app: input.app,
-        event: "observe.symbolicated",
-        frames,
-        release: input.release,
-      }),
-    );
-  });
+  yield* Console.info(
+    JSON.stringify({
+      app: input.app,
+      event: "observe.symbolicated",
+      frames,
+      release: input.release,
+    }),
+  );
 });
 
 NodeRuntime.runMain(
   (values.help ? help : resolveFrames).pipe(
-    Effect.catchCause(() =>
-      Effect.sync(() => {
-        console.error(JSON.stringify({ event: "observe.symbolicate_failed" }));
-        process.exitCode = 1;
-      }),
-    ),
+    Effect.catchCause(() => reportFailed({ event: "observe.symbolicate_failed" })),
   ),
   { disableErrorReporting: true },
 );

@@ -1,7 +1,6 @@
-import { Array as Arr, Effect, Queue, Semaphore, type Cause } from "effect";
+import { Array as Arr, Console, Effect, Queue, Semaphore, type Cause } from "effect";
 
 import { maximumBatchSize, type BrowserEvent } from "./events.ts";
-import { logError } from "./log.ts";
 
 const maximumPendingEvents = 128;
 
@@ -12,9 +11,9 @@ export type EventQueue = {
   readonly close: () => void;
 };
 
-const reportExportFailure = Effect.sync(() => {
-  logError({ event: "browser.telemetry_export_failed" });
-});
+const reportExportFailure = Console.error(
+  JSON.stringify({ event: "browser.telemetry_export_failed" }),
+);
 
 export const makeEventQueue = (
   deliver: (batch: readonly BrowserEvent[]) => Promise<void>,
@@ -45,7 +44,7 @@ export const makeEventQueue = (
     },
     enqueue: (browserEvent) => {
       if (!Queue.offerUnsafe(pending, browserEvent) && Queue.isFullUnsafe(pending)) {
-        logError({ event: "browser.telemetry_queue_full" });
+        Effect.runSync(Console.error(JSON.stringify({ event: "browser.telemetry_queue_full" })));
       }
     },
     flushBeforeUnload: () => {

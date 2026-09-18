@@ -1,13 +1,12 @@
-import { getSessionSecurity } from "@template/db/security";
-import { Effect } from "effect";
-
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
-import { authSession } from "./auth-request.ts";
 import { Auth } from "./auth.ts";
-import { isStrongMethod } from "./policy.ts";
+import { Effect } from "effect";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
+import { authSession } from "./auth-request.ts";
+import { getSessionSecurity } from "@template/db/security";
+import { isStrongMethod } from "./policy.ts";
 
 const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* requireSessionSecurity(
   headers: Headers,
@@ -50,8 +49,9 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   return { session: current.session, strong, user: current.user };
 });
 
-const verifySession = (headers: Headers, allowEnrollment = false) => {
+// oxlint-disable-next-line typescript/explicit-function-return-type, typescript/explicit-module-boundary-types
+function verifySession(headers: Headers, allowEnrollment = false) {
   return verifySessionWith(headers, allowEnrollment);
-};
+}
 
 export { verifySession };

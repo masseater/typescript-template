@@ -1,8 +1,3 @@
-import { assert, describe, it } from "@effect/vitest";
-import { Telemetry, httpStatus } from "@template/observability";
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
-
-import { ProfileUpdate } from "./contracts.ts";
 import {
   AppOrigin,
   apiRoutes,
@@ -12,9 +7,12 @@ import {
   readJsonBody,
   secureResponse,
 } from "./http.ts";
-import { startRoute } from "./worker.ts";
-
+import { Effect, Layer, ManagedRuntime, Schema } from "effect";
+import { Telemetry, httpStatus } from "@template/observability";
+import { assert, describe, it } from "@effect/vitest";
 import type { AnyElysia } from "elysia";
+import { ProfileUpdate } from "./contracts.ts";
+import { startRoute } from "./worker.ts";
 
 const origin = "http://localhost:3001";
 const oversizedBody = 16_385;
@@ -26,11 +24,11 @@ const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemet
 const runtime = ManagedRuntime.make(context);
 const api = apiRoutes(runtime);
 
-const mutation = (headers: Readonly<Record<string, string>>, body: string): Request => {
+function mutation(headers: Readonly<Record<string, string>>, body: string): Request {
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
-};
+}
 
-const servedThroughStart = (app: AnyElysia): ((request: Request) => Effect.Effect<Response>) => {
+function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
   const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
   return startRoute({
@@ -41,11 +39,11 @@ const servedThroughStart = (app: AnyElysia): ((request: Request) => Effect.Effec
         : handle({ request });
     },
   });
-};
+}
 
-const callApi = async (app: AnyElysia, request: Request): Promise<Response> => {
+async function callApi(app: AnyElysia, request: Request): Promise<Response> {
   return Effect.runPromise(servedThroughStart(compileApi(app))(request));
-};
+}
 
 const rejections = [
   {
@@ -97,12 +95,7 @@ describe("json request bodies", () => {
 });
 
 describe("api routes behind a start server route", () => {
-  const echo = api.route(
-    ProfileUpdate,
-
-    (request) => readJsonBody(ProfileUpdate, request),
-    {},
-  );
+  const echo = api.route(ProfileUpdate, (request) => readJsonBody(ProfileUpdate, request), {});
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {

@@ -1,20 +1,19 @@
-import { NodeRuntime } from "@effect/platform-node";
-import { runRemoteDatabaseCommand } from "@template/db/remote";
-import { layer } from "alchemy/Alchemist";
-import { Effect } from "effect";
-
-import { CloudflareFailure } from "./config.ts";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { Console, Effect } from "effect";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
+import { CloudflareFailure } from "./config.ts";
+import { NodeRuntime } from "@effect/platform-node";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { layer } from "alchemy/Alchemist";
 import { reportCause } from "./secrets.ts";
+import { runRemoteDatabaseCommand } from "@template/db/remote";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";
 
-const inputInvalid = (): CloudflareFailure => {
+function inputInvalid(): CloudflareFailure {
   return new CloudflareFailure({ code: "database_input_invalid", keys: [] });
-};
+}
 
 const readBootstrapEmail = Effect.tryPromise({
   catch: inputInvalid,
@@ -47,8 +46,7 @@ NodeRuntime.runMain(
         databaseId,
         ...(email === "" ? {} : { email }),
       });
-
-      console.info(JSON.stringify(result));
+      yield* Console.info(JSON.stringify(result));
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,

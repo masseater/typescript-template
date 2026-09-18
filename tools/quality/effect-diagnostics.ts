@@ -1,15 +1,17 @@
-import { execFile } from "node:child_process";
-import { readdir } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-
+import { Console, Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { readdir } from "node:fs/promises";
 
-type Diagnosis = {
+interface Diagnosis {
   readonly ok: boolean;
   readonly output: string;
   readonly project: string;
-};
+}
 
 const MAX_OUTPUT_BYTES = 33_554_432;
 const DIAGNOSTIC_CONCURRENCY = 4;
@@ -17,43 +19,41 @@ const DIAGNOSTIC_CONCURRENCY = 4;
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/effect-tsgo", import.meta.url));
 
-const areaProjects = (area: string): Effect.Effect<string[]> => {
+function areaProjects(area: string): Effect.Effect<string[]> {
   return Effect.promise(async () =>
     readdir(new URL(`../../${area}/`, import.meta.url), { withFileTypes: true }),
   ).pipe(
     Effect.map((entries) =>
       entries
-
         .filter((entry) => entry.isDirectory())
-
         .map((entry) => `${area}/${entry.name}/tsconfig.json`),
     ),
   );
-};
+}
 
-const hasProject = (project: string): Effect.Effect<boolean> => {
+function hasProject(project: string): Effect.Effect<boolean> {
   const directory = new URL(`../../${project.replace(/tsconfig\.json$/u, "")}`, import.meta.url);
   return Effect.promise(async () => readdir(directory)).pipe(
     Effect.map((names) => names.includes("tsconfig.json")),
   );
-};
+}
 
-const diagnose = (project: string): Effect.Effect<Diagnosis> => {
+function diagnose(project: string): Effect.Effect<Diagnosis> {
   return Effect.promise(
     async () =>
+      // oxlint-disable-next-line promise/avoid-new
       new Promise<Diagnosis>((resolve) => {
         execFile(
           executable,
           ["diagnostics", "--project", `${root}${project}`, "--format", "text", "--strict"],
           { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
-
           (failure, stdout, stderr) => {
             resolve({ ok: failure === null, output: `${stdout}${stderr}`, project });
           },
         );
       }),
   );
-};
+}
 
 const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
   const areas = yield* Effect.all(
@@ -71,18 +71,18 @@ const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
 NodeRuntime.runMain(
   diagnoseAll().pipe(
     Effect.flatMap((results) =>
-      Effect.sync(() => {
+      Effect.gen(function* report() {
         const failed = results.filter((result) => !result.ok);
         for (const result of failed) {
-          process.stderr.write(result.output);
+          yield* Console.error(result.output);
         }
-        process.stdout.write(
-          `${JSON.stringify({
+        yield* Console.log(
+          JSON.stringify({
             event: "quality.effect_diagnostics",
             failed: failed.map((result) => result.project),
             ok: failed.length === 0,
             projects: results.length,
-          })}\n`,
+          }),
         );
         if (failed.length > 0) {
           process.exitCode = 1;

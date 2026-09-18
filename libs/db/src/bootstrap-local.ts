@@ -1,12 +1,10 @@
-import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
-import { getPlatformProxy } from "wrangler";
-
+import { Console, Effect, Schema } from "effect";
 import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
-import { Database } from "./database.ts";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
-
 import type { D1Database } from "@cloudflare/workers-types";
+import { Database } from "./database.ts";
+import { NodeRuntime } from "@effect/platform-node";
+import { getPlatformProxy } from "wrangler";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>
@@ -17,24 +15,25 @@ const platform = Effect.acquireRelease(
       remoteBindings: false,
     }),
   ),
-
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
-const report = (error: string): Effect.Effect<void> => {
-  return Effect.sync(() => {
-    console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false }));
-    process.exitCode = 1;
-  });
-};
+function report(error: string): Effect.Effect<void> {
+  return Console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false })).pipe(
+    Effect.andThen(
+      Effect.sync(() => {
+        process.exitCode = 1;
+      }),
+    ),
+  );
+}
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
     const { env } = yield* platform;
     const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
-
-    console.log(
+    yield* Console.log(
       JSON.stringify({
         action: "admin_bootstrap",
         role: administrator.role,

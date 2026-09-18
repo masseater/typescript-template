@@ -1,10 +1,13 @@
-import { spawn } from "node:child_process";
-import { constants } from "node:fs";
-import { access } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-
+import { Console, Effect, Schema } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
-import { Effect, Schema } from "effect";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { access } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { constants } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { spawn } from "node:child_process";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
@@ -24,14 +27,14 @@ const actions: Readonly<Record<string, readonly string[]>> = {
   up: ["up", "-d", "--wait"],
 };
 
-const composeArguments = (
+function composeArguments(
   name: string | undefined,
-): Effect.Effect<readonly string[], LocalServicesFailure> => {
+): Effect.Effect<readonly string[], LocalServicesFailure> {
   const args = name === undefined || !Object.hasOwn(actions, name) ? undefined : actions[name];
   return args === undefined
     ? Effect.fail(new LocalServicesFailure({ code: "local_action_unknown" }))
     : Effect.succeed(args);
-};
+}
 
 const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly string[]) {
   const bundled = yield* Effect.promise(async () =>
@@ -60,16 +63,19 @@ NodeRuntime.runMain(
   composeArguments(action).pipe(
     Effect.flatMap(runCompose),
     Effect.catchCause(() =>
-      Effect.sync(() => {
-        process.stderr.write(
-          `${JSON.stringify({
-            event: "local.services_command_failed",
-            ok: false,
-            remediation: "Check the Docker daemon, then retry the requested action.",
-          })}\n`,
-        );
-        process.exitCode = 1;
-      }),
+      Console.error(
+        JSON.stringify({
+          event: "local.services_command_failed",
+          ok: false,
+          remediation: "Check the Docker daemon, then retry the requested action.",
+        }),
+      ).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = 1;
+          }),
+        ),
+      ),
     ),
   ),
   { disableErrorReporting: true },

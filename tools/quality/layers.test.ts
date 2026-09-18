@@ -1,8 +1,48 @@
 import { describe, expect, it } from "vite-plus/test";
-
+import type { ViteUserConfigFnObject } from "vite-plus";
+import { appRun } from "@template/config/vite";
+import { applications } from "@template/config";
 import { reported } from "./lint-harness.ts";
 
 const source = "export const value = 1;\n";
+
+const appConfigs: Readonly<Record<string, ViteUserConfigFnObject>> =
+  import.meta.glob<ViteUserConfigFnObject>("../../apps/*/vite.config.ts", {
+    eager: true,
+    import: "default",
+  });
+
+const steigerConfigs: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../apps/*/steiger.config.ts",
+  { eager: true, import: "default" },
+);
+
+function appName(key: string): string {
+  return /\/apps\/(?<app>[^/]+)\//u.exec(key)?.groups?.["app"] ?? "";
+}
+
+describe("steiger coverage", () => {
+  it("runs the shared layer check in every application", () => {
+    expect.hasAssertions();
+    expect(
+      Object.keys(appConfigs)
+        .map((key) => appName(key))
+        .toSorted(),
+    ).toStrictEqual(applications.toSorted());
+    for (const config of Object.values(appConfigs)) {
+      expect(config({ command: "build", mode: "production" }).run).toBe(appRun);
+    }
+  });
+
+  it("gives every application its own steiger config", () => {
+    expect.hasAssertions();
+    expect(
+      Object.keys(steigerConfigs)
+        .map((key) => appName(key))
+        .toSorted(),
+    ).toStrictEqual(applications.toSorted());
+  });
+});
 
 describe("feature-sliced layers", () => {
   it.for([
