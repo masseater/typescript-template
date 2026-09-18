@@ -7,17 +7,15 @@ import {
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
-import { verifiedAddresses, zoneName } from "./email-lookup.ts";
+import { senderVerdict, sendingRecordNames, verifiedAddresses } from "./email-lookup.ts";
 import type { AccountAccess } from "./account-read.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
-import type { StateStore } from "./state-ownership.ts";
+import type { StateService } from "alchemy/State";
 import { applications } from "@template/config";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { databaseVerdict } from "./database-guard.ts";
 import { missingPermissions } from "./deploy-token.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
-import { sendingDomain } from "./config.ts";
 
 type Claim = "free" | "owned" | "taken";
 type Presence = "absent" | "present";
@@ -35,11 +33,6 @@ function hostnames(config: SharedConfig): readonly string[] {
   return Object.values(config.origins).map((origin) => new URL(origin).hostname);
 }
 
-function sendingRecordNames(config: SharedConfig): readonly string[] {
-  const domain = sendingDomain(config.mailFrom);
-  return [`cf-bounce.${domain}`, `cf-bounce._domainkey.${domain}`, `_dmarc.${domain}`];
-}
-
 function presence(found: boolean): Presence {
   return found ? "present" : "absent";
 }
@@ -50,24 +43,6 @@ function claim(present: boolean, owned: boolean): Claim {
   }
   return owned ? "owned" : "taken";
 }
-
-const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
-  Failure,
-  Requirements,
->(
-  access: AccountAccess,
-  config: SharedConfig,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
-) {
-  if ((yield* findDatabaseId(access, databaseName(config.prefix))) === undefined) {
-    return "free" as const;
-  }
-  return yield* assertDatabaseUnclaimed(access, config, store).pipe(
-    Effect.as("owned" as const),
-    Effect.catchCause(() => Effect.succeed("taken" as const)),
-  );
-});
 
 const workerVerdict = Effect.fn("workerVerdict")(function* workerVerdict(
   access: AccountAccess,
@@ -106,18 +81,6 @@ const dnsVerdict = Effect.fn("dnsVerdict")(function* dnsVerdict(
   return found.flat().length > 0 ? ("taken" as const) : ("free" as const);
 });
 
-const senderVerdict = Effect.fn("senderVerdict")(function* senderVerdict(
-  access: AccountAccess,
-  config: SharedConfig,
-) {
-  const zone = yield* zoneName(access, config.zoneId);
-  const domain = sendingDomain(config.mailFrom);
-  if (domain === zone) {
-    return "zone_apex" as const;
-  }
-  return domain.endsWith(`.${zone}`) ? ("dedicated" as const) : ("outside_zone" as const);
-});
-
 const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVerdict(
   access: AccountAccess,
   recipients: readonly string[],
@@ -135,7 +98,6 @@ const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVer
 
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
   return yield* grantedPermissions(access).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((granted) => missingPermissions(granted)),
     Effect.catchTag("CloudflareFailure", () =>
       Effect.succeed("unreadable_account_owned_token_required" as const),
@@ -146,8 +108,7 @@ const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: Ac
 const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Failure, Requirements>(
   access: AccountAccess,
   config: SharedConfig,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  store: StateStore<Failure, Requirements>,
+  store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
     Effect.catchCause(() => Effect.succeed<readonly string[]>([])),

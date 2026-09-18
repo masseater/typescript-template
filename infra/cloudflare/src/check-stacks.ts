@@ -256,7 +256,6 @@ NodeRuntime.runMain(
       process.exitCode = FAILED_EXIT_CODE;
     }
   }).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("InventoryFailure", (failure) =>
       Effect.sync(() => {
         // oxlint-disable-next-line no-console

@@ -131,7 +131,6 @@ function traversable(value: unknown): value is object {
   return value !== null && (typeof value === "object" || typeof value === "function");
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string>): void {
   if (!traversable(value) || seen.has(value)) {
     return;

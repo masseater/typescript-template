@@ -24,7 +24,6 @@ function totpUri(body: unknown): string {
 }
 
 const assertTotpUriDenied = Effect.fn("assertTotpUriDenied")(function* assertTotpUriDenied(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   client: Readonly<BrowserClient>,
 ) {
   const denied = yield* client.json("/two-factor/get-totp-uri", { password: PASSWORD });
@@ -34,7 +33,6 @@ const assertTotpUriDenied = Effect.fn("assertTotpUriDenied")(function* assertTot
 });
 
 const assertTotpUriAllowed = Effect.fn("assertTotpUriAllowed")(function* assertTotpUriAllowed(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   client: Readonly<BrowserClient>,
 ) {
   const allowed = yield* client.json("/two-factor/get-totp-uri", { password: PASSWORD });

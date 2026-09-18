@@ -1,7 +1,7 @@
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import { mockServer, pagedCollection } from "./account-fixture.ts";
-import { verifiedAddresses, zoneName } from "./email-lookup.ts";
+import { senderVerdict, verifiedAddresses } from "./email-lookup.ts";
 import { Effect } from "effect";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -17,7 +17,6 @@ const mixedRows = `{"result":[{"email":"alerts@example.com","verified":"2026-01-
 it.effect("counts only the destination addresses Cloudflare has dated as verified", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       pagedCollection(addresses, ADDRESS_PAGE_LIMIT, ({ request }) => {
         const asked = new URL(request.url).searchParams;
         assert.strictEqual(asked.get("per_page"), String(ADDRESS_PAGE_LIMIT));
@@ -36,7 +35,6 @@ it.effect("asks for every page Cloudflare counted rather than the first one", ()
       verified: "2026-01-01T00:00:00Z",
     }));
     yield* mockServer(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       pagedCollection(addresses, ADDRESS_PAGE_LIMIT, ({ request }) => {
         const asked = Number(new URL(request.url).searchParams.get("page"));
         return HttpResponse.json({
@@ -64,9 +62,19 @@ it.effect("refuses an address list whose pages do not add up to what Cloudflare 
   }).pipe(Effect.scoped),
 );
 
-it.effect("reads the zone by id so the sender's domain can be told from the apex", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(http.get(zone, () => HttpResponse.json({ result: { name: "example.com" } })));
-    assert.strictEqual(yield* zoneName(access, verificationSettings.zoneId), "example.com");
-  }).pipe(Effect.scoped),
+it.effect("tells a dedicated sending subdomain from the zone apex and from another zone", () =>
+  Effect.forEach(
+    [
+      { name: "example.com", verdict: "dedicated" },
+      { name: "send.example.com", verdict: "zone_apex" },
+      { name: "elsewhere.example", verdict: "outside_zone" },
+    ] as const,
+    (asked) =>
+      Effect.gen(function* program() {
+        yield* mockServer(
+          http.get(zone, () => HttpResponse.json({ result: { name: asked.name } })),
+        );
+        assert.strictEqual(yield* senderVerdict(access, verificationSettings), asked.verdict);
+      }).pipe(Effect.scoped),
+  ),
 );

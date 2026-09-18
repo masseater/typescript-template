@@ -169,18 +169,15 @@ function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
       }),
     ),
     unpagedCollection(`${account}/workers/scripts`, () => scriptPage(options.scripts ?? [])),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     unpagedCollection(`${account}/workers/domains`, ({ request }) =>
       domainPage(options.domains ?? [], request.url),
     ),
     http.get(`${account}/workers/subdomain`, () =>
       HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     unpagedCollection(`${zone}/dns_records`, ({ request }) =>
       dnsPage(options.records ?? [], request.url),
     ),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     pagedCollection(`${account}/email/routing/addresses`, ADDRESS_PAGE_LIMIT, ({ request }) =>
       addressPage(options.addresses ?? [], request.url),
     ),
