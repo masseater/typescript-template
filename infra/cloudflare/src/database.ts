@@ -2,6 +2,7 @@ import { RemovalPolicy, Stack } from "alchemy";
 import { stackName, stackOptions } from "./stacks.ts";
 import { D1 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
+import { databaseName } from "./database-lookup.ts";
 import { settings } from "./settings.ts";
 
 const databaseResource = "Database";
@@ -11,7 +12,7 @@ const stack = Stack(
   stackOptions,
   Effect.gen(function* database() {
     const config = yield* Effect.orDie(settings);
-    const d1 = yield* D1.Database(databaseResource, { name: `${config.prefix}-db` }).pipe(
+    const d1 = yield* D1.Database(databaseResource, { name: databaseName(config.prefix) }).pipe(
       RemovalPolicy.retain(),
     );
     return { databaseId: d1.databaseId, databaseName: d1.databaseName };

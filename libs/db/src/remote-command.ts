@@ -7,7 +7,6 @@ type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
 interface PlanReport {
-  readonly accountId: string;
   readonly databaseId: string;
   readonly event: "database.remote_plan";
   readonly migrations: readonly { readonly hash: string; readonly name: string }[];
@@ -19,7 +18,6 @@ interface PlanReport {
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function planReport({ operation, target }: RemoteInput, migrations: Migrations): PlanReport {
   return {
-    accountId: target.accountId,
     databaseId: target.databaseId,
     event: "database.remote_plan",
     migrations: migrations.map((item) => ({ hash: item.hash, name: item.name })),

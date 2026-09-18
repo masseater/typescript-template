@@ -7,7 +7,7 @@ description: 秘密の値が残る場所と、実行に与える権限の幅に�
 
 どちらも、起きた後に打てる手が無い。平文で一度出た値について、複写が何部できたかを数える手段は無い。効く操作は、出す前にしか無い。
 
-このリポジトリで秘密が動く場所は 3 つある。開発者の手元、Cloudflare Workers の実行環境、Cloudflare の Secrets Store である。手元の開発用の値は `apps/<app>/.dev.vars` に置き、デプロイの入力はリポジトリの外の owner だけが読めるファイルに置く。本番の実行環境が読む値は Worker の secret binding が持ち、Alchemy が state を暗号化する鍵とその認証トークンは Secrets Store にある。ここで見るのは、その実行に何を持たせるかだけである。
+このリポジトリで秘密が動く場所は 4 つある。開発者の手元、Cloudflare Workers の実行環境、Cloudflare の Secrets Store、Alchemy の state store である。手元の開発用の値は `apps/<app>/.dev.vars` に置き、デプロイの入力はリポジトリの外の owner だけが読めるファイルに置く。本番の実行環境が読む値は Worker の secret binding が持ち、Alchemy が state を暗号化する鍵とその認証トークンは Secrets Store にある。4 つ目は、宣言に渡した秘密と、宣言が発行した資格情報の実値である。Alchemy はそれらを state に載せ、state store の Durable Object が暗号化して保管する。宣言の入力である `TEMPLATE_AUTH_SECRET` と、`infra/cloudflare` が発行するアカウントトークンの値がこれにあたる。ここで見るのは、その実行に何を持たせるかだけである。
 
 ## 秘密の値を平文でこのリポジトリに置かない
 
@@ -70,6 +70,10 @@ description: 秘密の値が残る場所と、実行に与える権限の幅に�
 - IF: 値を読み出せない主体だけがその値を知っている; THEN
   - MUST: その値を宣言の管理下に入れない
   - MUST: 値を入れる主体と手順を、その領域を所有する文書に書く
+- IF: 宣言が、作成時にしか読み出せない資格情報を発行する; THEN
+  - MUST: その実値を保持している state store を、その資格情報そのものと同じ扱いで守る
+  - PROHIBIT: state store を捨てる操作を、作り直せるものへの操作として扱う
+    - `alchemy provider cloudflare teardown` が state を消すと、発行済みトークンの実値はどこからも読み出せない。復旧は、トークンを作り直して参照する側を差し替えることだけである
 
 ## 実行が持つ権限を宣言に限る
 

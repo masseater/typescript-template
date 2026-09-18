@@ -7,7 +7,6 @@ import type { Application } from "@template/config";
 import { Effect } from "effect";
 import type { Redacted } from "effect";
 import type { SharedConfig } from "./config.ts";
-import { archiveSourceMaps } from "./source-maps.ts";
 import { databaseRef } from "./database.ts";
 import { grants } from "@template/config";
 
@@ -23,7 +22,6 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const secret: Redacted.Redacted = yield* authSecret;
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
-  yield* Effect.orDie(archiveSourceMaps(repositoryRoot, target, artifacts.release));
   const database = yield* databaseRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
   const worker = yield* Worker("Worker", {

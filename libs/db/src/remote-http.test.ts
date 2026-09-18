@@ -99,6 +99,8 @@ it.effect("plan never accesses the network or discloses credentials and bootstra
     assert.isFalse("remoteStateVerified" in output && output.remoteStateVerified);
     assert.notInclude(JSON.stringify(output), target.apiToken);
     assert.notInclude(JSON.stringify(output), "private@example.test");
+    assert.notInclude(JSON.stringify(output), target.accountId);
+    assert.include(JSON.stringify(output), target.databaseId);
   }).pipe(Effect.scoped),
 );
 
