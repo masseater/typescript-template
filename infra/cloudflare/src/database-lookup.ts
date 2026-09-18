@@ -26,7 +26,6 @@ const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
 ) {
   const source = databaseSource(access.accountId);
   const listed = yield* readList(access, { filter: { name }, source }, DatabaseList).pipe(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.mapError((failure) => unavailable(failure.keys)),
   );
   const matches = listed.result.filter((database) => database.name === name);

@@ -68,7 +68,6 @@ const understood = Effect.fn("interview.understand")(function* understood(
   const interviewer = yield* Interviewer;
   return yield* interviewer.understand(state, spoken(utterance)).pipe(
     Effect.map((understanding): Reading => ({ source: "model", understanding })),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("UnderstandingFailed", (failure) =>
       Effect.as(
         Effect.logWarning("interview.model_failed", {

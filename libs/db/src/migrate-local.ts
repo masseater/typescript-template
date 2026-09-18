@@ -14,7 +14,6 @@ const platform = Effect.acquireRelease(
       remoteBindings: false,
     }),
   ),
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
@@ -34,7 +33,6 @@ NodeRuntime.runMain(
     console.log(JSON.stringify({ action: "local_migration", applied, success: true }));
   }).pipe(
     Effect.scoped,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.catchTag("RemoteFailure", (failure) => report(failure.code)),
     Effect.catchCause(() => report("LOCAL_MIGRATION_FAILED")),
   ),

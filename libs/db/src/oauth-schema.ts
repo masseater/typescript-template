@@ -53,7 +53,6 @@ const oauthClient = sqliteTable(
     uri: text("uri"),
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [
     index("oauth_client_user_id_idx").on(table.userId),
     uniqueIndex("oauth_client_client_id_unique").on(table.clientId),
@@ -81,7 +80,6 @@ const oauthResource = sqliteTable(
     signingKeyId: text("signing_key_id"),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [uniqueIndex("oauth_resource_identifier_unique").on(table.identifier)],
 );
 
@@ -98,7 +96,6 @@ const oauthClientResource = sqliteTable(
       .notNull()
       .references(() => oauthResource.identifier, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [
     index("oauth_client_resource_client_id_idx").on(table.clientId),
     index("oauth_client_resource_resource_id_idx").on(table.resourceId),
@@ -131,7 +128,6 @@ const oauthRefreshToken = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [
     index("oauth_refresh_token_client_id_idx").on(table.clientId),
     index("oauth_refresh_token_session_id_idx").on(table.sessionId),
@@ -162,7 +158,6 @@ const oauthAccessToken = sqliteTable(
     token: text("token"),
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [
     index("oauth_access_token_client_id_idx").on(table.clientId),
     index("oauth_access_token_session_id_idx").on(table.sessionId),
@@ -188,7 +183,6 @@ const oauthConsent = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   (table) => [
     index("oauth_consent_client_id_idx").on(table.clientId),
     index("oauth_consent_user_id_idx").on(table.userId),
