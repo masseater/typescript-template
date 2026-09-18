@@ -1,32 +1,50 @@
-import { Option, Tracer } from "effect";
+import { Effect, Option, Ref, Tracer } from "effect";
 
-import type { LogSink } from "./structured-logs.ts";
+import { isRecord, type LogSink } from "./structured-logs.ts";
 
-export const recordingSink = (): {
-  readonly sink: LogSink;
-  readonly stderr: readonly unknown[];
-  readonly stdout: readonly unknown[];
-  readonly stdwarn: readonly unknown[];
-} => {
-  const stderr: unknown[] = [];
-  const stdout: unknown[] = [];
-  const stdwarn: unknown[] = [];
+const parsedLine = (line: string): Readonly<Record<string, unknown>> => {
+  const decoded: unknown = JSON.parse(line);
+  return isRecord(decoded) ? decoded : {};
+};
+
+type RecordedLines = {
+  readonly stderr: readonly Readonly<Record<string, unknown>>[];
+  readonly stdout: readonly Readonly<Record<string, unknown>>[];
+  readonly stdwarn: readonly Readonly<Record<string, unknown>>[];
+};
+
+export const recordingSink = (): RecordedLines & { readonly sink: LogSink } => {
+  const lines = Ref.makeUnsafe<RecordedLines>({ stderr: [], stdout: [], stdwarn: [] });
+  const recordInto =
+    (stream: keyof RecordedLines) =>
+    (line: string): void => {
+      Effect.runSync(
+        Ref.update(lines, (earlier) => ({
+          ...earlier,
+          [stream]: [...earlier[stream], parsedLine(line)],
+        })),
+      );
+    };
   return {
-    sink: {
-      error: (line) => {
-        stderr.push(JSON.parse(line));
-      },
-      info: (line) => {
-        stdout.push(JSON.parse(line));
-      },
-      warn: (line) => {
-        stdwarn.push(JSON.parse(line));
-      },
+    sink: { error: recordInto("stderr"), info: recordInto("stdout"), warn: recordInto("stdwarn") },
+    get stderr(): RecordedLines["stderr"] {
+      return Ref.getUnsafe(lines).stderr;
     },
-    stderr,
-    stdout,
-    stdwarn,
+    get stdout(): RecordedLines["stdout"] {
+      return Ref.getUnsafe(lines).stdout;
+    },
+    get stdwarn(): RecordedLines["stdwarn"] {
+      return Ref.getUnsafe(lines).stdwarn;
+    },
   };
+};
+
+export const recordedLogs = async (
+  logging: (sink: LogSink) => Effect.Effect<void>,
+): Promise<RecordedLines> => {
+  const logs = recordingSink();
+  await Effect.runPromise(logging(logs.sink));
+  return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
 };
 
 const fixedSpanId = "c".repeat(16);
