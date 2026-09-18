@@ -16,8 +16,9 @@ function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<
   return Console.error(JSON.stringify(record)).pipe(Effect.andThen(markFailed));
 }
 
-type FailureRecord = Readonly<Record<string, unknown>>;
-type FailureReport<Failure> = FailureRecord | ((cause: Cause.Cause<Failure>) => FailureRecord);
+type FailureReport<Failure> =
+  | Readonly<Record<string, unknown>>
+  | ((cause: Cause.Cause<Failure>) => Readonly<Record<string, unknown>>);
 
 function runCli<Failure>(
   program: Effect.Effect<unknown, Failure>,

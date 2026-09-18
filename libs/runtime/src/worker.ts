@@ -1,13 +1,13 @@
-import { Effect, Result } from "effect";
-import type { Cause } from "effect";
-
 import { cspNonceHeader } from "@repo/config/security";
-import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
 import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
+import { Effect, Result } from "effect";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
 import { createNonce, jsonResponse, secureResponse } from "./responses.ts";
+
+import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
+import type { Cause } from "effect";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
 interface StartHandler {

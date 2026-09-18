@@ -1,11 +1,11 @@
+import { Database } from "@repo/db";
 import { Context, Effect, Layer } from "effect";
 
-import type { Application } from "@repo/config";
-import { Database } from "@repo/db";
-
 import { AuthFailure } from "./auth-failure.ts";
-import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
 import { createAuth } from "./create-auth.ts";
+
+import type { Application } from "@repo/config";
+import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
 
 interface AuthShape {
   readonly audience: Application;

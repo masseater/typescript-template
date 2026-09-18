@@ -53,6 +53,12 @@ describe("dont-review-it/no-unregistered-rule-plugin--enable-the-plugin", () => 
         options: ENABLES_VITEST,
       },
       {
+        name: "the configuration of another tool names rules of its own",
+        documented: true,
+        code: 'import { defineConfig } from "react-doctor/api";\nexport default defineConfig({ rules: { "react-doctor/circular-dependency": "error" } });',
+        options: ENABLES_NOTHING,
+      },
+      {
         name: "an object that names no rules block is not a rules record",
         code: 'export const routes = { "vitest/no-focused-tests": "error" };',
         options: ENABLES_NOTHING,
@@ -123,6 +129,17 @@ describe("dont-review-it/no-unregistered-rule-plugin--enable-the-plugin", () => 
       },
     ],
     invalid: [
+      {
+        name: "a configuration built by Vite+ is read as a lint configuration",
+        code: 'import { defineConfig } from "vite-plus";\nexport default defineConfig({ lint: { rules: { "vitest/no-focused-tests": "error" } } });',
+        options: ENABLES_NOTHING,
+        errors: [
+          {
+            messageId: "unregisteredRulePlugin",
+            data: { plugin: "vitest", ruleName: "vitest/no-focused-tests" },
+          },
+        ],
+      },
       {
         name: "a rule of a plugin nothing enables is reported",
         documented: true,

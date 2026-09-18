@@ -1,11 +1,12 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { createLink } from "@tanstack/react-router";
 import { cn } from "cn";
-import type { ComponentProps, ReactElement } from "react";
 import { use } from "react";
 
 import { DropdownMenuClose } from "./dropdown-menu-close";
 import { itemVariants } from "./dropdown-menu-item-variants";
+
+import type { ComponentProps, ReactElement } from "react";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function DropdownMenuLinkAnchor({

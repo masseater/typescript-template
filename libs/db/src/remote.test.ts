@@ -5,9 +5,7 @@ import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import type { Database } from "./database.ts";
 import { query } from "./database.ts";
-import type { RemoteFailure } from "./remote-input.ts";
 import { parseRemoteInput } from "./remote-input.ts";
 import {
   APPLICATION_TABLES,
@@ -18,6 +16,9 @@ import {
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
+
+import type { Database } from "./database.ts";
+import type { RemoteFailure } from "./remote-input.ts";
 
 const HEX_ID_LENGTH = 32;
 const HASH_LENGTH = 64;

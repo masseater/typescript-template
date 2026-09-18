@@ -10,7 +10,9 @@ import {
 } from "../repository-scan/worktree-files.ts";
 import { isRunnerConfigurationFile, sharedSetupFilesUnder } from "./registered-setup-files.ts";
 
-const FIXTURE_ROOT = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-registered-setup-files-"));
+const FIXTURE_ROOT = mkdtempSync(
+  join(realpathSync(tmpdir()), "dont-review-it-registered-setup-files-"),
+);
 
 describe("isRunnerConfigurationFile", () => {
   describe("a module carrying the name the toolchain gives the runner configuration", () => {

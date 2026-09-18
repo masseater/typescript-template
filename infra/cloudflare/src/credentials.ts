@@ -3,16 +3,16 @@ import { constants } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { lstat, open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
-import type { FileHandle } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-
-import { Effect, Schema } from "effect";
 
 import { secretsFile } from "@repo/config/deployment";
 import { deploymentKeys } from "@repo/config/deployment-keys";
+import { Effect, Schema } from "effect";
 
 import { projectName } from "./project.ts";
+
+// oxlint-disable-next-line import/no-nodejs-modules
+import type { FileHandle } from "node:fs/promises";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 const KEY_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=/u;

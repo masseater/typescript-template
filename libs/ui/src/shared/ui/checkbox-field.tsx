@@ -1,8 +1,9 @@
 import { Field as FieldPrimitive } from "@base-ui/react/field";
-import type { ReactElement } from "react";
 
 import { Checkbox } from "./checkbox";
 import { labelClassName } from "./control";
+
+import type { ReactElement } from "react";
 
 function CheckboxField({
   checked,

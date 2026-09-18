@@ -1,8 +1,8 @@
-import { useLocation } from "@tanstack/react-router";
-import type { ReactElement } from "react";
-
 import { redirectTarget } from "@repo/ui";
 import { LoginPage } from "@repo/ui/auth";
+import { useLocation } from "@tanstack/react-router";
+
+import type { ReactElement } from "react";
 
 function AdminLogin(): ReactElement {
   const { searchStr } = useLocation();

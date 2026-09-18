@@ -1,14 +1,14 @@
-import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-
 import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
 import { otlpSignalUrl } from "@repo/observability";
+import { Effect } from "effect";
 
-import type { AppBindings } from "./bindings.ts";
 import { parseDeploymentCommand, traceDestination, workerObservability } from "./config.ts";
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import type { AppBindings } from "./bindings.ts";
 
 const release = "0123456789abcdef";
 const settings = verificationSettings;

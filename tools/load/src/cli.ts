@@ -5,14 +5,12 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { Console, Effect, Schema } from "effect";
-
 import { applicationOrigins, mailpitOrigin } from "@repo/config";
 import { reportFailed, runCli } from "@repo/config/cli";
 import { memberPageSize } from "@repo/runtime/contracts";
+import { Console, Effect, Schema } from "effect";
 
 import { exists, installBinary } from "./binary.ts";
-import type { BinaryUnavailable } from "./binary.ts";
 import {
   Application,
   awaitReady,
@@ -20,8 +18,10 @@ import {
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
 } from "./environment.ts";
-import type { EnvironmentUnusable } from "./environment.ts";
 import { discardSummary, readSummary } from "./summary.ts";
+
+import type { BinaryUnavailable } from "./binary.ts";
+import type { EnvironmentUnusable } from "./environment.ts";
 import type { Report } from "./summary.ts";
 
 class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFailure", {

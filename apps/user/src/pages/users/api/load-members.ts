@@ -1,7 +1,9 @@
-import type { UsersSearch } from "#pages/users/model/users-search.ts";
-import { userClient } from "#shared/api/index.ts";
 import { apiData } from "@repo/runtime/client";
 import { MemberList } from "@repo/runtime/contracts";
+
+import { userClient } from "#shared/api/index.ts";
+
+import type { UsersSearch } from "#pages/users/model/users-search.ts";
 
 type Members = typeof MemberList.Type;
 

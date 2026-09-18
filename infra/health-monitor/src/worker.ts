@@ -1,12 +1,12 @@
-import { Effect } from "effect";
-
 import { Monitor, monitorHandler } from "@repo/monitor";
-import type { MonitorBindings, Notify } from "@repo/monitor";
+import { Effect } from "effect";
 
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
-import type { HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
+
+import type { MonitorBindings, Notify } from "@repo/monitor";
+import type { HealthState } from "./decision.ts";
 
 interface Bindings extends MonitorBindings {
   USER_ORIGIN: string;

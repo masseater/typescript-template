@@ -1,9 +1,10 @@
+import { Status, loginPath, useSession } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import type { ReactElement } from "react";
 import { useEffect } from "react";
 
 import { AdminFrame } from "#widgets/admin-frame/index.ts";
-import { Status, loginPath, useSession } from "@repo/ui";
+
+import type { ReactElement } from "react";
 
 const SECURITY = "/security";
 

@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Deferred, Effect, Layer, Queue, Schema, Stream } from "effect";
-
 import { Telemetry, httpStatus } from "@repo/observability";
+import { Deferred, Effect, Layer, Queue, Schema, Stream } from "effect";
 
 import { apiServerClient } from "./client.ts";
 import { AppOrigin, apiRoutes, createApi, elysiaServer, readSearchParams } from "./http.ts";

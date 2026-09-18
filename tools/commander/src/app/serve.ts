@@ -1,13 +1,13 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { loopbackAddress, loopbackOrigin } from "@repo/config";
 import { Effect, Schema } from "effect";
-import type { Scope } from "effect";
 
 import { playbookDirectory } from "#shared/playbook/index.ts";
-import { loopbackAddress, loopbackOrigin } from "@repo/config";
-
 import { nodeServer } from "./node-server.ts";
+
+import type { Scope } from "effect";
 
 interface Served {
   readonly directory: string;

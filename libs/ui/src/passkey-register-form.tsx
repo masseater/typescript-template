@@ -1,12 +1,12 @@
-import type { ReactElement, SyntheticEvent } from "react";
-
 import { authClient } from "./client";
-import type { SettingsContext } from "./mfa-types";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
 import { useTextInput } from "./use-text-input";
+
+import type { ReactElement, SyntheticEvent } from "react";
+import type { SettingsContext } from "./mfa-types";
 
 interface PasskeyRegisterFormProps {
   readonly context: SettingsContext;

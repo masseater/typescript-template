@@ -1,8 +1,8 @@
-import { Clock, Context, Duration, Effect, Layer } from "effect";
-import type { Exit } from "effect";
-
 import { checkDatabase } from "@repo/db";
+import { Clock, Context, Duration, Effect, Layer } from "effect";
+
 import type { Database, DatabaseFailure } from "@repo/db";
+import type { Exit } from "effect";
 
 const healthCacheWindow = Duration.minutes(1);
 

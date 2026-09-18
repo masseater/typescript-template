@@ -1,8 +1,7 @@
-import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
+import { field, workspaceManifests } from "./dependencies.ts";
 
 import type { Tasks } from "@repo/config/vite";
-
-import { field, workspaceManifests } from "./dependencies.ts";
+import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
 
 const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> = import.meta.glob(
   ["../../vite.config.ts", "../../{apps,libs,infra,tools}/*/vite.config.ts"],

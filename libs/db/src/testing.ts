@@ -1,4 +1,3 @@
-import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import { reset } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { getColumns } from "drizzle-orm";
@@ -9,6 +8,8 @@ import { Database } from "./database.ts";
 import { d1Executor } from "./migrate-d1.ts";
 import { MigrationFiles, migrateDatabase } from "./remote-operations.ts";
 import { schema } from "./schema.ts";
+
+import type { D1Database, D1Result } from "@cloudflare/workers-types";
 
 declare global {
   // oxlint-disable-next-line typescript/no-namespace

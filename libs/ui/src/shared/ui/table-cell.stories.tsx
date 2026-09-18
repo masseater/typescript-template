@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
 import preview from "../../../.storybook/preview";
 import { Table } from "./table";
 import { TableBody } from "./table-body";
 import { TableCell } from "./table-cell";
 import { TableRow } from "./table-row";
+
+import type { ReactElement } from "react";
 
 const meta = preview.meta({
   component: TableCell,

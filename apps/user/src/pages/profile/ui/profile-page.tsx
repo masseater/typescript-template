@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-
-import type { Member } from "#pages/profile/model/member.ts";
 import { Avatar, ButtonLink, Heading } from "@repo/ui";
 
 import { Biography } from "./biography.tsx";
 import { ProfileBody } from "./profile-body.tsx";
+
+import type { Member } from "#pages/profile/model/member.ts";
+import type { ReactElement } from "react";
 
 const joinedMonth = new Intl.DateTimeFormat("ja", {
   month: "long",

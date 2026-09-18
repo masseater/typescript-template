@@ -5,9 +5,10 @@ import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
 import { AuthFailure } from "./auth-failure.ts";
 import { Auth } from "./auth.ts";
-import type { BetterAuthInstance } from "./create-auth.ts";
 import { EmailVerificationFailed } from "./email-verification-failed.ts";
 import { SessionInvalid } from "./session-invalid.ts";
+
+import type { BetterAuthInstance } from "./create-auth.ts";
 
 const tooManyRequests = 429;
 

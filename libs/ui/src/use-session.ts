@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-
 import { decodeJson } from "@repo/runtime/client";
 import { SessionView as SessionContract } from "@repo/runtime/contracts";
+import { useEffect, useState } from "react";
+
+import { errorMessage } from "./protocol";
 
 import type { SessionView } from "./protocol";
-import { errorMessage } from "./protocol";
 
 interface SessionSnapshot {
   readonly error: string | undefined;
