@@ -2,7 +2,7 @@ import { State, readState } from "alchemy/State";
 import type { StateService } from "alchemy/State";
 import { Effect, Schema } from "effect";
 
-import { stackName, stackNames } from "./stacks.ts";
+import { stackName, stackNames, traceDestinationStack } from "./stacks.ts";
 import type { StackName } from "./stacks.ts";
 
 const StoredDatabase = Schema.Struct({ attr: Schema.Struct({ databaseId: Schema.String }) });
@@ -10,9 +10,13 @@ const StoredWorker = Schema.Struct({ attr: Schema.Struct({ workerName: Schema.St
 const StoredSending = Schema.Struct({
   attr: Schema.Struct({ name: Schema.String, zoneId: Schema.String }),
 });
+const StoredTraceDestination = Schema.Struct({
+  attr: Schema.Struct({ name: Schema.String, slug: Schema.String }),
+});
 const isStoredDatabase = Schema.is(StoredDatabase);
 const isStoredWorker = Schema.is(StoredWorker);
 const isStoredSending = Schema.is(StoredSending);
+const isStoredTraceDestination = Schema.is(StoredTraceDestination);
 
 const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, Requirements>(
   store: Effect.Effect<StateService, Failure, Requirements>,
@@ -56,4 +60,19 @@ const recordedSendingDomains = Effect.fn("recordedSendingDomains")(function* rec
   );
 });
 
-export { recordedDatabaseIds, recordedSendingDomains, recordedWorkerNames };
+const recordedTraceDestinations = Effect.fn("recordedTraceDestinations")(
+  function* recordedTraceDestinations<Failure, Requirements>(
+    store: Effect.Effect<StateService, Failure, Requirements>,
+    prefix: string,
+  ) {
+    const rows = yield* recordedRows(store, prefix, [traceDestinationStack]);
+    return rows.flatMap((row) => (isStoredTraceDestination(row) ? [row.attr.name] : []));
+  },
+);
+
+export {
+  recordedDatabaseIds,
+  recordedSendingDomains,
+  recordedTraceDestinations,
+  recordedWorkerNames,
+};

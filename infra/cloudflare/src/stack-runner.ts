@@ -12,7 +12,7 @@ import type { DeploymentSecrets } from "./credentials.ts";
 import { stateStore } from "./deployment-access.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import type { PlannedStack } from "./plan-confirmation.ts";
-import { assertStackUnclaimed } from "./stack-guards.ts";
+import { assertStackReady } from "./stack-guards.ts";
 import type { StackName } from "./stacks.ts";
 
 interface Deployment {
@@ -92,7 +92,7 @@ const applyStack = Effect.fn("applyStack")(function* applyStack(
   deployment: Deployment,
 ) {
   const { confirmation, stack } = requested;
-  yield* assertStackUnclaimed(stack, deployment, stateStore(deployment.secrets));
+  yield* assertStackReady(stack, deployment, stateStore(deployment.secrets));
   const { planned, snapshot } = yield* planStack(stack, deployment);
   yield* announce(planned, stack);
   yield* acceptPlan(planned, { accountId: deployment.access.accountId, confirmation });

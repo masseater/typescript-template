@@ -5,10 +5,11 @@ import type { AccountAccess } from "./account-read.ts";
 import type { SharedConfig } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { assertSendingDomainUnclaimed } from "./email-guard.ts";
+import { assertTraceDestinationApplied } from "./observability-guard.ts";
 import type { StackName } from "./stacks.ts";
-import { onboardingStack } from "./stacks.ts";
+import { onboardingStack, stackDependencies, traceDestinationStack } from "./stacks.ts";
 
-const assertStackUnclaimed = Effect.fn("assertStackUnclaimed")(function* assertStackUnclaimed<
+const assertStackReady = Effect.fn("assertStackReady")(function* assertStackReady<
   Failure,
   Requirements,
 >(
@@ -22,6 +23,9 @@ const assertStackUnclaimed = Effect.fn("assertStackUnclaimed")(function* assertS
   if (stack === onboardingStack) {
     yield* assertSendingDomainUnclaimed(deployment.access, deployment.config, store);
   }
+  if (stackDependencies(stack).includes(traceDestinationStack)) {
+    yield* assertTraceDestinationApplied(deployment.config, store);
+  }
 });
 
-export { assertStackUnclaimed };
+export { assertStackReady };

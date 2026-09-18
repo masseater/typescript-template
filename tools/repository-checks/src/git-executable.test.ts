@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 
@@ -6,12 +6,12 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { gitExecutablePath } from "./git-executable.ts";
 
-const LEADING_EMPTY_DIRECTORY = join(tmpdir(), "git-executable-leading-empty");
-const TRAILING_GIT_DIRECTORY = join(tmpdir(), "git-executable-trailing-git");
-const WINDOWS_GIT_DIRECTORY = join(tmpdir(), "git-executable-windows-git");
-const UNRUNNABLE_GIT_DIRECTORY = join(tmpdir(), "git-executable-unrunnable-git");
-const NOTHING_CARRIED_DIRECTORY = join(tmpdir(), "git-executable-nothing-carried");
-const REPEATED_SEARCH_DIRECTORY = join(tmpdir(), "git-executable-repeated-search");
+const LEADING_EMPTY_DIRECTORY = mkdtempSync(join(tmpdir(), "git-executable-leading-empty-"));
+const TRAILING_GIT_DIRECTORY = mkdtempSync(join(tmpdir(), "git-executable-trailing-git-"));
+const WINDOWS_GIT_DIRECTORY = mkdtempSync(join(tmpdir(), "git-executable-windows-git-"));
+const UNRUNNABLE_GIT_DIRECTORY = mkdtempSync(join(tmpdir(), "git-executable-unrunnable-git-"));
+const NOTHING_CARRIED_DIRECTORY = mkdtempSync(join(tmpdir(), "git-executable-nothing-carried-"));
+const REPEATED_SEARCH_DIRECTORY = mkdtempSync(join(tmpdir(), "git-executable-repeated-search-"));
 
 describe("gitExecutablePath", () => {
   describe("a search path whose later directory carries an executable git", () => {
