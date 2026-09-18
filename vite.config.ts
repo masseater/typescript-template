@@ -55,7 +55,10 @@ export default defineConfig({
         ],
       },
       "check:effect": {
-        command: "node tools/quality/effect-diagnostics.ts",
+        command: [
+          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+          "vp run -F '!typescript-template' --cache check:effect",
+        ],
         input: [...taskInput],
       },
       "check:imports":

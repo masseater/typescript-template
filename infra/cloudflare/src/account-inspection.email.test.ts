@@ -74,7 +74,9 @@ it.effect("blocks when the zone's sending domains cannot be read as the plan wou
       ...accountHandlers({}),
     );
     const inspection = yield* inspectAccount(access, config, emptyState());
-    assert.strictEqual(inspection.sendingSubdomain, "unreadable");
+    assert.deepStrictEqual(inspection.sendingSubdomain, {
+      unreadable: ["zones/{}/email/sending/subdomains", `status_${FORBIDDEN_STATUS}`],
+    });
     assert.deepStrictEqual(blocked(inspection), ["sendingSubdomain"]);
   }).pipe(Effect.scoped),
 );
@@ -88,7 +90,16 @@ it.effect("keeps reading the account when the destination addresses cannot be re
       ...accountHandlers({}),
     );
     const inspection = yield* inspectAccount(access, config, emptyState());
-    assert.strictEqual(inspection.alertQuota, "unreadable");
-    assert.deepStrictEqual(blocked(inspection), []);
+    assert.deepStrictEqual(inspection.alertQuota, {
+      unreadable: ["accounts/{}/email/routing/addresses", `status_${FORBIDDEN_STATUS}`],
+    });
+    assert.deepStrictEqual(blocked(inspection), ["alertQuota"]);
+    assert.deepInclude(inspection, {
+      database: "free",
+      senderDomain: "dedicated",
+      sendingSubdomain: "free",
+      stateStore: "absent",
+      workerNames: "free",
+    });
   }).pipe(Effect.scoped),
 );
