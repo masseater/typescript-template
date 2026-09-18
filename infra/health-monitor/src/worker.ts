@@ -12,7 +12,7 @@ type Bindings = {
 } & MonitorBindings;
 
 export class HealthMonitor extends Monitor<Bindings> {
-  protected readonly event = "health_monitor";
+  protected readonly eventName = "health_monitor";
   protected readonly failure = {
     subject: "Cloudflare Workers health monitoring failed",
     text: "アプリの死活監視が失敗しました。health_monitor.check_failed のログを確認してください。アプリが稼働しているとは判断しないでください。",

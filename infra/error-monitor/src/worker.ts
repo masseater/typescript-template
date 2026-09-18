@@ -13,7 +13,7 @@ type Bindings = {
 const LOOKBACK_MS = 900_000;
 
 export class ErrorMonitor extends Monitor<Bindings> {
-  protected readonly event = "error_monitor";
+  protected readonly eventName = "error_monitor";
   protected readonly failure = {
     subject: "Cloudflare Workers error monitoring failed",
     text: "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",

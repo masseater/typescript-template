@@ -121,7 +121,7 @@ export const UPSTREAM_RULES: NonNullable<OxlintConfig["rules"]> = {
   "typescript/no-misused-promises": LINT_SEVERITY.ERROR,
   "typescript/no-misused-spread": LINT_SEVERITY.ERROR,
   "typescript/no-mixed-enums": LINT_SEVERITY.ERROR,
-  "typescript/no-namespace": LINT_SEVERITY.ERROR,
+  "typescript/no-namespace": [LINT_SEVERITY.ERROR, { allowDeclarations: true }],
   "typescript/no-non-null-asserted-nullish-coalescing": LINT_SEVERITY.ERROR,
   "typescript/no-non-null-asserted-optional-chain": LINT_SEVERITY.ERROR,
   "typescript/no-non-null-assertion": LINT_SEVERITY.ERROR,

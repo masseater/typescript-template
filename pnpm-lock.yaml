@@ -993,6 +993,9 @@ importers:
       '@template/config':
         specifier: workspace:*
         version: link:../config
+      '@template/observability':
+        specifier: workspace:*
+        version: link:../observability
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1006,6 +1009,12 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@template/dont-review-it':
+        specifier: workspace:*
+        version: link:../../tools/dont-review-it
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.52.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

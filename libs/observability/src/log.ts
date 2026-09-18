@@ -1,29 +1,28 @@
-type LogLevel = "error" | "info";
+/** @canonical-values observability.log-level */
+const LOG_LEVELS = ["error", "info"] as const;
 
-type LogSink = {
-  readonly error: (line: string) => void;
-  readonly info: (line: string) => void;
+const [failureLevel, progressLevel] = LOG_LEVELS;
+
+export type LogLevel = (typeof LOG_LEVELS)[number];
+export type LogSink = Readonly<Record<LogLevel, (line: string) => void>>;
+
+export const consoleSink: LogSink = {
+  error: (line) => {
+    console[failureLevel](line);
+  },
+  info: (line) => {
+    console[progressLevel](line);
+  },
 };
 
-const consoleError = (line: string): void => {
-  console.error(line);
+const writeLog = (level: LogLevel, fields: Readonly<Record<string, unknown>>): void => {
+  consoleSink[level](JSON.stringify(fields));
 };
 
-const consoleInfo = (line: string): void => {
-  console.info(line);
+export const logError = (fields: Readonly<Record<string, unknown>>): void => {
+  writeLog(failureLevel, fields);
 };
 
-const consoleSink: LogSink = { error: consoleError, info: consoleInfo };
-
-type LogFields = Readonly<Record<string, string | number | boolean>>;
-
-const writeLog = (sink: LogSink, level: LogLevel, fields: LogFields): void => {
-  sink[level](JSON.stringify(fields));
+export const logInfo = (fields: Readonly<Record<string, unknown>>): void => {
+  writeLog(progressLevel, fields);
 };
-
-const logError = (fields: LogFields): void => {
-  writeLog(consoleSink, "error", fields);
-};
-
-export { consoleSink, logError };
-export type { LogSink };

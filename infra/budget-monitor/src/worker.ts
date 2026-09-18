@@ -15,7 +15,7 @@ type Bindings = {
 } & MonitorBindings;
 
 export class BudgetMonitor extends Monitor<Bindings> {
-  protected readonly event = "budget";
+  protected readonly eventName = "budget";
   protected readonly failure = {
     subject: "Cloudflare budget monitoring failed",
     text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",

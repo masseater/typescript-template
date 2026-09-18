@@ -4,7 +4,9 @@
   "type": "module",
   "exports": {
     ".": "./src/server.ts",
-    "./browser": "./src/browser.ts"
+    "./browser": "./src/browser.ts",
+    "./log": "./src/log.ts",
+    "./http-status": "./src/http-status.ts"
   },
   "scripts": {},
   "dependencies": {

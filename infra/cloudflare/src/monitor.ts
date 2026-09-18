@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { monitorBinding } from "@template/monitor";
+import { monitorBinding } from "@template/monitor/binding";
 import { DurableObject, Email, Worker } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 

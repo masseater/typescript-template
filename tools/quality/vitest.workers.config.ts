@@ -4,7 +4,7 @@ import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { workerCompatibility } from "@template/config/worker";
 import { localDatabase } from "@template/db/local";
 import { loadRemoteMigrations } from "@template/db/migrations";
-import { monitorBinding } from "@template/monitor";
+import { monitorBinding } from "@template/monitor/binding";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
@@ -33,9 +33,10 @@ export default defineProject({
         compatibilityDate: workerCompatibility.date,
         compatibilityFlags: [...workerCompatibility.flags],
         d1Databases: { [localDatabase.binding]: localDatabase.database_id },
+        kvNamespaces: ["SENT_MAIL"],
         durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
-        outboundService: (request: { readonly url: string }) =>
-          Response.json({ blocked: request.url }, { status: 403 }),
+        outboundService: (outboundRequest: { readonly url: string }) =>
+          Response.json({ blocked: outboundRequest.url }, { status: 403 }),
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
       },
     }),

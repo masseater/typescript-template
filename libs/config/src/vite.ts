@@ -111,8 +111,8 @@ const appRun = {
 const monitorWorker = {
   pack: {
     deps: {
-      alwaysBundle: ["effect", "@template/config", "@template/monitor"],
-      onlyBundle: ["effect", "@template/config", "@template/monitor"],
+      alwaysBundle: ["effect", "@template/config", "@template/monitor", "@template/observability"],
+      onlyBundle: ["effect", "@template/config", "@template/monitor", "@template/observability"],
     },
     entry: { index: "src/worker.ts" },
     format: "esm",

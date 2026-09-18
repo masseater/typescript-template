@@ -81,6 +81,7 @@ export default defineConfig({
             "drizzle.config.ts",
             "knip.ts",
             "main.ts",
+            "monitor-fixture.ts",
             "preview.tsx",
             "server.ts",
             "steiger.config.js",
@@ -90,6 +91,12 @@ export default defineConfig({
             "vitest.workers.config.ts",
             "worker.ts",
           ],
+        },
+      ],
+      "dont-review-it/no-detached-test-file--move-beside-source": [
+        LINT_SEVERITY.ERROR,
+        {
+          testFileSuffixes: [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".worker.test.ts"],
         },
       ],
       "dont-review-it/no-empty-catch--throw-or-handle": LINT_SEVERITY.ERROR,
