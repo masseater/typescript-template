@@ -9,7 +9,6 @@ function jsonResponse(value: unknown, status: number = httpStatus.ok): Response 
   return Response.json(value, { headers: privateHeaders, status });
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function secureResponse(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");

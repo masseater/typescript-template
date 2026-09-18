@@ -29,7 +29,6 @@ function decodeJson<Contract extends Decodable>(
 }
 
 function failureMessage(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   reply: Readonly<Pick<Response, "headers" | "status">>,
   body: unknown,
 ): string {
@@ -43,7 +42,6 @@ function failureMessage(
 
 function apiData<Contract extends Decodable>(
   contract: Contract,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   reply: ApiReply,
 ): Contract["Type"] {
   if (reply.error !== null) {
@@ -64,7 +62,6 @@ const absent = {
 
 function apiDataOrNone<Contract extends Decodable>(
   contract: Contract,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   reply: ApiReply,
   absentStatus: (typeof absent)[keyof typeof absent] = absent.unauthorized,
 ): Contract["Type"] | undefined {

@@ -31,7 +31,6 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     .get("/health", api.route(HealthView, health, unavailable))
     .get(
       "/session",
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
     );
 }
@@ -43,14 +42,12 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
       "/verify-email",
       api.route(
         EmailVerified,
-        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
         (request) =>
           readJsonBody(EmailVerificationRequest, request).pipe(
             Effect.flatMap(({ token }) => verifyEmailToken(token, request.headers)),
           ),
         {
           ...unavailable,
-          // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
           EmailVerificationFailed: (error) => emailVerificationFailure(error),
         },
       ),

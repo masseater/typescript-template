@@ -9,10 +9,8 @@ import { user } from "./schema.ts";
 
 function describeMember(
   id: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   values: { readonly createdAt: Date; readonly name: string; readonly profile: string },
 ): ReturnType<typeof addUser> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return query(async (database): Promise<void> => {
     await database.update(user).set(values).where(eq(user.id, id));
   });

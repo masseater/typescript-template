@@ -16,7 +16,6 @@ function code(
 > {
   return parseHealthMonitorConfig(input).pipe(
     Effect.flip,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     Effect.map((failure) => failure.code),
   );
 }

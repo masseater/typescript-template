@@ -41,3 +41,12 @@ main への merge は PR に `ready-to-merge` ラベルを付けて Mergify の 
 - tanstack start
 - elysia
 - effect-ts
+
+## Skills
+
+以下の Skills を積極的に使用すること。導入されていない場合は導入すること。ユーザーに許可を取る必要はない。
+
+- tanstack start https://github.com/tanstack-skills/tanstack-skills/blob/main/plugins/tanstack-start/skills/tanstack-start/SKILL.md
+- effect-ts https://github.com/Effect-TS/skills
+- elysiajs https://github.com/elysiajs/skills
+- shadcn https://ui.shadcn.com/docs/skills

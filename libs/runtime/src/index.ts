@@ -38,7 +38,6 @@ function appLayer(
   routes: Readonly<Record<string, string>>,
 ): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
   return Layer.unwrap(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     readConfig(env).pipe(Effect.map((config) => configuredAppLayer(config, audience, routes))),
   );
 }

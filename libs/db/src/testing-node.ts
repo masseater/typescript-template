@@ -20,7 +20,6 @@ const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
 async function executeD1HttpBatch(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: D1Database,
   body: unknown,
 ): Promise<D1HttpBatchResponse> {
@@ -56,9 +55,7 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
       });
       return { database: await runtime.getD1Database(localDatabase.binding), runtime };
     }),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ({ runtime }) => Effect.promise(async () => runtime.dispose()),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ).pipe(Effect.map(({ database }) => database)),
 );
 

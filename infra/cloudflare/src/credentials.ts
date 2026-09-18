@@ -28,17 +28,11 @@ function failure(code: SecretsFileFailure["code"]): () => SecretsFileFailure {
   return () => new SecretsFileFailure({ code, keys: [] });
 }
 
-function closeHandle(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  handle: FileHandle,
-): Effect.Effect<void> {
+function closeHandle(handle: FileHandle): Effect.Effect<void> {
   return Effect.tryPromise(async () => handle.close()).pipe(Effect.ignore);
 }
 
-const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  handle: FileHandle,
-) {
+const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle: FileHandle) {
   const metadata = yield* Effect.tryPromise({
     catch: failure("secrets_file_unreadable"),
     try: async () => handle.stat(),

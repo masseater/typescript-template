@@ -668,9 +668,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@repo/interview':
-        specifier: workspace:*
-        version: link:../../libs/interview
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1

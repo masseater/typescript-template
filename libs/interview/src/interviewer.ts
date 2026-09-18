@@ -97,7 +97,6 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
 
   public static fromEnvironment(env: unknown): Layer.Layer<Interviewer, ConfigurationInvalid> {
     return Layer.unwrap(
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       Effect.map(readAi(env), (ai) =>
         Interviewer.layer(ai === undefined ? undefined : { binding: ai }),
       ),

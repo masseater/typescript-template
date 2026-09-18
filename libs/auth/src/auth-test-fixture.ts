@@ -50,7 +50,6 @@ function authFor(
     sendVerificationEmail: (message) =>
       sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, message),
   });
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return Layer.build(layer).pipe(Effect.map((context) => Context.get(context, Auth)));
 }
 
@@ -66,14 +65,12 @@ const fixture = Layer.effect(
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
 
 function withAuth<Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, unknown, Fixture | TestServices>,
 ): Effect.Effect<Value, unknown> {
   return effect.pipe(Effect.provide(fixture));
 }
 
 function withEmptyDatabase<Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, unknown, TestServices>,
 ): Effect.Effect<Value, unknown> {
   return effect.pipe(Effect.provide(EmptyTestDatabase));
@@ -108,7 +105,6 @@ const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* boo
   yield* bootstrapAdmin(email);
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function signIn(client: Readonly<BrowserClient>, email: string): Effect.Effect<Response> {
   return client.request("/sign-in/email", { email, password: PASSWORD });
 }
@@ -119,7 +115,6 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application,
   return client;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: Readonly<BrowserClient>) {
   const response = yield* client.json("/two-factor/enable", { password: PASSWORD });
   assert.strictEqual(response.status, HTTP_OK);
@@ -131,7 +126,6 @@ const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: Readonly
 });
 
 function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   effect: Effect.Effect<Value, Failure, Requirements>,
 ): Effect.Effect<string, Value, Requirements> {
   return effect.pipe(

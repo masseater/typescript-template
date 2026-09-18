@@ -7,19 +7,15 @@ import type { ManagedRuntime } from "effect";
 import { runtimeUnavailable } from "./failures.ts";
 
 interface StartHandler {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response> | Response;
 }
 interface FetchWorker {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
 }
 type WorkerRoute<Requirements> = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | CurrentRequest>;
 type AppRoute<Requirements> = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
   path: string,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
@@ -30,12 +26,10 @@ function unavailableResponse(): Response {
 }
 
 function serveWorker<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
   route: WorkerRoute<Requirements>,
 ): FetchWorker {
   return {
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     fetch: async (request): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
       return exit._tag === "Success" ? exit.value : unavailableResponse();
@@ -43,7 +37,6 @@ function serveWorker<Requirements>(
   };
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function requestPath(request: Request): string | undefined {
   const pathname = URL.parse(request.url)?.pathname;
   if (pathname === undefined) {
@@ -53,7 +46,6 @@ function requestPath(request: Request): string | undefined {
   return Result.isSuccess(decoded) ? decoded.success : undefined;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
   return Effect.gen(function* fetchAssetProgram() {
     const assets = yield* Assets;
@@ -62,11 +54,9 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 }
 
 function serveApp<Requirements>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
   route: AppRoute<Requirements>,
 ): FetchWorker {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return serveWorker(runtime, (request) => {
     const path = requestPath(request);
     if (path === undefined) {
@@ -79,11 +69,7 @@ function serveApp<Requirements>(
   });
 }
 
-function startRoute(
-  handler: StartHandler,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-): (request: Request) => Effect.Effect<Response> {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
   return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
 }
 
