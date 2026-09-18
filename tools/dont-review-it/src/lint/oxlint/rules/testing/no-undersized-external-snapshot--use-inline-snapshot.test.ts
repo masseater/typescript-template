@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,7 +8,7 @@ import { describe } from "vite-plus/test";
 
 import { noUndersizedExternalSnapshot } from "./no-undersized-external-snapshot--use-inline-snapshot.ts";
 
-const fixtureDir = join(tmpdir(), "dont-review-it-no-undersized-external-snapshot");
+const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-undersized-external-snapshot-"));
 rmSync(fixtureDir, { recursive: true, force: true });
 
 const SPEC_FILE_NAME = "subject.test.ts";

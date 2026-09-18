@@ -1,4 +1,4 @@
-import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -9,7 +9,7 @@ import { forbidTestHook } from "./forbid-test-hook--move-setup-into-fixture.ts";
 
 const SPEC_FILENAME = "order.test.ts";
 
-const fixtureDir = join(realpathSync(tmpdir()), "dont-review-it-forbid-test-hook");
+const fixtureDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-forbid-test-hook-"));
 rmSync(fixtureDir, { recursive: true, force: true });
 
 mkdirSync(join(fixtureDir, "hooks"), { recursive: true });
