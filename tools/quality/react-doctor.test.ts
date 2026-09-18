@@ -56,6 +56,18 @@ describe("react-doctor integration", () => {
     }).toStrictEqual({ scripts: [], workflows: [] });
   });
 
+  it("workspace configs only add file-scoped suppressions", () => {
+    expect.hasAssertions();
+    const configs = Object.values(workspaceConfigs);
+    expect({
+      ignore: configs.map((config) => Object.keys({ ...config.ignore })),
+      keys: configs.map((config) => Object.keys(config)),
+    }).toStrictEqual({
+      ignore: configs.map(() => ["overrides"]),
+      keys: configs.map(() => ["$schema", "ignore"]),
+    });
+  });
+
   it("every suppressed file still exists", () => {
     expect.hasAssertions();
     expect(suppressedFiles().filter((file) => !(file in sources))).toStrictEqual([]);
