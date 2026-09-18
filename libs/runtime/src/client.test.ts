@@ -4,10 +4,10 @@ import { Effect, Schema } from "effect";
 import { httpStatus } from "@repo/observability";
 
 import { apiData, apiServerClient } from "./client.ts";
-import { compileApi, createApi } from "./http.ts";
+import { createApi } from "./http.ts";
 
 const View = Schema.Struct({ id: Schema.String });
-const app = compileApi(createApi("/api").get("/view", () => ({ id: "visible" })));
+const app = createApi("/api").get("/view", () => ({ id: "visible" }));
 
 describe("in-process api client", () => {
   it.effect("answers a request without leaving the isolate", () =>
