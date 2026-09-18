@@ -8,7 +8,7 @@ import { searchWiki } from "./search.ts";
 import { serveMcp } from "./mcp.ts";
 
 const maximumQueryLength = 200;
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, { service: "wiki" });
 
 function search(request: Request): Effect.Effect<Response, never, WikiServices> {
   const query = new URL(request.url).searchParams.get("query")?.trim() ?? "";

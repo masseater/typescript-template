@@ -28,8 +28,7 @@ function failureTag(error: unknown): string | undefined {
   return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
 }
 
-function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttributes {
-  const error = Cause.squash(cause);
+function failureAttributesOf(error: unknown): FailureAttributes {
   const attributes = errorAttributes(error);
   const tag = failureTag(error);
   if (tag === undefined) {
@@ -43,7 +42,7 @@ function failureAttributes(cause: Readonly<Cause.Cause<unknown>>): FailureAttrib
 }
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
-  return Effect.logError("application.error", failureAttributes(cause));
+  return Effect.logError("application.error", failureAttributesOf(Cause.squash(cause)));
 }
 
 function incomingContext(headers: Readonly<Pick<Headers, "get">>): RequestContext {
@@ -128,4 +127,4 @@ function observeRequest<Requirements>(
   });
 }
 
-export { failureAttributes, observeRequest, reportFailure };
+export { failureAttributesOf, observeRequest, reportFailure };

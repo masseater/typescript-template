@@ -32,6 +32,9 @@ const workspaces = {
     ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
   },
+  "libs/runtime": {
+    ignoreDependencies: ["cloudflare"],
+  },
   "libs/ui": {
     project: [
       "src/**/*.{ts,tsx}!",

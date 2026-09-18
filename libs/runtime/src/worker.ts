@@ -1,5 +1,5 @@
 import type { Cause, ManagedRuntime } from "effect";
-import type { CurrentRequest, LogSink, Telemetry } from "@template/observability";
+import type { CurrentRequest, Reporting, Telemetry } from "@template/observability";
 import { Effect, Result } from "effect";
 import { httpStatus, observeRequest } from "@template/observability";
 import { jsonResponse, secureResponse } from "./responses.ts";
@@ -20,20 +20,23 @@ type AppRoute<Requirements> = (
   path: string,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
-function unavailableResponse(cause: Readonly<Cause.Cause<unknown>>, log?: LogSink): Response {
-  const failure = runtimeUnavailable(cause, log);
+async function unavailableResponse(
+  cause: Readonly<Cause.Cause<unknown>>,
+  reporting: Reporting,
+): Promise<Response> {
+  const failure = await Effect.runPromise(runtimeUnavailable(cause, reporting));
   return jsonResponse({ error: failure.message }, failure.status);
 }
 
 function serveWorker<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
   route: WorkerRoute<Requirements>,
-  log?: LogSink,
+  reporting: Reporting,
 ): FetchWorker {
   return {
     fetch: async (request): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      return exit._tag === "Success" ? exit.value : unavailableResponse(exit.cause, log);
+      return exit._tag === "Success" ? exit.value : unavailableResponse(exit.cause, reporting);
     },
   };
 }
@@ -57,7 +60,7 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
 function serveApp<Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
   route: AppRoute<Requirements>,
-  log?: LogSink,
+  reporting: Reporting,
 ): FetchWorker {
   return serveWorker(
     runtime,
@@ -71,7 +74,7 @@ function serveApp<Requirements>(
       }
       return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
     },
-    log,
+    reporting,
   );
 }
 

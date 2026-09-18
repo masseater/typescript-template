@@ -1,11 +1,12 @@
 import { assert, it } from "@effect/vitest";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-import { deploymentKeys, secretsFile } from "@template/config/deployment";
 import { Effect } from "effect";
 import type { Scope } from "effect";
+import { deploymentKeys } from "@template/config/deployment-keys";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+import { secretsFile } from "@template/config/deployment";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 import { verificationEnvironment } from "./verification-fixture.ts";

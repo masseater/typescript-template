@@ -23,7 +23,7 @@ import { interviewApi } from "./interview-api.ts";
 import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, { service: "user" });
 const failures = {
   ...unavailable,
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },

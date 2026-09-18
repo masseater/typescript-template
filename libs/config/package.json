@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./deployment": "./src/deployment.ts",
+    "./deployment-keys": "./src/deployment-keys.ts",
     "./mode": "./src/mode.ts",
     "./vite": "./src/vite.ts",
     "./worker": "./src/worker.ts"

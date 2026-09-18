@@ -21,7 +21,7 @@ import { httpStatus } from "@template/observability";
 import { runtime } from "./runtime.ts";
 import { verifySession } from "@template/auth";
 
-const api = apiRoutes(runtime);
+const api = apiRoutes(runtime, { service: "admin" });
 const forbidden = { message: "この操作は許可されていません。", status: httpStatus.forbidden };
 const failures = {
   ...unavailable,

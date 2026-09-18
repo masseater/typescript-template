@@ -40,4 +40,4 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
 }
 
 export { isRecord, structuredLogs };
-export type { StructuredLogOptions };
+export type { LogSink, StructuredLogOptions };
