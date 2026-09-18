@@ -1,4 +1,4 @@
-import { Button } from "./shared/ui";
+import { Button } from "./shared/ui/button";
 import { PasskeyList } from "./passkey-list";
 import { PasskeyRegisterForm } from "./passkey-register-form";
 import type { ReactElement } from "react";

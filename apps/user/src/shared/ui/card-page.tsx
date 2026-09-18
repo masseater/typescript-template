@@ -1,4 +1,4 @@
-import { Card, Heading } from "@template/ui/ui";
+import { Card, Heading } from "@template/ui";
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function CardPage({
@@ -9,7 +9,7 @@ function CardPage({
   title: string;
 }>): ReactElement {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col px-4 py-12">
+    <main className="mx-auto flex w-full max-w-column flex-col px-4 py-12">
       <Card>
         <Heading as="h1" size="page">
           {title}

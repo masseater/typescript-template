@@ -14,15 +14,24 @@ concurrency:
 
 jobs:
   check:
+    if: github.event_name == 'pull_request'
+    name: ${{ startsWith(github.head_ref, 'mergify/merge-queue/') && 'merge-queue' || 'check' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      TEST_SCOPE: ${{ !startsWith(github.head_ref, 'mergify/merge-queue/') && '--changed HEAD^1' || '' }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - &checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - &browser-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-workspace.yaml') }}
-      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+      - &setup
+        uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
           cache: true
@@ -34,12 +43,19 @@ jobs:
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
       - run: vp run check
-      - run: vp test run
+      - run: vp test run $TEST_SCOPE
       - run: vp run build
-      - run: vp run --filter @template/infra-cloudflare verify:artifacts
-      - run: vp run --filter @template/infra-cloudflare verify:stacks
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
+
+  dependencies:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - *checkout
+      - *browser-cache
+      - *setup

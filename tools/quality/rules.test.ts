@@ -139,7 +139,7 @@ const opaqueSpecifiers = [
 ] as const;
 
 const validBoundaries = [
-  ["apps/admin/src/probe.ts", 'export * from "@template/db/admin";'],
+  ["apps/admin/src/app/probe.ts", 'export * from "@template/db/admin";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/db/admin";'],
   ["apps/user/src/app/probe.ts", 'import "@template/db/src/schema";'],
   ["libs/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
@@ -150,7 +150,7 @@ const validBoundaries = [
   ["apps/user/src/app/probe.ts", 'export * from "@template/db";'],
   ["apps/user/src/app/probe.ts", 'export * from "@template/ui/signup";'],
   ["apps/wiki/vite.config.ts", 'export { localDatabase } from "@template/db/local";'],
-  ["apps/wiki/src/probe.ts", 'export * from "@template/auth";'],
+  ["apps/wiki/src/app/probe.ts", 'export * from "@template/auth";'],
   ["apps/user/src/app/probe.ts", 'export const load = () => import("./feature");'],
   ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
   ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],

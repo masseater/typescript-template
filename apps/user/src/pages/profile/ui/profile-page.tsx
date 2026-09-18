@@ -1,4 +1,4 @@
-import { Avatar, ButtonLink, Heading } from "@template/ui/ui";
+import { Avatar, ButtonLink, Heading } from "@template/ui";
 import { Biography } from "./biography.tsx";
 import type { Member } from "#pages/profile/model/member.ts";
 import { ProfileBody } from "./profile-body.tsx";

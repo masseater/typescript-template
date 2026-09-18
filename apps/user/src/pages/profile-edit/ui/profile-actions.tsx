@@ -1,4 +1,4 @@
-import { Button, ButtonLink } from "@template/ui/ui";
+import { Button, ButtonLink } from "@template/ui";
 import type { ReactElement } from "react";
 
 function ProfileActions({

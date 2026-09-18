@@ -2,7 +2,7 @@ import type { ActionState } from "./action";
 import { PasskeyItem } from "./passkey-item";
 import type { PasskeySummary } from "./mfa-types";
 import type { ReactElement } from "react";
-import { Status } from "./shared/ui";
+import { Status } from "./shared/ui/status";
 
 interface PasskeyListProps {
   readonly action: ActionState;

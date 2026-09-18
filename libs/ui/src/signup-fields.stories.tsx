@@ -18,7 +18,6 @@ export const Pending = meta.story({
 });
 
 export const RejectsShortPassword = meta.story({
-  parameters: { a11y: { config: { rules: [{ enabled: false, id: "color-contrast" }] } } },
   play: async ({ canvas, canvasElement }) => {
     const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);

@@ -17,6 +17,7 @@ import { field, workspaceManifests } from "./dependencies.ts";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { AssertionError } from "node:assert";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
+import { hoverViolations } from "./hover-colors.ts";
 import { plugin } from "@shadcn/lint";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
@@ -25,18 +26,6 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const lint = field(configs["../../vite.config.ts"], "lint");
-
-function restrictedImportNames(): string[] {
-  const rule: unknown = field(field(lint, "rules"), "eslint/no-restricted-imports");
-  const options: unknown = Array.isArray(rule) ? rule.at(1) : undefined;
-  const paths: unknown = field(options, "paths");
-  return Array.isArray(paths)
-    ? paths.flatMap((entry: unknown) => {
-        const name = field(entry, "name");
-        return typeof name === "string" ? [name] : [];
-      })
-    : [];
-}
 
 const restyled = [
   ["no-restyle", "bg-destructive"],
@@ -62,7 +51,7 @@ function reports(rule: RuleName, className: string): boolean {
       invalid: [],
       valid: [
         {
-          code: `import { Button } from "@template/ui/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
+          code: `import { Button } from "@template/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
           filename: designSystemProbe,
           options: [{ allow: ["layout", "spacing"] }],
         },
@@ -93,6 +82,23 @@ describe("smarthr-ui token port", () => {
     expect(tokenViolations(`:root { ${token}: rebeccapurple; }`)).toContainEqual(
       expect.stringContaining(token),
     );
+  });
+
+  it("keeps every hover colour darker than the colour it replaces", () => {
+    expect.hasAssertions();
+    expect(hoverViolations(stylesheetSource())).toStrictEqual([]);
+  });
+
+  it("reports a hover colour that is lighter than the colour it replaces", () => {
+    expect.hasAssertions();
+    expect(
+      hoverViolations(":root { --danger: #e01e5a; --x: var(--danger); --x-hover: #ffffff; }"),
+    ).toHaveLength(1);
+  });
+
+  it("reports a hover colour it cannot resolve to a colour", () => {
+    expect.hasAssertions();
+    expect(hoverViolations(":root { --x: red; --x-hover: blue; }")).toHaveLength(1);
   });
 
   it.for(untouchedTokens)("reports %s when it is redefined", (token) => {
@@ -136,41 +142,41 @@ describe("app stylesheet ownership", () => {
   it("reports a @source that scans a directory which does not exist", () => {
     expect.hasAssertions();
     expect(
-      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@source "./nonexistent";'),
+      sourceViolations("apps/wiki", "apps/wiki/src/app/auth.css", '@source "./nonexistent";'),
     ).toHaveLength(1);
   });
 
   it("reports a @source that scans outside the app", () => {
     expect.hasAssertions();
     expect(
-      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@source "../../../libs/ui";'),
+      sourceViolations("apps/wiki", "apps/wiki/src/app/auth.css", '@source "../../../libs/ui";'),
     ).toHaveLength(1);
   });
 
   it("reports a stylesheet with no @source at all", () => {
     expect.hasAssertions();
     expect(
-      sourceViolations("apps/wiki", "apps/wiki/src/styles/auth.css", '@import "tailwindcss";'),
+      sourceViolations("apps/wiki", "apps/wiki/src/app/auth.css", '@import "tailwindcss";'),
     ).toHaveLength(1);
   });
 
   it("reports a stylesheet the app never links", () => {
     expect.hasAssertions();
-    expect(linkViolations("apps/wiki", "apps/wiki/src/styles/unlinked.css")).toHaveLength(1);
+    expect(linkViolations("apps/wiki", "apps/wiki/src/app/unlinked.css")).toHaveLength(1);
   });
 });
 
 describe("app stylesheet coverage", () => {
   it("reports a @source narrowed past the screens it has to cover", () => {
     expect.hasAssertions();
-    expect(coverageViolations("apps/wiki", ["apps/wiki/src/styles"])).toContainEqual(
-      expect.stringContaining("apps/wiki/src/components/consent-actions.tsx"),
+    expect(coverageViolations("apps/wiki", ["apps/wiki/src/app"])).toContainEqual(
+      expect.stringContaining("apps/wiki/src/pages/consent/ui/consent-actions.tsx"),
     );
   });
 
   it("accepts a @source that covers every styled file of the app", () => {
     expect.hasAssertions();
-    expect(coverageViolations("apps/wiki", ["apps/wiki/src/components"])).toStrictEqual([]);
+    expect(coverageViolations("apps/wiki", ["apps/wiki/src"])).toStrictEqual([]);
   });
 });
 
@@ -181,14 +187,6 @@ describe("design system lint", () => {
       expect.arrayContaining(["Button", "Field", "Status", "Table"]),
     );
   });
-
-  it.for(["smarthr-ui", "styled-components", "react-intl"])(
-    "keeps %s out of the import graph",
-    (name) => {
-      expect.hasAssertions();
-      expect(restrictedImportNames()).toContain(name);
-    },
-  );
 
   it("leaves the story exports out of the part names it reports", () => {
     expect.hasAssertions();

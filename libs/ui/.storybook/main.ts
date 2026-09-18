@@ -3,7 +3,6 @@ import type { StorybookConfig } from "@storybook/react-vite";
 import { reactCompiler } from "@template/config/vite";
 import tailwindcss from "@tailwindcss/vite";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function withAppTransforms(config: InlineConfig): InlineConfig {
   return { ...config, plugins: [...(config.plugins ?? []), tailwindcss(), reactCompiler()] };
 }

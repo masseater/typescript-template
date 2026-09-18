@@ -40,7 +40,6 @@ function probe(
       return network;
     }),
     () => probeService(target),
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     (network) =>
       Effect.sync(() => {
         network.disable();
