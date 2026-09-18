@@ -17,11 +17,13 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "database_name_taken",
     "database_output_unavailable",
     "deploy_token_permissions_missing",
+    "mail_from_outside_deployment",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
     "plan_removes_bindings",
     "plan_removes_resources",
     "secrets_store_already_present",
+    "sending_domain_unavailable",
     "state_store_name_taken",
   ]),
   keys: Schema.Array(Schema.String),
@@ -158,6 +160,10 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   return { operation: "plan", stacks } as const;
 });
 
+function sendingDomain(mailFrom: string): string {
+  return mailFrom.slice(mailFrom.indexOf("@") + 1);
+}
+
 function duplicatedOrigins(config: SharedConfig): readonly string[] {
   const origins = [
     [originKeys.admin, config.origins.admin],
@@ -186,6 +192,9 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
       "TEMPLATE_RESERVE_USD",
     ]);
   }
+  if (!sendingDomain(config.mailFrom).startsWith(`${config.prefix}.`)) {
+    return yield* fail("mail_from_outside_deployment", ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
+  }
   return config;
 });
 
@@ -209,6 +218,7 @@ export {
   checkSharedConfig,
   originKeys,
   parseDeploymentCommand,
+  sendingDomain,
   traceDestination,
   workerCompatibilityOptions,
   workerObservability,

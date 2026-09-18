@@ -9,7 +9,7 @@ const application = {
 const workspaces = {
   ".": {
     entry: ["doctor.config.ts"],
-    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "effect-tsgo"],
+    ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "@swc/core", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
   },
   "infra/error-monitor": {
@@ -43,6 +43,7 @@ const workspaces = {
 
 const cloudflareStacks = [
   "src/database.ts!",
+  "src/email.ts!",
   "src/observability.ts!",
   "src/tokens.ts!",
   "src/budget-monitor.ts!",
@@ -94,7 +95,7 @@ function config({
       "infra/cloudflare": {
         entry: [...cloudflareStacks, ...productionOnly(...scripts["infra/cloudflare"])],
         ignoreExportsUsedInFile: true,
-        project: ["src/**/*.ts!", "!src/account-fixture.ts!"],
+        project: ["src/**/*.ts!", "!src/account-fixture.ts!", "!src/inspection-fixture.ts!"],
       },
       "infra/local": {
         entry: productionOnly(...scripts["infra/local"]),
