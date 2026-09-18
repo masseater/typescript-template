@@ -13,9 +13,7 @@
     "./local": "./src/local.ts"
   },
   "scripts": {
-    "db:bootstrap:local": "node src/bootstrap-local.ts",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "node src/migrate-local.ts"
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

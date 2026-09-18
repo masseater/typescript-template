@@ -2,17 +2,6 @@
   "name": "@repo/dev",
   "private": true,
   "type": "module",
-  "scripts": {
-    "browser": "node src/cli.ts browser",
-    "browser-command": "node src/cli.ts browser-command",
-    "connect": "node src/cli.ts connect",
-    "logs": "node src/cli.ts logs",
-    "setup": "node src/cli.ts setup",
-    "start": "node src/cli.ts start",
-    "status": "node src/cli.ts status",
-    "stop": "node src/cli.ts stop",
-    "storybook": "node src/cli.ts storybook"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/local": "workspace:*",
