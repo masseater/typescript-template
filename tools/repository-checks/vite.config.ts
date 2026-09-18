@@ -2,7 +2,10 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vite-plus";
 
+import { effectRun } from "@repo/config/vite";
+
 export default defineConfig({
+  run: effectRun,
   test: {
     experimental: {
       openTelemetry: {

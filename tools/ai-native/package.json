@@ -69,6 +69,7 @@
     "shell-quote": "1.10.0"
   },
   "devDependencies": {
+    "@repo/config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
