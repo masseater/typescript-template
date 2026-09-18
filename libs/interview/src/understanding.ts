@@ -1,3 +1,5 @@
+import { Schema } from "effect";
+
 import {
   FieldKey,
   ReadableSheet,
@@ -7,9 +9,8 @@ import {
   readValue,
   readable,
 } from "./sheet.ts";
-import type { InterviewState } from "./state.ts";
-import { Schema } from "effect";
 import type { SheetData } from "./sheet.ts";
+import type { InterviewState } from "./state.ts";
 
 const maximumQuestion = 300;
 

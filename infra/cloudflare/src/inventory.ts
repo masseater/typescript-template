@@ -1,12 +1,13 @@
-import { Effect, References, Result, Schema } from "effect";
 import { Stage, inMemoryState } from "alchemy";
-import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
-import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
-import type { StackName } from "./stacks.ts";
 import { providers } from "alchemy/Cloudflare";
-import { repositoryRoot } from "./artifacts.ts";
-import { stackName } from "./stacks.ts";
+import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
+import { Effect, References, Result, Schema } from "effect";
+
+import { repositoryRoot } from "./artifacts.ts";
+import type { StackName } from "./stacks.ts";
+import { stackName } from "./stacks.ts";
+import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 
 interface ResourceInventory {
   readonly adopt: boolean;
@@ -186,6 +187,14 @@ function describeBinding(entry: typeof BindingEntry.Type): string {
   ].join(":");
 }
 
+const SEND_EMAIL = "send_email";
+
+function bindsSendEmail(inventory: StackInventory): boolean {
+  return Object.values(inventory.resources).some((resource) =>
+    resource.bindings.some((binding) => binding.split(":")[1] === SEND_EMAIL),
+  );
+}
+
 function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
   return Object.fromEntries(
     Object.entries(props)
@@ -276,5 +285,5 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
   return inventoryOf(shape);
 });
 
-export { applyVerificationEnvironment, compileStack, describeCause };
+export { applyVerificationEnvironment, bindsSendEmail, compileStack, describeCause };
 export type { StackInventory };

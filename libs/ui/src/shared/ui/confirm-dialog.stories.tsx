@@ -1,7 +1,8 @@
-import { expect, screen } from "storybook/test";
-import { ConfirmDialog } from "./confirm-dialog";
 import { noop } from "es-toolkit";
+import { expect, screen } from "storybook/test";
+
 import preview from "../../../.storybook/preview";
+import { ConfirmDialog } from "./confirm-dialog";
 
 const meta = preview.meta({
   args: {

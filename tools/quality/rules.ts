@@ -1,22 +1,17 @@
-import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
+import { definePlugin } from "vite-plus/lint/plugins";
+
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
-import { importVisitor, reportViolation } from "./lint-context.ts";
-import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
-import {
-  nodeRuntimeModules,
-  runsInWorkerRuntime,
-  testRuntimeVisitor,
-  workerRuntimeModules,
-  workerTestSuffix,
-} from "./test-runtime.ts";
-import { origins, propertyName, staticText } from "./references.ts";
-import type { Origin } from "./references.ts";
-import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
+import type { LintContext, Node } from "./lint-context.ts";
+import { reportViolation } from "./lint-context.ts";
+import { specifierVisitor } from "./module-specifiers.ts";
+import { propertyName, staticText } from "./references.ts";
+import type { Origin } from "./references.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
+import { runsInWorkerRuntime } from "./test-runtime.ts";
 
 interface RawD1Checks {
   readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;
@@ -72,18 +67,6 @@ function isEnvironment(origin: Origin): boolean {
   );
 }
 
-function importSourceChecker(context: LintContext): (node: Node) => void {
-  const importer = importerOf(filename(context));
-  return (node) => {
-    const source = staticText(context, node);
-    if (
-      source === undefined ? isApplicationOrLibrary(importer) : isForbiddenImport(importer, source)
-    ) {
-      reportViolation(context, node);
-    }
-  };
-}
-
 const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
 const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
@@ -105,10 +88,10 @@ function rawD1Checks(context: LintContext): RawD1Checks {
 }
 
 function boundariesVisitor(context: LintContext): Visitor {
-  const checkSource = importSourceChecker(context);
+  const specifiers = specifierVisitor(context);
   const checks = rawD1Checks(context);
   return {
-    ...importVisitor(checkSource),
+    ...specifiers.visitor,
     AssignmentExpression(node: Node): void {
       if (node.type === "AssignmentExpression") {
         checks.destructuring(node, node.left, node.right);
@@ -119,14 +102,8 @@ function boundariesVisitor(context: LintContext): Visitor {
         return;
       }
       checks.operation(node.callee);
-      const [argument] = node.arguments;
-      if (
-        argument !== undefined &&
-        origins(context, node.callee).some(
-          (origin) => origin[0] === "require" && origin.length === 1,
-        )
-      ) {
-        checkSource(argument);
+      if (specifiers.loaderCall(node.callee)) {
+        specifiers.commonJs(node);
       }
     },
     MemberExpression(node: Node): void {
@@ -207,7 +184,7 @@ export default definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。アプリ間の参照、ユーザー側への管理者処理の持ち込み、非公開パッケージへの相対参照をやめ、公開 exports を使ってください。動的な依存先は静的な文字列で指定してください。生 DB ドライバーは libs/db 内だけで使用できます。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。wiki はローカル D1 の定義以外の DB パッケージを直接参照できず、利用者登録の画面も持てません。@repo/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決するので、apps と libs からは参照できません。デプロイの入力が要るコードは infra か tools に置いてください。`,
+        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
       ),
     },
     "effect-failures": {
@@ -250,12 +227,6 @@ export default definePlugin({
       create: testImportGraphVisitor,
       meta: metadata(
         "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
-      ),
-    },
-    "test-runtime": {
-      create: testRuntimeVisitor,
-      meta: metadata(
-        `Worker のランタイムで動くテストは ${workerTestSuffix} という名前にして ${workerRuntimeModules.join(" / ")} を使い、Node でしか動かないテストは ${workerTestSuffix} 以外の名前にして ${nodeRuntimeModules.join(" / ")} を使ってください。名前がテストの実行先を決めるので、両方を 1 つのファイルに混ぜられません。`,
       ),
     },
     "worker-fetch": {

@@ -1,7 +1,9 @@
-import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
-import { lint } from "./tools/quality/lint.ts";
+import { defaultExclude } from "vite-plus/test/config";
+
 import { taskInput } from "@repo/config/vite";
+
+import { generatedFiles, lint } from "./tools/quality/lint.ts";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -13,14 +15,10 @@ function textModule(code: string, id: string): string | undefined {
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   fmt: {
-    ignorePatterns: [
-      "**/mockServiceWorker.js",
-      "**/routeTree.gen.ts",
-      ".local/**",
-      ".local-agents/**",
-      "**/.wrangler/**",
-      "**/dist/**",
-    ],
+    ignorePatterns: generatedFiles,
+    sortImports: { internalPattern: ["@repo/"], newlinesBetween: true },
+    sortPackageJson: { sortScripts: true },
+    sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
   },
   lint,
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
@@ -37,6 +35,7 @@ export default defineConfig({
           "vp check",
           "vp run knip",
           "vp run check:client",
+          "vp run check:imports",
           "vp run check:react",
           "vp run check:staged",
           "vp run check:effect",
@@ -49,6 +48,8 @@ export default defineConfig({
         command: "node tools/quality/effect-diagnostics.ts",
         input: [...taskInput],
       },
+      "check:imports":
+        "depcruise --config tools/quality/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
         command: "node tools/quality/react-doctor.ts",
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],

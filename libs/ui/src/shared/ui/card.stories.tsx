@@ -1,7 +1,7 @@
+import preview from "../../../.storybook/preview";
 import { Card } from "./card";
 import { Heading } from "./heading";
 import { Status } from "./status";
-import preview from "../../../.storybook/preview";
 
 const meta = preview.meta({ component: Card });
 

@@ -1,19 +1,23 @@
-import type { Children } from "./types";
-import { DropdownMenuClose } from "./dropdown-menu-close";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import type { ReactElement } from "react";
+import { createLink } from "@tanstack/react-router";
 import { cn } from "cn";
-import { itemVariants } from "./dropdown-menu-item-variants";
+import type { ComponentProps, ReactElement } from "react";
 import { use } from "react";
 
-type DropdownMenuLinkItemProps = Children & Readonly<{ render: ReactElement }>;
+import { DropdownMenuClose } from "./dropdown-menu-close";
+import { itemVariants } from "./dropdown-menu-item-variants";
 
-function DropdownMenuLinkItem({ children, render }: DropdownMenuLinkItemProps): ReactElement {
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+function DropdownMenuLinkAnchor({
+  children,
+  ...anchor
+}: Readonly<ComponentProps<"a">>): ReactElement {
   const close = use(DropdownMenuClose);
   return (
     <MenuPrimitive.LinkItem
       data-slot="dropdown-menu-link-item"
-      render={render}
+      // oxlint-disable-next-line react/jsx-props-no-spreading
+      render={<a {...anchor} />}
       onClick={close}
       className={cn(itemVariants(), "no-underline hover:text-foreground")}
     >
@@ -21,5 +25,7 @@ function DropdownMenuLinkItem({ children, render }: DropdownMenuLinkItemProps): 
     </MenuPrimitive.LinkItem>
   );
 }
+
+const DropdownMenuLinkItem = createLink(DropdownMenuLinkAnchor);
 
 export { DropdownMenuLinkItem };

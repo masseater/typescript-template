@@ -1,9 +1,11 @@
-import { Heading } from "@repo/ui";
 import type { ReactElement } from "react";
-import { UserFilters } from "./user-filters.tsx";
-import { UserResults } from "./user-results.tsx";
+
 import { useUserList } from "#pages/users/model/user-list.ts";
 import { useUsersSearch } from "#pages/users/model/users-search-state.ts";
+import { Heading } from "@repo/ui";
+
+import { UserFilters } from "./user-filters.tsx";
+import { UserResults } from "./user-results.tsx";
 
 function UsersPage(): ReactElement {
   const search = useUsersSearch();

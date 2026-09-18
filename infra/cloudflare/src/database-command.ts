@@ -1,12 +1,14 @@
+import { NodeRuntime } from "@effect/platform-node";
+import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
+
+import { runRemoteDatabaseCommand } from "@repo/db/remote";
+
+import { CloudflareFailure } from "./config.ts";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
-import { CloudflareFailure } from "./config.ts";
-import { NodeRuntime } from "@effect/platform-node";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
-import { layer } from "alchemy/Alchemist";
 import { reportCause } from "./secrets.ts";
-import { runRemoteDatabaseCommand } from "@repo/db/remote";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";

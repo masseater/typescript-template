@@ -1,9 +1,10 @@
-import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
+import { setupNetwork } from "@msw/cloudflare";
 import { Effect } from "effect";
 import type { Scope } from "effect";
+import { HttpResponse, http } from "msw";
+
 import { fetchUsage } from "./billing.ts";
-import { setupNetwork } from "@msw/cloudflare";
 
 type Network = ReturnType<typeof setupNetwork>;
 

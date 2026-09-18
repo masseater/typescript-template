@@ -1,9 +1,12 @@
-import { Console, Effect, Schema } from "effect";
-import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
-import { NodeRuntime } from "@effect/platform-node";
-import { applicationPorts } from "@repo/config";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+
+import { applicationPorts } from "@repo/config";
+
+import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { reportFailed } from "./failure.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {

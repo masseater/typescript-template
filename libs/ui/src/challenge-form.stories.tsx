@@ -1,6 +1,7 @@
-import { ChallengeForm } from "./challenge-form";
 import { noop } from "es-toolkit";
+
 import preview from "../.storybook/preview";
+import { ChallengeForm } from "./challenge-form";
 
 const meta = preview.meta({
   args: {
