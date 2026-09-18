@@ -59,18 +59,18 @@ async function serveApplications(
   configured: readonly ConfiguredApplication[],
   database: IsolatedDatabase,
 ): Promise<void> {
-  const served = await Promise.allSettled(
-    configured.map(async ({ application, port }) => {
-      const { environment } = database;
-      const options = { application, environment, logDirectory: database.directory, port };
-      const running = await serveApplication(options);
-      collect(running.stop);
-    }),
-  );
-  const failure = served.find((result) => result.status === "rejected");
-  if (failure !== undefined) {
-    throw failure.reason;
+  const [first, ...rest] = configured;
+  if (first === undefined) {
+    return;
   }
+  const running = await serveApplication({
+    application: first.application,
+    environment: database.environment,
+    logDirectory: database.directory,
+    port: first.port,
+  });
+  collect(running.stop);
+  await serveApplications(collect, rest, database);
 }
 
 function originFinder(configured: readonly ConfiguredApplication[]): (role: JourneyRole) => string {
