@@ -1,4 +1,3 @@
-import { applications } from "@repo/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { lint } from "./tools/quality/lint.ts";
@@ -38,7 +37,6 @@ export default defineConfig({
           "vp check",
           "vp run knip",
           "vp run check:client",
-          "vp run check:layers",
           "vp run check:staged",
           "vp run check:effect",
           "vp run -F '!typescript-template' check",
@@ -47,7 +45,6 @@ export default defineConfig({
       },
       "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
-      "check:layers": applications.map((app) => `steiger apps/${app}/src --fail-on-warnings`),
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
