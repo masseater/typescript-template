@@ -13,7 +13,6 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
     volumes:
       - otlp-data:/data
-      - ./otelcol.yaml:/otel-lgtm/otelcol-config.yaml:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:13133/ready"]
       interval: 10s

@@ -2,12 +2,7 @@ import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
-import {
-  traceDestination,
-  workerCompatibilityOptions,
-  workerObservability,
-  workerSubdomain,
-} from "./config.ts";
+import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import type { Application } from "@template/config";
 import { Effect } from "effect";
 import type { Redacted } from "effect";
@@ -47,10 +42,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     }),
     main: artifacts.mainModule,
     name: `${config.prefix}-${target}`,
-    observability: workerObservability(
-      config.observabilitySampling,
-      traceDestination(config)?.name,
-    ),
+    observability: workerObservability(config),
     rules: [{ globs: workerModuleGlobs }],
     workersDev: workerSubdomain,
   });

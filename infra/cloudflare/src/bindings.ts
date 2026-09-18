@@ -9,8 +9,9 @@ type SharedEnv = Readonly<{
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;
-}> &
-  Readonly<Partial<{ OTLP_AUTHORIZATION: Redacted.Redacted; OTLP_ENDPOINT: string }>>;
+  OTLP_AUTHORIZATION?: Redacted.Redacted;
+  OTLP_ENDPOINT?: string;
+}>;
 
 interface CapabilityEnv {
   readonly ai: Readonly<{ AI: AIBinding }>;

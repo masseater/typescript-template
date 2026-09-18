@@ -3,7 +3,6 @@ import { ConfigurationInvalid, readAi, readConfig } from "@template/config";
 import { assert, it } from "@effect/vitest";
 import {
   parseDeploymentCommand,
-  traceDestination,
   workerCompatibilityOptions,
   workerObservability,
   workerSubdomain,
@@ -84,27 +83,23 @@ it.effect("every Worker keeps the same public surface, compatibility and observa
       date: "2026-09-16",
       flags: ["nodejs_compat"],
     });
-    assert.deepStrictEqual(workerObservability(settings.observabilitySampling), {
+    assert.deepStrictEqual(workerObservability({ ...settings, otlpEndpoint: undefined }), {
       enabled: true,
       headSamplingRate: 1,
       logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
       traces: { enabled: true, headSamplingRate: 1, persist: true },
     });
-    assert.deepStrictEqual(
-      workerObservability(settings.observabilitySampling, traceDestination(settings)?.name),
-      {
+    assert.deepStrictEqual(workerObservability(settings), {
+      enabled: true,
+      headSamplingRate: 1,
+      logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
+      traces: {
+        destinations: [`${settings.prefix}-traces`],
         enabled: true,
         headSamplingRate: 1,
-        logs: { enabled: true, headSamplingRate: 1, invocationLogs: false },
-        traces: {
-          destinations: [`${settings.prefix}-traces`],
-          enabled: true,
-          headSamplingRate: 1,
-          persist: true,
-        },
+        persist: true,
       },
-    );
-    assert.isUndefined(traceDestination({ ...settings, otlpEndpoint: undefined }));
+    });
   }),
 );
 

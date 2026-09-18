@@ -30,10 +30,7 @@ const providerAddedBindings = [
 
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
-  observability: workerObservability(
-    verificationSettings.observabilitySampling,
-    traceDestination(verificationSettings)?.name,
-  ),
+  observability: workerObservability(verificationSettings),
   workersDev: workerSubdomain,
 };
 

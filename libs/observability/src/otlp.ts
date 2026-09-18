@@ -1,4 +1,4 @@
-import { Duration, Layer } from "effect";
+import { Duration, Effect, Layer } from "effect";
 import {
   OtlpExporter,
   OtlpLogger,
@@ -18,6 +18,11 @@ interface OtlpOptions {
 }
 
 const trailingSlashes = /\/+$/u;
+const flushTelemetry = Effect.flatMap(
+  OtlpExporter.Flusher,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  (flusher) => flusher.flush,
+);
 const transport = Layer.merge(OtlpSerialization.layerJson, FetchHttpClient.layer);
 
 function signalUrl(endpoint: string, signal: string): string {
@@ -40,5 +45,5 @@ function otlpExport(options: OtlpOptions): Layer.Layer<OtlpExporter.Flusher> {
   ).pipe(Layer.provide(transport));
 }
 
-export { otlpExport };
+export { flushTelemetry, otlpExport };
 export type { OtlpDestination };

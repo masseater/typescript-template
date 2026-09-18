@@ -1,34 +1,26 @@
 import type { CurrentRequest, Telemetry } from "@template/observability";
 import { Effect, Result } from "effect";
-import { httpStatus, observeRequest } from "@template/observability";
+import { flushTelemetry, httpStatus, observeRequest } from "@template/observability";
 import { jsonResponse, secureResponse } from "./responses.ts";
 import { Assets } from "./assets.ts";
+import type { ExecutionContext } from "@cloudflare/workers-types";
 import type { ManagedRuntime } from "effect";
-import { OtlpExporter } from "effect/unstable/observability";
+import type { OtlpExporter } from "effect/unstable/observability";
 import { runtimeUnavailable } from "./failures.ts";
 
 interface StartHandler {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response> | Response;
 }
-interface RequestLifetime {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly waitUntil: (work: Promise<unknown>) => void;
-}
 interface FetchWorker {
   readonly fetch: (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     request: Request,
-    environment?: unknown,
-    lifetime?: RequestLifetime,
+    environment: unknown,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    context: ExecutionContext,
   ) => Promise<Response>;
 }
-
-const flushTelemetry = Effect.flatMap(
-  OtlpExporter.Flusher,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (flusher) => flusher.flush,
-);
 type WorkerRoute<Requirements> = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
@@ -51,9 +43,9 @@ function serveWorker<Requirements>(
 ): FetchWorker {
   return {
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    fetch: async (request, _environment, lifetime): Promise<Response> => {
+    fetch: async (request, _environment, context): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      lifetime?.waitUntil(runtime.runPromise(flushTelemetry));
+      context.waitUntil(runtime.runPromise(flushTelemetry));
       return exit._tag === "Success" ? exit.value : unavailableResponse();
     },
   };

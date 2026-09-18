@@ -107,7 +107,9 @@ function traceDestination(
     : { name: `${config.prefix}-traces`, url: config.otlpEndpoint };
 }
 
-function workerObservability(headSamplingRate: number, destination?: string): WorkerObservability {
+function workerObservability(config: SharedConfig): WorkerObservability {
+  const headSamplingRate = config.observabilitySampling;
+  const destination = traceDestination(config);
   return {
     enabled: true,
     headSamplingRate,
@@ -116,7 +118,7 @@ function workerObservability(headSamplingRate: number, destination?: string): Wo
       enabled: true,
       headSamplingRate,
       persist: true,
-      ...(destination === undefined ? {} : { destinations: [destination] }),
+      ...(destination === undefined ? {} : { destinations: [destination.name] }),
     },
   };
 }

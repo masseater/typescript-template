@@ -1,14 +1,10 @@
 import { HttpResponse, http } from "msw";
-import { Telemetry, observeRequest } from "./server.ts";
+import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { OtlpExporter } from "effect/unstable/observability";
+import type { OtlpDestination } from "./otlp.ts";
 import { setupNetwork } from "@msw/cloudflare";
 
-interface OtlpDestination {
-  readonly authorization?: string;
-  readonly endpoint: string;
-}
 interface Observed {
   readonly authorization: readonly string[];
   readonly lines: readonly unknown[];
@@ -23,12 +19,6 @@ const noContent = 204;
 const exportedTraceIds = /"traceId":"(?<traceId>[0-9a-f]{32})"/gu;
 const traceparentTraceId = /^00-(?<traceId>[0-9a-f]{32})-[0-9a-f]{16}-01$/u;
 const traceIdPattern = /^[0-9a-f]{32}$/u;
-
-const flush = Effect.flatMap(
-  OtlpExporter.Flusher,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  (flusher) => flusher.flush,
-);
 
 function receiving(
   collect: (signal: "logs" | "traces") => Parameters<typeof http.post>[1],
@@ -73,7 +63,7 @@ function observed(otlp?: OtlpDestination): Effect.Effect<Observed> {
         const response = yield* observeRequest(new Request("http://localhost/"), () =>
           Effect.succeed(new Response(undefined, { status: noContent })),
         );
-        yield* flush;
+        yield* flushTelemetry;
         return { ...seen, lines, traceparent: response.headers.get("traceparent") ?? "" };
       }).pipe(Effect.provide(telemetry), Effect.orDie),
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -85,8 +75,9 @@ function observed(otlp?: OtlpDestination): Effect.Effect<Observed> {
 }
 
 function traceIds(payload: readonly unknown[]): readonly string[] {
-  const parts = JSON.stringify(payload).split(exportedTraceIds);
-  return parts.filter((part) => traceIdPattern.test(part));
+  const matches = JSON.stringify(payload).matchAll(exportedTraceIds);
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  return Array.from(matches, (match) => match.groups?.["traceId"] ?? "");
 }
 
 function requestTraceId(traceparent: string): string {

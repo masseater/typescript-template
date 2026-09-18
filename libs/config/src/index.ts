@@ -100,7 +100,7 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
     return yield* invalid("Mailpit is restricted to local development");
   }
   if (scalars.OTLP_ENDPOINT !== undefined) {
-    yield* requireSecureOrigin(new URL(scalars.OTLP_ENDPOINT).origin);
+    yield* requireSecureOrigin(scalars.OTLP_ENDPOINT);
   }
   return { ...scalars, local };
 });

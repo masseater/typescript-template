@@ -1,11 +1,6 @@
 import { DurableObject, Email, Worker } from "alchemy/Cloudflare";
 import { fail, io } from "./artifact-io.ts";
-import {
-  traceDestination,
-  workerCompatibilityOptions,
-  workerObservability,
-  workerSubdomain,
-} from "./config.ts";
+import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { Effect } from "effect";
 import type { SharedConfig } from "./config.ts";
 import { monitorBinding } from "@template/monitor";
@@ -55,10 +50,7 @@ const monitorProgram = Effect.fn("monitorProgram")(function* monitorProgram(
     },
     main: options.artifact,
     name: `${config.prefix}-${options.name}`,
-    observability: workerObservability(
-      config.observabilitySampling,
-      traceDestination(config)?.name,
-    ),
+    observability: workerObservability(config),
     workersDev: workerSubdomain,
   });
   return { crons: worker.crons, workerName: worker.workerName };

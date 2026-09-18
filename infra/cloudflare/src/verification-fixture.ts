@@ -43,4 +43,4 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   TEMPLATE_WIKI_ORIGIN: verificationSettings.origins.wiki,
 };
 
-export { verificationEnvironment, verificationOtlpAuthorization, verificationSettings };
+export { verificationEnvironment, verificationSettings };
