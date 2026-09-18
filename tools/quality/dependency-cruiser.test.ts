@@ -1,14 +1,10 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { rm } from "node:fs/promises";
 
-import { cruise } from "dependency-cruiser";
+import { cruise, type ICruiseResult } from "dependency-cruiser";
 import { describe, expect, it } from "vite-plus/test";
 
-import { createFixture } from "./dependency-cruiser-fixture.ts";
+import { createFixture, type Fixture } from "./dependency-cruiser-fixture.ts";
 import configuration from "./dependency-cruiser.ts";
-
-import type { ICruiseResult } from "dependency-cruiser";
-import type { Fixture } from "./dependency-cruiser-fixture.ts";
 
 type Case = readonly [string, Fixture];
 
@@ -18,20 +14,20 @@ for (const rule of forbidden) {
   configuredRules.add(rule.name ?? "");
 }
 
-function reportedRules(
+const reportedRules = (
   violations: readonly { readonly rule: { readonly name: string } }[],
-): string[] {
+): string[] => {
   const reported = new Set<string>();
   for (const violation of violations) {
     reported.add(violation.rule.name);
   }
   return [...reported].toSorted();
-}
+};
 
-async function cruiseModules(
+const cruiseModules = async (
   directories: readonly string[],
   baseDir?: string,
-): Promise<ICruiseResult> {
+): Promise<ICruiseResult> => {
   const { output } = await cruise(
     [...directories],
     {
@@ -48,9 +44,9 @@ async function cruiseModules(
     );
   }
   return output;
-}
+};
 
-async function violatedRules(files: Fixture): Promise<readonly string[]> {
+const violatedRules = async (files: Fixture): Promise<readonly string[]> => {
   const root = await createFixture(files);
   try {
     const { summary } = await cruiseModules(["apps", "libs", "tools"], root);
@@ -58,7 +54,7 @@ async function violatedRules(files: Fixture): Promise<readonly string[]> {
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}
+};
 
 const detected: readonly Case[] = [
   ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@repo/db/src/schema";\n' }],
@@ -251,14 +247,14 @@ const accepted: readonly Case[] = [
   ],
 ];
 
-const scannedModules = ["libs/db/src/index.ts", "libs/ui/src/index.ts", "tools/quality/rules.ts"];
+const scannedModules = ["libs/db/src/index.ts", "libs/ui/src/index.ts", "tools/quality/plugin.ts"];
 
 interface RepositoryCruise {
   readonly scanned: readonly string[];
   readonly violations: readonly string[];
 }
 
-async function cruiseRepository(): Promise<RepositoryCruise> {
+const cruiseRepository = async (): Promise<RepositoryCruise> => {
   const { modules, summary } = await cruiseModules(["apps", "libs", "infra", "tools"]);
   const sources = new Set<string>();
   for (const module of modules) {
@@ -268,7 +264,7 @@ async function cruiseRepository(): Promise<RepositoryCruise> {
     scanned: scannedModules.filter((module) => sources.has(module)),
     violations: reportedRules(summary.violations),
   };
-}
+};
 
 describe("dependency-cruiser rules on package boundaries", () => {
   it("every rule has a case that reports it and a case that must stay silent", () => {

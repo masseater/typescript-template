@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { field } from "./dependencies.ts";
 import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
 import { configuredLintRules } from "./lint.ts";
-import plugin from "./rules.ts";
+import plugin from "./plugin.ts";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
   eager: true,
@@ -190,28 +190,31 @@ describe("project lint rules on dependency boundaries", () => {
 
   it.for(forbiddenCode)("rejects forbidden code in %s", ([name, code, rule]) => {
     expect.hasAssertions();
-    expect(reported(rule, name, code)).toBe(true);
+    expect(reported(rule, { code, filename: name })).toBe(true);
   });
 
   it.for(singleReports)("reports a default import member call once: %s", ([rule, code]) => {
     expect.hasAssertions();
-    expect(reportCount(rule, "libs/ui/src/probe.ts", code)).toBe(1);
+    expect(reportCount(rule, { code, filename: "libs/ui/src/probe.ts" })).toBe(1);
   });
 
   it.for(opaqueSpecifiers)("rejects an opaque specifier: %s", ([_label, name, code]) => {
     expect.hasAssertions();
-    expect(reported("boundaries", name, code)).toBe(true);
+    expect(reported("boundaries", { code, filename: name })).toBe(true);
   });
 
   it.for(validBoundaries)("allows valid boundary in %s", ([name, code]) => {
     expect.hasAssertions();
-    expect(reportedRules(name, code)).toStrictEqual([]);
+    expect(reportedRules({ code, filename: name })).toStrictEqual([]);
   });
 
   it("allows shared pure code", () => {
     expect.hasAssertions();
     expect(
-      reportedRules("valid.ts", "export const add = (a: number, b: number) => a + b;\n"),
+      reportedRules({
+        code: "export const add = (a: number, b: number) => a + b;\n",
+        filename: "valid.ts",
+      }),
     ).toStrictEqual([]);
   });
 });

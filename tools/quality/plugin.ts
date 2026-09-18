@@ -1,18 +1,67 @@
-import { definePlugin } from "vite-plus/lint/plugins";
+import { definePlugin, type RuleMeta, type Visitor } from "vite-plus/lint/plugins";
 
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
-import { filename, reportViolation } from "./lint-context.ts";
-import { propertyName, staticText } from "./references.ts";
+import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import { propertyName, staticText, type Origin } from "./references.ts";
 import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 
-import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
-import type { LintContext, Node } from "./lint-context.ts";
-import type { Origin } from "./references.ts";
+const metadata = (violation: string): RuleMeta => {
+  return {
+    messages: { violation },
+    schema: [],
+    type: "problem",
+  };
+};
+
+const isEnvironment = (origin: Origin): boolean => {
+  const [source, ...members] = origin;
+  return (
+    ((source === "node:process" || source === "process" || source === "import.meta") &&
+      members[0] === "env") ||
+    (source === "global" && members[0] === "process" && members[1] === "env")
+  );
+};
+
+const environmentVisitor = (inspection: LintContext): Visitor => {
+  if (/\/(?:libs\/config|infra|tools)\//u.test(filename(inspection))) {
+    return {};
+  }
+  return {
+    ...aliasVisitor(inspection, isEnvironment),
+    ExportNamedDeclaration(node: Node): void {
+      if (
+        node.type !== "ExportNamedDeclaration" ||
+        !node.source ||
+        !["node:process", "process"].includes(node.source.value)
+      ) {
+        return;
+      }
+      for (const specifier of node.specifiers) {
+        const exported =
+          specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
+        if (exported === "env") {
+          reportViolation(inspection, specifier);
+        }
+      }
+    },
+  };
+};
+
+const mockMethods = new Set([
+  "mock",
+  "doMock",
+  "fn",
+  "spyOn",
+  "stubGlobal",
+  "stubEnv",
+  "mockObject",
+  "mockModule",
+]);
 
 const mockSources = new Set([
   "vitest",
@@ -25,8 +74,54 @@ const mockSources = new Set([
   "test",
   "bun:test",
 ]);
+
+const isMock = (origin: Origin): boolean => {
+  const [source, ...members] = origin;
+  return mockSources.has(source ?? "") && members.some((member) => mockMethods.has(member));
+};
+
+const mockVisitor = (inspection: LintContext): Visitor => {
+  return originVisitor(inspection, isMock);
+};
+
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
+
+const isManualMemoization = (origin: Origin): boolean => {
+  const [source, ...members] = origin;
+  return source === "react" && members.some((member) => memoizationApis.has(member));
+};
+
+const memoizationVisitor = (inspection: LintContext): Visitor => {
+  return originVisitor(inspection, isManualMemoization);
+};
+
+const annotationApis = new Set([
+  "annotateCurrentSpan",
+  "annotateLogs",
+  "annotateLogsScoped",
+  "annotateSpans",
+  "withLogSpan",
+]);
+const effectModule = /^effect(?:\/|$)/u;
+
+const isRawAnnotation = (origin: Origin): boolean => {
+  const [source, ...members] = origin;
+  if (source === undefined || !effectModule.test(source)) {
+    return false;
+  }
+  return source === "effect"
+    ? members[0] === "Effect" && annotationApis.has(members[1] ?? "")
+    : annotationApis.has(members[0] ?? "");
+};
+
+const annotationVisitor = (inspection: LintContext): Visitor => {
+  return filename(inspection).endsWith("/libs/observability/src/annotations.ts")
+    ? {}
+    : originVisitor(inspection, isRawAnnotation);
+};
+
 const sharedWaitApis = new Set(["cached", "cachedInvalidateWithTTL", "cachedWithTTL"]);
+
 const sharedWaitModules = new Set([
   "Cache",
   "ManagedRuntime",
@@ -36,102 +131,8 @@ const sharedWaitModules = new Set([
   "Resource",
   "ScopedCache",
 ]);
-const annotationApis = new Set([
-  "annotateCurrentSpan",
-  "annotateLogs",
-  "annotateLogsScoped",
-  "annotateSpans",
-  "withLogSpan",
-]);
-const effectModule = /^effect(?:\/|$)/u;
-const mockMethods = new Set([
-  "mock",
-  "doMock",
-  "fn",
-  "spyOn",
-  "stubGlobal",
-  "stubEnv",
-  "mockObject",
-  "mockModule",
-]);
 
-function metadata(message: string): RuleMeta {
-  return {
-    messages: { violation: message },
-    schema: [],
-    type: "problem",
-  };
-}
-
-function isMock(origin: Origin): boolean {
-  const [source, ...members] = origin;
-  return mockSources.has(source ?? "") && members.some((member) => mockMethods.has(member));
-}
-
-function isEnvironment(origin: Origin): boolean {
-  const [source, ...members] = origin;
-  return (
-    ((source === "node:process" || source === "process" || source === "import.meta") &&
-      members[0] === "env") ||
-    (source === "global" && members[0] === "process" && members[1] === "env")
-  );
-}
-
-function environmentVisitor(context: LintContext): Visitor {
-  if (/\/(?:libs\/config|infra|tools)\//u.test(filename(context))) {
-    return {};
-  }
-  return {
-    ...aliasVisitor(context, isEnvironment),
-    ExportNamedDeclaration(node: Node): void {
-      if (
-        node.type !== "ExportNamedDeclaration" ||
-        !node.source ||
-        !["node:process", "process"].includes(node.source.value)
-      ) {
-        return;
-      }
-      for (const specifier of node.specifiers) {
-        const name =
-          specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
-        if (name === "env") {
-          reportViolation(context, specifier);
-        }
-      }
-    },
-  };
-}
-
-function mockVisitor(context: LintContext): Visitor {
-  return originVisitor(context, isMock);
-}
-
-function isManualMemoization(origin: Origin): boolean {
-  const [source, ...members] = origin;
-  return source === "react" && members.some((member) => memoizationApis.has(member));
-}
-
-function memoizationVisitor(context: LintContext): Visitor {
-  return originVisitor(context, isManualMemoization);
-}
-
-function isRawAnnotation(origin: Origin): boolean {
-  const [source, ...members] = origin;
-  if (source === undefined || !effectModule.test(source)) {
-    return false;
-  }
-  return source === "effect"
-    ? members[0] === "Effect" && annotationApis.has(members[1] ?? "")
-    : annotationApis.has(members[0] ?? "");
-}
-
-function annotationVisitor(context: LintContext): Visitor {
-  return filename(context).endsWith("/libs/observability/src/annotations.ts")
-    ? {}
-    : originVisitor(context, isRawAnnotation);
-}
-
-function isCrossRequestState(origin: Origin): boolean {
+const isCrossRequestState = (origin: Origin): boolean => {
   const [source, ...members] = origin;
   if (source === undefined || !effectModule.test(source)) {
     return false;
@@ -143,35 +144,37 @@ function isCrossRequestState(origin: Origin): boolean {
     sharedWaitModules.has(members[0] ?? "") ||
     (members[0] === "Effect" && sharedWaitApis.has(members[1] ?? ""))
   );
-}
+};
 
-function crossRequestStateVisitor(context: LintContext): Visitor {
-  const current = filename(context);
-  if (!runsInWorkerRuntime(current) || current.endsWith("/libs/runtime/src/worker-runtime.ts")) {
+const crossRequestStateVisitor = (inspection: LintContext): Visitor => {
+  const inspected = filename(inspection);
+  if (
+    !runsInWorkerRuntime(inspected) ||
+    inspected.endsWith("/libs/runtime/src/worker-runtime.ts")
+  ) {
     return {};
   }
-  return originVisitor(context, isCrossRequestState);
-}
+  return originVisitor(inspection, isCrossRequestState);
+};
 
-function workerFetchVisitor(context: LintContext): Visitor {
-  if (!runsInWorkerRuntime(filename(context))) {
+const workerFetchVisitor = (inspection: LintContext): Visitor => {
+  if (!runsInWorkerRuntime(filename(inspection))) {
     return {};
   }
   return {
     Property(node: Node): void {
       if (
         node.type === "Property" &&
-        propertyName(context, node) === "redirect" &&
-        staticText(context, node.value) === "error"
+        propertyName(inspection, node) === "redirect" &&
+        staticText(inspection, node.value) === "error"
       ) {
-        reportViolation(context, node);
+        reportViolation(inspection, node);
       }
     },
   };
-}
+};
 
-// oxlint-disable-next-line import/no-default-export
-export default definePlugin({
+const projectPlugin = definePlugin({
   meta: { name: "project" },
   rules: {
     annotations: {
@@ -254,3 +257,5 @@ export default definePlugin({
     },
   },
 });
+
+export default projectPlugin;

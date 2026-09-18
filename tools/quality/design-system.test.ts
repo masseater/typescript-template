@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { AssertionError } from "node:assert";
 
 import { plugin } from "@shadcn/lint";
@@ -44,9 +43,9 @@ const restyled = [
   ["no-unknown-classes", "shadow-xs"],
 ] as const;
 
-function runDirectly(_text: string, run: () => void): void {
+const runDirectly = (_text: string, run: () => void): void => {
   run();
-}
+};
 
 RuleTester.describe = runDirectly;
 RuleTester.it = runDirectly;
@@ -55,7 +54,7 @@ const tester = new RuleTester({});
 
 type RuleName = (typeof restyled)[number][0];
 
-function reports(rule: RuleName, className: string): boolean {
+const reports = (rule: RuleName, className: string): boolean => {
   try {
     tester.run(rule, plugin.rules[rule], {
       invalid: [],
@@ -74,7 +73,7 @@ function reports(rule: RuleName, className: string): boolean {
     throw error;
   }
   return false;
-}
+};
 
 describe("smarthr-ui token port", () => {
   it("reads the stylesheet the linter resolves from components.json", () => {

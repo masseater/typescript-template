@@ -14,15 +14,15 @@ const projects: Readonly<Record<string, unknown>> = import.meta.glob(
 
 const environment = { command: "serve", mode: "development" };
 
-function workspace(file: string): string {
+const workspace = (file: string): string => {
   return file.replace(/^(?:\.\.\/)+/u, "").replace(/\/[^/]+$/u, "");
-}
+};
 
-function diagnosticsTask(config: unknown): unknown {
+const diagnosticsTask = (config: unknown): unknown => {
   const resolved: unknown =
     typeof config === "function" ? Reflect.apply(config, undefined, [environment]) : config;
   return field(field(field(resolved, "run"), "tasks"), "check:effect");
-}
+};
 
 const diagnosed = Object.entries(configs)
   .filter(([, config]: readonly [string, unknown]) => diagnosticsTask(config) !== undefined)

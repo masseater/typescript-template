@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { deploymentValues, prefixScan, secretViolations } from "./secrets.ts";
-
-import type { DeploymentValue, PrefixScan } from "./secrets.ts";
+import {
+  deploymentValues,
+  prefixScan,
+  secretViolations,
+  type DeploymentValue,
+  type PrefixScan,
+} from "./secrets.ts";
 
 const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 
@@ -11,13 +15,13 @@ const githubTokenMinimumBodyLength = 36;
 const source = "infra/cloudflare/src/app.ts";
 const prefixValues = deploymentValues(`TEMPLATE_PREFIX="${unusablePrefix}"\n`);
 
-function violations(
+const violations = (
   staged: Readonly<{ content: string; filename: string }>,
   values: readonly DeploymentValue[] = prefixValues,
   scan: PrefixScan = "separated",
-): string[] {
+): string[] => {
   return secretViolations(staged, values, scan);
-}
+};
 
 describe("staged secret detection", () => {
   it.for([

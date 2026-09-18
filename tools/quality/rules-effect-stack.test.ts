@@ -57,11 +57,11 @@ const allowedStacks = [
 describe("the Effect stack boundary", () => {
   it.for(forbiddenStacks)("rejects %s", ([name, code]) => {
     expect.hasAssertions();
-    expect(reported("effect-stack", name, code)).toBe(true);
+    expect(reported("effect-stack", { code, filename: name })).toBe(true);
   });
 
   it.for(allowedStacks)("allows %s", ([name, code]) => {
     expect.hasAssertions();
-    expect(reportedRules(name, code)).toStrictEqual([]);
+    expect(reportedRules({ code, filename: name })).toStrictEqual([]);
   });
 });
