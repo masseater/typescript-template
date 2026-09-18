@@ -1,5 +1,6 @@
-import { Effect, References, Schema } from "effect";
+import { Effect, References, Result, Schema } from "effect";
 import { Stage, inMemoryState } from "alchemy";
+import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 import type { StackName } from "./stacks.ts";
 import { providers } from "alchemy/Cloudflare";
@@ -34,8 +35,8 @@ function describeCause(cause: unknown): string {
   if (cause instanceof Error && cause.message !== "") {
     return String(cause);
   }
-  const fields = JSON.stringify(cause);
-  return fields === "{}" ? String(cause) : fields;
+  const fields = Result.try(() => JSON.stringify(cause));
+  return Result.isSuccess(fields) && fields.success !== "{}" ? fields.success : String(cause);
 }
 
 function inventoryFailure(
@@ -64,7 +65,6 @@ const CompiledShape = Schema.Struct({
 
 const BINDING_PROPERTY = "env";
 const DIGEST_SEGMENT = /\/[0-9a-f]{64}\//u;
-const REFERENCE_KIND = "RefExpr";
 const CALLABLE_KEYS: ReadonlySet<string> = new Set(["length", "name", "prototype"]);
 
 function traversable(value: unknown): value is object {
@@ -72,28 +72,46 @@ function traversable(value: unknown): value is object {
 }
 
 function referencePath(value: unknown): string | undefined {
-  if (!traversable(value)) {
-    return undefined;
+  if (isRefExpr(value)) {
+    const stage = value.stage === undefined ? "" : `@${value.stage}`;
+    return `${value.stack ?? "<self>"}${stage}.${value.resourceId}`;
   }
-  const kind: unknown = Reflect.get(value, "kind");
-  const inner: unknown = Reflect.get(value, "expr");
-  if (kind === REFERENCE_KIND) {
-    return `${String(Reflect.get(value, "stack"))}.${String(Reflect.get(value, "resourceId"))}`;
+  if (isPropExpr(value)) {
+    const base = referencePath(value.expr);
+    return base === undefined ? undefined : `${base}.${String(value.identifier)}`;
   }
-  if (kind === "PropExpr") {
-    const base = referencePath(inner);
-    return base === undefined ? undefined : `${base}.${String(Reflect.get(value, "identifier"))}`;
+  return undefined;
+}
+
+function expressionValue(value: unknown): string {
+  return referencePath(value) ?? `<unresolved ${isExpr(value) ? value.kind : typeof value}>`;
+}
+
+function opaqueValue(value: unknown): string | undefined {
+  if (isExpr(value)) {
+    return expressionValue(value);
   }
-  return kind === "ApplyExpr" ? referencePath(inner) : undefined;
+  if (typeof value === "function") {
+    return "<function>";
+  }
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    (Object.getPrototypeOf(value) ?? Object.prototype) !== Object.prototype
+  ) {
+    return `<${value.constructor.name}>`;
+  }
+  return undefined;
 }
 
 function declaredValue(value: unknown): unknown {
   if (typeof value === "string") {
     return value.replace(repositoryRoot, "").replace(DIGEST_SEGMENT, "/<digest>/");
   }
-  const reference = referencePath(value);
-  if (reference !== undefined) {
-    return reference;
+  const opaque = opaqueValue(value);
+  if (opaque !== undefined) {
+    return opaque;
   }
   if (Array.isArray(value)) {
     return value.map((item: unknown) => declaredValue(item));
@@ -117,12 +135,12 @@ function applyVerificationEnvironment(): void {
 
 const BINDING_IDENTITY_KEYS: ReadonlySet<string> = new Set(["name", "type"]);
 
-function bindingField(type: string, key: string, value: unknown): boolean {
-  return (
-    value !== undefined &&
-    !BINDING_IDENTITY_KEYS.has(key) &&
-    !(type === "secret_text" && key === "text")
-  );
+const fixtureVariableByValue: ReadonlyMap<string, string> = new Map(
+  Object.entries(verificationEnvironment).map(([name, value]) => [value, `$${name}`]),
+);
+
+function secretSource(text: unknown): string {
+  return (typeof text === "string" ? fixtureVariableByValue.get(text) : undefined) ?? "<unknown>";
 }
 
 function bindingText(declared: unknown): string {
@@ -132,23 +150,39 @@ function bindingText(declared: unknown): string {
   return typeof declared === "string" ? declared : JSON.stringify(declared);
 }
 
-function bindingDetail(key: string, value: unknown): string {
-  return `${key}=${bindingText(declaredValue(value))}`;
+function bindingDetail(type: string, key: string, value: unknown): string {
+  const text =
+    type === "secret_text" && key === "text"
+      ? secretSource(value)
+      : bindingText(declaredValue(value));
+  return `${key}=${text}`;
+}
+
+function deferredValue(binding: unknown): string {
+  return isExpr(binding) && isApplyExpr(binding)
+    ? expressionValue(binding.expr)
+    : expressionValue(binding);
 }
 
 function describeBinding(entry: typeof BindingEntry.Type): string {
   const [binding] = entry.data.bindings;
-  if (!traversable(binding) || typeof binding === "function") {
-    return `${entry.sid}:deferred:${referencePath(binding) ?? "unresolved"}`;
+  if (isExpr(binding)) {
+    return `${entry.sid}:deferred:${deferredValue(binding)}`;
+  }
+  if (!traversable(binding)) {
+    return `${entry.sid}:<${typeof binding}>`;
   }
   const type = String(Reflect.get(binding, "type"));
   return [
     entry.sid,
     type,
     ...Object.entries(binding)
-      .filter(([key, value]: readonly [string, unknown]) => bindingField(type, key, value))
+      .filter(
+        ([key, value]: readonly [string, unknown]) =>
+          value !== undefined && !BINDING_IDENTITY_KEYS.has(key),
+      )
       .toSorted(([left], [right]) => left.localeCompare(right))
-      .map(([key, value]: readonly [string, unknown]) => bindingDetail(key, value)),
+      .map(([key, value]: readonly [string, unknown]) => bindingDetail(type, key, value)),
   ].join(":");
 }
 
@@ -165,9 +199,8 @@ function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string
     return;
   }
   seen.add(value);
-  const referenced: unknown = Reflect.get(value, "stack");
-  if (Reflect.get(value, "kind") === REFERENCE_KIND && typeof referenced === "string") {
-    found.add(referenced);
+  if (isRefExpr(value) && value.stack !== undefined) {
+    found.add(value.stack);
   }
   for (const key of Reflect.ownKeys(value)) {
     if (typeof key === "string" && !CALLABLE_KEYS.has(key)) {
@@ -178,7 +211,7 @@ function collectReferences(value: unknown, seen: Set<unknown>, found: Set<string
 
 function referencedStacks(shape: typeof CompiledShape.Type): readonly string[] {
   const found = new Set<string>();
-  collectReferences(shape.bindings, new Set(), found);
+  collectReferences([shape.bindings, shape.resources], new Set(), found);
   return [...found].filter((referenced) => referenced !== shape.name).toSorted();
 }
 
