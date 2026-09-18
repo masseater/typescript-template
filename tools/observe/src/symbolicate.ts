@@ -7,8 +7,8 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
 import { applications } from "@repo/config";
+import { reportFailed } from "@repo/config/cli";
 
-import { reportFailed } from "./failure.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {

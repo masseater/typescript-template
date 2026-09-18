@@ -8,7 +8,9 @@ import { access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { NodeRuntime } from "@effect/platform-node";
-import { Console, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
+
+import { reportFailed } from "@repo/config/cli";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
@@ -64,19 +66,11 @@ NodeRuntime.runMain(
   composeArguments(action).pipe(
     Effect.flatMap(runCompose),
     Effect.catchCause(() =>
-      Console.error(
-        JSON.stringify({
-          event: "local.services_command_failed",
-          ok: false,
-          remediation: "Check the Docker daemon, then retry the requested action.",
-        }),
-      ).pipe(
-        Effect.andThen(
-          Effect.sync(() => {
-            process.exitCode = 1;
-          }),
-        ),
-      ),
+      reportFailed({
+        event: "local.services_command_failed",
+        ok: false,
+        remediation: "Check the Docker daemon, then retry the requested action.",
+      }),
     ),
   ),
   { disableErrorReporting: true },
