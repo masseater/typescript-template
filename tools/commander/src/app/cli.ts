@@ -6,12 +6,11 @@ import { parseArgs } from "node:util";
 import { NodeRuntime, NodeServices } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 import open from "open";
-import { serve } from "srvx";
-import { staticMiddleware } from "srvx/static";
 
 import { playbookDirectory } from "#shared/playbook/index.ts";
 
 import { reportFailed } from "./failure.ts";
+import { nodeServer } from "./node-server.ts";
 import { resolveProject } from "./project.ts";
 
 const host = "127.0.0.1";
@@ -98,12 +97,11 @@ const listen = Effect.fn("listen")(function* listen() {
   const { fetch } = built.default;
   const server = yield* Effect.acquireRelease(
     Effect.sync(() =>
-      serve({
-        fetch: async (request) => fetch(request),
+      nodeServer({
+        fetch,
         hostname: host,
-        middleware: [staticMiddleware({ dir: path.join(workspace, "dist/client") })],
         port,
-        silent: true,
+        staticDirectory: path.join(workspace, "dist/client"),
       }),
     ),
     (running) => Effect.promise(async () => running.close(true)),
