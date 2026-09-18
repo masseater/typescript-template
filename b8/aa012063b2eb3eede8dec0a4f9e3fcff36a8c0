@@ -1,0 +1,1 @@
+replace vocabulary literals; derive MAILPIT_SEND_URL; wire OpsMail; export AuthenticationMethod
