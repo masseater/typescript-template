@@ -110,26 +110,10 @@ const appRun = {
   tasks: { build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] } },
 } satisfies UserConfig["run"];
 
-const monitorWorker = {
-  pack: {
-    deps: {
-      alwaysBundle: ["effect", "@template/monitor"],
-      onlyBundle: ["effect", "@template/monitor"],
-    },
-    entry: { index: "src/worker.ts" },
-    format: "esm",
-    outExtensions: (): { js: string } => ({ js: ".js" }),
-    platform: "browser",
-    target: "es2023",
-  },
-  run: { tasks: { build: { command: "vp pack", input: [...taskInput] } } },
-} satisfies UserConfig;
-
 export {
   appRun,
   appServer,
   clientReachableModules,
-  monitorWorker,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,

@@ -24,8 +24,10 @@ function workflowRuns(file: string): string[] {
   if (workflow === undefined) {
     throw new Error(`${file} is missing`);
   }
-  const step = /^\s*- run: /u;
-  return (workflow.match(/^\s*- run: .+$/gmu) ?? []).map((line: string) => line.replace(step, ""));
+  const step = /^\s*(?:- )?run: /u;
+  return (workflow.match(/^\s*(?:- )?run: .+$/gmu) ?? []).map((line: string) =>
+    line.replace(step, ""),
+  );
 }
 
 describe("git hooks", () => {

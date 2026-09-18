@@ -8,7 +8,6 @@ const application = {
 
 const workspaces = {
   ".": {
-    entry: ["steiger.config.js"],
     ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "@swc/core", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
   },
@@ -34,13 +33,7 @@ const workspaces = {
     project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
   },
   "libs/ui": {
-    project: [
-      "src/**/*.{ts,tsx}!",
-      "src/**/*.css",
-      ".storybook/*.ts",
-      "!src/story-fixture.ts!",
-      "!src/**/*.stories.tsx!",
-    ],
+    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
   },
 };
 

@@ -1,7 +1,24 @@
 import { describe, expect, it } from "vite-plus/test";
+import { field, workspaceManifests } from "./dependencies.ts";
+import { applications } from "@template/config";
 import { reported } from "./lint-harness.ts";
 
 const source = "export const value = 1;\n";
+
+describe("steiger coverage", () => {
+  it("runs the layer check in every application", () => {
+    expect.hasAssertions();
+    const checks = workspaceManifests
+      .filter(({ area }) => area === "apps")
+      .map(({ file, manifest }) => `${file}: ${String(field(field(manifest, "scripts"), "check"))}`)
+      .toSorted();
+    expect(checks).toStrictEqual(
+      applications
+        .map((app) => `apps/${app}/package.json: steiger src --fail-on-warnings`)
+        .toSorted(),
+    );
+  });
+});
 
 describe("feature-sliced layers", () => {
   it.for([
