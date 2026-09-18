@@ -7,6 +7,7 @@ const configuration = {
     ".local-agents",
     ".local/**",
     "tools/quality/dependency-cruiser.test.ts",
+    "tools/quality/effect-diagnostics.test.ts",
   ],
   ignoreStatic: true,
   mutate: [
