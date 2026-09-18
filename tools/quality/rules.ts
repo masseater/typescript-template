@@ -1,10 +1,10 @@
 import type { LintContext, Node } from "./lint-context.ts";
 import type { RuleMeta, Visitor } from "vite-plus/lint/plugins";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
-import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
+import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
-import { importVisitor, reportViolation } from "./lint-context.ts";
-import { importerOf, isApplicationOrLibrary, isForbiddenImport } from "./import-boundaries.ts";
+import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
+import { filename, reportViolation } from "./lint-context.ts";
 import {
   nodeRuntimeModules,
   runsInWorkerRuntime,
@@ -12,16 +12,11 @@ import {
   workerRuntimeModules,
   workerTestSuffix,
 } from "./test-runtime.ts";
-import { origins, propertyName, staticText } from "./references.ts";
+import { propertyName, staticText } from "./references.ts";
 import type { Origin } from "./references.ts";
 import { definePlugin } from "vite-plus/lint/plugins";
 import { layersVisitor } from "./layers.ts";
 import { testImportGraphVisitor } from "./test-import-graph.ts";
-
-interface RawD1Checks {
-  readonly destructuring: (reported: Node, pattern: Node, input: Node) => void;
-  readonly operation: (node: Node) => void;
-}
 
 const mockSources = new Set([
   "vitest",
@@ -54,10 +49,6 @@ function metadata(message: string): RuleMeta {
   };
 }
 
-function filename(context: LintContext): string {
-  return context.filename.replaceAll("\\", "/");
-}
-
 function isMock(origin: Origin): boolean {
   const [source, ...members] = origin;
   return mockSources.has(source ?? "") && members.some((member) => mockMethods.has(member));
@@ -70,79 +61,6 @@ function isEnvironment(origin: Origin): boolean {
       members[0] === "env") ||
     (source === "global" && members[0] === "process" && members[1] === "env")
   );
-}
-
-function importSourceChecker(context: LintContext): (node: Node) => void {
-  const importer = importerOf(filename(context));
-  return (node) => {
-    const source = staticText(context, node);
-    if (
-      source === undefined ? isApplicationOrLibrary(importer) : isForbiddenImport(importer, source)
-    ) {
-      reportViolation(context, node);
-    }
-  };
-}
-
-const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
-const rawD1Modules = rawD1Adapters.map((name) => `libs/db/src/${name}.ts`);
-const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
-
-function rawD1Checks(context: LintContext): RawD1Checks {
-  const allowed = rawD1Pattern.test(filename(context));
-  return {
-    destructuring: (reported, pattern, input) => {
-      if (!allowed && destructuresD1Operation(context, pattern, input)) {
-        reportViolation(context, reported);
-      }
-    },
-    operation: (node) => {
-      if (!allowed && isD1Operation(context, node)) {
-        reportViolation(context, node);
-      }
-    },
-  };
-}
-
-function boundariesVisitor(context: LintContext): Visitor {
-  const checkSource = importSourceChecker(context);
-  const checks = rawD1Checks(context);
-  return {
-    ...importVisitor(checkSource),
-    AssignmentExpression(node: Node): void {
-      if (node.type === "AssignmentExpression") {
-        checks.destructuring(node, node.left, node.right);
-      }
-    },
-    CallExpression(node: Node): void {
-      if (node.type !== "CallExpression") {
-        return;
-      }
-      checks.operation(node.callee);
-      const [argument] = node.arguments;
-      if (
-        argument !== undefined &&
-        origins(context, node.callee).some(
-          (origin) => origin[0] === "require" && origin.length === 1,
-        )
-      ) {
-        checkSource(argument);
-      }
-    },
-    MemberExpression(node: Node): void {
-      checks.operation(node);
-    },
-    ObjectPattern(node: Node): void {
-      if (node.type === "ObjectPattern" && node.typeAnnotation) {
-        checks.destructuring(node, node, node.typeAnnotation);
-      }
-    },
-    VariableDeclarator(node: Node): void {
-      if (node.type === "VariableDeclarator" && node.init) {
-        checks.destructuring(node, node.id, node.init);
-      }
-    },
-  };
 }
 
 function environmentVisitor(context: LintContext): Visitor {
@@ -226,6 +144,12 @@ export default definePlugin({
       create: environmentVisitor,
       meta: metadata(
         "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Effect の Schema で検証してください。",
+      ),
+    },
+    "example-values": {
+      create: exampleValuesVisitor,
+      meta: metadata(
+        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 00000000-0000-0000-0000-000000000000 のような数字だけの合成値にし、secret・token・password・credential の値は小文字と数字とハイフンだけの自己申告な文字列にしてください。`,
       ),
     },
     layers: {

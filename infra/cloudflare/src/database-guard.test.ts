@@ -14,7 +14,7 @@ const target = { accountId: verificationSettings.accountId, prefix: verification
 const access = { accountId: target.accountId, apiToken: "guard-test-not-a-real-token" };
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database`;
 const databaseName = `${target.prefix}-db`;
-const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
+const databaseId = "22222222-2222-4222-8222-222222222222";
 const otherDatabaseId = "11111111-2222-3333-4444-555555555555";
 
 function storedDatabase(uuid: string): CreatedResourceState {

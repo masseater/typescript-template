@@ -49,7 +49,7 @@ it.effect("treats only loopback and HTTPS LAN hosts as local development", () =>
     for (const origin of [
       "https://local",
       "https://user.template.local.example.test",
-      "https://mac-mini.tail2ee823.ts.net",
+      "https://app.example.ts.net",
       "https://app.example.test",
     ]) {
       assert.strictEqual(isLocalDevelopmentOrigin(origin), false);

@@ -24,7 +24,7 @@ const TEST_TIMEOUT_MS = 60_000;
 
 const target = {
   accountId: "a".repeat(HEX_ID_LENGTH),
-  databaseId: "92b705e4-7b3b-42a9-9de3-700a33fa609c",
+  databaseId: "22222222-2222-4222-8222-222222222222",
 };
 const executeFlags = ["--execute", "--confirm-database"] as const;
 

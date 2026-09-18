@@ -19,7 +19,7 @@ const SECRETS_STORE_PAGE_LIMIT = 100;
 const RETURNED_PAGE_SIZE = 50;
 const ACCOUNT_DATABASE_COUNT = 5;
 const tokenId = "0123456789abcdef0123456789abcdef";
-const databaseId = "92b705e4-7b3b-42a9-9de3-700a33fa609c";
+const databaseId = "22222222-2222-4222-8222-222222222222";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
 const workers = ["user", "admin", "wiki", "budget", "errors", "health"].map(
   (suffix) => `${config.prefix}-${suffix}`,

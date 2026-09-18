@@ -10,7 +10,7 @@ it.effect("Local Explorer queries only target loopback HTTP app origins", () =>
     assert.strictEqual((yield* explorerOrigin(loopbackApp)).href, loopbackApp);
     for (const app of [
       "https://127.0.0.1:3001/",
-      "http://mac-mini.tail2ee823.ts.net:3001/",
+      "http://app.example.ts.net:3001/",
       "http://user:secret@127.0.0.1:3001/",
       "http://127.0.0.1:3001/cdn-cgi/local/explorer",
     ]) {
