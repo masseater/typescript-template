@@ -11,7 +11,7 @@ const load = {
   ignoreDependencies: ["k6"],
   project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
 };
-const loadCommands = ["src/cli.ts!", "src/prepare.ts!"];
+const loadCommands = ["src/cli.ts!", "src/environment-file.ts!"];
 
 const workspaces = {
   ".": {

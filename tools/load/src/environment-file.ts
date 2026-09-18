@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 
 const firstUserArgumentIndex = 2;
-const usage = "vp run --filter @template/load prepare <user|admin|wiki>";
+const usage = "vp run --filter @template/load environment <user|admin|wiki>";
 
 NodeRuntime.runMain(
   Schema.decodeUnknownEffect(Application)(process.argv[firstUserArgumentIndex]).pipe(

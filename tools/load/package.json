@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "load": "node src/cli.ts",
-    "prepare": "node src/prepare.ts"
+    "environment": "node src/environment-file.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
