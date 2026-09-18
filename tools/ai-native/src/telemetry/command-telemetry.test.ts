@@ -230,6 +230,20 @@ describe("measureCommand", () => {
         metrics.disable();
         logs.disable();
         vi.resetModules();
+        const traceExporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
+        vi.spyOn(traceExporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
+          (_batch, resultCallback) => {
+            resultCallback({ code: 0 });
+          },
+        );
+        vi.spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown").mockResolvedValue();
+        const metricExporterModule = await import("@opentelemetry/exporter-metrics-otlp-http");
+        vi.spyOn(metricExporterModule.OTLPMetricExporter.prototype, "export").mockImplementation(
+          (_batch, resultCallback) => {
+            resultCallback({ code: 0 });
+          },
+        );
+        vi.spyOn(metricExporterModule.OTLPMetricExporter.prototype, "shutdown").mockResolvedValue();
         const telemetry = await import("./telemetry.ts");
         const started = telemetry.startTelemetry(MEASURED_SERVICE);
         onTestFinished(async () => {
