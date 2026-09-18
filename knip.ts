@@ -79,7 +79,7 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!", "src/private-maps.ts!"],
+  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
   "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
 };
 

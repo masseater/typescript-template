@@ -8,9 +8,7 @@
     "db:migrate:remote": "node src/database-command.ts migrate",
     "deploy": "node src/cli.ts deploy",
     "preview": "node src/cli.ts plan",
-    "verify:account": "node src/check-account.ts",
-    "verify:artifacts": "node src/check-artifacts.ts",
-    "verify:stacks": "node src/check-stacks.ts"
+    "verify:account": "node src/check-account.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
