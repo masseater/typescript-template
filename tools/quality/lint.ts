@@ -120,6 +120,14 @@ const lint = {
       },
     ],
     "eslint/no-restricted-imports": ["error", retiredImports],
+    "eslint/no-restricted-properties": [
+      "error",
+      ...["stdout", "stderr"].map((property) => ({
+        message: "effect の Console で出力してください。",
+        object: "process",
+        property,
+      })),
+    ],
     "eslint/no-ternary": "off",
     "eslint/no-undef": "off",
     "eslint/no-undefined": "off",
