@@ -2,6 +2,7 @@ import type { WorkerObservability } from "alchemy/Cloudflare";
 import { Config, Effect, Schema } from "effect";
 
 import { workerCompatibility } from "@repo/config/worker";
+import { otlpSignalUrl } from "@repo/observability";
 
 import type { StackName } from "./stacks.ts";
 import { stackNames } from "./stacks.ts";
@@ -59,6 +60,9 @@ const Origin = Schema.String.check(
     );
   }),
 );
+const HttpsUrl = Schema.String.check(
+  Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
+);
 const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
 const SamplingRate = Schema.Number.check(
   Schema.isFinite(),
@@ -82,6 +86,7 @@ const SharedSettings = Schema.Struct({
   mailFrom: Email,
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
+  otlp: Schema.UndefinedOr(Schema.Struct({ enabled: Schema.Boolean, endpoint: HttpsUrl })),
   prefix: Prefix,
   zoneId: Id,
 });
@@ -99,12 +104,34 @@ const workerCompatibilityOptions = {
   date: workerCompatibility.date,
   flags: [...workerCompatibility.flags],
 };
-function workerObservability(headSamplingRate: number): WorkerObservability {
+interface TraceDestination {
+  readonly enabled: boolean;
+  readonly name: string;
+  readonly url: string;
+}
+
+function traceDestination(config: SharedConfig): TraceDestination | undefined {
+  return config.otlp === undefined
+    ? undefined
+    : {
+        enabled: config.otlp.enabled,
+        name: `${config.prefix}-traces`,
+        url: otlpSignalUrl(config.otlp.endpoint, "traces"),
+      };
+}
+
+function workerObservability(config: SharedConfig): WorkerObservability {
+  const headSamplingRate = config.observabilitySampling;
+  const destination = traceDestination(config);
   return {
     enabled: true,
     headSamplingRate,
     logs: { enabled: true, headSamplingRate, invocationLogs: false },
-    traces: { enabled: true, headSamplingRate },
+    traces: {
+      enabled: true,
+      headSamplingRate,
+      ...(destination === undefined ? {} : { destinations: [destination.name], persist: true }),
+    },
   };
 }
 
@@ -180,6 +207,7 @@ export {
   SamplingRate,
   CloudflareFailure,
   Email,
+  HttpsUrl,
   Id,
   Nonnegative,
   Origin,
@@ -191,6 +219,7 @@ export {
   originKeys,
   parseDeploymentCommand,
   sendingDomain,
+  traceDestination,
   workerCompatibilityOptions,
   workerObservability,
   workerSubdomain,

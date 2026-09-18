@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 
 import { applications } from "@repo/config";
+import { receiverOrigin } from "@repo/local";
 
 import { failure, fileIo } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";
@@ -77,6 +78,7 @@ function appVariables(
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
     MAILPIT_URL: `http://127.0.0.1:${routes.mailpit}`,
+    OTLP_ENDPOINT: receiverOrigin("otlp"),
   };
 }
 
