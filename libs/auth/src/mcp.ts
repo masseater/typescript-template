@@ -21,10 +21,6 @@ const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
 const Jwks = Schema.Struct({ keys: Schema.mutable(Schema.Array(Jwk)) });
 const decodeJwks = Schema.decodeUnknownPromise(Jwks);
 
-const unauthorized = (message: string): APIError => {
-  return new APIError("UNAUTHORIZED", { message });
-};
-
 const bearerToken = (authorization: string): Option.Option<string> => {
   const [scheme, token, ...rest] = authorization.split(" ");
   return scheme?.toLowerCase() === "bearer" &&
@@ -43,6 +39,10 @@ const fetchJwks = async (
   return response.ok
     ? decodeJwks(await response.json())
     : Promise.reject(new Error("WIKI_JWKS_UNAVAILABLE"));
+};
+
+const unauthorized = (message: string): APIError => {
+  return new APIError("UNAUTHORIZED", { message });
 };
 
 const verifiedClaims = (

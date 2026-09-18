@@ -1,20 +1,20 @@
-import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
-import { ConfigurationInvalid, readAi, readConfig } from "@template/config";
 import { assert, it } from "@effect/vitest";
-import type { AppBindings } from "./bindings.ts";
+import { ConfigurationInvalid, readAi, readConfig } from "@template/config";
 import { Effect } from "effect";
+
 import { parseDeploymentCommand } from "./config.ts";
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
+import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import type { AppBindings } from "./bindings.ts";
+
 const release = "0123456789abcdef";
 const settings = verificationSettings;
 
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
-function binding<Binding>(value: object): Binding {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+const binding = <Binding>(value: object): Binding => {
   return value as Binding;
-}
+};
 
 const sharedBindings = {
   APP_ORIGIN: settings.origins.admin,

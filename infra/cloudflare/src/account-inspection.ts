@@ -1,3 +1,6 @@
+import { applications } from "@template/config";
+import { Effect } from "effect";
+
 import {
   attachedService,
   dnsRecordNames,
@@ -7,15 +10,14 @@ import {
   workerNames,
   workersSubdomain,
 } from "./account-lookup.ts";
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
-import type { AccountAccess } from "./account-read.ts";
-import { Effect } from "effect";
-import type { SharedConfig } from "./config.ts";
-import type { StateService } from "alchemy/State";
-import { applications } from "@template/config";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
+import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import { missingPermissions } from "./deploy-token.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
+
+import type { StateService } from "alchemy/State";
+import type { AccountAccess } from "./account-read.ts";
+import type { SharedConfig } from "./config.ts";
 
 type Claim = "free" | "owned" | "taken";
 type Presence = "absent" | "present";
@@ -23,26 +25,26 @@ type Presence = "absent" | "present";
 const monitorSuffixes = ["budget", "errors", "health"] as const;
 const tokenSuffixes = ["billing-read", "observability-query"] as const;
 
-function declaredNames(prefix: string): readonly string[] {
+const declaredNames = (prefix: string): readonly string[] => {
   return [...applications, ...monitorSuffixes, ...tokenSuffixes].map(
     (suffix) => `${prefix}-${suffix}`,
   );
-}
+};
 
-function hostnames(config: SharedConfig): readonly string[] {
+const hostnames = (config: SharedConfig): readonly string[] => {
   return Object.values(config.origins).map((origin) => new URL(origin).hostname);
-}
+};
 
-function presence(found: boolean): Presence {
+const presence = (found: boolean): Presence => {
   return found ? "present" : "absent";
-}
+};
 
-function claim(present: boolean, owned: boolean): Claim {
+const claim = (present: boolean, owned: boolean): Claim => {
   if (!present) {
     return "free";
   }
   return owned ? "owned" : "taken";
-}
+};
 
 const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
   Failure,
@@ -130,7 +132,7 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
 
 type Inspection = Effect.Success<ReturnType<typeof inspectAccount>>;
 
-function blocked(inspection: Readonly<Inspection>): readonly string[] {
+const blocked = (inspection: Readonly<Inspection>): readonly string[] => {
   const claimed = ["database", "workerDomains", "workerNames"] as const;
   return [
     ...claimed.filter((name) => inspection[name] === "taken"),
@@ -138,7 +140,7 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
     ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
     ...(inspection.deployToken.length > 0 ? ["deployToken"] : []),
   ];
-}
+};
 
 export { blocked, inspectAccount };
 export type { Inspection };

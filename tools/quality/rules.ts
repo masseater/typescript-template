@@ -31,10 +31,6 @@ const metadata = (message: string): RuleMeta => {
   };
 };
 
-const filename = (context: LintContext): string => {
-  return context.filename.replaceAll("\\", "/");
-};
-
 const mockSources = new Set([
   "vitest",
   "@vitest/spy",
@@ -70,6 +66,10 @@ const isEnvironment = (origin: Origin): boolean => {
       members[0] === "env") ||
     (source === "global" && members[0] === "process" && members[1] === "env")
   );
+};
+
+const filename = (context: LintContext): string => {
+  return context.filename.replaceAll("\\", "/");
 };
 
 const importSourceChecker = (context: LintContext): ((node: Node) => void) => {

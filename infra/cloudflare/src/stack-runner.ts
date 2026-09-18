@@ -1,17 +1,22 @@
-import { Console, Effect } from "effect";
-import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
-import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
-import type { ArtifactMode } from "./artifacts.ts";
-import { ArtifactWrites } from "./artifacts.ts";
-import type { DeploymentSecrets } from "./credentials.ts";
-import type { PlannedStack } from "./plan-confirmation.ts";
-import type { ProgressEvent } from "alchemy/Alchemist";
-import type { StackName } from "./stacks.ts";
-import { assertDatabaseUnclaimed } from "./database-guard.ts";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
+
+import { Progress, Stack as StackRoute, layer, type ProgressEvent } from "alchemy/Alchemist";
+import { Console, Effect } from "effect";
+
+import { ArtifactWrites, type ArtifactMode } from "./artifacts.ts";
+import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { stateStore } from "./deployment-access.ts";
+import {
+  acceptPlan,
+  planConfirmation,
+  planReport,
+  plannedStack,
+  type PlannedStack,
+} from "./plan-confirmation.ts";
+
+import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
+import type { DeploymentSecrets } from "./credentials.ts";
+import type { StackName } from "./stacks.ts";
 
 interface Deployment {
   readonly access: { readonly accountId: string; readonly apiToken: string };
@@ -21,11 +26,11 @@ interface Deployment {
 
 const alchemist = layer();
 
-function write(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
+const write = (record: Readonly<Record<string, unknown>>): Effect.Effect<void> => {
   return Console.info(JSON.stringify(record));
-}
+};
 
-function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effect<void> {
+const reportProgress = (stack: StackName): ((event: ProgressEvent) => Effect.Effect<void>) => {
   return (event) =>
     event._tag === "apply.resource.status"
       ? write({
@@ -36,7 +41,7 @@ function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effe
           type: event.type,
         })
       : Effect.void;
-}
+};
 
 const planStack = Effect.fn("planStack")(function* planStack(
   stack: StackName,
@@ -53,18 +58,18 @@ const planStack = Effect.fn("planStack")(function* planStack(
   return { planned: plannedStack(snapshot), snapshot };
 });
 
-function announce(
+const announce = (
   planned: PlannedStack,
   stack: StackName,
   confirmation?: string,
-): Effect.Effect<void> {
+): Effect.Effect<void> => {
   return write({
     ...(confirmation === undefined ? {} : { confirmation }),
     event: "cloudflare.planned",
     plan: planReport(planned),
     stack,
   });
-}
+};
 
 const previewStack = Effect.fn("previewStack")(function* previewStack(
   stack: StackName,

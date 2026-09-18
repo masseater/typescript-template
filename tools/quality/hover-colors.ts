@@ -2,7 +2,6 @@ import { declarations } from "./design-system.ts";
 
 const hoverSuffix = "-hover";
 const referenceDepth = 8;
-const hexChannels = 3;
 const byteMaximum = 255;
 const srgbThreshold = 0.03928;
 const srgbSlope = 12.92;
@@ -35,6 +34,8 @@ const channel = (byte: number): number => {
 };
 
 const hexPattern = /^#(?<digits>(?:[\da-f]{3}|[\da-f]{6}))$/iu;
+
+const hexChannels = 3;
 
 const luminance = (color: string | undefined): number | undefined => {
   const digits = color === undefined ? undefined : hexPattern.exec(color)?.groups?.digits;

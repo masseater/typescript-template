@@ -29,9 +29,10 @@ const deploymentValues = (content: string): DeploymentValue[] => {
 };
 
 const PREFIX_KEY = "TEMPLATE_PREFIX";
-const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/gu;
 
 type PrefixScan = "separated" | "word";
+
+const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/gu;
 
 const quoted = (value: string): string => {
   return value.replaceAll(REGEXP_METACHARACTERS, String.raw`\$&`);
@@ -47,10 +48,6 @@ const separatedPattern = (value: string): RegExp => {
 
 const prefixPattern = (value: string, scan: PrefixScan): RegExp => {
   return scan === "word" ? wordPattern(value) : separatedPattern(value);
-};
-
-const leaks = (content: string, { key, value }: DeploymentValue, scan: PrefixScan): boolean => {
-  return key === PREFIX_KEY ? prefixPattern(value, scan).test(content) : content.includes(value);
 };
 
 const prefixScan = (
@@ -78,6 +75,10 @@ const contentRules: Readonly<Record<string, RegExp>> = {
   "aws-access-key": /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/u,
   "github-token": /\bgh[pousr]_[A-Za-z0-9]{36,255}\b|\bgithub_pat_[A-Za-z0-9_]{60,255}\b/u,
   "private-key": /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/u,
+};
+
+const leaks = (content: string, { key, value }: DeploymentValue, scan: PrefixScan): boolean => {
+  return key === PREFIX_KEY ? prefixPattern(value, scan).test(content) : content.includes(value);
 };
 
 const secretViolations = (

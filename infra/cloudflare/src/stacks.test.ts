@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vite-plus/test";
-import { stackDependencies, stackNames } from "./stacks.ts";
 import { Effect } from "effect";
+import { describe, expect, it } from "vite-plus/test";
+
+import { stackDependencies, stackNames } from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
   "./admin.ts",
@@ -13,9 +14,9 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
   "./wiki.ts",
 ]);
 
-function defaultExport(module: unknown): unknown {
+const defaultExport = (module: unknown): unknown => {
   return typeof module === "object" && module !== null ? Reflect.get(module, "default") : undefined;
-}
+};
 
 describe("alchemy stacks", () => {
   it("every apply unit runs once, after the units whose resources it reads", () => {

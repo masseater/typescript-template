@@ -4,7 +4,6 @@ import { origins, propertyName, staticText, type Origin } from "./references.ts"
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
 const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
 const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
 
@@ -14,6 +13,8 @@ const outOfGraphModules: ReadonlySet<string> = new Set([
   "node:worker_threads",
   "worker_threads",
 ]);
+
+const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
 
 const isOutOfGraph = (origin: Origin): boolean => {
   const [source = "", first = "", second = ""] = origin;

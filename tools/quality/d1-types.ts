@@ -69,24 +69,6 @@ const followPath = (references: readonly D1Reference[], path: readonly string[])
   return current;
 };
 
-const declaredType = (
-  block: NodeOf<"Program" | "BlockStatement">,
-  name: string,
-): Node | undefined => {
-  for (const statement of block.body) {
-    const declaration =
-      statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
-    if (
-      (declaration?.type === "TSTypeAliasDeclaration" ||
-        declaration?.type === "TSInterfaceDeclaration") &&
-      declaration.id.name === name
-    ) {
-      return declaration;
-    }
-  }
-  return undefined;
-};
-
 const memberD1Types = (
   context: LintContext,
   members: NodeOf<"TSTypeLiteral">["members"],
@@ -133,6 +115,24 @@ const d1NamedType = (source: string, name: string): D1Reference[] => {
   }
   const known = templateTypes.get(source)?.get(name);
   return known === undefined ? [] : [known];
+};
+
+const declaredType = (
+  block: NodeOf<"Program" | "BlockStatement">,
+  name: string,
+): Node | undefined => {
+  for (const statement of block.body) {
+    const declaration =
+      statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
+    if (
+      (declaration?.type === "TSTypeAliasDeclaration" ||
+        declaration?.type === "TSInterfaceDeclaration") &&
+      declaration.id.name === name
+    ) {
+      return declaration;
+    }
+  }
+  return undefined;
 };
 
 const localType = (node: Node, name: string): Node | undefined => {

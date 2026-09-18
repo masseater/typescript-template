@@ -1,5 +1,7 @@
-import type { Application, Role } from "@template/config";
+import { eq } from "drizzle-orm";
 import { Effect, Exit } from "effect";
+
+import { query, type Database } from "./database.ts";
 import {
   account,
   oauthAccessToken,
@@ -9,16 +11,15 @@ import {
   session,
   user,
 } from "./schema.ts";
-import type { Database } from "./database.ts";
-import type { DatabaseFailure } from "./database-failure.ts";
-import { eq } from "drizzle-orm";
-import { query } from "./database.ts";
 
-type Records = Effect.Effect<void, DatabaseFailure, Database>;
+import type { Application, Role } from "@template/config";
+import type { DatabaseFailure } from "./database-failure.ts";
 
 const SESSION_LIFETIME_MS = 60_000;
 
-function addUser(id: string, role: Role = "user", emailVerified = true): Records {
+type Records = Effect.Effect<void, DatabaseFailure, Database>;
+
+const addUser = (id: string, role: Role = "user", emailVerified = true): Records => {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),
@@ -30,9 +31,9 @@ function addUser(id: string, role: Role = "user", emailVerified = true): Records
       updatedAt: new Date(),
     });
   });
-}
+};
 
-function addCredential(userId: string): Records {
+const addCredential = (userId: string): Records => {
   return query(async (database): Promise<void> => {
     await database.insert(account).values({
       accountId: userId,
@@ -44,7 +45,7 @@ function addCredential(userId: string): Records {
       userId,
     });
   });
-}
+};
 
 const insertSession = Effect.fn("insertSession")(function* insertSession(
   userId: string,
@@ -72,26 +73,26 @@ const insertSession = Effect.fn("insertSession")(function* insertSession(
   return id;
 });
 
-function addSession(
+const addSession = (
   userId: string,
   audience: Application,
   strong = true,
-): Effect.Effect<string, DatabaseFailure, Database> {
+): Effect.Effect<string, DatabaseFailure, Database> => {
   return insertSession(userId, audience, strong);
-}
+};
 
-function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
+const failureTag = <Value, Failure extends { readonly _tag: string }, Requirements>(
   effect: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<string, Value, Requirements> {
+): Effect.Effect<string, Value, Requirements> => {
   return effect.pipe(
     Effect.flip,
     Effect.map((failure) => failure._tag),
   );
-}
+};
 
-function successCount<Value, Failure>(outcomes: readonly Exit.Exit<Value, Failure>[]): number {
+const successCount = <Value, Failure>(outcomes: readonly Exit.Exit<Value, Failure>[]): number => {
   return outcomes.filter((outcome) => Exit.isSuccess(outcome)).length;
-}
+};
 
 const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId: string) {
   const clientId = `client-${userId}`;

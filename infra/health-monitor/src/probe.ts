@@ -1,4 +1,5 @@
 import { Effect, Option, Schema } from "effect";
+
 import type { Application as HealthService } from "@template/config";
 
 interface HealthTarget {
@@ -22,11 +23,7 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
-  return { detail, healthy, service: target.service };
-}
-
-function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
+const requestHealth = (target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> => {
   return Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
     fetch(`${target.origin}/api/health`, {
       headers: { accept: "application/json" },
@@ -34,7 +31,11 @@ function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeR
       signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
     }),
   ).pipe(Effect.option);
-}
+};
+
+const probeResult = (target: HealthTarget, healthy: boolean, detail: string): ProbeResult => {
+  return { detail, healthy, service: target.service };
+};
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   target: HealthTarget,

@@ -1,8 +1,8 @@
+import { Email } from "@template/config";
 import { Config, Effect, Redacted } from "effect";
 
 import {
   AuthSecret,
-  Email,
   Id,
   Nonnegative,
   Origin,

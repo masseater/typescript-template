@@ -1,10 +1,8 @@
-import { Cause, Console, Effect, Schema } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { connect, createServer } from "node:net";
+import { connect, createServer, type Server } from "node:net";
+
 import { NodeRuntime } from "@effect/platform-node";
-import type { Scope } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Server } from "node:net";
+import { Cause, Console, Effect, Schema, type Scope } from "effect";
+
 import { reportFailed } from "./failure.ts";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
@@ -17,7 +15,7 @@ const ProxyPort = Schema.Number.check(
   Schema.isGreaterThan(HIGHEST_PRIVILEGED_PORT),
 );
 
-function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Scope> {
+const listen = (target: number): Effect.Effect<Server, GatewayFailure, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.callback<ReturnType<typeof createServer>, GatewayFailure>((resume) => {
       const server = createServer((client) => {
@@ -39,7 +37,7 @@ function listen(target: number): Effect.Effect<Server, GatewayFailure, Scope.Sco
     }),
     (server) => Effect.sync(() => server.close()),
   );
-}
+};
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {

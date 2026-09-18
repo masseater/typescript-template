@@ -1,9 +1,11 @@
-import { Console, Effect } from "effect";
-import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
-import type { D1Database } from "@cloudflare/workers-types";
 import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect } from "effect";
 import { getPlatformProxy } from "wrangler";
+
+import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import { migrateD1 } from "./migrate-d1.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>
@@ -17,7 +19,7 @@ const platform = Effect.acquireRelease(
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
-function report(error: string): Effect.Effect<void> {
+const report = (error: string): Effect.Effect<void> => {
   return Console.error(JSON.stringify({ action: "local_migration", error, success: false })).pipe(
     Effect.andThen(
       Effect.sync(() => {
@@ -25,7 +27,7 @@ function report(error: string): Effect.Effect<void> {
       }),
     ),
   );
-}
+};
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {

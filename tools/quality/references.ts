@@ -103,19 +103,6 @@ const propertyName = (
     : staticText(context, property.key);
 };
 
-const propertyBindingPath = (
-  context: LintContext,
-  property: NodeOf<"ObjectPattern">["properties"][number],
-  resolve: Resolve<string[] | undefined>,
-): string[] | undefined => {
-  if (property.type === "RestElement") {
-    return resolve(property.argument);
-  }
-  const suffix = resolve(property.value);
-  const key = suffix === undefined ? undefined : propertyName(context, property);
-  return key === undefined || suffix === undefined ? undefined : [key, ...suffix];
-};
-
 const destructuredOrigins = (
   context: LintContext,
   pattern: Node,
@@ -158,6 +145,19 @@ const importedOrigin = (declaration: Node): Origin | undefined => {
   return declaration.imported.type === "Identifier"
     ? [source, declaration.imported.name]
     : [source, declaration.imported.value];
+};
+
+const propertyBindingPath = (
+  context: LintContext,
+  property: NodeOf<"ObjectPattern">["properties"][number],
+  resolve: Resolve<string[] | undefined>,
+): string[] | undefined => {
+  if (property.type === "RestElement") {
+    return resolve(property.argument);
+  }
+  const suffix = resolve(property.value);
+  const key = suffix === undefined ? undefined : propertyName(context, property);
+  return key === undefined || suffix === undefined ? undefined : [key, ...suffix];
 };
 
 const bindingPath = (context: LintContext, pattern: Node, name: string): string[] | undefined => {

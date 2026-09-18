@@ -1,8 +1,7 @@
+import { State, readState, type StateService } from "alchemy/State";
 import { Effect, Schema } from "effect";
-import { State, readState } from "alchemy/State";
-import { stackName, stackNames } from "./stacks.ts";
-import type { StackName } from "./stacks.ts";
-import type { StateService } from "alchemy/State";
+
+import { stackName, stackNames, type StackName } from "./stacks.ts";
 
 const StoredDatabase = Schema.Struct({ attr: Schema.Struct({ databaseId: Schema.String }) });
 const StoredWorker = Schema.Struct({ attr: Schema.Struct({ workerName: Schema.String }) });

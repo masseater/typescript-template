@@ -1,6 +1,6 @@
 import { Console, Effect } from "effect";
 
-function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
+const reportFailed = (record: Readonly<Record<string, unknown>>): Effect.Effect<void> => {
   return Console.error(JSON.stringify(record)).pipe(
     Effect.andThen(
       Effect.sync(() => {
@@ -8,6 +8,6 @@ function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<
       }),
     ),
   );
-}
+};
 
 export { reportFailed };

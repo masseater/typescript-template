@@ -1,16 +1,17 @@
-import type { CurrentRequest, Telemetry } from "@template/observability";
-import { Effect, Result } from "effect";
-import { httpStatus, observeRequest } from "@template/observability";
-import { jsonResponse, secureResponse } from "./responses.ts";
+import {
+  httpStatus,
+  observeRequest,
+  type CurrentRequest,
+  type Telemetry,
+} from "@template/observability";
+import { Effect, Result, type ManagedRuntime } from "effect";
+
 import { Assets } from "./assets.ts";
-import type { ManagedRuntime } from "effect";
 import { runtimeUnavailable } from "./failures.ts";
+import { jsonResponse, secureResponse } from "./responses.ts";
 
 interface StartHandler {
   readonly fetch: (request: Request) => Promise<Response> | Response;
-}
-interface FetchWorker {
-  readonly fetch: (request: Request) => Promise<Response>;
 }
 type WorkerRoute<Requirements> = (
   request: Request,
@@ -20,43 +21,47 @@ type AppRoute<Requirements> = (
   path: string,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
-function unavailableResponse(): Response {
+const unavailableResponse = (): Response => {
   const failure = runtimeUnavailable();
   return jsonResponse({ error: failure.message }, failure.status);
+};
+
+interface FetchWorker {
+  readonly fetch: (request: Request) => Promise<Response>;
 }
 
-function serveWorker<Requirements>(
+const serveWorker = <Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry, unknown>,
   route: WorkerRoute<Requirements>,
-): FetchWorker {
+): FetchWorker => {
   return {
     fetch: async (request): Promise<Response> => {
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
       return exit._tag === "Success" ? exit.value : unavailableResponse();
     },
   };
-}
+};
 
-function requestPath(request: Request): string | undefined {
+const requestPath = (request: Request): string | undefined => {
   const pathname = URL.parse(request.url)?.pathname;
   if (pathname === undefined) {
     return undefined;
   }
   const decoded = Result.try(() => decodeURIComponent(pathname));
   return Result.isSuccess(decoded) ? decoded.success : undefined;
-}
+};
 
-function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
+const fetchAsset = (request: Request): Effect.Effect<Response, never, Assets> => {
   return Effect.gen(function* fetchAssetProgram() {
     const assets = yield* Assets;
     return yield* Effect.promise(async () => assets.fetch(request));
   });
-}
+};
 
-function serveApp<Requirements>(
+const serveApp = <Requirements>(
   runtime: ManagedRuntime.ManagedRuntime<Requirements | Telemetry | Assets, unknown>,
   route: AppRoute<Requirements>,
-): FetchWorker {
+): FetchWorker => {
   return serveWorker(runtime, (request) => {
     const path = requestPath(request);
     if (path === undefined) {
@@ -67,11 +72,11 @@ function serveApp<Requirements>(
     }
     return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
   });
-}
+};
 
-function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
+const startRoute = (handler: StartHandler): ((request: Request) => Effect.Effect<Response>) => {
   return (request) => Effect.promise(async () => secureResponse(await handler.fetch(request)));
-}
+};
 
 export { serveApp, serveWorker, startRoute };
 export type { AppRoute, FetchWorker };

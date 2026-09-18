@@ -1,6 +1,8 @@
 import { Heading, Icon } from "@template/ui";
 import { SearchIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
+
 import { Feature } from "./feature.tsx";
+
 import type { ReactElement } from "react";
 
 const features = [
@@ -21,7 +23,7 @@ const features = [
   },
 ] as const;
 
-function Features(): ReactElement {
+const Features = (): ReactElement => {
   return (
     <section className="mx-auto flex w-full max-w-wide flex-col gap-6 px-4 py-12">
       <Heading as="h2">できること</Heading>
@@ -37,6 +39,6 @@ function Features(): ReactElement {
       </ul>
     </section>
   );
-}
+};
 
 export { Features };

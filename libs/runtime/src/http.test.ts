@@ -1,3 +1,8 @@
+import { assert, describe, it } from "@effect/vitest";
+import { Telemetry, httpStatus } from "@template/observability";
+import { Effect, Layer, ManagedRuntime, Schema } from "effect";
+
+import { ProfileUpdate } from "./contracts.ts";
 import {
   AppOrigin,
   apiRoutes,
@@ -7,12 +12,9 @@ import {
   readJsonBody,
   secureResponse,
 } from "./http.ts";
-import { Effect, Layer, ManagedRuntime, Schema } from "effect";
-import { Telemetry, httpStatus } from "@template/observability";
-import { assert, describe, it } from "@effect/vitest";
-import type { AnyElysia } from "elysia";
-import { ProfileUpdate } from "./contracts.ts";
 import { startRoute } from "./worker.ts";
+
+import type { AnyElysia } from "elysia";
 
 const origin = "http://localhost:3001";
 const oversizedBody = 16_385;
@@ -24,11 +26,11 @@ const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemet
 const runtime = ManagedRuntime.make(context);
 const api = apiRoutes(runtime);
 
-function mutation(headers: Readonly<Record<string, string>>, body: string): Request {
+const mutation = (headers: Readonly<Record<string, string>>, body: string): Request => {
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
-}
+};
 
-function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
+const servedThroughStart = (app: AnyElysia): ((request: Request) => Effect.Effect<Response>) => {
   const { handlers } = elysiaServer(app);
   const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
   return startRoute({
@@ -39,11 +41,11 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
         : handle({ request });
     },
   });
-}
+};
 
-async function callApi(app: AnyElysia, request: Request): Promise<Response> {
+const callApi = async (app: AnyElysia, request: Request): Promise<Response> => {
   return Effect.runPromise(servedThroughStart(compileApi(app))(request));
-}
+};
 
 const rejections = [
   {

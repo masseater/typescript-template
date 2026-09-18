@@ -100,8 +100,6 @@ const a11yRelaxations = (): A11yRelaxation[] => {
     );
 };
 
-const agentConfigFile = ".mcp.json";
-
 const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
 
 const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
@@ -121,6 +119,8 @@ const vendoredWorkerViolations = (): string[] => {
         `${workerFile}: msw ${String(installed)} に対して ${String(vendored)} のままです。vp exec msw init .storybook/public で取り直してください。`,
       ];
 };
+
+const agentConfigFile = ".mcp.json";
 
 const storybookEndpointViolations = (port: number): string[] => {
   const parsed: unknown = JSON.parse(readFileSync(agentConfigFile, "utf-8"));

@@ -1,17 +1,16 @@
-import { Cause, Console, Effect } from "effect";
-import { browser, browserCommand } from "./browser.ts";
-import { connection, logs, start, status, stop } from "./applications.ts";
-import { failure, reportFailed } from "./failure.ts";
-import type { App } from "./local-environment.ts";
-import type { LocalCommandFailure } from "./failure.ts";
 import { NodeRuntime } from "@effect/platform-node";
-import { application } from "./local-environment.ts";
+import { Cause, Console, Effect } from "effect";
+
+import { connection, logs, start, status, stop } from "./applications.ts";
+import { browser, browserCommand } from "./browser.ts";
+import { failure, reportFailed, type LocalCommandFailure } from "./failure.ts";
+import { application, type App } from "./local-environment.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
-type Command = Effect.Effect<unknown, LocalCommandFailure>;
-
 const firstUserArgumentIndex = 2;
+
+type Command = Effect.Effect<unknown, LocalCommandFailure>;
 
 const globalCommands = new Map<string, () => Command>([
   ["connect", connection],
@@ -19,6 +18,10 @@ const globalCommands = new Map<string, () => Command>([
   ["status", status],
   ["storybook", storybook],
 ]);
+
+const writeReport = (report: unknown): Effect.Effect<void> => {
+  return report === undefined ? Effect.void : Console.log(JSON.stringify(report));
+};
 
 const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
   ["browser", browser],
@@ -28,11 +31,11 @@ const appCommands = new Map<string, (app: App, args: readonly string[]) => Comma
   ["stop", stop],
 ]);
 
-function writeReport(report: unknown): Effect.Effect<void> {
-  return report === undefined ? Effect.void : Console.log(JSON.stringify(report));
-}
-
-function selectCommand(action: string, app: string | undefined, args: readonly string[]): Command {
+const selectCommand = (
+  action: string,
+  app: string | undefined,
+  args: readonly string[],
+): Command => {
   const global = globalCommands.get(action);
   if (global !== undefined) {
     return global();
@@ -41,7 +44,7 @@ function selectCommand(action: string, app: string | undefined, args: readonly s
   return scoped === undefined
     ? Effect.fail(failure("command_unsupported"))
     : application(app).pipe(Effect.flatMap((name) => scoped(name, args)));
-}
+};
 
 const [action = "", app, ...args] = process.argv.slice(firstUserArgumentIndex);
 

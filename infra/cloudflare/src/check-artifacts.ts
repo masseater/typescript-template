@@ -1,14 +1,15 @@
-import { Console, Effect } from "effect";
-import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
+import { Console, Effect } from "effect";
+
+import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { markFailed } from "./secrets.ts";
 
-function report(reason: string): Effect.Effect<void> {
+const report = (reason: string): Effect.Effect<void> => {
   return Console.error(JSON.stringify({ event: "artifacts.invalid", reason })).pipe(
     Effect.andThen(markFailed),
   );
-}
+};
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {

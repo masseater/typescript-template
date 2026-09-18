@@ -1,14 +1,15 @@
-import { databaseName, findDatabaseId } from "./database-lookup.ts";
-import type { AccountAccess } from "./account-read.ts";
-import { CloudflareFailure } from "./config.ts";
-import type { DeploymentTarget } from "./config.ts";
 import { Effect } from "effect";
-import type { StateService } from "alchemy/State";
+
+import { CloudflareFailure, type DeploymentTarget } from "./config.ts";
+import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import { recordedDatabaseIds } from "./state-ownership.ts";
 
-function nameTaken(): CloudflareFailure {
+import type { StateService } from "alchemy/State";
+import type { AccountAccess } from "./account-read.ts";
+
+const nameTaken = (): CloudflareFailure => {
   return new CloudflareFailure({ code: "database_name_taken", keys: ["TEMPLATE_PREFIX"] });
-}
+};
 
 const assertDatabaseUnclaimed = Effect.fn("assertDatabaseUnclaimed")(
   function* assertDatabaseUnclaimed<Failure, Requirements>(

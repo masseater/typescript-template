@@ -27,7 +27,7 @@ const fileIo = <Value>(
   return Effect.tryPromise({ catch: () => failure("file_io_failed"), try: operation });
 };
 
-function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
+const reportFailed = (record: Readonly<Record<string, unknown>>): Effect.Effect<void> => {
   return Console.error(JSON.stringify(record)).pipe(
     Effect.andThen(
       Effect.sync(() => {
@@ -35,6 +35,6 @@ function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<
       }),
     ),
   );
-}
+};
 
 export { LocalCommandFailure, failure, fileIo, reportFailed };

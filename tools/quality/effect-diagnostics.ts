@@ -1,11 +1,9 @@
-import { Console, Effect } from "effect";
-import { NodeRuntime } from "@effect/platform-node";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect } from "effect";
 
 interface Diagnosis {
   readonly ok: boolean;
@@ -19,7 +17,7 @@ const DIAGNOSTIC_CONCURRENCY = 4;
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/effect-tsgo", import.meta.url));
 
-function areaProjects(area: string): Effect.Effect<string[]> {
+const areaProjects = (area: string): Effect.Effect<string[]> => {
   return Effect.promise(async () =>
     readdir(new URL(`../../${area}/`, import.meta.url), { withFileTypes: true }),
   ).pipe(
@@ -29,19 +27,18 @@ function areaProjects(area: string): Effect.Effect<string[]> {
         .map((entry) => `${area}/${entry.name}/tsconfig.json`),
     ),
   );
-}
+};
 
-function hasProject(project: string): Effect.Effect<boolean> {
+const hasProject = (project: string): Effect.Effect<boolean> => {
   const directory = new URL(`../../${project.replace(/tsconfig\.json$/u, "")}`, import.meta.url);
   return Effect.promise(async () => readdir(directory)).pipe(
     Effect.map((names) => names.includes("tsconfig.json")),
   );
-}
+};
 
-function diagnose(project: string): Effect.Effect<Diagnosis> {
+const diagnose = (project: string): Effect.Effect<Diagnosis> => {
   return Effect.promise(
     async () =>
-      // oxlint-disable-next-line promise/avoid-new
       new Promise<Diagnosis>((resolve) => {
         execFile(
           executable,
@@ -53,7 +50,7 @@ function diagnose(project: string): Effect.Effect<Diagnosis> {
         );
       }),
   );
-}
+};
 
 const diagnoseAll = Effect.fn("diagnoseAll")(function* diagnoseAll() {
   const areas = yield* Effect.all(

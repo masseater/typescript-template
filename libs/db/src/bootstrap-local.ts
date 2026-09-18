@@ -1,10 +1,12 @@
-import { Console, Effect, Schema } from "effect";
-import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
-import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
-import type { D1Database } from "@cloudflare/workers-types";
-import { Database } from "./database.ts";
 import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";
+
+import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
+import { Database } from "./database.ts";
+import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
 
 const platform = Effect.acquireRelease(
   Effect.promise(async () =>
@@ -18,7 +20,7 @@ const platform = Effect.acquireRelease(
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
 
-function report(error: string): Effect.Effect<void> {
+const report = (error: string): Effect.Effect<void> => {
   return Console.error(JSON.stringify({ action: "admin_bootstrap", error, success: false })).pipe(
     Effect.andThen(
       Effect.sync(() => {
@@ -26,7 +28,7 @@ function report(error: string): Effect.Effect<void> {
       }),
     ),
   );
-}
+};
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {

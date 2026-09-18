@@ -12,7 +12,6 @@ const Results = ({
   search,
 }: Readonly<{ list: Members; search: UsersSearch }>): ReactElement => {
   const current = search.page ?? 1;
-  const first = (current - 1) * list.pageSize + 1;
   if (list.total === 0) {
     return (
       <p className="text-base leading-normal">
@@ -36,6 +35,7 @@ const Results = ({
   const pageLink = (target: PageTarget): ReactElement => {
     return <MemberPageLink search={search} target={target} />;
   };
+  const first = (current - 1) * list.pageSize + 1;
   return (
     <>
       <p className="text-sm leading-normal text-muted-foreground">

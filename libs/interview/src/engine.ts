@@ -11,9 +11,6 @@ import { understandByRules, type UnderstandingData } from "./understanding.ts";
 
 import type { InterviewState, MemberUtterance } from "./state.ts";
 
-const summaryText =
-  "ここまでの内容をまとめました。直したいところがあれば、そのまま教えてください。";
-
 type Asked = {
   readonly reply?: ReplyForm;
   readonly text: string;
@@ -38,6 +35,9 @@ const maximumMessages = 100;
 const says = (progress: Progress, message: Message): InterviewState["messages"] => {
   return [...progress.messages, message].slice(-maximumMessages);
 };
+
+const summaryText =
+  "ここまでの内容をまとめました。直したいところがあれば、そのまま教えてください。";
 
 const summarizing = (progress: Progress, opening: string): Settled => {
   const { sheet, skipped } = progress;

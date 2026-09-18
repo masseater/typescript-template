@@ -83,7 +83,6 @@ for (const [specifier, pattern] of serverOnly) {
   }
 }
 
-// oxlint-disable-next-line eslint/no-restricted-properties
 process.stdout.write(
   `${JSON.stringify({
     event: "quality.client_bundle",

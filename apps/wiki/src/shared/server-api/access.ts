@@ -1,7 +1,7 @@
-import { Effect, Option } from "effect";
+import { verifySession } from "@template/auth";
 import { httpStatus } from "@template/observability";
 import { jsonResponse } from "@template/runtime/http";
-import { verifySession } from "@template/auth";
+import { Effect, Option } from "effect";
 
 type SessionEffect = ReturnType<typeof verifySession>;
 type SessionServices = Effect.Services<SessionEffect>;
@@ -19,15 +19,19 @@ const publicPaths: ReadonlySet<string> = new Set([
   "/api/session",
 ]);
 
-function isPublic(path: string): boolean {
+const isPublic = (path: string): boolean => {
   return (
     publicPaths.has(path) || path.startsWith("/api/auth/") || path.startsWith("/.well-known/oauth-")
   );
-}
+};
 
-function currentSession(
+const currentSession = (
   request: Request,
-): Effect.Effect<Option.Option<{ readonly strong: boolean }>, SessionUnavailable, SessionServices> {
+): Effect.Effect<
+  Option.Option<{ readonly strong: boolean }>,
+  SessionUnavailable,
+  SessionServices
+> => {
   return verifySession(request.headers, true).pipe(
     Effect.map((session) => Option.some(session)),
     Effect.catchTags({
@@ -37,9 +41,9 @@ function currentSession(
       SessionRequired: () => Effect.succeed(Option.none()),
     }),
   );
-}
+};
 
-function denied(path: string, signedIn: boolean): Response {
+const denied = (path: string, signedIn: boolean): Response => {
   if (path.startsWith("/api/") || path.startsWith("/_serverFn/")) {
     return jsonResponse({ error: "ログインしてください。" }, httpStatus.unauthorized);
   }
@@ -47,7 +51,7 @@ function denied(path: string, signedIn: boolean): Response {
     headers: { "cache-control": "no-store", location: signedIn ? "/security" : "/login" },
     status: httpStatus.found,
   });
-}
+};
 
 const guardAccess = Effect.fn("guardAccess")(function* guardAccess(request: Request, path: string) {
   if (isPublic(path)) {

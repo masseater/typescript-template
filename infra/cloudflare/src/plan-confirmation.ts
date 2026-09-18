@@ -9,13 +9,6 @@ import type { Stack as StackRoute } from "alchemy/Alchemist";
 import type { Plan } from "alchemy/Plan";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
 
-const bindingDisposition = {
-  create: undefined,
-  delete: "plan_removes_bindings",
-  noop: undefined,
-  update: undefined,
-} as const satisfies Record<PlannedBinding["action"], CloudflareFailure["code"] | undefined>;
-
 type RowAction = PlannedAction["action"] | PlannedResource["action"];
 
 type PlanRow = {
@@ -150,6 +143,13 @@ const refused = (code: CloudflareFailure["code"] | undefined, id: string): reado
   return code === undefined ? [] : [{ code, id }];
 };
 
+const bindingDisposition = {
+  create: undefined,
+  delete: "plan_removes_bindings",
+  noop: undefined,
+  update: undefined,
+} as const satisfies Record<PlannedBinding["action"], CloudflareFailure["code"] | undefined>;
+
 const refusedBindings = (row: PlanRow): readonly Refusal[] => {
   return row.bindings.flatMap((binding) =>
     refused(bindingDisposition[binding.action], `${row.id}.${binding.sid}`),
@@ -166,14 +166,6 @@ const rowDisposition = {
   run: undefined,
   update: undefined,
 } as const satisfies Record<RowAction, CloudflareFailure["code"] | undefined>;
-
-const refusedRows = (planned: PlannedStack): readonly Refusal[] => {
-  const rows = planRows(planned);
-  return [
-    ...rows.flatMap((row) => refused(rowDisposition[row.action], row.id)),
-    ...rows.flatMap((row) => refusedBindings(row)),
-  ];
-};
 
 const resourceProps = (nodes: Plan["resources"]): readonly (readonly [string, unknown])[] => {
   return Object.entries(nodes).map(
@@ -210,6 +202,14 @@ const planConfirmation = (planned: PlannedStack, accountId: string): string => {
     stack: planned.stack.name,
     stage: digest(planned.stack.stage),
   });
+};
+
+const refusedRows = (planned: PlannedStack): readonly Refusal[] => {
+  const rows = planRows(planned);
+  return [
+    ...rows.flatMap((row) => refused(rowDisposition[row.action], row.id)),
+    ...rows.flatMap((row) => refusedBindings(row)),
+  ];
 };
 
 const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(

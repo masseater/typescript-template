@@ -1,25 +1,15 @@
-import { applications, authenticationMethods, roles } from "@template/config";
-import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
-import type { Application } from "@template/config";
-import type { BetterAuthOptions } from "better-auth";
-import type { DrizzleDatabase } from "@template/db";
-import { Effect } from "effect";
-import type { Run } from "./runner.ts";
-import { authPlugins } from "./auth-plugins.ts";
-import { betterAuth } from "better-auth";
-import { createRequestHooks } from "./request-hooks.ts";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { applications, authenticationMethods, roles, type Application } from "@template/config";
+import { schema, type DrizzleDatabase } from "@template/db";
 import { findUser } from "@template/db/security";
-import { schema } from "@template/db";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { Effect } from "effect";
 
-interface AuthOptions {
-  readonly baseURL: string;
-  readonly secret: string;
-  readonly audience: Application;
-  readonly sendVerificationEmail: (
-    message: Readonly<{ email: string; url: string }>,
-  ) => Effect.Effect<void, unknown>;
-}
+import { authPlugins } from "./auth-plugins.ts";
+import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
+import { createRequestHooks } from "./request-hooks.ts";
+
+import type { Run } from "./runner.ts";
 
 type AdvancedOptions = NonNullable<BetterAuthOptions["advanced"]>;
 type EmailAndPasswordOptions = NonNullable<BetterAuthOptions["emailAndPassword"]>;
@@ -42,7 +32,7 @@ const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
 const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
 const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
 
-function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
+const createDatabaseHooks = (run: Run, audience: Application): DatabaseHooks => {
   return {
     session: {
       create: {
@@ -72,12 +62,21 @@ function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
       },
     },
   };
+};
+
+interface AuthOptions {
+  readonly baseURL: string;
+  readonly secret: string;
+  readonly audience: Application;
+  readonly sendVerificationEmail: (
+    message: Readonly<{ email: string; url: string }>,
+  ) => Effect.Effect<void, unknown>;
 }
 
-function createEmailVerification(
+const createEmailVerification = (
   options: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
-): EmailVerificationOptions {
+): EmailVerificationOptions => {
   return {
     autoSignInAfterVerification: false,
     sendOnSignIn: options.audience !== "wiki",
@@ -91,9 +90,9 @@ function createEmailVerification(
       await run(options.sendVerificationEmail({ email: user.email, url: link.href }));
     },
   };
-}
+};
 
-function createLogger(run: Run): LoggerOptions {
+const createLogger = (run: Run): LoggerOptions => {
   return {
     level: "warn",
     log: (level, _message, ...details: readonly unknown[]) => {
@@ -105,18 +104,18 @@ function createLogger(run: Run): LoggerOptions {
       );
     },
   };
-}
+};
 
-function createAdvancedOptions(audience: Application, origin: string): AdvancedOptions {
+const createAdvancedOptions = (audience: Application, origin: string): AdvancedOptions => {
   return {
     cookiePrefix: `template-${audience}`,
     crossSubDomainCookies: { enabled: false },
     ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     useSecureCookies: origin.startsWith("https:"),
   };
-}
+};
 
-function createSessionOptions(audience: Application): SessionOptions {
+const createSessionOptions = (audience: Application): SessionOptions => {
   return {
     additionalFields: {
       audience: {
@@ -138,18 +137,18 @@ function createSessionOptions(audience: Application): SessionOptions {
     expiresIn: audience === "user" ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
     freshAge: FRESH_SESSION_SECONDS,
   };
-}
+};
 
-function createEmailAndPassword(audience: Application): EmailAndPasswordOptions {
+const createEmailAndPassword = (audience: Application): EmailAndPasswordOptions => {
   return {
     disableSignUp: audience !== "user",
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
     requireEmailVerification: true,
   };
-}
+};
 
-function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
+const createAuth = (options: AuthOptions, database: DrizzleDatabase, run: Run) => {
   const { audience } = options;
   const { origin } = new URL(options.baseURL);
   return betterAuth({
@@ -180,7 +179,7 @@ function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
       deleteUser: { enabled: false },
     },
   });
-}
+};
 
 type BetterAuthInstance = ReturnType<typeof createAuth>;
 

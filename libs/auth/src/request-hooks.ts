@@ -17,12 +17,6 @@ type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
-type HookScope = {
-  readonly audience: Application;
-  readonly ctx: HookContext;
-  readonly run: Run;
-};
-
 const sessionRevokingPaths = new Set([
   "/change-password",
   "/two-factor/disable",
@@ -44,6 +38,12 @@ const currentSessionOf = async (ctx: HookContext): ReturnType<typeof getSessionF
 };
 
 const totpUpgradableMethods = new Set(["password", "password_totp"]);
+
+type HookScope = {
+  readonly audience: Application;
+  readonly ctx: HookContext;
+  readonly run: Run;
+};
 
 const markTotpSessionStrong = async ({ audience, ctx, run }: HookScope): Promise<void> => {
   const session = await currentSessionOf(ctx);

@@ -1,10 +1,10 @@
-import { Console, Effect, Schema } from "effect";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+
 import { NodeRuntime } from "@effect/platform-node";
 import { applications } from "@template/config";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { parseArgs } from "node:util";
+import { Console, Effect, Schema } from "effect";
+
 import { reportFailed } from "./failure.ts";
 import { symbolicate } from "./source-maps.ts";
 

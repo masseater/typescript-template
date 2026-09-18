@@ -5,7 +5,6 @@ import type { Visitor } from "vite-plus/lint/plugins";
 
 const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
-const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 const browserOrNodeOnly =
   /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/(?:remote|testing-node)[^/]*\.ts$/u;
 const nodeRuntimeModules = [
@@ -30,6 +29,8 @@ const importsAnyOf = (specifiers: readonly string[], source: string): boolean =>
 const workerTestFile = /\.worker\.test\.[cm]?[jt]sx?$/u;
 
 const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
+
+const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 
 const runsInWorkerRuntime = (current: string): boolean => {
   return (

@@ -1,13 +1,10 @@
-import { Effect, Schema } from "effect";
-import { deploymentKeys, secretsFile } from "@template/config/deployment";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { lstat, open } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { FileHandle } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
+import { lstat, open, type FileHandle } from "node:fs/promises";
 import path from "node:path";
+
+import { deploymentKeys, secretsFile } from "@template/config/deployment";
+import { Effect, Schema } from "effect";
+
 import { projectName } from "./project.ts";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
@@ -24,13 +21,13 @@ class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("Secre
   keys: Schema.Array(Schema.String),
 }) {}
 
-function failure(code: SecretsFileFailure["code"]): () => SecretsFileFailure {
-  return () => new SecretsFileFailure({ code, keys: [] });
-}
-
-function closeHandle(handle: FileHandle): Effect.Effect<void> {
+const closeHandle = (handle: FileHandle): Effect.Effect<void> => {
   return Effect.tryPromise(async () => handle.close()).pipe(Effect.ignore);
-}
+};
+
+const failure = (code: SecretsFileFailure["code"]): (() => SecretsFileFailure) => {
+  return () => new SecretsFileFailure({ code, keys: [] });
+};
 
 const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle: FileHandle) {
   const metadata = yield* Effect.tryPromise({
@@ -40,7 +37,6 @@ const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle:
   if (
     !metadata.isFile() ||
     metadata.nlink !== 1 ||
-    // oxlint-disable-next-line no-bitwise
     (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0
   ) {
     return yield* Effect.fail(
@@ -53,14 +49,14 @@ const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle:
   });
 });
 
-function declaredKeys(contents: string): ReadonlySet<string> {
+const declaredKeys = (contents: string): ReadonlySet<string> => {
   return new Set(
     contents.split("\n").flatMap((line) => {
-      const key = KEY_PATTERN.exec(line)?.groups?.["key"];
+      const key = KEY_PATTERN.exec(line)?.groups?.key;
       return key === undefined ? [] : [key];
     }),
   );
-}
+};
 
 const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecretsFile(
   filename: string,
@@ -80,7 +76,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
         cause instanceof Error && "code" in cause && cause.code === "ELOOP"
           ? new SecretsFileFailure({ code: "secrets_file_symlink_forbidden", keys: [] })
           : new SecretsFileFailure({ code: "secrets_file_missing", keys: [] }),
-      // oxlint-disable-next-line no-bitwise
+
       try: async () => open(filename, constants.O_RDONLY | constants.O_NOFOLLOW),
     }),
     readOwnerOnly,

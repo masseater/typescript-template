@@ -1,8 +1,10 @@
-import type { ReactElement } from "react";
-import { ToastItem } from "./toast-item";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
-function ToastViewport(): ReactElement {
+import { ToastItem } from "./toast-item";
+
+import type { ReactElement } from "react";
+
+const ToastViewport = (): ReactElement => {
   const { toasts } = ToastPrimitive.useToastManager();
   return (
     <ToastPrimitive.Portal>
@@ -13,6 +15,6 @@ function ToastViewport(): ReactElement {
       </ToastPrimitive.Viewport>
     </ToastPrimitive.Portal>
   );
-}
+};
 
 export { ToastViewport };

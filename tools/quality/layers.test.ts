@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vite-plus/test";
-import type { ViteUserConfigFnObject } from "vite-plus";
-import { appRun } from "@template/config/vite";
 import { applications } from "@template/config";
+import { appRun } from "@template/config/vite";
+import { describe, expect, it } from "vite-plus/test";
+
 import { reported } from "./lint-harness.ts";
+
+import type { ViteUserConfigFnObject } from "vite-plus";
 
 const source = "export const value = 1;\n";
 
@@ -17,9 +19,9 @@ const steigerConfigs: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: true, import: "default" },
 );
 
-function appName(key: string): string {
-  return /\/apps\/(?<app>[^/]+)\//u.exec(key)?.groups?.["app"] ?? "";
-}
+const appName = (key: string): string => {
+  return /\/apps\/(?<app>[^/]+)\//u.exec(key)?.groups?.app ?? "";
+};
 
 describe("steiger coverage", () => {
   it("runs the shared layer check in every application", () => {

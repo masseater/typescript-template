@@ -16,24 +16,6 @@ type BindingLookup = {
   readonly seen: Readonly<ReadonlySet<Node>>;
 };
 
-const annotatedBinding = (
-  context: LintContext,
-  pattern: Node,
-  lookup: BindingLookup,
-): D1Reference[] => {
-  if (pattern.type === "AssignmentPattern") {
-    return annotatedBinding(context, pattern.left, lookup);
-  }
-  if (pattern.type === "TSParameterProperty") {
-    return annotatedBinding(context, pattern.parameter, lookup);
-  }
-  const path = bindingPath(context, pattern, lookup.name);
-  if (!path || !("typeAnnotation" in pattern) || !pattern.typeAnnotation) {
-    return [];
-  }
-  return followPath(d1Type(context, pattern.typeAnnotation, lookup.seen), path);
-};
-
 const objectD1References = (
   context: LintContext,
   node: NodeOf<"ObjectExpression">,
@@ -122,6 +104,24 @@ const workerBindingReferences = (
     return [{ kind: "database", path: ["DB"] }];
   }
   return member === undefined ? [{ kind: "database", path: ["env", "DB"] }] : [];
+};
+
+const annotatedBinding = (
+  context: LintContext,
+  pattern: Node,
+  lookup: BindingLookup,
+): D1Reference[] => {
+  if (pattern.type === "AssignmentPattern") {
+    return annotatedBinding(context, pattern.left, lookup);
+  }
+  if (pattern.type === "TSParameterProperty") {
+    return annotatedBinding(context, pattern.parameter, lookup);
+  }
+  const path = bindingPath(context, pattern, lookup.name);
+  if (!path || !("typeAnnotation" in pattern) || !pattern.typeAnnotation) {
+    return [];
+  }
+  return followPath(d1Type(context, pattern.typeAnnotation, lookup.seen), path);
 };
 
 const definitionD1References = (

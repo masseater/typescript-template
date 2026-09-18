@@ -1,8 +1,9 @@
-import { Exit, Option } from "effect";
 import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/react-start";
-import { guardAccess, runtime } from "#shared/server-api/index.ts";
 import { httpStatus } from "@template/observability";
 import { jsonResponse } from "@template/runtime/http";
+import { Exit, Option } from "effect";
+
+import { guardAccess, runtime } from "#shared/server-api/index.ts";
 
 const guard = createMiddleware().server(async ({ next, request }) => {
   const exit = await runtime.runPromiseExit(guardAccess(request, new URL(request.url).pathname));

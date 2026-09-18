@@ -20,17 +20,17 @@ const enrollmentPaths = new Set([
 
 type AuthenticationMethod = "passkey_uv" | "password" | "password_totp" | "recovery";
 
-const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
-  ["/passkey/verify-authentication", "passkey_uv"],
-  ["/two-factor/verify-totp", "password_totp"],
-  ["/two-factor/verify-backup-code", "recovery"],
-]);
-
 const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => {
   return strongMethods.has(method);
 };
+
+const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
+  ["/passkey/verify-authentication", "passkey_uv"],
+  ["/two-factor/verify-totp", "password_totp"],
+  ["/two-factor/verify-backup-code", "recovery"],
+]);
 
 const authenticationMethodFor = (path: string | undefined): AuthenticationMethod => {
   return (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ?? "password";

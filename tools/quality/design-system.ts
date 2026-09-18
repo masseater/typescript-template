@@ -106,14 +106,6 @@ const appModules: Readonly<Record<string, unknown>> = import.meta.glob(
 
 const partsImport = '@import "@template/ui/styles.css"';
 
-const isDirectory = (target: string): boolean => {
-  try {
-    return statSync(target).isDirectory();
-  } catch {
-    return false;
-  }
-};
-
 const sourcePattern = /@source\s+"(?<directory>[^"]+)"/gu;
 
 const declaredSources = (css: string): string[] => {
@@ -131,6 +123,14 @@ const scannedDirectories = (file: string, css: string): string[] => {
   return declaredSources(css).map((directory) =>
     path.normalize(path.join(path.dirname(file), directory)),
   );
+};
+
+const isDirectory = (target: string): boolean => {
+  try {
+    return statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
 };
 
 const sourceViolations = (app: string, file: string, css: string): string[] => {

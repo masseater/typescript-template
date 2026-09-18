@@ -1,15 +1,12 @@
-import { Console, Effect, Schema } from "effect";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, readdir } from "node:fs/promises";
-import { NodeRuntime } from "@effect/platform-node";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
+import { chmod, readdir } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
+
+import { NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Schema } from "effect";
+
 import { reportFailed } from "./failure.ts";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
@@ -27,28 +24,27 @@ class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
 const EXECUTABLE_MODE = 0o755;
 const PLAYWRIGHT_BROWSER = "chromium";
 
-// oxlint-disable-next-line typescript/strict-void-return
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
 
-function fileIo<Value>(
+const fileIo = <Value>(
   operation: () => Promise<Value>,
-): Effect.Effect<Value, PrepareBrowserFailure> {
+): Effect.Effect<Value, PrepareBrowserFailure> => {
   return Effect.tryPromise({
     catch: () => new PrepareBrowserFailure({ reason: "file_io_failed" }),
     try: operation,
   });
-}
+};
 
-function packageDirectory(
+const packageDirectory = (
   specifier: string,
   reason: "browser_cli_missing" | "playwright_cli_missing",
-): Effect.Effect<string, PrepareBrowserFailure> {
+): Effect.Effect<string, PrepareBrowserFailure> => {
   return Effect.try({
     catch: () => new PrepareBrowserFailure({ reason }),
     try: () => path.dirname(require.resolve(`${specifier}/package.json`)),
   });
-}
+};
 
 const prepareAgentBrowser = Effect.fn("prepareAgentBrowser")(function* prepareAgentBrowser() {
   const directory = path.join(

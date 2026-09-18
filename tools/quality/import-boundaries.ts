@@ -50,16 +50,6 @@ const isWithinDatabase = (importer: Importer): boolean => {
   return importer.location?.area === "libs" && importer.location.owner === "db";
 };
 
-const isDatabaseRuntime = (importer: Importer): boolean => {
-  return (
-    isWithinDatabase(importer) &&
-    !importer.isTest &&
-    !/\/src\/(?:remote[^/]*|bootstrap[^/]*|migrate[^/]*|testing[^/]*)\.[cm]?[jt]s$/u.test(
-      importer.current,
-    )
-  );
-};
-
 const crossesApplication = (importer: Importer, target: ImportTarget): boolean => {
   const { location } = importer;
   return (
@@ -107,6 +97,16 @@ const leaksDatabaseAdmin = (importer: Importer, target: ImportTarget): boolean =
     ((location?.area === "apps" && location.owner === "user") ||
       (location?.area === "libs" && !isWithinDatabase(importer) && !importer.isTest) ||
       isDatabaseRoot(importer))
+  );
+};
+
+const isDatabaseRuntime = (importer: Importer): boolean => {
+  return (
+    isWithinDatabase(importer) &&
+    !importer.isTest &&
+    !/\/src\/(?:remote[^/]*|bootstrap[^/]*|migrate[^/]*|testing[^/]*)\.[cm]?[jt]s$/u.test(
+      importer.current,
+    )
   );
 };
 
