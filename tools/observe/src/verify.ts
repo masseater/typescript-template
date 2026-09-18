@@ -5,9 +5,9 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect, Schema } from "effect";
 
 import { applications } from "@repo/config";
+import { reportFailed } from "@repo/config/cli";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
-import { reportFailed } from "./failure.ts";
 
 interface Verified {
   readonly logs: number;

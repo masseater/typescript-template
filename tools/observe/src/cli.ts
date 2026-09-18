@@ -5,11 +5,11 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Schema } from "effect";
 
 import { applicationPorts } from "@repo/config";
+import { reportFailed } from "@repo/config/cli";
 import { receiverOrigin } from "@repo/local";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";
-import { reportFailed } from "./failure.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
   reason: Schema.Literals(["arguments_invalid"]),

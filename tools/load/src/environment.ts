@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect, Schedule, Schema } from "effect";
 
-import { applicationPorts, applicationReadyPaths, applications } from "@repo/config";
+import { applicationPorts, applicationReadyPaths, applications, mailpitPort } from "@repo/config";
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
   reason: Schema.Literals([
@@ -31,6 +31,8 @@ const loadAverageDigits = 2;
 function targetOrigin(app: typeof Application.Type): string {
   return `http://127.0.0.1:${applicationPorts[app]}`;
 }
+
+const mailpitOrigin = `http://127.0.0.1:${mailpitPort}`;
 
 function oneMinuteLoadAverage(): number {
   const [average = 0] = loadavg();
@@ -109,6 +111,7 @@ export {
   EnvironmentUnusable,
   awaitReady,
   clearTraces,
+  mailpitOrigin,
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
   targetOrigin,

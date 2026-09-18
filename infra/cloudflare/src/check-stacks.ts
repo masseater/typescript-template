@@ -6,6 +6,7 @@ import { Cause, Console, Effect, Schema } from "effect";
 
 import { applications, grants } from "@repo/config";
 import type { Application } from "@repo/config";
+import { markFailed, reportFailed } from "@repo/config/cli";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { hstsSetting } from "./config.ts";
@@ -16,7 +17,6 @@ import {
   describeCause,
 } from "./inventory.ts";
 import type { StackInventory } from "./inventory.ts";
-import { markFailed } from "./secrets.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -304,21 +304,16 @@ NodeRuntime.runMain(
     yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
-      Console.error(
-        JSON.stringify({
-          code: failure.code,
-          detail: failure.detail,
-          event: "stacks.invalid",
-          stack: failure.stack,
-        }),
-      ).pipe(Effect.andThen(markFailed)),
+      reportFailed({
+        code: failure.code,
+        detail: failure.detail,
+        event: "stacks.invalid",
+        stack: failure.stack,
+      }),
     ),
-    Effect.catchCause((cause) => {
-      const detail = describeCause(Cause.squash(cause));
-      return Console.error(JSON.stringify({ detail, event: "stacks.invalid" })).pipe(
-        Effect.andThen(markFailed),
-      );
-    }),
+    Effect.catchCause((cause) =>
+      reportFailed({ detail: describeCause(Cause.squash(cause)), event: "stacks.invalid" }),
+    ),
   ),
   { disableErrorReporting: true },
 );

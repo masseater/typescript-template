@@ -1,20 +1,17 @@
 // oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, mkdir, realpath, rename } from "node:fs/promises";
+import { chmod, mkdir, realpath, rename, rm } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import type { Plugin } from "vite-plus";
 
 import type { Application } from "./applications.ts";
+import { sourceMapDirectories } from "./source-maps.ts";
 
 const PRIVATE_FILE_MODE = 0o600;
 const PRIVATE_DIRECTORY_MODE = 0o700;
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../../..");
-
-function privateSourceMapDirectory(app: Application): string {
-  return path.join(repositoryRoot, ".local", "source-maps", app, "client");
-}
 
 async function moveMap(source: string, target: string): Promise<void> {
   const directory = path.dirname(target);
@@ -27,7 +24,7 @@ async function moveMap(source: string, target: string): Promise<void> {
 }
 
 function privateSourceMaps(app: Application): Plugin {
-  const destination = privateSourceMapDirectory(app);
+  const destination = sourceMapDirectories(repositoryRoot, app).client;
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
@@ -41,6 +38,7 @@ function privateSourceMaps(app: Application): Plugin {
       if (maps.length === 0) {
         this.error("client build emitted no source maps");
       }
+      await rm(destination, { force: true, recursive: true });
       await Promise.all(
         maps.map(async (file) => moveMap(path.join(outDir, file), path.join(destination, file))),
       );

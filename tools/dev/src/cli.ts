@@ -1,9 +1,11 @@
 import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect } from "effect";
 
+import { reportFailed } from "@repo/config/cli";
+
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { browser, browserCommand } from "./browser.ts";
-import { failure, reportFailed } from "./failure.ts";
+import { failure } from "./failure.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 import { application } from "./local-environment.ts";

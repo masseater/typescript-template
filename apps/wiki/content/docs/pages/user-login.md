@@ -48,11 +48,11 @@ description: 会員が自分のアカウントでログインするページ
 
 ```mermaid
 flowchart TD
-  choose["1. ログイン方法を選ぶ"] -- パスキー --> done["redirect のページ。無ければ自分のホーム"]
+  choose["1. ログイン方法を選ぶ"] -- パスキー --> done["redirect のページ。無ければ /home"]
   choose -- "パスワード（認証アプリ未設定）" --> done
   choose -- "パスワード（認証アプリ設定済み）" --> totp["2. 確認コードを入れる"]
   choose -- 新規登録 --> signup["/signup"]
   totp -- 認証アプリの確認コード --> done
-  totp -- バックアップコード --> recovery["/security（認証アプリの登録し直しを案内する）"]
+  totp -- バックアップコード --> recovery["/settings/security（認証アプリの登録し直しを案内する）"]
   totp -- ログイン方法を選び直す --> choose
 ```

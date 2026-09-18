@@ -2,14 +2,12 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
 
 import { applications } from "@repo/config";
+import { reportFailed } from "@repo/config/cli";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import { markFailed } from "./secrets.ts";
 
 function report(reason: string): Effect.Effect<void> {
-  return Console.error(JSON.stringify({ event: "artifacts.invalid", reason })).pipe(
-    Effect.andThen(markFailed),
-  );
+  return reportFailed({ event: "artifacts.invalid", reason });
 }
 
 NodeRuntime.runMain(
