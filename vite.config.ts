@@ -1,6 +1,7 @@
 import { applications } from "@template/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
+import { taskInput } from "@template/config/vite";
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
@@ -242,7 +243,7 @@ export default defineConfig({
           "vp run check:effect",
           "vp run -F '!typescript-template' check",
         ],
-        input: [{ auto: true }, "!node_modules/.modules.yaml"],
+        input: [...taskInput],
       },
       "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
@@ -250,7 +251,7 @@ export default defineConfig({
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
-        input: [{ auto: true }, "!node_modules/.cache/**"],
+        input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
     },
