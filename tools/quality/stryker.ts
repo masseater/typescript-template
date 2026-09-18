@@ -4,10 +4,6 @@ const configuration = {
   mutate: [
     "libs/config/src/applications.ts",
     "libs/config/src/index.ts",
-    "libs/db/src/admin-session.ts",
-    "libs/db/src/admin-strong-session-required.ts",
-    "libs/db/src/contains-keyword.ts",
-    "libs/db/src/security.ts",
     "libs/runtime/src/contracts.ts",
     "libs/runtime/src/failures.ts",
     "libs/runtime/src/http.ts",

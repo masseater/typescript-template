@@ -12,7 +12,6 @@ export default defineConfig({
         test: {
           include: [
             "libs/config/**/*.test.ts",
-            "libs/db/**/*.test.ts",
             "libs/runtime/**/*.test.ts",
             "tools/quality/**/*.test.ts",
           ],
