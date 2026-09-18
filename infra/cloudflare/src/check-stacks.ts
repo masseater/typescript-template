@@ -14,15 +14,6 @@ import { workerModuleGlobs } from "./artifacts.ts";
 
 const { accountId, origins, prefix } = verificationSettings;
 
-const providerAddedBindings = [
-  "ALCHEMY_CLOUDFLARE_ACCOUNT_ID",
-  "ALCHEMY_PHASE",
-  "ALCHEMY_STACK_NAME",
-  "ALCHEMY_STAGE",
-  "ALCHEMY_WORKER_NAME",
-  "ASSETS",
-];
-
 const sharedWorker = {
   compatibility: workerCompatibilityOptions,
   observability: workerObservability(verificationSettings.observabilitySampling),
@@ -187,16 +178,16 @@ function declaredMatches(inventory: StackInventory, stack: StackName): boolean {
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const matches = declaredMatches(inventory, stack);
-  yield* matches
-    ? Console.log(JSON.stringify({ event: "stacks.verified", stack }))
-    : Console.error(
-        JSON.stringify({
-          event: "stacks.differs",
-          inventory,
-          notCompared: providerAddedBindings,
-          stack,
-        }),
-      );
+  if (!matches) {
+    yield* Console.error(
+      JSON.stringify({
+        actual: inventory,
+        event: "stacks.differs",
+        expected: expected[stack],
+        stack,
+      }),
+    );
+  }
   return matches;
 });
 
@@ -205,7 +196,9 @@ NodeRuntime.runMain(
     const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
     if (verified.includes(false)) {
       yield* markFailed;
+      return;
     }
+    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
       Console.error(
