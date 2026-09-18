@@ -1,10 +1,9 @@
 import { Result, Schema } from "effect";
 import type { AnyElysia } from "elysia";
+import type { Decodable } from "./contracts.ts";
 import { ErrorBody } from "./contracts.ts";
 import { httpStatus } from "@template/observability";
 import { treaty } from "@elysiajs/eden";
-
-type Decodable = Schema.Top & { readonly DecodingServices: never };
 
 interface ApiFailure {
   readonly status: number;

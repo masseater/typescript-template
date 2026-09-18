@@ -1,6 +1,5 @@
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
 import { Telemetry, httpStatus, ingestBrowser } from "@template/observability";
-import { createApi, readJsonBody } from "./http.ts";
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@template/auth";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
@@ -8,6 +7,7 @@ import { Effect } from "effect";
 import type { EmailVerificationFailed } from "@template/auth";
 import type { Failure } from "./failures.ts";
 import { checkDatabase } from "@template/db";
+import { createApi } from "./http.ts";
 
 const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
 
@@ -26,13 +26,17 @@ function emailVerificationFailure(error: EmailVerificationFailed): Failure {
 
 function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
-    .all("/auth/*", api.raw(handleAuthRequest, unavailable))
-    .post("/telemetry", api.raw(ingestBrowser, {}))
-    .get("/health", api.route(HealthView, health, unavailable))
+    .all("/auth/*", ...api.raw(handleAuthRequest, unavailable))
+    .post("/telemetry", ...api.raw(ingestBrowser, {}))
+    .get("/health", ...api.route({ response: HealthView }, health, unavailable))
     .get(
       "/session",
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
+      ...api.route(
+        { response: SessionView },
+        // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+        (request) => verifySession(request.headers, true),
+        unavailable,
+      ),
     );
 }
 
@@ -41,13 +45,10 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     .use(sessionApi(api))
     .post(
       "/verify-email",
-      api.route(
-        EmailVerified,
+      ...api.route(
+        { body: EmailVerificationRequest, response: EmailVerified },
         // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-        (request) =>
-          readJsonBody(EmailVerificationRequest, request).pipe(
-            Effect.flatMap(({ token }) => verifyEmailToken(token, request.headers)),
-          ),
+        (request, { token }) => verifyEmailToken(token, request.headers),
         {
           ...unavailable,
           // oxlint-disable-next-line typescript/prefer-readonly-parameter-types

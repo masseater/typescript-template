@@ -15,6 +15,7 @@
   "dependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@elysiajs/eden": "1.4.9",
+    "@elysiajs/openapi": "1.4.16",
     "@template/auth": "workspace:*",
     "@template/config": "workspace:*",
     "@template/db": "workspace:*",

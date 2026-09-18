@@ -129,6 +129,7 @@ export {
   grants,
   loopbackHosts,
   roles,
+  scalarReferencePath,
   storybookPort,
   strongAuthenticationMethods,
 } from "./applications.ts";

@@ -5,6 +5,7 @@ import {
   importProtection,
   previewDevVars,
   reactCompiler,
+  scalarReference,
   withoutEnvFileLoader,
 } from "@template/config/vite";
 import { localDatabase, localDatabasePersistence } from "@template/db/local";
@@ -37,6 +38,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     tailwindcss(),
     ...withoutEnvFileLoader(tanstackStart({ importProtection })),
     reactCompiler(),
+    scalarReference(),
   ],
   preview: appServer("admin"),
   run: appRun,

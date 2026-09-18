@@ -7,14 +7,7 @@ import {
   UserListQuery,
 } from "@template/runtime/contracts";
 import { accountApi, unavailable } from "@template/runtime/account";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@template/runtime/http";
+import { apiDocs, apiRoot, apiRoutes, compileApi, createApi } from "@template/runtime/http";
 import { deleteUser, listUsers, setUserRole } from "@template/db/admin";
 import { Effect } from "effect";
 import { httpStatus } from "@template/observability";
@@ -37,16 +30,16 @@ const failures = {
 };
 
 const app = createApi(apiRoot)
+  .use(apiDocs("admin"))
   .use(accountApi(api))
   .get(
     "/users",
-    api.route(
-      UserList,
+    ...api.route(
+      { query: UserListQuery, response: UserList },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
+      (request, page) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
-          const page = yield* readSearchParams(UserListQuery, request);
           return yield* listUsers(session.id, page);
         }),
       failures,
@@ -54,13 +47,12 @@ const app = createApi(apiRoot)
   )
   .patch(
     "/users",
-    api.route(
-      RoleChanged,
+    ...api.route(
+      { body: RoleChange, response: RoleChanged },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
+      (request, change) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
-          const change = yield* readJsonBody(RoleChange, request);
           return yield* setUserRole(session.id, change.id, change.role);
         }),
       failures,
@@ -68,13 +60,12 @@ const app = createApi(apiRoot)
   )
   .delete(
     "/users",
-    api.route(
-      UserDeleted,
+    ...api.route(
+      { body: UserDeletion, response: UserDeleted },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
+      (request, deletion) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
-          const deletion = yield* readJsonBody(UserDeletion, request);
           return yield* deleteUser(session.id, deletion.id);
         }),
       failures,

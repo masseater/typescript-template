@@ -99,15 +99,15 @@ describe("json request bodies", () => {
 
 describe("api routes behind a start server route", () => {
   const echo = api.route(
-    ProfileUpdate,
+    { body: ProfileUpdate, response: ProfileUpdate },
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-    (request) => readJsonBody(ProfileUpdate, request),
+    (_request, values) => Effect.succeed(values),
     {},
   );
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {
-      const app = createApi("").patch("/api/profile", echo);
+      const app = createApi("").patch("/api/profile", ...echo);
       const name = "private-profile-text".repeat(repeatedPrivateText);
       const body = JSON.stringify({ name, profile: 1 });
       const response = yield* Effect.promise(async () => callApi(app, mutation(jsonHeaders, body)));
@@ -121,7 +121,7 @@ describe("api routes behind a start server route", () => {
   for (const { headers, body, reason } of rejections) {
     it.effect(`keeps the request body readable so ${reason} is still rejected`, () =>
       Effect.gen(function* program() {
-        const app = createApi("").patch("/api/profile", echo);
+        const app = createApi("").patch("/api/profile", ...echo);
         const response = yield* Effect.promise(async () => callApi(app, mutation(headers, body)));
         assert.isAtLeast(response.status, httpStatus.badRequest);
         assert.isBelow(response.status, httpStatus.internalServerError);
@@ -134,8 +134,12 @@ describe("api responses behind a start server route", () => {
   it.effect("encode the response contract and drop fields outside it", () =>
     Effect.gen(function* program() {
       const View = Schema.Struct({ id: Schema.String });
-      const handler = api.route(View, () => Effect.succeed({ id: "visible", profile: "x" }), {});
-      const app = createApi("").get("/api/view", handler);
+      const handler = api.route(
+        { response: View },
+        () => Effect.succeed({ id: "visible", profile: "x" }),
+        {},
+      );
+      const app = createApi("").get("/api/view", ...handler);
       const response = yield* Effect.promise(async () =>
         callApi(app, new Request(`${origin}/api/view`)),
       );
@@ -156,10 +160,10 @@ describe("api responses behind a start server route", () => {
   it.effect("turn unexpected failures into a generic 500 response", () =>
     Effect.gen(function* program() {
       const broken = { _tag: "Broken" } as const;
-      const handler = api.route(Schema.Struct({}), () => Effect.fail(broken), {
+      const handler = api.route({ response: Schema.Struct({}) }, () => Effect.fail(broken), {
         Broken: "unexpected",
       });
-      const app = createApi("").get("/api/broken", handler);
+      const app = createApi("").get("/api/broken", ...handler);
       const response = yield* Effect.promise(async () =>
         callApi(app, new Request(`${origin}/api/broken`)),
       );
@@ -172,11 +176,11 @@ describe("api methods behind a start server route", () => {
   it.effect("answer HEAD on every route that answers GET", () =>
     Effect.gen(function* program() {
       const handler = api.route(
-        Schema.Struct({ id: Schema.String }),
+        { response: Schema.Struct({ id: Schema.String }) },
         () => Effect.succeed({ id: "visible" }),
         {},
       );
-      const app = createApi("").get("/api/view", handler);
+      const app = createApi("").get("/api/view", ...handler);
       const response = yield* Effect.promise(async () =>
         callApi(app, new Request(`${origin}/api/view`, { method: "HEAD" })),
       );
@@ -188,7 +192,7 @@ describe("api methods behind a start server route", () => {
     Effect.gen(function* program() {
       const app = createApi("").get(
         "/api/view",
-        api.route(Schema.Struct({}), () => Effect.succeed({}), {}),
+        ...api.route({ response: Schema.Struct({}) }, () => Effect.succeed({}), {}),
       );
       const response = yield* Effect.promise(async () =>
         callApi(app, new Request(`${origin}/api/missing`)),

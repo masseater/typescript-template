@@ -31,10 +31,12 @@ const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
 type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
 const authenticationMethods = ["password", ...strongAuthenticationMethods, "recovery"] as const;
 const loopbackHosts: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
+const scalarReferencePath = "/assets/scalar-api-reference.js";
 const storybookPort = STORYBOOK_PORT;
 
 export {
   applicationPorts,
+  scalarReferencePath,
   applications,
   authenticationMethods,
   grants,

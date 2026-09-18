@@ -1,6 +1,8 @@
 import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
+import { applicationPorts, scalarReferencePath } from "./applications.ts";
 import type { Application } from "./applications.ts";
-import { applicationPorts } from "./applications.ts";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 import react from "@vitejs/plugin-react";
@@ -29,6 +31,48 @@ function previewDevVars(appRoot: string): Plugin {
       }
     },
     name: "template-preview-dev-vars",
+  };
+}
+
+const scalarReferenceEntry = fileURLToPath(import.meta.resolve("@scalar/api-reference"));
+const scalarReferenceSource = path.join(
+  path.dirname(scalarReferenceEntry),
+  "browser/standalone.js",
+);
+
+interface ScriptResponse {
+  readonly end: (body: string) => void;
+  readonly setHeader: (name: string, value: string) => void;
+}
+
+async function readScalarReference(): Promise<string> {
+  return readFile(scalarReferenceSource, "utf-8");
+}
+
+async function writeScalarReference(response: ScriptResponse): Promise<void> {
+  const source = await readScalarReference();
+  response.setHeader("content-type", "text/javascript");
+  response.end(source);
+}
+
+function scalarReference(): Plugin {
+  return {
+    applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    configureServer(server) {
+      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+      server.middlewares.use(scalarReferencePath, (_request, response) => {
+        void writeScalarReference(response);
+      });
+    },
+    async generateBundle() {
+      this.emitFile({
+        fileName: scalarReferencePath.slice(1),
+        source: await readScalarReference(),
+        type: "asset",
+      });
+    },
+    name: "template-scalar-reference",
   };
 }
 
@@ -105,6 +149,7 @@ export {
   importProtection,
   previewDevVars,
   reactCompiler,
+  scalarReference,
   serverOnlyMarkers,
   withoutEnvFileLoader,
 };

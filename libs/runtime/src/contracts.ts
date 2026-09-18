@@ -10,6 +10,8 @@ const secondPage = 2;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
 
+type Decodable = Schema.Top & { readonly DecodingServices: never };
+
 const Role = Schema.Literals(roles);
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
@@ -166,3 +168,4 @@ export {
   maximumNameLength,
   maximumProfileLength,
 };
+export type { Decodable };

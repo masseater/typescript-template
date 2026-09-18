@@ -9,14 +9,7 @@ import {
 } from "@template/runtime/contracts";
 import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@template/db";
 import { accountApi, unavailable } from "@template/runtime/account";
-import {
-  apiRoot,
-  apiRoutes,
-  compileApi,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-} from "@template/runtime/http";
+import { apiDocs, apiRoot, apiRoutes, compileApi, createApi } from "@template/runtime/http";
 import { Effect } from "effect";
 import { httpStatus } from "@template/observability";
 import { interviewApi } from "./interview-api.ts";
@@ -30,12 +23,13 @@ const failures = {
 };
 
 const app = createApi(apiRoot)
+  .use(apiDocs("user"))
   .use(accountApi(api))
   .use(interviewApi(api))
   .get(
     "/profile",
-    api.route(
-      ProfileView,
+    ...api.route(
+      { response: ProfileView },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
       (request) =>
         Effect.gen(function* handleRequest() {
@@ -51,13 +45,12 @@ const app = createApi(apiRoot)
   )
   .get(
     "/member",
-    api.route(
-      MemberView,
+    ...api.route(
+      { query: MemberQuery, response: MemberView },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
+      (request, { id }) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
-          const { id } = yield* readSearchParams(MemberQuery, request);
           return yield* getMember(user.id, id);
         }),
       failures,
@@ -65,13 +58,12 @@ const app = createApi(apiRoot)
   )
   .get(
     "/members",
-    api.route(
-      MemberList,
+    ...api.route(
+      { query: MemberListQuery, response: MemberList },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
+      (request, { keyword, page }) =>
         Effect.gen(function* handleRequest() {
           yield* verifySession(request.headers);
-          const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
           const offset = (page - 1) * memberPageSize;
           const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
           return { ...list, pageSize: memberPageSize };
@@ -81,13 +73,12 @@ const app = createApi(apiRoot)
   )
   .patch(
     "/profile",
-    api.route(
-      ProfileView,
+    ...api.route(
+      { body: ProfileUpdate, response: ProfileView },
       // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      (request) =>
+      (request, values) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
-          const values = yield* readJsonBody(ProfileUpdate, request);
           return yield* updateProfile(user.id, values);
         }),
       failures,
