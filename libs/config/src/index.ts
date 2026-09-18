@@ -130,10 +130,12 @@ type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
 export {
   applicationPorts,
+  applicationReadyPaths,
   applications,
   authenticationMethods,
   grants,
   loopbackHosts,
+  mailpitPort,
   roles,
   storybookPort,
   strongAuthenticationMethods,

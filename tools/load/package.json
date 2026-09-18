@@ -1,0 +1,21 @@
+{
+  "name": "@repo/load",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "load": "node src/cli.ts"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@repo/config": "workspace:*",
+    "@repo/runtime": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/k6": "2.2.1",
+    "@types/node": "catalog:",
+    "msw": "catalog:",
+    "typescript": "catalog:"
+  }
+}

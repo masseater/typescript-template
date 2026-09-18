@@ -3,6 +3,7 @@ import { Console, Effect, Schema } from "effect";
 class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("LocalCommandFailure", {
   reason: Schema.Literals([
     "command_unsupported",
+    "origin_mode_invalid",
     "app_invalid",
     "file_io_failed",
     "process_failed",
