@@ -11,6 +11,7 @@ import {
   forbiddenStateList,
 } from "./effect-rules.ts";
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
+import { gitEnvironmentVisitor } from "./git-environment.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
@@ -18,11 +19,7 @@ import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
 import { atomHeldServerDataMessage, serverCacheApiMessage } from "./state-kinds.ts";
-import {
-  gitEnvironmentVisitor,
-  tempDirectoryVisitor,
-  testImportGraphVisitor,
-} from "./test-import-graph.ts";
+import { tempDirectoryVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 import { warekiFormatVisitor } from "./wareki-format.ts";
 
