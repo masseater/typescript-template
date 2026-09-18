@@ -57,7 +57,7 @@ Worker が実行時に受け取るのは文字列だけではなく、D1、メ�
 | ★4     | Cloudflare Workflows V2      | 途中で落ちても再開できる多段処理を担います                                                                | 未着手                                                                                   |
 | ★4     | Queues                       | 非同期処理のキューです                                                                                    | 未着手                                                                                   |
 | ★4     | R2                           | 投稿画像などのファイルを保存します                                                                        | 未着手                                                                                   |
-| ★4     | Workers の OTLP エクスポート | Workers のトレースとログを外部に送ります                                                                  | 未着手                                                                                   |
+| ★4     | Workers の OTLP エクスポート | Workers のトレースとログを外部に送ります                                                                  | 一部。トレースの destination だけを宣言していて、ログの destination は残っています       |
 | ★4     | effect-cf                    | Cloudflare の binding を Effect の Layer として扱います                                                   | 未着手                                                                                   |
 | ★3     | KV                           | セッションなど、読み込みの多いデータをキャッシュします                                                    | 未着手                                                                                   |
 | ★2     | Containers                   | Workers で動かないネイティブ依存の処理を逃がします                                                        | 未着手                                                                                   |
@@ -143,7 +143,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | ★5     | Vitest browser mode と Playwright       | 実ブラウザでテストと E2E を実行します              | 一部。Storybook の部品のテストだけが実ブラウザで走り、アプリ全体の E2E は残っています |
 | ★5     | MSW                                     | 外部 HTTP だけを置き換えます                       | 導入済み                                                                              |
 | ★5     | knip                                    | 使われていない export や依存を検出します           | 導入済み                                                                              |
-| ★4     | Effect の OTLP 出力                     | Effect のスパンとログを OpenTelemetry で送ります   | 未着手                                                                                |
+| ★4     | Effect の OTLP 出力                     | Effect のスパンとログを OpenTelemetry で送ります   | 導入済み                                                                              |
 | ★4     | Renovate と pnpm の `minimumReleaseAge` | 依存を更新し、公開直後のパッケージは取り込みません | 導入済み                                                                              |
 | ★3     | Scalar                                  | OpenAPI から API ドキュメントの画面を作ります      | 未着手                                                                                |
 | ★3     | dependency-cruiser                      | steiger で表せない import の制約を検出します       | 未着手                                                                                |

@@ -73,6 +73,63 @@ describe("secret redaction boundaries", () => {
   });
 });
 
+describe("cookies a header joins with a comma", () => {
+  it("hides every cookie a header carries, not only the one before the first comma", () => {
+    expect.hasAssertions();
+    expect([
+      redactSecrets(`set-cookie: theme=dark; Path=/, template-user.session=${secret}; HttpOnly`),
+      redactSecrets(`Cookie: theme=dark, template-user.session=${secret}`),
+      redactSecrets(`set-cookie: theme=dark, template-user.session=${secret}\nstatus: 500`),
+    ]).toStrictEqual([
+      "set-cookie: [redacted]",
+      "Cookie: [redacted]",
+      "set-cookie: [redacted]\nstatus: 500",
+    ]);
+  });
+
+  it("stops at the comma when the name only looks like a list, so JSON stays parseable", () => {
+    expect.hasAssertions();
+    const redacted = redactSecrets('{"paramsCount":2,"hasCookie":true,"reason":"boom"}');
+    expect([redacted, JSON.parse(redacted)]).toStrictEqual([
+      '{"paramsCount":"[redacted]","hasCookie":"[redacted]","reason":"boom"}',
+      { hasCookie: "[redacted]", paramsCount: "[redacted]", reason: "boom" },
+    ]);
+  });
+});
+
+describe("query parameters a failed statement reports", () => {
+  it("hides every query parameter, keeping the statement readable", () => {
+    expect.hasAssertions();
+    expect([
+      redactSecrets(`Failed query: select 1 from user where name = ?\nparams: alpha,${secret}`),
+      redactSecrets(`Failed query: select 1\nparams: ${secret}\n    at run (file.ts:1:1)`),
+    ]).toStrictEqual([
+      "Failed query: select 1 from user where name = ?\nparams: [redacted]",
+      "Failed query: select 1\nparams: [redacted]\n    at run (file.ts:1:1)",
+    ]);
+  });
+});
+
+describe("lists a log line carries JSON encoded", () => {
+  it("keeps JSON parseable when the list sits inside an encoded message", () => {
+    expect.hasAssertions();
+    const header = redactSecrets(
+      JSON.stringify({ headers: `set-cookie: a=1, session=${secret}`, reason: "boom" }),
+    );
+    const query = redactSecrets(
+      JSON.stringify({
+        message: `Failed query: select 1\nparams: ${secret}\n    at run`,
+        name: "Error",
+      }),
+    );
+    expect([header, JSON.parse(header), JSON.parse(query)]).toStrictEqual([
+      '{"headers":"set-cookie: [redacted]","reason":"boom"}',
+      { headers: "set-cookie: [redacted]", reason: "boom" },
+      { message: "Failed query: select 1\nparams: [redacted]\n    at run", name: "Error" },
+    ]);
+  });
+});
+
 describe("secrets held by a structured value", () => {
   it("hides the whole object or array a secret name holds, not just up to its first comma", () => {
     expect.hasAssertions();
