@@ -62,8 +62,13 @@ const config: KnipConfig = {
       ],
     },
     "libs/db": {
-      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+      entry: ["src/bootstrap-local.ts!", "src/migrate-local.ts!", "src/testing-node.ts!"],
+      ignoreDependencies: ["cloudflare"],
       project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
+    },
+    "libs/monitor": {
+      ignoreDependencies: ["cloudflare"],
+      project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
     },
     "libs/ui": {
       project: [

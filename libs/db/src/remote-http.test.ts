@@ -1,4 +1,4 @@
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing.ts";
+import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
 import { HttpResponse, http } from "msw";
 import { assert, it } from "@effect/vitest";
 import type { D1Database } from "@cloudflare/workers-types";

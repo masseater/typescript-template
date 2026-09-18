@@ -13,6 +13,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",
