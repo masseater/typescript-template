@@ -10,6 +10,7 @@ class LayerFailed extends Schema.TaggedError<LayerFailed>()("LayerFailed", {
 
 const summaryLength = 512;
 const overlongFactor = 8;
+const leaked = "worker-test-secret-at-least-32-characters";
 
 async function reportedLine(cause: unknown): Promise<unknown> {
   const logs = recordingSink();
@@ -99,5 +100,40 @@ describe("bounding what a runtime failure report carries", () => {
           '{"_tag":"LayerFailed","cause":{"AUTH_SECRET":"[redacted]","reason":"too short"}}',
       },
     ]);
+  });
+});
+
+describe("hiding a value that a comma used to cut short", () => {
+  it("hides a cookie list and query parameters in the chain, the fields and the cause", async () => {
+    expect.hasAssertions();
+    const statement = new Error(
+      `Failed query: select 1 from user where name = ?\nparams: alpha,${leaked}`,
+      { cause: new Error(`set-cookie: theme=dark; Path=/, template-user.session=${leaked}`) },
+    );
+    const logs = recordingSink();
+    await Effect.runPromise(
+      reportUnavailable(Cause.die(statement), { log: logs.sink, service: "wiki" }),
+    );
+    expect(JSON.stringify(logs.stderr)).not.toContain(leaked);
+    expect(logs.stderr[0]).toMatchObject({
+      "error.cause": expect.stringContaining(
+        "Error: Failed query: select 1 from user where name = ?\nparams: [redacted]",
+      ) as unknown,
+      "error.chain": [
+        "Error: set-cookie: [redacted]",
+        "Error: Failed query: select 1 from user where name = ?\nparams: [redacted]",
+      ].join(" < "),
+      "error.fields": String.raw`{"message":"Failed query: select 1 from user where name = ?\nparams: [redacted]","name":"Error"}`,
+    });
+  });
+
+  it("hides the query parameters a failure carries under a params key", async () => {
+    expect.hasAssertions();
+    await expect(
+      reportedLine({ params: [leaked], reason: "no such table" }),
+    ).resolves.toMatchObject({
+      "error.fields":
+        '{"_tag":"LayerFailed","cause":{"params":"[redacted]","reason":"no such table"}}',
+    });
   });
 });
