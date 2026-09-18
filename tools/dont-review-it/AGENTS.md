@@ -19,8 +19,6 @@ description: Machine-enforced answers to the writing questions that would otherw
 - IF: 検出できない回避策がある; THEN MUST: 文書の禁止事項として名指しする
   - 検出できないことは許していることを意味しない。この差を文書で埋める
 
-同じ不変条件を守る公式のルールを先に探すこと、どの順に検討するか、自前で書いてよい条件と書いたあとの後始末は [AGENTS.md](../../AGENTS.md) が持つ。
-
 ## 文書
 
 ルールごとに `docs/lint/<ルール名>.md` を持つ。節の集合は、lint ルールの preset を配るパッケージで通用している形に合わせ、人が書く節と機械が所有する領域を分ける。
@@ -40,13 +38,13 @@ description: Machine-enforced answers to the writing questions that would otherw
     - 手で書いた例は、実装が変わっても書き換えられないまま残る。テストから作れば、食い違った時点で検査が落ちる
   - 印が 1 つも無いルールは例の領域が空になり、検査が落ちる
 
-説明に載せる例をどこから作るかは [文書](../../docs/guidelines/documents.md) が持つ。
+説明に載せる例をどこから作るかは [文書](../../apps/wiki/content/docs/guidelines/documents.md) が持つ。
 
 ## 公開する config
 
 公開する config は `dontReviewItPreset` の 1 つだけである。`fmt` と `lint` の 2 つの関数を持ち、ルートの `vite.config.ts` はそれぞれのブロックで対応する関数を呼ぶ。呼び出し側が足したいものは引数に渡し、preset が返した値へ後ろから重なる。呼び忘れは [no-unwrapped-toolchain-config--call-the-preset-for-the-block](docs/lint/no-unwrapped-toolchain-config--call-the-preset-for-the-block.md) が報告する。
 
-`lint` は束（bundle）を受け取り、名指しされた束のルールだけを配る。束は採用者が引き受ける不変条件の単位で、`all` を渡すと全部入る。呼び出した時点でリポジトリ全体に効き、対象種別による出し分けはしない。対象を絞るのはルールの側である。判断は [EDR 0042](../../docs/engineering-decision-logs/0042-let-the-caller-choose-the-bundles-and-apply-them-at-the-root.md) にある。
+`lint` は束（bundle）を受け取り、名指しされた束のルールだけを配る。束は採用者が引き受ける不変条件の単位で、`all` を渡すと全部入る。呼び出した時点でリポジトリ全体に効き、対象種別による出し分けはしない。対象を絞るのはルールの側である。
 
 束は 8 つある。`governance` は選択に関わらず必ず入り、残りが選べる。
 
@@ -75,9 +73,9 @@ description: Machine-enforced answers to the writing questions that would otherw
 - IF: 束のディレクトリと構成ファイルが食い違った; THEN MUST: 直す
   - `src/configs/bundles/composition.ts` の検査が落とす
 
-仕様担保テストの置き場所だけは、`testing` 束の中で `overrides` として範囲を絞る。`specs/` の下はテスト規律の束の射程外で、名前の綴りを `.spec.ts` に切り替え、ソース隣接の要求と `describe` の入れ子の上限をそこに与える。射程の分担は [EDR 0060](../../docs/engineering-decision-logs/0060-let-the-specifications-bundle-guard-the-specs-directory-alone.md) が、設定の所在は [EDR 0057](../../docs/engineering-decision-logs/0057-read-the-spelling-the-repository-mandates-and-move-the-spec-lint-settings-into-the-preset.md) が決めている。
+仕様担保テストの置き場所だけは、`testing` 束の中で `overrides` として範囲を絞る。`specs/` の下はテスト規律の束の射程外で、名前の綴りを `.spec.ts` に切り替え、ソース隣接の要求と `describe` の入れ子の上限をそこに与える。
 
-`fmt` が決めているのは、整形結果が読み手に届く見た目を変えず、差分にだけ現れる書き方である。markdown の段落を 1 行に畳むこと、import の並び順がこれにあたる。判断は [EDR 0046](../../docs/engineering-decision-logs/0046-let-the-formatter-own-where-markdown-lines-break.md) と [EDR 0047](../../docs/engineering-decision-logs/0047-hand-every-toolchain-block-one-preset-function.md) にある。
+`fmt` が決めているのは、整形結果が読み手に届く見た目を変えず、差分にだけ現れる書き方である。markdown の段落を 1 行に畳むこと、import の並び順がこれにあたる。
 
 - IF: 整形の選択を `fmt` に足したい; THEN
   - MUST: レンダリングされた結果が変わらないことを確かめる
@@ -133,7 +131,7 @@ CLI が持つコマンドは `check` の 1 つで、そこが全部の検査を�
 
 ## ワークフロー定義の検査
 
-`check` が `.github/workflows/` の定義も読む。守っているのは [強制の機構](../../docs/guidelines/enforcement.md) と [秘密と権限](../../docs/guidelines/secrets-and-permissions.md) に既に書かれている規範で、この検査はその強制側にあたる。
+`check` が `.github/workflows/` の定義も読む。守っているのは [強制の機構](../../apps/wiki/content/docs/guidelines/enforcement.md) と [秘密と権限](../../apps/wiki/content/docs/guidelines/secrets-and-permissions.md) に既に書かれている規範で、この検査はその強制側にあたる。
 
 - 読めない定義が残っていない
 - ゲートとして要求されうる実行単位が、起動の条件で自分を絞り込んでいない
@@ -153,10 +151,8 @@ CLI が持つコマンドは `check` の 1 つで、そこが全部の検査を�
   - MUST: 既製の側が覆う不変条件をこの検査から外す
   - PROHIBIT: 同じ違反を 2 つの経路から報告する
 - IF: 構文・式の注入・ランナー名を検査したくなった; THEN MUST: この検査に足さず、その層を持つ既製の検査を導入する判断から始める
-  - この検査が持たない範囲であることは [EDR 0025](../../docs/engineering-decision-logs/0025-check-workflow-definitions-with-our-own-policy-layer.md) が決めている
 - IF: アクションの入力を検査したくなった; THEN MUST: 判定にそのアクションの定義が要るかで決める
   - 定義が要るなら持たない。要らないなら持つ
-  - 線の引き方は [EDR 0039](../../docs/engineering-decision-logs/0039-pin-action-references-and-bound-the-history-a-run-fetches.md) が決めている
 - IF: 参照が最新の版かを検査したくなった; THEN
   - MUST: 追随する機構が繋がっていることの検査に留める
   - PROHIBIT: 検査の中から上流へ問い合わせる
@@ -164,7 +160,7 @@ CLI が持つコマンドは `check` の 1 つで、そこが全部の検査を�
 
 ## 依存宣言の検査
 
-`check` が `pnpm-workspace.yaml` と、そこに宣言されたワークスペースの `package.json` も読む。ワークスペース定義が無いリポジトリでは何も検査しない。守っているのは「catalog は複数のワークスペースが共有するバージョンだけを持つ」という規範で、判断は [EDR 0028](../../docs/engineering-decision-logs/0028-keep-the-catalog-for-shared-versions-only.md) にある。
+`check` が `pnpm-workspace.yaml` と、そこに宣言されたワークスペースの `package.json` も読む。ワークスペース定義が無いリポジトリでは何も検査しない。守っているのは「catalog は複数のワークスペースが共有するバージョンだけを持つ」という規範である。
 
 - 読めないワークスペース定義が残っていない
 - 1 つのマニフェストしか使わない catalog エントリが残っていない。overrides が `catalog:` で参照するエントリは除く
@@ -175,7 +171,7 @@ CLI が持つコマンドは `check` の 1 つで、そこが全部の検査を�
 
 ## 必須ファイルの形の検査
 
-`check` が、リポジトリの根と `package.json` を持つディレクトリを開き、そこに置かれていなければならないファイルが要求された形で存在しているかを読む。ファイルの中身は読まない。判断は [EDR 0045](../../docs/engineering-decision-logs/0045-require-the-form-of-the-files-a-repository-cannot-do-without.md) にある。
+`check` が、リポジトリの根と `package.json` を持つディレクトリを開き、そこに置かれていなければならないファイルが要求された形で存在しているかを読む。ファイルの中身は読まない。
 
 道具の設定が TypeScript の外に置かれていないことを見る。対象は knip・oxlint・eslint・vite で、それぞれの道具自身が読む綴りのうち、型検査が届かないものを名指しする。報告には移し先の綴りを載せる。oxlint と vite の移し先は `vite.config.ts` で、knip は `knip.ts`、eslint は `eslint.config.ts` になる。
 
@@ -189,7 +185,6 @@ AI 向けの指示が 1 か所にしかないことを見る。`AGENTS.md` が�
 - IF: 道具の設定を TypeScript 以外の綴りで置きたくなった; THEN PROHIBIT: 置く
   - 型検査もフォーマッタも lint も届かない設定は、それが支配しているコードから静かにずれていく
 - IF: 道具が TypeScript の設定を読めない; THEN MUST: その道具を使わない判断から始める
-  - 綴りを増やす前に、ツールチェーンを一本化する規約（[AGENTS.md](../../AGENTS.md)）に戻る
 - IF: 検査対象の綴りを増やす; THEN MUST: その道具自身が読む綴りの一覧を一次情報で確かめてから足す
   - 道具が読まない綴りを足すと、直しようのない報告が出る
 - IF: `CLAUDE.md` に `AGENTS.md` と違うことを書きたくなった; THEN PROHIBIT: 書く
@@ -199,7 +194,7 @@ AI 向けの指示が 1 か所にしかないことを見る。`AGENTS.md` が�
 
 `check` が、ワークスペースのツールチェーン設定を開き、時間を使うブロックが計測を宣言しているかを読む。宣言が無いワークスペースを問題として報告する。
 
-守っているのは「計測は時間を使っている当人に置く」という規範で、その裏返しとして、当人が計測を宣言し忘れた状態を検出する。包む方式を採らないと決めた以上、宣言の抜けは誰も包み忘れを教えてくれない。判断は [EDR 0064](../../docs/engineering-decision-logs/0064-carry-one-trace-through-the-gate-and-let-the-agent-query-it.md) にある。
+守っているのは「計測は時間を使っている当人に置く」という規範で、その裏返しとして、当人が計測を宣言し忘れた状態を検出する。包む方式を採らないと決めた以上、宣言の抜けは誰も包み忘れを教えてくれない。
 
 見るのは宣言の有無だけで、宣言された値が正しく効いているかは見ない。
 
@@ -222,14 +217,14 @@ AI 向けの指示が 1 か所にしかないことを見る。`AGENTS.md` が�
 報告を警告に留めるのは、止め方を解く手段が 1 つに決まらないためである。override を消して報告を直す道と、依存の向きなどで届かないことを記録して残す道があり、どちらを選ぶかは判断になる。
 
 - IF: preset のルールを `overrides` で止める; THEN
-  - MUST: 止めた理由を EDR に残す
+  - MUST: 止めた理由をコミットログに残す
     - 警告は消えない。理由が無い `off` は、適用範囲への載せ忘れと見分けが付かない
 - IF: 警告が指すワークスペースを preset の下に戻せた; THEN MUST: `off` を消す
   - 残った `off` は、いつか誰かが「元からそうだった」として読む
 
 ## 出荷できるパッケージの検査
 
-`check` が、ワークスペースのマニフェストを読み、npm へ公開できるパッケージが公開された状態で解決できるかを見る。見るのは宣言だけで、成果物が実在するかは見ない。判断は [EDR 0066](../../docs/engineering-decision-logs/0066-replace-the-published-entries-and-bundle-the-internal-contract.md) にある。
+`check` が、ワークスペースのマニフェストを読み、npm へ公開できるパッケージが公開された状態で解決できるかを見る。見るのは宣言だけで、成果物が実在するかは見ない。
 
 - 公開できるパッケージが、`private: true` のワークスペースを `dependencies` / `peerDependencies` / `optionalDependencies` で参照していない
 - 公開後に実行時が解決する入口が、型注釈を持つソースを指していない
@@ -266,8 +261,7 @@ npm へ公開できるパッケージには、あることを要求する。
 
 changelog の中身は読まない。項目が実態と合っているかは機械が判定しないので、次の規範は人が守る。
 
-- IF: SKILL.md の中身の構造を検査したくなった; THEN MUST: この検査に足さず、上流の `intent validate`（各パッケージの `check:skills`）に任せる
-  - 不変条件の分担は [EDR 0030](../../docs/engineering-decision-logs/0030-ship-agent-skills-with-published-packages-and-gate-the-shipping-ourselves.md) が決めている
+- IF: SKILL.md の中身の構造を検査したくなった; THEN MUST: この検査に足さず、上流の `intent validate`（各パッケージの `check`）に任せる
 - IF: 公開パッケージの `version` を上げる; THEN
   - MUST: 同じ変更で `skills/CHANGELOG.md` にその版の見出しを書く
   - PROHIBIT: `metadata.library_version` を手で書き換える
@@ -279,4 +273,4 @@ changelog の中身は読まない。項目が実態と合っているかは機�
     - MUST: 版を上げ、新しい項目に書く
       - 配った tarball の中身は変わらない。過去の項目を今の姿へ寄せると、版ごとの差分という changelog の役目が消える
 - IF: 版を上げた変更で SKILL.md の差分も要求したくなった; THEN PROHIBIT: 足す
-  - 書くことが無いのに本文をいじる操作が生まれる。線の引き方は [EDR 0044](../../docs/engineering-decision-logs/0044-ship-a-changelog-beside-the-skills-and-check-it-against-the-manifest.md) が決めている
+  - 書くことが無いのに本文をいじる操作が生まれる
