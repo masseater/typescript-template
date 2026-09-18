@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Duration, Effect } from "effect";
 
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
 import type { EmailVerificationFailed } from "@repo/auth";
@@ -13,11 +13,18 @@ import type { AppServices } from "./index.ts";
 
 const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
 
-const health = Effect.fn("health")(function* health() {
-  yield* checkDatabase();
-  const telemetry = yield* Telemetry;
-  return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
-});
+const healthCacheWindow = Duration.minutes(1);
+
+function healthHandler() {
+  // oxlint-disable-next-line unicorn/no-null
+  let checkedDatabase: ReturnType<typeof checkDatabase> | null = null;
+  return Effect.fn("health")(function* health() {
+    checkedDatabase ??= yield* Effect.cachedWithTTL(checkDatabase(), healthCacheWindow);
+    yield* checkedDatabase;
+    const telemetry = yield* Telemetry;
+    return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
+  });
+}
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function emailVerificationFailure(error: EmailVerificationFailed): Failure {
@@ -30,7 +37,7 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
   return createApi("")
     .all("/auth/*", api.raw(handleAuthRequest, unavailable))
     .post("/telemetry", api.raw(ingestBrowser, {}))
-    .get("/health", api.route(HealthView, health, unavailable))
+    .get("/health", api.route(HealthView, healthHandler(), unavailable))
     .get(
       "/session",
       api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
