@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import { Stack } from "alchemy";
 import { Effect } from "effect";
 
@@ -17,9 +18,9 @@ const stack = Stack(
     name: "health",
     variables: (config: SharedConfig) =>
       Effect.succeed({
-        SERVICE_ADMIN_ORIGIN: config.origins["service-admin"],
-        SERVICE_MEMBER_ORIGIN: config.origins["service-member"],
-        INTERNAL_DASHBOARD_ORIGIN: config.origins["internal-dashboard"],
+        SERVICE_ADMIN_ORIGIN: config.origins[APPLICATION.admin],
+        SERVICE_MEMBER_ORIGIN: config.origins[APPLICATION.user],
+        INTERNAL_DASHBOARD_ORIGIN: config.origins[APPLICATION.wiki],
       }),
   }),
 );

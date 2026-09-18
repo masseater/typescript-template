@@ -13,7 +13,7 @@ import { promisify } from "node:util";
 import { Cause, Console, Effect, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
 
-import { applicationReadyPaths, applications, loopbackAddress } from "./applications.ts";
+import { ApplicationName, applicationReadyPaths, loopbackAddress } from "./applications.ts";
 import { reportFailed, runCli } from "./cli.ts";
 import { localDatabaseVariable } from "./local-database-path.ts";
 import { repositoryRoot } from "./repository-root.ts";
@@ -22,7 +22,6 @@ class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFai
   reason: Schema.String,
 }) {}
 
-const Application = Schema.Literals(applications);
 const successStatus = 200;
 const requestTimeoutMilliseconds = 120_000;
 const startTimeout = "5 minutes";
@@ -130,7 +129,7 @@ function report(reasons: readonly string[]): Effect.Effect<void> {
 }
 
 const program = Effect.gen(function* program() {
-  const app = yield* Schema.decodeUnknownEffect(Application)(path.basename(process.cwd())).pipe(
+  const app = yield* Schema.decodeUnknownEffect(ApplicationName)(path.basename(process.cwd())).pipe(
     Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
   );
   const origin = yield* listeningOrigin;

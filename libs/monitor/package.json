@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./fixture": "./src/monitor-fixture.ts",
-    "./vite": "./src/vite.ts"
+    "./vite": "./src/vite.ts",
+    "./binding": "./src/binding.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -16,6 +17,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@repo/dont-review-it": "workspace:*",
     "typescript": "catalog:"
   }
 }

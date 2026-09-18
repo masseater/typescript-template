@@ -1,13 +1,13 @@
-import type { Application } from "@repo/config";
+import { APPLICATION, ROLE, type Application } from "@repo/config";
 
-const journeyRoles = ["member", "operator", "knowledge"] as const;
+const journeyRoles = [ROLE.member, "operator", "knowledge"] as const;
 
 type JourneyRole = (typeof journeyRoles)[number];
 
 const roleApplications = {
-  knowledge: "internal-dashboard",
-  member: "service-member",
-  operator: "service-admin",
+  knowledge: APPLICATION.wiki,
+  member: APPLICATION.user,
+  operator: APPLICATION.admin,
 } as const satisfies Readonly<Record<JourneyRole, Application>>;
 
 export { journeyRoles, roleApplications };

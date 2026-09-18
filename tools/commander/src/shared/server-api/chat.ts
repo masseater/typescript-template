@@ -1,6 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { APPLICATION } from "@repo/config";
 import {
   Console,
   Effect,
@@ -247,7 +248,7 @@ class Conversation {
   }
 
   private opened(from: Prompt["from"]): Effect.Effect<void> {
-    if (from === "user") {
+    if (from === APPLICATION.user) {
       return Effect.void;
     }
     return from === "queue" ? this.emit({ type: "taken" }) : this.notify("woken");

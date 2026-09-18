@@ -1,6 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { APPLICATION } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { bd, bdQuiet } from "./bd.ts";
@@ -58,7 +59,7 @@ const needsReview = "needs-review";
 const recentlyDone = 10;
 const prefixLength = 8;
 const fallbackPrefix = "task";
-const userActor = "user";
+const userActor = APPLICATION.user;
 
 function byPriority(left: TaskView, right: TaskView): number {
   return left.priority - right.priority || left.id.localeCompare(right.id);

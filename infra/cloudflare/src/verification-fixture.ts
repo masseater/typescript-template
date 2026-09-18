@@ -1,3 +1,5 @@
+import { APPLICATION } from "@repo/config";
+
 const HEX_ID_LENGTH = 32;
 const verificationAuthSecret = "verification-test-secret-0123456789abcdef";
 

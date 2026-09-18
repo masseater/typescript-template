@@ -1,3 +1,4 @@
+import { ROLE } from "@repo/config";
 import { StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";
@@ -19,7 +20,7 @@ const RecoveryNotice = ({
   return (
     <>
       <StatusMessage>バックアップコードでログインしました。</StatusMessage>
-      {role === "admin" ? (
+      {role === ROLE.administrator ? (
         <StatusMessage>
           復旧コードでは管理者操作はできません。ログアウト後、登録済みのパスキーまたは認証アプリで
           ログインしてください。どちらも使えない場合は、この画面から管理者の認証設定を復旧できません。

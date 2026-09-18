@@ -1,9 +1,10 @@
 import path from "node:path";
 
+import { APPLICATION, type Application } from "@repo/config";
+
 import { applicationsExcept } from "./private-path.ts";
 
 import type { UserConfig } from "vite-plus";
-import type { Application } from "../applications.ts";
 
 const serverOptions = ({
   application,
@@ -31,7 +32,7 @@ const serverOptions = ({
         "**/.local/**",
         "**/.local-agents/**",
         ...applicationsExcept(application).map((foreign) => `**/apps/${foreign}/**`),
-        ...(application === "service-admin" ? [] : ["**/libs/db/src/admin.*"]),
+        ...(application === APPLICATION.admin ? [] : ["**/libs/db/src/admin.*"]),
         "**/libs/db/src/remote*",
         "**/libs/db/src/bootstrap*",
         "**/libs/db/src/testing.*",

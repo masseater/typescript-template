@@ -1,4 +1,4 @@
-import { readConfig } from "@repo/config";
+import { APPLICATION, readConfig } from "@repo/config";
 import { appLayer } from "@repo/runtime";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
@@ -10,7 +10,7 @@ import { opsMailLayer } from "./ops-mail.ts";
 
 import type { Reporting } from "@repo/observability";
 
-const service = "service-member";
+const service = APPLICATION.user;
 const reporting: Reporting = { service };
 const runtime = workerRuntime(() =>
   Layer.mergeAll(

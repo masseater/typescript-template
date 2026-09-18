@@ -1,3 +1,4 @@
+import { ROLE } from "@repo/config";
 import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
 
 import { authClient } from "./client";
@@ -31,7 +32,8 @@ const PasskeyRegisterForm = ({
       await onRegistered();
     });
   };
-  const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
+  const recoveringAdmin =
+    session.user.role === ROLE.administrator && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
       <FormColumn>

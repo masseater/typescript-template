@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import { Config, Effect, Option, Redacted } from "effect";
 
 import {
