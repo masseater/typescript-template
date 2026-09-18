@@ -1,0 +1,3 @@
+{
+  "extends": "@repo/dont-review-it/tsconfig/library.json"
+}
