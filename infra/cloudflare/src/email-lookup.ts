@@ -35,4 +35,4 @@ const zoneName = Effect.fn("zoneName")(function* zoneName(access: AccountAccess,
   return found.result.name;
 });
 
-export { ADDRESS_PAGE_SIZE, verifiedAddresses, zoneName };
+export { verifiedAddresses, zoneName };
