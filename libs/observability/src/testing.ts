@@ -1,12 +1,12 @@
+import { Option, Tracer } from "effect";
+
 import type { LogSink } from "./structured-logs.ts";
 
-interface RecordedLogs {
+export const recordingSink = (): {
   readonly sink: LogSink;
   readonly stderr: readonly unknown[];
   readonly stdout: readonly unknown[];
-}
-
-function recordingSink(): RecordedLogs {
+} => {
   const stderr: unknown[] = [];
   const stdout: unknown[] = [];
   return {
@@ -21,6 +21,17 @@ function recordingSink(): RecordedLogs {
     stderr,
     stdout,
   };
+};
+
+const fixedSpanId = "c".repeat(16);
+const fixedTraceId = "c".repeat(32);
+
+class FixedSpan extends Tracer.NativeSpan {
+  public override readonly spanId: string = fixedSpanId;
+  public override readonly traceId: string =
+    Option.getOrUndefined(this.parent)?.traceId ?? fixedTraceId;
 }
 
-export { recordingSink };
+export const fixedSpans: Tracer.Tracer = Tracer.make({
+  span: (spanOptions) => new FixedSpan(spanOptions),
+});

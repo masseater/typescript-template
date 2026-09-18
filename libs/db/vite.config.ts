@@ -2,7 +2,6 @@ import { defineConfig } from "vite-plus";
 
 import { effectDiagnostics } from "@repo/config/vite";
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   run: {
     tasks: {
@@ -13,5 +12,10 @@ export default defineConfig({
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
     },
+  },
+  test: {
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    mockReset: true,
+    restoreMocks: true,
   },
 });

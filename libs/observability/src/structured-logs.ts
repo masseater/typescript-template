@@ -1,48 +1,43 @@
-import { Console, Logger, References } from "effect";
-import type { Layer } from "effect";
+import { Console, Logger, References, type Layer } from "effect";
 
 import type { Application } from "@repo/config";
 
-interface LogSink {
+export type LogSink = {
   readonly error: (line: string) => void;
   readonly info: (line: string) => void;
-}
+};
 
-interface StructuredLogOptions {
+export type StructuredLogOptions = {
   readonly serviceName: Application;
   readonly release: string;
   readonly log?: LogSink;
-}
+};
 
 const failureLevels: ReadonlySet<string> = new Set(["Error", "Fatal", "Warn"]);
 
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+export const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> => {
+  return typeof candidate === "object" && candidate !== null && !Array.isArray(candidate);
+};
 
-function messageParts(message: unknown): readonly unknown[] {
-  return Array.isArray(message) ? message : [message];
-}
+export const serviceLabel = (serviceName: Application): string => `${serviceName}-server`;
 
-function serviceLabel(name: Application): string {
-  return `${name}-server`;
-}
-
-function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
-  const logger = Logger.make(({ fiber, logLevel, message }) => {
-    const sink = options.log ?? fiber.getRef(Console.Console);
-    const [event, attributes] = messageParts(message);
+export const structuredLogs = (logOptions: StructuredLogOptions): Layer.Layer<never> => {
+  const logger = Logger.make(({ fiber, logLevel, message: logged }) => {
+    const sink = logOptions.log ?? fiber.getRef(Console.Console);
+    const logParts: readonly unknown[] = Array.isArray(logged) ? logged : [logged];
+    const [eventName, attributes] = logParts;
     const line = JSON.stringify({
-      event: typeof event === "string" ? event : "application.log",
-      release: options.release,
-      service: serviceLabel(options.serviceName),
+      event: typeof eventName === "string" ? eventName : "application.log",
+      release: logOptions.release,
+      service: serviceLabel(logOptions.serviceName),
       ...fiber.getRef(References.CurrentLogAnnotations),
       ...(isRecord(attributes) ? attributes : {}),
     });
-    sink[failureLevels.has(logLevel) ? "error" : "info"](line);
+    if (failureLevels.has(logLevel)) {
+      sink.error(line);
+      return;
+    }
+    sink.info(line);
   });
   return Logger.layer([logger]);
-}
-
-export { isRecord, serviceLabel, structuredLogs };
-export type { LogSink, StructuredLogOptions };
+};

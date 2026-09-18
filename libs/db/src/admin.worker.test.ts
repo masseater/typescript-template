@@ -1,147 +1,378 @@
-import { assert, it } from "@effect/vitest";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
-import { deleteUser, listUsers, setUserRole } from "./admin.ts";
-import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import { getProfile, query, updateProfile } from "./index.ts";
-import type { Database } from "./index.ts";
-import { addCredential, addSession, addUser, failureTag, successCount } from "./records-fixture.ts";
+import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+import {
+  deleteUser,
+  LastAdminRequired,
+  listUsers,
+  setUserRole,
+  TargetUnavailable,
+} from "./admin.ts";
+import { query } from "./database.ts";
 import { account, auditEvent, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
-import { TestDatabase } from "./testing.ts";
+import { addCredential, addSession, addUser, recordedAt, TestDatabase } from "./testing.ts";
 
-const page = { limit: 50, offset: 0 };
+describe("listUsers", () => {
+  describe.for([
+    ["a session that signed in without a second factor", "admin", false],
+    ["a session opened for the user application", "user", true],
+  ] as const)("an administrator reading through %s", ([, audience, strong]) => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(
+        Effect.gen(function* weakRead() {
+          yield* addUser({ role: "admin", userId: "administrator" });
+          const sessionId = yield* addSession({ audience, strong, userId: "administrator" });
+          return yield* Effect.flip(listUsers(sessionId, { limit: 50, offset: 0 }));
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
 
-function auditRecords(): Effect.Effect<readonly unknown[], unknown, Database> {
-  return query(async (database) => database.select().from(auditEvent));
-}
+    it("is refused until the session is a strong admin session", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new AdminStrongSessionRequired());
+    });
+  });
 
-it.effect("persists Unicode profiles", () =>
-  Effect.gen(function* program() {
-    yield* addUser("reader");
-    yield* updateProfile("reader", { name: "日本語 العربية 🐈", profile: "私は開発者です。" });
-    const profile = yield* getProfile("reader");
-    assert.strictEqual(profile?.name, "日本語 العربية 🐈");
-    assert.strictEqual(profile?.profile, "私は開発者です。");
-    assert.strictEqual(
-      yield* failureTag(updateProfile("missing", { name: "missing", profile: "" })),
-      "UserNotFound",
-    );
-  }).pipe(Effect.provide(TestDatabase)),
-);
+  describe("an administrator reading through a strong admin session", () => {
+    const it = test.extend("userPage", async () =>
+      Effect.runPromise(
+        Effect.gen(function* strongRead() {
+          yield* addUser({ role: "admin", userId: "administrator" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "administrator" });
+          return yield* listUsers(sessionId, { limit: 50, offset: 0 });
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
 
-it.effect("rejects weak admin and cross-audience sessions", () =>
-  Effect.gen(function* program() {
-    yield* addUser("administrator", "admin");
-    const weak = yield* addSession("administrator", "admin", false);
-    const wrongAudience = yield* addSession("administrator", "user");
-    assert.strictEqual(yield* failureTag(listUsers(weak, page)), "AdminStrongSessionRequired");
-    assert.strictEqual(
-      yield* failureTag(listUsers(wrongAudience, page)),
-      "AdminStrongSessionRequired",
-    );
-    const strong = yield* addSession("administrator", "admin");
-    assert.lengthOf((yield* listUsers(strong, page)).users, 1);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+    it("reads every user", ({ userPage }) => {
+      expect(userPage).toStrictEqual({
+        total: 1,
+        users: [
+          {
+            createdAt: recordedAt,
+            email: "administrator@example.com",
+            emailVerified: true,
+            id: "administrator",
+            name: "administrator",
+            role: "admin",
+            twoFactorEnabled: false,
+          },
+        ],
+      });
+    });
+  });
+});
 
-it.effect("role change invalidates both audiences immediately", () =>
-  Effect.gen(function* program() {
-    yield* addUser("actor", "admin");
-    yield* addUser("target", "admin");
-    const actor = yield* addSession("actor", "admin");
-    const targetAdmin = yield* addSession("target", "admin");
-    const targetUser = yield* addSession("target", "user");
-    yield* setUserRole(actor, "target", "user");
-    assert.isNull(yield* getSessionSecurity(targetAdmin, "admin"));
-    assert.isNull(yield* getSessionSecurity(targetUser, "user"));
-  }).pipe(Effect.provide(TestDatabase)),
-);
+describe("setUserRole", () => {
+  describe.for([
+    ["admin", "admin"],
+    ["user", "user"],
+  ] as const)("a demoted administrator's %s session", ([, audience]) => {
+    const it = test.extend("demotedSession", async () =>
+      Effect.runPromise(
+        Effect.gen(function* demote() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ role: "admin", userId: "target" });
+          const actorSession = yield* addSession({ audience: "admin", userId: "actor" });
+          const targetSession = yield* addSession({ audience, userId: "target" });
+          yield* setUserRole({ role: "user", sessionId: actorSession, targetId: "target" });
+          return yield* getSessionSecurity(targetSession, audience);
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
 
-it.effect("protects final administrator and credentials during deletion", () =>
-  Effect.gen(function* program() {
-    yield* addUser("last", "admin");
-    yield* addCredential("last");
-    const actor = yield* addSession("last", "admin");
-    assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
-    assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
-    assert.lengthOf(yield* query(async (database) => database.select().from(account)), 1);
-    assert.strictEqual((yield* getSessionSecurity(actor, "admin"))?.user.role, "admin");
-  }).pipe(Effect.provide(TestDatabase)),
-);
+    it("stops being a live session at once", ({ demotedSession }) => {
+      expect(demotedSession).toBe(null);
+    });
+  });
 
-it.effect("simultaneous self-demotions cannot remove all administrators", () =>
-  Effect.gen(function* program() {
-    yield* addUser("first", "admin");
-    yield* addUser("second", "admin");
-    const first = yield* addSession("first", "admin");
-    const second = yield* addSession("second", "admin");
-    const outcomes = yield* Effect.all(
-      [
-        Effect.exit(setUserRole(first, "first", "user")),
-        Effect.exit(setUserRole(second, "second", "user")),
-      ],
-      { concurrency: "unbounded" },
-    );
-    assert.strictEqual(successCount(outcomes), 1);
-    const admins = yield* query(async (database) =>
-      database.select().from(user).where(eq(user.role, "admin")),
-    );
-    assert.lengthOf(admins, 1);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+  describe("the only administrator demoting themselves", () => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(
+        Effect.gen(function* demoteLast() {
+          yield* addUser({ role: "admin", userId: "last" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "last" });
+          return yield* Effect.flip(setUserRole({ role: "user", sessionId, targetId: "last" }));
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
 
-it.effect("deletion removes credentials and all sessions", () =>
-  Effect.gen(function* program() {
-    yield* addUser("actor", "admin");
-    yield* addUser("target");
-    const actor = yield* addSession("actor", "admin");
-    const target = yield* addSession("target", "user");
-    yield* deleteUser(actor, "target");
-    assert.isNull(yield* getProfile("target"));
-    assert.isNull(yield* getSessionSecurity(target, "user"));
-    assert.strictEqual(yield* failureTag(deleteUser(actor, "target")), "TargetUnavailable");
-  }).pipe(Effect.provide(TestDatabase)),
-);
+    it("is refused", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new LastAdminRequired());
+    });
+  });
 
-it.effect("first administrator bootstrap is atomic and one-time", () =>
-  Effect.gen(function* program() {
-    yield* addUser("first");
-    yield* addUser("second");
-    const outcomes = yield* Effect.all(
-      [
-        Effect.exit(bootstrapAdmin("first@example.com")),
-        Effect.exit(bootstrapAdmin("second@example.com")),
-      ],
-      { concurrency: "unbounded" },
-    );
-    assert.strictEqual(successCount(outcomes), 1);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+  describe("two administrators demoting themselves at the same time", () => {
+    const it = test.extend("remainingAdmins", async () =>
+      Effect.runPromise(
+        Effect.gen(function* demoteBoth() {
+          yield* addUser({ role: "admin", userId: "first" });
+          yield* addUser({ role: "admin", userId: "second" });
+          const first = yield* addSession({ audience: "admin", userId: "first" });
+          const second = yield* addSession({ audience: "admin", userId: "second" });
+          yield* Effect.all(
+            [
+              Effect.exit(setUserRole({ role: "user", sessionId: first, targetId: "first" })),
+              Effect.exit(setUserRole({ role: "user", sessionId: second, targetId: "second" })),
+            ],
+            { concurrency: "unbounded" },
+          );
+          return yield* query(async (database) =>
+            database.select({ count: count() }).from(user).where(eq(user.role, "admin")),
+          );
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
 
-it.effect("writes an audit record only when the user change lands", () =>
-  Effect.gen(function* program() {
-    yield* addUser("actor", "admin");
-    yield* addUser("target");
-    const actor = yield* addSession("actor", "admin");
-    assert.strictEqual(yield* failureTag(deleteUser(actor, "missing")), "TargetUnavailable");
-    assert.strictEqual(
-      yield* failureTag(setUserRole(actor, "missing", "admin")),
-      "TargetUnavailable",
-    );
-    assert.lengthOf(yield* auditRecords(), 0);
-    yield* setUserRole(actor, "target", "admin");
-    assert.lengthOf(yield* auditRecords(), 1);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+    it("leaves one administrator standing", ({ remainingAdmins }) => {
+      expect(remainingAdmins).toStrictEqual([{ count: 1 }]);
+    });
+  });
 
-it.effect("a rejected user change leaves no audit record behind", () =>
-  Effect.gen(function* program() {
-    yield* addUser("last", "admin");
-    const actor = yield* addSession("last", "admin");
-    assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
-    assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
-    assert.lengthOf(yield* auditRecords(), 0);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+  describe("a role change for a user who does not exist", () => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(
+        Effect.gen(function* changeMissing() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          return yield* Effect.flip(setUserRole({ role: "admin", sessionId, targetId: "missing" }));
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("is refused as an unavailable target", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new TargetUnavailable());
+    });
+  });
+
+  describe("a role change that lands", () => {
+    const it = test.extend("auditCount", async () =>
+      Effect.runPromise(
+        Effect.gen(function* changeAndAudit() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ userId: "target" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          yield* Effect.exit(setUserRole({ role: "admin", sessionId, targetId: "missing" }));
+          yield* setUserRole({ role: "admin", sessionId, targetId: "target" });
+          return yield* query(async (database) =>
+            database.select({ count: count() }).from(auditEvent),
+          );
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("leaves one audit record, and none for the change that missed", ({ auditCount }) => {
+      expect(auditCount).toStrictEqual([{ count: 1 }]);
+    });
+  });
+});
+
+describe("deleteUser", () => {
+  describe("the only administrator deleting themselves", () => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(
+        Effect.gen(function* deleteLast() {
+          yield* addUser({ role: "admin", userId: "last" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "last" });
+          return yield* Effect.flip(deleteUser(sessionId, "last"));
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("is refused", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new LastAdminRequired());
+    });
+  });
+
+  describe("a refused deletion of the only administrator", () => {
+    const it = test.extend("keptRecords", async () =>
+      Effect.runPromise(
+        Effect.gen(function* keepLast() {
+          yield* addUser({ role: "admin", userId: "last" });
+          yield* addCredential("last");
+          const sessionId = yield* addSession({ audience: "admin", userId: "last" });
+          yield* Effect.exit(deleteUser(sessionId, "last"));
+          yield* Effect.exit(setUserRole({ role: "user", sessionId, targetId: "last" }));
+          return yield* query(async (database) =>
+            database
+              .select({ credentials: count(account.id), role: user.role })
+              .from(user)
+              .leftJoin(account, eq(account.userId, user.id))
+              .where(eq(user.id, "last"))
+              .groupBy(user.id),
+          );
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("keeps the administrator's role and credential untouched", ({ keptRecords }) => {
+      expect(keptRecords).toStrictEqual([{ credentials: 1, role: "admin" }]);
+    });
+  });
+
+  describe("a refused change to the only administrator", () => {
+    const it = test.extend("auditCount", async () =>
+      Effect.runPromise(
+        Effect.gen(function* refuseAndAudit() {
+          yield* addUser({ role: "admin", userId: "last" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "last" });
+          yield* Effect.exit(setUserRole({ role: "user", sessionId, targetId: "last" }));
+          yield* Effect.exit(deleteUser(sessionId, "last"));
+          return yield* query(async (database) =>
+            database.select({ count: count() }).from(auditEvent),
+          );
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("leaves no audit record behind", ({ auditCount }) => {
+      expect(auditCount).toStrictEqual([{ count: 0 }]);
+    });
+  });
+
+  describe("a deleted member's session", () => {
+    const it = test.extend("deletedSession", async () =>
+      Effect.runPromise(
+        Effect.gen(function* deleteMember() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ userId: "target" });
+          const actorSession = yield* addSession({ audience: "admin", userId: "actor" });
+          const targetSession = yield* addSession({ audience: "user", userId: "target" });
+          yield* deleteUser(actorSession, "target");
+          return yield* getSessionSecurity(targetSession, "user");
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("is gone with the user", ({ deletedSession }) => {
+      expect(deletedSession).toBe(null);
+    });
+  });
+
+  describe("deleting the same member twice", () => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(
+        Effect.gen(function* deleteTwice() {
+          yield* addUser({ role: "admin", userId: "actor" });
+          yield* addUser({ userId: "target" });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          yield* deleteUser(sessionId, "target");
+          return yield* Effect.flip(deleteUser(sessionId, "target"));
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("refuses the second deletion as an unavailable target", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new TargetUnavailable());
+    });
+  });
+});
+
+const directoryRows = {
+  actor: {
+    createdAt: new Date("2026-09-01"),
+    email: "actor@example.com",
+    emailVerified: true,
+    id: "actor",
+    name: "管理者",
+    role: "admin",
+    twoFactorEnabled: false,
+  },
+  alice: {
+    createdAt: new Date("2026-09-02"),
+    email: "alice@example.com",
+    emailVerified: true,
+    id: "alice",
+    name: "Alice",
+    role: "user",
+    twoFactorEnabled: false,
+  },
+  bob: {
+    createdAt: new Date("2026-09-03"),
+    email: "bob@example.net",
+    emailVerified: false,
+    id: "bob",
+    name: "Bob",
+    role: "user",
+    twoFactorEnabled: false,
+  },
+  sale: {
+    createdAt: new Date("2026-09-04"),
+    email: "sale@example.com",
+    emailVerified: true,
+    id: "sale",
+    name: "50%_off",
+    role: "user",
+    twoFactorEnabled: false,
+  },
+  carol: {
+    createdAt: new Date("2026-09-05"),
+    email: "carol@example.org",
+    emailVerified: true,
+    id: "carol",
+    name: "山田 花子",
+    role: "admin",
+    twoFactorEnabled: false,
+  },
+  dave: {
+    createdAt: new Date("2026-09-06"),
+    email: "dave@example.com",
+    emailVerified: true,
+    id: "dave",
+    name: "Dave",
+    role: "user",
+    twoFactorEnabled: true,
+  },
+} as const;
+
+describe("listUsers over a directory of six users", () => {
+  describe.for([
+    [
+      "the first page of two",
+      { limit: 2, offset: 0 },
+      [directoryRows.dave, directoryRows.carol],
+      6,
+    ],
+    [
+      "the last page of two",
+      { limit: 2, offset: 4 },
+      [directoryRows.alice, directoryRows.actor],
+      6,
+    ],
+    ["the page past the end", { limit: 2, offset: 6 }, [], 6],
+    ["a name in another case", { keyword: "ALI", limit: 50, offset: 0 }, [directoryRows.alice], 1],
+    [
+      "a part of an email",
+      { keyword: "example.net", limit: 50, offset: 0 },
+      [directoryRows.bob],
+      1,
+    ],
+    ["a Japanese name", { keyword: "花子", limit: 50, offset: 0 }, [directoryRows.carol], 1],
+    ["a percent sign", { keyword: "%", limit: 50, offset: 0 }, [directoryRows.sale], 1],
+    ["an underscore", { keyword: "_", limit: 50, offset: 0 }, [directoryRows.sale], 1],
+    ["a backslash", { keyword: "\\", limit: 50, offset: 0 }, [], 0],
+    [
+      "the admin role",
+      { limit: 50, offset: 0, role: "admin" },
+      [directoryRows.carol, directoryRows.actor],
+      2,
+    ],
+    ["unverified email", { emailVerified: false, limit: 50, offset: 0 }, [directoryRows.bob], 1],
+    [
+      "verified users with a matching email on the second page",
+      { emailVerified: true, keyword: "example.com", limit: 1, offset: 1, role: "user" },
+      [directoryRows.sale],
+      3,
+    ],
+  ] as const)("read by %s", ([, page, expectedUsers, expectedTotal]) => {
+    const it = test.extend("userPage", async () =>
+      Effect.runPromise(
+        Effect.gen(function* readDirectory() {
+          yield* query(async (database): Promise<void> => {
+            await database.insert(user).values(
+              Object.values(directoryRows).map((directoryRow) => ({
+                ...directoryRow,
+                updatedAt: directoryRow.createdAt,
+              })),
+            );
+          });
+          const sessionId = yield* addSession({ audience: "admin", userId: "actor" });
+          return yield* listUsers(sessionId, page);
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("lists the matches newest first and counts only the matches", ({ userPage }) => {
+      expect(userPage).toStrictEqual({ total: expectedTotal, users: expectedUsers });
+    });
+  });
+});

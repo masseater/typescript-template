@@ -1,33 +1,37 @@
+import { Database } from "@repo/db";
 import { Context, Effect, Layer } from "effect";
 
-import type { Application } from "@repo/config";
-import { Database } from "@repo/db";
-
 import { AuthFailure } from "./auth-failure.ts";
-import type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
-import { createAuth } from "./create-auth.ts";
+import { AuthIdentifiers } from "./auth-identifiers.ts";
+import { createAuth, type AuthOptions, type BetterAuthInstance } from "./create-auth.ts";
 
-interface AuthShape {
-  readonly audience: Application;
-  readonly instance: BetterAuthInstance;
-}
+import type { Application } from "@repo/config";
 
-class Auth extends Context.Service<Auth, AuthShape>()("@repo/auth/Auth") {
-  public static layer(options: AuthOptions): Layer.Layer<Auth, AuthFailure, Database> {
+export class Auth extends Context.Service<
+  Auth,
+  {
+    readonly audience: Application;
+    readonly instance: BetterAuthInstance;
+  }
+>()("@repo/auth/Auth") {
+  public static layer(authOptions: AuthOptions): Layer.Layer<Auth, AuthFailure, Database> {
     return Layer.effect(
       Auth,
       Effect.gen(function* authLayer() {
         const database = yield* Database;
-        const context = yield* Effect.context<Database>();
-        const instance = createAuth(options, database, Effect.runPromiseWith(context));
+        const databaseContext = yield* Effect.context<Database>();
+        const betterAuthInstance = createAuth({
+          authOptions,
+          database,
+          generateId: yield* AuthIdentifiers,
+          run: Effect.runPromiseWith(databaseContext),
+        });
         yield* Effect.tryPromise({
           catch: (cause) => new AuthFailure({ cause }),
-          try: async () => instance.$context,
+          try: async () => betterAuthInstance.$context,
         });
-        return Auth.of({ audience: options.audience, instance });
+        return Auth.of({ audience: authOptions.audience, instance: betterAuthInstance });
       }),
     );
   }
 }
-
-export { Auth };

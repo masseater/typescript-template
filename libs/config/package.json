@@ -7,7 +7,8 @@
     "./deployment": "./src/deployment.ts",
     "./deployment-keys": "./src/deployment-keys.ts",
     "./vite": "./src/vite.ts",
-    "./worker": "./src/worker.ts"
+    "./worker": "./src/worker.ts",
+    "./private-files": "./src/private-files.ts"
   },
   "scripts": {},
   "dependencies": {

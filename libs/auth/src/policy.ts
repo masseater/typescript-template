@@ -1,18 +1,14 @@
+import {
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  strongAuthenticationMethods,
+  type Application,
+  type AuthenticationMethod,
+} from "@repo/config";
 import { APIError } from "better-auth/api";
 
-import type { Application } from "@repo/config";
-import { strongAuthenticationMethods } from "@repo/config";
-
-type AuthenticationMethod = "passkey_uv" | "password" | "password_totp" | "recovery";
-
-interface EligibleUser {
-  readonly emailVerified: boolean;
-  readonly role: string;
-}
-
-const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
-
-const enrollmentPaths = new Set([
+export const enrollmentPaths = new Set([
   "/get-session",
   "/sign-out",
   "/two-factor/enable",
@@ -24,34 +20,39 @@ const enrollmentPaths = new Set([
   "/passkey/verify-authentication",
 ]);
 
+const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
+
+export const isStrongMethod = (method: string): boolean => {
+  return strongMethods.has(method);
+};
+
 const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
-  ["/passkey/verify-authentication", "passkey_uv"],
-  ["/two-factor/verify-totp", "password_totp"],
-  ["/two-factor/verify-backup-code", "recovery"],
+  ["/passkey/verify-authentication", AUTHENTICATION_METHOD.passkey],
+  ["/two-factor/verify-totp", AUTHENTICATION_METHOD.passwordTotp],
+  ["/two-factor/verify-backup-code", AUTHENTICATION_METHOD.recovery],
 ]);
 
-function deny(message: string): never {
-  throw new APIError("FORBIDDEN", { message });
-}
+export const authenticationMethodFor = (path: string | undefined): AuthenticationMethod => {
+  return (
+    (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
+    AUTHENTICATION_METHOD.password
+  );
+};
 
-function isStrongMethod(method: string): boolean {
-  return strongMethods.has(method);
-}
+export const deny: (denialCode: string) => never = (denialCode) => {
+  throw new APIError("FORBIDDEN", { message: denialCode });
+};
 
-function authenticationMethodFor(path: string | undefined): AuthenticationMethod {
-  return (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ?? "password";
-}
-
-function assertEligibleUser<TUser extends EligibleUser>(
+export const assertEligibleUser: <
+  TUser extends { readonly emailVerified: boolean; readonly role: string },
+>(
   user: TUser | undefined,
   audience: Application,
-): asserts user is TUser {
+) => asserts user is TUser = (user, audience) => {
   if (user?.emailVerified !== true) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }
-  if (audience !== "user" && user.role !== "admin") {
+  if (audience !== APPLICATION.user && user.role !== ROLE.administrator) {
     deny("ADMIN_REQUIRED");
   }
-}
-
-export { assertEligibleUser, authenticationMethodFor, deny, enrollmentPaths, isStrongMethod };
+};

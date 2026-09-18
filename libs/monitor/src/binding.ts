@@ -1,0 +1,1 @@
+export const monitorBinding = "MONITOR";

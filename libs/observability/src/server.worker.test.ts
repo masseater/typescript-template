@@ -1,235 +1,378 @@
-import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
-import type { Layer } from "effect";
+import "@repo/dont-review-it/vitest/parsed-fields";
+import { Effect, Layer } from "effect";
+import { attemptAsync } from "es-toolkit";
+import { describe, expect, test, vi } from "vite-plus/test";
 
-import { httpStatus } from "./http-status.ts";
-import { randomHex, spanIdBytes } from "./protocol.ts";
-import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
-import type { TelemetryInvalid } from "./server.ts";
-import type { LogSink } from "./structured-logs.ts";
-import { recordingSink } from "./testing.ts";
+import {
+  CurrentRequest,
+  RequestEntropy,
+  Telemetry,
+  ingestBrowser,
+  observeRequest,
+} from "./server.ts";
+import { fixedSpans, recordingSink } from "./testing.ts";
 
-interface IngestInit {
-  readonly body?: string;
-  readonly headers?: Readonly<Record<string, string>>;
-  readonly method?: string;
-}
-
-const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-const spanId = "bbbbbbbbbbbbbbbb";
-const telemetryUrl = "http://localhost/api/telemetry";
-const created = 201;
-const noContent = 204;
-const oversizedBody = 32_769;
-const jsonHeaders = { "content-type": "application/json", origin: "http://localhost" };
-const telemetry = Telemetry.layer({
-  release: "test",
-  routes: { "/": "home", "/api/telemetry": "telemetry" },
-  serviceName: "user",
+const fixedEntropy = Layer.succeed(RequestEntropy, {
+  epochMilliseconds: () => 1_800_000_000_000,
+  monotonicMilliseconds: () => 0,
+  requestId: () => "22222222-2222-4222-8222-222222222222",
 });
 
-function recordedTelemetry(log: LogSink): Layer.Layer<Telemetry, TelemetryInvalid> {
-  return Telemetry.layer({
-    log,
-    release: "abc123",
-    routes: { "/": "home" },
-    serviceName: "user",
+const testOrigin = new URL("http://localhost");
+
+const correlationHeaders = {
+  traceparent: `00-${"c".repeat(32)}-${"c".repeat(16)}-01`,
+  "x-request-id": "22222222-2222-4222-8222-222222222222",
+};
+
+const requestEvent = {
+  duration: 25,
+  kind: "http",
+  method: "POST",
+  name: "http.client.request",
+  requestId: "11111111-1111-4111-8111-111111111111",
+  route: "home",
+  spanId: "bbbbbbbbbbbbbbbb",
+  start: 1_800_000_000_000,
+  status: 201,
+  traceId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  value: 0,
+};
+
+describe("observeRequest", () => {
+  describe("a request whose handler answers", () => {
+    const it = test.extend("observedResponse", async () =>
+      Effect.runPromise(
+        observeRequest(new Request(new URL("/?token=private", testOrigin)), () =>
+          Effect.succeed(
+            new Response("actual response", {
+              headers: { "set-cookie": "session=private; HttpOnly" },
+              status: 201,
+            }),
+          ),
+        ).pipe(
+          Effect.provide(
+            Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "user" }),
+          ),
+          Effect.provide(fixedEntropy),
+          Effect.withTracer(fixedSpans),
+        ),
+      ));
+
+    it("keeps the body, status and headers and adds the correlation headers", async ({
+      observedResponse,
+    }) => {
+      await expect(observedResponse).toHaveParsedFields({
+        status: 201,
+        headers: {
+          "content-type": "text/plain;charset=UTF-8",
+          "set-cookie": "session=private; HttpOnly",
+          ...correlationHeaders,
+        },
+        body: "actual response",
+      });
+    });
   });
-}
 
-function browserEvent(): Record<string, unknown> {
-  return {
-    duration: 25,
-    kind: "http",
-    method: "POST",
-    name: "http.client.request",
-    requestId: crypto.randomUUID(),
-    route: "home",
-    spanId: randomHex(spanIdBytes),
-    start: Date.now(),
-    status: created,
-    traceId,
-    value: 0,
-  };
-}
+  describe("a request whose handler dies", () => {
+    const it = test.extend("observedResponse", async () =>
+      Effect.runPromise(
+        observeRequest(new Request(testOrigin), () =>
+          Effect.die(new Error("sensitive application error")),
+        ).pipe(
+          Effect.provide(
+            Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "user" }),
+          ),
+          Effect.provide(fixedEntropy),
+          Effect.withTracer(fixedSpans),
+        ),
+      ));
 
-function ingestStatus(init?: IngestInit): Effect.Effect<number, never, Telemetry> {
-  return ingestBrowser(new Request(telemetryUrl, init)).pipe(
-    Effect.map((response) => response.status),
-  );
-}
+    it("answers a generic 500 that leaves the error message out", async ({ observedResponse }) => {
+      await expect(observedResponse).toHaveParsedFields({
+        status: 500,
+        headers: {
+          "cache-control": "no-store",
+          "content-type": "application/json",
+          ...correlationHeaders,
+        },
+        body: { error: "処理に失敗しました。リクエスト ID でログを確認してください。" },
+      });
+    });
+  });
 
-function probeEvents(): string {
-  const base = {
-    duration: 25,
-    requestId: "11111111-1111-4111-8111-111111111111",
-    route: "home",
-    start: Date.now(),
-    traceId,
-  };
-  const exception = {
-    ...base,
-    errorType: "TypeError",
-    kind: "exception",
-    locations: "/assets/index-abc.js:1:234",
-    method: "GET",
-    name: "browser.error",
-    spanId: randomHex(spanIdBytes),
-    status: 0,
-    value: 1,
-  };
-  const request = {
-    ...base,
-    kind: "http",
-    method: "POST",
-    name: "http.client.request",
-    spanId,
-  };
-  return JSON.stringify([{ ...request, status: created, value: 0 }, exception]);
-}
+  describe("a request carrying a browser traceparent and a request id of its own", () => {
+    const it = test.extend("observedResponse", async () =>
+      Effect.runPromise(
+        observeRequest(
+          new Request(testOrigin, {
+            headers: {
+              traceparent: `00-${"a".repeat(32)}-${"b".repeat(16)}-01`,
+              "x-request-id": "private@example.com",
+            },
+          }),
+          () =>
+            Effect.gen(function* echoContext() {
+              return Response.json(yield* CurrentRequest);
+            }),
+        ).pipe(
+          Effect.provide(
+            Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "user" }),
+          ),
+          Effect.provide(fixedEntropy),
+          Effect.withTracer(fixedSpans),
+        ),
+      ));
 
-const runProbe = Effect.fn("runProbe")(function* runProbe() {
-  const accepted = yield* ingestBrowser(
-    new Request(telemetryUrl, { body: probeEvents(), headers: jsonHeaders, method: "POST" }),
-  );
-  yield* observeRequest(new Request("http://localhost/"), () =>
-    Effect.die(new RangeError("private@example.test")),
-  );
-  return accepted.status;
+    it("continues the browser trace under a request id of its own", async ({
+      observedResponse,
+    }) => {
+      await expect(observedResponse).toHaveParsedFields({
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          traceparent: `00-${"a".repeat(32)}-${"c".repeat(16)}-01`,
+          "x-request-id": "22222222-2222-4222-8222-222222222222",
+        },
+        body: {
+          requestId: "22222222-2222-4222-8222-222222222222",
+          spanId: "c".repeat(16),
+          traceId: "a".repeat(32),
+          traceparent: `00-${"a".repeat(32)}-${"c".repeat(16)}-01`,
+        },
+      });
+    });
+  });
 });
 
-describe("request wrapping", () => {
-  it.effect("the real HTTP response keeps its body and headers and gains correlation headers", () =>
-    Effect.gen(function* program() {
-      const response = yield* observeRequest(new Request("http://localhost/?token=private"), () =>
-        Effect.succeed(
-          new Response("actual response", {
-            headers: { "set-cookie": "session=private; HttpOnly" },
-            status: created,
-          }),
+describe("ingestBrowser", () => {
+  describe.for([
+    ["a GET", {}, 405, { allow: "POST", "cache-control": "no-store" }],
+    [
+      "a POST from another origin",
+      { headers: { origin: "https://evil.example" }, method: "POST" },
+      403,
+      { "cache-control": "no-store" },
+    ],
+    [
+      "a POST that is not JSON",
+      {
+        body: "x",
+        headers: { "content-type": "text/plain", origin: "http://localhost" },
+        method: "POST",
+      },
+      415,
+      { "cache-control": "no-store" },
+    ],
+    [
+      "a POST over the size limit",
+      {
+        body: "x".repeat(32_769),
+        headers: { "content-type": "application/json", origin: "http://localhost" },
+        method: "POST",
+      },
+      413,
+      { "cache-control": "no-store" },
+    ],
+    [
+      "a POST carrying a field the schema does not know",
+      {
+        body: JSON.stringify([{ ...requestEvent, token: "private" }]),
+        headers: { "content-type": "application/json", origin: "http://localhost" },
+        method: "POST",
+      },
+      400,
+      { "cache-control": "no-store" },
+    ],
+  ] as const)("%s", ([, requestInit, expectedStatus, expectedHeaders]) => {
+    const it = test.extend("ingressResponse", async () =>
+      Effect.runPromise(
+        ingestBrowser(new Request(new URL("/api/telemetry", testOrigin), requestInit)).pipe(
+          Effect.provide(
+            Telemetry.layer({
+              release: "test",
+              routes: { "/": "home", "/api/telemetry": "telemetry" },
+              serviceName: "user",
+            }),
+          ),
+          Effect.provide(fixedEntropy),
+          Effect.withTracer(fixedSpans),
+        ),
+      ));
+
+    it("is refused without a body", async ({ ingressResponse }) => {
+      await expect(ingressResponse).toHaveParsedFields({
+        status: expectedStatus,
+        headers: expectedHeaders,
+        body: null,
+      });
+    });
+  });
+
+  describe("the same batch posted twice", () => {
+    const it = test.extend("resentBatch", async () => {
+      const recorded = recordingSink();
+      const resend = (): Promise<Response> =>
+        Effect.runPromise(
+          ingestBrowser(
+            new Request(new URL("/api/telemetry", testOrigin), {
+              body: JSON.stringify([requestEvent]),
+              headers: { "content-type": "application/json", origin: "http://localhost" },
+              method: "POST",
+            }),
+          ).pipe(
+            Effect.provide(
+              Telemetry.layer({
+                log: recorded.sink,
+                release: "test",
+                routes: { "/": "home", "/api/telemetry": "telemetry" },
+                serviceName: "user",
+              }),
+            ),
+            Effect.provide(fixedEntropy),
+            Effect.withTracer(fixedSpans),
+          ),
+        );
+      const accepted = await resend();
+      const resent = await resend();
+      return {
+        accepted: accepted.status,
+        recorded: recorded.stdout.length,
+        resent: resent.status,
+      };
+    });
+
+    it("is accepted again and records its events once", ({ resentBatch }) => {
+      expect(resentBatch).toStrictEqual({ accepted: 202, recorded: 1, resent: 202 });
+    });
+  });
+});
+
+describe("browser events followed by a failing request", () => {
+  const it = test
+    .extend("progressLines", () => vi.fn<(line: string) => void>())
+    .extend("failureLines", () => vi.fn<(line: string) => void>())
+    .extend("serverFailure", { auto: true }, async ({ failureLines, progressLines }) => {
+      const telemetry = Telemetry.layer({
+        log: { error: failureLines, info: progressLines },
+        release: "abc123",
+        routes: { "/": "home" },
+        serviceName: "user",
+      });
+      const [failure] = await attemptAsync(async () =>
+        Effect.runPromise(
+          Effect.gen(function* probe() {
+            yield* ingestBrowser(
+              new Request(new URL("/api/telemetry", testOrigin), {
+                body: JSON.stringify([
+                  requestEvent,
+                  {
+                    ...requestEvent,
+                    errorType: "TypeError",
+                    kind: "exception",
+                    locations: "/assets/index-abc.js:1:234",
+                    method: "GET",
+                    name: "browser.error",
+                    status: 0,
+                    value: 1,
+                  },
+                ]),
+                headers: { "content-type": "application/json", origin: "http://localhost" },
+                method: "POST",
+              }),
+            );
+            yield* observeRequest(new Request(testOrigin), () =>
+              Effect.die(
+                new (class extends RangeError {
+                  public override readonly stack =
+                    "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)";
+                })("private@example.test"),
+              ),
+            );
+          }).pipe(
+            Effect.provide(telemetry),
+            Effect.provide(fixedEntropy),
+            Effect.withTracer(fixedSpans),
+          ),
         ),
       );
-      assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/u);
-      assert.match(response.headers.get("traceparent") ?? "", /^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/u);
-      const text = yield* Effect.promise(async () => response.text());
-      assert.deepStrictEqual(
-        { cookie: response.headers.get("set-cookie"), status: response.status, text },
-        { cookie: "session=private; HttpOnly", status: created, text: "actual response" },
-      );
-    }).pipe(Effect.provide(telemetry)),
-  );
+      return failure;
+    });
 
-  it.effect("handler defects become a generic 500 response without the error message", () =>
-    Effect.gen(function* program() {
-      const response = yield* observeRequest(new Request("http://localhost/"), () =>
-        Effect.die(new Error("sensitive application error")),
-      );
-      assert.strictEqual(response.status, httpStatus.internalServerError);
-      assert.notInclude(yield* Effect.promise(async () => response.text()), "sensitive");
-    }).pipe(Effect.provide(telemetry)),
-  );
-});
-
-describe("trace propagation", () => {
-  it.effect(
-    "browser trace parent is propagated but caller-controlled request IDs are replaced",
-    () =>
-      Effect.gen(function* program() {
-        const incoming = new Request("http://localhost/", {
-          headers: {
-            traceparent: `00-${traceId}-${spanId}-01`,
-            "x-request-id": "private@example.com",
-          },
-        });
-        const response = yield* observeRequest(incoming, () =>
-          Effect.gen(function* handler() {
-            const context = yield* CurrentRequest;
-            assert.strictEqual(context.traceId, traceId);
-            assert.notStrictEqual(context.requestId, "private@example.com");
-            return new Response(undefined, { status: noContent });
-          }),
-        );
-        assert.match(response.headers.get("traceparent") ?? "", new RegExp(`^00-${traceId}-`, "u"));
-      }).pipe(Effect.provide(telemetry)),
-  );
-});
-
-describe("browser ingress", () => {
-  it.effect("rejects non-POST and cross-origin requests", () =>
-    Effect.gen(function* program() {
-      assert.strictEqual(yield* ingestStatus(), httpStatus.methodNotAllowed);
-      const crossOrigin = { headers: { origin: "https://evil.example" }, method: "POST" };
-      assert.strictEqual(yield* ingestStatus(crossOrigin), httpStatus.forbidden);
-    }).pipe(Effect.provide(telemetry)),
-  );
-
-  it.effect("rejects arbitrary bodies and excessive payloads", () =>
-    Effect.gen(function* program() {
-      const plain = {
-        body: "x",
-        headers: { ...jsonHeaders, "content-type": "text/plain" },
-        method: "POST",
-      };
-      assert.strictEqual(yield* ingestStatus(plain), httpStatus.unsupportedMediaType);
-      const oversized = { body: "x".repeat(oversizedBody), headers: jsonHeaders, method: "POST" };
-      assert.strictEqual(yield* ingestStatus(oversized), httpStatus.payloadTooLarge);
-      const body = JSON.stringify([{ ...browserEvent(), token: "private" }]);
-      const forged = { body, headers: jsonHeaders, method: "POST" };
-      assert.strictEqual(yield* ingestStatus(forged), httpStatus.badRequest);
-    }).pipe(Effect.provide(telemetry)),
-  );
-
-  it.effect("accepts a resent batch without recording its events a second time", () => {
-    const logs = recordingSink();
-    const resend = {
-      body: JSON.stringify([browserEvent()]),
-      headers: jsonHeaders,
-      method: "POST",
-    };
-    return Effect.gen(function* program() {
-      const accepted = yield* ingestStatus(resend);
-      const resent = yield* ingestStatus(resend);
-      assert.deepStrictEqual(
-        { accepted, recorded: logs.stdout.length, resent },
-        { accepted: httpStatus.accepted, recorded: 1, resent: httpStatus.accepted },
-      );
-    }).pipe(Effect.provide(recordedTelemetry(logs.sink)));
+  it("logs the request event as a progress line", ({ progressLines }) => {
+    expect(progressLines).toHaveBeenNthCalledWith(
+      1,
+      JSON.stringify({
+        event: "http.client.request",
+        release: "abc123",
+        service: "user-browser",
+        duration_ms: 25,
+        "http.route": "home",
+        measurement_value: 0,
+        request_id: "11111111-1111-4111-8111-111111111111",
+        span_id: "bbbbbbbbbbbbbbbb",
+        start: "2027-01-15T08:00:00.000Z",
+        "telemetry.source": "untrusted-browser",
+        trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "http.request.method": "POST",
+        "http.response.status_code": 201,
+      }),
+    );
   });
-});
 
-describe("structured log lines", () => {
-  it.effect("browser events and server errors become structured log lines", () =>
-    Effect.gen(function* program() {
-      const logs = recordingSink();
-      const status = yield* runProbe().pipe(Effect.provide(recordedTelemetry(logs.sink)));
-      assert.strictEqual(status, httpStatus.accepted);
-      assert.lengthOf(logs.stdout, 1);
-      assert.containSubset(logs.stdout, [
-        {
-          event: "http.client.request",
-          "http.response.status_code": created,
-          release: "abc123",
-          service: "user-browser",
-          trace_id: traceId,
-        },
-      ]);
-      assert.containSubset(logs.stderr, [
-        {
-          "error.locations": "/assets/index-abc.js:1:234",
-          "error.type": "TypeError",
-          event: "browser.error",
-          request_id: "11111111-1111-4111-8111-111111111111",
-          service: "user-browser",
-        },
-        { "error.type": "RangeError", event: "application.error" },
-        { event: "http.server.request", status: httpStatus.internalServerError },
-      ]);
-      const serialized = JSON.stringify(logs.stderr);
-      assert.match(
-        serialized,
-        /"error\.fingerprint":"[0-9a-f]{8}".*"error\.fingerprint":"[0-9a-f]{8}"/u,
-      );
-      assert.notInclude(serialized, "private@example.test");
-    }),
-  );
+  it("logs the browser exception without its message", ({ failureLines }) => {
+    expect(failureLines).toHaveBeenNthCalledWith(
+      1,
+      JSON.stringify({
+        event: "browser.error",
+        release: "abc123",
+        service: "user-browser",
+        duration_ms: 25,
+        "http.route": "home",
+        measurement_value: 1,
+        request_id: "11111111-1111-4111-8111-111111111111",
+        span_id: "bbbbbbbbbbbbbbbb",
+        start: "2027-01-15T08:00:00.000Z",
+        "telemetry.source": "untrusted-browser",
+        trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "error.fingerprint": "17494eb0",
+        "error.locations": "/assets/index-abc.js:1:234",
+        "error.type": "TypeError",
+      }),
+    );
+  });
+
+  it("logs the server failure without its message", ({ failureLines }) => {
+    expect(failureLines).toHaveBeenNthCalledWith(
+      2,
+      JSON.stringify({
+        event: "application.error",
+        release: "abc123",
+        service: "user-server",
+        request_id: "22222222-2222-4222-8222-222222222222",
+        span_id: "c".repeat(16),
+        trace_id: "c".repeat(32),
+        "error.fingerprint": "ea495fdd",
+        "error.locations": "/assets/app-abc.js:7:11",
+        "error.type": "RangeError",
+      }),
+    );
+  });
+
+  it("logs the failed request as the last line", ({ failureLines }) => {
+    expect(failureLines).toHaveBeenLastCalledWith(
+      JSON.stringify({
+        event: "http.server.request",
+        release: "abc123",
+        service: "user-server",
+        request_id: "22222222-2222-4222-8222-222222222222",
+        span_id: "c".repeat(16),
+        trace_id: "c".repeat(32),
+        duration_ms: 0,
+        method: "GET",
+        route: "home",
+        status: 500,
+      }),
+    );
+  });
 });

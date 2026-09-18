@@ -1,13 +1,9 @@
-import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
-import type { Metric } from "web-vitals";
+import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
 
 import { captureObservers } from "./browser-observers.ts";
-import { BrowserEventQueue } from "./browser-queue.ts";
-import type { EventQueue } from "./browser-queue.ts";
+import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
 import { errorAttributes } from "./errors.ts";
-import type { BrowserEvent } from "./events.ts";
-import { maximumMeasurement } from "./events.ts";
-import type { Correlation, HttpMethod } from "./protocol.ts";
+import { maximumMeasurement, type BrowserEvent } from "./events.ts";
 import {
   httpMethod,
   isRequestId,
@@ -17,179 +13,155 @@ import {
   routeMessage,
   spanIdBytes,
   traceIdBytes,
+  type Correlation,
 } from "./protocol.ts";
 
-interface BrowserTelemetryOptions {
-  readonly endpoint: "/api/telemetry";
-  readonly routes: Readonly<Record<string, string>>;
-}
-interface BrowserTelemetry {
-  readonly dispose: () => void;
-  readonly flush: () => Promise<void>;
-}
-interface Recorder {
-  readonly documentContext: Correlation;
-  readonly queue: EventQueue;
-  readonly routes: Readonly<Record<string, string>>;
-}
-interface FetchInstrumentation {
+const flushIntervalMilliseconds = 3000;
+const exportTimeoutMilliseconds = 5000;
+
+const elapsedSince = (startedAt: number): number =>
+  Math.min(performance.now() - startedAt, maximumMeasurement);
+
+type FetchInstrumentation = {
   readonly endpoint: string;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
   readonly send: typeof fetch;
-}
-interface HttpObservation {
-  readonly duration: number;
-  readonly method: HttpMethod;
-  readonly requestId: string;
-  readonly route: string;
-  readonly spanId: string;
-  readonly start: number;
-  readonly status: number;
-  readonly traceId: string;
-}
+};
 
-const exportTimeoutMilliseconds = 5000;
-const flushIntervalMilliseconds = 3000;
-
-async function deliverEvents(
-  send: typeof fetch,
-  endpoint: string,
-  events: readonly BrowserEvent[],
-): Promise<void> {
-  const response = await send(endpoint, {
-    body: JSON.stringify(events),
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    keepalive: true,
-    method: "POST",
-    mode: "same-origin",
-    redirect: "error",
-    signal: AbortSignal.timeout(exportTimeoutMilliseconds),
-  });
-  if (!response.ok) {
-    throw new Error(`Browser telemetry rejected (${response.status})`);
-  }
-}
-
-function httpEvent(observation: HttpObservation): BrowserEvent {
-  return { ...observation, kind: "http", name: "http.client.request", value: 0 };
-}
-
-function elapsed(timer: number): number {
-  return Math.min(performance.now() - timer, maximumMeasurement);
-}
-
-function responseOutcome(
-  response: Readonly<Pick<Response, "status">> & {
-    readonly headers: Readonly<Pick<Headers, "get">>;
-  },
-  fallbackRequestId: string,
-): Pick<BrowserEvent, "requestId" | "status"> {
-  const serverRequestId = response.headers.get("x-request-id");
-  return {
-    requestId: isRequestId(serverRequestId) ? serverRequestId : fallbackRequestId,
-    status: response.status,
-  };
-}
-
-async function tracedFetch(setup: FetchInstrumentation, request: Request): Promise<Response> {
-  const timer = performance.now();
+const outgoingSpan = (
+  outgoing: Request,
+): {
+  readonly span: { readonly spanId: string; readonly start: number; readonly traceId: string };
+  readonly traced: Request;
+} => {
   const span = {
     spanId: randomHex(spanIdBytes),
     start: Date.now(),
     traceId: randomHex(traceIdBytes),
   };
-  request.headers.set("traceparent", `00-${span.traceId}-${span.spanId}-01`);
-  const { pathname } = new URL(request.url);
-  const outcome = { requestId: crypto.randomUUID(), status: 0 };
-  try {
-    const response = await setup.send(request);
-    Object.assign(outcome, responseOutcome(response, outcome.requestId));
-    return response;
-  } finally {
-    setup.queue.enqueue(
-      httpEvent({
-        ...outcome,
-        ...span,
-        duration: elapsed(timer),
-        method: httpMethod(request.method),
-        route: routeLabel(pathname, setup.routes),
-      }),
-    );
-  }
-}
+  const traced = new Request(outgoing, {
+    headers: new Headers([
+      ...outgoing.headers.entries(),
+      ["traceparent", `00-${span.traceId}-${span.spanId}-01`],
+    ]),
+  });
+  return { span, traced };
+};
 
-function patchFetch(setup: FetchInstrumentation): () => void {
+const tracedFetch = async (
+  instrumentation: FetchInstrumentation,
+  outgoing: Request,
+): Promise<Response> => {
+  const startedAt = performance.now();
+  const { span, traced } = outgoingSpan(outgoing);
+  const fallbackRequestId = crypto.randomUUID();
+  const recordAnswer = (answered: {
+    readonly requestId: string;
+    readonly status: number;
+  }): void => {
+    instrumentation.queue.enqueue({
+      ...span,
+      ...answered,
+      duration: elapsedSince(startedAt),
+      kind: "http",
+      method: httpMethod(outgoing.method),
+      name: "http.client.request",
+      route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
+      value: 0,
+    });
+  };
+  try {
+    const received = await instrumentation.send(traced);
+    recordAnswer({
+      requestId: [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
+      status: received.status,
+    });
+    return received;
+  } catch (unsent) {
+    recordAnswer({ requestId: fallbackRequestId, status: 0 });
+    throw unsent;
+  }
+};
+
+const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
   const originalFetch = globalThis.fetch;
-  async function instrumentedFetch(
+  const instrumentedFetch = async (
     input: RequestInfo | URL,
     init?: RequestInit,
-  ): Promise<Response> {
+  ): Promise<Response> => {
     const url = new URL(
       input instanceof Request ? input.url : String(input),
       globalThis.location.href,
     );
-    if (url.origin !== globalThis.location.origin || url.pathname === setup.endpoint) {
-      return setup.send(input, init);
+    if (url.origin !== globalThis.location.origin || url.pathname === instrumentation.endpoint) {
+      return instrumentation.send(input, init);
     }
-    return tracedFetch(setup, new Request(input instanceof Request ? input : url, init));
-  }
+    return tracedFetch(instrumentation, new Request(input instanceof Request ? input : url, init));
+  };
   globalThis.fetch = instrumentedFetch;
   return () => {
     if (globalThis.fetch === instrumentedFetch) {
       globalThis.fetch = originalFetch;
     }
   };
-}
+};
 
-function documentFields(
+type Recorder = {
+  readonly documentContext: Correlation;
+  readonly queue: EventQueue;
+  readonly routes: Readonly<Record<string, string>>;
+};
+
+const documentFields = (
   recorder: Recorder,
-): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> {
+): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> => {
   return {
     ...recorder.documentContext,
     duration: 0,
-    method: "GET",
+    method: httpMethod("GET"),
     route: routeLabel(globalThis.location.pathname, recorder.routes),
     spanId: randomHex(spanIdBytes),
     start: Date.now(),
     status: 0,
   };
-}
+};
 
-function recordException(
+const recordException = (
   recorder: Recorder,
-  name: "browser.error" | "browser.unhandledrejection",
-  error: unknown,
-): void {
-  const attributes = errorAttributes(error);
+  exception: {
+    readonly name: "browser.error" | "browser.unhandledrejection";
+    readonly thrown: unknown;
+  },
+): void => {
+  const attributes = errorAttributes(exception.thrown);
   recorder.queue.enqueue({
     ...documentFields(recorder),
     errorType: attributes["error.type"],
     kind: "exception",
     locations: attributes["error.locations"],
-    name,
+    name: exception.name,
     value: 1,
   });
   recorder.queue.flushInBackground();
-}
+};
 
-function listen(recorder: Recorder): () => void {
+const listen = (recorder: Recorder): (() => void) => {
   const { queue } = recorder;
-  function errorListener(event: Readonly<Pick<ErrorEvent, "error">>): void {
-    recordException(recorder, "browser.error", event.error);
-  }
-  function rejectionListener(event: Readonly<Pick<PromiseRejectionEvent, "reason">>): void {
-    recordException(recorder, "browser.unhandledrejection", event.reason);
-  }
-  function visibilityListener(): void {
+  const rejectionListener = (rejection: Readonly<Pick<PromiseRejectionEvent, "reason">>): void => {
+    recordException(recorder, { name: "browser.unhandledrejection", thrown: rejection.reason });
+  };
+  const visibilityListener = (): void => {
     if (document.visibilityState === "hidden") {
       queue.flushBeforeUnload();
     }
-  }
-  function pageHideListener(): void {
+  };
+  const pageHideListener = (): void => {
     queue.flushBeforeUnload();
-  }
+  };
+  const errorListener = (uncaught: Readonly<Pick<ErrorEvent, "error">>): void => {
+    recordException(recorder, { name: "browser.error", thrown: uncaught.error });
+  };
   globalThis.addEventListener("error", errorListener);
   globalThis.addEventListener("unhandledrejection", rejectionListener);
   globalThis.addEventListener("pagehide", pageHideListener);
@@ -200,21 +172,18 @@ function listen(recorder: Recorder): () => void {
     globalThis.removeEventListener("pagehide", pageHideListener);
     document.removeEventListener("visibilitychange", visibilityListener);
   };
-}
+};
 
-function observeVitals(recorder: Recorder): () => void {
-  function recordVital(metric: Readonly<Pick<Metric, "name" | "value">>): void {
-    const value = Math.min(Math.max(metric.value, 0), maximumMeasurement);
+const observeVitals = (recorder: Recorder): (() => void) => {
+  const recordVital = (metric: Readonly<Pick<Metric, "name" | "value">>): void => {
     recorder.queue.enqueue({
       ...documentFields(recorder),
       kind: "vital",
       name: metric.name,
-      value,
+      value: Math.min(Math.max(metric.value, 0), maximumMeasurement),
     });
-    if (!recorder.queue.disposed) {
-      recorder.queue.flushInBackground();
-    }
-  }
+    recorder.queue.flushInBackground();
+  };
   const stopCapturing = captureObservers();
   onCLS(recordVital, { reportAllChanges: true });
   onFCP(recordVital);
@@ -222,21 +191,38 @@ function observeVitals(recorder: Recorder): () => void {
   onLCP(recordVital, { reportAllChanges: true });
   onTTFB(recordVital);
   return stopCapturing;
-}
+};
 
-function assertRoutes(routes: Readonly<Record<string, string>>): void {
+const batchSender =
+  (exporter: { readonly endpoint: string; readonly send: typeof fetch }) =>
+  async (batch: readonly BrowserEvent[]): Promise<void> => {
+    const delivery = await exporter.send(exporter.endpoint, {
+      body: JSON.stringify(batch),
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      keepalive: true,
+      method: "POST",
+      mode: "same-origin",
+      redirect: "error",
+      signal: AbortSignal.timeout(exportTimeoutMilliseconds),
+    });
+    if (!delivery.ok) {
+      throw new Error(`Browser telemetry rejected (${String(delivery.status)})`);
+    }
+  };
+
+export const initBrowserTelemetry = ({
+  endpoint,
+  routes,
+}: {
+  readonly endpoint: "/api/telemetry";
+  readonly routes: Readonly<Record<string, string>>;
+}): { readonly dispose: () => void } => {
   if (!isRoutes(routes)) {
     throw new Error(routeMessage);
   }
-}
-
-function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetry {
-  assertRoutes(options.routes);
-  const { endpoint, routes } = options;
   const send = globalThis.fetch.bind(globalThis);
-  const queue = new BrowserEventQueue(async (events) => {
-    await deliverEvents(send, endpoint, events);
-  });
+  const queue = makeEventQueue(batchSender({ endpoint, send }));
   const recorder: Recorder = {
     documentContext: {
       requestId: crypto.randomUUID(),
@@ -249,22 +235,17 @@ function initBrowserTelemetry(options: BrowserTelemetryOptions): BrowserTelemetr
   const restoreFetch = patchFetch({ endpoint, queue, routes, send });
   const stopListening = listen(recorder);
   const stopObservingVitals = observeVitals(recorder);
-  const interval = globalThis.setInterval(() => {
+  const flushTimer = globalThis.setInterval(() => {
     queue.flushInBackground();
   }, flushIntervalMilliseconds);
   return {
     dispose: () => {
       queue.close();
-      globalThis.clearInterval(interval);
+      globalThis.clearInterval(flushTimer);
       restoreFetch();
       stopListening();
       stopObservingVitals();
       queue.flushInBackground();
     },
-    flush: async () => {
-      await queue.flush();
-    },
   };
-}
-
-export { initBrowserTelemetry };
+};

@@ -16,6 +16,8 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/dont-review-it": "workspace:*",
+    "es-toolkit": "catalog:",
     "msw": "catalog:"
   }
 }

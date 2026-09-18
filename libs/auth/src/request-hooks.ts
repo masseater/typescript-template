@@ -1,7 +1,10 @@
-import type { BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-
-import type { Application } from "@repo/config";
+import {
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  loopbackHostSet,
+  type Application,
+} from "@repo/config";
 import {
   getSessionSecurity,
   hasEnrolledFactor,
@@ -9,75 +12,63 @@ import {
   markSessionStrong,
   revokeUserSessions,
 } from "@repo/db/security";
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 
 import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
+
+import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
-type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 
-interface HookScope {
+const currentSessionOf = async (hookContext: HookContext): ReturnType<typeof getSessionFromCtx> => {
+  const signedIn =
+    hookContext.context.newSession ??
+    (await getSessionFromCtx(hookContext, { disableCookieCache: true }));
+  return signedIn;
+};
+
+type HookScope = {
   readonly audience: Application;
-  readonly ctx: HookContext;
+  readonly hookContext: HookContext;
   readonly run: Run;
-}
+};
 
-interface SessionPolicyInput {
-  readonly audience: Application;
-  readonly path: string;
-  readonly role: string;
-  readonly strong: boolean;
-  readonly userId: string;
-}
-
-const totpUpgradableMethods = new Set(["password", "password_totp"]);
-const sessionRevokingPaths = new Set([
-  "/change-password",
-  "/two-factor/disable",
-  "/passkey/delete-passkey",
+const totpUpgradableMethods: ReadonlySet<string> = new Set([
+  AUTHENTICATION_METHOD.password,
+  AUTHENTICATION_METHOD.passwordTotp,
 ]);
-const factorEnrollmentPaths = new Set([
-  "/two-factor/enable",
-  "/passkey/generate-register-options",
-  "/passkey/verify-registration",
-]);
-const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-passkey"]);
-const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
-const loopbackHosts: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function currentSessionOf(ctx: HookContext): ReturnType<typeof getSessionFromCtx> {
-  const session =
-    ctx.context.newSession ?? (await getSessionFromCtx(ctx, { disableCookieCache: true }));
-  return session;
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function markTotpSessionStrong({ audience, ctx, run }: HookScope): Promise<void> {
-  const session = await currentSessionOf(ctx);
-  if (!session) {
+const markTotpSessionStrong = async ({ audience, hookContext, run }: HookScope): Promise<void> => {
+  const signedIn = await currentSessionOf(hookContext);
+  if (!signedIn) {
     return;
   }
-  const current = await run(getSessionSecurity(session.session.id, audience));
-  if (current && totpUpgradableMethods.has(current.session.authenticationMethod)) {
-    await run(markSessionStrong(current.session.id, audience, "password_totp"));
+  const liveSession = await run(getSessionSecurity(signedIn.session.id, audience));
+  if (liveSession && totpUpgradableMethods.has(liveSession.session.authenticationMethod)) {
+    await run(
+      markSessionStrong({
+        audience,
+        method: AUTHENTICATION_METHOD.passwordTotp,
+        sessionId: liveSession.session.id,
+      }),
+    );
   }
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function revokeSessionsAfterFactorChange({ ctx, run }: HookScope): Promise<void> {
-  const session = await currentSessionOf(ctx);
-  if (session) {
-    await run(revokeUserSessions(session.user.id));
+const revokeSessionsAfterFactorChange = async ({ hookContext, run }: HookScope): Promise<void> => {
+  const signedIn = await currentSessionOf(hookContext);
+  if (signedIn) {
+    await run(revokeUserSessions(signedIn.user.id));
   }
-}
+};
 
-function isLoopbackHttpRedirect(value: unknown): boolean {
-  const url = typeof value === "string" ? URL.parse(value) : undefined;
-  return url?.protocol === "http:" && loopbackHosts.has(url.hostname);
-}
+const isLoopbackHttpRedirect = (redirectUri: unknown): boolean => {
+  const url = typeof redirectUri === "string" ? URL.parse(redirectUri) : undefined;
+  return url?.protocol === "http:" && loopbackHostSet.has(url.hostname);
+};
 
-function registersLoopbackClient(path: string, fields: object): boolean {
+const registersLoopbackClient = (path: string, fields: object): boolean => {
   return (
     path === "/oauth2/register" &&
     !("application_type" in fields) &&
@@ -86,30 +77,39 @@ function registersLoopbackClient(path: string, fields: object): boolean {
     fields.redirect_uris.length > 0 &&
     fields.redirect_uris.every((uri: unknown) => isLoopbackHttpRedirect(uri))
   );
-}
+};
 
-function rejectUnsafeFields(ctx: Readonly<Pick<HookContext, "body" | "path">>): void {
-  const body: unknown = ctx.body;
-  const fields = typeof body === "object" && body !== null ? body : {};
+const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
+
+const unsafeFieldDenial = (path: string, fields: object): string | undefined => {
   if ("trustDevice" in fields && fields.trustDevice === true) {
-    deny("TRUSTED_DEVICE_DISABLED");
+    return "TRUSTED_DEVICE_DISABLED";
   }
-  if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
-    deny("OAUTH_QUERY_NOT_ACCEPTED");
+  if ("oauth_query" in fields && !oauthQueryPaths.has(path)) {
+    return "OAUTH_QUERY_NOT_ACCEPTED";
   }
-  if (registersLoopbackClient(ctx.path, fields)) {
-    Object.assign(fields, { application_type: "native" });
-  }
-  if (
-    ctx.path === "/passkey/verify-registration" &&
+  return path === "/passkey/verify-registration" &&
     "createSession" in fields &&
     fields.createSession === true
-  ) {
-    deny("REGISTRATION_SESSION_DISABLED");
-  }
-}
+    ? "REGISTRATION_SESSION_DISABLED"
+    : undefined;
+};
 
-function challengeCookieFor(path: string, signedIn: boolean): string | undefined {
+const checkedBody = (
+  hookContext: Readonly<Pick<HookContext, "body" | "path">>,
+): { readonly context: { readonly body: object } } | undefined => {
+  const requestBody: unknown = hookContext.body;
+  const fields = typeof requestBody === "object" && requestBody !== null ? requestBody : {};
+  const denialCode = unsafeFieldDenial(hookContext.path, fields);
+  if (denialCode !== undefined) {
+    deny(denialCode);
+  }
+  return registersLoopbackClient(hookContext.path, fields)
+    ? { context: { body: { ...fields, application_type: "native" } } }
+    : undefined;
+};
+
+const challengeCookieFor = (path: string, signedIn: boolean): string | undefined => {
   if (path.startsWith("/passkey/verify-")) {
     return "better-auth-passkey";
   }
@@ -117,19 +117,18 @@ function challengeCookieFor(path: string, signedIn: boolean): string | undefined
     return "two_factor";
   }
   return undefined;
-}
+};
 
-async function verifyChallengeAudience(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  { audience, ctx, run }: HookScope,
+const verifyChallengeAudience = async (
+  { audience, hookContext, run }: HookScope,
   signedIn: boolean,
-): Promise<void> {
-  const challengeCookie = challengeCookieFor(ctx.path, signedIn);
+): Promise<void> => {
+  const challengeCookie = challengeCookieFor(hookContext.path, signedIn);
   if (challengeCookie === undefined) {
     return;
   }
-  const cookie = ctx.context.createAuthCookie(challengeCookie);
-  const identifier = await ctx.getSignedCookie(cookie.name, ctx.context.secret);
+  const cookie = hookContext.context.createAuthCookie(challengeCookie);
+  const identifier = await hookContext.getSignedCookie(cookie.name, hookContext.context.secret);
   if (
     typeof identifier !== "string" ||
     identifier === "" ||
@@ -137,28 +136,43 @@ async function verifyChallengeAudience(
   ) {
     deny("CHALLENGE_AUDIENCE_INVALID");
   }
-}
+};
 
-function enforceAdminAccess({ audience, path, role, strong }: SessionPolicyInput): void {
-  if (role === "admin" && path === "/two-factor/get-totp-uri" && !strong) {
+type SessionPolicyInput = {
+  readonly audience: Application;
+  readonly path: string;
+  readonly role: string;
+  readonly strong: boolean;
+  readonly userId: string;
+};
+
+const enforceAdminAccess = ({ audience, path, role, strong }: SessionPolicyInput): void => {
+  if (role === ROLE.administrator && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
-  if (audience === "user") {
+  if (audience === APPLICATION.user) {
     return;
   }
-  if (role !== "admin") {
+  if (role !== ROLE.administrator) {
     deny("ADMIN_REQUIRED");
   }
   if (!strong && !enrollmentPaths.has(path)) {
     deny("ADMIN_MFA_REQUIRED");
   }
-}
+};
 
-async function enforceFactorChanges(
+const factorEnrollmentPaths = new Set([
+  "/two-factor/enable",
+  "/passkey/generate-register-options",
+  "/passkey/verify-registration",
+]);
+const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-passkey"]);
+
+const enforceFactorChanges = async (
   { audience, path, role, strong, userId }: SessionPolicyInput,
   run: Run,
-): Promise<void> {
-  if (role !== "admin") {
+): Promise<void> => {
+  if (role !== ROLE.administrator) {
     return;
   }
   if (
@@ -171,52 +185,60 @@ async function enforceFactorChanges(
   if (factorRemovalPaths.has(path)) {
     deny("ADMIN_FACTOR_REMOVAL_DISABLED");
   }
-}
+};
 
-async function enforceSessionPolicy(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  { audience, ctx, run }: HookScope,
+const enforceSessionPolicy = async (
+  { audience, hookContext, run }: HookScope,
   sessionId: string,
-): Promise<void> {
-  const current = await run(getSessionSecurity(sessionId, audience));
-  if (current?.user.emailVerified !== true) {
+): Promise<void> => {
+  const liveSession = await run(getSessionSecurity(sessionId, audience));
+  if (liveSession?.user.emailVerified !== true) {
     deny("SESSION_INVALID");
   }
-  const input = {
+  const policyInput = {
     audience,
-    path: ctx.path,
-    role: current.user.role,
-    strong: isStrongMethod(current.session.authenticationMethod),
-    userId: current.user.id,
+    path: hookContext.path,
+    role: liveSession.user.role,
+    strong: isStrongMethod(liveSession.session.authenticationMethod),
+    userId: liveSession.user.id,
   };
-  enforceAdminAccess(input);
-  await enforceFactorChanges(input, run);
-}
+  enforceAdminAccess(policyInput);
+  await enforceFactorChanges(policyInput, run);
+};
 
-function createRequestHooks(run: Run, audience: Application): RequestHooks {
+const sessionRevokingPaths = new Set([
+  "/change-password",
+  "/two-factor/disable",
+  "/passkey/delete-passkey",
+]);
+
+export const createRequestHooks = (
+  run: Run,
+  audience: Application,
+): NonNullable<BetterAuthOptions["hooks"]> => {
   return {
-    after: createAuthMiddleware(async (ctx) => {
-      if (ctx.context.returned instanceof APIError) {
+    after: createAuthMiddleware(async (hookContext) => {
+      if (hookContext.context.returned instanceof APIError) {
         return;
       }
-      const scope = { audience, ctx, run };
-      if (ctx.path === "/two-factor/verify-totp") {
+      const scope = { audience, hookContext, run };
+      if (hookContext.path === "/two-factor/verify-totp") {
         await markTotpSessionStrong(scope);
       }
-      if (sessionRevokingPaths.has(ctx.path)) {
+      if (sessionRevokingPaths.has(hookContext.path)) {
         await revokeSessionsAfterFactorChange(scope);
       }
     }),
-    before: createAuthMiddleware(async (ctx) => {
-      rejectUnsafeFields(ctx);
-      const scope = { audience, ctx, run };
-      const session = await getSessionFromCtx(ctx, { disableCookieCache: true });
-      await verifyChallengeAudience(scope, Boolean(session));
-      if (session) {
-        await enforceSessionPolicy(scope, session.session.id);
+
+    before: createAuthMiddleware(async (hookContext) => {
+      const bodyOverride = checkedBody(hookContext);
+      const scope = { audience, hookContext, run };
+      const signedIn = await getSessionFromCtx(hookContext, { disableCookieCache: true });
+      await verifyChallengeAudience(scope, Boolean(signedIn));
+      if (signedIn) {
+        await enforceSessionPolicy(scope, signedIn.session.id);
       }
+      return bodyOverride;
     }),
   };
-}
-
-export { createRequestHooks };
+};

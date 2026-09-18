@@ -1,11 +1,8 @@
+import { AUTHENTICATION_METHOD, ROLE, type Application, type Role } from "@repo/config";
 import { eq } from "drizzle-orm";
-import { Effect, Exit } from "effect";
+import { Effect } from "effect";
 
-import type { Application, Role } from "@repo/config";
-
-import type { DatabaseFailure } from "./database-failure.ts";
-import type { Database } from "./database.ts";
-import { query } from "./database.ts";
+import { query, type Database } from "./database.ts";
 import {
   account,
   oauthAccessToken,
@@ -16,25 +13,29 @@ import {
   user,
 } from "./schema.ts";
 
-type Records = Effect.Effect<void, DatabaseFailure, Database>;
+import type { DatabaseFailure } from "./database-failure.ts";
 
-const SESSION_LIFETIME_MS = 60_000;
+export const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 
-function addUser(id: string, role: Role = "user", emailVerified = true): Records {
+export const addUser = (added: {
+  readonly userId: string;
+  readonly role?: Role;
+  readonly emailVerified?: boolean;
+}): Effect.Effect<void, DatabaseFailure, Database> => {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
-      createdAt: new Date(),
-      email: `${id}@example.com`,
-      emailVerified,
-      id,
-      name: id,
-      role,
-      updatedAt: new Date(),
+      createdAt: recordedAt,
+      email: `${added.userId}@example.com`,
+      emailVerified: added.emailVerified ?? true,
+      id: added.userId,
+      name: added.userId,
+      role: added.role ?? ROLE.member,
+      updatedAt: recordedAt,
     });
   });
-}
+};
 
-function addCredential(userId: string): Records {
+export const addCredential = (userId: string): Effect.Effect<void, DatabaseFailure, Database> => {
   return query(async (database): Promise<void> => {
     await database.insert(account).values({
       accountId: userId,
@@ -46,56 +47,40 @@ function addCredential(userId: string): Records {
       userId,
     });
   });
-}
+};
 
-const insertSession = Effect.fn("insertSession")(function* insertSession(
-  userId: string,
-  audience: Application,
-  strong: boolean,
-) {
-  const id = crypto.randomUUID();
+const SESSION_LIFETIME_MS = 60_000;
+
+export const addSession = Effect.fn("addSession")(function* addSession(opened: {
+  readonly userId: string;
+  readonly audience: Application;
+  readonly strong?: boolean;
+}) {
+  const sessionId = crypto.randomUUID();
   const owners = yield* query(async (database) =>
-    database.select().from(user).where(eq(user.id, userId)),
+    database.select().from(user).where(eq(user.id, opened.userId)),
   );
   const securityVersion = owners.at(0)?.securityVersion ?? 0;
   yield* query(async (database): Promise<void> => {
     await database.insert(session).values({
-      audience,
-      authenticationMethod: strong ? "password_totp" : "password",
+      audience: opened.audience,
+      authenticationMethod:
+        opened.strong === false
+          ? AUTHENTICATION_METHOD.password
+          : AUTHENTICATION_METHOD.passwordTotp,
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
-      id,
+      id: sessionId,
       securityVersion,
       token: crypto.randomUUID(),
       updatedAt: new Date(),
-      userId,
+      userId: opened.userId,
     });
   });
-  return id;
+  return sessionId;
 });
 
-function addSession(
-  userId: string,
-  audience: Application,
-  strong = true,
-): Effect.Effect<string, DatabaseFailure, Database> {
-  return insertSession(userId, audience, strong);
-}
-
-function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
-  effect: Effect.Effect<Value, Failure, Requirements>,
-): Effect.Effect<string, Value, Requirements> {
-  return effect.pipe(
-    Effect.flip,
-    Effect.map((failure) => failure._tag),
-  );
-}
-
-function successCount<Value, Failure>(outcomes: readonly Exit.Exit<Value, Failure>[]): number {
-  return outcomes.filter((outcome) => Exit.isSuccess(outcome)).length;
-}
-
-const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId: string) {
+export const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId: string) {
   const clientId = `client-${userId}`;
   const scopes = '["wiki:read"]';
   yield* query(async (database): Promise<void> => {
@@ -121,7 +106,9 @@ const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId:
   });
 });
 
-const oauthGrantCounts = Effect.fn("oauthGrantCounts")(function* oauthGrantCounts(userId: string) {
+export const oauthGrantCounts = Effect.fn("oauthGrantCounts")(function* oauthGrantCounts(
+  userId: string,
+) {
   const access = yield* query(async (database) =>
     database.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
   );
@@ -133,13 +120,3 @@ const oauthGrantCounts = Effect.fn("oauthGrantCounts")(function* oauthGrantCount
   );
   return { access: access.length, consent: consent.length, refresh: refresh.length };
 });
-
-export {
-  addCredential,
-  addOAuthGrant,
-  addSession,
-  addUser,
-  failureTag,
-  oauthGrantCounts,
-  successCount,
-};
