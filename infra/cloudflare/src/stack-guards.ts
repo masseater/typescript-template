@@ -23,8 +23,7 @@ const assertStackReady = Effect.fn("assertStackReady")(function* assertStackRead
   if (stack === onboardingStack) {
     yield* assertSendingDomainUnclaimed(deployment.access, deployment.config, store);
   }
-  const dependencies: readonly string[] = stackDependencies[stack];
-  if (dependencies.includes(traceDestinationStack)) {
+  if (stackDependencies(stack).includes(traceDestinationStack)) {
     yield* assertTraceDestinationApplied(deployment.config, store);
   }
 });

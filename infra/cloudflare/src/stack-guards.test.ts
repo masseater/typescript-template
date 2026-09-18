@@ -58,7 +58,7 @@ it.effect("reads nothing for the units that claim no account-wide name", () =>
 it.effect("refuses an application before the unit that declares its trace destination ran", () =>
   Effect.forEach(applications, (stack) =>
     Effect.gen(function* program() {
-      assert.include(stackDependencies[stack], traceDestinationStack);
+      assert.include(stackDependencies(stack), traceDestinationStack);
       const failure = yield* assertStackReady(stack, deployment, emptyState()).pipe(Effect.flip);
       assert.deepStrictEqual(describeFailure(failure, []), {
         code: "trace_destination_not_applied",

@@ -95,13 +95,8 @@ const SharedSettings = Schema.Struct({
 
 type SharedConfig = typeof SharedSettings.Type;
 
-interface OtlpInput {
-  readonly enabled: boolean | undefined;
-  readonly endpoint: string | undefined;
-}
-
 const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSettings(
-  otlp: OtlpInput,
+  otlp: Readonly<{ enabled: boolean | undefined; endpoint: string | undefined }>,
 ) {
   if (otlp.endpoint === undefined && otlp.enabled !== undefined) {
     return yield* fail("otlp_enabled_without_endpoint", [

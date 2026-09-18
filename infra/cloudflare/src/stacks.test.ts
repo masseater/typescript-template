@@ -33,20 +33,13 @@ function violationsWhenLast(last: StackName): readonly StackName[] {
   return applyOrderViolations([...stackNames.filter((stack) => stack !== last), last]).toSorted();
 }
 
-function undeclaredReferences(): readonly StackName[] {
-  return stackNames.filter((stack) => {
-    const dependencies: readonly string[] = stackDependencies[stack];
-    return !stackReferences[stack].every((reference) => dependencies.includes(reference));
-  });
-}
-
 describe("alchemy stacks", () => {
   it("every apply unit runs once, after the units it reads from and after the onboarding", () => {
     expect.hasAssertions();
     expect(new Set(stackNames).size).toBe(stackNames.length);
-    expect([...stackNames].toSorted()).toStrictEqual(Object.keys(stackDependencies).toSorted());
+    expect([...stackNames].toSorted()).toStrictEqual(Object.keys(stackReferences).toSorted());
     expect(applyOrderViolations(stackNames)).toStrictEqual([]);
-    expect(undeclaredReferences()).toStrictEqual([]);
+    expect(stackDependencies("user")).toContain(traceDestinationStack);
   });
 
   it("reports the units an apply order would run before what they need", () => {
