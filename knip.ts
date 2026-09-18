@@ -129,7 +129,7 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "libs/db": {
-        entry: ["src/testing-node.ts!", ...productionOnly(...scripts["libs/db"])],
+        entry: productionOnly(...scripts["libs/db"]),
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
       },

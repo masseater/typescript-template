@@ -14,7 +14,8 @@
     "./source-maps": "./src/source-maps.ts",
     "./deployment-keys": "./src/deployment-keys.ts",
     "./vite": "./src/vite.ts",
-    "./worker": "./src/worker.ts"
+    "./worker": "./src/worker.ts",
+    "./private-files": "./src/private-files.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -25,7 +26,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "oxc-transform-react": "catalog:",
     "typescript": "catalog:"

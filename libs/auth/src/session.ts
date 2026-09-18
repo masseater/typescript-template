@@ -1,3 +1,4 @@
+import { APPLICATION, ROLE } from "@repo/config";
 import { getSessionSecurity } from "@repo/db/security";
 import { Effect } from "effect";
 
@@ -13,46 +14,48 @@ const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* req
   headers: Headers,
 ) {
   const { audience } = yield* Auth;
-  const session = yield* authSession(headers);
-  if (!session) {
+  const authenticated = yield* authSession(headers);
+  if (!authenticated) {
     return yield* new SessionRequired();
   }
-  const current = yield* getSessionSecurity(session.session.id, audience);
-  if (current?.user.emailVerified !== true) {
+  const liveSession = yield* getSessionSecurity(authenticated.session.id, audience);
+  if (liveSession?.user.emailVerified !== true) {
     return yield* new SessionInvalid();
   }
-  return current;
+  return liveSession;
 });
 
-const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(
-  role: string,
-  strong: boolean,
-  allowEnrollment: boolean,
-) {
-  if (role !== "admin") {
+const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(checked: {
+  readonly role: string;
+  readonly strong: boolean;
+  readonly allowEnrollment: boolean;
+}) {
+  if (checked.role !== ROLE.administrator) {
     return yield* new AdminRequired();
   }
-  if (!allowEnrollment && !strong) {
+  if (!checked.allowEnrollment && !checked.strong) {
     return yield* new AdminMfaRequired();
   }
 });
 
-const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProgram(
+export const verifySession = Effect.fn("verifySession")(function* verifySessionProgram(
   headers: Headers,
-  allowEnrollment: boolean,
+  allowEnrollment?: boolean,
 ) {
   const { audience } = yield* Auth;
-  const current = yield* requireSessionSecurity(headers);
-  const strong = isStrongMethod(current.session.authenticationMethod);
-  if (audience !== "user") {
-    yield* verifyAdmin(current.user.role, strong, allowEnrollment);
+  const liveSession = yield* requireSessionSecurity(headers);
+  const strong = isStrongMethod(liveSession.session.authenticationMethod);
+  if (audience !== APPLICATION.user) {
+    yield* verifyAdmin({
+      allowEnrollment: allowEnrollment === true,
+      role: liveSession.user.role,
+      strong,
+    });
   }
-  return { session: current.session, strong, user: current.user };
+  const { email, id, name, role, twoFactorEnabled } = liveSession.user;
+  return {
+    session: { id: liveSession.session.id },
+    strong,
+    user: { email, id, name, role, twoFactorEnabled },
+  };
 });
-
-// oxlint-disable-next-line typescript/explicit-function-return-type, typescript/explicit-module-boundary-types
-function verifySession(headers: Headers, allowEnrollment = false) {
-  return verifySessionWith(headers, allowEnrollment);
-}
-
-export { verifySession };

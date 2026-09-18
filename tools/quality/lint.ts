@@ -14,12 +14,7 @@ const awaitingPresetPackages = [
   "infra/error-monitor/**",
   "infra/health-monitor/**",
   "infra/local/**",
-  "libs/auth/**",
-  "libs/config/**",
-  "libs/db/**",
   "libs/interview/**",
-  "libs/monitor/**",
-  "libs/observability/**",
   "libs/runtime/**",
   "libs/ui/**",
   "tools/commander/**",
@@ -180,11 +175,32 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           {
             allow: [
-              { from: "lib", name: ["Request", "RequestInit", "Response", "URL", "Uint8Array"] },
+              {
+                from: "lib",
+                name: [
+                  "Error",
+                  "Headers",
+                  "Request",
+                  "RequestInit",
+                  "Response",
+                  "URL",
+                  "Uint8Array",
+                ],
+              },
               {
                 from: "package",
-                name: ["Codec", "Effect", "Exit", "ManagedRuntime"],
+                name: ["Codec", "Effect", "Exit", "ManagedRuntime", "Queue", "Ref"],
                 package: "effect",
+              },
+              {
+                from: "package",
+                name: ["Auth", "BetterAuthOptions", "GenericEndpointContext"],
+                package: "better-auth",
+              },
+              {
+                from: "package",
+                name: ["MiddlewareContext", "MiddlewareOptions"],
+                package: "better-call",
               },
               {
                 from: "package",
@@ -220,6 +236,19 @@ const lintOptions = {
       files: ["tools/ai-native/**", "tools/lint-rule-authoring/**"],
       rules: {
         "dont-review-it/no-handmade-standard-io-double--use-standard-io-test": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/config/src/cli.ts"],
+      rules: {
+        "no-restricted-properties": [
+          LINT_SEVERITY.ERROR,
+          ...["stdout", "stderr"].map((property) => ({
+            message: "effect の Console で出力してください。",
+            object: "process",
+            property,
+          })),
+        ],
       },
     },
     {

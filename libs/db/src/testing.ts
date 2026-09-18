@@ -12,7 +12,6 @@ import { schema } from "./schema.ts";
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;
@@ -23,26 +22,26 @@ declare global {
 
 const migrations = Schema.decodeUnknownEffect(MigrationFiles);
 
-function getSchemaShape(): Record<string, string[]> {
+const getSchemaShape = (): Record<string, string[]> => {
   return Object.fromEntries(
-    Object.entries(schema).map(([name, table]) => [name, Object.keys(getColumns(table))]),
+    Object.entries(schema).map(([tableName, table]) => [tableName, Object.keys(getColumns(table))]),
   );
-}
+};
 
-function runStatement(
+const runStatement = (
   sql: string,
-  ...params: readonly (string | number)[]
-): Effect.Effect<D1Result, DatabaseFailure> {
+  ...statementParameters: readonly (string | number)[]
+): Effect.Effect<D1Result, DatabaseFailure> => {
   return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
     try: async () =>
       env.DB.prepare(sql)
-        .bind(...params)
+        .bind(...statementParameters)
         .run(),
   });
-}
+};
 
-function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
+const testDatabase = (migrated: boolean): Layer.Layer<Database, unknown> => {
   return Layer.unwrap(
     Effect.gen(function* database() {
       yield* Effect.promise(async () => reset());
@@ -52,10 +51,18 @@ function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
       return Database.layer(env.DB);
     }),
   );
-}
+};
 
 const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
 
 export { bootstrapAdmin } from "./bootstrap-statement.ts";
+export {
+  addCredential,
+  addOAuthGrant,
+  addSession,
+  addUser,
+  oauthGrantCounts,
+  recordedAt,
+} from "./records-fixture.ts";
 export { EmptyTestDatabase, TestDatabase, getSchemaShape, runStatement };

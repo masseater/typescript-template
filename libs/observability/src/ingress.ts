@@ -1,160 +1,185 @@
-import { Effect, Result } from "effect";
+import { Effect, Ref, Result } from "effect";
 
 import { errorFingerprint } from "./errors.ts";
-import { parseBrowserEvents } from "./events.ts";
+import { parseBrowserEvents, type BrowserEvent } from "./events.ts";
 import { httpStatus } from "./http-status.ts";
-import { readJson, rejectionStatus } from "./request.ts";
-import { logAt, statusSeverity } from "./severity.ts";
+import { RequestEntropy } from "./request-span.ts";
+import { readJson, rejectionStatus, type JsonRequest } from "./request.ts";
+import { logAt, statusSeverity, type Severity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 
 import type { ServiceName } from "@repo/config";
-import type { BrowserEvent } from "./events.ts";
-import type { JsonRequest } from "./request.ts";
-import type { Severity } from "./severity.ts";
-
-type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
-type LogFields = Readonly<Record<string, string | number | boolean>>;
-interface IngressWindow {
-  start: number;
-  count: number;
-  readonly recorded: Set<string>;
-}
 
 const maximumBodyBytes = 32_768;
+const retryAfterSeconds = "60";
 const rateWindowMilliseconds = 60_000;
 const maximumEventsPerWindow = 1200;
-const retryAfterSeconds = "60";
-const ingressWindows = new Map<ServiceName, IngressWindow>();
 const noStore = { "cache-control": "no-store" };
 
-function emptyResponse(
-  status: number,
-  headers: Readonly<Record<string, string>> = noStore,
-): Response {
-  return new Response(undefined, { headers, status });
-}
+const ingressWindows = Ref.makeUnsafe<
+  ReadonlyMap<
+    ServiceName,
+    { readonly start: number; readonly admitted: number; readonly recorded: ReadonlySet<string> }
+  >
+>(new Map());
 
-function currentWindow(serviceName: ServiceName): IngressWindow {
-  const now = Date.now();
-  const window = ingressWindows.get(serviceName) ?? { count: 0, recorded: new Set(), start: now };
-  if (now - window.start > rateWindowMilliseconds) {
-    window.start = now;
-    window.count = 0;
-    window.recorded.clear();
-  }
-  ingressWindows.set(serviceName, window);
-  return window;
-}
-
-function unrecorded(
+const unrecorded = (
   recorded: ReadonlySet<string>,
-  events: readonly BrowserEvent[],
-): readonly BrowserEvent[] {
-  const batch = new Set<string>();
-  return events.filter((event) => {
-    if (recorded.has(event.spanId) || batch.has(event.spanId)) {
-      return false;
-    }
-    batch.add(event.spanId);
-    return true;
+  browserEvents: readonly BrowserEvent[],
+): readonly BrowserEvent[] =>
+  browserEvents.filter(
+    (browserEvent, position) =>
+      !recorded.has(browserEvent.spanId) &&
+      browserEvents.findIndex((earlier) => earlier.spanId === browserEvent.spanId) === position,
+  );
+
+const admitUnrecorded = (batch: {
+  readonly serviceName: ServiceName;
+  readonly browserEvents: readonly BrowserEvent[];
+}): Effect.Effect<readonly BrowserEvent[] | undefined> =>
+  Ref.modify(ingressWindows, (windows) => {
+    const arrivedAt = Date.now();
+    const stored = windows.get(batch.serviceName);
+    const activeWindow =
+      stored === undefined || arrivedAt - stored.start > rateWindowMilliseconds
+        ? { admitted: 0, recorded: new Set<string>(), start: arrivedAt }
+        : stored;
+    const fresh = unrecorded(activeWindow.recorded, batch.browserEvents);
+    const overflowed = activeWindow.admitted + fresh.length > maximumEventsPerWindow;
+    const nextWindow = overflowed
+      ? activeWindow
+      : {
+          ...activeWindow,
+          admitted: activeWindow.admitted + fresh.length,
+          recorded: new Set([
+            ...activeWindow.recorded,
+            ...fresh.map((browserEvent) => browserEvent.spanId),
+          ]),
+        };
+    const admitted: readonly BrowserEvent[] | undefined = overflowed ? undefined : fresh;
+    return [admitted, new Map([...windows, [batch.serviceName, nextWindow]])];
   });
-}
 
-function admitUnrecorded(
-  serviceName: ServiceName,
-  events: readonly BrowserEvent[],
-): readonly BrowserEvent[] | undefined {
-  const window = currentWindow(serviceName);
-  const fresh = unrecorded(window.recorded, events);
-  if (window.count + fresh.length > maximumEventsPerWindow) {
-    return undefined;
-  }
-  window.count += fresh.length;
-  for (const event of fresh) {
-    window.recorded.add(event.spanId);
-  }
-  return fresh;
-}
-
-function kindFields(event: BrowserEvent): LogFields {
-  if (event.kind === "http") {
+const kindFields = (
+  browserEvent: BrowserEvent,
+): Readonly<Record<string, string | number | boolean>> => {
+  if (browserEvent.kind === "http") {
     return {
-      "http.request.method": event.method,
-      "http.response.status_code": event.status,
+      "http.request.method": browserEvent.method,
+      "http.response.status_code": browserEvent.status,
     };
   }
-  if (event.kind === "exception") {
+  if (browserEvent.kind === "exception") {
     return {
-      "error.fingerprint": errorFingerprint(event.errorType, event.locations),
-      "error.locations": event.locations,
-      "error.type": event.errorType,
+      "error.fingerprint": errorFingerprint({
+        errorType: browserEvent.errorType,
+        locations: browserEvent.locations,
+      }),
+      "error.locations": browserEvent.locations,
+      "error.type": browserEvent.errorType,
     };
   }
   return {};
-}
+};
 
-function eventSeverity(event: BrowserEvent): Severity {
-  if (event.kind === "exception") {
+const eventSeverity = (browserEvent: BrowserEvent): Severity => {
+  if (browserEvent.kind === "exception") {
     return "Error";
   }
-  return event.kind === "http" ? statusSeverity(event.status) : "Info";
-}
+  return browserEvent.kind === "http" ? statusSeverity(browserEvent.status) : "Info";
+};
 
-function recordBrowserEvent(serviceName: ServiceName, event: BrowserEvent): Effect.Effect<void> {
+const recordBrowserEvent = (recorded: {
+  readonly serviceName: ServiceName;
+  readonly browserEvent: BrowserEvent;
+}): Effect.Effect<void> => {
+  const { browserEvent, serviceName } = recorded;
   const attributes = {
-    duration_ms: event.duration,
-    "http.route": event.route,
-    measurement_value: event.value,
-    request_id: event.requestId,
+    duration_ms: browserEvent.duration,
+    "http.route": browserEvent.route,
+    measurement_value: browserEvent.value,
+    request_id: browserEvent.requestId,
     service: `${serviceName}-browser`,
-    span_id: event.spanId,
-    start: new Date(event.start).toISOString(),
+    span_id: browserEvent.spanId,
+    start: new Date(browserEvent.start).toISOString(),
     "telemetry.source": "untrusted-browser",
-    trace_id: event.traceId,
-    ...kindFields(event),
+    trace_id: browserEvent.traceId,
+    ...kindFields(browserEvent),
   };
-  return logAt(eventSeverity(event), event.name, attributes);
-}
+  return logAt(eventSeverity(browserEvent), { attributes, eventName: browserEvent.name });
+};
 
-const readEvents = Effect.fn("readEvents")(function* readEvents(request: IngressRequest) {
+const emptyResponse = (emptyAnswer: {
+  readonly status: number;
+  readonly headers?: Readonly<Record<string, string>>;
+}): Response => {
+  return new Response(undefined, {
+    headers: emptyAnswer.headers ?? noStore,
+    status: emptyAnswer.status,
+  });
+};
+
+type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
+
+const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: IngressRequest) {
   const telemetry = yield* Telemetry;
-  const input = yield* Effect.result(
-    readJson(request, new URL(request.url).origin, maximumBodyBytes),
+  const entropy = yield* RequestEntropy;
+  const jsonBody = yield* Effect.result(
+    readJson({
+      expectedOrigin: new URL(incoming.url).origin,
+      incoming,
+      limit: maximumBodyBytes,
+    }),
   );
-  if (Result.isFailure(input)) {
-    return emptyResponse(rejectionStatus[input.failure.reason]);
+  if (Result.isFailure(jsonBody)) {
+    return emptyResponse({ status: rejectionStatus[jsonBody.failure.reason] });
   }
-  const events = yield* Effect.result(
-    parseBrowserEvents(input.success, telemetry.labels, Date.now()),
+  const browserEvents = yield* Effect.result(
+    parseBrowserEvents({
+      body: jsonBody.success,
+      receivedAt: entropy.epochMilliseconds(),
+      routeLabels: telemetry.labels,
+    }),
   );
-  if (Result.isFailure(events)) {
-    return emptyResponse(httpStatus.badRequest);
+  if (Result.isFailure(browserEvents)) {
+    return emptyResponse({ status: httpStatus.badRequest });
   }
-  return events.success;
+  return browserEvents.success;
 });
 
-function recordUnseen(
-  serviceName: ServiceName,
-  events: readonly BrowserEvent[],
-): Effect.Effect<Response> {
-  const fresh = admitUnrecorded(serviceName, events);
-  if (fresh === undefined) {
-    return Effect.succeed(
-      emptyResponse(httpStatus.tooManyRequests, { ...noStore, "retry-after": retryAfterSeconds }),
+const recordAdmitted = (batch: {
+  readonly serviceName: ServiceName;
+  readonly browserEvents: readonly BrowserEvent[];
+}): Effect.Effect<Response> =>
+  Effect.gen(function* recordAdmittedProgram() {
+    const admitted = yield* admitUnrecorded(batch);
+    if (admitted === undefined) {
+      return emptyResponse({
+        headers: { ...noStore, "retry-after": retryAfterSeconds },
+        status: httpStatus.tooManyRequests,
+      });
+    }
+    yield* Effect.forEach(
+      admitted,
+      (browserEvent) => recordBrowserEvent({ browserEvent, serviceName: batch.serviceName }),
+      { discard: true },
     );
-  }
-  return Effect.forEach(fresh, (event) => recordBrowserEvent(serviceName, event), {
-    discard: true,
-  }).pipe(Effect.as(emptyResponse(httpStatus.accepted)));
-}
+    return emptyResponse({ status: httpStatus.accepted });
+  });
 
-const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(request: IngressRequest) {
-  if (request.method !== "POST") {
-    return emptyResponse(httpStatus.methodNotAllowed, { ...noStore, allow: "POST" });
+export const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(
+  incoming: IngressRequest,
+) {
+  if (incoming.method !== "POST") {
+    return emptyResponse({
+      headers: { ...noStore, allow: "POST" },
+      status: httpStatus.methodNotAllowed,
+    });
   }
   const { serviceName } = yield* Telemetry;
-  const events = yield* readEvents(request);
-  return events instanceof Response ? events : yield* recordUnseen(serviceName, events);
+  const browserEvents = yield* readEvents(incoming);
+  if (browserEvents instanceof Response) {
+    return browserEvents;
+  }
+  return yield* recordAdmitted({ browserEvents, serviceName });
 });
-
-export { ingestBrowser };
