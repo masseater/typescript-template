@@ -1,0 +1,16 @@
+{
+  "name": "@repo/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {},
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@types/node": "catalog:",
+    "otpauth": "9.5.2",
+    "playwright": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  }
+}

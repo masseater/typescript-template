@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { localDatabaseDirectory } from "@repo/config/local-database-path";
 import { workerCompatibility } from "@repo/config/worker";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
@@ -14,7 +15,7 @@ const localDatabase = {
   database_name: "template-shared",
 };
 
-const localDatabasePersistence = path.join(import.meta.dirname, "../../../.local/d1");
+const localDatabasePersistence = localDatabaseDirectory();
 const localDatabaseStore = path.join(localDatabasePersistence, "v3");
 
 async function writeLocalDatabaseConfig(): Promise<string> {
