@@ -1,3 +1,4 @@
+import { applications } from "@template/config";
 import { defaultExclude } from "vite-plus/test/config";
 import { defineConfig } from "vite-plus";
 import { workerTests } from "./tools/quality/test-runtime.ts";
@@ -68,12 +69,12 @@ export default defineConfig({
       },
       {
         files: [
-          "apps/admin/src/components/account-menu.tsx",
-          "apps/admin/src/components/admin-header.tsx",
-          "apps/admin/src/components/admin-navigation-item.tsx",
-          "apps/admin/src/components/empty-results.tsx",
-          "apps/admin/src/components/page-link.tsx",
-          "apps/admin/src/components/row-action-menu.tsx",
+          "apps/admin/src/pages/users/ui/empty-results.tsx",
+          "apps/admin/src/pages/users/ui/page-link.tsx",
+          "apps/admin/src/pages/users/ui/row-action-menu.tsx",
+          "apps/admin/src/widgets/admin-frame/ui/account-menu.tsx",
+          "apps/admin/src/widgets/admin-frame/ui/admin-header.tsx",
+          "apps/admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
         ],
         rules: { "react/forbid-component-props": ["error", { forbid: ["style"] }] },
       },
@@ -255,7 +256,7 @@ export default defineConfig({
       },
       "check:client": { cache: false, command: "node tools/quality/client-bundle.ts" },
       "check:effect": { cache: false, command: "node tools/quality/effect-diagnostics.ts" },
-      "check:layers": "steiger apps/user/src --fail-on-warnings",
+      "check:layers": applications.map((app) => `steiger apps/${app}/src --fail-on-warnings`),
       "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],

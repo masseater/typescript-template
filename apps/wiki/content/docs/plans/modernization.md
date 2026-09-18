@@ -73,7 +73,7 @@ user アプリは業務アプリではなく、Facebook のような SNS の画�
 フロントを含むアプリは [Feature-Sliced Design](https://fsd.how/ja/docs/get-started/overview/) で構成し、層の境界を [steiger](https://github.com/feature-sliced/steiger) で検査します。
 TanStack Start のルートファイルは app 層の薄いアダプタにとどめ、画面は pages 層に置きます。
 
-状況は一部です。層に分かれているのは user アプリだけで、steiger の検査も user アプリにしか掛かっていません。
+導入済みです。user・admin・wiki の 3 アプリが層に分かれ、steiger の検査も 3 アプリすべてに掛かっています。
 
 ### 見た目を SmartHR 風にする
 
