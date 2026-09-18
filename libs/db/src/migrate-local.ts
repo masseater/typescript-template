@@ -1,6 +1,6 @@
+import { Console, Effect } from "effect";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
 import type { D1Database } from "@cloudflare/workers-types";
-import { Effect } from "effect";
 import { NodeRuntime } from "@effect/platform-node";
 import { getPlatformProxy } from "wrangler";
 import { migrateD1 } from "./migrate-d1.ts";
@@ -18,19 +18,20 @@ const platform = Effect.acquireRelease(
 );
 
 function report(error: string): Effect.Effect<void> {
-  return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
-    console.error(JSON.stringify({ action: "local_migration", error, success: false }));
-    process.exitCode = 1;
-  });
+  return Console.error(JSON.stringify({ action: "local_migration", error, success: false })).pipe(
+    Effect.andThen(
+      Effect.sync(() => {
+        process.exitCode = 1;
+      }),
+    ),
+  );
 }
 
 NodeRuntime.runMain(
   Effect.gen(function* program() {
     const { env } = yield* platform;
     const applied = yield* migrateD1(env.DB);
-    // oxlint-disable-next-line no-console
-    console.log(JSON.stringify({ action: "local_migration", applied, success: true }));
+    yield* Console.log(JSON.stringify({ action: "local_migration", applied, success: true }));
   }).pipe(
     Effect.scoped,
     Effect.catchTag("RemoteFailure", (failure) => report(failure.code)),

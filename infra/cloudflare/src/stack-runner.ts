@@ -1,10 +1,10 @@
+import { Console, Effect } from "effect";
 import type { DeploymentRequest, DeploymentTarget } from "./config.ts";
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import type { ArtifactMode } from "./artifacts.ts";
 import { ArtifactWrites } from "./artifacts.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
-import { Effect } from "effect";
 import type { PlannedStack } from "./plan-confirmation.ts";
 import type { ProgressEvent } from "alchemy/Alchemist";
 import type { StackName } from "./stacks.ts";
@@ -22,10 +22,7 @@ interface Deployment {
 const alchemist = layer();
 
 function write(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
-  return Effect.sync(() => {
-    // oxlint-disable-next-line no-console
-    console.info(JSON.stringify(record));
-  });
+  return Console.info(JSON.stringify(record));
 }
 
 function reportProgress(stack: StackName): (event: ProgressEvent) => Effect.Effect<void> {
