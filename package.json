@@ -15,6 +15,8 @@
     "@repo/db": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@shadcn/lint": "catalog:",
+    "@stryker-mutator/core": "10.0.0",
+    "@stryker-mutator/vitest-runner": "10.0.0",
     "@swc/core": "1.16.2",
     "@types/node": "catalog:",
     "dependency-cruiser": "18.3.1",
@@ -24,7 +26,8 @@
     "react-doctor": "0.9.14",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   },
   "devEngines": {
     "runtime": {

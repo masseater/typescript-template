@@ -1,0 +1,41 @@
+const configuration = {
+  coverageAnalysis: "perTest",
+  dryRunTimeoutMinutes: 20,
+  htmlReporter: { fileName: ".local/stryker-report.html" },
+  ignorePatterns: [
+    "**/tsconfig*.json",
+    ".local-agents",
+    ".local/**",
+    "tools/quality/dependency-cruiser.test.ts",
+  ],
+  ignoreStatic: true,
+  mutate: [
+    "libs/config/src/index.ts",
+    "libs/runtime/src/failures.ts",
+    "libs/runtime/src/http.ts",
+    "libs/runtime/src/responses.ts",
+    "tools/quality/alias-visitor.ts",
+    "tools/quality/d1-references.ts",
+    "tools/quality/d1-types.ts",
+    "tools/quality/effect-rules.ts",
+    "tools/quality/layers.ts",
+    "tools/quality/lint-context.ts",
+    "tools/quality/module-specifiers.ts",
+    "tools/quality/references.ts",
+    "tools/quality/rules.ts",
+    "tools/quality/scripts.ts",
+    "tools/quality/secrets.ts",
+    "tools/quality/test-import-graph.ts",
+    "tools/quality/test-runtime.ts",
+  ],
+  packageManager: "pnpm",
+  plugins: ["@stryker-mutator/vitest-runner"],
+  reporters: ["progress", "clear-text", "html"],
+  tempDirName: ".local/stryker",
+  testRunner: "vitest",
+  thresholds: { break: 70, high: 80, low: 71 },
+  vitest: { configFile: "vitest.mutation.config.ts" },
+};
+
+// oxlint-disable-next-line import/no-default-export
+export default configuration;

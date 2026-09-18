@@ -18,6 +18,7 @@ const workspaces = {
     entry: ["doctor.config.ts"],
     ignoreDependencies: ["@effect/tsgo", "@effect/language-service", "@swc/core", "effect-tsgo"],
     project: ["*.{js,ts}", "tools/quality/**/*.{ts,mjs}"],
+    vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
@@ -92,6 +93,7 @@ function config({
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
+      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
       "apps/wiki": { ...app, project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"] },
       "infra/budget-monitor": {
