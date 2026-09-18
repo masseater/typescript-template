@@ -28,12 +28,6 @@ const deploymentValues = (content: string): DeploymentValue[] => {
     .toSorted(byKey);
 };
 
-const contentRules: Readonly<Record<string, RegExp>> = {
-  "aws-access-key": /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/u,
-  "github-token": /\bgh[pousr]_[A-Za-z0-9]{36,255}\b|\bgithub_pat_[A-Za-z0-9_]{60,255}\b/u,
-  "private-key": /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/u,
-};
-
 const PREFIX_KEY = "TEMPLATE_PREFIX";
 const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/gu;
 
@@ -78,6 +72,12 @@ const privateFile = (filename: string): boolean => {
       !filename.endsWith("/.env.example") &&
       filename !== ".env.example")
   );
+};
+
+const contentRules: Readonly<Record<string, RegExp>> = {
+  "aws-access-key": /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/u,
+  "github-token": /\bgh[pousr]_[A-Za-z0-9]{36,255}\b|\bgithub_pat_[A-Za-z0-9_]{60,255}\b/u,
+  "private-key": /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/u,
 };
 
 const secretViolations = (

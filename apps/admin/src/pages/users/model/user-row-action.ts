@@ -51,7 +51,7 @@ const useUserRowAction = (user: ListedUser, onChanged: () => void): UserRowActio
     }
     setConfirming(undefined);
     setPending(true);
-    async function run(operation: RowOperation): Promise<void> {
+    const run = async (operation: RowOperation): Promise<void> => {
       try {
         notify("success", await perform(user, operation));
         onChanged();
@@ -59,7 +59,7 @@ const useUserRowAction = (user: ListedUser, onChanged: () => void): UserRowActio
         notify("error", errorMessage(error));
       }
       setPending(false);
-    }
+    };
     void run(confirming);
   };
   return {

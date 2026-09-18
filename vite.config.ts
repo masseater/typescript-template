@@ -1,9 +1,10 @@
 import { applications } from "@template/config";
+import { taskInput } from "@template/config/vite";
 import { dontReviewItPreset } from "@template/dont-review-it";
 import { LINT_SEVERITY } from "@template/lint-rule-authoring";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
-import { taskInput } from "@template/config/vite";
+
 import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;

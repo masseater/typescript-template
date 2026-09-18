@@ -6,7 +6,6 @@ import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 
 type AssetFetcher = {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response>;
 };
 

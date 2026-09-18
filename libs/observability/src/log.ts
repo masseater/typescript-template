@@ -1,17 +1,15 @@
 type LogLevel = "error" | "info";
 
-interface LogSink {
+type LogSink = {
   readonly error: (line: string) => void;
   readonly info: (line: string) => void;
-}
+};
 
 const consoleError = (line: string): void => {
-  // oxlint-disable-next-line no-console
   console.error(line);
 };
 
 const consoleInfo = (line: string): void => {
-  // oxlint-disable-next-line no-console
   console.info(line);
 };
 

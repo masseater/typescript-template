@@ -42,7 +42,6 @@ const stack = Stack(
   }),
 );
 
-// oxlint-disable-next-line import/no-default-export
 export default stack;
 const accountTokenRef = (resource: TokenResource): Effect.Effect<ApiToken.AccountApiToken> => {
   return ApiToken.AccountApiToken.ref(resource, { stack: stackName("tokens") });

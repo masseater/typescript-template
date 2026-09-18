@@ -19,12 +19,13 @@ declare global {
   }
 }
 
-const probeEvent = "probe_monitor";
 const probeAlert = { subject: "probe alert", text: "probe alert" } as const;
 const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
+const probeEvent = "probe_monitor";
+
 class ProbeMonitor extends Monitor<MonitorBindings> {
   protected readonly event = probeEvent;
   protected readonly failure = probeFailure;

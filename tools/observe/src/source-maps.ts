@@ -24,26 +24,26 @@ type Frame =
       readonly name?: string;
     };
 
-interface Symbolication {
+type Symbolication = {
   readonly repositoryRoot: string;
   readonly app: App;
   readonly release: string;
-}
+};
 
-interface ParsedLocation {
+type ParsedLocation = {
   readonly client: boolean;
   readonly column: number;
   readonly filename: string;
   readonly line: number;
-}
+};
 
 type Runtime = "client" | "server";
 
-interface MapCandidate {
+type MapCandidate = {
   readonly mapFile: string;
   readonly runtime: Runtime;
   readonly runtimeDirectory: string;
-}
+};
 
 type MapLookup = {
   readonly location: string;
@@ -61,10 +61,6 @@ const Payload = Schema.Struct({
   sources: Schema.Array(Schema.String),
   version: Schema.Literal(sourceMapVersion),
 });
-
-const invalid = (): SourceMapFailure => {
-  return new SourceMapFailure({ reason: "source_map_invalid" });
-};
 
 const isMissing = (cause: unknown): boolean => {
   return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
@@ -127,6 +123,10 @@ const parseLocation = (location: string): ParsedLocation | undefined => {
     filename,
     line: Number(groups.line),
   };
+};
+
+const invalid = (): SourceMapFailure => {
+  return new SourceMapFailure({ reason: "source_map_invalid" });
 };
 
 const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(

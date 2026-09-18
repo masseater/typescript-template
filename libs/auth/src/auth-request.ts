@@ -11,7 +11,6 @@ import { SessionInvalid } from "./session-invalid.ts";
 import type { BetterAuthInstance } from "./create-auth.ts";
 
 const authPromise = <Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   run: (instance: BetterAuthInstance) => Promise<Value>,
 ): Effect.Effect<Value, AuthFailure, Auth> => {
   return Effect.gen(function* authPromiseProgram() {
@@ -24,7 +23,6 @@ const authPromise = <Value>(
 };
 
 const classifyDenial = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   failure: AuthFailure,
 ): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired => {
   const denial = failure.cause instanceof APIError ? failure.cause.body?.message : undefined;
@@ -40,22 +38,18 @@ const classifyDenial = (
 type AuthSession = Awaited<ReturnType<BetterAuthInstance["api"]["getSession"]>>;
 
 const authSession = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   headers: Headers,
 ): Effect.Effect<
   AuthSession,
   AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired,
   Auth
 > => {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return authPromise(async (instance): Promise<AuthSession> =>
     instance.api.getSession({ headers, query: { disableCookieCache: true } }),
   ).pipe(Effect.mapError(classifyDenial));
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const handleAuthRequest = (request: Request): Effect.Effect<Response, AuthFailure, Auth> => {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   return authPromise(async (instance) => instance.handler(request));
 };
 

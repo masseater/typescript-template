@@ -47,7 +47,7 @@ The rule list is discoverable — `vp lint --print-config` prints every built-in
 
 **A function takes at most two parameters.** `max-params` is 2, and most functions in this preset's own source therefore take one destructured object. Adding a third parameter is a rewrite, not a tweak — decide the shape before you write the signature.
 
-**A type is a `type`, never an `interface`.** `typescript/consistent-type-definitions` is set to `type`.
+**A type is a `type`, never an `interface`.** `no-interface-declaration--write-a-type-alias` leaves an `interface` only inside `declare module`, `declare global` or `declare namespace`, where it has to merge into a declaration someone else owns.
 
 **Truthiness is not a test.** `strict-boolean-expressions` rejects `if (name)` on a string and `if (count)` on a number. Compare: `if (name !== "")`.
 

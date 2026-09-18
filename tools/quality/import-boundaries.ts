@@ -50,10 +50,6 @@ const isWithinDatabase = (importer: Importer): boolean => {
   return importer.location?.area === "libs" && importer.location.owner === "db";
 };
 
-const isDatabaseRoot = (importer: Importer): boolean => {
-  return isWithinDatabase(importer) && /\/src\/index\.[cm]?[jt]s$/u.test(importer.current);
-};
-
 const isDatabaseRuntime = (importer: Importer): boolean => {
   return (
     isWithinDatabase(importer) &&
@@ -95,6 +91,10 @@ const reachesTools = ({ location }: Importer, target: ImportTarget): boolean => 
     (location?.area === "apps" || location?.area === "libs" || location?.area === "infra") &&
     target.area === "tools"
   );
+};
+
+const isDatabaseRoot = (importer: Importer): boolean => {
+  return isWithinDatabase(importer) && /\/src\/index\.[cm]?[jt]s$/u.test(importer.current);
 };
 
 const leaksDatabaseAdmin = (importer: Importer, target: ImportTarget): boolean => {

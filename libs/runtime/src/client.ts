@@ -6,16 +6,16 @@ import { ErrorBody } from "./contracts.ts";
 
 import type { AnyElysia } from "elysia";
 
-interface ApiFailure {
+type ApiFailure = {
   readonly status: number;
   readonly value: unknown;
-}
+};
 
-interface ApiReply {
+type ApiReply = {
   readonly data: unknown;
   readonly error: ApiFailure | null;
   readonly response: Readonly<Pick<Response, "headers">>;
-}
+};
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 

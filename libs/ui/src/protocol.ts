@@ -6,20 +6,20 @@ const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
 
 type SessionView = typeof SessionContract.Type;
 
-interface AuthResult<TData> {
+type AuthResult<TData> = {
   readonly data: TData;
   readonly error: Readonly<{ code?: string | undefined; message?: string | undefined }> | null;
-}
+};
+
+const errorMessage = (error: unknown): string => {
+  return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
+};
 
 const failureReasons: Readonly<Record<string, string>> = {
   EMAIL_NOT_VERIFIED: "メールアドレスが未確認です。確認メールのリンクを開いてください。",
   INVALID_BACKUP_CODE: "バックアップコードが違います。",
   INVALID_CODE: "確認コードが違います。",
   INVALID_EMAIL_OR_PASSWORD: "メールアドレスかパスワードが違います。",
-};
-
-const errorMessage = (error: unknown): string => {
-  return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
 };
 
 const requireSuccess = <TData>(result: AuthResult<TData>): NonNullable<TData> => {

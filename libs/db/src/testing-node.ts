@@ -20,7 +20,6 @@ const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.S
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
 const executeD1HttpBatch = async (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   database: D1Database,
   body: unknown,
 ): Promise<D1HttpBatchResponse> => {

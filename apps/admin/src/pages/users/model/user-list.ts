@@ -8,7 +8,7 @@ import { userListQuery } from "./users-search.ts";
 
 import type { UsersSearch } from "./users-search.ts";
 
-interface ListedUser {
+type ListedUser = {
   readonly email: string;
   readonly emailVerified: boolean;
   readonly id: string;
@@ -16,23 +16,23 @@ interface ListedUser {
   readonly registeredOn: string;
   readonly role: (typeof UserList.Type)["users"][number]["role"];
   readonly twoFactorEnabled: boolean;
-}
+};
 
-interface ListedUsers {
+type ListedUsers = {
   readonly total: number;
   readonly users: readonly ListedUser[];
-}
+};
 
 type UserListState =
   | Readonly<{ list: ListedUsers; status: "loaded" }>
   | Readonly<{ message: string; status: "failed" }>
   | Readonly<{ status: "loading" }>;
 
-interface Outcome {
+type Outcome = {
   readonly attempt: number;
   readonly path: string;
   readonly state: UserListState;
-}
+};
 
 const registeredDate = new Intl.DateTimeFormat("ja-JP", {
   day: "numeric",

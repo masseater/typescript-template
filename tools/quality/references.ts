@@ -89,16 +89,6 @@ const staticText = (
   return derivedText(context, node, (child) => staticText(context, child, next));
 };
 
-const propertyKey = (
-  context: LintContext,
-  node: NodeOf<"MemberExpression">,
-): string | undefined => {
-  if (!node.computed && node.property.type === "Identifier") {
-    return node.property.name;
-  }
-  return staticText(context, node.property);
-};
-
 const propertyName = (
   context: LintContext,
   property: NodeOf<"Property" | "TSPropertySignature">,
@@ -237,6 +227,16 @@ function callOrigins(
   const source = first === undefined ? undefined : staticText(context, first);
   return source === undefined ? [] : [[source]];
 }
+
+const propertyKey = (
+  context: LintContext,
+  node: NodeOf<"MemberExpression">,
+): string | undefined => {
+  if (!node.computed && node.property.type === "Identifier") {
+    return node.property.name;
+  }
+  return staticText(context, node.property);
+};
 
 const memberOrigins = (
   context: LintContext,

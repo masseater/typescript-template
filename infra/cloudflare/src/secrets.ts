@@ -9,17 +9,17 @@ const isCoded = Schema.is(
   Schema.Struct({ code: Schema.String, keys: Schema.optional(FailureKeys) }),
 );
 
-type Confidential = {
-  readonly key: string;
-  readonly value: string;
-};
-
 const withVerifiedSecrets = <Value, Failure, Requirements>(
   secrets: Readonly<{ contents: string }>,
 
   program: Effect.Effect<Value, Failure, Requirements>,
 ): Effect.Effect<Value, Failure, Requirements> => {
   return Effect.provideService(program, ConfigProvider, fromDotEnvContents(secrets.contents));
+};
+
+type Confidential = {
+  readonly key: string;
+  readonly value: string;
 };
 
 const redact = (text: string, confidential: readonly Confidential[]): string => {

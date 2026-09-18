@@ -18,7 +18,6 @@ type IngressWindow = {
 };
 
 const maximumBodyBytes = 32_768;
-const maximumEventsPerWindow = 1200;
 const retryAfterSeconds = "60";
 const ingressWindows = new Map<Application, IngressWindow>();
 const noStore = { "cache-control": "no-store" };
@@ -31,6 +30,8 @@ const emptyResponse = (
 };
 
 const rateWindowMilliseconds = 60_000;
+
+const maximumEventsPerWindow = 1200;
 
 const admit = (serviceName: Application, count: number): boolean => {
   const now = Date.now();

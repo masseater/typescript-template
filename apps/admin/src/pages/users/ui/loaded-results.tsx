@@ -15,15 +15,15 @@ const LoadedResults = ({
   onReload,
   search,
 }: Readonly<{ list: ListedUsers; onReload: () => void; search: UsersSearch }>): ReactElement => {
-  const pageLink = (target: PageTarget): ReactElement => {
-    return <UserPageLink search={search} target={target} />;
-  };
   if (list.users.length === 0) {
     return <EmptyResults beyondLastPage={list.total > 0} search={search} />;
   }
   const page = search.page ?? 1;
   const first = (page - 1) * usersPageSize + 1;
   const last = first + list.users.length - 1;
+  const pageLink = (target: PageTarget): ReactElement => {
+    return <UserPageLink search={search} target={target} />;
+  };
   return (
     <>
       <p className="text-base leading-normal text-muted-foreground">

@@ -22,8 +22,6 @@ type RequestHandler<Requirements> = (
 ) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
 type FailureAttributes = ErrorAttributes & { readonly "error.tag"?: string };
 
-const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
-
 const tagPattern = /^[A-Za-z]{1,64}$/u;
 
 const failureTag = (error: unknown): string | undefined => {
@@ -70,6 +68,8 @@ const correlatedResponse = (response: Response, context: RequestContext): Respon
     statusText: response.statusText,
   });
 };
+
+const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 
 const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> => {
   return reportFailure(cause).pipe(

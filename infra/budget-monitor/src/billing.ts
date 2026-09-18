@@ -33,18 +33,18 @@ const UsageEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-interface UsageSnapshot {
+type UsageSnapshot = {
   periodStart: string;
   measuredThrough: string;
   usageUsd: number;
   records: number;
-}
+};
 
-interface RowExpectation {
+type RowExpectation = {
   accountId: string;
   periodStart: string;
   now: Readonly<Date>;
-}
+};
 
 type UsageRecord = typeof UsageRow.Type;
 

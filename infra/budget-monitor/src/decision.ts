@@ -5,11 +5,12 @@ import { fail } from "./config.ts";
 import type { UsageSnapshot } from "./billing.ts";
 import type { BudgetConfig } from "./config.ts";
 
-const WARNING_LEVEL = 80;
 const EXHAUSTED_LEVEL = 100;
 const WARNING_RATIO = 0.8;
 
 const NO_ALERT_LEVEL = 0;
+
+const WARNING_LEVEL = 80;
 
 interface BudgetDecision {
   periodStart: string;

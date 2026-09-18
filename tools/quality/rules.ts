@@ -26,16 +26,6 @@ type RawD1Checks = {
 };
 
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
-const mockMethods = new Set([
-  "mock",
-  "doMock",
-  "fn",
-  "spyOn",
-  "stubGlobal",
-  "stubEnv",
-  "mockObject",
-  "mockModule",
-]);
 
 const metadata = (message: string): RuleMeta => {
   return {
@@ -59,6 +49,17 @@ const mockSources = new Set([
   "node:test",
   "test",
   "bun:test",
+]);
+
+const mockMethods = new Set([
+  "mock",
+  "doMock",
+  "fn",
+  "spyOn",
+  "stubGlobal",
+  "stubEnv",
+  "mockObject",
+  "mockModule",
 ]);
 
 const isMock = (origin: Origin): boolean => {

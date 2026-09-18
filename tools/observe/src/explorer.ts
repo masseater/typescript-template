@@ -36,7 +36,6 @@ const responseInvalid = (): ExplorerFailure => {
   return new ExplorerFailure({ reason: "response_invalid" });
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const isLoopbackAppOrigin = (url: Readonly<URL>): boolean => {
   return (
     url.protocol === "http:" &&

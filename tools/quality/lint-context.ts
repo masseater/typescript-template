@@ -1,10 +1,5 @@
 import type { Context, ESTree, Scope, Visitor } from "vite-plus/lint/plugins";
 
-type LintContext = Readonly<
-  Pick<Context, "filename" | "report"> & {
-    sourceCode: Readonly<Pick<Context["sourceCode"], "getDeclaredVariables" | "getScope">>;
-  }
->;
 type DeepReadonly<Type> = unknown extends Type
   ? Type
   : Type extends (...parameters: readonly never[]) => unknown
@@ -13,6 +8,12 @@ type DeepReadonly<Type> = unknown extends Type
 
 type Node = DeepReadonly<ESTree.Node>;
 type NodeOf<Type extends Node["type"]> = Extract<Node, { type: Type }>;
+
+type LintContext = Readonly<
+  Pick<Context, "filename" | "report"> & {
+    sourceCode: Readonly<Pick<Context["sourceCode"], "getDeclaredVariables" | "getScope">>;
+  }
+>;
 
 const scopeOf = (context: LintContext, node: Node): Scope => {
   return context.sourceCode.getScope(node as ESTree.Node);

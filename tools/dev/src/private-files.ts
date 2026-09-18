@@ -9,7 +9,6 @@ import type { LocalCommandFailure } from "./failure.ts";
 
 const privateFileMode = 0o600;
 const privateDirectoryMode = 0o700;
-const groupAndOtherPermissions = 0o077;
 
 const isErrorCode = (error: unknown, code: string): boolean => {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
@@ -23,6 +22,8 @@ const closeFile = (
 };
 
 type FileLocation = Readonly<URL>;
+
+const groupAndOtherPermissions = 0o077;
 
 const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
   location: FileLocation,

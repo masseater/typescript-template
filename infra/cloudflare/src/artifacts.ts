@@ -39,10 +39,10 @@ const ArtifactWrites = Context.Reference<ArtifactMode>("template/cloudflare/Arti
   defaultValue: (): ArtifactMode => "describe",
 });
 
-interface WorkerModule {
+type WorkerModule = {
   readonly contentFile: string;
   readonly name: string;
-}
+};
 
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
 

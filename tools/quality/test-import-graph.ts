@@ -6,15 +6,16 @@ import type { Visitor } from "vite-plus/lint/plugins";
 import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import type { Origin } from "./references.ts";
 
+const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
+const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
+const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
+
 const outOfGraphModules: ReadonlySet<string> = new Set([
   "node:child_process",
   "child_process",
   "node:worker_threads",
   "worker_threads",
 ]);
-const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
-const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
-const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
 
 const isOutOfGraph = (origin: Origin): boolean => {
   const [source = "", first = "", second = ""] = origin;

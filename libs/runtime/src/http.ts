@@ -14,16 +14,15 @@ import type { AnyElysia } from "elysia";
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 
 type Handler<Value, Failures, Requirements> = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   request: Request,
 ) => Effect.Effect<Value, Failures, Requirements>;
-interface ElysiaContext {
+type ElysiaContext = {
   readonly request: Request;
-}
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+};
+
 type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
-interface ApiRoutes<Requirements> {
+type ApiRoutes<Requirements> = {
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -35,9 +34,8 @@ interface ApiRoutes<Requirements> {
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
-}
+};
 
-const missingMessage = "見つかりませんでした。";
 const unreadBody = { unread: true } as const;
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
@@ -61,20 +59,15 @@ const readSearchParams = <Contract extends Decodable>(
 
 const apiRoot = "/api";
 
-const createApi = <const Prefix extends string>(prefix: Prefix) => {
-  return (
-    new Elysia({ adapter: CloudflareAdapter, prefix })
-      .onParse(() => unreadBody)
-      // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-      .onError(({ code }) =>
-        code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
-      )
-  );
-};
+const missingMessage = "見つかりませんでした。";
 
-const compileApi = <App extends AnyElysia>(app: App): App => {
-  app.compile();
-  return app;
+const createApi = <const Prefix extends string>(prefix: Prefix) => {
+  return new Elysia({ adapter: CloudflareAdapter, prefix })
+    .onParse(() => unreadBody)
+
+    .onError(({ code }) =>
+      code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+    );
 };
 
 type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
@@ -194,6 +187,11 @@ const readJsonBody = <Contract extends Decodable>(
     const input = yield* readJson(request, yield* AppOrigin);
     return yield* decodeInput(schema, input);
   });
+};
+
+const compileApi = <App extends AnyElysia>(app: App): App => {
+  app.compile();
+  return app;
 };
 
 export { apiRoot, apiRoutes, compileApi, createApi, elysiaServer, readJsonBody, readSearchParams };

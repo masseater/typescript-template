@@ -21,17 +21,6 @@ const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
 const Jwks = Schema.Struct({ keys: Schema.mutable(Schema.Array(Jwk)) });
 const decodeJwks = Schema.decodeUnknownPromise(Jwks);
 
-const jsonRpcError = (
-  status: number,
-  message: string,
-  headers: Readonly<Record<string, string>>,
-): Response => {
-  return Response.json(
-    { error: { code: JSON_RPC_SERVER_ERROR, message }, id: null, jsonrpc: "2.0" },
-    { headers: { ...headers, "cache-control": "no-store" }, status },
-  );
-};
-
 const unauthorized = (message: string): APIError => {
   return new APIError("UNAUTHORIZED", { message });
 };
@@ -80,6 +69,17 @@ const scopeError = (claims: Readonly<Record<string, unknown>>): Option.Option<un
   const granted = new Set(typeof scope === "string" ? scope.split(" ") : []);
   const missing = requiredScopes.filter((required) => !granted.has(required));
   return missing.length > 0 ? Option.some(createInsufficientScopeError(missing)) : Option.none();
+};
+
+const jsonRpcError = (
+  status: number,
+  message: string,
+  headers: Readonly<Record<string, string>>,
+): Response => {
+  return Response.json(
+    { error: { code: JSON_RPC_SERVER_ERROR, message }, id: null, jsonrpc: "2.0" },
+    { headers: { ...headers, "cache-control": "no-store" }, status },
+  );
 };
 
 const challengeResponse = (error: unknown, resource: string): Response => {

@@ -14,15 +14,6 @@ import type { DrizzleDatabase } from "@template/db";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
-type AuthOptions = {
-  readonly baseURL: string;
-  readonly secret: string;
-  readonly audience: Application;
-  readonly sendVerificationEmail: (
-    message: Readonly<{ email: string; url: string }>,
-  ) => Effect.Effect<void, unknown>;
-};
-
 type AdvancedOptions = NonNullable<BetterAuthOptions["advanced"]>;
 type EmailAndPasswordOptions = NonNullable<BetterAuthOptions["emailAndPassword"]>;
 type DatabaseHooks = NonNullable<BetterAuthOptions["databaseHooks"]>;
@@ -75,6 +66,15 @@ const createDatabaseHooks = (run: Run, audience: Application): DatabaseHooks => 
       },
     },
   };
+};
+
+type AuthOptions = {
+  readonly baseURL: string;
+  readonly secret: string;
+  readonly audience: Application;
+  readonly sendVerificationEmail: (
+    message: Readonly<{ email: string; url: string }>,
+  ) => Effect.Effect<void, unknown>;
 };
 
 const createEmailVerification = (

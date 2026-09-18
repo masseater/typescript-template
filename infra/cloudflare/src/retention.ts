@@ -8,10 +8,10 @@ import { io } from "./artifact-io.ts";
 import type { Dirent } from "node:fs";
 import type { ArtifactFailure } from "./artifact-io.ts";
 
-interface Generation {
+type Generation = {
   readonly modified: number;
   readonly name: string;
-}
+};
 
 const newestFirst = (left: Generation, right: Generation): number => {
   return right.modified - left.modified;

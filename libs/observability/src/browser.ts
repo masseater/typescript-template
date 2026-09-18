@@ -32,12 +32,6 @@ type Recorder = {
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
 };
-type FetchInstrumentation = {
-  readonly endpoint: string;
-  readonly queue: EventQueue;
-  readonly routes: Readonly<Record<string, string>>;
-  readonly send: typeof fetch;
-};
 type HttpObservation = {
   readonly duration: number;
   readonly method: HttpMethod;
@@ -92,6 +86,13 @@ const responseOutcome = (
     requestId: isRequestId(serverRequestId) ? serverRequestId : fallbackRequestId,
     status: response.status,
   };
+};
+
+type FetchInstrumentation = {
+  readonly endpoint: string;
+  readonly queue: EventQueue;
+  readonly routes: Readonly<Record<string, string>>;
+  readonly send: typeof fetch;
 };
 
 const tracedFetch = async (setup: FetchInstrumentation, request: Request): Promise<Response> => {

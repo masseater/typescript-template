@@ -45,14 +45,14 @@ const useAction = (): ActionState => {
     active.current = true;
     setPending(true);
     setError(undefined);
-    async function perform(): Promise<void> {
+    const perform = async (): Promise<void> => {
       const failure = await failureOf(task);
       if (failure !== undefined) {
         setError(failure);
       }
       active.current = false;
       setPending(false);
-    }
+    };
     void perform();
   };
   return { blocked: pending || !hydrated, error, pending, run };

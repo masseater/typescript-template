@@ -47,7 +47,7 @@ const authFor = (
     sendVerificationEmail: (message) =>
       sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, message),
   });
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+
   return Layer.build(layer).pipe(Effect.map((context) => Context.get(context, Auth)));
 };
 

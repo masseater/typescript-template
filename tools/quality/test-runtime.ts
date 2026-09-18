@@ -6,7 +6,6 @@ import type { LintContext, Node } from "./lint-context.ts";
 
 const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
-const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
 const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 const browserOrNodeOnly =
   /\/libs\/ui\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/(?:remote|testing-node)[^/]*\.ts$/u;
@@ -30,6 +29,8 @@ const importsAnyOf = (specifiers: readonly string[], source: string): boolean =>
 };
 
 const workerTestFile = /\.worker\.test\.[cm]?[jt]sx?$/u;
+
+const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
 
 const runsInWorkerRuntime = (current: string): boolean => {
   return (

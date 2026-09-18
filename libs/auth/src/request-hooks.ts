@@ -17,18 +17,10 @@ type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
-interface HookScope {
+type HookScope = {
   readonly audience: Application;
   readonly ctx: HookContext;
   readonly run: Run;
-}
-
-type SessionPolicyInput = {
-  readonly audience: Application;
-  readonly path: string;
-  readonly role: string;
-  readonly strong: boolean;
-  readonly userId: string;
 };
 
 const sessionRevokingPaths = new Set([
@@ -137,6 +129,14 @@ const verifyChallengeAudience = async (
   ) {
     deny("CHALLENGE_AUDIENCE_INVALID");
   }
+};
+
+type SessionPolicyInput = {
+  readonly audience: Application;
+  readonly path: string;
+  readonly role: string;
+  readonly strong: boolean;
+  readonly userId: string;
 };
 
 const enforceAdminAccess = ({ audience, path, role, strong }: SessionPolicyInput): void => {

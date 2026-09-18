@@ -11,6 +11,7 @@ import { noExplanatoryComment } from "../../lint/oxlint/rules/writing/no-explana
 import { noHardcodedEndpoint } from "../../lint/oxlint/rules/writing/no-hardcoded-endpoint--read-from-configuration.ts";
 import { noHardcodedProviderId } from "../../lint/oxlint/rules/writing/no-hardcoded-provider-id--read-from-configuration.ts";
 import { noIdentityWrapper } from "../../lint/oxlint/rules/writing/no-identity-wrapper--call-the-target-directly.ts";
+import { noInterfaceDeclaration } from "../../lint/oxlint/rules/writing/no-interface-declaration--write-a-type-alias.ts";
 import { noMultiBindingDeclaration } from "../../lint/oxlint/rules/writing/no-multi-binding-declaration--declare-one-binding-per-statement.ts";
 import { noSingleUseLocalType } from "../../lint/oxlint/rules/writing/no-single-use-local-type--inline-at-the-use-site.ts";
 import { noUncheckedCast } from "../../lint/oxlint/rules/writing/no-unchecked-cast--parse-at-boundary.ts";
@@ -34,6 +35,7 @@ export const writingBundle: readonly WorkspaceLintRule[] = [
   noHardcodedEndpoint,
   noHardcodedProviderId,
   noIdentityWrapper,
+  noInterfaceDeclaration,
   noMultiBindingDeclaration,
   noSingleUseLocalType,
   noUncheckedCast,

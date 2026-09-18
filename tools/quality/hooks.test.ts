@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { UserConfig } from "vite-plus";
+
 import { field } from "./dependencies.ts";
+
+import type { UserConfig } from "vite-plus";
 
 const manifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
   eager: true,
@@ -22,22 +24,22 @@ const mergify: Readonly<Record<string, string>> = import.meta.glob("../../.mergi
   import: "default",
 });
 
-function script(name: string): string {
+const script = (name: string): string => {
   const command = field(field(manifests["../../package.json"], "scripts"), name);
   if (typeof command !== "string") {
     throw new TypeError(`Script ${name} must be a string`);
   }
   return command;
-}
+};
 
-function workflowRuns(file: string): string[] {
+const workflowRuns = (file: string): string[] => {
   const workflow = workflows[file];
   if (workflow === undefined) {
     throw new Error(`${file} is missing`);
   }
   const step = /^\s*- run: /u;
   return (workflow.match(/^\s*- run: .+$/gmu) ?? []).map((line: string) => line.replace(step, ""));
-}
+};
 
 describe("git hooks", () => {
   it("git hooks run the verified package scripts", () => {
@@ -49,7 +51,7 @@ describe("git hooks", () => {
       "../../.vite-hooks/pre-push": "vp run prepush\n",
     });
     expect(script("precommit")).toBe("vp run check");
-    expect(rootConfig["../../vite.config.ts"]?.run?.tasks?.["check"]).toHaveProperty(
+    expect(rootConfig["../../vite.config.ts"]?.run?.tasks?.check).toHaveProperty(
       ["command", 0],
       "vp check",
     );

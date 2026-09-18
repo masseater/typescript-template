@@ -100,10 +100,11 @@ const a11yRelaxations = (): A11yRelaxation[] => {
     );
 };
 
-const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
 const agentConfigFile = ".mcp.json";
 
 const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
+
+const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
 
 const vendoredWorkerViolations = (): string[] => {
   const { program } = parseSync(workerFile, readFileSync(workerFile, "utf-8"));

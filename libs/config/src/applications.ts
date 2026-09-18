@@ -1,10 +1,11 @@
-const ADMIN_PORT = 3002;
 const WIKI_PORT = 3003;
 const STORYBOOK_PORT = 3051;
 
 const applications = ["user", "admin", "wiki"] as const;
 type Application = (typeof applications)[number];
 const USER_PORT = 3001;
+
+const ADMIN_PORT = 3002;
 
 const applicationPorts: Readonly<Record<Application, number>> = {
   admin: ADMIN_PORT,

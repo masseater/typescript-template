@@ -9,12 +9,7 @@ import type { CurrentRequest, Telemetry } from "@template/observability";
 import type { ManagedRuntime } from "effect";
 
 type StartHandler = {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   readonly fetch: (request: Request) => Promise<Response> | Response;
-};
-type FetchWorker = {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  readonly fetch: (request: Request) => Promise<Response>;
 };
 type WorkerRoute<Requirements> = (
   request: Request,
@@ -27,6 +22,11 @@ type AppRoute<Requirements> = (
 const unavailableResponse = (): Response => {
   const failure = runtimeUnavailable();
   return jsonResponse({ error: failure.message }, failure.status);
+};
+
+type FetchWorker = {
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  readonly fetch: (request: Request) => Promise<Response>;
 };
 
 const serveWorker = <Requirements>(

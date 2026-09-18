@@ -98,7 +98,6 @@ export const UPSTREAM_RULES: NonNullable<OxlintConfig["rules"]> = {
   "typescript/consistent-generic-constructors": LINT_SEVERITY.ERROR,
   "typescript/consistent-indexed-object-style": LINT_SEVERITY.ERROR,
   "typescript/consistent-type-assertions": LINT_SEVERITY.ERROR,
-  "typescript/consistent-type-definitions": [LINT_SEVERITY.ERROR, "type"],
   "typescript/consistent-type-imports": [LINT_SEVERITY.ERROR, { fixStyle: "inline-type-imports" }],
   "typescript/dot-notation": LINT_SEVERITY.ERROR,
   "typescript/no-array-delete": LINT_SEVERITY.ERROR,

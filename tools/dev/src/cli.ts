@@ -11,8 +11,6 @@ import { storybook } from "./storybook.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 
-const firstUserArgumentIndex = 2;
-
 type Command = Effect.Effect<unknown, LocalCommandFailure>;
 
 const globalCommands = new Map<string, () => Command>([
@@ -52,6 +50,8 @@ const selectCommand = (
     ? Effect.fail(failure("command_unsupported"))
     : application(app).pipe(Effect.flatMap((name) => scoped(name, args)));
 };
+
+const firstUserArgumentIndex = 2;
 
 const [action = "", app, ...args] = process.argv.slice(firstUserArgumentIndex);
 

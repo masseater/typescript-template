@@ -16,8 +16,6 @@ import type { Application, Role } from "@template/config";
 import type { DatabaseFailure } from "./database-failure.ts";
 import type { Database } from "./database.ts";
 
-const SESSION_LIFETIME_MS = 60_000;
-
 type Records = Effect.Effect<void, DatabaseFailure, Database>;
 
 const addUser = (id: string, role: Role = "user", emailVerified = true): Records => {
@@ -47,6 +45,8 @@ const addCredential = (userId: string): Records => {
     });
   });
 };
+
+const SESSION_LIFETIME_MS = 60_000;
 
 const insertSession = Effect.fn("insertSession")(function* insertSession(
   userId: string,

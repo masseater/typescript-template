@@ -34,12 +34,6 @@ const endpoint = (parts: TemplateStringsArray, ...values: readonly string[]): En
   };
 };
 
-const requestReason = (error: unknown): string => {
-  return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
-    ? "timeout"
-    : "request_failed";
-};
-
 const listedQuery = (collection: Collection): Query => {
   return collection.pageSize === undefined
     ? { ...collection.filter }
@@ -64,6 +58,12 @@ const overflowed = (
 
 const unreadable = (source: Endpoint, reason: string): CloudflareFailure => {
   return new CloudflareFailure({ code: "account_read_unavailable", keys: [source.shape, reason] });
+};
+
+const requestReason = (error: unknown): string => {
+  return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
+    ? "timeout"
+    : "request_failed";
 };
 
 const fetchJson = Effect.fn("fetchJson")(function* fetchJson(

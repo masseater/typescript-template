@@ -9,14 +9,14 @@ import type { Stack as StackRoute } from "alchemy/Alchemist";
 import type { Plan } from "alchemy/Plan";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
 
-type RowAction = PlannedAction["action"] | PlannedResource["action"];
-
 const bindingDisposition = {
   create: undefined,
   delete: "plan_removes_bindings",
   noop: undefined,
   update: undefined,
 } as const satisfies Record<PlannedBinding["action"], CloudflareFailure["code"] | undefined>;
+
+type RowAction = PlannedAction["action"] | PlannedResource["action"];
 
 interface PlanRow {
   readonly action: RowAction;
@@ -26,10 +26,10 @@ interface PlanRow {
   readonly type: string;
 }
 
-interface PlanReport {
+type PlanReport = {
   readonly rows: readonly Omit<PlanRow, "props">[];
   readonly stack: string;
-}
+};
 
 type PlannedStack = Pick<StackRoute.PlanSnapshot, "actions" | "resources" | "stack"> & {
   readonly props: Readonly<Record<string, unknown>>;
@@ -44,7 +44,6 @@ const digest = (value: unknown): string => {
 
 const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "stack", "stage"];
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const stableExpression = (value: object, seen: ReadonlySet<unknown>): unknown => {
   const node: unknown = Reflect.get(value, ExprSymbol);
   if (typeof node !== "object" || node === null) {
@@ -58,7 +57,7 @@ const stableExpression = (value: object, seen: ReadonlySet<unknown>): unknown =>
     ...Object.fromEntries(
       EXPRESSION_FIELDS.flatMap((field) => {
         const found: unknown = Reflect.get(node, field);
-        // oxlint-disable-next-line typescript/no-use-before-define
+
         return found === undefined ? [] : [[field, stable(found, nested)] as const];
       }),
     ),
@@ -66,11 +65,9 @@ const stableExpression = (value: object, seen: ReadonlySet<unknown>): unknown =>
   };
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const stableEntries = (value: object, seen: ReadonlySet<unknown>): unknown => {
   const nested = new Set([...seen, value]);
   if (Array.isArray(value)) {
-    // oxlint-disable-next-line typescript/no-use-before-define
     return value.map((item: unknown) => stable(item, nested));
   }
   return Object.fromEntries(
@@ -78,12 +75,11 @@ const stableEntries = (value: object, seen: ReadonlySet<unknown>): unknown => {
       .toSorted(([left]: readonly [string, unknown], [right]: readonly [string, unknown]) =>
         left.localeCompare(right),
       )
-      // oxlint-disable-next-line typescript/no-use-before-define
+
       .map(([key, item]: readonly [string, unknown]) => [key, stable(item, nested)] as const),
   );
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 const stable = (value: unknown, seen: ReadonlySet<unknown>): unknown => {
   if (Redacted.isRedacted(value)) {
     return { redacted: digest(String(Redacted.value(value))) };
@@ -143,15 +139,6 @@ const planReport = (planned: PlannedStack): PlanReport => {
     })),
     stack: planned.stack.name,
   };
-};
-
-const planConfirmation = (planned: PlannedStack, accountId: string): string => {
-  return digest({
-    account: digest(accountId),
-    rows: planRows(planned),
-    stack: planned.stack.name,
-    stage: digest(planned.stack.stage),
-  });
 };
 
 interface Refusal {
@@ -214,6 +201,15 @@ const plannedStack = (
     resources: snapshot.resources,
     stack: snapshot.stack,
   };
+};
+
+const planConfirmation = (planned: PlannedStack, accountId: string): string => {
+  return digest({
+    account: digest(accountId),
+    rows: planRows(planned),
+    stack: planned.stack.name,
+    stage: digest(planned.stack.stage),
+  });
 };
 
 const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(

@@ -20,11 +20,6 @@ type PageScore = {
   readonly score: number;
 };
 
-type SemanticIndex = {
-  readonly documents: readonly SemanticDocument[];
-  readonly vectors: readonly (readonly number[])[];
-};
-
 type SemanticSearch = (query: string) => Effect.Effect<SemanticMatch[], EmbeddingFailed, Embedder>;
 
 const KEYWORD_RANK_BONUS = 0.3;
@@ -36,6 +31,11 @@ const similarity = (vector: readonly number[], target: readonly number[]): numbe
 const normalize = (vector: readonly number[]): number[] => {
   const length = Math.hypot(...vector);
   return length > 0 ? vector.map((value) => value / length) : [...vector];
+};
+
+type SemanticIndex = {
+  readonly documents: readonly SemanticDocument[];
+  readonly vectors: readonly (readonly number[])[];
 };
 
 const buildIndex = Effect.fn("buildIndex")(function* buildIndex(

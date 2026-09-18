@@ -28,7 +28,6 @@ const hexRadix = 16;
 const fnvOffsetBasis = 2_166_136_261;
 const fnvPrime = 16_777_619;
 const locationSource = String.raw`(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+`;
-const locationLine = new RegExp(`^${locationSource}$`, "u");
 
 const errorType = (value: unknown): ErrorType | undefined => {
   return errorTypes.find((candidate) => candidate === value);
@@ -44,6 +43,8 @@ const errorLocations = (stack: string | undefined): string => {
     .slice(0, maximumLocations)
     .join("\n");
 };
+
+const locationLine = new RegExp(`^${locationSource}$`, "u");
 
 const locationsBounded = (value: string): boolean => {
   return (

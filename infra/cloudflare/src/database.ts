@@ -20,7 +20,6 @@ const stack = Stack(
   }),
 );
 
-// oxlint-disable-next-line import/no-default-export
 export default stack;
 const databaseRef = (): Effect.Effect<D1.Database> => {
   return D1.Database.ref(databaseResource, { stack: stackName("database") });

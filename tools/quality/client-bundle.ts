@@ -20,6 +20,25 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
 
+const bundledMarkers = async (): Promise<readonly string[]> => {
+  const entries = await readdir(outDirectory, { recursive: true });
+  const sources = await Promise.all(
+    entries
+      .filter((entry) => entry.endsWith(".js"))
+      .map(async (entry) => readFile(path.join(outDirectory, entry), "utf-8")),
+  );
+  return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
+};
+
+const unexpected: string[] = [];
+
+const clientReachable: readonly string[] = [
+  "@template/runtime/client",
+  "@template/runtime/contracts",
+  "@template/ui",
+  "#shared/api/client.ts",
+];
+
 const clientBuild = async (specifiers: readonly string[]): Promise<string> => {
   try {
     await build({
@@ -49,25 +68,6 @@ const clientBuild = async (specifiers: readonly string[]): Promise<string> => {
     );
   }
 };
-
-const bundledMarkers = async (): Promise<readonly string[]> => {
-  const entries = await readdir(outDirectory, { recursive: true });
-  const sources = await Promise.all(
-    entries
-      .filter((entry) => entry.endsWith(".js"))
-      .map(async (entry) => readFile(path.join(outDirectory, entry), "utf-8")),
-  );
-  return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
-};
-
-const unexpected: string[] = [];
-
-const clientReachable: readonly string[] = [
-  "@template/runtime/client",
-  "@template/runtime/contracts",
-  "@template/ui",
-  "#shared/api/client.ts",
-];
 
 const reachableDenial = await clientBuild(clientReachable);
 if (reachableDenial !== "") {

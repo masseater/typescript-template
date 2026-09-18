@@ -5,7 +5,6 @@ import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
 import type { InterviewState, MemberUtterance } from "./state.ts";
 import type { UnderstandingData } from "./understanding.ts";
 
-const thanks = "ありがとうございます。";
 const summaryText =
   "ここまでの内容をまとめました。直したいところがあれば、そのまま教えてください。";
 
@@ -114,6 +113,8 @@ const merged = (
   const skipped = [...state.skipped.filter((key) => sheet[key] === undefined), ...skippedNow];
   return { sheet, skipped };
 };
+
+const thanks = "ありがとうございます。";
 
 const openingFor = (
   state: Asking,

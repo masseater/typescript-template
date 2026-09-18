@@ -9,8 +9,6 @@ import type { Dirent } from "node:fs";
 import type { Application } from "@template/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 
-const OWNER_ONLY_FILE_MODE = 0o600;
-
 type MapEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
 
 const isMissing = (cause: unknown): boolean => {
@@ -34,6 +32,8 @@ const directoryExists = (source: string): Effect.Effect<boolean, ArtifactFailure
 };
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
+
+const OWNER_ONLY_FILE_MODE = 0o600;
 
 const copyMap = (
   from: string,

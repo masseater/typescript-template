@@ -65,7 +65,6 @@ const declarations = (css: string): Map<string, string> => {
 };
 
 const read = (file: string): string => {
-  // oxlint-disable-next-line node/no-sync
   return readFileSync(file, "utf-8");
 };
 
@@ -106,12 +105,6 @@ const appModules: Readonly<Record<string, unknown>> = import.meta.glob(
 );
 
 const partsImport = '@import "@template/ui/styles.css"';
-
-const appFiles = (files: Readonly<Record<string, unknown>>, app: string): string[] => {
-  return Object.keys(files)
-    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
-    .filter((file) => file.startsWith(`${app}/`));
-};
 
 const isDirectory = (target: string): boolean => {
   try {
@@ -157,6 +150,12 @@ const sourceViolations = (app: string, file: string, css: string): string[] => {
       ? []
       : [`${file}: @source "${directory}" のディレクトリがありません。`];
   });
+};
+
+const appFiles = (files: Readonly<Record<string, unknown>>, app: string): string[] => {
+  return Object.keys(files)
+    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
+    .filter((file) => file.startsWith(`${app}/`));
 };
 
 const styledFiles = (app: string): string[] => {

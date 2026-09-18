@@ -6,11 +6,6 @@ import type { D1Reference } from "./d1-types.ts";
 import type { DeepReadonly, LintContext, Node, NodeOf } from "./lint-context.ts";
 import type { Resolve } from "./references.ts";
 
-type Resolution = {
-  readonly references: Resolve<D1Reference[]>;
-  readonly seen: Readonly<ReadonlySet<Node>>;
-};
-
 type BindingLookup = {
   readonly name: string;
   readonly seen: Readonly<ReadonlySet<Node>>;
@@ -67,6 +62,11 @@ const templateFactories = new Map<string, ReadonlyMap<string, D1Reference>>([
   ],
   ["@template/db", new Map<string, D1Reference>([["createDb", { kind: "orm", path: [] }]])],
 ]);
+
+type Resolution = {
+  readonly references: Resolve<D1Reference[]>;
+  readonly seen: Readonly<ReadonlySet<Node>>;
+};
 
 const callD1References = (
   context: LintContext,

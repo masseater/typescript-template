@@ -3,12 +3,10 @@ import { APIError } from "better-auth/api";
 
 import type { Application } from "@template/config";
 
-interface EligibleUser {
+type EligibleUser = {
   readonly emailVerified: boolean;
   readonly role: string;
-}
-
-const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
+};
 
 const enrollmentPaths = new Set([
   "/get-session",
@@ -29,6 +27,8 @@ const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
   ["/two-factor/verify-totp", "password_totp"],
   ["/two-factor/verify-backup-code", "recovery"],
 ]);
+
+const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => {
   return strongMethods.has(method);

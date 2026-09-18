@@ -5,17 +5,17 @@ import type { Resolve } from "./references.ts";
 
 type D1Kind = "database" | "session" | "statement" | "orm";
 
+const workerTypeKinds = new Map<string, D1Kind>([
+  ["D1Database", "database"],
+  ["D1DatabaseSession", "session"],
+  ["D1PreparedStatement", "statement"],
+]);
 type D1Reference = {
   readonly kind: D1Kind;
   readonly method?: string | undefined;
   readonly path: readonly string[];
 };
 
-const workerTypeKinds = new Map<string, D1Kind>([
-  ["D1Database", "database"],
-  ["D1DatabaseSession", "session"],
-  ["D1PreparedStatement", "statement"],
-]);
 const templateTypes = new Map<string, ReadonlyMap<string, D1Reference>>([
   [
     "@template/db",
@@ -88,18 +88,6 @@ const declaredType = (
   return undefined;
 };
 
-const localType = (node: Node, name: string): Node | undefined => {
-  const { parent } = node;
-  if (!parent) {
-    return undefined;
-  }
-  const declaration =
-    parent.type === "Program" || parent.type === "BlockStatement"
-      ? declaredType(parent, name)
-      : undefined;
-  return declaration ?? localType(parent, name);
-};
-
 const memberD1Types = (
   context: LintContext,
   members: NodeOf<"TSTypeLiteral">["members"],
@@ -146,6 +134,18 @@ const d1NamedType = (source: string, name: string): D1Reference[] => {
   }
   const known = templateTypes.get(source)?.get(name);
   return known === undefined ? [] : [known];
+};
+
+const localType = (node: Node, name: string): Node | undefined => {
+  const { parent } = node;
+  if (!parent) {
+    return undefined;
+  }
+  const declaration =
+    parent.type === "Program" || parent.type === "BlockStatement"
+      ? declaredType(parent, name)
+      : undefined;
+  return declaration ?? localType(parent, name);
 };
 
 const identifierD1Type = (

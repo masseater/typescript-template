@@ -7,13 +7,6 @@ import { applications as apps } from "@template/config";
 import type { Application as App } from "@template/config";
 import type { ConfigEnv, Connect, Plugin, ResolvedConfig, UserConfig } from "vite-plus";
 
-type BoundaryRoots = {
-  readonly app: App;
-  readonly appRoot: string;
-  readonly canonicalRepository: string;
-  readonly repository: string;
-};
-
 const forbiddenStatus = 403;
 const badRequestStatus = 400;
 
@@ -27,6 +20,13 @@ const privateAdminPath = (normalized: string, app: App): boolean => {
     (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(normalized) ||
       /@template\/db\/admin(?:\/|$)/u.test(normalized))
   );
+};
+
+type BoundaryRoots = {
+  readonly app: App;
+  readonly appRoot: string;
+  readonly canonicalRepository: string;
+  readonly repository: string;
 };
 
 const privatePath = (

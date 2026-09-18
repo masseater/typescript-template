@@ -12,6 +12,13 @@ import type { FileHandle } from "node:fs/promises";
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 const KEY_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=/u;
 
+const closeHandle = (
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  handle: FileHandle,
+): Effect.Effect<void> => {
+  return Effect.tryPromise(async () => handle.close()).pipe(Effect.ignore);
+};
+
 class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("SecretsFileFailure", {
   code: Schema.Literals([
     "secrets_file_missing",
@@ -22,13 +29,6 @@ class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("Secre
   ]),
   keys: Schema.Array(Schema.String),
 }) {}
-
-const closeHandle = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  handle: FileHandle,
-): Effect.Effect<void> => {
-  return Effect.tryPromise(async () => handle.close()).pipe(Effect.ignore);
-};
 
 const failure = (code: SecretsFileFailure["code"]): (() => SecretsFileFailure) => {
   return () => new SecretsFileFailure({ code, keys: [] });
