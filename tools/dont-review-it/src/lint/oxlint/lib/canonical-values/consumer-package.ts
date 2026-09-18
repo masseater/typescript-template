@@ -15,15 +15,24 @@ const DEPENDENCY_FIELDS = [
   "peerDependencies",
 ] as const;
 
-const reachablePackagesOf = memoize((packageDirectory: string): ReadonlySet<string> => {
+const manifestAt = memoize((packageDirectory: string): object | null => {
   const manifest = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
-  if (typeof manifest !== "object" || manifest === null) return new Set();
-  const ownName = Reflect.get(manifest, "name");
-  const dependencyNames = DEPENDENCY_FIELDS.flatMap((field) => {
-    const declared: unknown = Reflect.get(manifest, field);
-    return typeof declared === "object" && declared !== null ? Object.keys(declared) : [];
-  });
-  return new Set([...(typeof ownName === "string" ? [ownName] : []), ...dependencyNames]);
+  return typeof manifest === "object" && manifest !== null ? manifest : null;
+});
+
+const packageNameOf = (packageDirectory: string): string | null => {
+  const declaredName: unknown = Reflect.get(manifestAt(packageDirectory) ?? {}, "name");
+  return typeof declaredName === "string" ? declaredName : null;
+};
+
+const reachablePackagesOf = memoize((packageDirectory: string): ReadonlySet<string> => {
+  const manifest = manifestAt(packageDirectory) ?? {};
+  return new Set(
+    DEPENDENCY_FIELDS.flatMap((field) => {
+      const declared: unknown = Reflect.get(manifest, field);
+      return typeof declared === "object" && declared !== null ? Object.keys(declared) : [];
+    }),
+  );
 });
 
 export const ownersVisibleFrom = (consumer: {
@@ -36,5 +45,9 @@ export const ownersVisibleFrom = (consumer: {
   );
   const reachable =
     packageDirectory === null ? new Set<string>() : reachablePackagesOf(packageDirectory);
-  return (owner) => owner.packageName === null || reachable.has(owner.packageName);
+  const ownName = packageDirectory === null ? null : packageNameOf(packageDirectory);
+  return (owner) =>
+    owner.packageName === null ||
+    owner.packageName === ownName ||
+    (reachable.has(owner.packageName) && owner.importRoutes.length > 0);
 };

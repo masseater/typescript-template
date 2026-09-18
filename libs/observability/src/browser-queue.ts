@@ -1,94 +1,61 @@
+import { Array as Arr, Effect, Queue, Semaphore, type Cause } from "effect";
+
 import { maximumBatchSize, type BrowserEvent } from "./events.ts";
 import { logError } from "./log.ts";
 
-type Deliver = (events: readonly BrowserEvent[]) => Promise<void>;
-type EventQueue = {
-  readonly disposed: boolean;
-  readonly enqueue: (event: BrowserEvent) => void;
-  readonly flushInBackground: () => void;
-  readonly flushBeforeUnload: () => void;
-};
-
 const maximumPendingEvents = 128;
 
-const reportFailure = (): void => {
+export type EventQueue = {
+  readonly enqueue: (browserEvent: BrowserEvent) => void;
+  readonly flushInBackground: () => void;
+  readonly flushBeforeUnload: () => void;
+  readonly close: () => void;
+};
+
+const reportExportFailure = Effect.sync(() => {
   logError({ event: "browser.telemetry_export_failed" });
+});
+
+export const makeEventQueue = (
+  deliver: (batch: readonly BrowserEvent[]) => Promise<void>,
+): EventQueue => {
+  const pending = Effect.runSync(Queue.dropping<BrowserEvent, Cause.Done>(maximumPendingEvents));
+  const drainPermit = Semaphore.makeUnsafe(1);
+  const settled = (delivery: Effect.Effect<void, unknown>): Effect.Effect<void> =>
+    delivery.pipe(
+      Effect.tapError(() => reportExportFailure),
+      Effect.ignore,
+    );
+  const requeue = (batch: readonly BrowserEvent[]): Effect.Effect<void> =>
+    Effect.sync(() => {
+      Queue.offerAllUnsafe(pending, batch);
+    });
+  const delivered = (batch: readonly BrowserEvent[]): Effect.Effect<void, unknown> =>
+    Effect.tryPromise({ catch: (failure) => failure, try: async () => deliver(batch) });
+  const drain = (): Effect.Effect<void, unknown> =>
+    Queue.sizeUnsafe(pending) === 0
+      ? Effect.void
+      : Queue.takeBetween(pending, 1, maximumBatchSize).pipe(
+          Effect.flatMap((batch) => delivered(batch).pipe(Effect.tapError(() => requeue(batch)))),
+          Effect.flatMap(drain),
+        );
+  return {
+    close: () => {
+      Queue.endUnsafe(pending);
+    },
+    enqueue: (browserEvent) => {
+      if (!Queue.offerUnsafe(pending, browserEvent) && Queue.isFullUnsafe(pending)) {
+        logError({ event: "browser.telemetry_queue_full" });
+      }
+    },
+    flushBeforeUnload: () => {
+      const unsent = Effect.runSync(Queue.clear(pending).pipe(Effect.orElseSucceed(() => [])));
+      for (const batch of Arr.chunksOf(unsent, maximumBatchSize)) {
+        Effect.runFork(settled(delivered(batch)));
+      }
+    },
+    flushInBackground: () => {
+      Effect.runFork(settled(Semaphore.withPermit(drainPermit)(Effect.suspend(drain))));
+    },
+  };
 };
-
-const settle = async (delivery: Readonly<Promise<void>>): Promise<void> => {
-  try {
-    await delivery;
-  } catch {
-    reportFailure();
-  }
-};
-
-class BrowserEventQueue implements EventQueue {
-  private readonly deliver: Deliver;
-  private readonly pending: BrowserEvent[] = [];
-  private active: Promise<void> | undefined;
-  private closed = false;
-
-  public constructor(deliver: Deliver) {
-    this.deliver = deliver;
-  }
-
-  public get disposed(): boolean {
-    return this.closed;
-  }
-
-  public enqueue(event: BrowserEvent): void {
-    if (this.closed) {
-      return;
-    }
-    if (this.pending.length >= maximumPendingEvents) {
-      logError({ event: "browser.telemetry_queue_full" });
-      return;
-    }
-    this.pending.push(event);
-  }
-
-  public async flush(): Promise<void> {
-    this.active ??= this.drainOnce();
-    await this.active;
-  }
-
-  public flushInBackground(): void {
-    void settle(this.flush());
-  }
-
-  public flushBeforeUnload(): void {
-    while (this.pending.length > 0) {
-      void settle(this.deliver(this.pending.splice(0, maximumBatchSize)));
-    }
-  }
-
-  public close(): void {
-    this.closed = true;
-  }
-
-  private async drainOnce(): Promise<void> {
-    try {
-      await this.drain();
-    } finally {
-      this.active = undefined;
-    }
-  }
-
-  private async drain(): Promise<void> {
-    const events = this.pending.splice(0, maximumBatchSize);
-    if (events.length === 0) {
-      return;
-    }
-    try {
-      await this.deliver(events);
-    } catch (error) {
-      this.pending.unshift(...events);
-      throw error;
-    }
-    await this.drain();
-  }
-}
-
-export { BrowserEventQueue };
-export type { EventQueue };

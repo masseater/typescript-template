@@ -4,9 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/server.ts",
-    "./browser": "./src/browser.ts",
-    "./log": "./src/log.ts",
-    "./http-status": "./src/http-status.ts"
+    "./browser": "./src/browser.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -15,6 +13,8 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@template/config": "workspace:*"
+    "@template/config": "workspace:*",
+    "@template/dont-review-it": "workspace:*",
+    "es-toolkit": "catalog:"
   }
 }

@@ -1,4 +1,5 @@
 import { loopbackHosts } from "@template/config";
+import { RequestId } from "@template/observability";
 import { Effect, Result, Schema } from "effect";
 
 type Row = Record<string, unknown>;
@@ -24,9 +25,6 @@ const Columns = Schema.Array(Schema.String);
 const Rows = Schema.Array(Schema.Array(Schema.Unknown));
 const QueryResult = Schema.Struct({ columns: Columns, rows: Rows });
 const QueryResponse = Schema.Struct({ result: QueryResult, success: Schema.Literal(true) });
-const RequestId = Schema.String.check(
-  Schema.isPattern(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
-);
 
 const queryFailed = (): ExplorerFailure => {
   return new ExplorerFailure({ reason: "query_failed" });

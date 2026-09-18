@@ -1,62 +1,97 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { errorAttributes, errorFingerprint } from "./errors.ts";
 
-const deepFrames = 6;
-const fingerprintPattern = /^[0-9a-f]{8}$/u;
+class RecordedError extends Error {
+  public override readonly name: string;
+  public override readonly stack: string;
 
-const fingerprintOf = (error: unknown): string => {
-  return errorAttributes(error)["error.fingerprint"];
-};
+  public constructor(recorded: {
+    readonly name: string;
+    readonly message: string;
+    readonly stack: string;
+  }) {
+    super(recorded.message);
+    this.name = recorded.name;
+    this.stack = recorded.stack;
+  }
+}
 
-describe("error attributes", () => {
-  it("keeps useful error locations without messages, arguments or local directory names", () => {
-    expect.hasAssertions();
-    const error = new TypeError("private@example.test password=secret");
-    error.stack =
-      "TypeError: private@example.test password=secret\n at check (/Users/private/app.js:12:3)\n at https://app.test/assets/web.js:34:5";
-    const attributes = errorAttributes(error);
-    expect({
-      locations: attributes["error.locations"],
-      type: attributes["error.type"],
-    }).toStrictEqual({
-      locations: "app.js:12:3\n/assets/web.js:34:5",
-      type: "TypeError",
+describe("errorAttributes", () => {
+  describe("a TypeError whose message and stack carry private details", () => {
+    const it = test.extend("attributes", () =>
+      errorAttributes(
+        new RecordedError({
+          message: "private@example.test password=secret",
+          name: "TypeError",
+          stack:
+            "TypeError: private@example.test password=secret\n at check (/Users/private/app.js:12:3)\n at https://app.test/assets/web.js:34:5",
+        }),
+      ));
+
+    it("keeps the failure site without the message, the arguments or local directory names", ({
+      attributes,
+    }) => {
+      expect(attributes).toStrictEqual({
+        "error.fingerprint": "8cff9525",
+        "error.locations": "app.js:12:3\n/assets/web.js:34:5",
+        "error.type": "TypeError",
+      });
     });
-    expect(JSON.stringify(attributes)).not.toMatch(/private|secret|Users/u);
   });
 
-  it("does not serialize thrown objects or custom error names", () => {
-    expect.hasAssertions();
-    expect(errorAttributes({ password: "secret" })).toStrictEqual({
-      "error.fingerprint": errorFingerprint("Error", ""),
-      "error.locations": "",
-      "error.type": "Error",
+  describe("a thrown object that is not an error", () => {
+    const it = test.extend("attributes", () => errorAttributes({ password: "secret" }));
+
+    it("serialises nothing the object carries", ({ attributes }) => {
+      expect(attributes).toStrictEqual({
+        "error.fingerprint": "62ee1f21",
+        "error.locations": "",
+        "error.type": "Error",
+      });
     });
-    const error = new Error("secret");
-    error.name = "private@example.test";
-    expect(errorAttributes(error)["error.type"]).toBe("Error");
+  });
+
+  describe("an error whose name was replaced by private text", () => {
+    const it = test.extend("attributes", () =>
+      errorAttributes(
+        new RecordedError({ message: "secret", name: "private@example.test", stack: "" }),
+      ));
+
+    it("reports the generic error type in place of the custom name", ({ attributes }) => {
+      expect(attributes).toStrictEqual({
+        "error.fingerprint": "62ee1f21",
+        "error.locations": "",
+        "error.type": "Error",
+      });
+    });
   });
 });
 
-describe("error fingerprints", () => {
-  it("groups the same failure site regardless of message and deeper frames", () => {
-    expect.hasAssertions();
-    const first = new TypeError("first@example.test");
-    first.stack = `TypeError\n${Array.from({ length: deepFrames }, (_unused, index) => ` at a.js:${index + 1}:1`).join("\n")}`;
-    const second = new TypeError("second@example.test");
-    second.stack = `${first.stack.split("\n").slice(0, deepFrames).join("\n")}\n at b.js:9:9`;
-    expect(fingerprintOf(first)).toMatch(fingerprintPattern);
-    expect(fingerprintOf(second)).toBe(fingerprintOf(first));
-  });
+describe("errorFingerprint", () => {
+  describe.for([
+    [
+      "six frames at one site",
+      "TypeError",
+      ["a.js:1:1", "a.js:2:1", "a.js:3:1", "a.js:4:1", "a.js:5:1", "a.js:6:1"],
+      "a9065e65",
+    ],
+    [
+      "the same first five frames and a different sixth",
+      "TypeError",
+      ["a.js:1:1", "a.js:2:1", "a.js:3:1", "a.js:4:1", "a.js:5:1", "b.js:9:9"],
+      "a9065e65",
+    ],
+    ["a TypeError at the first site", "TypeError", ["a.js:1:1"], "7812c12d"],
+    ["a TypeError at a second site", "TypeError", ["a.js:2:1"], "31b0b2d8"],
+    ["a RangeError without a site", "RangeError", [], "972f61ba"],
+    ["a TypeError without a site", "TypeError", [], "a81128a9"],
+  ] as const)("%s", ([, errorType, frames, expectedFingerprint]) => {
+    const it = test.extend("fingerprint", () =>
+      errorFingerprint({ errorType, locations: frames.join("\n") }));
 
-  it("separates different failure sites and error types", () => {
-    expect.hasAssertions();
-    const first = new TypeError("first@example.test");
-    first.stack = "TypeError\n at a.js:1:1";
-    const moved = new TypeError("first@example.test");
-    moved.stack = "TypeError\n at a.js:2:1";
-    expect(fingerprintOf(moved)).not.toBe(fingerprintOf(first));
-    expect(fingerprintOf(new RangeError("range"))).not.toBe(fingerprintOf(new TypeError("type")));
+    it("groups by type and the first five frames only", ({ fingerprint }) => {
+      expect(fingerprint).toBe(expectedFingerprint);
+    });
   });
 });

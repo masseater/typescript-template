@@ -1,5 +1,4 @@
-import { httpStatus } from "@template/observability/http-status";
-import { logError, logInfo } from "@template/observability/log";
+import { httpStatus, logError, logInfo } from "@template/observability";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Exit, Schema } from "effect";
 

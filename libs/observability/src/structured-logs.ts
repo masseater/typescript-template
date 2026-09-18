@@ -4,7 +4,7 @@ import { consoleSink, type LogSink } from "./log.ts";
 
 import type { Application } from "@template/config";
 
-type StructuredLogOptions = {
+export type StructuredLogOptions = {
   readonly serviceName: Application;
   readonly release: string;
   readonly log?: LogSink;
@@ -12,30 +12,27 @@ type StructuredLogOptions = {
 
 const failureLevels: ReadonlySet<string> = new Set(["Error", "Fatal", "Warn"]);
 
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+export const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> => {
+  return typeof candidate === "object" && candidate !== null && !Array.isArray(candidate);
 };
 
-const messageParts = (message: unknown): readonly unknown[] => {
-  return Array.isArray(message) ? message : [message];
-};
-
-const structuredLogs = (options: StructuredLogOptions): Layer.Layer<never> => {
-  const sink = options.log ?? consoleSink;
-
-  const logger = Logger.make(({ fiber, logLevel, message }) => {
-    const [event, attributes] = messageParts(message);
+export const structuredLogs = (logOptions: StructuredLogOptions): Layer.Layer<never> => {
+  const sink = logOptions.log ?? consoleSink;
+  const logger = Logger.make(({ fiber, logLevel, message: logged }) => {
+    const logParts: readonly unknown[] = Array.isArray(logged) ? logged : [logged];
+    const [eventName, attributes] = logParts;
     const line = JSON.stringify({
-      event: typeof event === "string" ? event : "application.log",
-      release: options.release,
-      service: `${options.serviceName}-server`,
+      event: typeof eventName === "string" ? eventName : "application.log",
+      release: logOptions.release,
+      service: `${logOptions.serviceName}-server`,
       ...fiber.getRef(References.CurrentLogAnnotations),
       ...(isRecord(attributes) ? attributes : {}),
     });
-    sink[failureLevels.has(logLevel) ? "error" : "info"](line);
+    if (failureLevels.has(logLevel)) {
+      sink.error(line);
+      return;
+    }
+    sink.info(line);
   });
   return Logger.layer([logger]);
 };
-
-export { isRecord, structuredLogs };
-export type { StructuredLogOptions };

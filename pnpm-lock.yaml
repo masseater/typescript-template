@@ -1034,6 +1034,12 @@ importers:
       '@template/config':
         specifier: workspace:*
         version: link:../config
+      '@template/dont-review-it':
+        specifier: workspace:*
+        version: link:../../tools/dont-review-it
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.52.0
 
   libs/runtime:
     dependencies:
@@ -1403,6 +1409,9 @@ importers:
       '@template/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@template/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
