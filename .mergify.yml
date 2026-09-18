@@ -7,7 +7,7 @@ pull_request_rules:
         name: default
 
 merge_queue:
-  max_parallel_checks: 2
+  max_parallel_checks: 5
 
 queue_rules:
   - name: default
