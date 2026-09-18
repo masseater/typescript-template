@@ -1,7 +1,1 @@
-Revision history for #348:
-
-rev 3 (rebase) 2026-09-18 18:48 UTC — merge queue の投機的検査が 0 ステップで失敗したため、検査をやり直す
-rev 2 (rebase) 2026-09-18 18:22 UTC — 取り消された投機的検査で dequeue されたため、検査をやり直す
-rev 1 (initial) 2026-09-18 18:22 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":348,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"2d25c271ae72b2b78f944745694cf6f4f2c609c0","timestamp_iso":"2026-09-18T18:22:28Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"2d25c271ae72b2b78f944745694cf6f4f2c609c0","new_sha":"d05aa7a8d423ab3bb7fe840dda44d6d3ce8517dc","timestamp_iso":"2026-09-18T18:22:28Z","reason":"取り消された投機的検査で dequeue されたため、検査をやり直す","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/2d25c271ae72b2b78f944745694cf6f4f2c609c0...d05aa7a8d423ab3bb7fe840dda44d6d3ce8517dc"},{"number":3,"change_type":"rebase","old_sha":"d05aa7a8d423ab3bb7fe840dda44d6d3ce8517dc","new_sha":"13cba99ef7ca46f9499b9ae3caa45d6241a5ed34","timestamp_iso":"2026-09-18T18:48:45Z","reason":"merge queue の投機的検査が 0 ステップで失敗したため、検査をやり直す","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/d05aa7a8d423ab3bb7fe840dda44d6d3ce8517dc...13cba99ef7ca46f9499b9ae3caa45d6241a5ed34"}]} -->
+runner 側の checkout が 10 分で失敗したため、検査をやり直す
