@@ -40,10 +40,20 @@ export default defineConfig({
           "vp run check:staged",
           "vp run check:effect",
           "vp run -F '!typescript-template' --cache check",
+          "vp run check:dev",
         ],
         input: [...taskInput],
       },
       "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
+      "check:dev": {
+        command: "node tools/quality/dev-start.ts",
+        input: [
+          ...taskInput,
+          { base: "workspace", pattern: "!.local/**" },
+          { base: "workspace", pattern: "!apps/*/.dev.vars" },
+          { base: "workspace", pattern: "!node_modules/.vite/**" },
+        ],
+      },
       "check:effect": {
         command: "node tools/quality/effect-diagnostics.ts",
         input: [...taskInput],
