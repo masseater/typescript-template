@@ -36,8 +36,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: ${{ vars.CI_RUNNER == '' }}
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - &mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
+          cache: ${{ vars.CI_RUNNER == '' }}
           install_args: github:gastownhall/beads
       - &task-cache-restore
         id: vite-task-cache
@@ -72,6 +74,7 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
+      - *mise
       - *task-cache-restore
       - *premerge
       - *task-cache-save
