@@ -71,6 +71,7 @@ catalog:
   effect: 4.0.0-rc.112
   es-toolkit: 1.52.0
   lucide-react: 1.46.0
+  miniflare: 5.20260917.0-alpha
   msw: 2.15.0
   otpauth: 9.5.2
   oxc-parser: 0.149.0

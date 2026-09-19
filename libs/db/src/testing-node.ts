@@ -1,5 +1,5 @@
 import { Context, Effect, Layer, Schema } from "effect";
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
 import { Database } from "./database.ts";
 import { localDatabase } from "./local.ts";
@@ -49,12 +49,14 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
   TestBinding,
   Effect.acquireRelease(
     Effect.promise(async () => {
-      const runtime = new Miniflare({
-        compatibilityDate: miniflareCompatibilityDate,
-        d1Databases: { [localDatabase.binding]: localDatabase.database_name },
-        modules: true,
-        script: "export default { fetch() { return new Response('test-database'); } };",
-      });
+      const runtime = new Miniflare(
+        convertV4MiniflareOptions({
+          compatibilityDate: miniflareCompatibilityDate,
+          d1Databases: { [localDatabase.binding]: localDatabase.database_name },
+          modules: true,
+          script: "export default { fetch() { return new Response('test-database'); } };",
+        }),
+      );
       return { database: await runtime.getD1Database(localDatabase.binding), runtime };
     }),
     ({ runtime }) => Effect.promise(async () => runtime.dispose()),
