@@ -1,1 +1,1 @@
-rebase onto main（#538 verify-email dedup・#544 auth failure code・ConfirmDialog を維持）
+rebase onto main（#538/#544 と ConfirmDialog を維持）
