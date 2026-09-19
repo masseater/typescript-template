@@ -10,10 +10,23 @@ import { TestDatabase } from "./testing.ts";
 
 function describeMember(
   id: string,
-  values: { readonly createdAt: Date; readonly name: string; readonly profile: string },
+  values: {
+    readonly createdAt: Date;
+    readonly name: string;
+    readonly profile: string;
+    readonly socialLinks?: readonly string[];
+  },
 ): ReturnType<typeof addUser> {
   return query(async (database): Promise<void> => {
-    await database.update(user).set(values).where(eq(user.id, id));
+    await database
+      .update(user)
+      .set({
+        createdAt: values.createdAt,
+        name: values.name,
+        profile: values.profile,
+        socialLinks: values.socialLinks ?? [],
+      })
+      .where(eq(user.id, id));
   });
 }
 
@@ -31,6 +44,7 @@ it.effect("shows another member only what the profile page shows to others", () 
       joined: "2026-08",
       name: "山田 花子",
       profile: "はじめまして。",
+      socialLinks: [],
     });
   }).pipe(Effect.provide(TestDatabase)),
 );
@@ -50,6 +64,7 @@ it.effect("shows an unverified member to nobody but themselves", () =>
       joined: "2026-09",
       name: "pending",
       profile: "",
+      socialLinks: [],
     });
   }).pipe(Effect.provide(TestDatabase)),
 );

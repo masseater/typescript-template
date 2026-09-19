@@ -4,6 +4,8 @@ import { Effect, Option, Schema, SchemaGetter } from "effect";
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
 const maximumProfileLength = 2000;
+const maximumSocialLinkLength = 2048;
+const maximumSocialLinks = 10;
 const maximumTokenLength = 4096;
 const maximumKeywordLength = 100;
 const secondPage = 2;
@@ -26,16 +28,26 @@ const SessionView = Schema.Struct({
   }),
 });
 
+const SocialLink = Schema.String.check(
+  Schema.isMaxLength(maximumSocialLinkLength),
+  Schema.makeFilter(
+    (value: string) => URL.parse(value)?.protocol === "https:" || "https URL required",
+  ),
+);
+const SocialLinks = Schema.Array(SocialLink).check(Schema.isMaxLength(maximumSocialLinks));
+
 const ProfileView = Schema.Struct({
   email: Schema.String,
   id: Schema.String,
   name: Schema.String,
   profile: Schema.String,
+  socialLinks: SocialLinks,
 });
 
 const ProfileUpdate = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
   profile: Schema.String.check(Schema.isMaxLength(maximumProfileLength)),
+  socialLinks: SocialLinks,
 });
 
 const MemberQuery = Schema.Struct({ id: Identifier });
@@ -45,6 +57,7 @@ const MemberView = Schema.Struct({
   joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),
   name: Schema.String,
   profile: Schema.String,
+  socialLinks: SocialLinks,
 });
 
 const EmailVerificationRequest = Schema.Struct({
@@ -165,4 +178,6 @@ export {
   memberPageSize,
   maximumNameLength,
   maximumProfileLength,
+  maximumSocialLinkLength,
+  maximumSocialLinks,
 };
