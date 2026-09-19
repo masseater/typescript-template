@@ -251,10 +251,10 @@ describe("structured log lines", () => {
       ]);
       assert.containSubset(logs.stderr, [
         {
+          "browser.request_id": "11111111-1111-4111-8111-111111111111",
           "error.locations": "/assets/index-abc.js:1:234",
           "error.type": "TypeError",
           event: "browser.error",
-          request_id: "11111111-1111-4111-8111-111111111111",
           service: "user-browser",
         },
         { "error.type": "RangeError", event: "application.error" },

@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 
 import { applicationOrigins } from "@repo/config";
 import { runCli } from "@repo/config/cli";
+import { receiverOrigin } from "@repo/local";
 import { Console, Effect, Schema } from "effect";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
@@ -73,7 +74,13 @@ function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
   }
   if (input.command === "exported") {
     return required(input.traceId).pipe(
-      Effect.flatMap((traceId) => exportedTelemetry(traceId, input.minutes)),
+      Effect.flatMap((traceId) =>
+        exportedTelemetry(
+          { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
+          traceId,
+          input.minutes,
+        ),
+      ),
     );
   }
   if (input.command === "trace") {

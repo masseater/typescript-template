@@ -32,6 +32,7 @@ const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const runOnDemand = new Set([
   "infra/cloudflare: verify:account",
   "tools/observe: verify",
+  "tools/observe: check:exported",
   ".: check:repository",
 ]);
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];

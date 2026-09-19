@@ -162,3 +162,20 @@ describe("secrets held by a structured value", () => {
     ]);
   });
 });
+
+describe("stack locations a failure reports", () => {
+  it("keeps the line and column of a file whose name only looks like a secret", () => {
+    expect.hasAssertions();
+    expect([
+      redactedField("error.locations", "cookie-banner.tsx:5:1\nindex-abc.js:1:234"),
+      redactedField("error.type", "cookie-banner.tsx:5:1"),
+    ]).toStrictEqual(["cookie-banner.tsx:5:1\nindex-abc.js:1:234", "cookie-banner.tsx:[redacted]"]);
+  });
+
+  it("still hides a secret a location line carries", () => {
+    expect.hasAssertions();
+    expect(redactedField("error.locations", `bundle.js:1:2 token=${secret}`)).toBe(
+      "bundle.js:1:2 token=[redacted]",
+    );
+  });
+});

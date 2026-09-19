@@ -1,4 +1,3 @@
-import { receiverOrigin } from "@repo/local";
 import { Effect, Schema } from "effect";
 
 interface ExportedSpan {
@@ -13,6 +12,10 @@ interface ExportedLog {
   readonly service: string | undefined;
   readonly spanId: string | undefined;
   readonly traceId: string | undefined;
+}
+interface ReceiverOrigins {
+  readonly logs: string;
+  readonly traces: string;
 }
 interface ExportedTelemetry {
   readonly logs: readonly ExportedLog[];
@@ -86,10 +89,11 @@ function decoded<Decoded extends Schema.Top & { readonly DecodingServices: never
   );
 }
 
-const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(traceId: string) {
-  const body = yield* receiverJson(
-    new URL(`/api/traces/${traceId}`, receiverOrigin("traces")).href,
-  );
+const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(
+  receiver: ReceiverOrigins,
+  traceId: string,
+) {
+  const body = yield* receiverJson(new URL(`/api/traces/${traceId}`, receiver.traces).href);
   const trace = yield* decoded(TempoTrace, body);
   return trace.batches.flatMap((batch) =>
     batch.scopeSpans.flatMap((scope) =>
@@ -104,15 +108,18 @@ const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(traceId
 });
 
 const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(
+  receiver: ReceiverOrigins,
   traceId: string,
   minutes: number,
 ) {
-  const url = new URL("/loki/api/v1/query_range", receiverOrigin("logs"));
+  const now = Date.now();
+  const url = new URL("/loki/api/v1/query_range", receiver.logs);
   url.searchParams.set("query", `{service_name=~".+"} | trace_id = "${traceId}"`);
   url.searchParams.set(
     "start",
-    String((Date.now() - minutes * millisecondsPerMinute) * nanosecondsPerMillisecond),
+    String((now - minutes * millisecondsPerMinute) * nanosecondsPerMillisecond),
   );
+  url.searchParams.set("end", String(now * nanosecondsPerMillisecond));
   const body = yield* receiverJson(url.href);
   const streams = yield* decoded(LokiStreams, body);
   return streams.data.result.flatMap((entry) =>
@@ -127,11 +134,12 @@ const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(
 });
 
 const exportedTelemetry = Effect.fn("exportedTelemetry")(function* exportedTelemetry(
+  receiver: ReceiverOrigins,
   traceId: string,
   minutes: number,
 ) {
   const [logs, spans] = yield* Effect.all(
-    [exportedLogs(traceId, minutes), exportedSpans(traceId)],
+    [exportedLogs(receiver, traceId, minutes), exportedSpans(receiver, traceId)],
     { concurrency: "unbounded" },
   );
   const telemetry: ExportedTelemetry = { logs, spans };
@@ -139,3 +147,4 @@ const exportedTelemetry = Effect.fn("exportedTelemetry")(function* exportedTelem
 });
 
 export { exportedTelemetry };
+export type { ReceiverOrigins };

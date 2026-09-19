@@ -67,7 +67,14 @@ it.effect("exported telemetry pairs the receiver's span and log for one trace", 
         server.listen({ onUnhandledRequest: "error" });
         return server;
       }),
-      () => Effect.orDie(exportedTelemetry(traceId, minutes)),
+      () =>
+        Effect.orDie(
+          exportedTelemetry(
+            { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
+            traceId,
+            minutes,
+          ),
+        ),
       (server) =>
         Effect.sync(() => {
           server.close();
