@@ -1,12 +1,37 @@
 import { assert, it } from "@effect/vitest";
+import { query, schema } from "@repo/db";
+import { TestDatabase } from "@repo/db/testing";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { query } from "./database.ts";
 import { getMember } from "./members.ts";
-import { addUser, failureTag } from "./records-fixture.ts";
-import { user } from "./schema.ts";
-import { TestDatabase } from "./testing.ts";
+
+import type { Database, DatabaseFailure } from "@repo/db";
+
+const { user } = schema;
+
+function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
+  effect: Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<string, Value, Requirements> {
+  return effect.pipe(
+    Effect.flip,
+    Effect.map((failure) => failure._tag),
+  );
+}
+
+function addUser(id: string, emailVerified = true): Effect.Effect<void, DatabaseFailure, Database> {
+  return query(async (database): Promise<void> => {
+    await database.insert(user).values({
+      createdAt: new Date(),
+      email: `${id}@example.com`,
+      emailVerified,
+      id,
+      name: id,
+      role: "member",
+      updatedAt: new Date(),
+    });
+  });
+}
 
 function describeMember(
   id: string,
@@ -16,7 +41,7 @@ function describeMember(
     readonly profile: string;
     readonly socialLinks?: readonly string[];
   },
-): ReturnType<typeof addUser> {
+): Effect.Effect<void, DatabaseFailure, Database> {
   return query(async (database): Promise<void> => {
     await database
       .update(user)
@@ -52,7 +77,7 @@ it.effect("shows another member only what the profile page shows to others", () 
 it.effect("shows an unverified member to nobody but themselves", () =>
   Effect.gen(function* program() {
     yield* addUser("viewer");
-    yield* addUser("pending", "member", false);
+    yield* addUser("pending", false);
     yield* describeMember("pending", {
       createdAt: new Date("2026-09-01T00:00:00.000Z"),
       name: "pending",
