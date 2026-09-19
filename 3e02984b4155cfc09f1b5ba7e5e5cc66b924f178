@@ -1,1 +1,6 @@
-レビュー反映: new Response(body, response) で webSocket/cf を落とさない、呼び出しを 1 か所に、wiki の参照先を serveWorker に、テストを 200 の 2 経路＋既存の 503 に整理、E2E に実 Worker の応答の検査を追加
+Revision history for #441:
+
+rev 2 (content) 2026-09-19 02:38 UTC — レビュー反映: new Response(body, response) で webSocket/cf を落とさない、呼び出しを 1 か所に、wiki の参照先を serveWorker に、テストを 200 の 2 経路＋既存の 503 に整理、E2E に実 Worker の応答の検査を追加
+rev 1 (initial) 2026-09-19 02:38 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":441,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"611314c4e3df7fa140174563e212410de82ae66e","timestamp_iso":"2026-09-19T02:38:20Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"611314c4e3df7fa140174563e212410de82ae66e","new_sha":"3e02984b4155cfc09f1b5ba7e5e5cc66b924f178","timestamp_iso":"2026-09-19T02:38:20Z","reason":"レビュー反映: new Response(body, response) で webSocket/cf を落とさない、呼び出しを 1 か所に、wiki の参照先を serveWorker に、テストを 200 の 2 経路＋既存の 503 に整理、E2E に実 Worker の応答の検査を追加","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/611314c4e3df7fa140174563e212410de82ae66e...3e02984b4155cfc09f1b5ba7e5e5cc66b924f178"}]} -->
