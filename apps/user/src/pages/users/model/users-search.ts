@@ -1,25 +1,22 @@
-import {
-  SearchKeyword,
-  absentSearchKey,
-  laterPage,
-  maximumMemberPage,
-} from "@repo/runtime/contracts";
+import { SearchKeyword, laterPage, maximumMemberPage } from "@repo/runtime/contracts";
 import { Option, Schema } from "effect";
 
 const UsersSearchParams = Schema.Struct({
-  keyword: Schema.optionalKey(SearchKeyword).pipe(Schema.catchDecoding(absentSearchKey)),
-  page: Schema.optionalKey(laterPage(maximumMemberPage)).pipe(
-    Schema.catchDecoding(absentSearchKey),
-  ),
+  keyword: Schema.optionalKey(SearchKeyword),
+  page: Schema.optionalKey(laterPage(maximumMemberPage)),
 });
 
 type UsersSearch = typeof UsersSearchParams.Type;
 
+class InvalidUsersSearch extends Error {
+  override readonly name = "InvalidUsersSearch";
+}
+
 const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
 
 function normalizeUsersSearch(raw: unknown): UsersSearch {
-  return Option.getOrElse(decodeUsersSearch(raw), () => ({}));
+  return Option.getOrThrowWith(decodeUsersSearch(raw), () => new InvalidUsersSearch());
 }
 
-export { normalizeUsersSearch };
+export { decodeUsersSearch };
 export type { UsersSearch };
