@@ -1,1 +1,1 @@
-InvalidStatePath callers: empty fixture stacks so ownership reads do not hit missing paths
+Update empty/deployed state fixtures so empty inventory uses explicit stage nodes; missing paths still fail InvalidStatePath (MQ regression from folding #464).
