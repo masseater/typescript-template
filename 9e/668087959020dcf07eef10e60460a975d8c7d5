@@ -1,1 +1,1 @@
-fix format on auth-request and add missing sendContactEmail body
+restore sendContactEmail dropped in email.ts refactor (contact.ts unknown Effect E/R) and oxfmt auth-request.ts
