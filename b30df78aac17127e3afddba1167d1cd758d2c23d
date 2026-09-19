@@ -1,1 +1,6 @@
-merge-queue で TaggedError の error.type が tag 名になることを worker テストに反映
+Revision history for #517:
+
+rev 2 (content) 2026-09-19 06:28 UTC — merge-queue で TaggedError の error.type が tag 名になることを worker テストに反映
+rev 1 (initial) 2026-09-19 06:28 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":517,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"20c26a92e66c1b67e264f132b18a3c6b570380d4","timestamp_iso":"2026-09-19T06:28:03Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"20c26a92e66c1b67e264f132b18a3c6b570380d4","new_sha":"b30df78aac17127e3afddba1167d1cd758d2c23d","timestamp_iso":"2026-09-19T06:28:03Z","reason":"merge-queue で TaggedError の error.type が tag 名になることを worker テストに反映","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/20c26a92e66c1b67e264f132b18a3c6b570380d4...b30df78aac17127e3afddba1167d1cd758d2c23d"}]} -->
