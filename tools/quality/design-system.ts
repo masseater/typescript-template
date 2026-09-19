@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { project } from "@shadcn/lint";
 
+import { repositoryRoot } from "./repository-root.ts";
+
 const smarthrTokens: Readonly<Record<string, string>> = {
   "--danger": "#e01e5a",
   "--danger-darken": "#ca1b51",
@@ -68,7 +70,7 @@ const read = (file: string): string => {
   return readFileSync(file, "utf-8");
 };
 
-const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
+const designSystemProbe = path.join(repositoryRoot, "libs/ui/src/shared/ui/button.tsx");
 
 const stylesheetPath = (): string => {
   return project.themeFileFor(designSystemProbe) ?? "";
