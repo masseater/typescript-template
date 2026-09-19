@@ -103,7 +103,7 @@ const effectStackVisitor = (inspection: LintContext): Visitor => {
 const isEffectScope = (inspected: string): boolean => {
   return (
     /\/(?:apps|libs|infra|tools)\/[^/]+\/src\//u.test(inspected) &&
-    !/\/libs\/ui\/|\/libs\/runtime\/src\/client\.ts$|\/libs\/observability\/src\/browser\.ts$|\.tsx$/u.test(
+    !/\/libs\/(?:ui|auth-ui)\/|\/libs\/runtime\/src\/client\.ts$|\/libs\/observability\/src\/browser\.ts$|\.tsx$/u.test(
       inspected,
     )
   );

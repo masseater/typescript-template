@@ -1,4 +1,4 @@
-import { redirectTarget } from "@repo/ui";
+import { redirectTarget } from "@repo/auth-ui";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LoginRoute } from "./-login-route.tsx";

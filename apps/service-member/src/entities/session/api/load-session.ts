@@ -1,5 +1,5 @@
+import { SessionView } from "@repo/auth-ui";
 import { apiDataOrNone } from "@repo/runtime/client";
-import { SessionView } from "@repo/ui";
 
 import { userClient } from "#shared/api/index.ts";
 

@@ -1,5 +1,5 @@
+import { LoginForm } from "@repo/auth-ui";
 import { TextLink } from "@repo/ui";
-import { LoginForm } from "@repo/ui/auth";
 
 import { CardPage } from "#shared/ui/index.ts";
 

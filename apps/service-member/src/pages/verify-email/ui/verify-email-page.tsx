@@ -1,4 +1,4 @@
-import { EmailVerification } from "@repo/ui/auth";
+import { EmailVerification } from "@repo/auth-ui";
 
 import { CardPage } from "#shared/ui/index.ts";
 

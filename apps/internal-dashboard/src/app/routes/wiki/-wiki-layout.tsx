@@ -1,4 +1,5 @@
-import { STATUS_VARIANT, StatusMessage, loginPath, useSession } from "@repo/ui";
+import { loginPath, useSession } from "@repo/auth-ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
