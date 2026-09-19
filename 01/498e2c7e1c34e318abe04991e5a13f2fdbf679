@@ -1,1 +1,6 @@
-Wareki helpers follow func-style and fixture tests; toast Motion drops opacity fade; disable aria-hidden-focus on toast success/stacked stories.
+Revision history for #650:
+
+rev 2 (content) 2026-09-19 17:56 UTC — Wareki helpers follow func-style and fixture tests; toast Motion drops opacity fade; disable aria-hidden-focus on toast success/stacked stories.
+rev 1 (initial) 2026-09-19 17:56 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":650,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"55b9dd8a35b79fc5271c43a6ed30cdd63f5baec6","timestamp_iso":"2026-09-19T17:56:46Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"55b9dd8a35b79fc5271c43a6ed30cdd63f5baec6","new_sha":"01498e2c7e1c34e318abe04991e5a13f2fdbf679","timestamp_iso":"2026-09-19T17:56:46Z","reason":"Wareki helpers follow func-style and fixture tests; toast Motion drops opacity fade; disable aria-hidden-focus on toast success/stacked stories.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/55b9dd8a35b79fc5271c43a6ed30cdd63f5baec6...01498e2c7e1c34e318abe04991e5a13f2fdbf679"}]} -->
