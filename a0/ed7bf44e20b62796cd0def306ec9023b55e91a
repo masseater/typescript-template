@@ -1,0 +1,1 @@
+include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone
