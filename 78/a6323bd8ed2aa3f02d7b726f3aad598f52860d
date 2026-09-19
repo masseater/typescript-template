@@ -1,0 +1,1 @@
+Re-export runStatement via auth-test-fixture so no-testing-entry-outside-tests allows the wiki MCP worker test helper.
