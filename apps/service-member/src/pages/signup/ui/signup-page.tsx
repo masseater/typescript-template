@@ -1,13 +1,14 @@
-import { TextLink } from "@repo/ui";
-import { SignUpForm } from "@repo/ui/signup";
+import { StatusMessage, STATUS_VARIANT, TextLink, useAction } from "@repo/ui";
 import { useState } from "react";
 
 import { CardPage } from "#shared/ui/index.ts";
+import { SignUpFields } from "./signup-fields.tsx";
 
 import type { ReactElement } from "react";
 
 function SignUpPage(): ReactElement {
   const [sent, setSent] = useState(false);
+  const action = useAction();
   function showSent(): void {
     setSent(true);
   }
@@ -23,7 +24,13 @@ function SignUpPage(): ReactElement {
   }
   return (
     <CardPage title="新規登録">
-      <SignUpForm onSent={showSent} />
+      <SignUpFields action={action} onSent={showSent} />
+      {action.pending ? (
+        <StatusMessage variant={STATUS_VARIANT.pending}>登録を処理しています。</StatusMessage>
+      ) : null}
+      {action.error !== undefined ? (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
+      ) : null}
       <p className="text-base leading-normal">
         アカウントをお持ちの方は<TextLink to="/login">ログイン</TextLink>
       </p>
