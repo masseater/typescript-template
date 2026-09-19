@@ -1,4 +1,5 @@
 import { field, workspaceManifests } from "./dependencies.ts";
+import { directoryOfGlobKey } from "./repository-path.ts";
 
 import type { Tasks } from "@repo/config/vite";
 import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
@@ -14,12 +15,6 @@ const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../..
 });
 
 const serveEnv: ConfigEnv = { command: "serve", mode: "development" };
-const repository = "file:///repository/";
-
-function directoryOf(file: string): string {
-  const resolved = new URL(file, `${repository}tools/quality/`).href.slice(repository.length);
-  return resolved.replace(/\/?[^/]+$/u, "") || ".";
-}
 
 function scriptsOf(manifest: unknown): Readonly<Record<string, unknown>> {
   const scripts = field(manifest, "scripts");
@@ -49,7 +44,7 @@ const packageDirectories: Readonly<Record<string, string>> = Object.fromEntries(
 
 const workspaceConfigs: Readonly<Record<string, UserConfig>> = Object.fromEntries(
   Object.entries(configModules).map(([file, config]) => [
-    directoryOf(file),
+    directoryOfGlobKey(file),
     typeof config === "function" ? config(serveEnv) : config,
   ]),
 );

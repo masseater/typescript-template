@@ -1,5 +1,10 @@
 import { dontReviewItPreset } from "@repo/dont-review-it";
+import {
+  cloudflareNewCapExceptions,
+  cloudflareSourceFiles,
+} from "@repo/infra-cloudflare/lint-overrides";
 import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
+import { linkComponents, uiA11yComponents, uiSharedPartFiles } from "@repo/ui/lint-settings";
 
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
@@ -38,14 +43,11 @@ const templateWorkspaces = [
   "tools/quality/**",
 ];
 
-const linkComponents = [
-  "ButtonLink",
-  "CardLink",
-  "DropdownMenuLinkItem",
-  "Link",
-  "NavigationLink",
-  "PaginationLink",
-  "TextLink",
+const apiBoundaryFiles = [
+  "apps/*/src/**/api.ts",
+  "apps/*/src/**/*-api.ts",
+  "tools/*/src/**/*-api.ts",
+  "libs/runtime/src/account.ts",
 ];
 
 const lintOptions = {
@@ -71,35 +73,23 @@ const lintOptions = {
       },
     },
     {
-      files: ["libs/ui/src/shared/ui/**"],
+      files: uiSharedPartFiles,
       rules: {
         "react/forbid-component-props": [LINT_SEVERITY.ERROR, { forbid: ["style"] }],
         "shadcn/no-restyle": LINT_SEVERITY.OFF,
       },
     },
     {
-      files: [
-        "apps/*/src/**/api.ts",
-        "apps/*/src/**/*-api.ts",
-        "tools/*/src/**/*-api.ts",
-        "libs/runtime/src/account.ts",
-      ],
+      files: apiBoundaryFiles,
       rules: {
         "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
         "typescript/explicit-module-boundary-types": LINT_SEVERITY.OFF,
       },
     },
     {
-      files: ["infra/cloudflare/src/**"],
+      files: cloudflareSourceFiles,
       rules: {
-        "new-cap": [
-          LINT_SEVERITY.ERROR,
-          {
-            capIsNewExceptionPattern:
-              "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers|Zone)\\.",
-            capIsNewExceptions: ["DurableObject", "InMemoryService", "Stack", "Worker"],
-          },
-        ],
+        "new-cap": [LINT_SEVERITY.ERROR, cloudflareNewCapExceptions],
       },
     },
     {
@@ -273,13 +263,7 @@ const lintOptions = {
   settings: {
     "jsx-a11y": {
       attributes: { href: ["href", "to"] },
-      components: {
-        ...Object.fromEntries(linkComponents.map((name) => [name, "a"])),
-        Button: "button",
-        Checkbox: "button",
-        DropdownMenuTrigger: "button",
-        Heading: "h2",
-      },
+      components: uiA11yComponents,
       polymorphicPropName: "as",
     },
     react: { linkComponents: linkComponents.map((name) => ({ attribute: "to", name })) },

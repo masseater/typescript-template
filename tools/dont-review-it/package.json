@@ -25,6 +25,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./plugin": "./src/plugin.ts",
+    "./record-fields": "./src/dependency-catalog/record-fields.ts",
     "./vitest": "./src/vitest/standard-io-test.ts",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json",

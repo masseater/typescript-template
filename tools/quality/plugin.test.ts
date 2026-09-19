@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { field } from "./dependencies.ts";
 import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
 import { configuredLintRules } from "./lint.ts";
-
-const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
-  eager: true,
-  import: "default",
-});
 
 const forbiddenCode = [
   [
