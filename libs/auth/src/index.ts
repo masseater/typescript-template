@@ -1,3 +1,4 @@
+export { findWikiReader } from "@repo/db/security";
 export { AdminMfaRequired } from "./admin-mfa-required.ts";
 export { AdminRequired } from "./admin-required.ts";
 export { Auth } from "./auth.ts";

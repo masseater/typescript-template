@@ -1,5 +1,5 @@
 import { assert } from "@effect/vitest";
-import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@repo/db/testing";
+import { EmptyTestDatabase, TestDatabase, bootstrapAdmin, runStatement } from "@repo/db/testing";
 import { Context, Effect, Layer, Schema } from "effect";
 import { URI } from "otpauth";
 
@@ -159,6 +159,7 @@ export {
   receivedLink,
   register,
   registerVerified,
+  runStatement,
   signIn,
   signInAs,
   verifyEmail,

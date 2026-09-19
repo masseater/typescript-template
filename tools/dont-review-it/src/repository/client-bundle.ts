@@ -25,7 +25,6 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["@repo/runtime/http", "**/libs/runtime/src/**"],
   ["@repo/runtime/worker", "**/libs/runtime/src/**"],
   ["@repo/runtime/account", "**/libs/runtime/src/**"],
-  ["@repo/runtime/wiki", "**/libs/runtime/src/**"],
   ["@repo/runtime/contact", "**/libs/runtime/src/**"],
   ["@repo/db", "**/libs/db/src/**"],
   ["@repo/auth", "**/libs/auth/src/**"],
