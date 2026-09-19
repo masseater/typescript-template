@@ -1,7 +1,7 @@
 import { apiData } from "@repo/runtime/client";
-import { MemberList } from "@repo/runtime/contracts";
 
 import { userClient } from "#shared/api/index.ts";
+import { MemberList } from "#shared/contracts/index.ts";
 
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 
