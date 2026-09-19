@@ -48,6 +48,7 @@ describe("検査の走査証跡", () => {
       ["entry-composition", 0],
       ["canonical-values", 0],
       ["equivalent-concepts", 0],
+      ["canonical-literal-types", 0],
       ["duplicated-bodies", 0],
       ["workflow-definitions", 1],
       ["action-updates", 1],
@@ -100,6 +101,7 @@ describe("検査の走査証跡", () => {
       "  ✓ entry-composition        0 manifests
         ✓ canonical-values         0 source files
         ✓ equivalent-concepts      0 concepts
+        ✓ canonical-literal-types  0 declaration sources
         ✓ duplicated-bodies        0 declaration sources
         ✓ workflow-definitions     1 definition
         ✓ action-updates           1 update configuration
@@ -112,7 +114,7 @@ describe("検査の走査証跡", () => {
         ✓ shippable-packages       0 manifests
         ✓ intent-skills            0 manifests
 
-        14 checks ran, nothing to report
+        15 checks ran, nothing to report
       "
     `);
   });
@@ -128,6 +130,7 @@ describe("検査の走査証跡", () => {
       "checked entry-composition 0 manifests 0 problems 0 warnings
       checked canonical-values 0 source files 0 problems 0 warnings
       checked equivalent-concepts 0 concepts 0 problems 0 warnings
+      checked canonical-literal-types 0 declaration sources 0 problems 0 warnings
       checked duplicated-bodies 0 declaration sources 0 problems 0 warnings
       checked workflow-definitions 1 definition 0 problems 0 warnings
       checked action-updates 1 update configuration 0 problems 0 warnings

@@ -42,6 +42,10 @@ export default defineConfig({
         "lint-rule-authoring check",
         "stop-ai-slop check",
       ],
+      "check:canonical-literal-types": {
+        command: "dont-review-it-canonical-literal-types",
+        input: [...taskInput],
+      },
       knip: {
         command: ["knip", "knip --strict"],
         input: [...taskInput, "!node_modules/.cache/**"],
@@ -52,7 +56,14 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:code"],
         premerge: ["test"],
-        prepush: ["knip", "check:client", "check:imports", "check:react", "check:effect"],
+        prepush: [
+          "knip",
+          "check:client",
+          "check:imports",
+          "check:react",
+          "check:effect",
+          "check:canonical-literal-types",
+        ],
       }),
     },
   },

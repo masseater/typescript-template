@@ -29,6 +29,7 @@ describe("runChecks", () => {
         "entry-composition",
         "canonical-values",
         "equivalent-concepts",
+        "canonical-literal-types",
         "duplicated-bodies",
         "workflow-definitions",
         "action-updates",

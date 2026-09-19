@@ -25,7 +25,7 @@ const RETIRED_ANNOTATION = `/** ${RETIRED_ANNOTATION_TAGS[0]} */\nexport const L
 
 const SUPPRESSED_LOCAL_VALUE_SET = `// oxlint-disable-next-line dont-review-it/no-local-finite-value-set--use-or-register-canonical-values\nexport const schema = z.enum(["draft", "published"]);\n`;
 
-const SUPPRESSED_THROUGH_A_PLUGIN_ALIAS = `// oxlint-disable-next-line canonical-alias/no-strict-canonical-literal-use--use-canonical-import\nexport const status = "draft";\n`;
+const SUPPRESSED_THROUGH_A_PLUGIN_ALIAS = `// oxlint-disable-next-line canonical-alias/no-local-finite-value-set--use-or-register-canonical-values\nexport const schema = z.enum(["draft", "published"]);\n`;
 
 const SUPPRESSED_WITHOUT_NAMING_A_RULE = `// eslint-disable-next-line -- escape\nexport const schema = z.enum(["draft", "published"]);\n`;
 
