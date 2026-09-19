@@ -1,8 +1,10 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repo/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": ["ES2025", "DOM"],
-    "types": ["vite-plus/client"]
+    "types": ["vite-plus/client"],
+    "jsx": "react-jsx",
+    "noPropertyAccessFromIndexSignature": true,
+    "plugins": [{ "name": "@effect/language-service" }]
   },
   "include": ["storybook/**/*.ts", "storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"]
 }

@@ -3,13 +3,13 @@ import { Scripts } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import type { Children } from "./shared/ui/types";
 
-function AppBody({ children }: Children): ReactElement {
+const AppBody = ({ children }: Children): ReactElement => {
   return (
     <body>
       {children}
       <Scripts />
     </body>
   );
-}
+};
 
 export { AppBody };

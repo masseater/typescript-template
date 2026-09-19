@@ -3,21 +3,15 @@ import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { FormColumn } from "./shared/ui/form-column";
-import { useTextInput } from "./use-text-input";
+import { useTextInput, type TextInput } from "./use-text-input";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
-import type { TextInput } from "./use-text-input";
 
-interface SignUpFieldsProps {
-  readonly action: ActionState;
-  readonly onSent: () => void;
-}
-
-async function signUp(
+const signUp = async (
   fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
   onSent: () => void,
-): Promise<void> {
+): Promise<void> => {
   const { email, name, password } = fields;
   requireSuccess(
     await authClient.signUp.email({
@@ -29,16 +23,22 @@ async function signUp(
   );
   password.handleChange("");
   onSent();
-}
+};
 
-function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
-  const name = useTextInput();
+const SignUpFields = ({
+  action,
+  onSent,
+}: {
+  readonly action: ActionState;
+  readonly onSent: () => void;
+}): ReactElement => {
+  const accountName = useTextInput();
   const email = useTextInput();
   const password = useTextInput();
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
-    event.preventDefault();
-    action.run(async () => signUp({ email, name, password }, onSent));
-  }
+  const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
+    submitEvent.preventDefault();
+    action.run(async () => signUp({ email, name: accountName, password }, onSent));
+  };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <FormColumn>
@@ -48,8 +48,8 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
           autoComplete="name"
           required
           maxLength={100}
-          value={name.value}
-          onValueChange={name.handleChange}
+          value={accountName.value}
+          onValueChange={accountName.handleChange}
         />
         <Field
           label="メールアドレス"
@@ -77,6 +77,6 @@ function SignUpFields({ action, onSent }: SignUpFieldsProps): ReactElement {
       </FormColumn>
     </form>
   );
-}
+};
 
 export { SignUpFields };

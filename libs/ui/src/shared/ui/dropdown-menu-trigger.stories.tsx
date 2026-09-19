@@ -7,9 +7,9 @@ import type { ReactElement } from "react";
 const meta = preview.meta({
   args: { "aria-label": "利用者の操作", children: "操作" },
   component: DropdownMenuTrigger,
-  render: ({ "aria-label": label, children, disabled }): ReactElement => (
+  render: ({ "aria-label": accessibleName, children, disabled }): ReactElement => (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label={label} disabled={disabled === true}>
+      <DropdownMenuTrigger aria-label={accessibleName} disabled={disabled === true}>
         {children}
       </DropdownMenuTrigger>
     </DropdownMenu>

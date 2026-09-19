@@ -1,13 +1,15 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
-type ToastVariant = "error" | "success";
+import { STATUS_VARIANT } from "./status-variants.ts";
 
-function useToast(): (variant: ToastVariant, title: string) => void {
+type ToastVariant = (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "info" | "pending">];
+
+const useToast = (): ((variant: ToastVariant, title: string) => void) => {
   const { add } = ToastPrimitive.useToastManager();
-  function notify(variant: ToastVariant, title: string): void {
-    add({ priority: variant === "error" ? "high" : "low", title, type: variant });
-  }
+  const notify = (variant: ToastVariant, title: string): void => {
+    add({ priority: variant === STATUS_VARIANT.failure ? "high" : "low", title, type: variant });
+  };
   return notify;
-}
+};
 
 export { useToast };

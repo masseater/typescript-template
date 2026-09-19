@@ -1,12 +1,12 @@
 import { assert, it } from "@effect/vitest";
 import { runStatement } from "@repo/db/testing";
+import { httpStatus } from "@repo/observability/http-status";
 import { Effect } from "effect";
 
 import {
   Fixture,
   HTTP_FORBIDDEN,
   HTTP_OK,
-  HTTP_UNAUTHORIZED,
   PASSWORD,
   TEST_TIMEOUT,
   bootstrapVerifiedAdmin,
@@ -63,7 +63,7 @@ it.effect(
           registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
         });
         const challenge = yield* mcpRequest();
-        assert.strictEqual(responseStatus(challenge), HTTP_UNAUTHORIZED);
+        assert.strictEqual(responseStatus(challenge), httpStatus.unauthorized);
         const header =
           challenge instanceof Response ? challenge.headers.get("www-authenticate") : "";
         const metadata = `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`;
@@ -83,7 +83,7 @@ it.effect(
         assert.match(granted instanceof Response ? "" : granted.userId, /^.+$/u);
         const token = tokens.access_token;
         const tampered = `${token.slice(0, token.length - tamperedSuffix.length)}${tamperedSuffix}`;
-        assert.strictEqual(responseStatus(yield* mcpRequest(tampered)), HTTP_UNAUTHORIZED);
+        assert.strictEqual(responseStatus(yield* mcpRequest(tampered)), httpStatus.unauthorized);
       }),
     ),
   TEST_TIMEOUT,

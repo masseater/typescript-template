@@ -5,7 +5,7 @@ import { itemVariants } from "./dropdown-menu-item-variants";
 import type { ReactElement } from "react";
 import type { Children } from "./types";
 
-function DropdownMenuItem({
+const DropdownMenuItem = ({
   children,
   disabled,
   onClick,
@@ -15,7 +15,7 @@ function DropdownMenuItem({
     disabled?: boolean;
     onClick: () => void;
     variant?: "default" | "destructive";
-  }>): ReactElement {
+  }>): ReactElement => {
   return (
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -26,6 +26,6 @@ function DropdownMenuItem({
       {children}
     </MenuPrimitive.Item>
   );
-}
+};
 
 export { DropdownMenuItem };

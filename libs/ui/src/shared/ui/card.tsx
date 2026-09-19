@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import type { Children } from "./types";
 
-function Card({ children }: Children): ReactElement {
+const Card = ({ children }: Children): ReactElement => {
   return (
     <div
       data-slot="card"
@@ -10,6 +10,6 @@ function Card({ children }: Children): ReactElement {
       {children}
     </div>
   );
-}
+};
 
 export { Card };

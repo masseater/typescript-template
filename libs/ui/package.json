@@ -32,6 +32,7 @@
     "tailwindcss": "catalog:"
   },
   "devDependencies": {
+    "@repo/dont-review-it": "workspace:*",
     "@storybook/addon-a11y": "10.6.0",
     "@storybook/addon-mcp": "10.6.0",
     "@storybook/addon-vitest": "10.6.0",

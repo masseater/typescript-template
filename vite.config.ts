@@ -78,7 +78,9 @@ export default defineConfig({
           exclude: [...defaultExclude, workerTests],
           include: [
             "libs/**/*.test.ts",
+            "libs/**/*.test.tsx",
             "apps/**/*.test.ts",
+            "apps/**/*.test.tsx",
             "tools/dev/**/*.test.ts",
             "tools/quality/**/*.test.ts",
             "tools/load/**/*.test.ts",

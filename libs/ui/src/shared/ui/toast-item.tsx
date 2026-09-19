@@ -3,9 +3,11 @@ import { CircleAlertIcon, CircleCheckIcon, XIcon } from "lucide-react";
 
 import type { ReactElement } from "react";
 
-type ToastObject = ReturnType<typeof ToastPrimitive.useToastManager>["toasts"][number];
-
-function ToastItem({ toast }: Readonly<{ toast: ToastObject }>): ReactElement {
+const ToastItem = ({
+  toast,
+}: Readonly<{
+  toast: ReturnType<typeof ToastPrimitive.useToastManager>["toasts"][number];
+}>): ReactElement => {
   return (
     <ToastPrimitive.Root
       toast={toast}
@@ -26,6 +28,6 @@ function ToastItem({ toast }: Readonly<{ toast: ToastObject }>): ReactElement {
       </ToastPrimitive.Close>
     </ToastPrimitive.Root>
   );
-}
+};
 
 export { ToastItem };
