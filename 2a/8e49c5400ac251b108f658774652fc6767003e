@@ -1,1 +1,6 @@
-knip: IndexHit の未使用 export を消し、shell-quote を devDependencies へ。libs/ui の検査モジュールを knip project に載せる。
+Revision history for #540:
+
+rev 2 (content) 2026-09-19 08:15 UTC — knip: IndexHit の未使用 export を消し、shell-quote を devDependencies へ。libs/ui の検査モジュールを knip project に載せる。
+rev 1 (initial) 2026-09-19 08:15 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":540,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"c3d631f98074d800e712364fd147ce42a95a0d21","timestamp_iso":"2026-09-19T08:15:14Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"c3d631f98074d800e712364fd147ce42a95a0d21","new_sha":"2a8e49c5400ac251b108f658774652fc6767003e","timestamp_iso":"2026-09-19T08:15:14Z","reason":"knip: IndexHit の未使用 export を消し、shell-quote を devDependencies へ。libs/ui の検査モジュールを knip project に載せる。","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/c3d631f98074d800e712364fd147ce42a95a0d21...2a8e49c5400ac251b108f658774652fc6767003e"}]} -->
