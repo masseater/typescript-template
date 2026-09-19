@@ -9,7 +9,7 @@ import { noSilentSuppression } from "../../lint/oxlint/rules/governance/no-silen
 import { noUnregisteredRulePlugin } from "../../lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts";
 import { noUnwrappedToolchainConfig } from "../../lint/oxlint/rules/governance/no-unwrapped-toolchain-config--call-the-preset-for-the-block.ts";
 
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 
 export const governanceBundle: readonly WorkspaceLintRule[] = [
   forbidDeclaredCommandInvocation,

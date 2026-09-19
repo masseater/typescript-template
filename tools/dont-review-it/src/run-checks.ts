@@ -4,7 +4,7 @@ import {
   formatLintRuleProblem,
   lintRuleDocProblems,
   lintRuleIndexProblems,
-} from "@repo/lint-rule-authoring";
+} from "@repo/dont-review-it/lint-rule-authoring";
 
 import { runCanonicalLiteralTypeChecks } from "./canonical-literal-types/run-canonical-literal-type-checks.ts";
 import { adoptedBundlesIn } from "./configs/bundles/adopted-bundles.ts";
@@ -41,7 +41,7 @@ import { runTelemetryWiringChecks } from "./telemetry-wiring/run-telemetry-wirin
 import { defaultWorkflowChecksConfig } from "./workflows/config.ts";
 import { workflowOutcomesOf } from "./workflows/workflow-outcomes.ts";
 
-import type { CheckOutcome } from "@repo/repository-checks";
+import type { CheckOutcome } from "@repo/dont-review-it/repository-checks";
 
 export type CheckReport = {
   readonly outcomes: readonly CheckOutcome[];

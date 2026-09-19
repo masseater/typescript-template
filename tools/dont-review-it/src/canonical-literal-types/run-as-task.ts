@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
 
-import { EXIT_PROBLEMS_FOUND, measureCheck } from "@repo/repository-checks";
+import { EXIT_PROBLEMS_FOUND, measureCheck } from "@repo/dont-review-it/repository-checks";
 
 import { listRepositoryFiles } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { inspectCanonicalValues } from "../lint/oxlint/lib/canonical-values/verify.ts";
