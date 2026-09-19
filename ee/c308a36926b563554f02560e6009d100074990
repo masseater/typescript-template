@@ -1,1 +1,1 @@
-oxfmt after rebase: package.json deps order, credentials/claude line wraps.
+Rebase onto latest main; keep ensureAdminRole; align UI forms to arrow/concrete-noun lint; oxfmt.
