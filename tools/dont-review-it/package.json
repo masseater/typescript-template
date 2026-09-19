@@ -93,6 +93,7 @@
     "@opentelemetry/exporter-trace-otlp-http": "catalog:",
     "@opentelemetry/sdk-metrics": "catalog:",
     "@oxlint/plugins": "catalog:",
+    "@repo/ai-native-telemetry": "workspace:*",
     "@repo/config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
@@ -100,7 +101,8 @@
     "msw": "catalog:",
     "shell-quote": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "@repo/vite-config": "workspace:*"
   },
   "peerDependencies": {
     "vite-plus": "^0.3.2"

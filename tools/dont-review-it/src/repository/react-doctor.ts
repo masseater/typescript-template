@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
 import { applications } from "@repo/config";
-import { causeRecord, markFailed, runCli } from "@repo/config/cli";
+import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";

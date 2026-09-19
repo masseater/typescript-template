@@ -1,10 +1,10 @@
 import { assert, it } from "@effect/vitest";
+import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
 import { Effect, Schema } from "effect";
 
 import { migrateD1 } from "./migrate-d1.ts";
 import { schema } from "./schema.ts";
-import { EmptyTestDatabase, TestBinding, runStatement } from "./testing-node.ts";
 
 type SqliteSnapshot = Parameters<typeof generateMigration>[0];
 

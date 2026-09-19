@@ -1,6 +1,6 @@
-import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
 import { workerCompatibility } from "@repo/config/worker";
 import { otlpSignalUrl } from "@repo/observability";
+import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
 import { Config, Effect, Schema } from "effect";
 
 import { stackNames } from "./stacks.ts";

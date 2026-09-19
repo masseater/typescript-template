@@ -1,4 +1,4 @@
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { dontReviewItPreset } from "@repo/dont-review-it";
 import { generatedFiles, lintOptions } from "@repo/dont-review-it/lint";
 import { devServerTests, workerTests } from "@repo/dont-review-it/test-runtime";

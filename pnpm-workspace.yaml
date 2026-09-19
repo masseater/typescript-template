@@ -24,6 +24,7 @@ allowBuilds:
   "@google/genai": false
   "@openrouter/sdk": false
   "@swc/core": false
+minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - "@cloudflare/vite-plugin@1.54.10"
   - "@cloudflare/workers-types@5.20260916.1"

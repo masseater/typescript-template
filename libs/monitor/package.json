@@ -16,6 +16,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "typescript": "catalog:"
   }
 }

@@ -3,8 +3,8 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
 import { applicationOrigins, mailpitOrigin } from "@repo/config";
-import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Console, Effect, Schema } from "effect";
 

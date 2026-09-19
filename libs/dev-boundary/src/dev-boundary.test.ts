@@ -5,7 +5,7 @@ import path from "node:path";
 import { createServer } from "vite-plus";
 import { describe, expect, test as baseTest } from "vite-plus/test";
 
-import { applications, loopbackAddress, loopbackOrigin } from "../applications.ts";
+import { applications, loopbackAddress, loopbackOrigin } from "@repo/config";
 import { devBoundary } from "./dev-boundary.ts";
 import { applicationsExcept } from "./private-path.ts";
 

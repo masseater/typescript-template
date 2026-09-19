@@ -22,6 +22,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "libs/runtime": { ".": "./src/index.ts", "./contracts": "./src/contracts.ts" },
   "libs/auth-ui": { ".": "./src/index.ts" },
   "libs/ui": { ".": "./src/index.ts" },
+  "infra/cloudflare": { "./deployment": "./src/deployment.ts" },
   "tools/dev": { ".": "./src/index.ts" },
 };
 const installedPackages = ["drizzle-orm", "miniflare", "msw"];

@@ -42,7 +42,7 @@ describe("module specifiers", () => {
           'const plugin = { specifier: "@repo/quality/plugin" };',
           'const loaded = await import("@repo/runtime/http");',
           'const required = require("@repo/db/remote");',
-          'const resolved = require.resolve("@repo/config/vite");',
+          'const resolved = require.resolve("@repo/vite-config");',
         ].join("\n"),
       ),
     ).toStrictEqual([
@@ -50,7 +50,7 @@ describe("module specifiers", () => {
       "@repo/quality/plugin",
       "@repo/runtime/http",
       "@repo/db/remote",
-      "@repo/config/vite",
+      "@repo/vite-config",
     ]);
   });
 

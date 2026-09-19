@@ -1,4 +1,4 @@
-import { privateDeploymentKeys } from "@repo/config/deployment-keys";
+import { privateDeploymentKeys } from "@repo/observability/deployment-keys";
 
 const ASSIGNMENT_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<value>.*)$/u;
 const QUOTED_PATTERN = /^(?<quote>["'])(?<body>.*)\k<quote>$/u;

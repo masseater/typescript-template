@@ -1,4 +1,4 @@
-import { effectRun } from "@repo/config/vite";
+import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({

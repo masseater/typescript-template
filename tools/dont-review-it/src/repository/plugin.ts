@@ -313,7 +313,7 @@ const projectPlugin = definePlugin({
     "process-boundary": {
       create: processBoundaryVisitor,
       meta: metadata(
-        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console、終了コードは @repo/config/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.exitCode と NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、そこでも process.stdout と process.stderr は参照できません。`,
+        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.exitCode と NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、そこでも process.stdout と process.stderr は参照できません。`,
       ),
     },
     "retired-imports": {

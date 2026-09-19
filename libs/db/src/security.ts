@@ -12,7 +12,8 @@ import {
   verification,
 } from "./schema.ts";
 
-import type { Application, StrongAuthenticationMethod } from "@repo/config";
+import type { Application } from "@repo/config";
+import type { StrongAuthenticationMethod } from "@repo/config/identity";
 
 class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 
