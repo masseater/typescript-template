@@ -166,7 +166,11 @@ describe("lifecycle contents", () => {
 
   it("checks staged secrets before a commit", () => {
     expect.hasAssertions();
-    expect(reachable(".", ["precommit"])).toContain("check:staged");
+    expect(
+      configuredDirectories.filter((directory) =>
+        reachable(directory, ["precommit"]).includes("check:staged"),
+      ),
+    ).toStrictEqual(["tools/quality"]);
   });
 
   it("leaves tests, builds and work in other workspaces to ci", () => {

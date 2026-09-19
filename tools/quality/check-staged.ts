@@ -1,17 +1,14 @@
-import { fileURLToPath } from "node:url";
-
 import { markFailed, runCli } from "@repo/config/cli";
 import { Cause, Console, Effect, Option } from "effect";
 
 import { deploymentCredentials } from "./credentials.ts";
+import { repositoryRoot } from "./repository-root.ts";
 import { prefixScan, secretViolations } from "./secrets.ts";
 import { stagedFiles, type StagedFile } from "./staged.ts";
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
-
 const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
-  const credentials = yield* deploymentCredentials(root);
-  const staged = yield* stagedFiles(root);
+  const credentials = yield* deploymentCredentials(repositoryRoot);
+  const staged = yield* stagedFiles(repositoryRoot);
   const scan = prefixScan(
     credentials.values,
     staged.map((entry: StagedFile) => entry.content),

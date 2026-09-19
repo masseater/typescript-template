@@ -1,12 +1,12 @@
 import { lstat, readlink, stat } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+
+import { repositoryRoot } from "./repository-root.ts";
 
 import type { WorkspaceManifest } from "./dependencies.ts";
 
 const instructionFile = "AGENTS.md";
 const linkFile = "CLAUDE.md";
-const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
 
 const workspaceDirectories = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.map(({ file }) => path.posix.dirname(file));
@@ -55,4 +55,5 @@ const instructionViolations = async (
   return violations.flat();
 };
 
-export { instructionViolations, repositoryRoot, workspaceDirectories };
+export { instructionViolations, workspaceDirectories };
+export { repositoryRoot } from "./repository-root.ts";
