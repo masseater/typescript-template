@@ -1,0 +1,1 @@
+export RESPONSE_FACTORY_MEMBER and use canonical bindings; drop unused STREAM_SINK_MEMBER export
