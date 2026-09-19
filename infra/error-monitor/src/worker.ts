@@ -47,5 +47,4 @@ export class ErrorMonitor extends Monitor<Bindings> {
   }
 }
 
-// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("error_monitor");
