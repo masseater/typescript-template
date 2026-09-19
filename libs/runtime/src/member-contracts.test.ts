@@ -16,6 +16,7 @@ describe("member view", () => {
         name: "山田 花子",
         profile: "はじめまして。",
         role: "admin",
+        socialLinks: ["https://x.com/hanako"],
         twoFactorEnabled: true,
       });
       assert.deepStrictEqual(encoded, {
@@ -23,6 +24,7 @@ describe("member view", () => {
         joined: "2026-08",
         name: "山田 花子",
         profile: "はじめまして。",
+        socialLinks: ["https://x.com/hanako"],
       });
     }),
   );
@@ -31,9 +33,13 @@ describe("member view", () => {
     "rejects the registration date %s",
     (joined) =>
       Effect.gen(function* program() {
-        const failure = yield* encode({ id: "reader", joined, name: "reader", profile: "" }).pipe(
-          Effect.flip,
-        );
+        const failure = yield* encode({
+          id: "reader",
+          joined,
+          name: "reader",
+          profile: "",
+          socialLinks: [],
+        }).pipe(Effect.flip);
         assert.strictEqual(failure._tag, "SchemaError");
       }),
   );
@@ -94,13 +100,14 @@ describe("member list response", () => {
             name: "a",
             profile: "",
             role: "admin",
+            socialLinks: [],
           },
         ],
         pageSize: 24,
         total: 1,
       });
       assert.deepStrictEqual(encoded, {
-        members: [{ id: "a", joined: "2026-09", name: "a", profile: "" }],
+        members: [{ id: "a", joined: "2026-09", name: "a", profile: "", socialLinks: [] }],
         pageSize: 24,
         total: 1,
       });

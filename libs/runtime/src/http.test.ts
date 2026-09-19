@@ -110,9 +110,17 @@ const rejections = [
 describe("json request bodies", () => {
   it.effect("reads a bounded same-origin JSON mutation", () =>
     Effect.gen(function* program() {
-      const body = JSON.stringify({ name: " 利用者 ", profile: "自己紹介です。" });
+      const body = JSON.stringify({
+        name: " 利用者 ",
+        profile: "自己紹介です。",
+        socialLinks: ["https://github.com/example"],
+      });
       const decoded = yield* readJsonBody(ProfileUpdate, mutation(jsonHeaders, body));
-      assert.deepStrictEqual(decoded, { name: "利用者", profile: "自己紹介です。" });
+      assert.deepStrictEqual(decoded, {
+        name: "利用者",
+        profile: "自己紹介です。",
+        socialLinks: ["https://github.com/example"],
+      });
     }).pipe(Effect.provide(context)),
   );
 
@@ -132,7 +140,7 @@ describe("json request bodies", () => {
 
   it.effect("rejects unknown fields such as a self-assigned role", () =>
     Effect.gen(function* program() {
-      const body = JSON.stringify({ name: "reader", profile: "", role: "admin" });
+      const body = JSON.stringify({ name: "reader", profile: "", role: "admin", socialLinks: [] });
       const failure = yield* readJsonBody(ProfileUpdate, mutation(jsonHeaders, body)).pipe(
         Effect.flip,
       );

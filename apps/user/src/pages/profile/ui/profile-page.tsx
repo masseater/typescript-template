@@ -1,5 +1,6 @@
 import { Avatar, ButtonLink, Heading } from "@repo/ui";
 
+import { SocialLinks } from "#shared/social-link";
 import { Biography } from "./biography.tsx";
 import { ProfileBody } from "./profile-body.tsx";
 
@@ -22,6 +23,7 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
         </Heading>
       </div>
       <Biography own={own} text={member.profile} />
+      <SocialLinks urls={member.socialLinks} />
       <p className="text-sm leading-normal text-muted-foreground">
         {joinedMonth.format(new Date(`${member.joined}-01T00:00:00Z`))}に登録
       </p>

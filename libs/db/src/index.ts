@@ -10,6 +10,7 @@ const profileColumns = {
   id: user.id,
   name: user.name,
   profile: user.profile,
+  socialLinks: user.socialLinks,
 };
 
 const checkDatabase = Effect.fn("checkDatabase")(function* checkDatabase() {
@@ -26,7 +27,11 @@ const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) 
 
 const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
   userId: string,
-  values: { readonly name: string; readonly profile: string },
+  values: {
+    readonly name: string;
+    readonly profile: string;
+    readonly socialLinks: readonly string[];
+  },
 ) {
   const [profile] = yield* query((database) =>
     database

@@ -21,12 +21,19 @@ function auditRecords(): Effect.Effect<readonly unknown[], unknown, Database> {
 it.effect("persists Unicode profiles", () =>
   Effect.gen(function* program() {
     yield* addUser("reader");
-    yield* updateProfile("reader", { name: "日本語 العربية 🐈", profile: "私は開発者です。" });
+    yield* updateProfile("reader", {
+      name: "日本語 العربية 🐈",
+      profile: "私は開発者です。",
+      socialLinks: ["https://github.com/reader"],
+    });
     const profile = yield* getProfile("reader");
     assert.strictEqual(profile?.name, "日本語 العربية 🐈");
     assert.strictEqual(profile?.profile, "私は開発者です。");
+    assert.deepStrictEqual(profile?.socialLinks, ["https://github.com/reader"]);
     assert.strictEqual(
-      yield* failureTag(updateProfile("missing", { name: "missing", profile: "" })),
+      yield* failureTag(
+        updateProfile("missing", { name: "missing", profile: "", socialLinks: [] }),
+      ),
       "UserNotFound",
     );
   }).pipe(Effect.provide(TestDatabase)),
