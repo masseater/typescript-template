@@ -1,7 +1,3 @@
-export const raiseSignal = (signal: NodeJS.Signals): void => {
-  process.kill(process.pid, signal);
-};
-
 /** @canonical-values ai-native.interrupt-signal */
 const INTERRUPT_SIGNALS = ["SIGINT", "SIGTERM"] as const;
 
@@ -13,25 +9,25 @@ export const dropInterruptHandler = (takenHandler: (signal: NodeJS.Signals) => v
   for (const signal of INTERRUPT_SIGNALS) process.removeListener(signal, takenHandler);
 };
 
-export const makeWaitingInterruptHandler = (dependencies: {
+const raiseSignal = (signal: NodeJS.Signals): void => {
+  process.kill(process.pid, signal);
+};
+
+export const makeWaitingInterruptHandler = (input: {
   entryPath: string;
   removeEntry: (entryPath: string) => void;
-  raise: (signal: NodeJS.Signals) => void;
 }): ((signal: NodeJS.Signals) => void) => {
   return (signal) => {
-    dependencies.removeEntry(dependencies.entryPath);
-    dependencies.raise(signal);
+    input.removeEntry(input.entryPath);
+    raiseSignal(signal);
   };
 };
 
-type HeldDependencies = {
-  release: () => Promise<void>;
-  raise: (signal: NodeJS.Signals) => void;
-  onUnreleased: (failure: Error) => void;
-};
-
 const raiseAfterRelease = async (
-  dependencies: HeldDependencies,
+  dependencies: {
+    release: () => Promise<void>;
+    onUnreleased: (failure: Error) => void;
+  },
   arrival: Promise<NodeJS.Signals | null>,
 ): Promise<void> => {
   const signal = await arrival;
@@ -43,12 +39,13 @@ const raiseAfterRelease = async (
       new Error(`releasing the slot before re-raising ${signal} failed`, { cause: staleLease }),
     );
   }
-  dependencies.raise(signal);
+  raiseSignal(signal);
 };
 
-export const makeHeldInterrupt = (
-  dependencies: HeldDependencies,
-): {
+export const makeHeldInterrupt = (dependencies: {
+  release: () => Promise<void>;
+  onUnreleased: (failure: Error) => void;
+}): {
   readonly handler: (signal: NodeJS.Signals) => void;
   readonly standDown: () => void;
   readonly settled: Promise<void>;

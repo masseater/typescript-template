@@ -11,7 +11,6 @@ import {
   installInterruptHandler,
   makeHeldInterrupt,
   makeRunningInterruptHandler,
-  raiseSignal,
 } from "./signals.ts";
 import { warnUnreleased } from "./unreleased-warning.ts";
 
@@ -174,7 +173,6 @@ const spawnUnderHeldInterrupt = async (input: {
 }): Promise<{ childPid: number; settling: Promise<Settled> }> => {
   const held = makeHeldInterrupt({
     release: input.hold.release,
-    raise: raiseSignal,
     onUnreleased: warnUnreleased,
   });
   installInterruptHandler(held.handler);

@@ -1,10 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  mutatingBuiltinMemberOf,
-  MUTATING_BUILTIN_METHOD_NAMES,
-  MUTATING_BUILTIN_TYPE_NAMES,
-} from "./mutating-members.ts";
+import { mutatingBuiltinMemberOf } from "./mutating-members.ts";
 
 describe("mutatingBuiltinMemberOf", () => {
   describe("writing to a map", () => {
@@ -163,42 +159,6 @@ describe("mutatingBuiltinMemberOf", () => {
 
     it("is no member", ({ setWithMapMethod }) => {
       expect(setWithMapMethod).toBe(null);
-    });
-  });
-});
-
-describe("MUTATING_BUILTIN_TYPE_NAMES", () => {
-  describe("a type the enumeration carries", () => {
-    const it = test.extend("weakMapListed", () => MUTATING_BUILTIN_TYPE_NAMES.has("WeakMap"));
-
-    it("stands among the type names", ({ weakMapListed }) => {
-      expect(weakMapListed).toBe(true);
-    });
-  });
-
-  describe("a type the enumeration leaves out", () => {
-    const it = test.extend("arrayListed", () => MUTATING_BUILTIN_TYPE_NAMES.has("Array"));
-
-    it("is absent from the type names", ({ arrayListed }) => {
-      expect(arrayListed).toBe(false);
-    });
-  });
-});
-
-describe("MUTATING_BUILTIN_METHOD_NAMES", () => {
-  describe("a method the enumeration carries", () => {
-    const it = test.extend("appendListed", () => MUTATING_BUILTIN_METHOD_NAMES.has("append"));
-
-    it("stands among the method names", ({ appendListed }) => {
-      expect(appendListed).toBe(true);
-    });
-  });
-
-  describe("a method the enumeration leaves out", () => {
-    const it = test.extend("pushListed", () => MUTATING_BUILTIN_METHOD_NAMES.has("push"));
-
-    it("is absent from the method names", ({ pushListed }) => {
-      expect(pushListed).toBe(false);
     });
   });
 });

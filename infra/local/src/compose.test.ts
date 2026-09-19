@@ -1,14 +1,35 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { mailpitPort } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
-const files: Readonly<Record<string, string>> = import.meta.glob("../compose.yaml", {
-  eager: true,
-  import: "default",
-});
+import { receiverPorts } from "./receiver.ts";
 
-describe("the local services", () => {
-  it("publish Mailpit on the port the rest of the repository reads", () => {
+const MAILPIT_SMTP_PORT = 1025;
+
+const published = /^\s+- "127\.0\.0\.1:(?<host>\d+):(?<container>\d+)"$/gmu;
+
+const compose = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../compose.yaml"),
+  "utf8",
+);
+
+describe("local services", () => {
+  it("publish every loopback port the rest of the repository reads", () => {
     expect.hasAssertions();
-    expect(files["../compose.yaml"]).toContain(`"127.0.0.1:${mailpitPort}:${mailpitPort}"`);
+    const ports = Array.from(
+      compose.matchAll(published),
+      ({ groups }) => `${groups?.["host"]}:${groups?.["container"]}`,
+    );
+    const expected = [
+      `${receiverPorts.otlp}:${receiverPorts.otlp}`,
+      `${receiverPorts.logs}:${receiverPorts.logs}`,
+      `${receiverPorts.traces}:${receiverPorts.traces}`,
+      `${mailpitPort}:${mailpitPort}`,
+      `${MAILPIT_SMTP_PORT}:${MAILPIT_SMTP_PORT}`,
+    ];
+    expect(ports).toStrictEqual(expected);
   });
 });
