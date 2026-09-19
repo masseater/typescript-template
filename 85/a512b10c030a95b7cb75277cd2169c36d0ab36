@@ -1,1 +1,1 @@
-knip: auth の未使用 @effect/vitest を外し、monitor 3 Worker に @repo/observability を依存として足す
+keep auth/config/db/monitor/observability on awaitingPresetPackages until remaining ~90 preset lints are cleared; restore vitest.workers.config name
