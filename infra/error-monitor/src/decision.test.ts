@@ -16,7 +16,7 @@ function group(fingerprint: string): ErrorGroup {
     count: occurrences,
     event: "browser.error",
     fingerprint,
-    service: "user-browser",
+    service: "service-member-browser",
     tag: "TypeError",
     type: "Error",
   };
@@ -53,7 +53,7 @@ describe("error notifications", () => {
     expect.hasAssertions();
     const message = formatMessage(decideNotifications([group("0000000a")], {}, now).notifications);
     expect(message).toContain(
-      "[新規] user-browser browser.error TypeError Error (fingerprint 0000000a, 3 件)",
+      "[新規] service-member-browser browser.error TypeError Error (fingerprint 0000000a, 3 件)",
     );
     expect(message).toContain("error.fingerprint");
   });
