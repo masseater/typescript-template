@@ -14,9 +14,15 @@ import { storybook } from "./storybook.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 
-type Command = Effect.Effect<unknown, LocalCommandFailure>;
+type Command = Effect.Effect<unknown, LocalCommandFailure, never>;
 
 const firstUserArgumentIndex = 2;
+
+function asCommand<Args extends readonly unknown[], Requirements>(
+  run: (...args: Args) => Effect.Effect<unknown, LocalCommandFailure, Requirements>,
+): (...args: Args) => Command {
+  return run as (...args: Args) => Command;
+}
 
 const operator = Effect.fn("operator")(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
@@ -27,21 +33,21 @@ const operator = Effect.fn("operator")(function* operator(_args: readonly string
 });
 
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
-  ["ci-runner", ciRunner],
-  ["connect", connection],
-  ["operator", operator],
-  ["setup", setup],
-  ["status", status],
-  ["storybook", storybook],
+  ["ci-runner", asCommand(ciRunner)],
+  ["connect", asCommand(connection)],
+  ["operator", asCommand(operator)],
+  ["setup", asCommand(setup)],
+  ["status", asCommand(status)],
+  ["storybook", asCommand(storybook)],
 ]);
 
 const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
-  ["authenticate", authenticate],
-  ["browser", browser],
-  ["browser-command", browserCommand],
-  ["logs", logs],
-  ["start", start],
-  ["stop", stop],
+  ["authenticate", asCommand(authenticate)],
+  ["browser", asCommand(browser)],
+  ["browser-command", asCommand(browserCommand)],
+  ["logs", asCommand(logs)],
+  ["start", asCommand(start)],
+  ["stop", asCommand(stop)],
 ]);
 
 function writeReport(report: unknown): Effect.Effect<void> {
@@ -57,7 +63,7 @@ function selectCommand(action: string, args: readonly string[]): Command {
   const [app, ...rest] = args;
   return scoped === undefined
     ? Effect.fail(failure("command_unsupported"))
-    : application(app).pipe(Effect.flatMap((name) => scoped(name, rest)));
+    : asCommand(() => application(app).pipe(Effect.flatMap((name) => scoped(name, rest))))();
 }
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
