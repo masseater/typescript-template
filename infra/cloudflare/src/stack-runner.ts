@@ -104,6 +104,24 @@ const applyStack = Effect.fn("applyStack")(function* applyStack(
   yield* write({ event: "cloudflare.applied", stack });
 });
 
+const applyStacks = Effect.fn("applyStacks")(function* applyStacks(
+  stacks: readonly StackName[],
+  deployment: Deployment,
+) {
+  for (const stack of stacks) {
+    yield* assertStackReady(stack, deployment, stateStore(deployment.secrets));
+    const { planned, snapshot } = yield* planStack(stack, deployment);
+    const confirmation = planConfirmation(planned, deployment.access.accountId);
+    yield* announce(planned, stack, confirmation);
+    yield* acceptPlan(planned, { accountId: deployment.access.accountId, confirmation });
+    yield* StackRoute.apply(snapshot).pipe(
+      Effect.provideService(Progress, reportProgress(stack)),
+      Effect.asVoid,
+    );
+    yield* write({ event: "cloudflare.applied", stack });
+  }
+});
+
 const runDeployment = Effect.fn("runDeployment")(function* runDeployment(
   request: DeploymentRequest,
   deployment: Deployment,
@@ -112,7 +130,9 @@ const runDeployment = Effect.fn("runDeployment")(function* runDeployment(
   const run =
     request.operation === "plan"
       ? previewStacks(request.stacks, deployment)
-      : applyStack(request, deployment);
+      : request.operation === "deploy-all"
+        ? applyStacks(request.stacks, deployment)
+        : applyStack(request, deployment);
   yield* run.pipe(
     Effect.provideService(ArtifactWrites, mode),
     Effect.provide(alchemist),
