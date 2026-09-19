@@ -1,6 +1,7 @@
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
 
 import {
+  InvalidUsersSearch,
   UsersFailed,
   UsersPending,
   loadMembers,
@@ -8,25 +9,35 @@ import {
 } from "#pages/users/index.ts";
 import { UsersRoute } from "./-users-route.tsx";
 
+import type { UsersSearch } from "#pages/users/index.ts";
+
+function requireUsersSearch(raw: unknown): UsersSearch {
+  try {
+    return normalizeUsersSearch(raw);
+  } catch (error) {
+    if (error instanceof InvalidUsersSearch) {
+      throw redirect({ replace: true, search: {}, to: "/users" });
+    }
+    throw error;
+  }
+}
+
 // oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/users/")({
-  validateSearch: normalizeUsersSearch,
-  loaderDeps: ({ search }: Readonly<{ search: Readonly<Record<string, unknown>> }>) =>
-    normalizeUsersSearch(search),
+  validateSearch: requireUsersSearch,
+  loaderDeps: ({ search }: Readonly<{ search: UsersSearch }>) => search,
   beforeLoad: ({
     location,
     search,
   }: Readonly<{
     location: Readonly<{ searchStr: string }>;
-    search: Readonly<Record<string, unknown>>;
+    search: UsersSearch;
   }>) => {
-    const normalized = normalizeUsersSearch(search);
-    if (location.searchStr !== defaultStringifySearch(normalized)) {
-      throw redirect({ replace: true, search: normalized, to: "/users" });
+    if (location.searchStr !== defaultStringifySearch(search)) {
+      throw redirect({ replace: true, search, to: "/users" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: ReturnType<typeof normalizeUsersSearch> }>) =>
-    loadMembers(deps),
+  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
   component: UsersRoute,
   errorComponent: UsersFailed,
   pendingComponent: UsersPending,
