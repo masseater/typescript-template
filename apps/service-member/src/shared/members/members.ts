@@ -1,10 +1,8 @@
+import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { containsKeyword } from "./contains-keyword.ts";
-import { query } from "./database.ts";
-import { user } from "./schema.ts";
-import { UserNotFound } from "./user-not-found.ts";
+const { user } = schema;
 
 type Member = Readonly<{
   id: string;
@@ -17,6 +15,14 @@ type Member = Readonly<{
 const monthLength = "YYYY-MM".length;
 const memberColumns = {
   createdAt: user.createdAt,
+  id: user.id,
+  name: user.name,
+  profile: user.profile,
+  socialLinks: user.socialLinks,
+};
+
+const profileColumns = {
+  email: user.email,
   id: user.id,
   name: user.name,
   profile: user.profile,
@@ -73,4 +79,33 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
   return { members: members.map((member) => shown(member)), total: total?.count ?? 0 };
 });
 
-export { getMember, listMembers };
+const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {
+  const [profile] = yield* query((database) =>
+    database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
+  );
+  // oxlint-disable-next-line unicorn/no-null
+  return profile ?? null;
+});
+
+const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
+  userId: string,
+  values: {
+    readonly name: string;
+    readonly profile: string;
+    readonly socialLinks: readonly string[];
+  },
+) {
+  const [profile] = yield* query((database) =>
+    database
+      .update(user)
+      .set({ ...values, updatedAt: new Date() })
+      .where(eq(user.id, userId))
+      .returning(profileColumns),
+  );
+  if (!profile) {
+    return yield* new UserNotFound();
+  }
+  return profile;
+});
+
+export { getMember, getProfile, listMembers, updateProfile };
