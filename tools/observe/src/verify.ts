@@ -2,7 +2,7 @@
 import { parseArgs } from "node:util";
 
 import { applicationOrigins, applications } from "@repo/config";
-import { runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
@@ -24,6 +24,7 @@ class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("Ver
     "request_failed",
     "correlation_headers_missing",
     "telemetry_not_correlated",
+    "telemetry_unparsable",
   ]),
 }) {}
 
@@ -50,9 +51,23 @@ function fail(reason: VerificationFailure["reason"]): VerificationFailure {
 
 const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {
   const telemetry = yield* requestTelemetry(target.app, target.requestId);
+  if (
+    telemetry.logs.some(
+      ({
+        event,
+      }: Readonly<{ event: Readonly<Record<string, unknown>> | "unparsable" | undefined }>) =>
+        event === "unparsable",
+    )
+  ) {
+    return yield* fail("telemetry_unparsable");
+  }
   const logged = telemetry.logs.some(
-    ({ event }: Readonly<{ event: Readonly<Record<string, unknown>> | undefined }>) =>
-      event?.["event"] === "http.server.request" &&
+    ({
+      event,
+    }: Readonly<{ event: Readonly<Record<string, unknown>> | "unparsable" | undefined }>) =>
+      event !== undefined &&
+      event !== "unparsable" &&
+      event["event"] === "http.server.request" &&
       event["service"] === target.service &&
       event["request_id"] === target.requestId,
   );
@@ -125,8 +140,8 @@ const verify = Effect.fn("verify")(function* verify() {
   };
 });
 
-runCli(verify().pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), {
-  event: "observability.verification_failed",
-  ok: false,
-  remediation: `Specify --app with a running local app origin such as ${applicationOrigins.user}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
-});
+runCli(verify().pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
+  causeRecord("observability.verification_failed", cause, {
+    remediation: `Specify --app with a running local app origin such as ${applicationOrigins.user}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+  }),
+);
