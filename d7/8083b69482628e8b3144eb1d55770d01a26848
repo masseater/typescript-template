@@ -1,0 +1,1 @@
+MQ 単独でも vp が oxlint.darwin を載せたまま kevent 待ちで戻らないことを sample/lsof で確認。origins 修正に加え SKIP_LINT_NATIVE と premerge 連鎖解除を戻す。
