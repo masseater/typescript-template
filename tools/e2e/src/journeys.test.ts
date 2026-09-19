@@ -13,6 +13,7 @@ import {
   signOut,
   signUp,
 } from "./flows.ts";
+import { journeyRoles } from "./journey-roles.ts";
 import {
   appearanceTimeout,
   fill,
@@ -163,5 +164,15 @@ describe("アプリ全体の導線", () => {
     const address = page.getByLabel("メールアドレス", { exact: true }).first();
     await address.waitFor({ state: "visible", timeout: appearanceTimeout });
     expect(new URL(page.url()).pathname).toBe("/login");
+  });
+
+  it("どのアプリも検索エンジンの索引に載らない", async ({ environment, page }) => {
+    expect.hasAssertions();
+    const responses = await Promise.all(
+      journeyRoles.map(async (role) => page.request.get(environment.originOf(role))),
+    );
+    expect(responses.map((response) => response.headers()["x-robots-tag"])).toStrictEqual(
+      journeyRoles.map(() => "noindex, nofollow"),
+    );
   });
 });

@@ -4,7 +4,7 @@ import { Effect, Result } from "effect";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
-import { createNonce, jsonResponse, secureResponse } from "./responses.ts";
+import { createNonce, jsonResponse, secureResponse, unindexedResponse } from "./responses.ts";
 
 import type { CurrentRequest, Reporting, Telemetry, TelemetryFlusher } from "@repo/observability";
 import type { Cause } from "effect";
@@ -47,11 +47,14 @@ function serveWorker<Requirements>(
     fetch: async (request, _environment, context): Promise<Response> => {
       context.waitUntil(runtime.built());
       const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      if (exit._tag !== "Success") {
-        return unavailableResponse(request, exit.cause, reporting);
+      if (exit._tag === "Success") {
+        context.waitUntil(runtime.runPromise(flushTelemetry));
       }
-      context.waitUntil(runtime.runPromise(flushTelemetry));
-      return exit.value;
+      return unindexedResponse(
+        exit._tag === "Success"
+          ? exit.value
+          : await unavailableResponse(request, exit.cause, reporting),
+      );
     },
   };
 }

@@ -46,21 +46,23 @@ function contentSecurityPolicy(response: Response, nonce: string | undefined): s
 }
 
 function secureResponse(request: Request, response: Response, nonce?: string): Response {
-  const headers = new Headers(response.headers);
-  headers.set("cache-control", "no-store");
-  headers.set("x-content-type-options", "nosniff");
-  headers.set("referrer-policy", "no-referrer");
-  headers.set("x-frame-options", "DENY");
-  headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
-  headers.set("content-security-policy", contentSecurityPolicy(response, nonce));
+  const secured = new Response(response.body, response);
+  secured.headers.set("cache-control", "no-store");
+  secured.headers.set("x-content-type-options", "nosniff");
+  secured.headers.set("referrer-policy", "no-referrer");
+  secured.headers.set("x-frame-options", "DENY");
+  secured.headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
+  secured.headers.set("content-security-policy", contentSecurityPolicy(response, nonce));
   if (new URL(request.url).protocol === "https:") {
-    headers.set("strict-transport-security", strictTransportSecurity);
+    secured.headers.set("strict-transport-security", strictTransportSecurity);
   }
-  return new Response(response.body, {
-    headers,
-    status: response.status,
-    statusText: response.statusText,
-  });
+  return secured;
 }
 
-export { createNonce, jsonResponse, secureResponse };
+function unindexedResponse(response: Response): Response {
+  const unindexed = new Response(response.body, response);
+  unindexed.headers.set("x-robots-tag", "noindex, nofollow");
+  return unindexed;
+}
+
+export { createNonce, jsonResponse, secureResponse, unindexedResponse };
