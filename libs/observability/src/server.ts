@@ -16,3 +16,5 @@ export type { Correlation } from "./protocol.ts";
 export type { RequestContext } from "./current-request.ts";
 export type { Reporting } from "./unavailable.ts";
 export type { Attributes } from "./annotations.ts";
+export type { ServiceName } from "./service-name.ts";
+export { deploymentKeys, privateDeploymentKeys } from "./deployment-keys.ts";

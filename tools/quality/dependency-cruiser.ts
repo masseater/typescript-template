@@ -1,4 +1,4 @@
-import { clientReachableModules, serverOnlyPackages } from "@repo/config/vite";
+import { clientReachableModules, serverOnlyPackages } from "@repo/vite-config";
 
 import {
   nodeRuntimePackages,
@@ -17,11 +17,11 @@ const anyOf = (values: readonly string[]): string => {
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
-const databaseOperations = String.raw`^libs/db/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
-const databaseInternal = String.raw`^libs/db/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
+const databaseOperations = String.raw`^libs/db(?:-local)?/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
+const databaseInternal = String.raw`^libs/db(?:-local)?/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
 const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
-const deploymentConfig = String.raw`^libs/config/src/deployment\.ts$`;
+const deploymentConfig = String.raw`^infra/cloudflare/src/deployment\.ts$`;
 const serverOnlyModule = String.raw`^libs/(?:${serverOnlyPackages.join("|")})/src/`;
 const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`;
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
@@ -145,7 +145,7 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "@repo/config/deployment は node:os と node:path でデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
+        "@repo/infra-cloudflare/deployment は node:os と node:path でデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
       from: { path: "^(?:apps|libs)/" },
       name: "no-deployment-config-in-shipped-code",
       severity: "error",

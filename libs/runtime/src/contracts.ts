@@ -1,4 +1,5 @@
-import { applications, roles } from "@repo/config";
+import { applications } from "@repo/config";
+import { roles } from "@repo/config/identity";
 import { Effect, Option, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;

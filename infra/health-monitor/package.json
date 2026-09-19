@@ -11,6 +11,7 @@
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
     "@repo/config": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",
