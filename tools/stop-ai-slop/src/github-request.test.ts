@@ -1,5 +1,7 @@
 import { attemptAsync } from "es-toolkit";
-import { describe, expect, test, vi } from "vite-plus/test";
+import { http } from "msw";
+import { setupServer } from "msw/node";
+import { describe, expect, test } from "vite-plus/test";
 
 import { githubRequestFor } from "./github-request.ts";
 
@@ -21,44 +23,59 @@ describe("githubRequestFor", () => {
   });
 
   describe("a compare the API answered", () => {
-    const it = test.extend("decodedCompare", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        Response.json({ merge_base_commit: { sha: "basesha" } }),
-      );
-      return githubRequestFor("token")?.("/repos/owner/name/compare/a...b");
-    });
-
-    it("answers with the decoded body", ({ decodedCompare }) => {
-      expect(decodedCompare).toStrictEqual({ merge_base_commit: { sha: "basesha" } });
-    });
-  });
-
-  describe("the fetch behind a compare the API answered", () => {
-    const it = test.extend("githubFetch", async () => {
-      const fetched = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(Response.json({ merge_base_commit: { sha: "basesha" } }));
-      await githubRequestFor("token")?.("/repos/owner/name/compare/a...b");
-      return fetched;
-    });
-
-    it("asks the API for the path under the token", ({ githubFetch }) => {
-      expect(githubFetch).toHaveBeenCalledExactlyOnceWith(
-        "https://api.github.com/repos/owner/name/compare/a...b",
-        {
-          headers: {
-            accept: "application/vnd.github+json",
-            authorization: "Bearer token",
-            "x-github-api-version": "2022-11-28",
+    const it = test.extend("answeredCompare", async ({}, { onCleanup }) => {
+      const seen = Promise.withResolvers<Request>();
+      const server = setupServer(
+        http.get(
+          ({ request }) => new URL(request.url).origin === "https://api.github.com",
+          ({ request }) => {
+            seen.resolve(request);
+            return Response.json({ merge_base_commit: { sha: "basesha" } });
           },
-        },
+        ),
       );
+      server.listen({ onUnhandledRequest: "error" });
+      onCleanup(() => {
+        server.close();
+      });
+      const decoded = await githubRequestFor("token")?.("/repos/owner/name/compare/a...b");
+      const interceptedRequest = await seen.promise;
+      return Promise.all([
+        Promise.resolve(decoded),
+        Promise.all([
+          Promise.resolve(interceptedRequest.url),
+          Promise.resolve(interceptedRequest.headers.get("authorization")),
+          Promise.resolve(interceptedRequest.headers.get("accept")),
+          Promise.resolve(interceptedRequest.headers.get("x-github-api-version")),
+        ]),
+      ]);
+    });
+
+    it("answers under the token headers the handler received", ({ answeredCompare }) => {
+      expect(answeredCompare).toStrictEqual([
+        { merge_base_commit: { sha: "basesha" } },
+        [
+          "https://api.github.com/repos/owner/name/compare/a...b",
+          "Bearer token",
+          "application/vnd.github+json",
+          "2022-11-28",
+        ],
+      ]);
     });
   });
 
   describe("a failing answer from the API", () => {
-    const it = test.extend("failureFromReadingAFailingAnswer", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("no", { status: 404 }));
+    const it = test.extend("failureFromReadingAFailingAnswer", async ({}, { onCleanup }) => {
+      const server = setupServer(
+        http.get(
+          ({ request }) => new URL(request.url).origin === "https://api.github.com",
+          () => new Response("no", { status: 404 }),
+        ),
+      );
+      server.listen({ onUnhandledRequest: "error" });
+      onCleanup(() => {
+        server.close();
+      });
       const [failure] = await attemptAsync<unknown, Error>(async () =>
         githubRequestFor("token")?.("/repos/owner/name/contents/absent.ts"),
       );

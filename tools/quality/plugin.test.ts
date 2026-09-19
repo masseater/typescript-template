@@ -42,12 +42,16 @@ const forbiddenCode = [
     'import { useMemo as cache } from "react"; export const fn = () => cache(() => 0, []);',
     "no-manual-memoization",
   ],
-  ["libs/ui/src/probe.ts", 'export * from "smarthr-ui";', "retired-imports"],
-  ["apps/user/src/probe.ts", 'export { Button } from "smarthr-ui/lib/Button";', "retired-imports"],
+  ["libs/ui/src/probe.ts", 'export * from "styled-components";', "retired-imports"],
+  [
+    "apps/user/src/probe.ts",
+    'export { ThemeProvider } from "styled-components/native";',
+    "retired-imports",
+  ],
   ["infra/cloudflare/src/probe.ts", 'export * from "@pulumi/aws";', "retired-imports"],
   [
     "tools/dev/src/probe.ts",
-    'import legacy = require("smarthr-ui"); export { legacy };',
+    'import legacy = require("react-intl"); export { legacy };',
     "retired-imports",
   ],
   ["tools/dev/src/probe.ts", 'export const load = () => import("react-intl");', "retired-imports"],
@@ -214,7 +218,7 @@ const validBoundaries = [
     'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
   ],
   ["libs/ui/src/probe.ts", 'export * from "@repo/ui/button";'],
-  ["libs/ui/src/probe.ts", 'export * from "smarthr-ui-extra";'],
+  ["libs/ui/src/probe.ts", 'export * from "styled-components-extra";'],
   ["libs/ui/src/probe.ts", 'export * from "pulumi-helpers";'],
   [
     "tools/dev/src/probe.ts",

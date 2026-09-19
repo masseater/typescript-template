@@ -1,47 +1,40 @@
+import { randomBytes } from "node:crypto";
+import { closeSync, openSync, writeFileSync } from "node:fs";
+
 import { once } from "es-toolkit/function";
+import { tryLock } from "fs-native-extensions";
 
 import { closeFileDescriptorAfterFailure, releaseFileLock } from "./release-file-lock.ts";
 
-type FileLockRequest = {
-  path: string;
-  open: (path: string) => number;
-  tryLock: (descriptor: number) => boolean;
-  unlock: (descriptor: number) => void;
-  close: (descriptor: number) => void;
-  recordGeneration: () => void;
-};
-
-const lockedDescriptor = (fileLock: FileLockRequest): number | null => {
-  const descriptor = fileLock.open(fileLock.path);
+const lockedDescriptor = (lockPath: string): number | null => {
+  const descriptor = openSync(lockPath, "r+");
   const acquired = (() => {
     try {
-      return fileLock.tryLock(descriptor);
+      return tryLock(descriptor);
     } catch (lockFailure) {
       return closeFileDescriptorAfterFailure({
         descriptor,
         precedingFailure: lockFailure,
-        close: fileLock.close,
       });
     }
   })();
   if (!acquired) {
-    fileLock.close(descriptor);
+    closeSync(descriptor);
     return null;
   }
   return descriptor;
 };
 
-const releaseDescriptor = (fileLock: FileLockRequest, descriptor: number): void => {
-  releaseFileLock({ descriptor, unlock: fileLock.unlock, close: fileLock.close });
+const releaseDescriptor = (descriptor: number): void => {
+  releaseFileLock(descriptor);
 };
 
 const releaseAfterGenerationFailure = (input: {
-  fileLock: FileLockRequest;
   descriptor: number;
   generationWriteFailure: unknown;
 }): never => {
   try {
-    releaseDescriptor(input.fileLock, input.descriptor);
+    releaseDescriptor(input.descriptor);
   } catch (releaseFailure) {
     throw new AggregateError(
       [input.generationWriteFailure, releaseFailure],
@@ -51,25 +44,26 @@ const releaseAfterGenerationFailure = (input: {
   throw input.generationWriteFailure;
 };
 
-const recordGeneration = (fileLock: FileLockRequest, descriptor: number): void => {
+const recordGeneration = (markerPath: string, descriptor: number): void => {
   try {
-    fileLock.recordGeneration();
+    writeFileSync(markerPath, randomBytes(16).toString("hex"));
   } catch (generationWriteFailure) {
-    releaseAfterGenerationFailure({ fileLock, descriptor, generationWriteFailure });
+    releaseAfterGenerationFailure({ descriptor, generationWriteFailure });
   }
 };
 
-export const tryAcquireFileLock = (
-  fileLock: FileLockRequest,
-): { release: () => Promise<void> } | null => {
-  const descriptor = lockedDescriptor(fileLock);
+export const tryAcquireFileLock = (input: {
+  lockPath: string;
+  markerPath: string;
+}): { release: () => Promise<void> } | null => {
+  const descriptor = lockedDescriptor(input.lockPath);
   if (descriptor === null) return null;
-  recordGeneration(fileLock, descriptor);
+  recordGeneration(input.markerPath, descriptor);
   return {
     release: once(
       () =>
         new Promise<void>((resolve) => {
-          releaseDescriptor(fileLock, descriptor);
+          releaseDescriptor(descriptor);
           resolve();
         }),
     ),

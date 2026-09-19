@@ -1,12 +1,14 @@
+import { closeSync } from "node:fs";
+
 import { attempt } from "es-toolkit";
+import { unlock } from "fs-native-extensions";
 
 export const closeFileDescriptorAfterFailure = (input: {
   descriptor: number;
   precedingFailure: unknown;
-  close: (descriptor: number) => void;
 }): never => {
   const [closeFailure] = attempt<true, Error>(() => {
-    input.close(input.descriptor);
+    closeSync(input.descriptor);
     return true;
   });
   if (closeFailure !== null) {
@@ -18,23 +20,19 @@ export const closeFileDescriptorAfterFailure = (input: {
   throw input.precedingFailure;
 };
 
-export const releaseFileLock = (input: {
-  descriptor: number;
-  unlock: (descriptor: number) => void;
-  close: (descriptor: number) => void;
-}): void => {
+export const releaseFileLock = (descriptor: number): void => {
   const [unlockFailure] = attempt<true, Error>(() => {
-    input.unlock(input.descriptor);
+    unlock(descriptor);
     return true;
   });
   const [closeFailure] = attempt<true, Error>(() => {
-    input.close(input.descriptor);
+    closeSync(descriptor);
     return true;
   });
   if (unlockFailure !== null && closeFailure !== null) {
     throw new AggregateError(
       [unlockFailure, closeFailure],
-      `Could not unlock and close file descriptor ${input.descriptor}`,
+      `Could not unlock and close file descriptor ${descriptor}`,
     );
   }
   if (unlockFailure !== null) throw unlockFailure;

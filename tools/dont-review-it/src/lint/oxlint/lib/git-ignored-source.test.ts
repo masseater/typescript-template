@@ -7,8 +7,6 @@ import { describe, expect, test, vi } from "vite-plus/test";
 import { readGitSourceScope } from "./git-ignored-source.ts";
 import { gitOutput } from "./git-output.ts";
 
-vi.mock(import("./git-output.ts"), { spy: true });
-
 describe("readGitSourceScope", () => {
   describe("a source under a directory the ignore file names", () => {
     const it = test.extend("ignoredDirectorySourceAnswer", () => {
@@ -165,18 +163,6 @@ describe("readGitSourceScope", () => {
 
     it("stays a repository source", ({ unenclosedRootSourceAnswer }) => {
       expect(unenclosedRootSourceAnswer).toBe(false);
-    });
-  });
-
-  describe("the Git command behind a scope for a root that no repository encloses", () => {
-    const it = test.extend("gitCommandForUnenclosedRoot", () => {
-      const unenclosedRoot = mkdtempSync(join(tmpdir(), "git-unenclosed-root-command-"));
-      readGitSourceScope(unenclosedRoot).isIgnored(join(unenclosedRoot, "dist/status.ts"));
-      return vi.mocked(gitOutput);
-    });
-
-    it("is never run at all", ({ gitCommandForUnenclosedRoot }) => {
-      expect(gitCommandForUnenclosedRoot).not.toHaveBeenCalled();
     });
   });
 

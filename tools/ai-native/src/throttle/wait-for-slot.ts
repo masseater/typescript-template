@@ -5,7 +5,6 @@ import {
   dropInterruptHandler,
   installInterruptHandler,
   makeWaitingInterruptHandler,
-  raiseSignal,
 } from "./signals.ts";
 import {
   enqueueWaiter,
@@ -77,7 +76,6 @@ export const waitForSlot = async (
   const interruptHandler = makeWaitingInterruptHandler({
     entryPath,
     removeEntry: removeWaiter,
-    raise: raiseSignal,
   });
   installInterruptHandler(interruptHandler);
   try {
