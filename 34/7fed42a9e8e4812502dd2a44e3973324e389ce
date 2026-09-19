@@ -1,1 +1,1 @@
-export ui storybook preview so auth-ui stories do not package-escape
+export @repo/ui/storybook/preview for auth-ui stories (no-package-escape)
