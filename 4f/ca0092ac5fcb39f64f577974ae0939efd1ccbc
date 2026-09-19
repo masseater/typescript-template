@@ -1,1 +1,1 @@
-CI: config を environment 所有者へ切り出し、observability の withSpan/logCause/logAt を復元し、プリセット違反の呼び出しと壊れた fixture を直す。
+knip: auth の未使用 @effect/vitest を外し、monitor 3 Worker に @repo/observability を依存として足す
