@@ -1,4 +1,4 @@
-import { lifecycles } from "@repo/config/vite";
+import { generatedDirectories, lifecycles } from "@repo/config/vite";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -8,7 +8,9 @@ import {
   reachable,
   scriptNames,
   taskNames,
+  testProjectDirectories,
   workspaceDirectories,
+  workspaceNames,
 } from "./tasks.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob("../../.vite-hooks/pre-*", {
@@ -45,6 +47,15 @@ function misplacedHooks(): string[] {
         !lifecycles.some((name) => name === stage) || source !== `vp run -r ${stage}\n`,
     )
     .map(([stage]) => stage);
+}
+
+function cleanExclusions(file: string): string[] {
+  const workflow = workflows[file];
+  if (workflow === undefined) {
+    throw new Error(`${file} is missing`);
+  }
+  const clean = /^\s*(?:- )?run: git clean [^\n]*$/mu.exec(workflow)?.[0] ?? "";
+  return [...clean.matchAll(/-e (?<path>\S+)/gu)].map((match) => match[1] ?? "");
 }
 
 function workflowRuns(file: string): string[] {
@@ -89,6 +100,27 @@ function slowBeforePush(directory: string): string[] {
     .map((name) => `${directory}: ${name}`);
 }
 
+function ungatedProjects(): string[] {
+  return testProjectDirectories.filter(
+    (directory) => !reachable(directory, ["premerge"]).includes("test"),
+  );
+}
+
+function strayTestTasks(): string[] {
+  return configuredDirectories.filter(
+    (directory) =>
+      directory !== "." &&
+      !testProjectDirectories.includes(directory) &&
+      taskNames(directory).includes("test"),
+  );
+}
+
+function unmatchedProjectNames(): string[] {
+  return testProjectDirectories.filter(
+    (directory) => !(workspaceNames[directory] ?? "").startsWith("@repo/"),
+  );
+}
+
 describe("lifecycle entry points", () => {
   it("each hook runs its lifecycle task in every workspace", () => {
     expect.hasAssertions();
@@ -112,6 +144,15 @@ describe("lifecycle entry points", () => {
   });
 });
 
+describe("generated paths", () => {
+  it("keeps the workspace clean step and the task inputs on one list", () => {
+    expect.hasAssertions();
+    expect(cleanExclusions("../../.github/workflows/check.yml")).toStrictEqual([
+      ...generatedDirectories,
+    ]);
+  });
+});
+
 describe("lifecycle contents", () => {
   it("every workspace chains precommit into prepush into premerge", () => {
     expect.hasAssertions();
@@ -125,7 +166,11 @@ describe("lifecycle contents", () => {
 
   it("checks staged secrets before a commit", () => {
     expect.hasAssertions();
-    expect(reachable(".", ["precommit"])).toContain("check:staged");
+    expect(
+      configuredDirectories.filter((directory) =>
+        reachable(directory, ["precommit"]).includes("check:staged"),
+      ),
+    ).toStrictEqual(["tools/quality"]);
   });
 
   it("leaves tests, builds and work in other workspaces to ci", () => {
@@ -133,5 +178,24 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
+  });
+});
+
+describe("test ownership", () => {
+  it("every workspace vitest project runs from its own merge gate", () => {
+    expect.hasAssertions();
+    expect(testProjectDirectories.length).toBeGreaterThan(0);
+    expect(ungatedProjects()).toStrictEqual([]);
+  });
+
+  it("keeps a test task only where a workspace vitest project owns it", () => {
+    expect.hasAssertions();
+    expect(strayTestTasks()).toStrictEqual([]);
+  });
+
+  it("leaves the workspace projects out of the root test task", () => {
+    expect.hasAssertions();
+    expect(commands(".", "test")).toStrictEqual(["vp test run --project '!@repo/*' $TEST_SCOPE"]);
+    expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 });

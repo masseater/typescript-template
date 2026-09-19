@@ -5,13 +5,12 @@ import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { monitorBinding } from "@repo/monitor";
+import { workerTests } from "@repo/quality/test-runtime";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
 
-import { workerTests } from "./test-runtime.ts";
-
-const root = path.join(import.meta.dirname, "../..");
+const root = import.meta.dirname;
 const mailRecorder = "MailRecorder";
 const probeMonitor = "ProbeMonitor";
 
@@ -33,8 +32,8 @@ export default defineProject({
         compatibilityFlags: [...workerCompatibility.flags],
         d1Databases: { [localDatabase.binding]: localDatabase.database_id },
         durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
-        outboundService: (request: { readonly url: string }) =>
-          Response.json({ blocked: request.url }, { status: 403 }),
+        outboundService: (outbound: { readonly url: string }) =>
+          Response.json({ blocked: outbound.url }, { status: 403 }),
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
       },
     }),

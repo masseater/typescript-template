@@ -6,12 +6,6 @@
     ".": "./src/receiver.ts",
     "./image": "./src/receiver-image.ts"
   },
-  "scripts": {
-    "config": "node src/compose.ts config",
-    "logs": "node src/compose.ts logs",
-    "status": "node src/compose.ts status",
-    "up": "node src/compose.ts up"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "effect": "catalog:"

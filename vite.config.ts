@@ -1,10 +1,9 @@
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
 import { dontReviewItPreset } from "@repo/dont-review-it";
+import { generatedFiles, lintOptions } from "@repo/quality/lint";
+import { workerTests } from "@repo/quality/test-runtime";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
-
-import { generatedFiles, lintOptions } from "./tools/quality/lint.ts";
-import { workerTests } from "./tools/quality/test-runtime.ts";
 
 const importedTools = [
   "./tools/ai-native",
@@ -43,16 +42,15 @@ export default defineConfig({
         "lint-rule-authoring check",
         "stop-ai-slop check",
       ],
-      "check:staged": { cache: false, command: "node tools/quality/check-staged.ts" },
       knip: {
         command: ["knip", "knip --strict"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
-      test: { cache: false, command: "vp test run $TEST_SCOPE" },
+      test: { cache: false, command: "vp test run --project '!@repo/*' $TEST_SCOPE" },
       ...lifecycle({
-        precommit: ["check:code", "check:staged"],
+        precommit: ["check:code"],
         premerge: ["test"],
         prepush: ["knip", "check:client", "check:imports", "check:react", "check:effect"],
       }),
@@ -91,7 +89,7 @@ export default defineConfig({
           name: "node",
         },
       },
-      "./tools/quality/vitest.workers.config.ts",
+      "./vitest.workers.config.ts",
       "./libs/ui/.storybook/vitest.config.ts",
       ...importedTools,
     ],

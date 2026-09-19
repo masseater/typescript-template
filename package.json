@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts"
+    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
@@ -13,6 +13,7 @@
     "@repo/dont-review-it": "workspace:*",
     "@repo/lint-rule-authoring": "workspace:*",
     "@repo/monitor": "workspace:*",
+    "@repo/quality": "workspace:*",
     "@repo/stop-ai-slop": "workspace:*",
     "@shadcn/lint": "catalog:",
     "@stryker-mutator/core": "10.0.0",
@@ -20,7 +21,7 @@
     "@swc/core": "1.16.2",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "dependency-cruiser": "18.3.1",
+    "dependency-cruiser": "catalog:",
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "5.20260917.0-alpha",

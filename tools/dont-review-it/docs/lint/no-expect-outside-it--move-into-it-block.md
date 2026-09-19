@@ -25,9 +25,13 @@ The innermost enclosing block carrying a callback is the one read, and the repor
 
 A block counts as the runner's when its root is a globally injected `it` or `test` nobody shadowed, a binding imported from the runner under one of those names, or a binding built by applying `.extend(...)` to an imported binding. An automatic fix renames a block's root to the canonical spelling where that rename resolves and collides with nothing.
 
+One body stands beside those blocks: the function a story file gives its `play` property. A runner turns that function into the test block for that story, so an assertion inside it already answers for one named behaviour. This is read only in a file whose name carries the `.stories.` marker, only for a `play` property written out on an object, and only for a function written in place there.
+
 ## Fix
 
 Move the assertion into an `it` block that names the behaviour it checks, and declare the block through the runner's `it` or through a factory derived from `test.extend(...)`.
+
+In a story file, move it into the `play` of the story whose behaviour it checks.
 
 An assertion count moves into the block whose assertions it counts, or goes away.
 

@@ -104,6 +104,8 @@ function appServer(app: Application): ServerOptions {
   };
 }
 
+const generatedDirectories = ["node_modules", ".local", "dist", ".wrangler", ".alchemy"] as const;
+
 const taskInput = [
   { auto: true },
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
@@ -134,6 +136,20 @@ function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Task
     ]),
   );
 }
+
+const testRun = {
+  test: {
+    command: "vp test run",
+    input: [
+      ...taskInput,
+      "!coverage/**",
+      { base: "workspace", pattern: "!**/coverage/**" },
+      { base: "workspace", pattern: "pnpm-lock.yaml" },
+      { base: "workspace", pattern: "pnpm-workspace.yaml" },
+    ],
+    output: [],
+  },
+} satisfies Tasks;
 
 const effectRun = {
   tasks: {
@@ -171,8 +187,10 @@ export {
   reactCompiler,
   serverOnlyMarkers,
   serverOnlyPackages,
+  generatedDirectories,
   startOptions,
   taskInput,
+  testRun,
   withoutEnvFileLoader,
 };
 export { privateSourceMaps } from "./private-source-maps.ts";
