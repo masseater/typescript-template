@@ -2,6 +2,7 @@ import {
   effectDiagnostics,
   lifecycle,
   reactCompiler,
+  sliceBoundaries,
   startOptions,
   taskInput,
   withoutEnvFileLoader,
@@ -20,6 +21,7 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...sliceBoundaries,
       build: { command: "vp build", input: [...taskInput, "!dist"] },
       "check:start": {
         cache: false,

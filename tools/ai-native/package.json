@@ -46,9 +46,6 @@
     },
     "access": "public"
   },
-  "scripts": {
-    "check": "intent validate"
-  },
   "dependencies": {
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/api-logs": "0.221.0",

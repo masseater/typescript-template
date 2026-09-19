@@ -151,6 +151,14 @@ const testRun = {
   },
 } satisfies Tasks;
 
+const sliceBoundaries = {
+  check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
+} satisfies Tasks;
+
+const intentValidation = {
+  check: { command: "intent validate", input: [...taskInput] },
+} satisfies Tasks;
+
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
@@ -161,6 +169,7 @@ const effectRun = {
 const appRun = {
   tasks: {
     ...effectDiagnostics,
+    ...sliceBoundaries,
     build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
     "check:dev": {
       cache: false,
@@ -181,6 +190,7 @@ export {
   clientReachableModules,
   effectDiagnostics,
   effectRun,
+  intentValidation,
   lifecycle,
   lifecycles,
   previewDevVars,
@@ -188,6 +198,7 @@ export {
   serverOnlyMarkers,
   serverOnlyPackages,
   generatedDirectories,
+  sliceBoundaries,
   startOptions,
   taskInput,
   testRun,

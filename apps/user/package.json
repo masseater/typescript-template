@@ -7,7 +7,6 @@
     "#*": "./src/*"
   },
   "scripts": {
-    "check": "steiger src --fail-on-warnings",
     "dev": "vp dev",
     "preview": "vp preview"
   },
