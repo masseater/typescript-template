@@ -6,10 +6,10 @@ import { describeCause, redact } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const confidential = [
-  { key: "TEMPLATE_SERVICE_MEMBER_ORIGIN", value: verificationSettings.origins.user },
+  { key: "TEMPLATE_SERVICE_MEMBER_ORIGIN", value: verificationSettings.origins["service-member"] },
   {
     key: "TEMPLATE_SERVICE_MEMBER_ORIGIN",
-    value: new URL(verificationSettings.origins.user).hostname,
+    value: new URL(verificationSettings.origins["service-member"]).hostname,
   },
   { key: "CLOUDFLARE_ACCOUNT_ID", value: verificationSettings.accountId },
   { key: "TEMPLATE_PREFIX", value: verificationSettings.prefix },
@@ -18,7 +18,7 @@ const confidential = [
 const adoptionMessage = [
   `Cannot adopt resource 'template-user/${verificationSettings.prefix}/Worker'`,
   ` (Cloudflare.Worker): it exists in the cloud on account ${verificationSettings.accountId}`,
-  ` at ${verificationSettings.origins.user} but is not owned by this stack.`,
+  ` at ${verificationSettings.origins["service-member"]} but is not owned by this stack.`,
 ].join("");
 
 it.effect("keeps the values that identify the deployment out of every reported failure", () =>

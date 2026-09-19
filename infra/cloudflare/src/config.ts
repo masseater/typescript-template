@@ -91,7 +91,11 @@ const SharedSettings = Schema.Struct({
   }),
   mailFrom: Email,
   observabilitySampling: SamplingRate,
-  origins: Schema.Struct({ admin: Origin, user: Origin, wiki: Origin }),
+  origins: Schema.Struct({
+    "internal-dashboard": Origin,
+    "service-admin": Origin,
+    "service-member": Origin,
+  }),
   otlp: Schema.UndefinedOr(Schema.Struct({ enabled: Schema.Boolean, endpoint: HttpsUrl })),
   prefix: Prefix,
   zoneId: Id,
@@ -114,9 +118,9 @@ const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSett
 });
 
 const originKeys = {
-  admin: "TEMPLATE_SERVICE_ADMIN_ORIGIN",
-  user: "TEMPLATE_SERVICE_MEMBER_ORIGIN",
-  wiki: "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
+  "internal-dashboard": "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
+  "service-admin": "TEMPLATE_SERVICE_ADMIN_ORIGIN",
+  "service-member": "TEMPLATE_SERVICE_MEMBER_ORIGIN",
 } as const;
 
 const hstsSetting = {
@@ -196,9 +200,9 @@ function sendingDomain(mailFrom: string): string {
 
 function duplicatedOrigins(config: SharedConfig): readonly string[] {
   const origins = [
-    [originKeys.admin, config.origins.admin],
-    [originKeys.user, config.origins.user],
-    [originKeys.wiki, config.origins.wiki],
+    [originKeys["service-admin"], config.origins["service-admin"]],
+    [originKeys["service-member"], config.origins["service-member"]],
+    [originKeys["internal-dashboard"], config.origins["internal-dashboard"]],
   ] as const;
   return origins.flatMap(([key, origin]) =>
     origins.some(([other, value]) => other !== key && value === origin) ? [key] : [],
