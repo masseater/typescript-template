@@ -2,11 +2,6 @@
   "name": "@repo/observe",
   "private": true,
   "type": "module",
-  "scripts": {
-    "observe": "node src/cli.ts",
-    "symbolicate": "node src/symbolicate.ts",
-    "verify": "node src/verify.ts"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/local": "workspace:*",

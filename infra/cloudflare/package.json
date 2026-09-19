@@ -2,12 +2,6 @@
   "name": "@repo/infra-cloudflare",
   "private": true,
   "type": "module",
-  "scripts": {
-    "bootstrap:state": "node src/bootstrap-state.ts",
-    "db:bootstrap:remote": "node src/database-command.ts bootstrap",
-    "db:migrate:remote": "node src/database-command.ts migrate",
-    "verify:account": "node src/check-account.ts"
-  },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",

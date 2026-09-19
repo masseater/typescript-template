@@ -2,9 +2,6 @@
   "name": "@repo/budget-monitor",
   "private": true,
   "type": "module",
-  "scripts": {
-    "inspect": "node src/inspect.ts"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
