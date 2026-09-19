@@ -2,7 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { applications, authenticationMethods, roles } from "@repo/config";
 import { schema } from "@repo/db";
 import { claimMailSlot, findUser } from "@repo/db/security";
-import { logAt } from "@repo/observability";
+import { logAt, redactSecrets } from "@repo/observability";
 import { betterAuth } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
 import { Effect } from "effect";
@@ -129,16 +129,32 @@ function createEmailVerification(
 function createLogger(run: Run): LoggerOptions {
   return {
     level: "warn",
-    log: (level, _message, ...details: readonly unknown[]) => {
+    log: (level, message, ...details: readonly unknown[]) => {
       const cause = details.find((detail) => detail instanceof Error);
+      const detailText = details
+        .flatMap((detail) =>
+          detail instanceof Error
+            ? []
+            : [typeof detail === "string" ? detail : JSON.stringify(detail)],
+        )
+        .join(" ");
       void run(
         level === "error"
           ? logAt("Error", "authentication.failed", {
+              "auth.message": redactSecrets(message),
+              ...(detailText === "" ? {} : { "auth.details": redactSecrets(detailText) }),
               ...(cause === undefined
                 ? {}
-                : { "error.message": cause.message, "error.type": cause.name }),
+                : {
+                    "error.message": redactSecrets(cause.message),
+                    "error.type": cause.name,
+                  }),
             })
-          : logAt(level === "warn" ? "Warn" : "Info", "authentication.diagnostic", { level }),
+          : logAt(level === "warn" ? "Warn" : "Info", "authentication.diagnostic", {
+              "auth.message": redactSecrets(message),
+              level,
+              ...(detailText === "" ? {} : { "auth.details": redactSecrets(detailText) }),
+            }),
       );
     },
   };
