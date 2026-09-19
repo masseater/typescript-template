@@ -1,1 +1,1 @@
-replace canonical vocabulary literals with APPLICATION/ROLE/AUTHENTICATION_METHOD bindings; derive MAILPIT_SEND_URL; wire OpsMail to MailSettings
+replace owned vocabulary literals with APPLICATION/ROLE/AUTHENTICATION_METHOD bindings
