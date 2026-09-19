@@ -1,1 +1,7 @@
-use StatusMessage instead of missing Status export; keep knip unused-export cleanup
+Revision history for #678:
+
+rev 3 (content) 2026-09-19 19:06 UTC — use StatusMessage instead of missing Status export; keep knip unused-export cleanup
+rev 2 (content) 2026-09-19 18:57 UTC — drop unused knip exports memberPageTitles/MemberNavId/MemberNavPath
+rev 1 (initial) 2026-09-19 18:57 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":678,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"57fa3565efa915d86305adb557b88eeb6f5408d4","timestamp_iso":"2026-09-19T18:57:02Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"57fa3565efa915d86305adb557b88eeb6f5408d4","new_sha":"60dbb0102c09331b6b3c5637cc4600776daf45e9","timestamp_iso":"2026-09-19T18:57:02Z","reason":"drop unused knip exports memberPageTitles/MemberNavId/MemberNavPath","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/57fa3565efa915d86305adb557b88eeb6f5408d4...60dbb0102c09331b6b3c5637cc4600776daf45e9"},{"number":3,"change_type":"content","old_sha":"60dbb0102c09331b6b3c5637cc4600776daf45e9","new_sha":"6827e5e5f4b6c89a463753e13df583072de4d73a","timestamp_iso":"2026-09-19T19:06:41Z","reason":"use StatusMessage instead of missing Status export; keep knip unused-export cleanup","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/60dbb0102c09331b6b3c5637cc4600776daf45e9...6827e5e5f4b6c89a463753e13df583072de4d73a"}]} -->
