@@ -1,12 +1,10 @@
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
-import { Button } from "./shared/ui/button";
-import { Field } from "./shared/ui/field";
-import { FormColumn } from "./shared/ui/form-column";
-import { useTextInput, type TextInput } from "./use-text-input";
+import { Button, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
+import { authClient, requireSuccess } from "@repo/ui/auth-client";
 
+import type { TextInput } from "@repo/ui";
 import type { ReactElement, SyntheticEvent } from "react";
-import type { ActionState } from "./action";
+
+type ActionState = ReturnType<typeof useAction>;
 
 const signUp = async (
   fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
