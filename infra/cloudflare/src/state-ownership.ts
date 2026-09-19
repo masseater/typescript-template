@@ -29,7 +29,11 @@ const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, R
     readState({ path: `${stackName(stack)}/${prefix}`, recursive: true }).pipe(
       Effect.provideService(State, Effect.succeed(state)),
       Effect.map((entries) => entries.map((entry) => entry.value)),
-      Effect.catchTag("InvalidStatePath", () => Effect.succeed<readonly unknown[]>([])),
+      Effect.catchTag("InvalidStatePath", (error) =>
+        error.reason === "path does not exist"
+          ? Effect.succeed<readonly unknown[]>([])
+          : Effect.fail(error),
+      ),
     ),
   );
   return found.flat();

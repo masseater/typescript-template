@@ -60,8 +60,27 @@ function unreadableVerdict(
 
 const STATE_STORE_SOURCE = "state_store";
 
-function unreadableState(): Effect.Effect<Unreadable> {
-  return Effect.succeed({ unreadable: [STATE_STORE_SOURCE] });
+function stateFailureKeys(failure: unknown): readonly string[] {
+  if (typeof failure === "string") {
+    return [failure];
+  }
+  if (
+    Predicate.hasProperty(failure, "keys") &&
+    Array.isArray(failure.keys) &&
+    failure.keys.every((key) => typeof key === "string")
+  ) {
+    return failure.keys;
+  }
+  if (Predicate.hasProperty(failure, "_tag") && typeof failure._tag === "string") {
+    return Predicate.hasProperty(failure, "reason") && typeof failure.reason === "string"
+      ? [failure._tag, failure.reason]
+      : [failure._tag];
+  }
+  return ["unknown_failure"];
+}
+
+function unreadableState(failure: unknown): Effect.Effect<Unreadable> {
+  return Effect.succeed({ unreadable: [STATE_STORE_SOURCE, ...stateFailureKeys(failure)] });
 }
 
 function isUnreadable(verdict: unknown): verdict is Unreadable {

@@ -27,7 +27,7 @@ const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
     return "free" as const;
   }
   const recorded = yield* recordedDatabaseIds(store, target.prefix).pipe(
-    Effect.catchCause(unreadableState),
+    Effect.catch(unreadableState),
   );
   return readVerdict(recorded, (ids): "owned" | "taken" =>
     ids.includes(existing) ? "owned" : "taken",
