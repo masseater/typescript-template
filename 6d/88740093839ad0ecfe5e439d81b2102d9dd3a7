@@ -1,1 +1,1 @@
-fix format on auth-request and add missing sendContactEmail export body that tip already re-exported
+fix format on auth-request and add missing sendContactEmail body for tip re-export
