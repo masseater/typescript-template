@@ -1,0 +1,1 @@
+Move wrangler onto @repo/config with @cloudflare/vite-plugin so knip no longer flags unused app-level wrangler after the vite factory extract.
