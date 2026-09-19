@@ -1,19 +1,7 @@
-move wiki worker coverage with wikiLayer; drop unresolved ./wiki import from runtime worker test; include apps in workers project
-
 Revision history for #664:
 
+rev 3 (content) 2026-09-19 18:03 UTC
 rev 2 (content) 2026-09-19 17:54 UTC — include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone
 rev 1 (initial) 2026-09-19 17:54 UTC
 
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":664,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","new_sha":"a0ed7bf44e20b62796cd0def306ec9023b55e91a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/bfc574db0b2f698f4113f9b426735cb64c0ba62a...a0ed7bf44e20b62796cd0def306ec9023b55e91a"}]} -->
-
-sync pnpm-lock.yaml for wiki vitest worker deps
-
-move wiki worker coverage with wikiLayer; drop unresolved ./wiki import from runtime worker test; include apps in workers project
-
-Revision history for #664:
-
-rev 2 (content) 2026-09-19 17:54 UTC — include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone
-rev 1 (initial) 2026-09-19 17:54 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":664,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","new_sha":"a0ed7bf44e20b62796cd0def306ec9023b55e91a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/bfc574db0b2f698f4113f9b426735cb64c0ba62a...a0ed7bf44e20b62796cd0def306ec9023b55e91a"}]} -->
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":664,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","new_sha":"a0ed7bf44e20b62796cd0def306ec9023b55e91a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/bfc574db0b2f698f4113f9b426735cb64c0ba62a...a0ed7bf44e20b62796cd0def306ec9023b55e91a"},{"number":3,"change_type":"content","old_sha":"a0ed7bf44e20b62796cd0def306ec9023b55e91a","new_sha":"3d554186fc3cd85e94f03a1ee2ad72eee17b2ee5","timestamp_iso":"2026-09-19T18:03:01Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/a0ed7bf44e20b62796cd0def306ec9023b55e91a...3d554186fc3cd85e94f03a1ee2ad72eee17b2ee5"}]} -->
