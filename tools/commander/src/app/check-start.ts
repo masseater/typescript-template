@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createServer } from "node:net";
 

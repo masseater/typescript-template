@@ -1,6 +1,10 @@
 {
   "name": "@repo/dev",
   "private": true,
+  "bin": {
+    "repo-dev": "./src/cli.ts",
+    "repo-dev-prepare-browser": "./src/prepare-browser.ts"
+  },
   "type": "module",
   "dependencies": {
     "@repo/auth": "workspace:*",

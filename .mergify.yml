@@ -19,3 +19,4 @@ queue_rules:
       - check-success = check
     merge_conditions:
       - check-success = merge-queue
+      - check-success = e2e

@@ -1,5 +1,7 @@
+#!/usr/bin/env node
 import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
@@ -44,7 +46,8 @@ const Rules = Schema.fromJsonString(
   ),
 );
 
-const executable = fileURLToPath(new URL("../../node_modules/.bin/react-doctor", import.meta.url));
+const require = createRequire(import.meta.url);
+const executable = join(dirname(require.resolve("react-doctor")), "..", "bin", "react-doctor.js");
 
 const scan = (args: readonly string[]): Effect.Effect<Scan> => {
   return Effect.promise(

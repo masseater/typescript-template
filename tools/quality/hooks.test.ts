@@ -165,8 +165,9 @@ describe("lifecycle entry points", () => {
   it("gives a pull request the pr gate and leaves merge and release to their own gates", () => {
     expect.hasAssertions();
     expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
-      cache: ["vp run -r prepr"],
-      check: ["vp run -r prepr"],
+      cache: ["vp run -r prepush"],
+      check: ["vp run -r prepush"],
+      e2e: [],
       "merge-queue": ["vp run -r premerge"],
     });
     expect(lifecycleByJob("../../.github/workflows/prerelease.yml")).toStrictEqual({
@@ -213,13 +214,9 @@ describe("lifecycle contents", () => {
   it("replays every release gate task from the cache but the ones still tied to run time state", () => {
     expect.hasAssertions();
     expect(uncachedGateTasks()).toStrictEqual([
-      ".#mutation",
-      ".#test",
-      "infra/cloudflare#verify:account",
       "libs/db#db:migrate:local",
       "tools/commander#check:start",
       "tools/dev#setup",
-      "tools/e2e#test:e2e",
       "tools/quality#check:staged",
     ]);
   });

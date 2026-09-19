@@ -1,6 +1,13 @@
 {
   "name": "@repo/infra-cloudflare",
   "private": true,
+  "bin": {
+    "repo-cloudflare": "./src/cli.ts",
+    "repo-cloudflare-bootstrap-state": "./src/bootstrap-state.ts",
+    "repo-cloudflare-check-account": "./src/check-account.ts",
+    "repo-cloudflare-check-stacks": "./src/check-stacks.ts",
+    "repo-cloudflare-database": "./src/database-command.ts"
+  },
   "type": "module",
   "exports": {
     "./lint-overrides": "./src/lint-overrides.ts"

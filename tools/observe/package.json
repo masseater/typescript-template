@@ -1,6 +1,12 @@
 {
   "name": "@repo/observe",
   "private": true,
+  "bin": {
+    "repo-observe": "./src/cli.ts",
+    "repo-observe-check-exported": "./src/receiver-check.ts",
+    "repo-observe-symbolicate": "./src/symbolicate.ts",
+    "repo-observe-verify": "./src/verify.ts"
+  },
   "type": "module",
   "dependencies": {
     "@repo/config": "workspace:*",

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { reportFailed, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 import { getPlatformProxy } from "wrangler";

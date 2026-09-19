@@ -26,9 +26,18 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-      - run: vp run --filter @repo/local up
-      - run: vp run --filter @repo/dev setup loopback
-      - run: vp run --filter @repo/db db:migrate:local
-      - run: vp run --filter @repo/service-member build
-      - run: vp run --filter @repo/service-member preview &
-      - run: vp run --filter @repo/load load user ${{ inputs.profile }}
+      - id: vite-task-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules/.vite/task-cache
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            vite-task-${{ runner.os }}-${{ runner.arch }}-
+      - run: vp run --filter @repo/load ci service-member "$LOAD_PROFILE"
+        env:
+          LOAD_PROFILE: ${{ inputs.profile }}
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always()
+        with:
+          path: node_modules/.vite/task-cache
+          key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}

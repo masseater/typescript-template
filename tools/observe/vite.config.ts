@@ -6,15 +6,15 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
-      "check:exported": { cache: false, command: "node src/receiver-check.ts" },
-      observe: { cache: false, command: "node src/cli.ts" },
-      symbolicate: { cache: false, command: "node src/symbolicate.ts" },
-      verify: { cache: false, command: "node src/verify.ts" },
+      "check:exported": { cache: false, command: "./src/receiver-check.ts" },
+      observe: { cache: false, command: "./src/cli.ts" },
+      symbolicate: { cache: false, command: "./src/symbolicate.ts" },
+      verify: { cache: false, command: "./src/verify.ts" },
       ...lifecycle({
         precommit: [],
+        premerge: [],
         prepush: ["check:effect"],
         prepr: [],
-        premerge: [],
         prerelease: [],
       }),
     },

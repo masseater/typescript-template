@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
