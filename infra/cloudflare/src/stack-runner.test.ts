@@ -6,7 +6,7 @@ import { access, accountHandlers, config, sendingRecords } from "./inspection-fi
 import { describeCause } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 
-const CONFIRMATION = "0123456789abcdef";
+const CONFIRMATION = "0".repeat(16);
 const deployment = { access, config, secrets: { contents: "", filename: "/dev/null" } };
 
 it.effect("refuses to apply the onboarding unit before the account guard clears it", () =>

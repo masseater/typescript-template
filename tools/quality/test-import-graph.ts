@@ -1,10 +1,25 @@
 import { aliasChecker, aliasVisitor } from "./alias-visitor.ts";
-import { reportViolation, type LintContext, type Node, type NodeOf } from "./lint-context.ts";
+import {
+  fixtureOrTestFile,
+  reportViolation,
+  type LintContext,
+  type Node,
+  type NodeOf,
+} from "./lint-context.ts";
 import { origins, propertyName, staticText, type Origin } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
 const testFile = /\.(?:test|spec)\.[cm]?[jt]sx?$/u;
+const fsModules: ReadonlySet<string> = new Set([
+  "node:fs",
+  "fs",
+  "node:fs/promises",
+  "fs/promises",
+]);
+const osModules: ReadonlySet<string> = new Set(["node:os", "os"]);
+const mktempNames: ReadonlySet<string> = new Set(["mkdtemp", "mkdtempSync"]);
+const tmpdirNames: ReadonlySet<string> = new Set(["tmpdir"]);
 
 type SourceCheck = (node: Node) => void;
 
@@ -133,7 +148,6 @@ const testImportGraphVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
-const fixtureOrTestFile = /(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$/u;
 const gitExecutable = /(?:^|\/)git(?:\.exe)?$/u;
 
 const startsGit = (inspection: LintContext, node: NodeOf<"CallExpression">): boolean => {
@@ -154,6 +168,32 @@ const declaresEnvironment = (inspection: LintContext, node: Node): boolean => {
   );
 };
 
+const calledFrom = (
+  inspection: LintContext,
+  node: NodeOf<"CallExpression">,
+  modules: ReadonlySet<string>,
+  names: ReadonlySet<string>,
+): boolean => {
+  return origins(inspection, node.callee).some(
+    (origin) => origin.length >= 2 && modules.has(origin[0] ?? "") && names.has(origin[1] ?? ""),
+  );
+};
+
+const underMktemp = (inspection: LintContext, node: Node): boolean => {
+  let current: Node | null | undefined =
+    "parent" in node ? (node.parent as Node | null | undefined) : undefined;
+  while (current != null) {
+    if (
+      current.type === "CallExpression" &&
+      calledFrom(inspection, current, fsModules, mktempNames)
+    ) {
+      return true;
+    }
+    current = "parent" in current ? (current.parent as Node | null | undefined) : undefined;
+  }
+  return false;
+};
+
 const gitEnvironmentVisitor = (inspection: LintContext): Visitor => {
   if (!fixtureOrTestFile.test(inspection.filename.replaceAll("\\", "/"))) {
     return {};
@@ -170,4 +210,22 @@ const gitEnvironmentVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
-export { gitEnvironmentVisitor, testImportGraphVisitor };
+const tempDirectoryVisitor = (inspection: LintContext): Visitor => {
+  if (!fixtureOrTestFile.test(inspection.filename.replaceAll("\\", "/"))) {
+    return {};
+  }
+  return {
+    CallExpression(node: Node): void {
+      if (
+        node.type !== "CallExpression" ||
+        !calledFrom(inspection, node, osModules, tmpdirNames) ||
+        underMktemp(inspection, node)
+      ) {
+        return;
+      }
+      reportViolation(inspection, node);
+    },
+  };
+};
+
+export { gitEnvironmentVisitor, tempDirectoryVisitor, testImportGraphVisitor };

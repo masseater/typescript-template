@@ -10,7 +10,7 @@ import { verificationSettings } from "./verification-fixture.ts";
 import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
 import type { AppBindings } from "./bindings.ts";
 
-const release = "0123456789abcdef";
+const release = "0".repeat(16);
 const settings = verificationSettings;
 
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters
@@ -39,7 +39,7 @@ const userBindings: AppBindings<"user"> = {
   APP_ORIGIN: settings.origins.user,
 };
 
-const confirmation = "0123456789abcdef";
+const confirmation = "0".repeat(16);
 
 it.effect(
   "deployment commands reject ignored arguments instead of selecting an unintended stack",
