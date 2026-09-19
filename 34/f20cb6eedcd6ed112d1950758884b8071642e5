@@ -1,6 +1,1 @@
-Revision history for #647:
-
-rev 2 (content) 2026-09-19 19:02 UTC — point load ci dependsOn and workflow at service-member after app rename
-rev 1 (initial) 2026-09-19 19:02 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":647,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"f930913c04bd2fb9e885a1c35706e0772c03fcc5","timestamp_iso":"2026-09-19T19:02:58Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"f930913c04bd2fb9e885a1c35706e0772c03fcc5","new_sha":"18a50e3d6fa188c9010222a2bcc374d017666ccc","timestamp_iso":"2026-09-19T19:02:58Z","reason":"point load ci dependsOn and workflow at service-member after app rename","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/f930913c04bd2fb9e885a1c35706e0772c03fcc5...18a50e3d6fa188c9010222a2bcc374d017666ccc"}]} -->
+fix knip: resolve react-doctor via package createRequire and keep dependency on @repo/quality instead of root
