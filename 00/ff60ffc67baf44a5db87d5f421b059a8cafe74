@@ -1,0 +1,1 @@
+rename member-contracts test to .worker.test.ts so depcruise accepts @repo/db/testing import
