@@ -46,7 +46,7 @@ const tester = new RuleTester({});
 
 type RuleName = (typeof restyled)[number][0];
 
-const restyleProbe = "apps/wiki/src/pages/consent/ui/consent-actions.tsx";
+const restyleProbe = "tools/quality/restyle-probe.tsx";
 
 const reports = (rule: RuleName, className: string): boolean => {
   try {
