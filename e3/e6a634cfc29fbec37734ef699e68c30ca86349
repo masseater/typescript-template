@@ -1,1 +1,1 @@
-load vitest.workers via @repo/monitor/binding so knip does not resolve cloudflare:workers; drop unused @cloudflare/workers-types from auth
+TestDatabase back to Layer<Database, unknown> like main; runTest orDies after provide so R stays never
