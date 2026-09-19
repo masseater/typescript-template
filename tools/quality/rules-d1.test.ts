@@ -141,7 +141,10 @@ const rawD1Operations = [
 const rawD1OutsideAdapter = [
   ["libs/db/src/security.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
   ["tools/dev/src/probe.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
-  ["apps/user/src/probe.test.ts", 'export const load = (db: D1Database) => db.exec("SELECT 1");'],
+  [
+    "apps/service-member/src/probe.test.ts",
+    'export const load = (db: D1Database) => db.exec("SELECT 1");',
+  ],
 ] as const;
 
 const rawD1Adapters = [
@@ -191,7 +194,9 @@ const nonD1Operations = [
 describe("project lint rules on raw D1 access", () => {
   it.for(rawD1Operations)("rejects raw D1 operation: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("boundaries", { code, filename: "apps/user/src/probe.ts" })).toBe(true);
+    expect(reported("boundaries", { code, filename: "apps/service-member/src/probe.ts" })).toBe(
+      true,
+    );
   });
 
   it.for(rawD1OutsideAdapter)("rejects raw D1 outside the adapter in %s", ([name, code]) => {

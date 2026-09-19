@@ -15,16 +15,28 @@ const members = [
     name: "管理者",
     role: "admin",
   },
-  { createdAt: "2026-09-02", email: "alice@example.com", id: "alice", name: "Alice", role: "user" },
+  {
+    createdAt: "2026-09-02",
+    email: "alice@example.com",
+    id: "alice",
+    name: "Alice",
+    role: "member",
+  },
   {
     createdAt: "2026-09-03",
     email: "bob@example.net",
     emailVerified: false,
     id: "bob",
     name: "Bob",
-    role: "user",
+    role: "member",
   },
-  { createdAt: "2026-09-04", email: "sale@example.com", id: "sale", name: "50%_off", role: "user" },
+  {
+    createdAt: "2026-09-04",
+    email: "sale@example.com",
+    id: "sale",
+    name: "50%_off",
+    role: "member",
+  },
   {
     createdAt: "2026-09-05",
     email: "carol@example.org",
@@ -37,7 +49,7 @@ const members = [
     email: "dave@example.com",
     id: "dave",
     name: "Dave",
-    role: "user",
+    role: "member",
     totp: true,
   },
 ] as const;
@@ -58,7 +70,7 @@ const seedMembers = Effect.fn("seedMembers")(function* seedMembers() {
       });
     });
   }
-  return yield* addSession("actor", "admin");
+  return yield* addSession("actor", "service-admin");
 });
 
 function listed(
@@ -79,7 +91,7 @@ it.effect("lists newest users first with the fields the admin table shows", () =
           emailVerified: true,
           id: "dave",
           name: "Dave",
-          role: "user",
+          role: "member",
           twoFactorEnabled: true,
         },
         {
@@ -158,7 +170,7 @@ it.effect("filters by role and email verification and counts only the matches", 
           keyword: "example.com",
           limit: 1,
           offset: 1,
-          role: "user",
+          role: "member",
         }),
       ),
       { ids: ["sale"], total: 3 },

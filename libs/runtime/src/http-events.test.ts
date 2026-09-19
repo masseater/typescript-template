@@ -7,10 +7,10 @@ import { AppOrigin, apiRoutes, createApi, elysiaServer, readSearchParams } from 
 import { workerRuntime } from "./worker-runtime.ts";
 
 const origin = "http://localhost:3001";
-const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
+const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "service-member" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
 const runtime = workerRuntime(() => context);
-const api = apiRoutes(runtime, { service: "user" });
+const api = apiRoutes(runtime, { service: "service-member" });
 
 const Tick = Schema.Struct({
   data: Schema.Struct({ count: Schema.NumberFromString }),

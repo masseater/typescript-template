@@ -5,16 +5,16 @@ import { configuredLintRules } from "./lint.ts";
 
 const forbiddenCode = [
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     "export const load = (target: string) => import(target);",
     "boundaries",
   ],
   [
-    "apps/user/probe.ts",
+    "apps/service-member/probe.ts",
     'import { vi } from "vitest"; vi.mock("owned-module");',
     "no-internal-mocks",
   ],
-  ["apps/user/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
+  ["apps/service-member/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
   [
     "libs/ui/src/probe.ts",
     'import { useCallback } from "react"; export const fn = () => useCallback(() => 0, []);',
@@ -31,13 +31,13 @@ const forbiddenCode = [
     "no-manual-memoization",
   ],
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'import { useMemo as cache } from "react"; export const fn = () => cache(() => 0, []);',
     "no-manual-memoization",
   ],
   ["libs/ui/src/probe.ts", 'export * from "styled-components";', "retired-imports"],
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'export { ThemeProvider } from "styled-components/native";',
     "retired-imports",
   ],
@@ -119,7 +119,7 @@ const forbiddenCode = [
     "annotations",
   ],
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
     "annotations",
   ],
@@ -139,7 +139,7 @@ const forbiddenCode = [
     "annotations",
   ],
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'import { Effect } from "effect"; export const run = () => Effect.logError("boom");',
     "logs",
   ],
@@ -149,7 +149,7 @@ const forbiddenCode = [
     "logs",
   ],
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'export const mark = (span: { attribute: (key: string, value: string) => void }) => span.attribute("a", "b");',
     "span-mutation",
   ],
@@ -159,7 +159,7 @@ const forbiddenCode = [
     "span-mutation",
   ],
   [
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
     "cross-request-state",
   ],
@@ -174,7 +174,7 @@ const forbiddenCode = [
     "cross-request-state",
   ],
   [
-    "apps/admin/src/probe.ts",
+    "apps/service-admin/src/probe.ts",
     'import { RcMap } from "effect"; export const shared = () => RcMap;',
     "cross-request-state",
   ],
@@ -183,16 +183,24 @@ const forbiddenCode = [
 const opaqueSpecifiers = [
   [
     "concatenated",
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'const target = "@repo/db/" + "admin"; export const load = () => import(target);',
   ],
-  ["template", "apps/user/src/probe.ts", "export const load = () => import(`@repo/db/admin`);"],
+  [
+    "template",
+    "apps/service-member/src/probe.ts",
+    "export const load = () => import(`@repo/db/admin`);",
+  ],
   [
     "variable",
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'const target = "@repo/db/admin"; export const load = () => import(target);',
   ],
-  ["unknown", "apps/user/src/probe.ts", "export const load = (target: string) => import(target);"],
+  [
+    "unknown",
+    "apps/service-member/src/probe.ts",
+    "export const load = (target: string) => import(target);",
+  ],
   ["require", "libs/auth/src/probe.ts", 'export const admin = require("@repo/db/admin");'],
   [
     "require-alias",
@@ -206,25 +214,25 @@ const opaqueSpecifiers = [
   ],
   [
     "import-equals",
-    "apps/user/src/probe.ts",
+    "apps/service-member/src/probe.ts",
     'import admin = require("@repo/db/admin"); export { admin };',
   ],
 ] as const;
 
 const validBoundaries = [
-  ["apps/admin/src/app/probe.ts", 'export * from "@repo/db/admin";'],
-  ["apps/user/src/app/probe.ts", 'export * from "@repo/db/admin";'],
-  ["apps/user/src/app/probe.ts", 'import "@repo/db/src/schema";'],
+  ["apps/service-admin/src/app/probe.ts", 'export * from "@repo/db/admin";'],
+  ["apps/service-member/src/app/probe.ts", 'export * from "@repo/db/admin";'],
+  ["apps/service-member/src/app/probe.ts", 'import "@repo/db/src/schema";'],
   ["libs/ui/src/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
   ["tools/dev/src/probe.ts", 'export * from "@repo/db/remote";'],
   ["infra/cloudflare/src/probe.ts", 'export * from "@repo/db/remote";'],
   ["infra/cloudflare/src/probe.ts", "export const load = (target: string) => import(target);"],
   ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
-  ["apps/user/src/app/probe.ts", 'export * from "@repo/db";'],
-  ["apps/user/src/app/probe.ts", 'export * from "@repo/ui/signup";'],
-  ["apps/wiki/vite.config.ts", 'export { localDatabase } from "@repo/db/local";'],
-  ["apps/wiki/src/app/probe.ts", 'export * from "@repo/auth";'],
-  ["apps/user/src/app/probe.ts", 'export const load = () => import("./feature");'],
+  ["apps/service-member/src/app/probe.ts", 'export * from "@repo/db";'],
+  ["apps/service-member/src/app/probe.ts", 'export * from "@repo/ui/signup";'],
+  ["apps/internal-dashboard/vite.config.ts", 'export { localDatabase } from "@repo/db/local";'],
+  ["apps/internal-dashboard/src/app/probe.ts", 'export * from "@repo/auth";'],
+  ["apps/service-member/src/app/probe.ts", 'export const load = () => import("./feature");'],
   ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
   ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],
   ["libs/shared/src/probe.ts", "export const location = import.meta.url;"],

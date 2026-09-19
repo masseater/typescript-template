@@ -130,7 +130,11 @@ describe("app stylesheet ownership", () => {
   it("covers every app that depends on the parts", () => {
     expect.hasAssertions();
     expect(designSystemApps).toStrictEqual(
-      expect.arrayContaining(["apps/admin", "apps/user", "apps/wiki"]),
+      expect.arrayContaining([
+        "apps/service-admin",
+        "apps/service-member",
+        "apps/internal-dashboard",
+      ]),
     );
   });
 
@@ -147,41 +151,59 @@ describe("app stylesheet ownership", () => {
   it("reports a @source that scans a directory which does not exist", () => {
     expect.hasAssertions();
     expect(
-      sourceViolations("apps/wiki", "apps/wiki/src/app/auth.css", '@source "./nonexistent";'),
+      sourceViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/auth.css",
+        '@source "./nonexistent";',
+      ),
     ).toHaveLength(1);
   });
 
   it("reports a @source that scans outside the app", () => {
     expect.hasAssertions();
     expect(
-      sourceViolations("apps/wiki", "apps/wiki/src/app/auth.css", '@source "../../../libs/ui";'),
+      sourceViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/auth.css",
+        '@source "../../../libs/ui";',
+      ),
     ).toHaveLength(1);
   });
 
   it("reports a stylesheet with no @source at all", () => {
     expect.hasAssertions();
     expect(
-      sourceViolations("apps/wiki", "apps/wiki/src/app/auth.css", '@import "tailwindcss";'),
+      sourceViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/auth.css",
+        '@import "tailwindcss";',
+      ),
     ).toHaveLength(1);
   });
 
   it("reports a stylesheet the app never links", () => {
     expect.hasAssertions();
-    expect(linkViolations("apps/wiki", "apps/wiki/src/app/unlinked.css")).toHaveLength(1);
+    expect(
+      linkViolations("apps/internal-dashboard", "apps/internal-dashboard/src/app/unlinked.css"),
+    ).toHaveLength(1);
   });
 });
 
 describe("app stylesheet coverage", () => {
   it("reports a @source narrowed past the screens it has to cover", () => {
     expect.hasAssertions();
-    expect(coverageViolations("apps/wiki", ["apps/wiki/src/app"])).toContainEqual(
-      expect.stringContaining("apps/wiki/src/pages/consent/ui/consent-actions.tsx"),
+    expect(
+      coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src/app"]),
+    ).toContainEqual(
+      expect.stringContaining("apps/internal-dashboard/src/pages/consent/ui/consent-actions.tsx"),
     );
   });
 
   it("accepts a @source that covers every styled file of the app", () => {
     expect.hasAssertions();
-    expect(coverageViolations("apps/wiki", ["apps/wiki/src"])).toStrictEqual([]);
+    expect(
+      coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src"]),
+    ).toStrictEqual([]);
   });
 });
 

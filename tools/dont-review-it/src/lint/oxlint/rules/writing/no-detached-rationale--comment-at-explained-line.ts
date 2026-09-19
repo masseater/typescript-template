@@ -22,7 +22,7 @@ export const noDetachedRationale = createDontReviewItRule({
     docs: {
       description:
         "Require a JSDoc block to carry tag content only, so an explanation never drifts above a signature instead of sitting on the code it explains",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
     },
     messages: {
       jsdocDescriptionProse:

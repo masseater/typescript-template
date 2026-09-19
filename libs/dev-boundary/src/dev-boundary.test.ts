@@ -38,7 +38,7 @@ describe.each(applications)("the %s development server", (application) => {
   const servedGuardedFiles = Object.fromEntries(
     guardedFilePaths.map((guardedFile) => [
       guardedFile,
-      guardedFile === administratorDatabaseModulePath && application === "admin"
+      guardedFile === administratorDatabaseModulePath && application === "service-admin"
         ? `${okStatus} export default ${JSON.stringify(administratorDatabaseSource)};\n`
         : `${forbiddenStatus} ${refusalText}`,
     ]),
@@ -47,7 +47,7 @@ describe.each(applications)("the %s development server", (application) => {
     "/.dev.vars",
     "/src/alias.json",
     "/@id/@repo/db/remote",
-    ...(application === "admin" ? [] : ["/@id/@repo/db/admin"]),
+    ...(application === "service-admin" ? [] : ["/@id/@repo/db/admin"]),
     ...foreignApplications.flatMap((foreign) => [
       `/@id/@repo/${foreign}`,
       `/@fs/{repository}/apps/%${(foreign.codePointAt(0) ?? 0).toString(hexRadix)}${foreign.slice(1)}/src/private.js?raw`,

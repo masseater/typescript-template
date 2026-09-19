@@ -52,7 +52,7 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   const { audience } = yield* Auth;
   const current = yield* requireSessionSecurity(headers);
   const strong = isStrongMethod(current.session.authenticationMethod);
-  if (audience !== "user") {
+  if (audience !== "service-member") {
     yield* verifyAdmin(current.user.role, strong, allowEnrollment);
   }
   return { session: current.session, strong, user: current.user };

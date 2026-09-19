@@ -220,7 +220,7 @@ export const noRedundantMockReset = createDontReviewItRule({
     docs: {
       description:
         "Disallow clearing, resetting, restoring or releasing mock state by hand, so the state a test starts from is decided by one shared runner configuration instead of by cleanup calls spread across the specs",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       perMockReset:

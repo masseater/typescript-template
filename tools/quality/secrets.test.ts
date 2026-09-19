@@ -26,8 +26,8 @@ const violations = (
 describe("staged secret detection", () => {
   it.for([
     ".dev.vars",
-    "apps/user/.env",
-    "apps/admin/.dev.vars.preview",
+    "apps/service-member/.env",
+    "apps/service-admin/.dev.vars.preview",
     ".local/runtime.json",
     ".local-agents/credentials.json",
   ])("rejects staging private configuration: %s", (filename) => {
@@ -93,7 +93,7 @@ describe("deployment value leaks", () => {
       [
         "CLOUDFLARE_ACCOUNT_ID=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         `TEMPLATE_PREFIX="${unusablePrefix}"`,
-        "TEMPLATE_USER_ORIGIN=https://app.deployment.example",
+        "TEMPLATE_SERVICE_MEMBER_ORIGIN=https://app.deployment.example",
         "BUDGET_JPY=5000",
         "TEMPLATE_JPY_PER_USD=150",
         "UNRELATED=some-other-value",
@@ -103,7 +103,7 @@ describe("deployment value leaks", () => {
     expect(values).toStrictEqual([
       { key: "CLOUDFLARE_ACCOUNT_ID", value: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
       { key: "TEMPLATE_PREFIX", value: unusablePrefix },
-      { key: "TEMPLATE_USER_ORIGIN", value: "https://app.deployment.example" },
+      { key: "TEMPLATE_SERVICE_MEMBER_ORIGIN", value: "https://app.deployment.example" },
     ]);
     expect(
       violations({ content: `const p = "${unusablePrefix}-db";`, filename: source }, values),

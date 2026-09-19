@@ -16,9 +16,9 @@ import {
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
 const awaitingPresetPackages = [
-  "apps/admin/**",
-  "apps/user/**",
-  "apps/wiki/**",
+  "apps/service-admin/**",
+  "apps/service-member/**",
+  "apps/internal-dashboard/**",
   "infra/budget-monitor/**",
   "infra/cloudflare/**",
   "infra/error-monitor/**",

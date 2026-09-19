@@ -11,10 +11,10 @@ const meta = preview.meta({
     name: "role",
     onValueChange: changeRole,
     options: [
-      { label: "一般", value: "user" },
+      { label: "一般", value: "member" },
       { label: "管理者", value: "admin" },
     ],
-    value: "user",
+    value: "member",
   },
   component: SelectField,
 });

@@ -6,8 +6,11 @@ import { describeCause, redact } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 const confidential = [
-  { key: "TEMPLATE_USER_ORIGIN", value: verificationSettings.origins.user },
-  { key: "TEMPLATE_USER_ORIGIN", value: new URL(verificationSettings.origins.user).hostname },
+  { key: "TEMPLATE_SERVICE_MEMBER_ORIGIN", value: verificationSettings.origins.user },
+  {
+    key: "TEMPLATE_SERVICE_MEMBER_ORIGIN",
+    value: new URL(verificationSettings.origins.user).hostname,
+  },
   { key: "CLOUDFLARE_ACCOUNT_ID", value: verificationSettings.accountId },
   { key: "TEMPLATE_PREFIX", value: verificationSettings.prefix },
 ];
@@ -24,7 +27,7 @@ it.effect("keeps the values that identify the deployment out of every reported f
     const printed = JSON.stringify(described);
     assert.include(printed, "<redacted:TEMPLATE_PREFIX>");
     assert.include(printed, "<redacted:CLOUDFLARE_ACCOUNT_ID>");
-    assert.include(printed, "<redacted:TEMPLATE_USER_ORIGIN>");
+    assert.include(printed, "<redacted:TEMPLATE_SERVICE_MEMBER_ORIGIN>");
     for (const { value } of confidential) {
       assert.notInclude(printed, value);
     }

@@ -22,7 +22,7 @@ import { assertStackReady } from "./stack-guards.ts";
 import { sendingStacks, stackDependencies, traceDestinationStack } from "./stacks.ts";
 
 const deployment = { access, config };
-const applications = ["admin", "user", "wiki"] as const;
+const applications = ["service-admin", "service-member", "internal-dashboard"] as const;
 const withoutOtlp = { access, config: { ...config, otlp: undefined } };
 const migrations = await Effect.runPromise(loadRemoteMigrations());
 const declaredMigrations = migrations.length;
@@ -87,7 +87,7 @@ it.effect("separates a database whose tables were made without a recorded histor
     Effect.gen(function* program() {
       yield* mockServer(
         ...accountHandlers({ databases: deployedDatabases }),
-        migrationQuery(noMigrationsApplied, ["user"]),
+        migrationQuery(noMigrationsApplied, ["service-member"]),
       );
       const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
       assert.deepStrictEqual(describeFailure(failure, []), {

@@ -92,7 +92,7 @@ export const noTestContextEscape = createDontReviewItRule({
     docs: {
       description:
         "Disallow a test callback or a fixture factory holding the test context as anything but a pattern of statically readable fixture names, so the fixtures a test depends on stay listed in its parameter and the rules that read those names keep deciding",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       restContext:

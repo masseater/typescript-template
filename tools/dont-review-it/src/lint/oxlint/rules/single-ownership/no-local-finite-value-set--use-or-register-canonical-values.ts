@@ -117,7 +117,7 @@ export const createNoLocalFiniteValueSet = ({
       docs: {
         description:
           "Disallow defining a finite value set inside a file that does not own it, so one place declares the vocabulary and every other place derives from it",
-        relatedGuidelines: ["apps/wiki/content/docs/guidelines/writing-code.md"],
+        relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
       },
       messages: {
         localFiniteValueSetWithOwner:

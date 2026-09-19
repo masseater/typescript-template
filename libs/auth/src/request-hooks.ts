@@ -159,7 +159,7 @@ function enforceAdminAccess({ audience, path, role, strong }: SessionPolicyInput
   if (role === "admin" && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
-  if (audience === "user") {
+  if (audience === "service-member") {
     return;
   }
   if (role !== "admin") {

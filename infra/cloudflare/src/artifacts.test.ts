@@ -57,14 +57,14 @@ async function writeFiles(
 }
 
 async function writeUserBuild(root: string): Promise<UserBuild> {
-  const client = path.join(root, "apps/user/dist/client");
-  const server = path.join(root, "apps/user/dist/server");
+  const client = path.join(root, "apps/service-member/dist/client");
+  const server = path.join(root, "apps/service-member/dist/server");
   await writeFiles(client, {
     "app.js": "export const publicValue = 1;",
     "app.js.map": "private source map",
     "styles.css": "body{color:red}",
   });
-  await writeFiles(sourceMapDirectories(root, "user").client, {
+  await writeFiles(sourceMapDirectories(root, "service-member").client, {
     "app.js.map": "private source map",
     [SOURCE_MAP_MANIFEST]: JSON.stringify(["app.js.map"]),
   });
@@ -103,7 +103,7 @@ it.effect(
     Effect.gen(function* program() {
       const { client, root, server } = yield* userBuild;
       yield* run(async () => writeFiles(server, { "index.js.map": "{}", "orphan.js.map": "{}" }));
-      const artifacts = yield* load(root, "user");
+      const artifacts = yield* load(root, "service-member");
       assert.deepStrictEqual(
         artifacts.modules.map((module) => module.name),
         ["chunks/handler.js", "index.js", "index.js.map"],
@@ -127,8 +127,8 @@ it.effect(
 it.effect("reuses the staging directory for unchanged client content", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const first = yield* load(root, "user");
-    const second = yield* load(root, "user");
+    const first = yield* load(root, "service-member");
+    const second = yield* load(root, "service-member");
     assert.strictEqual(second.clientDirectory, first.clientDirectory);
   }).pipe(Effect.scoped),
 );
@@ -136,14 +136,16 @@ it.effect("reuses the staging directory for unchanged client content", () =>
 it.effect("resolves the upload without writing anything outside a deployment", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const artifacts = yield* loadArtifacts(root, "user");
+    const artifacts = yield* loadArtifacts(root, "service-member");
     assert.include(artifacts.clientDirectory, artifacts.uploaded);
     assert.deepStrictEqual(
       yield* run(async () => readdir(path.join(root, "infra", "cloudflare")).catch(() => [])),
       [],
     );
     assert.deepStrictEqual(
-      yield* run(async () => readdir(path.dirname(sourceMapDirectories(root, "user").client))),
+      yield* run(async () =>
+        readdir(path.dirname(sourceMapDirectories(root, "service-member").client)),
+      ),
       ["client"],
     );
   }).pipe(Effect.scoped),
@@ -152,9 +154,9 @@ it.effect("resolves the upload without writing anything outside a deployment", (
 it.effect("refuses to publish a build that never recorded what its maps were", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const kept = sourceMapDirectories(root, "user").client;
+    const kept = sourceMapDirectories(root, "service-member").client;
     yield* run(async () => rm(path.join(kept, SOURCE_MAP_MANIFEST)));
-    assert.strictEqual(yield* failureCode(root, "user"), "source_maps_missing");
+    assert.strictEqual(yield* failureCode(root, "service-member"), "source_maps_missing");
   }).pipe(Effect.scoped),
 );
 
@@ -164,7 +166,7 @@ it.effect("publishes a build whose bundler emitted no map for a generated chunk"
     yield* run(async () =>
       writeFiles(client, { "rolldown-runtime.js": "export const helper = 1;" }),
     );
-    const artifacts = yield* load(root, "user");
+    const artifacts = yield* load(root, "service-member");
     assert.include(
       artifacts.clientFiles.map((file) => path.basename(file)),
       "rolldown-runtime.js",
@@ -175,9 +177,9 @@ it.effect("publishes a build whose bundler emitted no map for a generated chunk"
 it.effect("refuses to publish a build whose client source maps were never kept", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const kept = sourceMapDirectories(root, "user").client;
+    const kept = sourceMapDirectories(root, "service-member").client;
     yield* run(async () => rm(path.join(kept, "app.js.map")));
-    assert.strictEqual(yield* failureCode(root, "user"), "source_maps_missing");
+    assert.strictEqual(yield* failureCode(root, "service-member"), "source_maps_missing");
     assert.deepStrictEqual(
       yield* run(async () => readdir(path.join(root, "infra")).catch(() => [])),
       [],
@@ -189,7 +191,7 @@ it.effect("describes a build without its private source maps", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
     yield* run(async () => rm(path.join(root, ".local"), { force: true, recursive: true }));
-    const artifacts = yield* loadArtifacts(root, "user");
+    const artifacts = yield* loadArtifacts(root, "service-member");
     assert.include(artifacts.clientDirectory, artifacts.uploaded);
   }).pipe(Effect.scoped),
 );
@@ -197,16 +199,16 @@ it.effect("describes a build without its private source maps", () =>
 it.effect("leaves earlier digests alone while a preview is still awaiting approval", () =>
   Effect.gen(function* program() {
     const { client, root } = yield* userBuild;
-    const first = yield* loadArtifacts(root, "user").pipe(
+    const first = yield* loadArtifacts(root, "service-member").pipe(
       Effect.provideService(ArtifactWrites, "stage"),
     );
     yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 4;"));
-    const second = yield* loadArtifacts(root, "user").pipe(
+    const second = yield* loadArtifacts(root, "service-member").pipe(
       Effect.provideService(ArtifactWrites, "stage"),
     );
     assert.deepStrictEqual(
       (yield* run(async () =>
-        readdir(path.join(root, "infra", "cloudflare", ".artifacts", "user")),
+        readdir(path.join(root, "infra", "cloudflare", ".artifacts", "service-member")),
       )).toSorted(),
       [first.uploaded, second.uploaded].toSorted(),
     );
@@ -216,12 +218,14 @@ it.effect("leaves earlier digests alone while a preview is still awaiting approv
 it.effect("keeps only the staged digest a deployment is about to upload", () =>
   Effect.gen(function* program() {
     const { client, root } = yield* userBuild;
-    const first = yield* load(root, "user");
+    const first = yield* load(root, "service-member");
     yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 3;"));
-    const second = yield* load(root, "user");
+    const second = yield* load(root, "service-member");
     assert.notStrictEqual(second.uploaded, first.uploaded);
     assert.deepStrictEqual(
-      yield* run(async () => readdir(path.join(root, "infra", "cloudflare", ".artifacts", "user"))),
+      yield* run(async () =>
+        readdir(path.join(root, "infra", "cloudflare", ".artifacts", "service-member")),
+      ),
       [second.uploaded],
     );
   }).pipe(Effect.scoped),
@@ -231,21 +235,27 @@ it.effect("refuses server CSS that differs from its public asset", () =>
   Effect.gen(function* program() {
     const { root, server } = yield* userBuild;
     yield* run(async () => writeFile(path.join(server, "styles.css"), "body{color:blue}"));
-    assert.strictEqual(yield* failureCode(root, "user"), "server_css_without_public_asset");
+    assert.strictEqual(
+      yield* failureCode(root, "service-member"),
+      "server_css_without_public_asset",
+    );
   }).pipe(Effect.scoped),
 );
 
 it.effect("never writes through a link placed in the staging directory", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const artifacts = yield* load(root, "user");
+    const artifacts = yield* load(root, "service-member");
     const protectedFile = path.join(root, "protected.txt");
     yield* run(async () => {
       await writeFile(protectedFile, "do not overwrite");
       await unlink(path.join(artifacts.clientDirectory, "app.js"));
       await symlink(protectedFile, path.join(artifacts.clientDirectory, "app.js"));
     });
-    assert.strictEqual(yield* failureCode(root, "user"), "artifact_staging_link_forbidden");
+    assert.strictEqual(
+      yield* failureCode(root, "service-member"),
+      "artifact_staging_link_forbidden",
+    );
     assert.strictEqual(
       yield* run(async () => readFile(protectedFile, "utf-8")),
       "do not overwrite",
@@ -256,9 +266,9 @@ it.effect("never writes through a link placed in the staging directory", () =>
 it.effect("stages changed client content in a new directory", () =>
   Effect.gen(function* program() {
     const { client, root } = yield* userBuild;
-    const first = yield* load(root, "user");
+    const first = yield* load(root, "service-member");
     yield* run(async () => writeFile(path.join(client, "app.js"), "export const publicValue = 2;"));
-    const second = yield* load(root, "user");
+    const second = yield* load(root, "service-member");
     assert.notStrictEqual(second.clientDirectory, first.clientDirectory);
     assert.notStrictEqual(second.release, first.release);
   }).pipe(Effect.scoped),
@@ -268,13 +278,13 @@ it.effect("derives the release from code and client content but not from source 
   Effect.gen(function* program() {
     const { root, server } = yield* userBuild;
     yield* run(async () => writeFiles(server, { "index.js.map": "{}" }));
-    const first = yield* load(root, "user");
+    const first = yield* load(root, "service-member");
     yield* run(async () => writeFile(path.join(server, "index.js.map"), '{"version":3}'));
-    const mapChanged = yield* load(root, "user");
+    const mapChanged = yield* load(root, "service-member");
     yield* run(async () =>
       writeFile(path.join(server, "chunks/handler.js"), "export default { changed: true };"),
     );
-    const codeChanged = yield* load(root, "user");
+    const codeChanged = yield* load(root, "service-member");
     assert.strictEqual(mapChanged.release, first.release);
     assert.notStrictEqual(codeChanged.release, first.release);
   }).pipe(Effect.scoped),
@@ -294,13 +304,13 @@ for (const filename of [
   it.effect(`refuses private client artifact ${filename} before copying anything`, () =>
     Effect.gen(function* program() {
       const root = yield* temporaryRoot;
-      const client = path.join(root, "apps/user/dist/client");
-      const server = path.join(root, "apps/user/dist/server");
+      const client = path.join(root, "apps/service-member/dist/client");
+      const server = path.join(root, "apps/service-member/dist/server");
       yield* run(async () => {
         await writeFiles(client, { [filename]: "private" });
         await writeFiles(server, { "index.js": "export default {};" });
       });
-      assert.strictEqual(yield* failureCode(root, "user"), "private_client_artifact");
+      assert.strictEqual(yield* failureCode(root, "service-member"), "private_client_artifact");
     }).pipe(Effect.scoped),
   );
 }
@@ -308,12 +318,15 @@ for (const filename of [
 it.effect("refuses symlinks in upload roots", () =>
   Effect.gen(function* program() {
     const root = yield* temporaryRoot;
-    const dist = path.join(root, "apps/admin/dist");
+    const dist = path.join(root, "apps/service-admin/dist");
     yield* run(async () => {
       await mkdir(path.join(dist, "server"), { recursive: true });
       await mkdir(path.join(root, "private"));
       await symlink(path.join(root, "private"), path.join(dist, "client"));
     });
-    assert.strictEqual(yield* failureCode(root, "admin"), "artifact_directory_symlink_forbidden");
+    assert.strictEqual(
+      yield* failureCode(root, "service-admin"),
+      "artifact_directory_symlink_forbidden",
+    );
   }).pipe(Effect.scoped),
 );

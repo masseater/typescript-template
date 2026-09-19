@@ -5,9 +5,9 @@ import path from "node:path";
 type Fixture = Readonly<Record<string, string>>;
 
 const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-  "apps/admin": { ".": "./src/index.ts" },
-  "apps/user": { ".": "./src/index.ts" },
-  "apps/wiki": { ".": "./src/index.ts" },
+  "apps/service-admin": { ".": "./src/index.ts" },
+  "apps/service-member": { ".": "./src/index.ts" },
+  "apps/internal-dashboard": { ".": "./src/index.ts" },
   "libs/auth": { ".": "./src/index.ts" },
   "libs/config": { ".": "./src/index.ts", "./deployment": "./src/deployment.ts" },
   "libs/db": {

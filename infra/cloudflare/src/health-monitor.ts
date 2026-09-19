@@ -17,9 +17,9 @@ const stack = Stack(
     name: "health",
     variables: (config: SharedConfig) =>
       Effect.succeed({
-        ADMIN_ORIGIN: config.origins.admin,
-        USER_ORIGIN: config.origins.user,
-        WIKI_ORIGIN: config.origins.wiki,
+        SERVICE_ADMIN_ORIGIN: config.origins.admin,
+        SERVICE_MEMBER_ORIGIN: config.origins.user,
+        INTERNAL_DASHBOARD_ORIGIN: config.origins.wiki,
       }),
   }),
 );

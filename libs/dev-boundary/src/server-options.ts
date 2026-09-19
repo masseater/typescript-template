@@ -31,7 +31,7 @@ const serverOptions = ({
         "**/.local/**",
         "**/.local-agents/**",
         ...applicationsExcept(application).map((foreign) => `**/apps/${foreign}/**`),
-        ...(application === "admin" ? [] : ["**/libs/db/src/admin.*"]),
+        ...(application === "service-admin" ? [] : ["**/libs/db/src/admin.*"]),
         "**/libs/db/src/remote*",
         "**/libs/db/src/bootstrap*",
         "**/libs/db/src/testing.*",

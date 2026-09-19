@@ -5,9 +5,9 @@ const journeyRoles = ["member", "operator", "knowledge"] as const;
 type JourneyRole = (typeof journeyRoles)[number];
 
 const roleApplications = {
-  knowledge: "wiki",
-  member: "user",
-  operator: "admin",
+  knowledge: "internal-dashboard",
+  member: "service-member",
+  operator: "service-admin",
 } as const satisfies Readonly<Record<JourneyRole, Application>>;
 
 export { journeyRoles, roleApplications };

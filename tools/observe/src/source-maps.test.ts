@@ -28,7 +28,7 @@ async function createTemporaryRoot(): Promise<string> {
 }
 
 async function writeReleaseMaps(root: string): Promise<void> {
-  const directory = path.join(sourceMapDirectories(root, "user").releases, release);
+  const directory = path.join(sourceMapDirectories(root, "service-member").releases, release);
   await mkdir(path.join(directory, "client/assets"), { recursive: true });
   await mkdir(path.join(directory, "server/assets"), { recursive: true });
   await writeFile(
@@ -71,7 +71,7 @@ it.effect("stack locations resolve to repository sources through the release's p
   Effect.gen(function* program() {
     const root = yield* temporaryRoot;
     yield* Effect.promise(async () => writeReleaseMaps(root));
-    const frames = yield* symbolicate({ app: "user", release, repositoryRoot: root }, [
+    const frames = yield* symbolicate({ app: "service-member", release, repositoryRoot: root }, [
       "/assets/index-abc.js:2:3",
       "auth-def.js:2:1",
       "/assets/index-abc.js:9:9",

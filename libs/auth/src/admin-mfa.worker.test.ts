@@ -42,10 +42,10 @@ const assertTotpUriAllowed = Effect.fn("assertTotpUriAllowed")(function* assertT
 });
 
 const recoverySession = Effect.fn("recoverySession")(function* recoverySession(
-  audience: "user" | "admin",
+  audience: "service-member" | "admin",
 ) {
   yield* bootstrapVerifiedAdmin(email);
-  const { backupCodes } = yield* enableTotp(yield* signInAs("admin", email));
+  const { backupCodes } = yield* enableTotp(yield* signInAs("service-admin", email));
   const client = new BrowserClient((yield* Fixture)[audience]);
   const login = yield* client.json("/sign-in/email", { email, password: PASSWORD });
   assert.deepInclude(login.body, { twoFactorRedirect: true });
@@ -61,7 +61,7 @@ it.effect(
     withAuth(
       Effect.gen(function* program() {
         yield* bootstrapVerifiedAdmin(email);
-        const client = yield* signInAs("admin", email);
+        const client = yield* signInAs("service-admin", email);
         assert.strictEqual(yield* failureTag(client.verify()), "AdminMfaRequired");
         assert.strictEqual((yield* client.verify(true)).strong, false);
         yield* enableTotp(client);
@@ -100,8 +100,8 @@ it.effect(
     withAuth(
       Effect.gen(function* program() {
         yield* bootstrapVerifiedAdmin(email);
-        const first = yield* signInAs("admin", email);
-        const old = yield* signInAs("admin", email);
+        const first = yield* signInAs("service-admin", email);
+        const old = yield* signInAs("service-admin", email);
         yield* enableTotp(first);
         const attempt = yield* old.json("/passkey/generate-register-options");
         assert.strictEqual(attempt.status, HTTP_FORBIDDEN);
@@ -114,7 +114,7 @@ it.effect(
   TEST_TIMEOUT,
 );
 
-for (const audience of ["user", "admin"] as const) {
+for (const audience of ["service-member", "service-admin"] as const) {
   it.effect(
     `weak admin session cannot retrieve TOTP secret through ${audience} app`,
     () =>
@@ -122,7 +122,7 @@ for (const audience of ["user", "admin"] as const) {
         Effect.gen(function* program() {
           yield* bootstrapVerifiedAdmin(email);
           const old = yield* signInAs(audience, email);
-          const { authenticator } = yield* enableTotp(yield* signInAs("admin", email));
+          const { authenticator } = yield* enableTotp(yield* signInAs("service-admin", email));
           yield* assertTotpUriDenied(old);
           assert.strictEqual((yield* old.verify(true)).strong, false);
           const code = { code: authenticator.generate() };
@@ -160,7 +160,7 @@ it.effect(
         const reader = "reader@example.com";
         const enrollment = yield* registerVerified(reader);
         assert.strictEqual((yield* signIn(enrollment, reader)).status, HTTP_OK);
-        const old = yield* signInAs("user", reader);
+        const old = yield* signInAs("service-member", reader);
         yield* enableTotp(enrollment);
         const current = yield* old.verify();
         assert.deepStrictEqual([current.user.role, current.strong], ["user", false]);

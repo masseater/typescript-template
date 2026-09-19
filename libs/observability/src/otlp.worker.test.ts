@@ -67,7 +67,7 @@ function observed(
     otlp,
     release: "abc123",
     routes: { "/": "home" },
-    serviceName: "user",
+    serviceName: "service-member",
   });
   return Effect.acquireUseRelease(
     Effect.sync(() => {

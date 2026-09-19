@@ -45,7 +45,7 @@
   "normativeDocuments": {
     "fileName": "AGENTS.md",
     "directories": [
-      "apps/wiki/content/docs/guidelines"
+      "apps/internal-dashboard/content/docs/guidelines"
     ]
   }
 }

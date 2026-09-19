@@ -234,7 +234,7 @@ export const noModuleScopeMockConfig = createDontReviewItRule({
     docs: {
       description:
         "Disallow creating a mock or settling what it does anywhere but a module replacement factory and the body of a fixture, so the instance a test reads was stood up and settled for that test alone",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       mockCreationOutsideFixture:

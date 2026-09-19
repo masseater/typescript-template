@@ -87,7 +87,7 @@ export const noExpectCallExpression = createDontReviewItRule({
     docs: {
       description:
         "Disallow producing the subject of an assertion inside `expect`, so an assertion states a property of a value the fixture handed over rather than the outcome of an expression the assertion itself runs",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       producedSubject:

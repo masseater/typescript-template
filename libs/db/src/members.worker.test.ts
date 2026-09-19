@@ -52,7 +52,7 @@ it.effect("shows another member only what the profile page shows to others", () 
 it.effect("shows an unverified member to nobody but themselves", () =>
   Effect.gen(function* program() {
     yield* addUser("viewer");
-    yield* addUser("pending", "user", false);
+    yield* addUser("pending", "member", false);
     yield* describeMember("pending", {
       createdAt: new Date("2026-09-01T00:00:00.000Z"),
       name: "pending",

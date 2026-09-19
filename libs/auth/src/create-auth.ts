@@ -102,7 +102,7 @@ function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
     user: {
       create: {
         before: async (user: Readonly<Record<string, unknown>>) => ({
-          data: { ...user, role: "user", securityVersion: 0 },
+          data: { ...user, role: "member", securityVersion: 0 },
         }),
       },
     },
@@ -115,7 +115,7 @@ function createEmailVerification(
 ): EmailVerificationOptions {
   return {
     autoSignInAfterVerification: false,
-    sendOnSignIn: options.audience !== "wiki",
+    sendOnSignIn: options.audience !== "internal-dashboard",
     sendOnSignUp: true,
     sendVerificationEmail: async ({
       user,
@@ -188,7 +188,7 @@ function createSessionOptions(audience: Application): SessionOptions {
       securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
     },
     cookieCache: { enabled: false },
-    expiresIn: audience === "user" ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
+    expiresIn: audience === "service-member" ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
     freshAge: FRESH_SESSION_SECONDS,
   };
 }
@@ -198,7 +198,7 @@ function createEmailAndPassword(
   { origin, run }: Readonly<{ origin: string; run: Run }>,
 ): EmailAndPasswordOptions {
   return {
-    disableSignUp: options.audience !== "user",
+    disableSignUp: options.audience !== "service-member",
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
     onExistingUserSignUp: async ({
@@ -235,7 +235,7 @@ function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
     trustedOrigins: [origin],
     user: {
       additionalFields: {
-        role: { defaultValue: "user", input: false, required: true, type: [...roles] },
+        role: { defaultValue: "member", input: false, required: true, type: [...roles] },
         securityVersion: { defaultValue: 0, input: false, required: true, type: "number" },
       },
       deleteUser: { enabled: false },

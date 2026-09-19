@@ -10,7 +10,7 @@ export const noEmptyCatch = createDontReviewItRule({
     docs: {
       description:
         "Disallow a catch clause whose body carries no statement, so catching a failure is a decision about what happens next instead of a place for the failure to stop being visible",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
     },
     messages: {
       emptyCatch:

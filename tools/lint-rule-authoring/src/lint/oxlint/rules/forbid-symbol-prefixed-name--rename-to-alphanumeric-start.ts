@@ -20,7 +20,7 @@ export const forbidSymbolPrefixedName = createLintRuleAuthoringRule({
     docs: {
       description:
         "Require every directory and file name on the path of a linted file to start with a letter or a digit, so nothing sits where a glob walk never reaches it",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/enforcement.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/enforcement.md"],
     },
     messages: {
       symbolPrefixedSegment:

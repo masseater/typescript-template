@@ -47,13 +47,17 @@ const brokenLayers = [
   {
     fields: '{"_tag":"ConfigurationInvalid","reason":"HTTPS is required outside localhost"}',
     layer: (): Layer.Layer<AppServices, unknown> =>
-      appLayer(appEnvironment({ APP_ORIGIN: "http://wiki.example.test" }), "user", validRoutes),
+      appLayer(
+        appEnvironment({ APP_ORIGIN: "http://wiki.example.test" }),
+        "service-member",
+        validRoutes,
+      ),
     tag: "ConfigurationInvalid",
   },
   {
     fields: '{"_tag":"TelemetryInvalid","reason":"routes"}',
     layer: (): Layer.Layer<AppServices, unknown> =>
-      appLayer(appEnvironment(), "user", { "bad path": "home" }),
+      appLayer(appEnvironment(), "service-member", { "bad path": "home" }),
     tag: "TelemetryInvalid",
   },
 ] as const;
@@ -63,7 +67,7 @@ describe("a worker whose layer cannot be built", () => {
     it.effect(`answers 503 without exposing ${tag} to the client`, () =>
       Effect.gen(function* program() {
         const response = yield* Effect.promise(async () =>
-          servedUnavailable(layer, { log: recordingSink().sink, service: "user" }),
+          servedUnavailable(layer, { log: recordingSink().sink, service: "service-member" }),
         );
         assert.strictEqual(response.status, httpStatus.serviceUnavailable);
         const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
@@ -74,7 +78,7 @@ describe("a worker whose layer cannot be built", () => {
       Effect.gen(function* program() {
         const logs = recordingSink();
         yield* Effect.promise(async () =>
-          servedUnavailable(layer, { log: logs.sink, service: "user" }),
+          servedUnavailable(layer, { log: logs.sink, service: "service-member" }),
         );
         assert.lengthOf(logs.stderr, 1);
         const {
@@ -124,7 +128,7 @@ describe("a wiki worker whose database has not been migrated", () => {
 
 async function servedDocument(url: string): Promise<Response> {
   const worker = serveApp(
-    workerRuntime(() => appLayer(appEnvironment({}), "user", validRoutes)),
+    workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
     startRoute({
       fetch: (rendered: Request): Response =>
         new Response("<!DOCTYPE html>", {
@@ -134,7 +138,7 @@ async function servedDocument(url: string): Promise<Response> {
           },
         }),
     }),
-    { service: "user" },
+    { service: "service-member" },
   );
   const context = createExecutionContext();
   const response = await worker.fetch(new Request(url), {}, context);
@@ -172,7 +176,10 @@ describe("a worker serving a rendered document", () => {
   it.effect("forbids every resource and indexing when the runtime cannot answer", () =>
     Effect.gen(function* program() {
       const response = yield* Effect.promise(async () =>
-        servedUnavailable(brokenLayers[0].layer, { log: recordingSink().sink, service: "user" }),
+        servedUnavailable(brokenLayers[0].layer, {
+          log: recordingSink().sink,
+          service: "service-member",
+        }),
       );
       assert.include(response.policy ?? "", "default-src 'none'");
       assert.notInclude(response.policy ?? "", "nonce-");

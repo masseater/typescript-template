@@ -22,10 +22,10 @@ const oversizedBody = 16_385;
 const repeatedPrivateText = 10;
 const created = 201;
 const jsonHeaders = { "content-type": "application/json", origin };
-const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "user" });
+const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "service-member" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
 const runtime = workerRuntime(() => context);
-const api = apiRoutes(runtime, { service: "user" });
+const api = apiRoutes(runtime, { service: "service-member" });
 
 function mutation(headers: Readonly<Record<string, string>>, body: string): Request {
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });

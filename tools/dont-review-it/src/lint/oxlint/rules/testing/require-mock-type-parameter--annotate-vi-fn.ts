@@ -78,7 +78,7 @@ export const requireMockTypeParameter = createDontReviewItRule({
     docs: {
       description:
         "Require every mock function creation to carry a type parameter that pins the call signature of the dependency it stands in for, so a mock drifting from that dependency is caught by the type checker instead of passing every assertion in the suite",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       untypedMockCreation:

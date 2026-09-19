@@ -27,7 +27,7 @@ function addMembers(seeds: readonly Seed[]): Effect.Effect<void, DatabaseFailure
         id: seed.id,
         name: seed.name,
         profile: seed.profile ?? "",
-        role: "user" as const,
+        role: "member" as const,
         updatedAt: new Date(seed.createdAt),
       })),
     );

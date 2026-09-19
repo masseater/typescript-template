@@ -17,14 +17,14 @@ const user = sqliteTable(
       .$type<readonly string[]>()
       .notNull()
       .default([]),
-    role: text("role", { enum: roles }).notNull().default("user"),
+    role: text("role", { enum: roles }).notNull().default("member"),
     securityVersion: integer("security_version").notNull().default(0),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
     uniqueIndex("user_email_unique").on(table.email),
-    check("user_role", sql`${table.role} IN ('user', 'admin')`),
+    check("user_role", sql`${table.role} IN ('member', 'admin')`),
   ],
 );
 

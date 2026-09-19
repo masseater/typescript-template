@@ -15,7 +15,9 @@ const leaked = "worker-test-secret-at-least-32-characters";
 async function reportedLine(cause: unknown): Promise<unknown> {
   const logs = recordingSink();
   const failure = Cause.fail(new LayerFailed({ cause }));
-  await Effect.runPromise(reportUnavailable(failure, { log: logs.sink, service: "wiki" }));
+  await Effect.runPromise(
+    reportUnavailable(failure, { log: logs.sink, service: "internal-dashboard" }),
+  );
   expect(logs.stdout).toHaveLength(0);
   expect(logs.stderr).toHaveLength(1);
   return logs.stderr[0];
@@ -59,7 +61,9 @@ describe("naming the cause that actually broke the layer", () => {
     expect.hasAssertions();
     const logs = recordingSink();
     const defect = Cause.die(new Error("D1_ERROR: no such table: jwks"));
-    await Effect.runPromise(reportUnavailable(defect, { log: logs.sink, service: "wiki" }));
+    await Effect.runPromise(
+      reportUnavailable(defect, { log: logs.sink, service: "internal-dashboard" }),
+    );
     expect(logs.stderr[0]).toMatchObject({
       "error.chain": "Error: D1_ERROR: no such table: jwks",
       "error.fields": '{"message":"D1_ERROR: no such table: jwks","name":"Error"}',
@@ -112,7 +116,7 @@ describe("hiding a value that a comma used to cut short", () => {
     );
     const logs = recordingSink();
     await Effect.runPromise(
-      reportUnavailable(Cause.die(statement), { log: logs.sink, service: "wiki" }),
+      reportUnavailable(Cause.die(statement), { log: logs.sink, service: "internal-dashboard" }),
     );
     expect(JSON.stringify(logs.stderr)).not.toContain(leaked);
     expect(logs.stderr[0]).toMatchObject({

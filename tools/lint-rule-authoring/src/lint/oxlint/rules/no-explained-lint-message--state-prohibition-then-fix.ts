@@ -145,7 +145,7 @@ export const noExplainedLintMessage = createLintRuleAuthoringRule({
     docs: {
       description:
         "Require every lint message to carry a prohibition and an imperative repair direction and nothing else, so the first thing a reader meets is the action that clears the report",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/enforcement.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/enforcement.md"],
     },
     messages: {
       missingProhibition:

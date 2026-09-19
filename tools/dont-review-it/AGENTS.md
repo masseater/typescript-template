@@ -38,7 +38,7 @@ description: Machine-enforced answers to the writing questions that would otherw
     - 手で書いた例は、実装が変わっても書き換えられないまま残る。テストから作れば、食い違った時点で検査が落ちる
   - 印が 1 つも無いルールは例の領域が空になり、検査が落ちる
 
-説明に載せる例をどこから作るかは [文書](../../apps/wiki/content/docs/guidelines/documents.md) が持つ。
+説明に載せる例をどこから作るかは [文書](../../apps/internal-dashboard/content/docs/guidelines/documents.md) が持つ。
 
 ## 公開する config
 
@@ -131,7 +131,7 @@ CLI が持つコマンドは `check` の 1 つで、そこが全部の検査を�
 
 ## ワークフロー定義の検査
 
-`check` が `.github/workflows/` の定義も読む。守っているのは [強制の機構](../../apps/wiki/content/docs/guidelines/enforcement.md) と [秘密と権限](../../apps/wiki/content/docs/guidelines/secrets-and-permissions.md) に既に書かれている規範で、この検査はその強制側にあたる。
+`check` が `.github/workflows/` の定義も読む。守っているのは [強制の機構](../../apps/internal-dashboard/content/docs/guidelines/enforcement.md) と [秘密と権限](../../apps/internal-dashboard/content/docs/guidelines/secrets-and-permissions.md) に既に書かれている規範で、この検査はその強制側にあたる。
 
 - 読めない定義が残っていない
 - ゲートとして要求されうる実行単位が、起動の条件で自分を絞り込んでいない

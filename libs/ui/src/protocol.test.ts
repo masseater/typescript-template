@@ -137,7 +137,7 @@ describe("セッション応答の検証", () => {
     email: "user@example.com",
     id: "user-id",
     name: "名前",
-    role: "user",
+    role: "member",
     twoFactorEnabled: false,
   };
   const malformedSessionMessage = "サーバーの応答形式が不正です。";

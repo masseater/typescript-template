@@ -12,10 +12,10 @@ it.effect("role change revokes wiki reading and every OAuth grant of the user", 
   Effect.gen(function* program() {
     yield* addUser("actor", "admin");
     yield* addUser("reader", "admin");
-    const actor = yield* addSession("actor", "admin");
+    const actor = yield* addSession("actor", "service-admin");
     yield* addOAuthGrant("reader");
     assert.deepStrictEqual(yield* findWikiReader("reader"), { id: "reader" });
-    yield* setUserRole(actor, "reader", "user");
+    yield* setUserRole(actor, "reader", "member");
     assert.isNull(yield* findWikiReader("reader"));
     assert.deepStrictEqual(yield* oauthGrantCounts("reader"), noGrants);
   }).pipe(Effect.provide(TestDatabase)),
@@ -24,10 +24,10 @@ it.effect("role change revokes wiki reading and every OAuth grant of the user", 
 it.effect("revoking sessions also revokes OAuth tokens but keeps consent", () =>
   Effect.gen(function* program() {
     yield* addUser("reader", "admin");
-    const wiki = yield* addSession("reader", "wiki");
+    const wiki = yield* addSession("reader", "internal-dashboard");
     yield* addOAuthGrant("reader");
     yield* revokeUserSessions("reader");
-    assert.isNull(yield* getSessionSecurity(wiki, "wiki"));
+    assert.isNull(yield* getSessionSecurity(wiki, "internal-dashboard"));
     assert.deepStrictEqual(yield* oauthGrantCounts("reader"), { ...noGrants, consent: 1 });
   }).pipe(Effect.provide(TestDatabase)),
 );
@@ -36,7 +36,7 @@ it.effect("deleting a user removes OAuth grants", () =>
   Effect.gen(function* program() {
     yield* addUser("actor", "admin");
     yield* addUser("reader");
-    const actor = yield* addSession("actor", "admin");
+    const actor = yield* addSession("actor", "service-admin");
     yield* addOAuthGrant("reader");
     yield* deleteUser(actor, "reader");
     assert.deepStrictEqual(yield* oauthGrantCounts("reader"), noGrants);

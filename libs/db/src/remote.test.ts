@@ -65,7 +65,7 @@ function insertUser(id: string, verified: boolean): Effect.Effect<void, unknown,
 function insertSession(id: string, userId: string): Effect.Effect<void, unknown, Database> {
   return query(async (database): Promise<void> => {
     await database.insert(session).values({
-      audience: "user",
+      audience: "service-member",
       authenticationMethod: "password",
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
@@ -195,7 +195,7 @@ it.effect(
       }
       yield* insertSession("old-session", "first");
       yield* bootstrapDatabase(executor, "FIRST@example.test");
-      assert.isNull(yield* getSessionSecurity("old-session", "user"));
+      assert.isNull(yield* getSessionSecurity("old-session", "service-member"));
       assert.strictEqual(
         yield* code(bootstrapDatabase(executor, "second@example.test")),
         "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",

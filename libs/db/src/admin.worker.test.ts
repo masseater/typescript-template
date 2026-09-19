@@ -43,13 +43,13 @@ it.effect("rejects weak admin and cross-audience sessions", () =>
   Effect.gen(function* program() {
     yield* addUser("administrator", "admin");
     const weak = yield* addSession("administrator", "admin", false);
-    const wrongAudience = yield* addSession("administrator", "user");
+    const wrongAudience = yield* addSession("administrator", "service-member");
     assert.strictEqual(yield* failureTag(listUsers(weak, page)), "AdminStrongSessionRequired");
     assert.strictEqual(
       yield* failureTag(listUsers(wrongAudience, page)),
       "AdminStrongSessionRequired",
     );
-    const strong = yield* addSession("administrator", "admin");
+    const strong = yield* addSession("administrator", "service-admin");
     assert.lengthOf((yield* listUsers(strong, page)).users, 1);
   }).pipe(Effect.provide(TestDatabase)),
 );
@@ -58,12 +58,12 @@ it.effect("role change invalidates both audiences immediately", () =>
   Effect.gen(function* program() {
     yield* addUser("actor", "admin");
     yield* addUser("target", "admin");
-    const actor = yield* addSession("actor", "admin");
-    const targetAdmin = yield* addSession("target", "admin");
-    const targetUser = yield* addSession("target", "user");
-    yield* setUserRole(actor, "target", "user");
-    assert.isNull(yield* getSessionSecurity(targetAdmin, "admin"));
-    assert.isNull(yield* getSessionSecurity(targetUser, "user"));
+    const actor = yield* addSession("actor", "service-admin");
+    const targetAdmin = yield* addSession("target", "service-admin");
+    const targetUser = yield* addSession("target", "service-member");
+    yield* setUserRole(actor, "target", "member");
+    assert.isNull(yield* getSessionSecurity(targetAdmin, "service-admin"));
+    assert.isNull(yield* getSessionSecurity(targetUser, "service-member"));
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -71,11 +71,14 @@ it.effect("protects final administrator and credentials during deletion", () =>
   Effect.gen(function* program() {
     yield* addUser("last", "admin");
     yield* addCredential("last");
-    const actor = yield* addSession("last", "admin");
+    const actor = yield* addSession("last", "service-admin");
     assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
-    assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
+    assert.strictEqual(
+      yield* failureTag(setUserRole(actor, "last", "member")),
+      "LastAdminRequired",
+    );
     assert.lengthOf(yield* query(async (database) => database.select().from(account)), 1);
-    assert.strictEqual((yield* getSessionSecurity(actor, "admin"))?.user.role, "admin");
+    assert.strictEqual((yield* getSessionSecurity(actor, "service-admin"))?.user.role, "admin");
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -83,12 +86,12 @@ it.effect("simultaneous self-demotions cannot remove all administrators", () =>
   Effect.gen(function* program() {
     yield* addUser("first", "admin");
     yield* addUser("second", "admin");
-    const first = yield* addSession("first", "admin");
-    const second = yield* addSession("second", "admin");
+    const first = yield* addSession("first", "service-admin");
+    const second = yield* addSession("second", "service-admin");
     const outcomes = yield* Effect.all(
       [
-        Effect.exit(setUserRole(first, "first", "user")),
-        Effect.exit(setUserRole(second, "second", "user")),
+        Effect.exit(setUserRole(first, "first", "member")),
+        Effect.exit(setUserRole(second, "second", "member")),
       ],
       { concurrency: "unbounded" },
     );
@@ -104,11 +107,11 @@ it.effect("deletion removes credentials and all sessions", () =>
   Effect.gen(function* program() {
     yield* addUser("actor", "admin");
     yield* addUser("target");
-    const actor = yield* addSession("actor", "admin");
-    const target = yield* addSession("target", "user");
+    const actor = yield* addSession("actor", "service-admin");
+    const target = yield* addSession("target", "service-member");
     yield* deleteUser(actor, "target");
     assert.isNull(yield* getProfile("target"));
-    assert.isNull(yield* getSessionSecurity(target, "user"));
+    assert.isNull(yield* getSessionSecurity(target, "service-member"));
     assert.strictEqual(yield* failureTag(deleteUser(actor, "target")), "TargetUnavailable");
   }).pipe(Effect.provide(TestDatabase)),
 );
@@ -132,7 +135,7 @@ it.effect("writes an audit record only when the user change lands", () =>
   Effect.gen(function* program() {
     yield* addUser("actor", "admin");
     yield* addUser("target");
-    const actor = yield* addSession("actor", "admin");
+    const actor = yield* addSession("actor", "service-admin");
     assert.strictEqual(yield* failureTag(deleteUser(actor, "missing")), "TargetUnavailable");
     assert.strictEqual(
       yield* failureTag(setUserRole(actor, "missing", "admin")),
@@ -147,8 +150,11 @@ it.effect("writes an audit record only when the user change lands", () =>
 it.effect("a rejected user change leaves no audit record behind", () =>
   Effect.gen(function* program() {
     yield* addUser("last", "admin");
-    const actor = yield* addSession("last", "admin");
-    assert.strictEqual(yield* failureTag(setUserRole(actor, "last", "user")), "LastAdminRequired");
+    const actor = yield* addSession("last", "service-admin");
+    assert.strictEqual(
+      yield* failureTag(setUserRole(actor, "last", "member")),
+      "LastAdminRequired",
+    );
     assert.strictEqual(yield* failureTag(deleteUser(actor, "last")), "LastAdminRequired");
     assert.lengthOf(yield* auditRecords(), 0);
   }).pipe(Effect.provide(TestDatabase)),

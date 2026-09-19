@@ -62,7 +62,7 @@ function configuredAppLayer(
 
 function appLayer(
   env: unknown,
-  audience: Exclude<Application, "wiki">,
+  audience: Exclude<Application, "internal-dashboard">,
   routes: Readonly<Record<string, string>>,
 ): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
   return Layer.unwrap(

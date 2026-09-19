@@ -78,7 +78,7 @@ export const createNoNonBoundaryDouble = (reading: {
       docs: {
         description:
           "Disallow replacing a module that does not own an external I/O boundary itself, so a spec cannot take the code it is supposed to be checking out of the run and call what is left a verification",
-        relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+        relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
       },
       messages: {
         determinedModuleDouble:

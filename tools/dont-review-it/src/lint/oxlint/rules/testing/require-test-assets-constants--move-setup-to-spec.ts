@@ -233,7 +233,7 @@ export const requireTestAssetsConstants = createDontReviewItRule({
     docs: {
       description:
         "Require an assets file to carry nothing but const declarations of written-out data, so setup cannot leave the spec that owns it under the name of test data",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       assetsImport:

@@ -18,7 +18,7 @@ export const noVacuousTestRun = createDontReviewItRule({
     docs: {
       description:
         "Disallow a test config that lets a run finding no test file report success, so a suite that stopped being collected reaches the gate as a failure instead of as a green run",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/enforcement.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/enforcement.md"],
     },
     messages: {
       vacuousTestRun:

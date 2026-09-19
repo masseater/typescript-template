@@ -29,7 +29,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   CLOUDFLARE_ACCOUNT_ID: verificationSettings.accountId,
   CLOUDFLARE_API_TOKEN: "stack-verification-not-a-real-token",
   CLOUDFLARE_ZONE_ID: verificationSettings.zoneId,
-  TEMPLATE_ADMIN_ORIGIN: verificationSettings.origins.admin,
+  TEMPLATE_SERVICE_ADMIN_ORIGIN: verificationSettings.origins.admin,
   TEMPLATE_AUTH_SECRET: verificationAuthSecret,
   TEMPLATE_FIXED_COST_USD: String(verificationSettings.budget.fixedCostUsd),
   TEMPLATE_JPY_PER_USD: String(verificationSettings.budget.jpyPerUsd),
@@ -40,8 +40,8 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   TEMPLATE_OTLP_ENDPOINT: verificationSettings.otlp.endpoint,
   TEMPLATE_PREFIX: verificationSettings.prefix,
   TEMPLATE_RESERVE_USD: String(verificationSettings.budget.reserveUsd),
-  TEMPLATE_USER_ORIGIN: verificationSettings.origins.user,
-  TEMPLATE_WIKI_ORIGIN: verificationSettings.origins.wiki,
+  TEMPLATE_SERVICE_MEMBER_ORIGIN: verificationSettings.origins.user,
+  TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: verificationSettings.origins.wiki,
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };

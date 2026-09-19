@@ -87,7 +87,10 @@ it.effect("names the origins that collide instead of the values", () =>
     });
     const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
     assert.strictEqual(failure.code, "app_origins_must_differ");
-    assert.deepStrictEqual([...failure.keys], ["TEMPLATE_ADMIN_ORIGIN", "TEMPLATE_USER_ORIGIN"]);
+    assert.deepStrictEqual(
+      [...failure.keys],
+      ["TEMPLATE_SERVICE_ADMIN_ORIGIN", "TEMPLATE_SERVICE_MEMBER_ORIGIN"],
+    );
     assert.notInclude(JSON.stringify(failure), settings.origins.user);
   }),
 );

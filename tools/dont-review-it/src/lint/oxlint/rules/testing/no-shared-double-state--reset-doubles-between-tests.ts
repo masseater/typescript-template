@@ -16,7 +16,7 @@ export const noSharedDoubleState = createDontReviewItRule({
     docs: {
       description:
         "Require the test config to declare that doubles are reset and restored before each test, so a spec that passes on the state its neighbour installed is impossible rather than merely unlikely",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       missingTestBlock:

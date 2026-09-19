@@ -33,8 +33,8 @@ const sharedBindings = {
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
-const adminBindings: AppBindings<"admin"> = sharedBindings;
-const userBindings: AppBindings<"user"> = {
+const adminBindings: AppBindings<"service-admin"> = sharedBindings;
+const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
   AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
   APP_ORIGIN: settings.origins.user,
@@ -46,7 +46,7 @@ it.effect(
   "deployment commands reject ignored arguments instead of selecting an unintended stack",
   () =>
     Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "admin"]), {
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "service-admin"]), {
         operation: "plan",
         stacks: ["admin"],
       });
@@ -55,15 +55,15 @@ it.effect(
         stacks: [...stackNames],
       });
       assert.deepStrictEqual(
-        yield* parseDeploymentCommand(["deploy", "user", "--confirm-plan", confirmation]),
-        { confirmation, operation: "deploy", stack: "user" },
+        yield* parseDeploymentCommand(["deploy", "service-member", "--confirm-plan", confirmation]),
+        { confirmation, operation: "deploy", stack: "service-member" },
       );
       for (const args of [
-        ["deploy", "user"],
+        ["deploy", "service-member"],
         ["deploy", "all", "--confirm-plan", confirmation],
-        ["deploy", "user", "--confirm-plan", confirmation, "--stage", "other"],
-        ["deploy", "user", "--confirm-plan", "not-a-confirmation"],
-        ["deploy", "user", "--yes"],
+        ["deploy", "service-member", "--confirm-plan", confirmation, "--stage", "other"],
+        ["deploy", "service-member", "--confirm-plan", "not-a-confirmation"],
+        ["deploy", "service-member", "--yes"],
         ["deploy", "unknown", "--confirm-plan", confirmation],
         ["plan", "all", "--confirm-plan", confirmation],
         ["up", "all"],

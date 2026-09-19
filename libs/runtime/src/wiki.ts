@@ -9,7 +9,7 @@ import type { ConfigurationInvalid } from "@repo/config";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "./index.ts";
 
-const wikiService = "wiki";
+const wikiService = "internal-dashboard";
 
 type WikiServices = AppServices | Embedder;
 

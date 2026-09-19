@@ -42,7 +42,7 @@ function runStatement(
   });
 }
 
-function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
+function testDatabase(migrated: boolean): Layer.Layer<Database> {
   return Layer.unwrap(
     Effect.gen(function* database() {
       yield* Effect.promise(async () => reset());
@@ -50,7 +50,7 @@ function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
         yield* migrateDatabase(d1Executor(env.DB), yield* migrations(env.TEST_MIGRATIONS));
       }
       return Database.layer(env.DB);
-    }),
+    }).pipe(Effect.orDie),
   );
 }
 

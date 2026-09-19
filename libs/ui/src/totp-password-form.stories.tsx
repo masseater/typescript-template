@@ -7,7 +7,7 @@ const user = {
   email: "taro@example.com",
   id: "user_01",
   name: "山田 太郎",
-  role: "user",
+  role: "member",
   twoFactorEnabled: false,
 } as const;
 

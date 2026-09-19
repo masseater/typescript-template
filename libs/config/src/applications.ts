@@ -1,31 +1,31 @@
 import { Schema } from "effect";
 
-const USER_PORT = 3001;
-const ADMIN_PORT = 3002;
-const WIKI_PORT = 3003;
+const SERVICE_MEMBER_PORT = 3001;
+const SERVICE_ADMIN_PORT = 3002;
+const INTERNAL_DASHBOARD_PORT = 3003;
 const STORYBOOK_PORT = 3051;
 const MAILPIT_PORT = 8025;
 
-const applications = ["user", "admin", "wiki"] as const;
+const applications = ["service-member", "service-admin", "internal-dashboard"] as const;
 const ApplicationName = Schema.Literals(applications);
 type Application = (typeof applications)[number];
 type ServiceName = Application | "commander";
 const applicationPorts: Readonly<Record<Application, number>> = {
-  admin: ADMIN_PORT,
-  user: USER_PORT,
-  wiki: WIKI_PORT,
+  "internal-dashboard": INTERNAL_DASHBOARD_PORT,
+  "service-admin": SERVICE_ADMIN_PORT,
+  "service-member": SERVICE_MEMBER_PORT,
 };
 const applicationReadyPaths: Readonly<Record<Application, string>> = {
-  admin: "/login",
-  user: "/login",
-  wiki: "/login",
+  "internal-dashboard": "/login",
+  "service-admin": "/login",
+  "service-member": "/login",
 };
 const capabilities = ["ai"] as const;
 type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {
-  admin: [],
-  user: ["ai"],
-  wiki: ["ai"],
+  "internal-dashboard": ["ai"],
+  "service-admin": [],
+  "service-member": ["ai"],
 } as const satisfies Readonly<Record<Application, readonly Capability[]>>;
 
 type CapabilityOf<App extends Application> = (typeof applicationCapabilities)[App][number];
@@ -35,7 +35,7 @@ function grants(app: Application, capability: Capability): boolean {
   return granted.includes(capability);
 }
 
-const roles = ["user", "admin"] as const;
+const roles = ["member", "admin"] as const;
 type Role = (typeof roles)[number];
 const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
 type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
@@ -50,9 +50,9 @@ function loopbackOrigin(port: number): string {
 }
 
 const applicationOrigins: Readonly<Record<Application, string>> = {
-  admin: loopbackOrigin(ADMIN_PORT),
-  user: loopbackOrigin(USER_PORT),
-  wiki: loopbackOrigin(WIKI_PORT),
+  "internal-dashboard": loopbackOrigin(INTERNAL_DASHBOARD_PORT),
+  "service-admin": loopbackOrigin(SERVICE_ADMIN_PORT),
+  "service-member": loopbackOrigin(SERVICE_MEMBER_PORT),
 };
 const mailpitOrigin = loopbackOrigin(MAILPIT_PORT);
 const storybookOrigin = `http://localhost:${STORYBOOK_PORT}`;
