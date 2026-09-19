@@ -60,7 +60,7 @@ export default defineConfig({
     "react-doctor/mcp-tool-capability-risk": "error",
     "react-doctor/nextjs-no-client-fetch-for-server-data": "error",
     "react-doctor/nextjs-no-img-element": "error",
-    "react-doctor/no-all-caps-body-text": "off",
+    "react-doctor/no-all-caps-body-text": "error",
     "react-doctor/no-arbitrary-px-font-size": "error",
     "react-doctor/no-aria-hidden-on-body": "error",
     "react-doctor/no-aria-invalid-without-description": "error",

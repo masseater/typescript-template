@@ -1715,6 +1715,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@repo/dont-review-it':
+        specifier: workspace:*
+        version: link:../dont-review-it
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.3.6

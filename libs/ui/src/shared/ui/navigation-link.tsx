@@ -21,10 +21,8 @@ type NavigationAnchorProps = Readonly<
   ComponentProps<"a"> & { variant?: "brand" | "item" | "side" }
 >;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function NavigationAnchor({ children, variant, ...anchor }: NavigationAnchorProps): ReactElement {
   return (
-    // oxlint-disable-next-line react/jsx-props-no-spreading
     <a {...anchor} data-slot="navigation-link" className={navigationLinkVariants({ variant })}>
       {children}
     </a>

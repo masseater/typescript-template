@@ -11,10 +11,8 @@ type ButtonAnchorProps = Readonly<
   }
 >;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function ButtonAnchor({ children, size, variant, ...anchor }: ButtonAnchorProps): ReactElement {
   return (
-    // oxlint-disable-next-line react/jsx-props-no-spreading
     <a {...anchor} data-slot="button-link" className={buttonVariants({ size, variant })}>
       {children}
     </a>

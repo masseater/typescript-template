@@ -25,5 +25,4 @@ function coldStartFixturePath(): string {
 }
 
 export { coldStartFixturePath };
-// oxlint-disable-next-line import/no-default-export
 export default coldStartWorker;

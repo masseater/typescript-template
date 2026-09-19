@@ -4,5 +4,5 @@
     "lib": ["ES2025", "DOM"],
     "types": ["vite-plus/client", "@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "vite.config.ts"]
 }

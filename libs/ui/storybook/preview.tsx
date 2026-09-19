@@ -25,5 +25,4 @@ const preview = definePreview({
   tags: ["test"],
 });
 
-// oxlint-disable-next-line import/no-default-export
 export default preview;

@@ -34,21 +34,23 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
-    project: [
-      "src/**/*.ts!",
-      "!src/auth-test-fixture.ts!",
-      "!src/browser-client.ts!",
-      "!src/mail-fixture.ts!",
-      "!src/wiki-oauth-fixture.ts!",
+    entry: [
+      "src/auth-test-fixture.ts",
+      "src/browser-client.ts",
+      "src/mail-fixture.ts",
+      "src/wiki-oauth-fixture.ts",
     ],
+    project: ["src/**/*.ts!"],
   },
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
-    project: ["src/**/*.ts!", "!src/monitor-fixture.ts!", "!src/mail-recorder.ts!"],
+    entry: ["src/mail-recorder.ts"],
+    project: ["src/**/*.ts!"],
   },
   "libs/runtime": {
     ignoreDependencies: ["cloudflare"],
-    project: ["src/**/*.ts!", "!src/*-fixture.ts!"],
+    entry: ["src/*-fixture.ts"],
+    project: ["src/**/*.ts!"],
   },
   "libs/ui": {
     entry: ["*.test.ts"],
@@ -151,18 +153,27 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "infra/cloudflare": {
-        entry: [...cloudflareStacks, ...productionOnly(...scripts["infra/cloudflare"])],
+        entry: [
+          ...cloudflareStacks,
+          ...productionOnly(...scripts["infra/cloudflare"]),
+          "src/account-fixture.ts",
+          "src/inspection-fixture.ts",
+        ],
         ignoreExportsUsedInFile: true,
-        project: ["src/**/*.ts!", "!src/account-fixture.ts!", "!src/inspection-fixture.ts!"],
+        project: ["src/**/*.ts!"],
       },
       "infra/local": {
         entry: productionOnly(...scripts["infra/local"]),
         project: ["src/**/*.ts!"],
       },
       "libs/db": {
-        entry: ["src/testing-node.ts!", ...productionOnly(...scripts["libs/db"])],
+        entry: [
+          "src/testing-node.ts!",
+          "src/records-fixture.ts",
+          ...productionOnly(...scripts["libs/db"]),
+        ],
         ignoreDependencies: ["cloudflare"],
-        project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
+        project: ["src/**/*.ts!"],
       },
       "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
       "tools/dev": {
