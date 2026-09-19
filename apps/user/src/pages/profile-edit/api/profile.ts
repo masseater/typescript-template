@@ -15,9 +15,13 @@ async function loadProfile(): Promise<Profile> {
   return profile;
 }
 
-async function saveProfile(name: string, profile: string): Promise<Profile> {
+async function saveProfile(
+  name: string,
+  profile: string,
+  socialLinks: readonly string[],
+): Promise<Profile> {
   const { api } = await userClient();
-  return apiData(ProfileView, await api.profile.patch({ name, profile }));
+  return apiData(ProfileView, await api.profile.patch({ name, profile, socialLinks }));
 }
 
 export { loadProfile, saveProfile };

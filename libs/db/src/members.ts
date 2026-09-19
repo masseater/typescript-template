@@ -6,7 +6,13 @@ import { query } from "./database.ts";
 import { user } from "./schema.ts";
 import { UserNotFound } from "./user-not-found.ts";
 
-type Member = Readonly<{ id: string; joined: string; name: string; profile: string }>;
+type Member = Readonly<{
+  id: string;
+  joined: string;
+  name: string;
+  profile: string;
+  socialLinks: readonly string[];
+}>;
 
 const monthLength = "YYYY-MM".length;
 const memberColumns = {
@@ -14,12 +20,19 @@ const memberColumns = {
   id: user.id,
   name: user.name,
   profile: user.profile,
+  socialLinks: user.socialLinks,
 };
 
 function shown({
   createdAt,
   ...member
-}: Readonly<{ createdAt: Readonly<Date>; id: string; name: string; profile: string }>): Member {
+}: Readonly<{
+  createdAt: Readonly<Date>;
+  id: string;
+  name: string;
+  profile: string;
+  socialLinks: readonly string[];
+}>): Member {
   return { ...member, joined: createdAt.toISOString().slice(0, monthLength) };
 }
 

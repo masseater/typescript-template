@@ -13,6 +13,10 @@ const user = sqliteTable(
     image: text("image"),
     name: text("name").notNull(),
     profile: text("profile").notNull().default(""),
+    socialLinks: text("social_links", { mode: "json" })
+      .$type<readonly string[]>()
+      .notNull()
+      .default([]),
     role: text("role", { enum: roles }).notNull().default("user"),
     securityVersion: integer("security_version").notNull().default(0),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),

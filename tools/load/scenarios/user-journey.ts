@@ -187,7 +187,9 @@ const readProfile = (): void => {
   const answered = http.get(`${targetOrigin}/api/profile`, read("profile"));
   const { status } = answered;
   const editable =
-    typeof answered.json("name") === "string" && typeof answered.json("profile") === "string";
+    typeof answered.json("name") === "string" &&
+    typeof answered.json("profile") === "string" &&
+    Array.isArray(answered.json("socialLinks"));
   check(answered, {
     "profile answers 200": () => status === ok,
     "profile carries the editable fields": () => editable,

@@ -2,6 +2,7 @@ import { maximumNameLength, maximumProfileLength } from "@repo/runtime/contracts
 import { Field, FormColumn } from "@repo/ui";
 
 import { ProfileActions } from "./profile-actions.tsx";
+import { SocialLinksEditor } from "./social-links-editor.tsx";
 
 import type { ProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
@@ -32,6 +33,7 @@ function ProfileEditor({
         <p className="text-sm leading-normal text-muted-foreground">
           残り {maximumProfileLength - form.profile.length} 文字
         </p>
+        <SocialLinksEditor values={form.socialLinks} onChange={form.handleSocialLinksChange} />
         <ProfileActions blocked={form.blocked} homeId={homeId} />
       </FormColumn>
     </form>
