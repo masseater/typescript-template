@@ -26,13 +26,21 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
 }
 
+function authFailureMessage(error: NonNullable<AuthResult<unknown>["error"]>): string {
+  const { code, message } = error;
+  if (code === undefined) {
+    return message === undefined ? "認証サーバーが失敗理由のコードを返しませんでした。" : message;
+  }
+  const known = failureReasons[code];
+  if (known !== undefined) {
+    return known;
+  }
+  return message === undefined ? `認証サーバーが未知の失敗コードを返しました: ${code}` : message;
+}
+
 function requireSuccess<TData>(result: AuthResult<TData>): NonNullable<TData> {
   if (result.error) {
-    throw new Error(
-      failureReasons[result.error.code ?? ""] ??
-        result.error.message ??
-        "認証サーバーが操作を拒否しました。",
-    );
+    throw new Error(authFailureMessage(result.error));
   }
   if (result.data === null || result.data === undefined) {
     throw new Error("認証サーバーから結果が返りませんでした。");
