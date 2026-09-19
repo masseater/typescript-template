@@ -1,6 +1,1 @@
-Revision history for #600:
-
-rev 2 (content) 2026-09-19 14:11 UTC — Fold #464 InvalidStatePath empty-success removal and design-system restyle test fix (root components.json / componentImports / flooblenorf fixture) into this PR so MQ unblocks with one fat change instead of thin stacked PRs.
-rev 1 (initial) 2026-09-19 14:11 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":600,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"148137a3be92ea01ffaefa8002d44686ad684f71","timestamp_iso":"2026-09-19T14:11:36Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"148137a3be92ea01ffaefa8002d44686ad684f71","new_sha":"cf72f9b70c09646a1d8a8b2847c6f39a611fa822","timestamp_iso":"2026-09-19T14:11:36Z","reason":"Fold #464 InvalidStatePath empty-success removal and design-system restyle test fix (root components.json / componentImports / flooblenorf fixture) into this PR so MQ unblocks with one fat change instead of thin stacked PRs.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/148137a3be92ea01ffaefa8002d44686ad684f71...cf72f9b70c09646a1d8a8b2847c6f39a611fa822"}]} -->
+emptyState fixtures keep stack paths present so InvalidStatePath does not mask database/trace guards
