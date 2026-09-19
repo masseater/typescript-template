@@ -534,7 +534,7 @@ export const ORDER_STATUSES = ["draft"] as const;
   describe("an oxlint directive naming a canonical rule", () => {
     const it = test.extend("scanOfAnOxlintDirectiveNamingACanonicalRule", () =>
       scanCanonicalValuesText(
-        '// oxlint-disable-next-line dont-review-it/no-strict-canonical-literal-use--use-canonical-import\nconst status = "draft";\n',
+        '// oxlint-disable-next-line dont-review-it/no-local-finite-value-set--use-or-register-canonical-values\nconst schema = z.enum(["draft"]);\n',
       ));
 
     it("cannot suppress a canonical rule", ({ scanOfAnOxlintDirectiveNamingACanonicalRule }) => {
@@ -548,7 +548,7 @@ export const ORDER_STATUSES = ["draft"] as const;
   describe("a plugin alias written with a slash", () => {
     const it = test.extend("scanOfAPluginAliasWrittenWithASlash", () =>
       scanCanonicalValuesText(
-        '// oxlint-disable-next-line canonical-alias/no-strict-canonical-literal-use--use-canonical-import\nconst status = "draft";\n',
+        '// oxlint-disable-next-line canonical-alias/no-local-finite-value-set--use-or-register-canonical-values\nconst schema = z.enum(["draft"]);\n',
       ));
 
     it("cannot hide a canonical suppression", ({ scanOfAPluginAliasWrittenWithASlash }) => {

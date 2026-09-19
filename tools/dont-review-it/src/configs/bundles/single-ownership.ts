@@ -3,7 +3,6 @@ import {
   noDuplicatedBody,
   noLocalFiniteValueSet,
   noSplitTypeAuthority,
-  noStrictCanonicalLiteralUse,
   noTwinDeclaration,
 } from "../../plugin.ts";
 
@@ -14,6 +13,5 @@ export const singleOwnershipBundle: readonly WorkspaceLintRule[] = [
   noDuplicatedBody,
   noLocalFiniteValueSet,
   noSplitTypeAuthority,
-  noStrictCanonicalLiteralUse,
   noTwinDeclaration,
 ];

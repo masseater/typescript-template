@@ -311,7 +311,6 @@ const retiredProblemsIn = (
 
 const CANONICAL_RULE_BASENAMES: ReadonlySet<string> = new Set([
   "no-local-finite-value-set--use-or-register-canonical-values",
-  "no-strict-canonical-literal-use--use-canonical-import",
 ]);
 
 const LINT_DISABLE_DIRECTIVE =
