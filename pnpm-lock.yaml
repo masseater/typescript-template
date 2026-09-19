@@ -1093,9 +1093,6 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../observability
-      '@repo/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
