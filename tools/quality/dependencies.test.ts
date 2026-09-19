@@ -7,7 +7,6 @@ import {
   rootOnlyPackages,
   workspaceManifests,
 } from "./dependencies.ts";
-import { retiredPackages } from "./retired-packages.ts";
 
 describe("application package boundaries", () => {
   it.for(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])(
@@ -44,11 +43,10 @@ describe("application package boundaries", () => {
 });
 
 describe("replaced packages", () => {
-  const retired = Object.keys(retiredPackages).map((name) =>
-    name.endsWith("/") ? `${name}cloudflare` : name,
-  );
-
-  it.for(retired)("rejects a workspace that declares %s", (dependency) => {
+  it.for([
+    { kind: "exact", dependency: "styled-components" },
+    { kind: "prefix", dependency: "@pulumi/cloudflare" },
+  ])("rejects a workspace that declares $dependency ($kind)", ({ dependency }) => {
     expect.hasAssertions();
     const violations = retiredDependencyViolations([
       {

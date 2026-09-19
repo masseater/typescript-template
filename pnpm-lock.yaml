@@ -1639,6 +1639,12 @@ importers:
         specifier: 'catalog:'
         version: 1.52.0
     devDependencies:
+      '@opentelemetry/exporter-metrics-otlp-http':
+        specifier: 'catalog:'
+        version: 0.221.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/exporter-trace-otlp-http':
+        specifier: 0.221.0
+        version: 0.221.0(@opentelemetry/api@1.9.1)
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1691,6 +1697,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

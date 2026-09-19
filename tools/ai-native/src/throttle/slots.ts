@@ -1,16 +1,6 @@
 import { randomBytes } from "node:crypto";
-import {
-  closeSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-
-import { tryLock, unlock } from "fs-native-extensions";
 
 import { tryAcquireFileLock } from "./acquire-file-lock.ts";
 import { failedWithCode, failureSpelling } from "./failure-codes.ts";
@@ -35,16 +25,7 @@ export const ensureSlots = (slotDir: string, limit: number): void => {
 export type SlotHold = { release: () => Promise<void> };
 
 const lockUnlessHeld = (marker: string): SlotHold | null => {
-  return tryAcquireFileLock({
-    path: lockPath(marker),
-    open: (path) => openSync(path, "r+"),
-    tryLock,
-    unlock,
-    close: closeSync,
-    recordGeneration: () => {
-      writeFileSync(marker, randomBytes(16).toString("hex"));
-    },
-  });
+  return tryAcquireFileLock({ lockPath: lockPath(marker), markerPath: marker });
 };
 
 export type AcquireConfiguration = {
