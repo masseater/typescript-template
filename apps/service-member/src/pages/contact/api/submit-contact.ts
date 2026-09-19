@@ -1,7 +1,7 @@
 import { apiData } from "@repo/runtime/client";
-import { ContactAccepted, ContactSubmission } from "@repo/runtime/contracts";
 
 import { userClient } from "#shared/api/index.ts";
+import { ContactAccepted, ContactSubmission } from "#shared/contracts/index.ts";
 
 type ContactFormValues = typeof ContactSubmission.Type;
 
