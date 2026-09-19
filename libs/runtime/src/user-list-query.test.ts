@@ -20,7 +20,7 @@ describe("user list query parameters", () => {
         keyword: "Alice",
         limit: 50,
         offset: 100,
-        role: "user",
+        role: "member",
       });
     }),
   );

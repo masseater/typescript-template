@@ -132,7 +132,7 @@ export const noExpectMemberSubject = createDontReviewItRule({
     docs: {
       description:
         "Disallow handing an assertion a member reached off the value a fixture handed over, so the faces of that value the spec never names cannot pass unread",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       memberSubject:

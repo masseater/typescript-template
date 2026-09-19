@@ -111,13 +111,13 @@ it.effect(
         yield* signIn(client, "reader@example.com");
         yield* client.request("/update-user", { role: "admin", securityVersion: 99 });
         yield* client.request("/update-session", {
-          audience: "admin",
+          audience: "service-admin",
           authenticationMethod: "passkey_uv",
         });
         const current = yield* client.verify();
         assert.deepStrictEqual(
           [current.user.role, current.session.audience, current.strong],
-          ["user", "user", false],
+          ["service-member", "service-member", false],
         );
       }),
     ),
@@ -163,7 +163,7 @@ it.effect(
   TEST_TIMEOUT,
 );
 
-for (const name of ["user", "wiki"] as const) {
+for (const name of ["service-member", "internal-dashboard"] as const) {
   it.effect(
     `database exposes every field required by the ${name} plugins`,
     () =>

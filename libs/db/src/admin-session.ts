@@ -11,7 +11,7 @@ import type { SQL } from "drizzle-orm";
 import type { DrizzleDatabase } from "./database.ts";
 
 const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId: string) {
-  const actor = yield* getSessionSecurity(sessionId, "admin");
+  const actor = yield* getSessionSecurity(sessionId, "service-admin");
   if (
     actor?.user.role !== "admin" ||
     !actor.user.emailVerified ||
@@ -27,7 +27,7 @@ function liveAdmin(database: DrizzleDatabase, sessionId: string): SQL {
   const now = new Date();
   const liveSession = and(
     eq(session.id, sessionId),
-    eq(session.audience, "admin"),
+    eq(session.audience, "service-admin"),
     eq(actor.role, "admin"),
     eq(actor.emailVerified, true),
     eq(session.securityVersion, actor.securityVersion),

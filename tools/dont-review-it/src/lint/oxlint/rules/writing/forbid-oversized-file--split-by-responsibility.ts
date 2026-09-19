@@ -34,7 +34,7 @@ export const forbidOversizedFile = createDontReviewItRule({
     docs: {
       description:
         "Disallow a file carrying more code lines than the budget set for it, so a file is split while it still has one seam instead of after it has accumulated several responsibilities",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
     },
     messages: {
       oversizedFile:

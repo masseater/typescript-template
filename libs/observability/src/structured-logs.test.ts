@@ -16,7 +16,7 @@ function recorded(program: Effect.Effect<void>): Effect.Effect<ReturnType<typeof
         log: logs.sink,
         release: "abc123",
         routes: { "/": "home" },
-        serviceName: "user",
+        serviceName: "service-member",
       }),
     ),
     Effect.orDie,

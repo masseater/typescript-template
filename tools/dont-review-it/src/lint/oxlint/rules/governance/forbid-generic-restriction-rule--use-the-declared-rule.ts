@@ -84,7 +84,7 @@ export const forbidGenericRestrictionRule = createDontReviewItRule({
     docs: {
       description:
         "Disallow enabling an off-the-shelf lint rule that reads what it rejects from its own configuration, so every ban this repository declares stands in the rule that carries its replacement and reaches the checks that read the bans",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/enforcement.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/enforcement.md"],
     },
     messages: {
       redirectedRestrictionRule:

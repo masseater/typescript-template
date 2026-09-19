@@ -74,7 +74,7 @@ export const noExpectForbiddenSubjectName = createDontReviewItRule({
     docs: {
       description:
         "Disallow naming the subject of an assertion by one of the configured forbidden-name patterns, so a reader settles what the assertion pins from the assertion alone rather than from the fixture behind it",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       forbiddenSubjectName:

@@ -4,16 +4,18 @@ import { Effect } from "effect";
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
-  ADMIN_ORIGIN: "https://admin.example.com",
-  USER_ORIGIN: "https://app.example.com",
-  WIKI_ORIGIN: "https://wiki.example.com",
+  SERVICE_ADMIN_ORIGIN: "https://admin.example.com",
+  SERVICE_MEMBER_ORIGIN: "https://app.example.com",
+  INTERNAL_DASHBOARD_ORIGIN: "https://wiki.example.com",
 };
 
-function code(
-  input: unknown,
-): Effect.Effect<
+function code(input: unknown): Effect.Effect<
   "health_monitor_config_invalid" | "health_monitor_origins_must_differ",
-  { readonly ADMIN_ORIGIN: string; readonly USER_ORIGIN: string; readonly WIKI_ORIGIN: string }
+  {
+    readonly SERVICE_ADMIN_ORIGIN: string;
+    readonly SERVICE_MEMBER_ORIGIN: string;
+    readonly INTERNAL_DASHBOARD_ORIGIN: string;
+  }
 > {
   return parseHealthMonitorConfig(input).pipe(
     Effect.flip,
@@ -24,16 +26,16 @@ function code(
 it.effect("accepts distinct https origins", () =>
   Effect.gen(function* program() {
     assert.deepStrictEqual(healthTargets(yield* parseHealthMonitorConfig(valid)), [
-      { origin: "https://app.example.com", service: "user" },
-      { origin: "https://admin.example.com", service: "admin" },
-      { origin: "https://wiki.example.com", service: "wiki" },
+      { origin: "https://app.example.com", service: "service-member" },
+      { origin: "https://admin.example.com", service: "service-admin" },
+      { origin: "https://wiki.example.com", service: "internal-dashboard" },
     ]);
   }),
 );
 
 for (const override of [
-  { USER_ORIGIN: "http://app.example.com" },
-  { WIKI_ORIGIN: "https://app.example.com/docs" },
+  { SERVICE_MEMBER_ORIGIN: "http://app.example.com" },
+  { INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" },
 ]) {
   it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>
     Effect.gen(function* program() {
@@ -45,7 +47,7 @@ for (const override of [
 it.effect("refuses a configuration that points two applications at the same origin", () =>
   Effect.gen(function* program() {
     assert.strictEqual(
-      yield* code({ ...valid, WIKI_ORIGIN: "https://app.example.com" }),
+      yield* code({ ...valid, INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com" }),
       "health_monitor_origins_must_differ",
     );
   }),

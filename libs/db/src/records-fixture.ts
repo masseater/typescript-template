@@ -20,7 +20,7 @@ type Records = Effect.Effect<void, DatabaseFailure, Database>;
 
 const SESSION_LIFETIME_MS = 60_000;
 
-function addUser(id: string, role: Role = "user", emailVerified = true): Records {
+function addUser(id: string, role: Role = "member", emailVerified = true): Records {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date(),

@@ -57,9 +57,9 @@ const fixture = Layer.effect(
   Fixture,
   Effect.gen(function* buildFixture() {
     return Fixture.of({
-      admin: yield* authFor("admin"),
-      user: yield* authFor("user"),
-      wiki: yield* authFor("wiki"),
+      admin: yield* authFor("service-admin"),
+      user: yield* authFor("service-member"),
+      wiki: yield* authFor("internal-dashboard"),
     });
   }),
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));

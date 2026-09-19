@@ -70,7 +70,7 @@ function assertEligibleUser<TUser extends EligibleUser>(
   if (user?.emailVerified !== true) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }
-  if (audience !== "user" && user.role !== "admin") {
+  if (audience !== "service-member" && user.role !== "admin") {
     deny("ADMIN_REQUIRED");
   }
 }

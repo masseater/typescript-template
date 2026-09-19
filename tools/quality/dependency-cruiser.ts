@@ -71,10 +71,10 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "管理者専用の処理です。apps/admin と libs/db の中だけで使い、利用者向けのコードへ持ち込まないでください。",
+        "管理者専用の処理です。apps/service-admin と libs/db の中だけで使い、利用者向けのコードへ持ち込まないでください。",
       from: {
         path: "^(?:apps|libs)/",
-        pathNot: `^apps/admin/|^libs/db/src/(?!index\\.ts$)|${testModule}`,
+        pathNot: `^apps/service-admin/|^libs/db/src/(?!index\\.ts$)|${testModule}`,
       },
       name: "no-database-admin-outside-admin",
       severity: "error",
@@ -122,15 +122,15 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "利用者登録の画面は apps/user だけが持てます。管理者と wiki からは参照しないでください。",
-      from: { path: "^apps/", pathNot: "^apps/user/" },
+        "利用者登録の画面は apps/service-member だけが持てます。管理者と wiki からは参照しないでください。",
+      from: { path: "^apps/", pathNot: "^apps/service-member/" },
       name: "no-signup-outside-user",
       severity: "error",
       to: { path: String.raw`^libs/ui/src/signup\.tsx$` },
     },
     {
       comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
-      from: { path: "^apps/wiki/" },
+      from: { path: "^apps/internal-dashboard/" },
       name: "no-wiki-to-database",
       severity: "error",
       to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/local\.ts$` },

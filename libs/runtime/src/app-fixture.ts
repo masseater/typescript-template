@@ -29,7 +29,7 @@ function appEnvironment(
 function testClockRuntime(
   routes: Readonly<Record<string, string>>,
 ): WorkerRuntime<AppServices | TestClock.TestClock, never> {
-  const services = Layer.orDie(appLayer(appEnvironment(), "user", routes));
+  const services = Layer.orDie(appLayer(appEnvironment(), "service-member", routes));
   return workerRuntime(() => Layer.merge(services, TestClock.layer()));
 }
 

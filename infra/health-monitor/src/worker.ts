@@ -9,9 +9,9 @@ import type { MonitorBindings, Notify } from "@repo/monitor";
 import type { HealthState } from "./decision.ts";
 
 interface Bindings extends MonitorBindings {
-  USER_ORIGIN: string;
-  ADMIN_ORIGIN: string;
-  WIKI_ORIGIN: string;
+  SERVICE_MEMBER_ORIGIN: string;
+  SERVICE_ADMIN_ORIGIN: string;
+  INTERNAL_DASHBOARD_ORIGIN: string;
 }
 
 export class HealthMonitor extends Monitor<Bindings> {

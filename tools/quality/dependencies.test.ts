@@ -14,11 +14,15 @@ describe("application package boundaries", () => {
     (key) => {
       expect.hasAssertions();
       const violations = applicationDependencyViolations([
-        { area: "apps", file: "apps/user/package.json", manifest: { name: "@repo/user" } },
+        {
+          area: "apps",
+          file: "apps/service-member/package.json",
+          manifest: { name: "@repo/service-member" },
+        },
         {
           area: "apps",
           file: "apps/batch/package.json",
-          manifest: { [key]: { "@repo/user": "workspace:*" }, name: "@repo/batch" },
+          manifest: { [key]: { "@repo/service-member": "workspace:*" }, name: "@repo/batch" },
         },
         {
           area: "libs",
@@ -37,7 +41,12 @@ describe("application package boundaries", () => {
     expect.hasAssertions();
     expect(
       workspaceManifests.filter(({ area }) => area === "apps").map(({ file }) => file),
-    ).toStrictEqual(expect.arrayContaining(["apps/user/package.json", "apps/admin/package.json"]));
+    ).toStrictEqual(
+      expect.arrayContaining([
+        "apps/service-member/package.json",
+        "apps/service-admin/package.json",
+      ]),
+    );
     expect(applicationDependencyViolations(workspaceManifests)).toStrictEqual([]);
   });
 });

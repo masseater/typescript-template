@@ -8,7 +8,7 @@ import type { MonitorStack } from "./monitors.ts";
 
 const application = ["database"] as const;
 const stackReferences = {
-  admin: application,
+  "service-admin": application,
   "budget-monitor": ["tokens"],
   database: [],
   email: [],
@@ -16,8 +16,8 @@ const stackReferences = {
   "health-monitor": [],
   observability: [],
   tokens: [],
-  user: application,
-  wiki: application,
+  "service-member": application,
+  "internal-dashboard": application,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<Record<Application, typeof application>> &
@@ -28,9 +28,9 @@ type StackName = keyof typeof stackReferences;
 const traceDestinationStack = "observability" as const satisfies StackName;
 
 const dependenciesByName: Readonly<Partial<Record<StackName, readonly StackName[]>>> = {
-  admin: [traceDestinationStack],
-  user: [traceDestinationStack],
-  wiki: [traceDestinationStack],
+  "service-admin": [traceDestinationStack],
+  "service-member": [traceDestinationStack],
+  "internal-dashboard": [traceDestinationStack],
 } satisfies Readonly<Record<Application, readonly StackName[]>>;
 
 function stackDependencies(stack: StackName): readonly StackName[] {
@@ -44,9 +44,9 @@ const stackNames = [
   "observability",
   "tokens",
   ...monitorStacks,
-  "user",
-  "admin",
-  "wiki",
+  "service-member",
+  "service-admin",
+  "internal-dashboard",
 ] as const satisfies readonly StackName[];
 
 const applicationStacks: readonly StackName[] = applications;
@@ -54,9 +54,9 @@ const applicationStacks: readonly StackName[] = applications;
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
   ...monitorStacks,
-  "user",
-  "admin",
-  "wiki",
+  "service-member",
+  "service-admin",
+  "internal-dashboard",
 ] as const satisfies readonly StackName[];
 
 function applyOrderViolations(order: readonly StackName[]): readonly StackName[] {

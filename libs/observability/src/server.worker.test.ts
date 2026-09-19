@@ -26,7 +26,7 @@ const jsonHeaders = { "content-type": "application/json", origin: "http://localh
 const telemetry = Telemetry.layer({
   release: "test",
   routes: { "/": "home", "/api/telemetry": "telemetry" },
-  serviceName: "user",
+  serviceName: "service-member",
 });
 
 function recordedTelemetry(log: LogSink): Layer.Layer<Telemetry, TelemetryInvalid> {
@@ -34,7 +34,7 @@ function recordedTelemetry(log: LogSink): Layer.Layer<Telemetry, TelemetryInvali
     log,
     release: "abc123",
     routes: { "/": "home" },
-    serviceName: "user",
+    serviceName: "service-member",
   });
 }
 

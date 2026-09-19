@@ -23,7 +23,7 @@ const exporting = Layer.orDie(
     otlp: { endpoint },
     release: "abc123",
     routes: { "/": "home" },
-    serviceName: "user",
+    serviceName: "service-member",
   }),
 );
 
@@ -40,7 +40,7 @@ function served(): Effect.Effect<Exported> {
     const worker = serveWorker(
       runtime,
       () => Effect.succeed(new Response(undefined, { status: noContent })),
-      { log: recordingSink().sink, service: "user" },
+      { log: recordingSink().sink, service: "service-member" },
     );
     const context = createExecutionContext();
     const response = await worker.fetch(new Request("http://localhost/"), {}, context);

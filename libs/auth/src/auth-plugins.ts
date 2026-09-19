@@ -80,7 +80,7 @@ function authPlugins({
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin(origin, run, audience),
-    ...(audience === "wiki" ? wikiAuthorizationServer(origin) : []),
+    ...(audience === "internal-dashboard" ? wikiAuthorizationServer(origin) : []),
   ];
 }
 

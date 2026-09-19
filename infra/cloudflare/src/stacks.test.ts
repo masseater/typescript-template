@@ -14,16 +14,16 @@ import {
 import type { StackName } from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
-  "./admin.ts",
   "./budget-monitor.ts",
   "./database.ts",
   "./email.ts",
   "./error-monitor.ts",
   "./health-monitor.ts",
+  "./internal-dashboard.ts",
   "./observability.ts",
+  "./service-admin.ts",
+  "./service-member.ts",
   "./tokens.ts",
-  "./user.ts",
-  "./wiki.ts",
   "./zone.ts",
 ]);
 
@@ -41,14 +41,22 @@ describe("alchemy stacks", () => {
     expect(new Set(stackNames).size).toBe(stackNames.length);
     expect([...stackNames].toSorted()).toStrictEqual(Object.keys(stackReferences).toSorted());
     expect(applyOrderViolations(stackNames)).toStrictEqual([]);
-    expect(stackDependencies("user")).toContain(traceDestinationStack);
+    expect(stackDependencies("service-member")).toContain(traceDestinationStack);
   });
 
   it("reports the units an apply order would run before what they need", () => {
     expect.hasAssertions();
     expect(violationsWhenLast(onboardingStack)).toStrictEqual([...sendingStacks].toSorted());
-    expect(violationsWhenLast("database")).toStrictEqual(["admin", "user", "wiki"]);
-    expect(violationsWhenLast(traceDestinationStack)).toStrictEqual(["admin", "user", "wiki"]);
+    expect(violationsWhenLast("database")).toStrictEqual([
+      "service-admin",
+      "service-member",
+      "internal-dashboard",
+    ]);
+    expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
+      "service-admin",
+      "service-member",
+      "internal-dashboard",
+    ]);
   });
 
   it.for(stackNames)("%s exports the program the CLI runs", async (stack) => {

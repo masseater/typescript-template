@@ -11,29 +11,32 @@ const forbiddenStacks = [
     'export const load = () => import("elysia/adapter/cloudflare-worker");',
   ],
   ["libs/shared/src/probe.ts", 'import type { Infer } from "valibot"; export type T = Infer;'],
-  ["apps/user/src/api.ts", 'import { Elysia } from "elysia"; export const api = new Elysia();'],
   [
-    "apps/user/src/routes/api.probe.ts",
+    "apps/service-member/src/api.ts",
+    'import { Elysia } from "elysia"; export const api = new Elysia();',
+  ],
+  [
+    "apps/service-member/src/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
   ],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; export const Route = createFileRoute("/api/$")({ server: { handlers: { GET: () => new Response() } } });',
   ],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: ownServer() });',
   ],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { own } from "../own.ts"; export const Route = createFileRoute("/api/$")({ ...own });',
   ],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { handlers: userApi } });',
   ],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { ownServer } from "../own.ts"; export const Route = createFileRoute("/api/$")({ server: { ...ownServer(), middleware: [] } });',
   ],
 ] as const;
@@ -44,14 +47,14 @@ const allowedStacks = [
   ["libs/shared/src/probe.ts", 'export { helper } from "pre-elysia";'],
   ["libs/shared/src/probe.ts", 'export { helper } from "my-valibot";'],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@repo/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
   ],
   [
-    "apps/user/src/app/routes/api.probe.ts",
+    "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@repo/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: { ...elysiaServer(userApi), middleware: [] } });',
   ],
-  ["apps/user/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
+  ["apps/service-member/src/app/routes/probe.ts", "export const config = { server: { port: 1 } };"],
 ] as const;
 
 describe("the Effect stack boundary", () => {

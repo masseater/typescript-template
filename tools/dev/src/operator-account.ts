@@ -239,13 +239,13 @@ const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
     return yield* readOperator();
   }
   const credentials = yield* readCredentials();
-  const origin = applicationOrigins.user;
+  const origin = applicationOrigins["service-member"];
   return yield* Effect.scoped(
     Effect.gen(function* provision() {
       const sink = yield* mailSink;
       const { env } = yield* platform;
       const authLayer = Auth.layer({
-        audience: "user",
+        audience: "service-member",
         baseURL: origin,
         mail: { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: sink.origin },
         secret: credentials.authSecret,

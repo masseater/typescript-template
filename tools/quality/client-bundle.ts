@@ -12,7 +12,7 @@ import { serverOnlyMarkers } from "@repo/config/vite";
 import { Console, Effect } from "effect";
 import { build } from "vite-plus";
 
-const appRoot = fileURLToPath(new URL("../../apps/user/", import.meta.url));
+const appRoot = fileURLToPath(new URL("../../apps/service-member/", import.meta.url));
 const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
 
 const clientReachable: readonly string[] = [

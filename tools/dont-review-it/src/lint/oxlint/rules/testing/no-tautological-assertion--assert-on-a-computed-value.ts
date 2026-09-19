@@ -75,7 +75,7 @@ export const noTautologicalAssertion = createDontReviewItRule({
     docs: {
       description:
         "Disallow an equality assertion whose expected value and whose subject are the same written-out literal, so every assertion in the suite compares something the code under test produced",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/tests.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
     },
     messages: {
       tautologicalAssertion:

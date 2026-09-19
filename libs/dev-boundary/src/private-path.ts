@@ -6,7 +6,7 @@ const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);
 
 const privateAdminPath = (slashedPath: string, application: Application): boolean =>
-  application !== "admin" &&
+  application !== "service-admin" &&
   (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
     /@repo\/db\/admin(?:\/|$)/u.test(slashedPath));
 

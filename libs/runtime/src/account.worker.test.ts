@@ -10,7 +10,7 @@ import { fixtureOrigin, testClockRuntime } from "./app-fixture.ts";
 import { apiRoot, apiRoutes, createApi } from "./http.ts";
 
 const routes = { "/api/health": "health" };
-const reporting = { log: recordingSink().sink, service: "user" } as const;
+const reporting = { log: recordingSink().sink, service: "service-member" } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 const broken = Effect.orDie(runStatement("drop table `user`"));
 

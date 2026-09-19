@@ -84,9 +84,9 @@ const cloudflareStacks = [
   "src/budget-monitor.ts!",
   "src/error-monitor.ts!",
   "src/health-monitor.ts!",
-  "src/user.ts!",
-  "src/admin.ts!",
-  "src/wiki.ts!",
+  "src/service-member.ts!",
+  "src/service-admin.ts!",
+  "src/internal-dashboard.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
@@ -144,7 +144,10 @@ const config = ({
       ...workspaces,
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
-      "apps/wiki": { ...app, project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"] },
+      "apps/internal-dashboard": {
+        ...app,
+        project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
+      },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
         project: ["src/**/*.ts!"],

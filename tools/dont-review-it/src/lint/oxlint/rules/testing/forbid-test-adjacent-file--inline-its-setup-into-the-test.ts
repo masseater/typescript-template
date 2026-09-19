@@ -18,8 +18,8 @@ export const forbidTestAdjacentFile = createDontReviewItRule({
       description:
         "Disallow a file whose name carries a test marker other than the ones the repository runs, so no file can leave the production scope by the way it is spelled",
       relatedGuidelines: [
-        "apps/wiki/content/docs/guidelines/tests.md",
-        "apps/wiki/content/docs/guidelines/enforcement.md",
+        "apps/internal-dashboard/content/docs/guidelines/tests.md",
+        "apps/internal-dashboard/content/docs/guidelines/enforcement.md",
       ],
     },
     messages: {

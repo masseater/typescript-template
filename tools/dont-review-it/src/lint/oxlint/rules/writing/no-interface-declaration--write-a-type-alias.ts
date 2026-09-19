@@ -18,7 +18,7 @@ export const noInterfaceDeclaration = createDontReviewItRule({
     docs: {
       description:
         "Disallow declaring an object type with an interface outside an ambient module, so every object type is written one way and only the declarations that must merge into a module or the global scope keep the form that merges",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
     },
     messages: {
       interfaceDeclaration:

@@ -36,9 +36,12 @@ it.effect(
   () =>
     withEmptyDatabase(
       Effect.gen(function* program() {
-        const wiki = Effect.scoped(authFor("wiki"));
+        const wiki = Effect.scoped(authFor("internal-dashboard"));
         assert.strictEqual(yield* failureTag(wiki), "AuthFailure");
-        assert.strictEqual((yield* Effect.scoped(authFor("user"))).audience, "user");
+        assert.strictEqual(
+          (yield* Effect.scoped(authFor("service-member"))).audience,
+          "service-member",
+        );
       }),
     ),
   TEST_TIMEOUT,
@@ -50,7 +53,7 @@ it.effect(
     withAuth(
       Effect.gen(function* program() {
         yield* bootstrapVerifiedAdmin(adminEmail);
-        const client = yield* signInAs("user", adminEmail);
+        const client = yield* signInAs("service-member", adminEmail);
         const forged = adminCopyOf(client, new BrowserClient((yield* Fixture).admin));
         assert.strictEqual(yield* failureTag(forged.verify(true)), "SessionInvalid");
       }),
@@ -64,7 +67,7 @@ it.effect(
     withAuth(
       Effect.gen(function* program() {
         yield* bootstrapVerifiedAdmin(adminEmail);
-        const client = yield* signInAs("user", adminEmail);
+        const client = yield* signInAs("service-member", adminEmail);
         const { authenticator } = yield* enableTotp(client);
         yield* client.request("/sign-out", {});
         yield* signIn(client, adminEmail);
@@ -85,7 +88,7 @@ it.effect(
     withAuth(
       Effect.gen(function* program() {
         yield* bootstrapVerifiedAdmin("owner@example.com");
-        const adminClient = yield* signInAs("admin", "owner@example.com");
+        const adminClient = yield* signInAs("service-admin", "owner@example.com");
         yield* enableTotp(adminClient);
         const authority = yield* adminClient.verify();
         const target = yield* registerVerified("target@example.com");

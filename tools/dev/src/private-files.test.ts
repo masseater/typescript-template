@@ -43,8 +43,8 @@ describe("the variables every runner shares", () => {
     expect.hasAssertions();
     const credentials = sharedRunnerCredentials();
     expect(credentials).toStrictEqual(sharedRunnerCredentials());
-    expect(appVariables("user", credentials, "loopback")).toMatchObject({
-      APP_ORIGIN: applicationOrigins.user,
+    expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
+      APP_ORIGIN: applicationOrigins["service-member"],
       AUTH_SECRET: credentials.authSecret,
     });
   });

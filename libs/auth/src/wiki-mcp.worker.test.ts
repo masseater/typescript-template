@@ -113,7 +113,7 @@ it.effect(
       Effect.gen(function* program() {
         const flow = yield* startAuthorization();
         yield* bootstrapVerifiedAdmin("owner@example.com");
-        const weak = yield* signInAs("wiki", "owner@example.com");
+        const weak = yield* signInAs("internal-dashboard", "owner@example.com");
         const continued = yield* weak.json("/oauth2/continue", {
           oauth_query: flow.oauthQuery,
           postLogin: true,

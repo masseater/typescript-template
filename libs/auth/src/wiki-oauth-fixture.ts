@@ -41,7 +41,7 @@ const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministr
   email: string,
 ) {
   yield* bootstrapVerifiedAdmin(email);
-  const { authenticator } = yield* enableTotp(yield* signInAs("admin", email));
+  const { authenticator } = yield* enableTotp(yield* signInAs("service-admin", email));
   const wiki = new BrowserClient((yield* Fixture).wiki);
   const challenge = yield* wiki.json("/sign-in/email", { email, password: PASSWORD });
   assert.deepInclude(challenge.body, { twoFactorRedirect: true });

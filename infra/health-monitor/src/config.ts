@@ -14,9 +14,9 @@ const Origin = Schema.String.check(
   }),
 );
 const HealthMonitorEnvironment = Schema.Struct({
-  ADMIN_ORIGIN: Origin,
-  USER_ORIGIN: Origin,
-  WIKI_ORIGIN: Origin,
+  SERVICE_ADMIN_ORIGIN: Origin,
+  SERVICE_MEMBER_ORIGIN: Origin,
+  INTERNAL_DASHBOARD_ORIGIN: Origin,
 });
 
 type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;
@@ -29,8 +29,11 @@ const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
       Effect.mapError(() => new HealthMonitorFailure({ code: "health_monitor_config_invalid" })),
     );
     if (
-      new Set([config.USER_ORIGIN, config.ADMIN_ORIGIN, config.WIKI_ORIGIN]).size !==
-      APPLICATION_COUNT
+      new Set([
+        config.SERVICE_MEMBER_ORIGIN,
+        config.SERVICE_ADMIN_ORIGIN,
+        config.INTERNAL_DASHBOARD_ORIGIN,
+      ]).size !== APPLICATION_COUNT
     ) {
       return yield* new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" });
     }
@@ -41,14 +44,14 @@ const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
 function healthTargets(
   config: HealthMonitorConfig,
 ): readonly [
-  { readonly origin: string; readonly service: "user" },
-  { readonly origin: string; readonly service: "admin" },
-  { readonly origin: string; readonly service: "wiki" },
+  { readonly origin: string; readonly service: "service-member" },
+  { readonly origin: string; readonly service: "service-admin" },
+  { readonly origin: string; readonly service: "internal-dashboard" },
 ] {
   return [
-    { origin: config.USER_ORIGIN, service: "user" },
-    { origin: config.ADMIN_ORIGIN, service: "admin" },
-    { origin: config.WIKI_ORIGIN, service: "wiki" },
+    { origin: config.SERVICE_MEMBER_ORIGIN, service: "service-member" },
+    { origin: config.SERVICE_ADMIN_ORIGIN, service: "service-admin" },
+    { origin: config.INTERNAL_DASHBOARD_ORIGIN, service: "internal-dashboard" },
   ] as const;
 }
 

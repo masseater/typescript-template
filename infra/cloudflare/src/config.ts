@@ -114,9 +114,9 @@ const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSett
 });
 
 const originKeys = {
-  admin: "TEMPLATE_ADMIN_ORIGIN",
-  user: "TEMPLATE_USER_ORIGIN",
-  wiki: "TEMPLATE_WIKI_ORIGIN",
+  admin: "TEMPLATE_SERVICE_ADMIN_ORIGIN",
+  user: "TEMPLATE_SERVICE_MEMBER_ORIGIN",
+  wiki: "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
 } as const;
 
 const hstsSetting = {

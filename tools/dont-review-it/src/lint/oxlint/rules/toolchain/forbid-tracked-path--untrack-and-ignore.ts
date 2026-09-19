@@ -101,7 +101,9 @@ export const forbidTrackedPath = createDontReviewItRule({
     docs: {
       description:
         "Require every path registered as untrackable to stay out of the tracked file list and to stand in the ignore settings, so values that belong to one machine and output that a build produces never ride a commit into another clone",
-      relatedGuidelines: ["apps/wiki/content/docs/guidelines/secrets-and-permissions.md"],
+      relatedGuidelines: [
+        "apps/internal-dashboard/content/docs/guidelines/secrets-and-permissions.md",
+      ],
     },
     messages: {
       trackedForbiddenPath:

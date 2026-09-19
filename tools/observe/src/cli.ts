@@ -36,7 +36,7 @@ type Query = typeof QueryInput.Type;
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    app: { default: `${applicationOrigins.user}/`, type: "string" },
+    app: { default: `${applicationOrigins["service-member"]}/`, type: "string" },
     help: { default: false, type: "boolean" },
     level: { type: "string" },
     limit: { default: "100", type: "string" },

@@ -57,15 +57,24 @@ const violatedRules = async (files: Fixture): Promise<readonly string[]> => {
 };
 
 const detected: readonly Case[] = [
-  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@repo/db/src/schema";\n' }],
   [
     "no-unresolvable",
-    { "apps/user/src/index.ts": 'export type { Row } from "@repo/db/src/schema";\n' },
+    { "apps/service-member/src/index.ts": 'export * from "@repo/db/src/schema";\n' },
   ],
-  ["no-unresolvable", { "apps/user/src/index.ts": 'export type * from "@repo/db/src/schema";\n' }],
-  ["no-unresolvable", { "apps/user/src/index.ts": 'import "cloudflare:workerz";\n' }],
-  ["no-app-to-app", { "apps/user/src/index.ts": 'export * from "@repo/admin";\n' }],
-  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@repo/user";\n' }],
+  [
+    "no-unresolvable",
+    { "apps/service-member/src/index.ts": 'export type { Row } from "@repo/db/src/schema";\n' },
+  ],
+  [
+    "no-unresolvable",
+    { "apps/service-member/src/index.ts": 'export type * from "@repo/db/src/schema";\n' },
+  ],
+  ["no-unresolvable", { "apps/service-member/src/index.ts": 'import "cloudflare:workerz";\n' }],
+  [
+    "no-app-to-app",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/service-admin";\n' },
+  ],
+  ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@repo/service-member";\n' }],
   ["no-runtime-to-tools", { "libs/auth/src/index.ts": 'export * from "@repo/dev";\n' }],
   ["no-package-escape", { "libs/auth/src/index.ts": 'export * from "../../db/src/index.ts";\n' }],
   [
@@ -74,12 +83,12 @@ const detected: readonly Case[] = [
   ],
   [
     "no-database-admin-outside-admin",
-    { "apps/user/src/index.ts": 'export * from "@repo/db/admin";\n' },
+    { "apps/service-member/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
   ["no-database-admin-outside-admin", { "libs/db/src/index.ts": 'export * from "./admin.ts";\n' }],
   [
     "no-database-operations-outside-tooling",
-    { "apps/admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
@@ -110,16 +119,25 @@ const detected: readonly Case[] = [
       "libs/auth/src/index.ts": 'export * from "./helper.test.ts";\n',
     },
   ],
-  ["no-signup-outside-user", { "apps/admin/src/index.ts": 'export * from "@repo/ui/signup";\n' }],
   [
     "no-signup-outside-user",
-    { "apps/admin/src/index.ts": 'export type { Props } from "@repo/ui/signup";\n' },
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/ui/signup";\n' },
   ],
-  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@repo/db";\n' }],
-  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' }],
+  [
+    "no-signup-outside-user",
+    { "apps/service-admin/src/index.ts": 'export type { Props } from "@repo/ui/signup";\n' },
+  ],
+  [
+    "no-wiki-to-database",
+    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
+  ],
+  [
+    "no-wiki-to-database",
+    { "apps/internal-dashboard/src/index.ts": 'export type { Db } from "@repo/db";\n' },
+  ],
   [
     "no-deployment-config-in-shipped-code",
-    { "apps/user/src/index.ts": 'export * from "@repo/config/deployment";\n' },
+    { "apps/service-member/src/index.ts": 'export * from "@repo/config/deployment";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -168,12 +186,12 @@ const detected: readonly Case[] = [
 ];
 
 const accepted: readonly Case[] = [
-  ["no-unresolvable", { "apps/user/src/index.ts": 'export * from "@repo/db";\n' }],
+  ["no-unresolvable", { "apps/service-member/src/index.ts": 'export * from "@repo/db";\n' }],
   [
     "no-app-to-app",
     {
-      "apps/user/src/helper.ts": "export const helper = 1;\n",
-      "apps/user/src/index.ts": 'export * from "./helper.ts";\n',
+      "apps/service-member/src/helper.ts": "export const helper = 1;\n",
+      "apps/service-member/src/index.ts": 'export * from "./helper.ts";\n',
     },
   ],
   ["no-shared-to-app", { "libs/auth/src/index.ts": 'export * from "@repo/db";\n' }],
@@ -187,7 +205,7 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-database-admin-outside-admin",
-    { "apps/admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
   [
     "no-database-operations-outside-tooling",
@@ -220,8 +238,14 @@ const accepted: readonly Case[] = [
       "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
     },
   ],
-  ["no-signup-outside-user", { "apps/user/src/index.ts": 'export * from "@repo/ui/signup";\n' }],
-  ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export * from "@repo/db/local";\n' }],
+  [
+    "no-signup-outside-user",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/ui/signup";\n' },
+  ],
+  [
+    "no-wiki-to-database",
+    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
+  ],
   [
     "no-browser-to-server",
     {
