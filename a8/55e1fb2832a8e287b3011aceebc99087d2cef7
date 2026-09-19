@@ -1,0 +1,7 @@
+Revision history for #650:
+
+rev 3 (content) 2026-09-19 18:22 UTC
+rev 2 (content) 2026-09-19 18:04 UTC — Wareki helpers follow func-style and fixture tests; toast Motion/a11y; cast Effect.fn commands in tools/dev cli Map so effect-tsgo accepts Command context after new ui deps.
+rev 1 (initial) 2026-09-19 18:04 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":650,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"55b9dd8a35b79fc5271c43a6ed30cdd63f5baec6","timestamp_iso":"2026-09-19T18:04:17Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"55b9dd8a35b79fc5271c43a6ed30cdd63f5baec6","new_sha":"8d2c99990195f593eeca4ce25d92ea507d47340e","timestamp_iso":"2026-09-19T18:04:17Z","reason":"Wareki helpers follow func-style and fixture tests; toast Motion/a11y; cast Effect.fn commands in tools/dev cli Map so effect-tsgo accepts Command context after new ui deps.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/55b9dd8a35b79fc5271c43a6ed30cdd63f5baec6...8d2c99990195f593eeca4ce25d92ea507d47340e"},{"number":3,"change_type":"content","old_sha":"8d2c99990195f593eeca4ce25d92ea507d47340e","new_sha":"a855e1fb2832a8e287b3011aceebc99087d2cef7","timestamp_iso":"2026-09-19T18:22:19Z","reason":"","replay_sha":"040bb28350f515f136a44b864dcd7dbccd25730f","compare_url":"https://github.com/masseater/typescript-template/compare/8d2c99990195f593eeca4ce25d92ea507d47340e...040bb28350f515f136a44b864dcd7dbccd25730f"}]} -->
