@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { loopbackAddress, type Application } from "@repo/config";
 
 import { privatePath } from "./private-path.ts";
-import { createRequestGuard, type RequestGuard } from "./request-guard.ts";
+import { createRequestGuard, resolvePath, type RequestGuard } from "./request-guard.ts";
 import { serverOptions } from "./server-options.ts";
 
 import type { ConfigEnv, Plugin, ResolvedConfig } from "vite-plus";
@@ -53,9 +53,11 @@ const devBoundary = (
       if (modulePath === "" || modulePath.startsWith("\0")) {
         return;
       }
-      const [modulePathRealPath] = await Promise.allSettled([realpath(modulePath)]);
-      const canonicalModulePath =
-        modulePathRealPath.status === "fulfilled" ? modulePathRealPath.value : modulePath;
+      const resolved = await resolvePath(modulePath);
+      if (resolved.kind === "unresolvable") {
+        throw new Error("Private development module denied");
+      }
+      const canonicalModulePath = resolved.kind === "resolved" ? resolved.path : modulePath;
       if (
         privatePath({ application, candidatePath: modulePath, repositoryRoot }) ||
         privatePath({

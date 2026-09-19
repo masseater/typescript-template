@@ -25,6 +25,23 @@ const decodedPathname = (encodedPathname: string, remainingDepth: number): strin
     : decodedPathname(decodedOnce, remainingDepth - 1);
 };
 
+const isMissingPath = (cause: unknown): boolean =>
+  typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT";
+
+const resolvePath = async (
+  file: string,
+): Promise<
+  | Readonly<{ kind: "resolved"; path: string }>
+  | Readonly<{ kind: "missing" }>
+  | Readonly<{ kind: "unresolvable"; cause: unknown }>
+> => {
+  try {
+    return { kind: "resolved", path: await realpath(file) };
+  } catch (cause: unknown) {
+    return isMissingPath(cause) ? { kind: "missing" } : { kind: "unresolvable", cause };
+  }
+};
+
 const deniesRequest = async (
   requestUrl: string | undefined,
   roots: BoundaryRoots,
@@ -34,9 +51,11 @@ const deniesRequest = async (
   const servedFile = pathname.startsWith("/@fs/")
     ? pathname.slice("/@fs".length)
     : path.resolve(roots.applicationRoot, `.${pathname}`);
-  const [servedFileRealPath] = await Promise.allSettled([realpath(servedFile)]);
-  const canonicalServedFile =
-    servedFileRealPath.status === "fulfilled" ? servedFileRealPath.value : servedFile;
+  const resolved = await resolvePath(servedFile);
+  if (resolved.kind === "unresolvable") {
+    return true;
+  }
+  const canonicalServedFile = resolved.kind === "resolved" ? resolved.path : servedFile;
   const { application, repositoryRoot } = roots;
   return (
     privatePath({ application, candidatePath: pathname, repositoryRoot }) ||
@@ -88,5 +107,5 @@ const createRequestGuard =
     serverResponse.end(undecidable ? "Invalid request" : "Private development resource denied");
   };
 
-export { createRequestGuard };
+export { createRequestGuard, resolvePath };
 export type { RequestGuard };

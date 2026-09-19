@@ -91,11 +91,15 @@ describe("an event stream route", () => {
     }),
   );
 
-  it.effect("ends the stream instead of throwing when the source dies after it opened", () =>
+  it.effect("ends with a failed event when the source dies after it opened", () =>
     Effect.gen(function* program() {
       const ticks = Stream.make(tick(1)).pipe(Stream.concat(Stream.die("source died")));
       const reader = frames(yield* open(ticks));
       assert.strictEqual(yield* nextFrame(reader), 'event: tick\ndata: {"count":"1"}\n\n');
+      assert.strictEqual(
+        yield* nextFrame(reader),
+        `event: failed\ndata: {"message":"処理に失敗しました。リクエスト ID でログを確認してください。","status":${String(httpStatus.internalServerError)}}\n\n`,
+      );
       assert.isUndefined(yield* nextFrame(reader));
     }),
   );
