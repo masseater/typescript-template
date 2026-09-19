@@ -1,13 +1,13 @@
 import { annotateSpan, reportFailure } from "@repo/observability";
-import { Embedder } from "@repo/runtime/wiki";
 import { Cause, Effect } from "effect";
 import { createFromSource } from "fumadocs-core/search/server";
 import { llms } from "fumadocs-core/source";
 
 import { source } from "#shared/content/index.ts";
+import { Embedder } from "#shared/wiki/wiki.ts";
 import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
 
-import type { WikiServices } from "@repo/runtime/wiki";
+import type { WikiServices } from "#shared/wiki/wiki.ts";
 import type { Context } from "effect";
 import type { SortedResult } from "fumadocs-core/search";
 import type { SearchServer } from "fumadocs-core/search/server";

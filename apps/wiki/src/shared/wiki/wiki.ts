@@ -1,13 +1,13 @@
 import { readWikiConfig } from "@repo/config";
+import { configuredAppLayer } from "@repo/runtime";
 import { Effect, Layer } from "effect";
 
 import { Embedder, embedWith } from "./embedder.ts";
-import { configuredAppLayer } from "./index.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { ConfigurationInvalid } from "@repo/config";
 import type { TelemetryInvalid } from "@repo/observability";
-import type { AppServices } from "./index.ts";
+import type { AppServices } from "@repo/runtime";
 
 const wikiService = "wiki";
 

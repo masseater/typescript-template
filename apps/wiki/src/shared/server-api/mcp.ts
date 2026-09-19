@@ -7,7 +7,7 @@ import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
 import { source } from "#shared/content/index.ts";
 import { searchServer, wikiLlms } from "./search.ts";
 
-import type { WikiServices } from "@repo/runtime/wiki";
+import type { WikiServices } from "#shared/wiki/wiki.ts";
 import type { Context } from "effect";
 
 const mcpVersion = "1.0.0";

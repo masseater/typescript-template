@@ -577,6 +577,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
@@ -626,12 +629,15 @@ importers:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
         version: 1.54.10(@types/node@26.6.1)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1))
+      '@cloudflare/vitest-plugin':
+        specifier: 'catalog:'
+        version: 1.1.12(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db

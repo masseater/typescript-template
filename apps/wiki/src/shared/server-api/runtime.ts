@@ -1,8 +1,8 @@
-import { wikiLayer, wikiService } from "@repo/runtime/wiki";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 
 import { routes } from "#shared/telemetry/index.ts";
+import { wikiLayer, wikiService } from "#shared/wiki/wiki.ts";
 
 import type { Reporting } from "@repo/observability";
 
