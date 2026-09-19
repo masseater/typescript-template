@@ -16,6 +16,7 @@ import {
   testImportGraphVisitor,
 } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
+import { warekiFormatVisitor } from "./wareki-format.ts";
 
 const metadata = (violation: string): RuleMeta => {
   return {
@@ -334,6 +335,12 @@ const projectPlugin = definePlugin({
       create: testImportGraphVisitor,
       meta: metadata(
         "テストは import グラフ外のファイルに依存できません。子プロセス・ワーカーの起動、import.meta.url / process.cwd() によるパス参照、?raw などクエリ付き import をやめ、対象を import し、ファイル内容はクエリなしの import または import.meta.glob で読み込んでください。",
+      ),
+    },
+    "wareki-format": {
+      create: warekiFormatVisitor,
+      meta: metadata(
+        "画面に出す日付は Intl.DateTimeFormat ではなく @repo/ui の formatWarekiDate / formatWarekiMonth を使ってください。和暦と Temporal の入口を一本に保つためです。",
       ),
     },
     "worker-fetch": {
