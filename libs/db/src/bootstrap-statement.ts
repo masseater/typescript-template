@@ -24,6 +24,14 @@ function bootstrapStatement(email: typeof EmailAddress.Type): SQL {
     RETURNING id, email, role`;
 }
 
+function ensureAdminStatement(email: typeof EmailAddress.Type): SQL {
+  return sql`UPDATE ${user}
+    SET role = ${"admin"}, updated_at = ${Date.now()}
+    WHERE ${user.email} = ${email.toLowerCase()}
+      AND ${user.emailVerified} = ${1}
+    RETURNING id, email, role`;
+}
+
 class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
   "BootstrapUnavailable",
   {},
@@ -41,4 +49,16 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   );
 });
 
-export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement };
+const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
+  email: typeof EmailAddress.Type,
+) {
+  const [updated] = yield* query(async (database) => database.all(ensureAdminStatement(email)));
+  if (updated === undefined) {
+    return yield* new BootstrapUnavailable();
+  }
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+    Effect.mapError((cause) => new DatabaseFailure({ cause })),
+  );
+});
+
+export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement, ensureAdminRole };

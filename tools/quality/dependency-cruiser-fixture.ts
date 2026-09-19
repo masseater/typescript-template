@@ -13,6 +13,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "libs/db": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
+    "./bootstrap": "./src/bootstrap-statement.ts",
     "./local": "./src/local.ts",
     "./remote": "./src/remote-command.ts",
     "./testing": "./src/testing.ts",
