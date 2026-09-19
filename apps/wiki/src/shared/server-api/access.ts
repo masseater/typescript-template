@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
-import { httpStatus } from "@repo/observability";
-import { jsonResponse } from "@repo/runtime/http";
 import { Effect, Option } from "effect";
+
+import { denied, sessionPresence } from "./access-decision.ts";
 
 type SessionEffect = ReturnType<typeof verifySession>;
 type SessionServices = Effect.Services<SessionEffect>;
@@ -29,24 +29,14 @@ function currentSession(
   request: Request,
 ): Effect.Effect<Option.Option<{ readonly strong: boolean }>, SessionUnavailable, SessionServices> {
   return verifySession(request.headers, true).pipe(
-    Effect.map((session) => Option.some(session)),
+    Effect.map((session) => sessionPresence(session)),
     Effect.catchTags({
-      AdminMfaRequired: () => Effect.succeed(Option.none()),
-      AdminRequired: () => Effect.succeed(Option.none()),
-      SessionInvalid: () => Effect.succeed(Option.none()),
-      SessionRequired: () => Effect.succeed(Option.none()),
+      AdminMfaRequired: (error) => Effect.succeed(sessionPresence(error)),
+      AdminRequired: (error) => Effect.succeed(sessionPresence(error)),
+      SessionInvalid: (error) => Effect.succeed(sessionPresence(error)),
+      SessionRequired: (error) => Effect.succeed(sessionPresence(error)),
     }),
   );
-}
-
-function denied(path: string, signedIn: boolean): Response {
-  if (path.startsWith("/api/") || path.startsWith("/_serverFn/")) {
-    return jsonResponse({ error: "ログインしてください。" }, httpStatus.unauthorized);
-  }
-  return new Response(undefined, {
-    headers: { "cache-control": "no-store", location: signedIn ? "/security" : "/login" },
-    status: httpStatus.found,
-  });
 }
 
 const guardAccess = Effect.fn("guardAccess")(function* guardAccess(request: Request, path: string) {
