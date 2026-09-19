@@ -1,7 +1,7 @@
 import { assert } from "@effect/vitest";
-import { Effect, Schema } from "effect";
-
+import { Auth } from "@repo/auth";
 import {
+  BrowserClient,
   Fixture,
   HTTP_CREATED,
   HTTP_FOUND,
@@ -10,11 +10,12 @@ import {
   bootstrapVerifiedAdmin,
   decodeOrDie,
   enableTotp,
+  origins,
   signInAs,
-} from "./auth-test-fixture.ts";
-import { Auth } from "./auth.ts";
-import { BrowserClient, origins } from "./browser-client.ts";
-import { authorizeMcpRequest } from "./mcp.ts";
+} from "@repo/auth/testing";
+import { Effect, Schema } from "effect";
+
+import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 interface AuthorizationFlow {
   readonly clientId: string;

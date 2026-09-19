@@ -7,7 +7,6 @@
     "./http": "./src/http.ts",
     "./worker": "./src/worker.ts",
     "./client": "./src/client.ts",
-    "./wiki": "./src/wiki.ts",
     "./account": "./src/account.ts",
     "./contracts": "./src/contracts.ts",
     "./testing": "./src/app-fixture.ts"

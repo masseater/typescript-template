@@ -7,7 +7,6 @@ import { Effect, Schema } from "effect";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import { appLayer } from "./index.ts";
-import { wikiLayer, wikiService } from "./wiki.ts";
 import { serveApp, startRoute, workerRuntime } from "./worker.ts";
 
 import type { Reporting } from "@repo/observability";
@@ -102,31 +101,6 @@ describe("a worker whose layer cannot be built", () => {
       }),
     );
   }
-});
-
-describe("a wiki worker whose database has not been migrated", () => {
-  it.effect("names the missing table that broke the layer", () =>
-    Effect.gen(function* program() {
-      const logs = recordingSink();
-      const response = yield* Effect.promise(async () =>
-        servedUnavailable(() => wikiLayer(appEnvironment(), validRoutes), {
-          log: logs.sink,
-          service: wikiService,
-        }),
-      );
-      assert.strictEqual(response.status, httpStatus.serviceUnavailable);
-      const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
-      assert.notInclude(error, "oauth_resource");
-      const reported = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(
-        Effect.orDie,
-      );
-      assert.deepInclude(reported, {
-        "error.tag": "AuthFailure",
-        service: "internal-dashboard-server",
-      });
-      assert.include(reported["error.chain"] ?? "", "no such table: oauth_resource");
-    }),
-  );
 });
 
 async function servedDocument(url: string): Promise<Response> {

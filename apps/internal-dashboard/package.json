@@ -10,13 +10,18 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@better-auth/oauth-provider": "1.7.5",
     "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "better-auth": "catalog:",
+    "better-call": "1.4.0",
     "effect": "catalog:",
     "fumadocs-core": "16.15.11",
     "fumadocs-mdx": "15.4.1",
@@ -30,7 +35,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@repo/config": "workspace:*",
+    "@effect/vitest": "catalog:",
     "@types/mdx": "2.0.14",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
