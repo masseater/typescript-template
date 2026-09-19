@@ -1,0 +1,1 @@
+Also enable knip css compiler: moving @tailwindcss/vite off apps disabled auto CSS compilation while project still includes *.css, and treatConfigHintsAsErrors was failing CI.
