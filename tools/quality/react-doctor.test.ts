@@ -48,6 +48,18 @@ const suppressedFiles = (): string[] => {
   return suppressed;
 };
 
+const rootDoctorConfigs: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../doctor.config.ts",
+  { eager: true, import: "default" },
+);
+
+const aiOperableDoctorRules = [
+  "react-doctor/control-has-associated-label",
+  "react-doctor/dialog-has-accessible-name",
+  "react-doctor/no-hover-only-reveal",
+  "react-doctor/base-ui-dialog-popup-requires-title",
+] as const;
+
 describe("react-doctor integration", () => {
   it("only the root check:react task runs react-doctor", () => {
     expect.hasAssertions();
@@ -55,6 +67,15 @@ describe("react-doctor integration", () => {
       scripts: scriptCommands().filter((command) => command.includes("react-doctor")),
       workflows: workflowRuns().filter((command) => command.includes("react-doctor")),
     }).toStrictEqual({ scripts: [], workflows: [] });
+  });
+
+  it("keeps AI-operable UI rules enabled at error", () => {
+    expect.hasAssertions();
+    const config = rootDoctorConfigs["../../doctor.config.ts"];
+    const rules = field(config, "rules");
+    expect(
+      Object.fromEntries(aiOperableDoctorRules.map((rule) => [rule, field(rules, rule)])),
+    ).toStrictEqual(Object.fromEntries(aiOperableDoctorRules.map((rule) => [rule, "error"])));
   });
 
   it("workspace configs only add file-scoped suppressions", () => {
