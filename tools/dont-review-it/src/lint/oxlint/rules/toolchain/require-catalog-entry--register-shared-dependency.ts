@@ -13,7 +13,7 @@ import {
 } from "../../lib/dependency-catalog/shared-dependency-index.ts";
 
 import type { Context, ESTree } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 
 const unregisteredSharedFor = (lookup: {
   readonly inspection: Context;

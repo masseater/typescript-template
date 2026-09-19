@@ -1,7 +1,7 @@
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { measureStage } from "@repo/lint-rule-authoring";
+import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { attempt } from "es-toolkit";
 
 import { gitOutput } from "./git-output.ts";

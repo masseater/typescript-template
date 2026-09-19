@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
 import { noViMockFactoryBehavior } from "./no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts";
