@@ -1,14 +1,14 @@
 import { loopbackHosts } from "@repo/config";
 import {
-  getSessionSecurity,
   hasEnrolledFactor,
   hasVerificationAudience,
+  lookupSessionByToken,
   markSessionStrong,
   revokeUserSessions,
 } from "@repo/db/security";
-import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 
-import { deny, enrollmentPaths, isStrongMethod } from "./policy.ts";
+import { deny, enrollmentPaths, isStrongMethod, sessionIsLive } from "./policy.ts";
 
 import type { Application } from "@repo/config";
 import type { BetterAuthOptions } from "better-auth";
@@ -16,6 +16,7 @@ import type { Run } from "./runner.ts";
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
+type SessionRecord = NonNullable<Awaited<ReturnType<typeof runSessionLookup>>>;
 
 interface HookScope {
   readonly audience: Application;
@@ -46,29 +47,44 @@ const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-pass
 const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function currentSessionOf(ctx: HookContext): ReturnType<typeof getSessionFromCtx> {
-  const session =
-    ctx.context.newSession ?? (await getSessionFromCtx(ctx, { disableCookieCache: true }));
-  return session;
+async function runSessionLookup({ ctx, run }: HookScope) {
+  const token = await ctx.getSignedCookie(
+    ctx.context.authCookies.sessionToken.name,
+    ctx.context.secret,
+  );
+  if (typeof token !== "string" || token === "") {
+    // oxlint-disable-next-line unicorn/no-null
+    return null;
+  }
+  return run(lookupSessionByToken(token));
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function markTotpSessionStrong({ audience, ctx, run }: HookScope): Promise<void> {
-  const session = await currentSessionOf(ctx);
-  if (!session) {
-    return;
+async function currentSessionOf(scope: HookScope) {
+  const { ctx, run } = scope;
+  if (ctx.context.newSession) {
+    return run(lookupSessionByToken(ctx.context.newSession.session.token));
   }
-  const current = await run(getSessionSecurity(session.session.id, audience));
-  if (current && totpUpgradableMethods.has(current.session.authenticationMethod)) {
-    await run(markSessionStrong(current.session.id, audience, "password_totp"));
+  return runSessionLookup(scope);
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function markTotpSessionStrong(scope: HookScope): Promise<void> {
+  const current = await currentSessionOf(scope);
+  if (
+    current &&
+    sessionIsLive(current, scope.audience) &&
+    totpUpgradableMethods.has(current.session.authenticationMethod)
+  ) {
+    await scope.run(markSessionStrong(current.session.id, scope.audience, "password_totp"));
   }
 }
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function revokeSessionsAfterFactorChange({ ctx, run }: HookScope): Promise<void> {
-  const session = await currentSessionOf(ctx);
-  if (session) {
-    await run(revokeUserSessions(session.user.id));
+async function revokeSessionsAfterFactorChange(scope: HookScope): Promise<void> {
+  const current = await currentSessionOf(scope);
+  if (current && sessionIsLive(current, scope.audience)) {
+    await scope.run(revokeUserSessions(current.user.id));
   }
 }
 
@@ -173,13 +189,12 @@ async function enforceFactorChanges(
   }
 }
 
-async function enforceSessionPolicy(
+function enforceSessionPolicy(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   { audience, ctx, run }: HookScope,
-  sessionId: string,
+  current: SessionRecord,
 ): Promise<void> {
-  const current = await run(getSessionSecurity(sessionId, audience));
-  if (current?.user.emailVerified !== true) {
+  if (!sessionIsLive(current, audience)) {
     deny("SESSION_INVALID");
   }
   const input = {
@@ -190,7 +205,7 @@ async function enforceSessionPolicy(
     userId: current.user.id,
   };
   enforceAdminAccess(input);
-  await enforceFactorChanges(input, run);
+  return enforceFactorChanges(input, run);
 }
 
 function createRequestHooks(run: Run, audience: Application): RequestHooks {
@@ -210,10 +225,11 @@ function createRequestHooks(run: Run, audience: Application): RequestHooks {
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
       const scope = { audience, ctx, run };
-      const session = await getSessionFromCtx(ctx, { disableCookieCache: true });
-      await verifyChallengeAudience(scope, Boolean(session));
-      if (session) {
-        await enforceSessionPolicy(scope, session.session.id);
+      const current = await runSessionLookup(scope);
+      const present = current !== null && current.session.expiresAt > new Date();
+      await verifyChallengeAudience(scope, present);
+      if (present) {
+        await enforceSessionPolicy(scope, current);
       }
     }),
   };

@@ -10,6 +10,18 @@ interface EligibleUser {
   readonly role: string;
 }
 
+interface SessionSecurityRecord {
+  readonly session: {
+    readonly audience: Application;
+    readonly expiresAt: Date;
+    readonly securityVersion: number;
+  };
+  readonly user: {
+    readonly emailVerified: boolean;
+    readonly securityVersion: number;
+  };
+}
+
 const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const enrollmentPaths = new Set([
@@ -38,6 +50,15 @@ function isStrongMethod(method: string): boolean {
   return strongMethods.has(method);
 }
 
+function sessionIsLive(current: SessionSecurityRecord, audience: Application): boolean {
+  return (
+    current.session.expiresAt > new Date() &&
+    current.session.audience === audience &&
+    current.session.securityVersion === current.user.securityVersion &&
+    current.user.emailVerified === true
+  );
+}
+
 function authenticationMethodFor(path: string | undefined): AuthenticationMethod {
   return (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ?? "password";
 }
@@ -54,4 +75,11 @@ function assertEligibleUser<TUser extends EligibleUser>(
   }
 }
 
-export { assertEligibleUser, authenticationMethodFor, deny, enrollmentPaths, isStrongMethod };
+export {
+  assertEligibleUser,
+  authenticationMethodFor,
+  deny,
+  enrollmentPaths,
+  isStrongMethod,
+  sessionIsLive,
+};

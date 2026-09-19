@@ -57,5 +57,28 @@ function testDatabase(migrated: boolean): Layer.Layer<Database, unknown> {
 const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
 
+function capturePrepares<Requirements>(
+  run: Effect.Effect<void, unknown, Requirements>,
+): Effect.Effect<readonly string[], unknown, Requirements> {
+  return Effect.gen(function* capturePreparesProgram() {
+    const statements: string[] = [];
+    const prepare = env.DB.prepare.bind(env.DB);
+    Object.defineProperty(env.DB, "prepare", {
+      configurable: true,
+      value: (sql: string) => {
+        statements.push(sql);
+        return prepare(sql);
+      },
+    });
+    yield* Effect.ensuring(
+      run,
+      Effect.sync(() => {
+        Object.defineProperty(env.DB, "prepare", { configurable: true, value: prepare });
+      }),
+    );
+    return statements;
+  });
+}
+
 export { bootstrapAdmin } from "./bootstrap-statement.ts";
-export { EmptyTestDatabase, TestDatabase, getSchemaShape, runStatement };
+export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement };
