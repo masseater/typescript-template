@@ -1,6 +1,1 @@
-Revision history for #647:
-
-rev 2 (content) 2026-09-19 16:53 UTC — rebase onto latest main after merge-queue dequeue for conflict; keep bin/shebang lifecycle changes and preserve check:client input fingerprint from main
-rev 1 (initial) 2026-09-19 16:53 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":647,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"f930913c04bd2fb9e885a1c35706e0772c03fcc5","timestamp_iso":"2026-09-19T16:53:31Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"f930913c04bd2fb9e885a1c35706e0772c03fcc5","new_sha":"0c209e3f86f99a1402d8338fcdf2ddc0c9c8e8ee","timestamp_iso":"2026-09-19T16:53:31Z","reason":"rebase onto latest main after merge-queue dequeue for conflict; keep bin/shebang lifecycle changes and preserve check:client input fingerprint from main","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/f930913c04bd2fb9e885a1c35706e0772c03fcc5...0c209e3f86f99a1402d8338fcdf2ddc0c9c8e8ee"}]} -->
+restore full lifecycle stages (prepr/prerelease) after rebase onto main's lifecycle API
