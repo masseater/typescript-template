@@ -147,7 +147,7 @@ it.effect("blocks only the names an unrelated project is holding", () =>
         databases: [{ name: `${config.prefix}-db`, uuid: "11111111-2222-3333-4444-555555555555" }],
         domains: [{ hostname: hosts[0] ?? "", service: "someone-elses-worker" }],
         records: [hosts[1] ?? ""],
-        scripts: [`${config.prefix}-user`],
+        scripts: [`${config.prefix}-service-member`],
       }),
     );
     const inspection = yield* inspectAccount(access, config, emptyState());

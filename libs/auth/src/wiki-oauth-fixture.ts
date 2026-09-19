@@ -22,7 +22,7 @@ interface AuthorizationFlow {
   readonly verifier: string;
 }
 
-const wikiOrigin = origins.wiki;
+const wikiOrigin = origins["internal-dashboard"];
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
 const Redirect = Schema.Struct({ url: Schema.String });
@@ -42,7 +42,7 @@ const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministr
 ) {
   yield* bootstrapVerifiedAdmin(email);
   const { authenticator } = yield* enableTotp(yield* signInAs("service-admin", email));
-  const wiki = new BrowserClient((yield* Fixture).wiki);
+  const wiki = new BrowserClient((yield* Fixture)["internal-dashboard"]);
   const challenge = yield* wiki.json("/sign-in/email", { email, password: PASSWORD });
   assert.deepInclude(challenge.body, { twoFactorRedirect: true });
   const verified = yield* wiki.request("/two-factor/verify-totp", {
@@ -91,7 +91,7 @@ const registerClient = Effect.fn("registerClient")(function* registerClient(
 });
 
 const startAuthorization = Effect.fn("startAuthorization")(function* startAuthorization() {
-  const anonymous = new BrowserClient((yield* Fixture).wiki);
+  const anonymous = new BrowserClient((yield* Fixture)["internal-dashboard"]);
   const clientId = yield* registerClient(anonymous);
   const verifier = base64url(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES)));
   const authorize = authorizeUrl(clientId, yield* pkceChallenge(verifier));
@@ -129,7 +129,7 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
   flow: AuthorizationFlow,
   code: string,
 ) {
-  const { wiki } = yield* Fixture;
+  const wiki = (yield* Fixture)["internal-dashboard"];
   const body = new URLSearchParams({
     client_id: flow.clientId,
     code,
@@ -152,7 +152,7 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
 });
 
 const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(token?: string) {
-  const { wiki } = yield* Fixture;
+  const wiki = (yield* Fixture)["internal-dashboard"];
   const request = new Request(`${wikiOrigin}/mcp`, {
     headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
     method: "POST",
