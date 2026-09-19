@@ -1,4 +1,4 @@
-import { Button, Status } from "@repo/ui";
+import { Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useState } from "react";
 
 import { useComment } from "#pages/commander/model/actions.ts";
@@ -35,7 +35,9 @@ function CommentForm({ taskId }: Readonly<{ taskId: string }>): ReactElement {
       <Button type="submit" variant="primary" disabled={comment.isPending || text.trim() === ""}>
         ワーカーへ伝える
       </Button>
-      {comment.isError ? <Status variant="error">コメントを送れませんでした。</Status> : undefined}
+      {comment.isError ? (
+        <StatusMessage variant={STATUS_VARIANT.failure}>コメントを送れませんでした。</StatusMessage>
+      ) : undefined}
     </form>
   );
 }

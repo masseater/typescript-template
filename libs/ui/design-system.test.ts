@@ -189,7 +189,7 @@ describe("design system lint", () => {
   it("resolves the parts directory through components.json", () => {
     expect.hasAssertions();
     expect(designSystemComponents()).toStrictEqual(
-      expect.arrayContaining(["Button", "Field", "Status", "Table"]),
+      expect.arrayContaining(["Button", "Field", "StatusMessage", "Table"]),
     );
   });
 

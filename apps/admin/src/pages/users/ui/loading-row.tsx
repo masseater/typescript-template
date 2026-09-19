@@ -1,4 +1,4 @@
-import { Status, TableCell, TableRow } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage, TableCell, TableRow } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
@@ -6,7 +6,7 @@ function LoadingRow({ columnCount }: Readonly<{ columnCount: number }>): ReactEl
   return (
     <TableRow>
       <TableCell colSpan={columnCount}>
-        <Status variant="pending">読み込み中です。</Status>
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       </TableCell>
     </TableRow>
   );

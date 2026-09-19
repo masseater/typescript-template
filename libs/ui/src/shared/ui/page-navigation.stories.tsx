@@ -1,17 +1,16 @@
 import preview from "../../../storybook/preview";
-import { PageNavigation } from "./page-navigation";
+import { PageNavigation, type PageTarget } from "./page-navigation";
 import { PaginationLink } from "./pagination-link";
 
 import type { ReactElement } from "react";
-import type { PageTarget } from "./page-navigation";
 
-function renderLink(target: Readonly<PageTarget>): ReactElement {
+const renderLink = (pageTarget: Readonly<PageTarget>): ReactElement => {
   return (
-    <PaginationLink to="/" aria-label={target.label} current={target.current}>
-      {target.text}
+    <PaginationLink to="/" aria-label={pageTarget.label} current={pageTarget.current}>
+      {pageTarget.text}
     </PaginationLink>
   );
-}
+};
 
 const meta = preview.meta({
   args: { current: 1, last: 12, renderLink },

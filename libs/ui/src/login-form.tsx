@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
@@ -8,26 +8,25 @@ import { PasskeyLogin } from "./passkey-login";
 import { FormColumn } from "./shared/ui/form-column";
 import { useTextInput } from "./use-text-input";
 
-import type { ReactElement } from "react";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import type { ChallengeMode } from "./challenge-form";
+import type { ChallengeMode } from "./challenge-modes.ts";
 
-function goHome(): void {
+const goHome = (): void => {
   globalThis.location.assign("/");
-}
+};
 
-function LoginForm({
+const LoginForm = ({
   onAuthenticated = goHome,
-}: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement {
+}: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement => {
   const email = useTextInput();
   const password = useTextInput();
   const [challenge, setChallenge] = useState<ChallengeMode>();
   const action = useAction();
-  function restart(): void {
+  const restart = (): void => {
     setChallenge(undefined);
     email.handleChange("");
     password.handleChange("");
-  }
+  };
   return (
     <FormColumn>
       {challenge === undefined ? (
@@ -53,6 +52,6 @@ function LoginForm({
       <ActionStatus action={action} pendingMessage="認証を処理しています。" />
     </FormColumn>
   );
-}
+};
 
 export { LoginForm };

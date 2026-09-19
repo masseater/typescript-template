@@ -3,26 +3,30 @@ import { expect, screen, userEvent, waitFor } from "storybook/test";
 
 import preview from "../../../storybook/preview";
 import { Button } from "./button";
+import { STATUS_VARIANT } from "./status-variants.ts";
 import { ToastItem } from "./toast-item";
 import { ToastViewport } from "./toast-viewport";
 import { useToast } from "./use-toast";
 
 import type { ReactElement } from "react";
 
-function Raise({
+const Raise = ({
   title,
   variant,
-}: Readonly<{ title: string; variant: "error" | "success" }>): ReactElement {
+}: Readonly<{
+  title: string;
+  variant: (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "info" | "pending">];
+}>): ReactElement => {
   const raise = useToast();
-  function show(): void {
+  const show = (): void => {
     raise(variant, title);
-  }
+  };
   return (
     <Button type="button" variant="primary" onClick={show}>
       通知を出す
     </Button>
   );
-}
+};
 
 const meta = preview.meta({
   args: { toast: { id: "toast_01", title: "利用者の権限を変更しました。", type: "success" } },
@@ -31,7 +35,9 @@ const meta = preview.meta({
     <ToastPrimitive.Provider>
       <Raise
         title={typeof toast.title === "string" ? toast.title : ""}
-        variant={toast.type === "error" ? "error" : "success"}
+        variant={
+          toast.type === STATUS_VARIANT.failure ? STATUS_VARIANT.failure : STATUS_VARIANT.success
+        }
       />
       <ToastViewport />
     </ToastPrimitive.Provider>

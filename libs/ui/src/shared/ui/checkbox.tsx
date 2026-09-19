@@ -12,7 +12,7 @@ const indicator = (
   </CheckboxPrimitive.Indicator>
 );
 
-function Checkbox({
+const Checkbox = ({
   "aria-label": ariaLabel,
   checked,
   onCheckedChange,
@@ -20,7 +20,7 @@ function Checkbox({
   "aria-label": string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-}>): ReactElement {
+}>): ReactElement => {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
@@ -32,6 +32,6 @@ function Checkbox({
       {indicator}
     </CheckboxPrimitive.Root>
   );
-}
+};
 
 export { Checkbox };

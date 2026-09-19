@@ -1,59 +1,59 @@
+import { httpStatus } from "@repo/observability/http-status";
 import { decodeJson } from "@repo/runtime/client";
 import { SessionView as SessionContract } from "@repo/runtime/contracts";
+import { Effect, Fiber } from "effect";
 import { useEffect, useState } from "react";
 
-import { errorMessage } from "./protocol";
+import { errorMessage, type SessionView } from "./protocol.ts";
 
-import type { SessionView } from "./protocol";
-
-interface SessionSnapshot {
+type SessionSnapshot = {
   readonly error: string | undefined;
   readonly loading: boolean;
   readonly session: SessionView | undefined;
-}
+};
 
-interface SessionState extends SessionSnapshot {
-  readonly refresh: () => Promise<void>;
-}
+const sessionEndpoint = "/api/session";
 
-const HTTP_UNAUTHORIZED = 401;
-
-async function fetchSession(): Promise<SessionView | undefined> {
-  const response = await fetch("/api/session", { cache: "no-store", credentials: "same-origin" });
-  if (response.status === HTTP_UNAUTHORIZED) {
+const fetchSession = async (endpoint: string): Promise<SessionView | undefined> => {
+  const served = await fetch(endpoint, { cache: "no-store", credentials: "same-origin" });
+  if (served.status === httpStatus.unauthorized) {
     return undefined;
   }
-  if (!response.ok) {
-    throw new Error(`セッションの取得に失敗しました（HTTP ${response.status}）。`);
+  if (!served.ok) {
+    throw new Error(`セッションの取得に失敗しました（HTTP ${served.status}）。`);
   }
-  const body: unknown = await response.json();
-  return decodeJson(SessionContract, body);
-}
+  const servedSession: unknown = await served.json();
+  return decodeJson(SessionContract, servedSession);
+};
 
-async function loadSession(): Promise<SessionSnapshot> {
+const loadSession = async (): Promise<SessionSnapshot> => {
   try {
-    return { error: undefined, loading: false, session: await fetchSession() };
-  } catch (error) {
-    return { error: errorMessage(error), loading: false, session: undefined };
+    return { error: undefined, loading: false, session: await fetchSession(sessionEndpoint) };
+  } catch (failure) {
+    return { error: errorMessage(failure), loading: false, session: undefined };
   }
-}
+};
 
-function useSession(): SessionState {
+const useSession = (): SessionSnapshot & { readonly refresh: () => Promise<void> } => {
   const [snapshot, setSnapshot] = useState<SessionSnapshot>({
     error: undefined,
     loading: true,
     session: undefined,
   });
-  async function refresh(): Promise<void> {
+  const refresh = async (): Promise<void> => {
     setSnapshot(await loadSession());
-  }
+  };
   useEffect(() => {
-    async function load(): Promise<void> {
-      setSnapshot(await loadSession());
-    }
-    void load();
+    const loading = Effect.runFork(
+      Effect.map(Effect.promise(loadSession), (loaded) => {
+        setSnapshot(loaded);
+      }),
+    );
+    return (): void => {
+      Effect.runFork(Fiber.interrupt(loading));
+    };
   }, []);
   return { ...snapshot, refresh };
-}
+};
 
 export { useSession };

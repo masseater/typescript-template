@@ -1,4 +1,4 @@
-import { CheckboxField, FormColumn, Page, Status } from "@repo/ui";
+import { CheckboxField, FormColumn, Page, StatusMessage } from "@repo/ui";
 import { useState } from "react";
 
 import type { ReactElement } from "react";
@@ -8,7 +8,7 @@ function AiPage(): ReactElement {
   const [shareUsage, setShareUsage] = useState(false);
   return (
     <Page title="AI と API">
-      <Status>AI と API の設定はまだありません。既定は許可しない側です。</Status>
+      <StatusMessage>AI と API の設定はまだありません。既定は許可しない側です。</StatusMessage>
       <FormColumn>
         <CheckboxField
           checked={assistReplies}

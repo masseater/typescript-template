@@ -5,7 +5,7 @@ import { buttonVariants } from "./button-variants";
 import type { MouseEventHandler, ReactElement } from "react";
 import type { Children } from "./types";
 
-function Button({
+const Button = ({
   "aria-label": ariaLabel,
   children,
   disabled,
@@ -21,7 +21,7 @@ function Button({
     size?: "medium" | "small";
     type: "button" | "submit";
     variant?: "danger" | "primary" | "secondary";
-  }>): ReactElement {
+  }>): ReactElement => {
   return (
     <ButtonPrimitive
       data-slot="button"
@@ -34,6 +34,6 @@ function Button({
       {children}
     </ButtonPrimitive>
   );
-}
+};
 
 export { Button };
