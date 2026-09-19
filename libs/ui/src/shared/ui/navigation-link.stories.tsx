@@ -6,7 +6,7 @@ const meta = preview.meta({
   component: NavigationLink,
 });
 
-export const Item = meta.story();
+export const NavigationItem = meta.story();
 
 export const Side = meta.story({ args: { variant: "side" } });
 

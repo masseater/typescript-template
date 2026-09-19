@@ -9,7 +9,6 @@ const storybook = await storybookTest({
   storybookUrl: storybookOrigin,
 });
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   plugins: storybook,
   test: {
@@ -19,7 +18,10 @@ export default defineConfig({
       instances: [{ browser: "chromium" }],
       provider: playwright(),
     },
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
     fileParallelism: false,
+    mockReset: true,
     name: "storybook",
+    restoreMocks: true,
   },
 });

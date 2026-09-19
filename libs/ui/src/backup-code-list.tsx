@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-function BackupCodeList({ codes }: Readonly<{ codes: readonly string[] }>): ReactElement {
+const BackupCodeList = ({ codes }: Readonly<{ codes: readonly string[] }>): ReactElement => {
   return (
     <ul aria-label="バックアップコード" className="flex w-full flex-col gap-1">
       {codes.map((backupCode) => (
@@ -10,6 +10,6 @@ function BackupCodeList({ codes }: Readonly<{ codes: readonly string[] }>): Reac
       ))}
     </ul>
   );
-}
+};
 
 export { BackupCodeList };

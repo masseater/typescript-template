@@ -1,18 +1,19 @@
 import preview from "../../../storybook/preview";
-import { Status } from "./status";
+import { StatusMessage } from "./status";
+import { STATUS_VARIANT } from "./status-variants.ts";
 
-const meta = preview.meta({ component: Status });
+const meta = preview.meta({ component: StatusMessage });
 
-export const Info = meta.story({ args: { children: "認証アプリは未設定です。" } });
+export const InfoStatus = meta.story({ args: { children: "認証アプリは未設定です。" } });
 
-export const Success = meta.story({
-  args: { children: "パスキーを登録しました。", variant: "success" },
+export const SuccessStatus = meta.story({
+  args: { children: "パスキーを登録しました。", variant: STATUS_VARIANT.success },
 });
 
-export const Error = meta.story({
-  args: { children: "認証サーバーが操作を拒否しました。", variant: "error" },
+export const FailureStatus = meta.story({
+  args: { children: "認証サーバーが操作を拒否しました。", variant: STATUS_VARIANT.failure },
 });
 
-export const Pending = meta.story({
-  args: { children: "認証設定を更新しています。", variant: "pending" },
+export const PendingStatus = meta.story({
+  args: { children: "認証設定を更新しています。", variant: STATUS_VARIANT.pending },
 });

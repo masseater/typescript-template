@@ -5,6 +5,10 @@
       {
         "files": ["src/email-verification.tsx", "src/use-session.ts"],
         "rules": ["react-doctor/no-fetch-in-effect"]
+      },
+      {
+        "files": ["src/action.ts"],
+        "rules": ["react-doctor/hook-use-state"]
       }
     ]
   }

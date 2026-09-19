@@ -7,17 +7,17 @@ import type { ReactElement } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
 
-function PasskeyLogin({
+const PasskeyLogin = ({
   action,
   onAuthenticated,
-}: Readonly<{ action: ActionState; onAuthenticated: AuthenticatedHandler }>): ReactElement {
-  function signIn(): void {
+}: Readonly<{ action: ActionState; onAuthenticated: AuthenticatedHandler }>): ReactElement => {
+  const signIn = (): void => {
     action.run(async () => {
       requireSecureContext();
       requireSuccess(await authClient.signIn.passkey());
       await onAuthenticated();
     });
-  }
+  };
   return (
     <>
       <Separator label="または" />
@@ -26,6 +26,6 @@ function PasskeyLogin({
       </Button>
     </>
   );
-}
+};
 
 export { PasskeyLogin };

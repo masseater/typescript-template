@@ -1,36 +1,37 @@
-import { Status } from "./shared/ui/status";
+import { StatusMessage } from "./shared/ui/status";
 
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol";
 
-interface RecoveryNoticeProps {
+const RecoveryNotice = ({
+  recovery,
+  role,
+}: {
   readonly recovery: string | undefined;
   readonly role: SessionView["user"]["role"];
-}
-
-function RecoveryNotice({ recovery, role }: RecoveryNoticeProps): ReactElement | undefined {
+}): ReactElement | undefined => {
   if (recovery === "setup") {
-    return <Status>新しい認証アプリを登録してください。</Status>;
+    return <StatusMessage>新しい認証アプリを登録してください。</StatusMessage>;
   }
   if (recovery !== "1") {
     return undefined;
   }
   return (
     <>
-      <Status>バックアップコードでログインしました。</Status>
+      <StatusMessage>バックアップコードでログインしました。</StatusMessage>
       {role === "admin" ? (
-        <Status>
+        <StatusMessage>
           復旧コードでは管理者操作はできません。ログアウト後、登録済みのパスキーまたは認証アプリで
           ログインしてください。どちらも使えない場合は、この画面から管理者の認証設定を復旧できません。
-        </Status>
+        </StatusMessage>
       ) : (
-        <Status>
+        <StatusMessage>
           認証アプリを失った場合は、パスワードを入力して古い認証アプリを解除してください。
           再ログイン後に新しい認証アプリを登録できます。使用済みのバックアップコードは再利用できません。
-        </Status>
+        </StatusMessage>
       )}
     </>
   );
-}
+};
 
 export { RecoveryNotice };
