@@ -27,9 +27,12 @@ function previewDevVars(appRoot: string): Plugin {
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
     async generateBundle() {
       const source = await readDevVars(appRoot);
-      if (source !== undefined) {
-        this.emitFile({ fileName: ".dev.vars", source, type: "asset" });
+      if (source === undefined) {
+        return this.error(
+          `Missing ${path.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
+        );
       }
+      this.emitFile({ fileName: ".dev.vars", source, type: "asset" });
     },
     name: "template-preview-dev-vars",
   };

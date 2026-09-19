@@ -19,16 +19,32 @@ sessions=null
 if jq -e 'any(.[][]; .text | startswith("dispatched: runtime=claude"))' <<<"$comments" >/dev/null && command -v claude >/dev/null; then
   sessions=$(perl -e 'alarm shift; exec @ARGV' 20 claude agents --json </dev/null 2>/dev/null | jq -c '[.[].id | select(. != null)] | select(length > 0)' 2>/dev/null) || sessions=null
 fi
-pids=$(jq -r '.[][] | select(.text | startswith("dispatched: runtime=cmd")) | .text | capture("session=pid-(?<p>[0-9]+)").p' <<<"$comments" | sort -u |
-  while read -r pid; do if kill -0 "$pid" 2>/dev/null; then echo "$pid"; fi; done | jq -Rn '[inputs]')
+pid_state=$(jq -r '.[][] | select(.text | startswith("dispatched: runtime=cmd")) | .text | capture("session=pid-(?<p>[0-9]+)").p' <<<"$comments" | sort -u |
+  while read -r pid; do
+    if kill -0 "$pid" 2>/dev/null; then
+      jq -nc --arg pid "$pid" '{pid:$pid,alive:true}'
+    else
+      err=$(kill -0 "$pid" 2>&1 || true)
+      case $err in
+        *"Operation not permitted"*|*"not permitted"*) jq -nc --arg pid "$pid" '{pid:$pid,alive:null}' ;;
+      esac
+    fi
+  done | jq -s '.')
+pids=$(jq '[.[] | select(.alive == true) | .pid]' <<<"$pid_state")
+unknown_pids=$(jq '[.[] | select(.alive == null) | .pid]' <<<"$pid_state")
 
 jq -n --argjson stale_minutes "$stale_minutes" --argjson in_progress "$in_progress" --argjson blocked "$blocked" \
   --argjson ready "$ready" --argjson human "$human" --argjson review "$review" --argjson comments "$comments" \
-  --argjson sessions "${sessions:-null}" --argjson pids "$pids" '
+  --argjson sessions "${sessions:-null}" --argjson pids "$pids" --argjson unknown_pids "$unknown_pids" '
   def ts: sub("\\.[0-9]+"; "") | fromdateiso8601;
   def labeled($l): (.labels // []) | index($l) != null;
   def thread: $comments[.id] // [];
   def brief: if . then {author, text, created_at} else null end;
+  def cmd_alive($session):
+    ($session | ltrimstr("pid-")) as $pid
+    | if ($pids | index($pid) != null) then true
+      elif ($unknown_pids | index($pid) != null) then null
+      else false end;
   now as $now
   | ($blocked // [] | map({key: .id, value: .blocked_by}) | from_entries) as $by
   | [ ($in_progress // [])[]
@@ -40,7 +56,7 @@ jq -n --argjson stale_minutes "$stale_minutes" --argjson in_progress "$in_progre
       | ($launch | capture("runtime=(?<v>[^ ]+)").v // null) as $runtime
       | ($launch | capture("session=(?<v>[^ ]+)").v // null) as $session
       | { id, title, assignee, runtime: $runtime, session: $session,
-          alive: (if $runtime == "cmd" then ($pids | index($session | ltrimstr("pid-")) != null)
+          alive: (if $runtime == "cmd" then cmd_alive($session)
                   elif $runtime == "claude" and $sessions != null then ($sessions | index($session) != null)
                   else null end),
           last_activity: ($t | todateiso8601),

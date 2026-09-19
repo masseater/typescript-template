@@ -48,7 +48,7 @@ const Init = Schema.Struct({
 });
 const Delta = Schema.Struct({ text: Schema.String, type: Schema.Literal("text_delta") });
 const BlockDelta = Schema.Struct({ delta: Delta, type: Schema.Literal("content_block_delta") });
-const TextDelta = Schema.Struct({ event: BlockDelta, type: Schema.Literal("stream_event") });
+const StreamEvent = Schema.Struct({ event: Schema.Unknown, type: Schema.Literal("stream_event") });
 const OtherBlock = Schema.Struct({ type: Schema.String });
 const ToolUse = Schema.Struct({
   id: Schema.String,
@@ -79,16 +79,43 @@ const Result = Schema.Struct({
   ),
   type: Schema.Literal("result"),
 });
-const Line = Schema.Union([Init, TextDelta, Assistant, User, Result]);
+const Line = Schema.Union([Init, StreamEvent, Assistant, User, Result]);
 const Envelope = Schema.Struct({ subtype: Schema.optional(Schema.String), type: Schema.String });
+const StreamEnvelope = Schema.Struct({ type: Schema.String });
+const StreamDeltaKind = Schema.Struct({ type: Schema.String });
 
 const parseJson = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown));
 const decodeLine = Schema.decodeUnknownOption(Line);
 const decodeEnvelope = Schema.decodeUnknownOption(Envelope);
-const contracted: ReadonlySet<string> = new Set(["assistant", "user", "result"]);
+const decodeStreamEnvelope = Schema.decodeUnknownOption(StreamEnvelope);
+const decodeStreamDeltaKind = Schema.decodeUnknownOption(StreamDeltaKind);
+const decodeBlockDelta = Schema.decodeUnknownOption(BlockDelta);
+const contracted: ReadonlySet<string> = new Set(["assistant", "user", "result", "stream_event"]);
 const invalid: readonly CommanderEvent[] = [{ reason: "output_invalid", type: "failed" }];
 const processFailed: CommanderEvent = { reason: "process_failed", type: "failed" };
 const spawnFailed: CommanderEvent = { reason: "spawn_failed", type: "failed" };
+
+function translateStreamEvent(event: unknown): readonly CommanderEvent[] {
+  const envelope = decodeStreamEnvelope(event);
+  if (Option.isNone(envelope)) {
+    return invalid;
+  }
+  if (envelope.value.type !== "content_block_delta") {
+    return [];
+  }
+  if (typeof event !== "object" || event === null || !("delta" in event)) {
+    return invalid;
+  }
+  const kind = decodeStreamDeltaKind(event.delta);
+  if (Option.isNone(kind)) {
+    return invalid;
+  }
+  if (kind.value.type !== "text_delta") {
+    return [];
+  }
+  const block = decodeBlockDelta(event);
+  return Option.isSome(block) ? [{ text: block.value.delta.text, type: "text" }] : invalid;
+}
 
 function translate(line: typeof Line.Type): readonly CommanderEvent[] {
   if (line.type === "system") {
@@ -104,7 +131,7 @@ function translate(line: typeof Line.Type): readonly CommanderEvent[] {
     ];
   }
   if (line.type === "stream_event") {
-    return [{ text: line.event.delta.text, type: "text" }];
+    return translateStreamEvent(line.event);
   }
   if (line.type === "assistant") {
     return line.message.content.flatMap((block) =>

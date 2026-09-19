@@ -94,11 +94,24 @@ function serviceOf(root: string): Effect.Effect<RunnerService, LocalCommandFailu
   );
 }
 
+function isMissing(cause: unknown): boolean {
+  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT";
+}
+
 function installedDocument(plistFile: string): Effect.Effect<string, LocalCommandFailure> {
   return Effect.tryPromise({
     catch: () => failure("file_io_failed"),
-    try: async () => readFile(plistFile, "utf-8"),
-  }).pipe(Effect.orElseSucceed(() => ""));
+    try: async () => {
+      try {
+        return await readFile(plistFile, "utf-8");
+      } catch (cause) {
+        if (isMissing(cause)) {
+          return "";
+        }
+        throw cause;
+      }
+    },
+  });
 }
 
 function renderService(
