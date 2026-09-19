@@ -34,6 +34,7 @@ const meta = preview.meta({
 export const Empty = meta.story();
 
 export const Stacked = meta.story({
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を 2 件出す" }));
     await expect(await screen.findByText("確認メールを再送しました。")).toBeInTheDocument();

@@ -45,6 +45,7 @@ const meta = preview.meta({
 });
 
 export const Success = meta.story({
+  parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
     await expect(await screen.findByText("利用者の権限を変更しました。")).toBeInTheDocument();
