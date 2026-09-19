@@ -1,12 +1,8 @@
-import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
-import { AdminMfaRequired } from "./admin-mfa-required.ts";
-import { AdminRequired } from "./admin-required.ts";
 import { AuthFailure } from "./auth-failure.ts";
 import { Auth } from "./auth.ts";
 import { EmailVerificationFailed } from "./email-verification-failed.ts";
-import { SessionInvalid } from "./session-invalid.ts";
 
 import type { BetterAuthInstance } from "./create-auth.ts";
 
@@ -23,34 +19,6 @@ function authPromise<Value>(
       try: async () => run(instance),
     });
   });
-}
-
-function classifyDenial(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  failure: AuthFailure,
-): AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired {
-  const denial = failure.cause instanceof APIError ? failure.cause.body?.message : undefined;
-  if (denial === "SESSION_INVALID") {
-    return new SessionInvalid();
-  }
-  if (denial === "ADMIN_REQUIRED") {
-    return new AdminRequired();
-  }
-  return denial === "ADMIN_MFA_REQUIRED" ? new AdminMfaRequired() : failure;
-}
-
-type AuthSession = Awaited<ReturnType<BetterAuthInstance["api"]["getSession"]>>;
-
-function authSession(
-  headers: Headers,
-): Effect.Effect<
-  AuthSession,
-  AuthFailure | SessionInvalid | AdminRequired | AdminMfaRequired,
-  Auth
-> {
-  return authPromise(async (instance): Promise<AuthSession> =>
-    instance.api.getSession({ headers, query: { disableCookieCache: true } }),
-  ).pipe(Effect.mapError(classifyDenial));
 }
 
 function handleAuthRequest(request: Request): Effect.Effect<Response, AuthFailure, Auth> {
@@ -72,4 +40,4 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   return { verified: true } as const;
 });
 
-export { authSession, handleAuthRequest, verifyEmailToken };
+export { handleAuthRequest, verifyEmailToken };

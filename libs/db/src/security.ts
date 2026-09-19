@@ -104,6 +104,21 @@ const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getSessionS
   return record ?? null;
 });
 
+const lookupSessionByToken = Effect.fn("lookupSessionByToken")(function* lookupSessionByToken(
+  token: string,
+) {
+  const [record] = yield* query((database) =>
+    database
+      .select({ session, user })
+      .from(session)
+      .innerJoin(user, eq(session.userId, user.id))
+      .where(eq(session.token, token))
+      .limit(1),
+  );
+  // oxlint-disable-next-line unicorn/no-null
+  return record ?? null;
+});
+
 const markSessionStrong = Effect.fn("markSessionStrong")(function* markSessionStrong(
   sessionId: string,
   audience: Application,
@@ -182,6 +197,7 @@ export {
   getSessionSecurity,
   hasEnrolledFactor,
   hasVerificationAudience,
+  lookupSessionByToken,
   markSessionStrong,
   revokeUserSessions,
 };
