@@ -1,32 +1,41 @@
+import { adminNavGroups } from "./admin-nav.ts";
 import { AdminNavigationItem } from "./admin-navigation-item.tsx";
 
 import type { ReactElement } from "react";
 
-const items = [
-  { label: "ユーザー一覧", to: "/" },
-  { label: "認証設定", to: "/security" },
-] as const;
-
 function AdminNavigation({
+  collapsed,
   onNavigate,
-  open,
-}: Readonly<{ onNavigate: () => void; open: boolean }>): ReactElement {
+}: Readonly<{
+  collapsed: boolean;
+  onNavigate: () => void;
+}>): ReactElement {
   return (
-    <nav
-      id="admin-navigation"
-      aria-label="メイン"
-      className={`border-b border-border bg-card md:block md:w-48 md:shrink-0 md:border-r md:border-b-0 ${open ? "block" : "hidden"}`}
-    >
-      <ul className="flex flex-col gap-1 p-2">
-        {items.map((item) => (
-          <AdminNavigationItem
-            key={item.to}
-            label={item.label}
-            to={item.to}
-            onNavigate={onNavigate}
-          />
+    <nav id="admin-navigation" aria-label="メイン" className="flex flex-1 flex-col overflow-y-auto">
+      <div className="flex flex-1 flex-col gap-4 p-2">
+        {adminNavGroups.map((group) => (
+          <div key={group.label} className="flex flex-col gap-1">
+            {collapsed ? null : (
+              <p className="px-3 text-sm leading-tight font-bold text-muted-foreground">
+                {group.label}
+              </p>
+            )}
+            <ul className="flex flex-col gap-1">
+              {group.items.map((item) => (
+                <AdminNavigationItem
+                  key={item.to}
+                  badge={item.badge}
+                  collapsed={collapsed}
+                  icon={item.icon}
+                  label={item.label}
+                  to={item.to}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
     </nav>
   );
 }

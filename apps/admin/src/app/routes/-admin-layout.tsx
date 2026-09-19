@@ -22,7 +22,7 @@ function AdminLayout(): ReactElement {
   }, [allowed, error, href, loading, navigate, session]);
   if (!allowed) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex min-h-dvh items-center justify-center p-4">
         {error === undefined ? (
           <Status variant="pending">読み込み中です。</Status>
         ) : (
@@ -32,7 +32,7 @@ function AdminLayout(): ReactElement {
     );
   }
   return (
-    <AdminFrame email={session.user.email}>
+    <AdminFrame email={session.user.email} name={session.user.name}>
       <Outlet />
     </AdminFrame>
   );
