@@ -1,10 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { UsersPage, normalizeUsersSearch } from "#pages/users/index.ts";
+import { InvalidUsersSearch, UsersPage, normalizeUsersSearch } from "#pages/users/index.ts";
 
 const Route = createFileRoute("/_admin/members")({
   component: UsersPage,
-  validateSearch: normalizeUsersSearch,
+  validateSearch: (search: unknown) => {
+    try {
+      return normalizeUsersSearch(search);
+    } catch (error) {
+      if (error instanceof InvalidUsersSearch) {
+        throw redirect({ replace: true, search: {}, to: "/members" });
+      }
+      throw error;
+    }
+  },
 });
 
 export { Route };
