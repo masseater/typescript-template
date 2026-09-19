@@ -1,5 +1,5 @@
 import { Auth } from "@repo/auth";
-import { readConfig, sendVerificationEmail } from "@repo/config";
+import { readConfig } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
 import { Effect, Layer } from "effect";
@@ -32,7 +32,7 @@ function configuredAppLayer(
     audience,
     baseURL: config.APP_ORIGIN,
     secret: config.AUTH_SECRET,
-    sendVerificationEmail: (message) => sendVerificationEmail(config, message),
+    mail: config,
   }).pipe(Layer.provideMerge(database));
   const otlp =
     config.OTLP_ENDPOINT === undefined || config.OTLP_ENABLED === "false"

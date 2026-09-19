@@ -1,11 +1,11 @@
 import { assert } from "@effect/vitest";
-import { sendVerificationEmail } from "@repo/config";
 import { EmptyTestDatabase, TestDatabase, bootstrapAdmin } from "@repo/db/testing";
 import { Context, Effect, Layer, Schema } from "effect";
 import { URI } from "otpauth";
 
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
+import { mailSubjects } from "./email.ts";
 import { mailConfig, mailServer, mailbox } from "./mail-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -49,8 +49,7 @@ function authFor(
     audience,
     baseURL: origins[audience],
     secret,
-    sendVerificationEmail: (message) =>
-      sendVerificationEmail({ ...mailConfig, APP_ORIGIN: origins[audience] }, message),
+    mail: mailConfig,
   });
   return Layer.build(layer).pipe(Effect.map((context) => Context.get(context, Auth)));
 }
@@ -78,11 +77,19 @@ function withEmptyDatabase<Value>(
   return effect.pipe(Effect.provide(EmptyTestDatabase));
 }
 
+function receivedLink(email: string, subject: string): URL {
+  const mail = mailbox.get(email);
+  assert.isDefined(mail, `no mail was sent to ${email}`);
+  assert.strictEqual(mail.subject, subject);
+  return new URL(mail.url);
+}
+
 const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
   const { user } = yield* Fixture;
-  const link = new URL(mailbox.get(email) ?? "http://invalid.test/");
+  const link = receivedLink(email, mailSubjects.verification);
   assert.deepStrictEqual([link.pathname, link.search], ["/verify-email", ""]);
-  const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
+  const token = new URLSearchParams(link.hash.slice(1)).get("token");
+  assert.isNotNull(token);
   yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
 });
 
@@ -151,10 +158,12 @@ export {
   decodeOrDie,
   enableTotp,
   failureTag,
+  receivedLink,
   register,
   registerVerified,
   signIn,
   signInAs,
+  verifyEmail,
   withAuth,
   withEmptyDatabase,
 };
