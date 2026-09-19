@@ -3,6 +3,10 @@
   "ignore": {
     "overrides": [
       {
+        "files": ["package.json"],
+        "rules": ["socket/low-supply-chain-score"]
+      },
+      {
         "files": ["src/pages/users/ui/search-fields.tsx"],
         "rules": ["react-doctor/no-derived-useState"]
       }

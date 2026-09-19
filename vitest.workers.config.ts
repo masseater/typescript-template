@@ -39,7 +39,7 @@ export default defineProject({
     }),
   ],
   test: {
-    include: [`libs/${workerTests}`, `infra/${workerTests}`],
+    include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
     testTimeout: 30_000,

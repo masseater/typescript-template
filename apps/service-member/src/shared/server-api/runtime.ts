@@ -1,9 +1,9 @@
-import { Interviewer } from "@repo/interview";
 import { appLayer } from "@repo/runtime";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Layer } from "effect";
 
+import { Interviewer } from "#shared/interview/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 
 import type { Reporting } from "@repo/observability";
