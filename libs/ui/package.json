@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "./src/temporal.ts"
   ],
   "exports": {
     ".": "./src/index.ts",
@@ -19,6 +20,7 @@
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
+    "@smarthr/wareki": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "better-auth": "catalog:",
@@ -27,10 +29,12 @@
     "effect": "catalog:",
     "es-toolkit": "catalog:",
     "lucide-react": "catalog:",
+    "motion": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "shadcn": "catalog:",
-    "tailwindcss": "catalog:"
+    "tailwindcss": "catalog:",
+    "temporal-polyfill": "catalog:"
   },
   "devDependencies": {
     "@shadcn/lint": "catalog:",
