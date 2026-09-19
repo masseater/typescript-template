@@ -1,26 +1,25 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { setTimeout as delay } from "node:timers/promises";
 
 const pollInterval = 250;
 
-async function until<Value>(
-  attempt: () => Promise<Value | undefined> | (Value | undefined),
-  deadline: number,
-  reason: string,
-): Promise<Value> {
-  const found = await attempt();
+const until = async <Value>(polling: {
+  readonly attempt: () => Promise<Value | undefined> | (Value | undefined);
+  readonly deadline: number;
+  readonly reason: string;
+}): Promise<Value> => {
+  const found = await polling.attempt();
   if (found !== undefined) {
     return found;
   }
-  if (Date.now() >= deadline) {
-    throw new Error(reason);
+  if (Date.now() >= polling.deadline) {
+    throw new Error(polling.reason);
   }
   await delay(pollInterval);
-  return until(attempt, deadline, reason);
-}
+  return until(polling);
+};
 
-function deadlineIn(milliseconds: number): number {
+const deadlineIn = (milliseconds: number): number => {
   return Date.now() + milliseconds;
-}
+};
 
 export { deadlineIn, until };

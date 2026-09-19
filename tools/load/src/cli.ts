@@ -1,28 +1,22 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { applicationOrigins, mailpitOrigin } from "@repo/config";
-import { reportFailed, runCli } from "@repo/config/cli";
+import { ApplicationName, applicationOrigins, mailpitOrigin } from "@repo/config";
+import { firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { memberPageSize } from "@repo/runtime/contracts";
 import { Console, Effect, Schema } from "effect";
 
-import { exists, installBinary } from "./binary.ts";
+import { type BinaryUnavailable, exists, installBinary } from "./binary.ts";
 import {
-  Application,
   awaitReady,
   clearTraces,
+  type EnvironmentUnusable,
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
 } from "./environment.ts";
-import { discardSummary, readSummary } from "./summary.ts";
-
-import type { BinaryUnavailable } from "./binary.ts";
-import type { EnvironmentUnusable } from "./environment.ts";
-import type { Report } from "./summary.ts";
+import { discardSummary, readSummary, type Report } from "./summary.ts";
 
 class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFailure", {
   code: Schema.optionalKey(Schema.Int),
@@ -39,9 +33,8 @@ class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFai
 
 type Failure = BinaryUnavailable | EnvironmentUnusable | LoadTestFailure;
 
-const root = fileURLToPath(new URL("../../../", import.meta.url));
 const scenarios = fileURLToPath(new URL("../scenarios/", import.meta.url));
-const home = path.join(root, ".local/k6");
+const home = path.join(repositoryRoot, ".local/k6");
 const summaryFile = path.join(home, "summary.json");
 const thresholdsExitCode = 99;
 const standardErrorDescriptor = 2;
@@ -51,7 +44,7 @@ const profiles = {
 } as const;
 const peak = Effect.succeed("peak" as const);
 const Profile = Schema.Literals(["peak", "smoke"]).pipe(Schema.withDecodingDefaultKey(peak));
-const Arguments = Schema.Struct({ app: Application, profile: Profile });
+const Arguments = Schema.Struct({ app: ApplicationName, profile: Profile });
 const usage = "vp run --filter @repo/load load <user|admin|wiki> [smoke|peak]";
 const rebuild = "vp run --filter @repo/dev setup loopback, then vp run --filter @repo/<app> build";
 const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
@@ -62,18 +55,20 @@ const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
   usage_invalid: usage,
 };
 
-function runScenario(
-  binary: string,
-  scenario: string,
+const runScenario = (
+  measured: { readonly binary: string; readonly scenario: string },
   environment: Readonly<Record<string, string>>,
-): Effect.Effect<boolean, LoadTestFailure> {
+): Effect.Effect<boolean, LoadTestFailure> => {
   return Effect.callback<boolean, LoadTestFailure>((resume) => {
-    const child = spawn(binary, ["run", "--summary-export", summaryFile, scenario], {
-      cwd: root,
-      // oxlint-disable-next-line node/no-process-env
-      env: { ...process.env, ...environment },
-      stdio: ["ignore", standardErrorDescriptor, "inherit"],
-    });
+    const child = spawn(
+      measured.binary,
+      ["run", "--summary-export", summaryFile, measured.scenario],
+      {
+        cwd: repositoryRoot,
+        env: { ...process.env, ...environment },
+        stdio: ["ignore", standardErrorDescriptor, "inherit"],
+      },
+    );
     child.once("error", () => {
       resume(Effect.fail(new LoadTestFailure({ reason: "scenario_failed" })));
     });
@@ -85,9 +80,9 @@ function runScenario(
       );
     });
   });
-}
+};
 
-function requireMeasurement(): Effect.Effect<Report, LoadTestFailure> {
+const requireMeasurement = (): Effect.Effect<Report, LoadTestFailure> => {
   return readSummary(summaryFile).pipe(
     Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
     Effect.filterOrFail(
@@ -95,31 +90,31 @@ function requireMeasurement(): Effect.Effect<Report, LoadTestFailure> {
       () => new LoadTestFailure({ reason: "measurement_empty" }),
     ),
   );
-}
+};
 
-function scenarioEnvironment(
+const scenarioEnvironment = (
   profile: keyof typeof profiles,
   origin: string,
-): Readonly<Record<string, string>> {
+): Readonly<Record<string, string>> => {
   return {
     ...profiles[profile],
     LOAD_MAILPIT_ORIGIN: mailpitOrigin,
     LOAD_MEMBER_PAGE_SIZE: String(memberPageSize),
     LOAD_TARGET_ORIGIN: origin,
   };
-}
+};
 
-interface Measured {
+type Measured = {
   readonly app: string;
   readonly crossed: boolean;
   readonly loadAverage: Readonly<{ after: number; before: number }>;
   readonly measured: Report;
   readonly origin: string;
   readonly profile: string;
-}
+};
 
 const prepare = Effect.fn("prepare")(function* prepare(
-  app: typeof Application.Type,
+  app: typeof ApplicationName.Type,
   origin: string,
 ) {
   const scenario = path.join(scenarios, `${app}-journey.ts`);
@@ -141,7 +136,7 @@ const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.T
   const origin = applicationOrigins[app];
   const { binary, scenario } = yield* prepare(app, origin);
   const before = oneMinuteLoadAverage();
-  const crossed = yield* runScenario(binary, scenario, scenarioEnvironment(profile, origin));
+  const crossed = yield* runScenario({ binary, scenario }, scenarioEnvironment(profile, origin));
   const loadAverage = { after: oneMinuteLoadAverage(), before };
   const measured: Measured = {
     app,
@@ -154,8 +149,8 @@ const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.T
   return measured;
 });
 
-const announce = Effect.fn("announce")(function* announce(result: Measured) {
-  const { crossed, measured, ...rest } = result;
+const announce = Effect.fn("announce")(function* announce(reported: Measured) {
+  const { crossed, measured, ...rest } = reported;
   yield* Console.log(
     JSON.stringify({ event: "load.measured", ok: !crossed, ...rest, ...measured }),
   );
@@ -164,22 +159,25 @@ const announce = Effect.fn("announce")(function* announce(result: Measured) {
   }
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function announceFailure(failure: Failure): Effect.Effect<void> {
-  const remediation = remediations[failure.reason];
+const announceFailure = (described: {
+  readonly crossed?: readonly string[] | undefined;
+  readonly exitCode?: number | undefined;
+  readonly reason: Failure["reason"];
+}): Effect.Effect<void> => {
+  const remediation = remediations[described.reason];
   const details = {
-    ...(failure._tag === "LoadTestFailure" && failure.code !== undefined
-      ? { exitCode: failure.code }
-      : {}),
-    ...(failure._tag === "LoadTestFailure" && failure.crossed !== undefined
-      ? { crossed: failure.crossed }
-      : {}),
+    ...(described.exitCode === undefined ? {} : { exitCode: described.exitCode }),
+    ...(described.crossed === undefined ? {} : { crossed: described.crossed }),
     ...(remediation === undefined ? {} : { remediation }),
   };
-  return reportFailed({ event: "load.run_failed", ok: false, reason: failure.reason, ...details });
-}
+  return reportFailed({
+    event: "load.run_failed",
+    ok: false,
+    reason: described.reason,
+    ...details,
+  });
+};
 
-const firstUserArgumentIndex = 2;
 const [app, profile] = process.argv.slice(firstUserArgumentIndex);
 
 runCli(
@@ -188,9 +186,10 @@ runCli(
     Effect.flatMap(measure),
     Effect.flatMap(announce),
     Effect.catchTags({
-      BinaryUnavailable: announceFailure,
-      EnvironmentUnusable: announceFailure,
-      LoadTestFailure: announceFailure,
+      BinaryUnavailable: (unavailable) => announceFailure({ reason: unavailable.reason }),
+      EnvironmentUnusable: (unusable) => announceFailure({ reason: unusable.reason }),
+      LoadTestFailure: (failed) =>
+        announceFailure({ crossed: failed.crossed, exitCode: failed.code, reason: failed.reason }),
     }),
   ),
   { event: "load.run_failed", ok: false, reason: "unexpected" },

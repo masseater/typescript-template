@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, realpath, rm } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { assert, describe, it } from "@effect/vitest";
@@ -16,13 +13,9 @@ import { downloadUrl, releases } from "./releases.ts";
 const prefix = path.join(tmpdir(), "template-k6-");
 const archives = [...releases.values()].map((release) => downloadUrl(release.archive));
 
-async function temporaryDirectory(): Promise<string> {
-  const created = await mkdtemp(prefix);
-  return realpath(created);
-}
-
-const temporaryHome = Effect.acquireRelease(Effect.promise(temporaryDirectory), (home) =>
-  Effect.promise(async () => rm(home, { force: true, recursive: true })),
+const temporaryHome = Effect.acquireRelease(
+  Effect.promise(async () => realpath(await mkdtemp(prefix))),
+  (home) => Effect.promise(async () => rm(home, { force: true, recursive: true })),
 );
 
 const tamperedArchives = Effect.acquireRelease(

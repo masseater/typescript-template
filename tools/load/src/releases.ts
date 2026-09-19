@@ -1,15 +1,15 @@
-interface Release {
+type Release = {
   readonly archive: string;
   readonly digest: string;
   readonly member: string;
-}
+};
 
 const version = "2.2.0";
 
-function release(
+const release = (
   platform: string,
   built: Readonly<{ archive: string; digest: string; member: string }>,
-): readonly [string, Release] {
+): readonly [string, Release] => {
   return [
     platform,
     {
@@ -18,7 +18,7 @@ function release(
       member: `k6-v${version}-${built.member}/k6`,
     },
   ];
-}
+};
 
 const releases: ReadonlyMap<string, Release> = new Map([
   release("darwin-arm64", {
@@ -45,9 +45,9 @@ const releases: ReadonlyMap<string, Release> = new Map([
 
 const downloadOrigin = "https://github.com/grafana/k6/releases/download";
 
-function downloadUrl(archive: string): string {
+const downloadUrl = (archive: string): string => {
   return `${downloadOrigin}/v${version}/${archive}`;
-}
+};
 
 export { downloadUrl, releases, version };
 export type { Release };

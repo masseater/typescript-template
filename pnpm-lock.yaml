@@ -1465,6 +1465,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112
       otpauth:
         specifier: 9.5.2
         version: 9.5.2

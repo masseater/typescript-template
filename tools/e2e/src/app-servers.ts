@@ -1,63 +1,60 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { open } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { healthy, logTail } from "./app-health.ts";
+import { healthReport, logTail, servingHealth } from "./app-health.ts";
 import { loopback, loopbackOrigin } from "./ports.ts";
 import { stopGroup } from "./process-group.ts";
-import { applicationRoot, packageRoot } from "./repository.ts";
+import { applicationRoot, vitePlus } from "./repository.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
 import type { Application } from "@repo/config";
 import type { Environment } from "./local-database.ts";
 
 const readyTimeout = 300_000;
-const startAttempts = 3;
-const vitePlus = packageRoot("node_modules/.bin/vp");
 
-interface ApplicationServer {
+const reachHealth = async (served: {
+  readonly alive: () => boolean;
+  readonly log: string;
+  readonly origin: string;
+}): Promise<void> => {
+  try {
+    await until({
+      attempt: async () => {
+        if (!served.alive()) {
+          throw new Error("E2E_APPLICATION_STOPPED");
+        }
+        return (await healthReport(served.origin)) === servingHealth || undefined;
+      },
+      deadline: deadlineIn(readyTimeout),
+      reason: "E2E_APPLICATION_NOT_READY",
+    });
+  } catch (unavailable) {
+    throw new Error(`E2E_APPLICATION_UNAVAILABLE ${await logTail(served.log)}`, {
+      cause: unavailable,
+    });
+  }
+};
+
+type ApplicationServer = {
   readonly application: Application;
   readonly environment: Environment;
   readonly logDirectory: string;
   readonly port: number;
-}
+};
 
-interface RunningApplication {
+const startApplication = async (
+  server: ApplicationServer,
+): Promise<{
   readonly stop: () => Promise<void>;
   readonly waitUntilReady: () => Promise<void>;
-}
-
-interface ServedApplication {
-  readonly stop: () => Promise<void>;
-}
-
-async function reachHealth(alive: () => boolean, origin: string, log: string): Promise<void> {
-  try {
-    await until(
-      async () => {
-        if (!alive()) {
-          throw new Error("E2E_APPLICATION_STOPPED");
-        }
-        return (await healthy(origin)) || undefined;
-      },
-      deadlineIn(readyTimeout),
-      "E2E_APPLICATION_NOT_READY",
-    );
-  } catch (error) {
-    throw new Error(`E2E_APPLICATION_UNAVAILABLE ${await logTail(log)}`, { cause: error });
-  }
-}
-
-async function startApplication(server: ApplicationServer): Promise<RunningApplication> {
+}> => {
   const { application, environment, logDirectory, port } = server;
   const log = path.join(logDirectory, `${application}.log`);
   const handle = await open(log, "a");
   const origin = loopbackOrigin(port);
-  const args = ["dev", "--host", loopback, "--port", String(port), "--strictPort"];
-  const child = spawn(vitePlus, args, {
+  const devCommand = ["dev", "--host", loopback, "--port", String(port), "--strictPort"];
+  const child = spawn(vitePlus, devCommand, {
     cwd: applicationRoot(application),
     detached: true,
     env: environment,
@@ -72,25 +69,31 @@ async function startApplication(server: ApplicationServer): Promise<RunningAppli
       await handle.close();
     },
     waitUntilReady: async () =>
-      reachHealth(() => child.exitCode === null && child.signalCode === null, origin, log),
+      reachHealth({
+        alive: () => child.exitCode === null && child.signalCode === null,
+        log,
+        origin,
+      }),
   };
-}
+};
 
-async function serveApplication(
+const startAttempts = 3;
+
+const serveApplication = async (
   server: ApplicationServer,
   attempt = 1,
-): Promise<ServedApplication> {
+): Promise<{ readonly stop: () => Promise<void> }> => {
   const running = await startApplication(server);
   try {
     await running.waitUntilReady();
     return running;
-  } catch (error) {
+  } catch (unready) {
     await running.stop();
     if (attempt >= startAttempts) {
-      throw error;
+      throw unready;
     }
     return serveApplication(server, attempt + 1);
   }
-}
+};
 
 export { serveApplication };

@@ -1,31 +1,35 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 
-const requestTimeout = 120_000;
-const okStatus = 200;
-const logTailLength = 10_000;
 const healthPath = "/api/health";
 
-async function healthy(origin: string): Promise<boolean> {
+const requestTimeout = 120_000;
+
+const okStatus = 200;
+
+const servingHealth = "serving";
+
+const healthReport = async (origin: string): Promise<string> => {
   try {
-    const response = await fetch(new URL(healthPath, origin), {
+    const probe = await fetch(new URL(healthPath, origin), {
       redirect: "manual",
       signal: AbortSignal.timeout(requestTimeout),
     });
-    await response.body?.cancel();
-    return response.status === okStatus;
-  } catch {
-    return false;
+    await probe.body?.cancel();
+    return probe.status === okStatus ? servingHealth : `E2E_HEALTH_STATUS ${probe.status}`;
+  } catch (unreachable) {
+    return `E2E_HEALTH_UNREACHABLE ${String(unreachable)}`;
   }
-}
+};
 
-async function logTail(file: string): Promise<string> {
+const logTailLength = 10_000;
+
+const logTail = async (file: string): Promise<string> => {
   try {
-    const content = await readFile(file, "utf-8");
-    return content.slice(-logTailLength);
-  } catch {
-    return "";
+    const recorded = await readFile(file, "utf-8");
+    return recorded.slice(-logTailLength);
+  } catch (unreadable) {
+    return `E2E_LOG_UNREADABLE ${String(unreadable)}`;
   }
-}
+};
 
-export { healthy, logTail };
+export { healthReport, logTail, servingHealth };

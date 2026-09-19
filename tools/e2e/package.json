@@ -6,6 +6,7 @@
   "devDependencies": {
     "@repo/config": "workspace:*",
     "@types/node": "catalog:",
+    "effect": "catalog:",
     "otpauth": "9.5.2",
     "playwright": "catalog:",
     "typescript": "catalog:",
