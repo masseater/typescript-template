@@ -11,7 +11,7 @@ description: テンプレートの概要と、含まれているもの、使い�
 
 ## 含まれているもの
 
-- 利用者アプリ・管理者アプリ・wiki の各アプリ。それぞれの役割は [アプリの役割](/getting-started/applications) にある
+- 利用者アプリ・管理者アプリ・wiki・司令塔アプリ（`tools/commander`）。それぞれの役割は [アプリの役割](/getting-started/applications) にある
 - 各画面の仕様。ページ構成の節（[利用者アプリのレイアウト](/pages/user-layout) ほか）にあり、使い始めた後も、画面の仕様を書き足していく場所としてそのまま使う
 - 実装とレビューの基準。[ガイドライン](/guidelines/principles) にある
 - 規約の違反を、型・lint・テストで機械的に見つける検査
