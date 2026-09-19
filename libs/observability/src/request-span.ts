@@ -2,7 +2,12 @@ import { Cause, Effect, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan } from "./annotations.ts";
 import { CurrentRequest } from "./current-request.ts";
-import { errorAttributes, errorFingerprint } from "./errors.ts";
+import {
+  errorAttributes,
+  errorFingerprint,
+  fingerprintIdentity,
+  identifierPattern,
+} from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
 import { logAt, statusSeverity } from "./severity.ts";
@@ -17,12 +22,11 @@ type RequestHandler<Requirements> = (
 ) => Effect.Effect<Response, never, Requirements | CurrentRequest>;
 type FailureAttributes = ErrorAttributes & { readonly "error.tag"?: string };
 
-const tagPattern = /^[A-Za-z]{1,64}$/u;
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 
 function failureTag(error: unknown): string | undefined {
   const tag = isRecord(error) ? error["_tag"] : undefined;
-  return typeof tag === "string" && tagPattern.test(tag) ? tag : undefined;
+  return typeof tag === "string" && identifierPattern.test(tag) ? tag : undefined;
 }
 
 function failureAttributesOf(error: unknown): FailureAttributes {
@@ -32,7 +36,7 @@ function failureAttributesOf(error: unknown): FailureAttributes {
     return attributes;
   }
   const fingerprint = errorFingerprint(
-    attributes["error.type"],
+    fingerprintIdentity(error),
     `${tag}\n${attributes["error.locations"]}`,
   );
   return { ...attributes, "error.fingerprint": fingerprint, "error.tag": tag };
