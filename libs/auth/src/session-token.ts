@@ -3,7 +3,7 @@ import { getCryptoKey } from "better-auth/crypto";
 
 const signatureLength = 44;
 
-async function sessionTokenFrom(
+const sessionTokenFrom = async function sessionTokenFrom(
   headers: Headers,
   cookiePrefix: string,
   secret: string,
@@ -37,6 +37,6 @@ async function sessionTokenFrom(
   } catch {
     return undefined;
   }
-}
+};
 
 export { sessionTokenFrom };

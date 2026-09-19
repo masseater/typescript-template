@@ -1,4 +1,4 @@
-import { readWikiConfig } from "@repo/config";
+import { APPLICATION, readWikiConfig } from "@repo/config";
 import { Effect, Layer } from "effect";
 
 import { Embedder, embedWith } from "./embedder.ts";
@@ -9,7 +9,7 @@ import type { ConfigurationInvalid } from "@repo/config";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "./index.ts";
 
-const wikiService = "wiki";
+const wikiService = APPLICATION.wiki;
 
 type WikiServices = AppServices | Embedder;
 

@@ -1,3 +1,4 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
 import { useState } from "react";
 
 import { useAction } from "./action";
@@ -15,7 +16,9 @@ function readRecovery(): string | undefined {
   if (!("location" in globalThis)) {
     return undefined;
   }
-  return new URLSearchParams(globalThis.location.search).get("recovery") ?? undefined;
+  return (
+    new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) ?? undefined
+  );
 }
 
 function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElement {

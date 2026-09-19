@@ -1,3 +1,5 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
+
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
@@ -32,7 +34,9 @@ async function signIn({
     onChallenge("totp");
     return;
   }
-  if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
+  if (
+    new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) === "setup"
+  ) {
     globalThis.location.assign("/security?recovery=setup");
     return;
   }
@@ -59,8 +63,8 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
         />
         <Field
           label="パスワード"
-          name="password"
-          type="password"
+          name={AUTHENTICATION_METHOD.password}
+          type={AUTHENTICATION_METHOD.password}
           autoComplete="current-password"
           required
           value={password.value}

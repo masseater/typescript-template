@@ -1,4 +1,5 @@
-import { loopbackHosts } from "@repo/config";
+import { loopbackHostSet } from "@repo/config";
+import { RequestId } from "@repo/observability";
 import { Effect, Result, Schema } from "effect";
 
 type Row = Record<string, unknown>;
@@ -19,14 +20,10 @@ class ExplorerFailure extends Schema.TaggedError<ExplorerFailure>()("ExplorerFai
 }) {}
 
 const explorerTimeoutMilliseconds = 15_000;
-const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
 const Columns = Schema.Array(Schema.String);
 const Rows = Schema.Array(Schema.Array(Schema.Unknown));
 const QueryResult = Schema.Struct({ columns: Columns, rows: Rows });
 const QueryResponse = Schema.Struct({ result: QueryResult, success: Schema.Literal(true) });
-const RequestId = Schema.String.check(
-  Schema.isPattern(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u),
-);
 
 function originInvalid(): ExplorerFailure {
   return new ExplorerFailure({ reason: "origin_invalid" });

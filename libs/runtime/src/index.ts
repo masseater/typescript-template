@@ -51,10 +51,13 @@ function configuredAppLayer(
     Layer.succeed(AppOrigin, config.APP_ORIGIN),
     Layer.succeed(Assets, config.ASSETS),
     Layer.succeed(OpsMail, {
-      EMAIL: config.EMAIL,
+      APP_ORIGIN: config.APP_ORIGIN,
       EMAIL_FROM: config.EMAIL_FROM,
-      MAILPIT_URL: config.MAILPIT_URL,
       OPS_EMAIL: config.OPS_EMAIL,
+      ...(config.EMAIL === undefined ? {} : { EMAIL: config.EMAIL }),
+      ...(config.MAILPIT_SEND_URL === undefined
+        ? {}
+        : { MAILPIT_SEND_URL: config.MAILPIT_SEND_URL }),
     }),
   );
   return services.pipe(Layer.provideMerge(telemetry));

@@ -1,4 +1,4 @@
-import { runCli } from "@repo/config/cli";
+import { firstUserArgumentIndex, runCli } from "@repo/config/cli";
 import { Console, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
@@ -13,8 +13,6 @@ import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure>;
-
-const firstUserArgumentIndex = 2;
 
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["ci-runner", ciRunner],

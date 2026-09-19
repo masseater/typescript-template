@@ -1,4 +1,5 @@
 import { Monitor, monitorHandler } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
@@ -15,7 +16,7 @@ interface Bindings extends MonitorBindings {
 }
 
 export class HealthMonitor extends Monitor<Bindings> {
-  protected readonly event = "health_monitor";
+  protected readonly eventName = "health_monitor";
   protected readonly failure = {
     subject: "Cloudflare Workers health monitoring failed",
     text: "アプリの死活監視が失敗しました。health_monitor.check_failed のログを確認してください。アプリが稼働しているとは判断しないでください。",
@@ -49,7 +50,7 @@ export class HealthMonitor extends Monitor<Bindings> {
         notified: decision.notifications.length,
         services: Object.fromEntries(results.map((result) => [result.service, result.detail])),
       };
-    }).pipe(Effect.withSpan("HealthMonitor.check"));
+    }).pipe(withSpan("HealthMonitor.check"));
   }
 }
 

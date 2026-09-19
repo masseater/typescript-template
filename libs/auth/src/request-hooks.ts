@@ -1,4 +1,10 @@
-import { loopbackHosts } from "@repo/config";
+import {
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  loopbackHosts,
+  type Application,
+} from "@repo/config";
 import {
   hasEnrolledFactor,
   hasVerificationAudience,
@@ -10,90 +16,89 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 
 import { deny, enrollmentPaths, isStrongMethod, sessionIsLive } from "./policy.ts";
 
-import type { Application } from "@repo/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
-type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 type SessionRecord = NonNullable<Awaited<ReturnType<typeof runSessionLookup>>>;
 
-interface HookScope {
-  readonly audience: Application;
-  readonly ctx: HookContext;
-  readonly run: Run;
-}
-
-interface SessionPolicyInput {
-  readonly audience: Application;
-  readonly path: string;
-  readonly role: string;
-  readonly strong: boolean;
-  readonly userId: string;
-}
-
-const totpUpgradableMethods = new Set(["password", "password_totp"]);
 const sessionRevokingPaths = new Set([
   "/change-password",
   "/two-factor/disable",
   "/passkey/delete-passkey",
 ]);
-const factorEnrollmentPaths = new Set([
-  "/two-factor/enable",
-  "/passkey/generate-register-options",
-  "/passkey/verify-registration",
-]);
 const factorRemovalPaths = new Set(["/two-factor/disable", "/passkey/delete-passkey"]);
 const oauthQueryPaths = new Set(["/oauth2/authorize", "/oauth2/consent", "/oauth2/continue"]);
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function runSessionLookup({ ctx, run }: HookScope) {
+type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
+
+type HookScope = {
+  readonly audience: Application;
+  readonly ctx: HookContext;
+  readonly run: Run;
+};
+
+const runSessionLookup = async function runSessionLookup({ ctx, run }: HookScope) {
   const token = await ctx.getSignedCookie(
     ctx.context.authCookies.sessionToken.name,
     ctx.context.secret,
   );
   if (typeof token !== "string" || token === "") {
-    // oxlint-disable-next-line unicorn/no-null
     return null;
   }
   return run(lookupSessionByToken(token));
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function currentSessionOf(scope: HookScope) {
+const currentSessionOf = async function currentSessionOf(scope: HookScope) {
   const { ctx, run } = scope;
   if (ctx.context.newSession) {
     return run(lookupSessionByToken(ctx.context.newSession.session.token));
   }
   return runSessionLookup(scope);
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function markTotpSessionStrong(scope: HookScope): Promise<void> {
+const totpUpgradableMethods: ReadonlySet<string> = new Set([
+  AUTHENTICATION_METHOD.password,
+  AUTHENTICATION_METHOD.passwordTotp,
+]);
+
+const markTotpSessionStrong = async function markTotpSessionStrong(
+  scope: HookScope,
+): Promise<void> {
   const current = await currentSessionOf(scope);
   if (
     current &&
     sessionIsLive(current, scope.audience) &&
     totpUpgradableMethods.has(current.session.authenticationMethod)
   ) {
-    await scope.run(markSessionStrong(current.session.id, scope.audience, "password_totp"));
+    await scope.run(
+      markSessionStrong({
+        audience: scope.audience,
+        method: AUTHENTICATION_METHOD.passwordTotp,
+        sessionId: current.session.id,
+      }),
+    );
   }
-}
+};
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-async function revokeSessionsAfterFactorChange(scope: HookScope): Promise<void> {
+const revokeSessionsAfterFactorChange = async function revokeSessionsAfterFactorChange(
+  scope: HookScope,
+): Promise<void> {
   const current = await currentSessionOf(scope);
   if (current && sessionIsLive(current, scope.audience)) {
     await scope.run(revokeUserSessions(current.user.id));
   }
-}
+};
 
-function isLoopbackHttpRedirect(value: unknown): boolean {
+const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(value: unknown): boolean {
   const url = typeof value === "string" ? URL.parse(value) : undefined;
   return url?.protocol === "http:" && loopbackHosts.includes(url.hostname);
-}
+};
 
-function registersLoopbackClient(path: string, fields: object): boolean {
+const registersLoopbackClient = function registersLoopbackClient(
+  path: string,
+  fields: object,
+): boolean {
   return (
     path === "/oauth2/register" &&
     !("application_type" in fields) &&
@@ -102,9 +107,11 @@ function registersLoopbackClient(path: string, fields: object): boolean {
     fields.redirect_uris.length > 0 &&
     fields.redirect_uris.every((uri: unknown) => isLoopbackHttpRedirect(uri))
   );
-}
+};
 
-function rejectUnsafeFields(ctx: Readonly<Pick<HookContext, "body" | "path">>): void {
+const rejectUnsafeFields = function rejectUnsafeFields(
+  ctx: Readonly<Pick<HookContext, "body" | "path">>,
+): void {
   const body: unknown = ctx.body;
   const fields = typeof body === "object" && body !== null ? body : {};
   if ("trustDevice" in fields && fields.trustDevice === true) {
@@ -123,9 +130,12 @@ function rejectUnsafeFields(ctx: Readonly<Pick<HookContext, "body" | "path">>): 
   ) {
     deny("REGISTRATION_SESSION_DISABLED");
   }
-}
+};
 
-function challengeCookieFor(path: string, signedIn: boolean): string | undefined {
+const challengeCookieFor = function challengeCookieFor(
+  path: string,
+  signedIn: boolean,
+): string | undefined {
   if (path.startsWith("/passkey/verify-")) {
     return "better-auth-passkey";
   }
@@ -133,10 +143,9 @@ function challengeCookieFor(path: string, signedIn: boolean): string | undefined
     return "two_factor";
   }
   return undefined;
-}
+};
 
-async function verifyChallengeAudience(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const verifyChallengeAudience = async function verifyChallengeAudience(
   { audience, ctx, run }: HookScope,
   signedIn: boolean,
 ): Promise<void> {
@@ -153,28 +162,47 @@ async function verifyChallengeAudience(
   ) {
     deny("CHALLENGE_AUDIENCE_INVALID");
   }
-}
+};
 
-function enforceAdminAccess({ audience, path, role, strong }: SessionPolicyInput): void {
-  if (role === "admin" && path === "/two-factor/get-totp-uri" && !strong) {
+type SessionPolicyInput = {
+  readonly audience: Application;
+  readonly path: string;
+  readonly role: string;
+  readonly strong: boolean;
+  readonly userId: string;
+};
+
+const enforceAdminAccess = function enforceAdminAccess({
+  audience,
+  path,
+  role,
+  strong,
+}: SessionPolicyInput): void {
+  if (role === ROLE.administrator && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
-  if (audience === "user") {
+  if (audience === APPLICATION.user) {
     return;
   }
-  if (role !== "admin") {
+  if (role !== ROLE.administrator) {
     deny("ADMIN_REQUIRED");
   }
   if (!strong && !enrollmentPaths.has(path)) {
     deny("ADMIN_MFA_REQUIRED");
   }
-}
+};
 
-async function enforceFactorChanges(
+const factorEnrollmentPaths = new Set([
+  "/two-factor/enable",
+  "/passkey/generate-register-options",
+  "/passkey/verify-registration",
+]);
+
+const enforceFactorChanges = async function enforceFactorChanges(
   { audience, path, role, strong, userId }: SessionPolicyInput,
   run: Run,
 ): Promise<void> {
-  if (role !== "admin") {
+  if (role !== ROLE.administrator) {
     return;
   }
   if (
@@ -187,10 +215,9 @@ async function enforceFactorChanges(
   if (factorRemovalPaths.has(path)) {
     deny("ADMIN_FACTOR_REMOVAL_DISABLED");
   }
-}
+};
 
-function enforceSessionPolicy(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const enforceSessionPolicy = function enforceSessionPolicy(
   { audience, ctx, run }: HookScope,
   current: SessionRecord,
 ): Promise<void> {
@@ -206,9 +233,12 @@ function enforceSessionPolicy(
   };
   enforceAdminAccess(input);
   return enforceFactorChanges(input, run);
-}
+};
 
-function createRequestHooks(run: Run, audience: Application): RequestHooks {
+const createRequestHooks = function createRequestHooks(
+  run: Run,
+  audience: Application,
+): RequestHooks {
   return {
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.context.returned instanceof APIError) {
@@ -233,6 +263,6 @@ function createRequestHooks(run: Run, audience: Application): RequestHooks {
       }
     }),
   };
-}
+};
 
 export { createRequestHooks };

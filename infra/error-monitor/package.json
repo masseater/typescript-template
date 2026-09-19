@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@repo/monitor": "workspace:*",
+    "@repo/observability": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
