@@ -43,9 +43,6 @@
     },
     "access": "public"
   },
-  "scripts": {
-    "check": "intent validate"
-  },
   "dependencies": {
     "@opentelemetry/api": "catalog:",
     "@repo/ai-native": "workspace:*",

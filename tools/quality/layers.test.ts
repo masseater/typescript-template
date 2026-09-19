@@ -1,22 +1,19 @@
 import { applications } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
-import { field, workspaceManifests } from "./dependencies.ts";
 import { reported } from "./lint-harness.ts";
+import { commands } from "./tasks.ts";
 
 const source = "export const value = 1;\n";
 
 describe("steiger coverage", () => {
   it("runs the layer check in every application", () => {
     expect.hasAssertions();
-    const checks = workspaceManifests
-      .filter(({ area }) => area === "apps")
-      .map(({ file, manifest }) => `${file}: ${String(field(field(manifest, "scripts"), "check"))}`)
+    const checks = applications
+      .map((app) => `apps/${app}: ${commands(`apps/${app}`, "check").join(" ")}`)
       .toSorted();
     expect(checks).toStrictEqual(
-      applications
-        .map((app) => `apps/${app}/package.json: steiger src --fail-on-warnings`)
-        .toSorted(),
+      applications.map((app) => `apps/${app}: steiger src --fail-on-warnings`).toSorted(),
     );
   });
 });

@@ -5,9 +5,6 @@
   "imports": {
     "#*": "./src/*"
   },
-  "scripts": {
-    "check": "steiger src --fail-on-warnings"
-  },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
