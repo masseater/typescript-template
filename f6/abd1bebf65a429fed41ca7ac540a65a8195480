@@ -1,1 +1,6 @@
-実リポジトリを読む検査が sandbox-unsafe の印なしだったため、merge queue の speculative check が落ちていた。ファイル名と一覧を既存の印に合わせた。
+Revision history for #716:
+
+rev 2 (content) 2026-09-19 22:52 UTC — 実リポジトリを読む検査が sandbox-unsafe の印なしだったため、merge queue の speculative check が落ちていた。ファイル名と一覧を既存の印に合わせた。
+rev 1 (initial) 2026-09-19 22:52 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":716,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"d3b154f1e84b92da82df89984e436050df9d77e4","timestamp_iso":"2026-09-19T22:52:01Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"d3b154f1e84b92da82df89984e436050df9d77e4","new_sha":"f6abd1bebf65a429fed41ca7ac540a65a8195480","timestamp_iso":"2026-09-19T22:52:01Z","reason":"実リポジトリを読む検査が sandbox-unsafe の印なしだったため、merge queue の speculative check が落ちていた。ファイル名と一覧を既存の印に合わせた。","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/d3b154f1e84b92da82df89984e436050df9d77e4...f6abd1bebf65a429fed41ca7ac540a65a8195480"}]} -->
