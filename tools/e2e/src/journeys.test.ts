@@ -34,6 +34,9 @@ describe("アプリ全体の導線", () => {
     expect(memberJourney).toStrictEqual({
       backupCodeCount: backupCodesIssuedOnEnrollment,
       landsOnTheMemberHome: true,
+      opensEveryListedSettingsItem: true,
+      reachesLeaveInOneClick: true,
+      reachesPlanInOneClick: true,
       showsTheBiographyWrittenEarlier: true,
     });
   });

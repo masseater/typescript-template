@@ -20,8 +20,7 @@ function AccountMenu({ name }: Readonly<{ name: string }>): ReactElement {
         <Icon icon={ChevronDownIcon} size="small" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLinkItem to="/settings/profile">プロフィールの編集</DropdownMenuLinkItem>
-        <DropdownMenuLinkItem to="/security">認証設定</DropdownMenuLinkItem>
+        <DropdownMenuLinkItem to="/settings">設定</DropdownMenuLinkItem>
         <DropdownMenuItem disabled={action.blocked} onClick={signOut}>
           ログアウト
         </DropdownMenuItem>

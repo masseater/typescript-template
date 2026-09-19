@@ -1,10 +1,9 @@
-import { SecurityPage } from "@repo/ui/auth";
-import { createFileRoute } from "@tanstack/react-router";
-
-import type { ReactElement } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 const Route = createFileRoute("/_member/security")({
-  component: (): ReactElement => <SecurityPage title="認証設定" signedOutPath="/" />,
+  beforeLoad: ({ location }: Readonly<{ location: Readonly<{ searchStr: string }> }>) => {
+    throw redirect({ href: `/settings/security${location.searchStr}`, replace: true });
+  },
 });
 
 export { Route };

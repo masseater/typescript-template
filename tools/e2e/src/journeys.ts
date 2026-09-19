@@ -61,6 +61,52 @@ const writeBiography = async (stage: JourneyStage, origin: string): Promise<stri
   return biography;
 };
 
+type ListedSetting = { readonly heading: string; readonly name: string };
+
+const openListedSetting = async (
+  stage: JourneyStage,
+  visit: { readonly listedSetting: ListedSetting; readonly origin: string },
+): Promise<void> => {
+  await stage.page.goto(`${visit.origin}/settings`);
+  await seeHeading(stage.page, "設定");
+  await stage.page.getByRole("link", { exact: true, name: visit.listedSetting.name }).click();
+  await seeHeading(stage.page, visit.listedSetting.heading);
+};
+
+const browseSettings = async (
+  stage: JourneyStage,
+  origin: string,
+): Promise<{
+  readonly opensEveryListedItem: boolean;
+  readonly reachesLeaveInOneClick: boolean;
+  readonly reachesPlanInOneClick: boolean;
+}> => {
+  await openListedSetting(stage, {
+    listedSetting: { heading: "プランと解約", name: "プランと解約" },
+    origin,
+  });
+  const reachesPlanInOneClick = stage.page.url().startsWith(`${origin}/settings/plan`);
+  await openListedSetting(stage, { listedSetting: { heading: "退会", name: "退会" }, origin });
+  const reachesLeaveInOneClick = stage.page.url().startsWith(`${origin}/settings/leave`);
+  const listedSettings = [
+    { heading: "プロフィールの編集", name: "プロフィール" },
+    { heading: "通知", name: "通知" },
+    { heading: "セキュリティ", name: "セキュリティ" },
+    { heading: "AI インタビュー", name: "AI インタビュー" },
+    { heading: "AI と API", name: "AI と API" },
+    { heading: "プランと解約", name: "プランと解約" },
+    { heading: "退会", name: "退会" },
+  ] as const satisfies readonly ListedSetting[];
+  for (const listedSetting of listedSettings) {
+    await openListedSetting(stage, { listedSetting, origin });
+  }
+  return {
+    opensEveryListedItem: true,
+    reachesLeaveInOneClick,
+    reachesPlanInOneClick,
+  };
+};
+
 const signInAgainWithTotp = async (
   stage: JourneyStage,
   enrolled: { readonly account: Account; readonly origin: string; readonly uri: string },
@@ -76,10 +122,14 @@ const runMemberJourney = async (
 ): Promise<{
   readonly backupCodeCount: number;
   readonly landsOnTheMemberHome: boolean;
+  readonly opensEveryListedSettingsItem: boolean;
+  readonly reachesLeaveInOneClick: boolean;
+  readonly reachesPlanInOneClick: boolean;
   readonly showsTheBiographyWrittenEarlier: boolean;
 }> => {
   const { account, origin } = await signUpAndConfirm(stage, "member");
   await browseMainScreens(stage, account);
+  const settings = await browseSettings(stage, origin);
   const biography = await writeBiography(stage, origin);
   const enrollment = await enrollTotp({ account, origin, page: stage.page });
   await signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
@@ -87,6 +137,9 @@ const runMemberJourney = async (
   return {
     backupCodeCount: enrollment.backupCodes.length,
     landsOnTheMemberHome: stage.page.url().startsWith(`${origin}/users/`),
+    opensEveryListedSettingsItem: settings.opensEveryListedItem,
+    reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
+    reachesPlanInOneClick: settings.reachesPlanInOneClick,
     showsTheBiographyWrittenEarlier: await stage.page
       .getByText(biography, { exact: false })
       .first()
