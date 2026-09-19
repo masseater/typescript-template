@@ -1,5 +1,5 @@
-import { cspNonceHeader } from "@repo/config/security";
 import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
+import { cspNonceHeader } from "@repo/runtime/security";
 import { Effect, Result } from "effect";
 
 import { Assets } from "./assets.ts";

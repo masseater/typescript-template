@@ -1,8 +1,9 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
+import { markFailed, reportFailed, runCli } from "@repo/cli";
 import { applications, grants } from "@repo/config";
-import { markFailed, reportFailed, runCli } from "@repo/config/cli";
+import { workerCompatibility } from "@repo/config/worker";
 import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
@@ -39,7 +40,10 @@ const traceDestination = `${prefix}-traces`;
 const SENDING_SUBDOMAIN = "Cloudflare.Email.SendingSubdomain";
 
 const sharedWorker = {
-  compatibility: { date: "2026-09-16", flags: ["nodejs_compat"] },
+  compatibility: {
+    date: workerCompatibility.date,
+    flags: [...workerCompatibility.flags],
+  },
   isExternal: true,
   observability: {
     ...sampling,

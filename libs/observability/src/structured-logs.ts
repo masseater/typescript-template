@@ -2,8 +2,8 @@ import { Cause, Console, Logger, References } from "effect";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 
-import type { ServiceName } from "@repo/config";
 import type { Layer, LogLevel } from "effect";
+import type { ServiceName } from "./service-name.ts";
 
 interface LogSink {
   readonly error: (line: string) => void;

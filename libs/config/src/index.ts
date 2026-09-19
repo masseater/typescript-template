@@ -140,26 +140,16 @@ export {
   applicationPorts,
   applicationReadyPaths,
   applications,
-  authenticationMethods,
   grants,
   loopbackAddress,
   loopbackHosts,
   loopbackOrigin,
   mailpitOrigin,
   mailpitPort,
-  roles,
   storybookOrigin,
   storybookPort,
-  strongAuthenticationMethods,
 } from "./applications.ts";
-export type {
-  Application,
-  Capability,
-  CapabilityOf,
-  Role,
-  ServiceName,
-  StrongAuthenticationMethod,
-} from "./applications.ts";
+export type { Application, Capability, CapabilityOf } from "./applications.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };
 export type { AppConfig, AssetFetcher, WikiConfig };

@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/config/source-maps";
+import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect } from "effect";
 
 import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";

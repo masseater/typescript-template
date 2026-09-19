@@ -1,4 +1,4 @@
-import { reactCompiler } from "@repo/config/vite";
+import { reactCompiler } from "@repo/vite-config";
 import tailwindcss from "@tailwindcss/vite";
 
 import type { StorybookConfig } from "@storybook/react-vite";

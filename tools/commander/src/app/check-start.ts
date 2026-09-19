@@ -2,8 +2,8 @@
 import { createServer } from "node:net";
 
 import { NodeServices } from "@effect/platform-node";
+import { reportFailed, runCli } from "@repo/cli";
 import { loopbackAddress } from "@repo/config";
-import { reportFailed, runCli } from "@repo/config/cli";
 import { Cause, Console, Effect, FileSystem, Schema } from "effect";
 import { chromium } from "playwright";
 
