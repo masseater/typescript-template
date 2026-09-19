@@ -247,7 +247,11 @@ const accepted: readonly Case[] = [
   ],
 ];
 
-const scannedModules = ["libs/db/src/index.ts", "libs/ui/src/index.ts", "tools/quality/plugin.ts"];
+const scannedModules = [
+  "libs/db/src/index.ts",
+  "libs/ui/src/index.ts",
+  "tools/dont-review-it/src/repository/plugin.ts",
+];
 
 interface RepositoryCruise {
   readonly scanned: readonly string[];

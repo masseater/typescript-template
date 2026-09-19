@@ -1,10 +1,11 @@
+import { LINT_BUNDLE } from "../configs/bundles/bundle-names.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { specifierVisitor } from "./module-specifiers.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const rawD1Adapters = ["migrate-d1", "testing", "testing-node"] as const;
+const rawD1Adapters = ["migrate-d1", LINT_BUNDLE.testing, "testing-node"] as const;
 const rawD1Modules = rawD1Adapters.map((adapter) => `libs/db/src/${adapter}.ts`);
 const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
 

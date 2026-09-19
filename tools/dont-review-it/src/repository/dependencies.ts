@@ -20,12 +20,12 @@ const field = (manifest: unknown, key: string): unknown => {
 };
 
 const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../{apps,libs,infra,tools}/*/package.json",
+  "../../../../{apps,libs,infra,tools}/*/package.json",
   { eager: true, import: "default" },
 );
 
 const repositoryPath = (key: string): string => {
-  const resolved = ["tools", "quality"];
+  const resolved = ["tools", "dont-review-it", "src", "repository"];
   for (const segment of key.split("/")) {
     if (segment === "..") {
       resolved.pop();
