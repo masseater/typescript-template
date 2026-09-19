@@ -1,1 +1,6 @@
-rebase onto main: resolve infrastructure.md conflict with rewritten guideline prose
+Revision history for #548:
+
+rev 2 (content) 2026-09-19 08:28 UTC — rebase onto main: resolve infrastructure.md conflict with rewritten guideline prose
+rev 1 (initial) 2026-09-19 08:28 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":548,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"4f38dea2ee202d1c4fe685cbb5d68e4fe0a649ca","timestamp_iso":"2026-09-19T08:28:28Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"4f38dea2ee202d1c4fe685cbb5d68e4fe0a649ca","new_sha":"2f97ec0be2ddadff47c6c7bfefb032b9dcb367a6","timestamp_iso":"2026-09-19T08:28:28Z","reason":"rebase onto main: resolve infrastructure.md conflict with rewritten guideline prose","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/4f38dea2ee202d1c4fe685cbb5d68e4fe0a649ca...2f97ec0be2ddadff47c6c7bfefb032b9dcb367a6"}]} -->
