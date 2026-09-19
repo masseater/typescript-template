@@ -54,24 +54,27 @@ const luminance = (color: string | undefined): number | undefined => {
 
 const hoverViolations = (css: string): string[] => {
   const declared = declarations(css);
-  return [...declared.keys()]
-    .filter((name) => name.endsWith(hoverSuffix))
-    .flatMap((name) => {
-      const resting = name.slice(0, -hoverSuffix.length);
-      const hovered = luminance(resolvedColor(declared, name, referenceDepth));
-      const base = luminance(resolvedColor(declared, resting, referenceDepth));
-      if (hovered === undefined || base === undefined) {
-        return [
-          `${name} と ${resting} を色として解決できません。hover が暗いことを確かめられません。`,
-        ];
-      }
-      return hovered < base
-        ? []
-        : [
-            `${name} は ${resting} より明るいか同じです。smarthr-ui の hover は darken(0.05) なので、暗い側のトークンを指してください。`,
-          ];
-    })
-    .toSorted();
+  const violations: string[] = [];
+  for (const name of declared.keys()) {
+    if (!name.endsWith(hoverSuffix)) {
+      continue;
+    }
+    const resting = name.slice(0, -hoverSuffix.length);
+    const hovered = luminance(resolvedColor(declared, name, referenceDepth));
+    const base = luminance(resolvedColor(declared, resting, referenceDepth));
+    if (hovered === undefined || base === undefined) {
+      violations.push(
+        `${name} と ${resting} を色として解決できません。hover が暗いことを確かめられません。`,
+      );
+      continue;
+    }
+    if (hovered >= base) {
+      violations.push(
+        `${name} は ${resting} より明るいか同じです。hover は darken(0.05) 相当なので、暗い側のトークンを指してください。`,
+      );
+    }
+  }
+  return violations.toSorted();
 };
 
 export { hoverViolations };
