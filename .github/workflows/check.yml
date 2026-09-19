@@ -14,12 +14,9 @@ concurrency:
 
 jobs:
   check:
-    if: github.event_name == 'pull_request'
-    name: ${{ startsWith(github.head_ref, 'mergify/merge-queue/') && 'merge-queue' || 'check' }}
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: &runner ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
     timeout-minutes: 30
-    env:
-      TEST_SCOPE: ${{ !startsWith(github.head_ref, 'mergify/merge-queue/') && '--changed HEAD^1' || '' }}
     steps:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,8 +43,7 @@ jobs:
           MISE_CEILING_PATHS: ${{ runner.workspace }}
         with:
           cache: ${{ vars.CI_RUNNER == '' }}
-      - &task-cache-restore
-        id: vite-task-cache
+      - id: vite-task-cache
         if: vars.CI_RUNNER == ''
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -63,20 +59,17 @@ jobs:
           mkdir -p "$SHARED_TASK_CACHE" node_modules/.vite
           rm -rf node_modules/.vite/task-cache
           ln -s "$SHARED_TASK_CACHE" node_modules/.vite/task-cache
-      - &premerge
-        run: vp run -r premerge
+      - run: vp run -r prepush
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && vars.CI_RUNNER == '' && !startsWith(github.head_ref, 'mergify/merge-queue/')
+        if: always() && vars.CI_RUNNER == ''
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
 
-  cache:
-    if: github.event_name == 'push'
+  merge-queue:
+    if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
     timeout-minutes: 30
-    env:
-      TEST_SCOPE: --changed HEAD^1
     steps:
       - *checkout
       - *clean-workspace
@@ -84,9 +77,19 @@ jobs:
       - *setup
       - *mise
       - *task-cache-share
-      - *premerge
+      - run: vp run -r premerge
+
+  cache:
+    if: github.event_name == 'push' && vars.CI_RUNNER == ''
+    runs-on: *runner
+    timeout-minutes: 30
+    steps:
+      - *checkout
+      - *browser-cache
+      - *setup
+      - *mise
+      - run: vp run -r prepush
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: vars.CI_RUNNER == ''
         with:
           path: node_modules/.vite/task-cache
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
