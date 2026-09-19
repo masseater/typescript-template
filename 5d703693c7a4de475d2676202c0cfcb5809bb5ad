@@ -1,1 +1,6 @@
-Refs #501 instead of Closes: this PR only folds quality; other tool packages remain
+Revision history for #512:
+
+rev 2 (rebase) 2026-09-19 04:43 UTC — Refs #501 instead of Closes: this PR only folds quality; other tool packages remain
+rev 1 (initial) 2026-09-19 04:43 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":512,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"61112bccb1fff6f07af9b82fca343d15ebde6e15","timestamp_iso":"2026-09-19T04:43:43Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"61112bccb1fff6f07af9b82fca343d15ebde6e15","new_sha":"5d703693c7a4de475d2676202c0cfcb5809bb5ad","timestamp_iso":"2026-09-19T04:43:43Z","reason":"Refs #501 instead of Closes: this PR only folds quality; other tool packages remain","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/61112bccb1fff6f07af9b82fca343d15ebde6e15...5d703693c7a4de475d2676202c0cfcb5809bb5ad"}]} -->
