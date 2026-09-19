@@ -1,0 +1,1 @@
+drop unused exports that failed pre-push; keep single PR for shells+auth
