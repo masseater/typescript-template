@@ -45,6 +45,6 @@ function embedWith(ai: Ai | undefined): EmbedderShape["embed"] {
         );
 }
 
-class Embedder extends Context.Service<Embedder, EmbedderShape>()("@repo/runtime/Embedder") {}
+class Embedder extends Context.Service<Embedder, EmbedderShape>()("@repo/wiki/Embedder") {}
 
 export { Embedder, embedWith };

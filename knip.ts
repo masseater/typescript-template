@@ -33,7 +33,6 @@ const workspaces = {
       "!src/auth-test-fixture.ts!",
       "!src/browser-client.ts!",
       "!src/mail-fixture.ts!",
-      "!src/wiki-oauth-fixture.ts!",
     ],
   },
   "libs/monitor": {
@@ -143,7 +142,12 @@ const config = ({
       "apps/*": app,
       "apps/internal-dashboard": {
         ...app,
-        project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
+        ignoreDependencies: [...app.ignoreDependencies, ...productionOnly("@repo/db")],
+        project: [
+          "src/**/*.{ts,tsx,mdx}!",
+          "src/**/*.css",
+          "!src/shared/wiki/wiki-oauth-fixture.ts!",
+        ],
       },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
