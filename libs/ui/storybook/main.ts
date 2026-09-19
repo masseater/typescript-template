@@ -18,5 +18,4 @@ const config: StorybookConfig = {
   viteFinal: withAppTransforms,
 };
 
-// oxlint-disable-next-line import/no-default-export
 export default config;

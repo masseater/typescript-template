@@ -11,7 +11,6 @@ const iconVariants = cva("shrink-0", {
   },
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function Icon({
   icon: Glyph,
   size,

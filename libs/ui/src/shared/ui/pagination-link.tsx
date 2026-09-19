@@ -18,11 +18,9 @@ const paginationLinkVariants = cva(
 
 type PaginationAnchorProps = Readonly<ComponentProps<"a"> & { current?: boolean }>;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function PaginationAnchor({ children, current, ...anchor }: PaginationAnchorProps): ReactElement {
   return (
     <a
-      // oxlint-disable-next-line react/jsx-props-no-spreading
       {...anchor}
       data-slot="pagination-link"
       aria-current={current === true ? "page" : undefined}

@@ -8,27 +8,34 @@ import { indexSecretHits } from "./staged.ts";
 const scanIndex = Effect.fn("scanIndex")(function* scanIndex() {
   const credentials = yield* deploymentCredentials(repositoryRoot);
   const { hits, scan } = yield* indexSecretHits(repositoryRoot, credentials.values);
-  return { credentials: credentials.source, failures: hits, scan };
+  const status =
+    hits.length > 0
+      ? ("failed" as const)
+      : credentials.source === "absent"
+        ? ("degraded" as const)
+        : ("passed" as const);
+  return { credentials: credentials.source, failures: hits, scan, status };
 });
 
 const uncheckedRecord = (
   detail: Readonly<Record<string, unknown>>,
 ): Readonly<Record<string, unknown>> => {
-  return { event: "quality.staged_secrets_failed", ok: false, ...detail };
+  return { event: "quality.staged_secrets_failed", ok: false, status: "failed", ...detail };
 };
 
 runCli(
   scanIndex().pipe(
-    Effect.flatMap(({ credentials, failures, scan }) =>
+    Effect.flatMap(({ credentials, failures, scan, status }) =>
       Console.log(
         JSON.stringify({
           credentials,
           event: "quality.staged_secrets",
           failures,
-          ok: failures.length === 0,
+          ok: status !== "failed",
           prefixScan: scan,
+          status,
         }),
-      ).pipe(Effect.andThen(failures.length > 0 ? markFailed : Effect.void)),
+      ).pipe(Effect.andThen(status === "failed" ? markFailed : Effect.void)),
     ),
   ),
   (cause) => {
