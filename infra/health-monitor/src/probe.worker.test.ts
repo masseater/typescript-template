@@ -8,8 +8,10 @@ import { probeService } from "./probe.ts";
 import type { HttpResponseResolver } from "msw";
 import type { ProbeResult } from "./probe.ts";
 
+const release = "0".repeat(16);
+
 function otherServiceHealth(): Response {
-  return HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "admin" });
+  return HttpResponse.json({ ok: true, release, service: "admin" });
 }
 
 function failedDependency(): Response {
@@ -52,10 +54,8 @@ function probe(
 it.effect("an application reporting its own service name and release is healthy", () =>
   Effect.gen(function* program() {
     assert.deepStrictEqual(
-      yield* probe(userTarget, () =>
-        HttpResponse.json({ ok: true, release: "0123456789abcdef", service: "user" }),
-      ),
-      { detail: "release_0123456789abcdef", healthy: true, service: "user" },
+      yield* probe(userTarget, () => HttpResponse.json({ ok: true, release, service: "user" })),
+      { detail: `release_${release}`, healthy: true, service: "user" },
     );
   }),
 );

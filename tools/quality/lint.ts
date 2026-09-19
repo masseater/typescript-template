@@ -134,6 +134,7 @@ const lintOptions = {
         "project/process-boundary": LINT_SEVERITY.ERROR,
         "project/retired-imports": LINT_SEVERITY.ERROR,
         "project/span-mutation": LINT_SEVERITY.ERROR,
+        "project/temp-directory": LINT_SEVERITY.ERROR,
         "project/test-import-graph": LINT_SEVERITY.ERROR,
         "project/worker-fetch": LINT_SEVERITY.ERROR,
         "shadcn/no-arbitrary-values": LINT_SEVERITY.ERROR,

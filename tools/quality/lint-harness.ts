@@ -2,27 +2,9 @@ import { RuleTester } from "vite-plus/lint/plugins-dev";
 
 import plugin from "./plugin.ts";
 
-const ruleNames = [
-  "annotations",
-  "boundaries",
-  "cross-request-state",
-  "effect-failures",
-  "effect-stack",
-  "environment-boundary",
-  "example-values",
-  "git-environment",
-  "layers",
-  "logs",
-  "no-internal-mocks",
-  "no-manual-memoization",
-  "process-boundary",
-  "retired-imports",
-  "span-mutation",
-  "test-import-graph",
-  "worker-fetch",
-] as const;
+type RuleName = keyof typeof plugin.rules;
 
-type RuleName = (typeof ruleNames)[number];
+const ruleNames = Object.keys(plugin.rules).toSorted() as RuleName[];
 
 const runImmediately = (_title: string, run: () => void): void => {
   run();
