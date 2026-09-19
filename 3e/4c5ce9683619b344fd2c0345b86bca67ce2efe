@@ -1,0 +1,1 @@
+InvalidStatePath callers: empty fixture stacks so ownership reads do not hit missing paths
