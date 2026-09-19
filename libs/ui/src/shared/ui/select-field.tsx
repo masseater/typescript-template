@@ -4,7 +4,7 @@ import { controlClassName, fieldClassName, labelClassName } from "./control";
 
 import type { ReactElement } from "react";
 
-function SelectField({
+const SelectField = ({
   label,
   name,
   onValueChange,
@@ -16,12 +16,12 @@ function SelectField({
   onValueChange: (value: string) => void;
   options: readonly Readonly<{ label: string; value: string }>[];
   value: string;
-}>): ReactElement {
+}>): ReactElement => {
   const select = (
     <select aria-label={label}>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
+      {options.map((selectOption) => (
+        <option key={selectOption.value} value={selectOption.value}>
+          {selectOption.label}
         </option>
       ))}
     </select>
@@ -38,6 +38,6 @@ function SelectField({
       />
     </FieldPrimitive.Root>
   );
-}
+};
 
 export { SelectField };

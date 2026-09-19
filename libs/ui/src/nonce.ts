@@ -6,9 +6,9 @@ const requestNonce = createIsomorphicFn()
   .client((): string | undefined => undefined)
   .server((): string | undefined => getRequestHeader(cspNonceHeader));
 
-function nonceOptions(): { readonly ssr?: { readonly nonce: string } } {
+const nonceOptions = (): { readonly ssr?: { readonly nonce: string } } => {
   const nonce = requestNonce();
   return nonce === undefined ? {} : { ssr: { nonce } };
-}
+};
 
 export { nonceOptions };

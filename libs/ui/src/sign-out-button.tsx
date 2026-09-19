@@ -4,9 +4,9 @@ import { useSignOut } from "./use-sign-out";
 
 import type { ReactElement } from "react";
 
-function SignOutButton({
+const SignOutButton = ({
   destination,
-}: Readonly<{ destination?: string | undefined }>): ReactElement {
+}: Readonly<{ destination?: string | undefined }>): ReactElement => {
   const { action, signOut } = useSignOut(destination);
   return (
     <>
@@ -16,6 +16,6 @@ function SignOutButton({
       <ActionStatus action={action} />
     </>
   );
-}
+};
 
 export { SignOutButton };

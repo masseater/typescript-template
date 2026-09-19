@@ -1,149 +1,334 @@
 import { decodeJson } from "@repo/runtime/client";
 import { SessionView } from "@repo/runtime/contracts";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { errorMessage, requirePasskeyUV, requireSuccess } from "./protocol";
+import { errorMessage, passkeyUVOptions, requireSuccess } from "./protocol.ts";
 
-function parseSession(input: unknown): typeof SessionView.Type {
-  return decodeJson(SessionView, input);
-}
+const authenticateOptionsPathname = "/api/auth/passkey/generate-authenticate-options";
+const registerOptionsPathname = "/api/auth/passkey/generate-register-options";
 
 describe("パスキー応答の本人確認", () => {
-  it("認証要求では既存の challenge を維持して本人確認を必須にする", () => {
-    expect.hasAssertions();
-    const response = { challenge: "challenge", userVerification: "preferred" };
-    requirePasskeyUV(response, "/api/auth/passkey/generate-authenticate-options");
-    expect(response).toStrictEqual({ challenge: "challenge", userVerification: "required" });
-  });
+  const it = test
+    .extend("theAuthenticationOptions", () =>
+      passkeyUVOptions(
+        { challenge: "challenge", userVerification: "preferred" },
+        authenticateOptionsPathname,
+      ))
+    .extend("theRegistrationOptionsCarryingAnAuthenticatorSelection", () =>
+      passkeyUVOptions(
+        { authenticatorSelection: { residentKey: "required", userVerification: "discouraged" } },
+        registerOptionsPathname,
+      ),
+    )
+    .extend("theRegistrationOptionsWithoutAnAuthenticatorSelection", () =>
+      passkeyUVOptions({ challenge: "challenge" }, registerOptionsPathname),
+    );
 
-  it("登録要求では認証器の指定を維持して本人確認を必須にする", () => {
-    expect.hasAssertions();
-    const response = {
-      authenticatorSelection: { residentKey: "required", userVerification: "discouraged" },
-    };
-    requirePasskeyUV(response, "/api/auth/passkey/generate-register-options");
-    expect(response.authenticatorSelection).toStrictEqual({
-      residentKey: "required",
+  it("認証要求では既存の challenge を維持して本人確認を必須にする", ({
+    theAuthenticationOptions,
+  }) => {
+    expect(theAuthenticationOptions).toStrictEqual({
+      challenge: "challenge",
       userVerification: "required",
     });
   });
 
-  it("登録要求に認証器の指定がなくても本人確認を必須にする", () => {
-    expect.hasAssertions();
-    const response = { challenge: "challenge" };
-    requirePasskeyUV(response, "/api/auth/passkey/generate-register-options");
-    expect(response).toStrictEqual({
+  it("登録要求では認証器の指定を維持して本人確認を必須にする", ({
+    theRegistrationOptionsCarryingAnAuthenticatorSelection,
+  }) => {
+    expect(theRegistrationOptionsCarryingAnAuthenticatorSelection).toStrictEqual({
+      authenticatorSelection: { residentKey: "required", userVerification: "required" },
+    });
+  });
+
+  it("登録要求に認証器の指定がなくても本人確認を必須にする", ({
+    theRegistrationOptionsWithoutAnAuthenticatorSelection,
+  }) => {
+    expect(theRegistrationOptionsWithoutAnAuthenticatorSelection).toStrictEqual({
       authenticatorSelection: { userVerification: "required" },
       challenge: "challenge",
     });
   });
-
-  it("パスキー以外の応答は変更しない", () => {
-    expect.hasAssertions();
-    const response = { userVerification: "unchanged" };
-    requirePasskeyUV(response, "/api/auth/get-session");
-    expect(response).toStrictEqual({ userVerification: "unchanged" });
-  });
 });
 
 describe("パスキー応答の形式検証", () => {
-  it("パスキー設定の不正な応答を拒否する", () => {
-    expect.hasAssertions();
-    expect(() => {
-      // oxlint-disable-next-line unicorn/no-null
-      requirePasskeyUV(null, "/api/auth/passkey/generate-register-options");
-    }).toThrow("パスキー設定の応答形式が不正です。");
-    expect(() => {
-      requirePasskeyUV(
-        { authenticatorSelection: "invalid" },
-        "/api/auth/passkey/generate-register-options",
-      );
-    }).toThrow("パスキー登録設定の応答形式が不正です。");
+  const it = test
+    .extend("theRefusalOfANonRecordPasskeyResponse", () => {
+      try {
+        passkeyUVOptions(null, registerOptionsPathname);
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("passkeyUVOptions accepted a passkey response that is not a record");
+    })
+    .extend("theRefusalOfAnInvalidAuthenticatorSelection", () => {
+      try {
+        passkeyUVOptions({ authenticatorSelection: "invalid" }, registerOptionsPathname);
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("passkeyUVOptions accepted an authenticator selection that is not a record");
+    });
+
+  it("レコードでないパスキー設定の応答を拒否する", ({ theRefusalOfANonRecordPasskeyResponse }) => {
+    expect(theRefusalOfANonRecordPasskeyResponse).toStrictEqual(
+      new Error("パスキー設定の応答形式が不正です。"),
+    );
+  });
+
+  it("レコードでない認証器の指定を拒否する", ({ theRefusalOfAnInvalidAuthenticatorSelection }) => {
+    expect(theRefusalOfAnInvalidAuthenticatorSelection).toStrictEqual(
+      new Error("パスキー登録設定の応答形式が不正です。"),
+    );
   });
 });
 
 describe("認証結果の検証", () => {
-  it("認証失敗と結果の欠落を成功扱いにしない", () => {
-    expect.hasAssertions();
-    // oxlint-disable-next-line unicorn/no-null
-    expect(() => requireSuccess({ data: null, error: { message: "SESSION_INVALID" } })).toThrow(
-      "SESSION_INVALID",
+  const it = test
+    .extend("theRefusalOfAnAuthenticationFailure", () => {
+      try {
+        requireSuccess({ data: null, error: { message: "SESSION_INVALID" } });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted an authentication failure");
+    })
+    .extend("theRefusalOfANullPayload", () => {
+      try {
+        requireSuccess({ data: null, error: null });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted a null payload");
+    })
+    .extend("theRefusalOfAMissingPayload", () => {
+      try {
+        requireSuccess({ data: undefined, error: null });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted a missing payload");
+    })
+    .extend("theAcceptedPayload", () => requireSuccess({ data: { status: true }, error: null }));
+
+  it("認証の失敗を成功扱いにしない", ({ theRefusalOfAnAuthenticationFailure }) => {
+    expect(theRefusalOfAnAuthenticationFailure).toStrictEqual(new Error("SESSION_INVALID"));
+  });
+
+  it("結果が null の応答を成功扱いにしない", ({ theRefusalOfANullPayload }) => {
+    expect(theRefusalOfANullPayload).toStrictEqual(
+      new Error("認証サーバーから結果が返りませんでした。"),
     );
-    // oxlint-disable-next-line unicorn/no-null
-    expect(() => requireSuccess({ data: null, error: null })).toThrow("結果が返りませんでした");
-    // oxlint-disable-next-line unicorn/no-null
-    expect(() => requireSuccess({ data: undefined, error: null })).toThrow(
-      "結果が返りませんでした",
+  });
+
+  it("結果が欠けた応答を成功扱いにしない", ({ theRefusalOfAMissingPayload }) => {
+    expect(theRefusalOfAMissingPayload).toStrictEqual(
+      new Error("認証サーバーから結果が返りませんでした。"),
     );
-    // oxlint-disable-next-line unicorn/no-null
-    expect(requireSuccess({ data: { status: true }, error: null })).toStrictEqual({
-      status: true,
+  });
+
+  it("結果を伴う成功はそのまま渡す", ({ theAcceptedPayload }) => {
+    expect(theAcceptedPayload).toStrictEqual({ status: true });
+  });
+});
+
+describe("セッション応答の検証", () => {
+  const signedInUser = {
+    email: "user@example.com",
+    id: "user-id",
+    name: "名前",
+    role: "user",
+    twoFactorEnabled: false,
+  };
+  const malformedSessionMessage = "サーバーの応答形式が不正です。";
+  const it = test
+    .extend("theDecodedSession", () =>
+      decodeJson(SessionView, { strong: false, user: signedInUser }))
+    .extend("theRefusalOfASessionWithoutStrength", () => {
+      try {
+        decodeJson(SessionView, { user: signedInUser });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("decodeJson accepted a session without strength");
+    })
+    .extend("theRefusalOfASessionWhoseStrengthIsText", () => {
+      try {
+        decodeJson(SessionView, { strong: "true", user: signedInUser });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("decodeJson accepted a session whose strength is text");
+    })
+    .extend("theRefusalOfASessionCarryingAnUnknownRole", () => {
+      try {
+        decodeJson(SessionView, { strong: true, user: { ...signedInUser, role: "root" } });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("decodeJson accepted a session carrying an unknown role");
     });
+
+  it("強度とロールを備えた応答をそのまま読む", ({ theDecodedSession }) => {
+    expect(theDecodedSession).toStrictEqual({ strong: false, user: signedInUser });
   });
 
-  it("セッションの強度とロールを応答から明示的に検証する", () => {
-    expect.hasAssertions();
-    const user = {
-      email: "user@example.com",
-      id: "user-id",
-      name: "名前",
-      role: "user",
-      twoFactorEnabled: false,
-    };
-    expect(parseSession({ strong: false, user })).toStrictEqual({ strong: false, user });
-    expect(() => parseSession({ user })).toThrow("サーバーの応答形式が不正です。");
-    expect(() => parseSession({ strong: "true", user })).toThrow("サーバーの応答形式が不正です。");
-    expect(() => parseSession({ strong: true, user: { ...user, role: "root" } })).toThrow(
-      "サーバーの応答形式が不正です。",
+  it("強度を持たない応答を拒否する", ({ theRefusalOfASessionWithoutStrength }) => {
+    expect(theRefusalOfASessionWithoutStrength).toStrictEqual(new Error(malformedSessionMessage));
+  });
+
+  it("強度が文字列の応答を拒否する", ({ theRefusalOfASessionWhoseStrengthIsText }) => {
+    expect(theRefusalOfASessionWhoseStrengthIsText).toStrictEqual(
+      new Error(malformedSessionMessage),
     );
   });
 
-  it("失敗理由は HTML に変換せず文字列として扱う", () => {
-    expect.hasAssertions();
-    expect(errorMessage(new Error("<script>alert(1)</script>"))).toBe("<script>alert(1)</script>");
-    expect(errorMessage("<script>alert(1)</script>")).toBe(
-      "操作に失敗しました。もう一度お試しください。",
+  it("知らないロールを持つ応答を拒否する", ({ theRefusalOfASessionCarryingAnUnknownRole }) => {
+    expect(theRefusalOfASessionCarryingAnUnknownRole).toStrictEqual(
+      new Error(malformedSessionMessage),
     );
   });
 });
 
-describe("認証の失敗理由", () => {
-  it.for([
-    ["INVALID_EMAIL_OR_PASSWORD", "メールアドレスかパスワードが違います。"],
-    ["EMAIL_NOT_VERIFIED", "メールアドレスが未確認です。確認メールのリンクを開いてください。"],
-    ["INVALID_CODE", "確認コードが違います。"],
-    ["INVALID_BACKUP_CODE", "バックアップコードが違います。"],
-  ] as const)("ログインの失敗 %s を画面に出す理由へ変える", ([code, reason]) => {
-    expect.hasAssertions();
-    expect(() =>
-      requireSuccess({ data: undefined, error: { code, message: "Upstream wording" } }),
-    ).toThrow(reason);
+describe("失敗理由の文言", () => {
+  const it = test
+    .extend("theMessageOfAThrownError", () => errorMessage(new Error("<script>alert(1)</script>")))
+    .extend("theMessageOfAThrownString", () => errorMessage("<script>alert(1)</script>"))
+    .extend("theRefusalOfAKnownFailureCode", () => {
+      try {
+        requireSuccess({
+          data: undefined,
+          error: { code: "INVALID_EMAIL_OR_PASSWORD", message: "Upstream wording" },
+        });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted a known failure code");
+    })
+    .extend("theRefusalOfAnUnverifiedEmail", () => {
+      try {
+        requireSuccess({
+          data: undefined,
+          error: { code: "EMAIL_NOT_VERIFIED", message: "Upstream wording" },
+        });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted an unverified email");
+    })
+    .extend("theRefusalOfAnInvalidCode", () => {
+      try {
+        requireSuccess({
+          data: undefined,
+          error: { code: "INVALID_CODE", message: "Upstream wording" },
+        });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted an invalid code");
+    })
+    .extend("theRefusalOfAnInvalidBackupCode", () => {
+      try {
+        requireSuccess({
+          data: undefined,
+          error: { code: "INVALID_BACKUP_CODE", message: "Upstream wording" },
+        });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted an invalid backup code");
+    })
+    .extend("theRefusalOfAnUnmappedFailureCode", () => {
+      try {
+        requireSuccess({
+          data: undefined,
+          error: { code: "SOMETHING_ELSE", message: "Upstream wording" },
+        });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted an unmapped failure code");
+    })
+    .extend("theRefusalOfAMissingFailureCode", () => {
+      try {
+        requireSuccess({ data: undefined, error: {} });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted a missing failure code");
+    })
+    .extend("theRefusalOfAMessageOnlyFailure", () => {
+      try {
+        requireSuccess({ data: undefined, error: { message: "message only" } });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted a message-only failure");
+    })
+    .extend("theRefusalOfAnUnknownCodeWithoutMessage", () => {
+      try {
+        requireSuccess({ data: undefined, error: { code: "SOMETHING_ELSE" } });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted an unknown code without a message");
+    });
+
+  it("投げられた Error の文言をそのまま出す", ({ theMessageOfAThrownError }) => {
+    expect(theMessageOfAThrownError).toBe("<script>alert(1)</script>");
   });
 
-  it("理由を持たない失敗コードは認証サーバーの文言のまま出す", () => {
-    expect.hasAssertions();
-    expect(() =>
-      requireSuccess({
-        data: undefined,
-        error: { code: "SOMETHING_ELSE", message: "Upstream wording" },
-      }),
-    ).toThrow("Upstream wording");
+  it("Error でない失敗には共通の文言を出す", ({ theMessageOfAThrownString }) => {
+    expect(theMessageOfAThrownString).toBe("操作に失敗しました。もう一度お試しください。");
   });
 
-  it("コードが無い失敗を空キーの辞書引きで汎用文言にしない", () => {
-    expect.hasAssertions();
-    expect(() => requireSuccess({ data: undefined, error: {} })).toThrow(
-      "認証サーバーが失敗理由のコードを返しませんでした。",
+  it("ログインの失敗を画面に出す理由へ変える", ({ theRefusalOfAKnownFailureCode }) => {
+    expect(theRefusalOfAKnownFailureCode).toStrictEqual(
+      new Error("メールアドレスかパスワードが違います。"),
     );
-    expect(() => requireSuccess({ data: undefined, error: { message: "message only" } })).toThrow(
-      "message only",
+  });
+
+  it("メール未確認を画面に出す理由へ変える", ({ theRefusalOfAnUnverifiedEmail }) => {
+    expect(theRefusalOfAnUnverifiedEmail).toStrictEqual(
+      new Error("メールアドレスが未確認です。確認メールのリンクを開いてください。"),
     );
   });
 
-  it("未知のコードをメッセージ欠落のまま汎用文言にしない", () => {
-    expect.hasAssertions();
-    expect(() => requireSuccess({ data: undefined, error: { code: "SOMETHING_ELSE" } })).toThrow(
-      "認証サーバーが未知の失敗コードを返しました: SOMETHING_ELSE",
+  it("確認コードの誤りを画面に出す理由へ変える", ({ theRefusalOfAnInvalidCode }) => {
+    expect(theRefusalOfAnInvalidCode).toStrictEqual(new Error("確認コードが違います。"));
+  });
+
+  it("バックアップコードの誤りを画面に出す理由へ変える", ({ theRefusalOfAnInvalidBackupCode }) => {
+    expect(theRefusalOfAnInvalidBackupCode).toStrictEqual(
+      new Error("バックアップコードが違います。"),
+    );
+  });
+
+  it("理由を持たない失敗コードは認証サーバーの文言のまま出す", ({
+    theRefusalOfAnUnmappedFailureCode,
+  }) => {
+    expect(theRefusalOfAnUnmappedFailureCode).toStrictEqual(new Error("Upstream wording"));
+  });
+
+  it("コードが無い失敗を空キーの辞書引きで汎用文言にしない", ({
+    theRefusalOfAMissingFailureCode,
+  }) => {
+    expect(theRefusalOfAMissingFailureCode).toStrictEqual(
+      new Error("認証サーバーが失敗理由のコードを返しませんでした。"),
+    );
+  });
+
+  it("コードが無くメッセージだけの失敗は認証サーバーの文言のまま出す", ({
+    theRefusalOfAMessageOnlyFailure,
+  }) => {
+    expect(theRefusalOfAMessageOnlyFailure).toStrictEqual(new Error("message only"));
+  });
+
+  it("未知のコードをメッセージ欠落のまま汎用文言にしない", ({
+    theRefusalOfAnUnknownCodeWithoutMessage,
+  }) => {
+    expect(theRefusalOfAnUnknownCodeWithoutMessage).toStrictEqual(
+      new Error("認証サーバーが未知の失敗コードを返しました: SOMETHING_ELSE"),
     );
   });
 });

@@ -1,4 +1,4 @@
-import { Button, Status } from "@repo/ui";
+import { Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 
 import { UsersBody } from "./users-body.tsx";
@@ -12,7 +12,9 @@ function UsersFailed(): ReactElement {
   }
   return (
     <UsersBody>
-      <Status variant="error">ユーザー一覧を取得できませんでした。</Status>
+      <StatusMessage variant={STATUS_VARIANT.failure}>
+        ユーザー一覧を取得できませんでした。
+      </StatusMessage>
       <Button type="button" onClick={retry}>
         再試行
       </Button>

@@ -112,11 +112,11 @@ describe("AI-operable UI source rules", () => {
     ).toStrictEqual([]);
   });
 
-  it("accepts Status text for results", () => {
+  it("accepts StatusMessage text for results", () => {
     expect.hasAssertions();
     expect(
       unnamedControlViolations(
-        'export const Done = () => <Status variant="success">保存しました</Status>;\n',
+        'export const Done = () => <StatusMessage variant="success">保存しました</StatusMessage>;\n',
       ),
     ).toStrictEqual([]);
   });

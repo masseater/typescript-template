@@ -20,7 +20,7 @@ const meta = preview.meta({
       recovery: undefined,
       session: { strong: true, user },
     },
-    onRegistered: async (): Promise<void> => undefined,
+    onRegistered: (): Promise<void> => Promise.resolve(),
   },
   component: PasskeyRegisterForm,
 });

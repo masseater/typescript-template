@@ -4,10 +4,10 @@ import { TotpField } from "./totp-field";
 import type { ReactElement } from "react";
 import type { TextInput } from "./use-text-input";
 
-function ChallengeCodeField({
+const ChallengeCodeField = ({
   backup,
   code,
-}: Readonly<{ backup: boolean; code: TextInput }>): ReactElement {
+}: Readonly<{ backup: boolean; code: TextInput }>): ReactElement => {
   return backup ? (
     <Field
       label="バックアップコード"
@@ -21,6 +21,6 @@ function ChallengeCodeField({
   ) : (
     <TotpField code={code} />
   );
-}
+};
 
 export { ChallengeCodeField };

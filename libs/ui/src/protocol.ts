@@ -2,18 +2,13 @@ import { Schema } from "effect";
 
 import type { SessionView as SessionContract } from "@repo/runtime/contracts";
 
-const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
-
-function isUnknownRecord(value: unknown): value is Record<string, unknown> {
-  return isRecord(value);
-}
-
 type SessionView = typeof SessionContract.Type;
 
-interface AuthResult<TData> {
-  readonly data: TData;
-  readonly error: Readonly<{ code?: string | undefined; message?: string | undefined }> | null;
-}
+const errorMessage = (failure: unknown): string => {
+  return failure instanceof Error
+    ? failure.message
+    : "操作に失敗しました。もう一度お試しください。";
+};
 
 const failureReasons: Readonly<Record<string, string>> = {
   EMAIL_NOT_VERIFIED: "メールアドレスが未確認です。確認メールのリンクを開いてください。",
@@ -22,58 +17,84 @@ const failureReasons: Readonly<Record<string, string>> = {
   INVALID_EMAIL_OR_PASSWORD: "メールアドレスかパスワードが違います。",
 };
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "操作に失敗しました。もう一度お試しください。";
-}
-
-function authFailureMessage(error: NonNullable<AuthResult<unknown>["error"]>): string {
-  const { code, message } = error;
+const authFailureMessage = (
+  authFailure: Readonly<{ code?: string | undefined; message?: string | undefined }>,
+): string => {
+  const { code, message } = authFailure;
   if (code === undefined) {
-    return message === undefined ? "認証サーバーが失敗理由のコードを返しませんでした。" : message;
+    return message ?? "認証サーバーが失敗理由のコードを返しませんでした。";
   }
   const known = failureReasons[code];
   if (known !== undefined) {
     return known;
   }
-  return message === undefined ? `認証サーバーが未知の失敗コードを返しました: ${code}` : message;
-}
+  return message ?? `認証サーバーが未知の失敗コードを返しました: ${code}`;
+};
 
-function requireSuccess<TData>(result: AuthResult<TData>): NonNullable<TData> {
-  if (result.error) {
-    throw new Error(authFailureMessage(result.error));
+const requireSuccess = <TData>(
+  authEnvelope: Readonly<{
+    data: TData;
+    error: Readonly<{ code?: string | undefined; message?: string | undefined }> | null;
+  }>,
+): NonNullable<TData> => {
+  if (authEnvelope.error) {
+    throw new Error(authFailureMessage(authEnvelope.error));
   }
-  if (result.data === null || result.data === undefined) {
+  if (authEnvelope.data === null || authEnvelope.data === undefined) {
     throw new Error("認証サーバーから結果が返りませんでした。");
   }
-  return result.data;
-}
+  return authEnvelope.data;
+};
 
-function requireSecureContext(): void {
+const requireSecureContext = (): void => {
   if (!globalThis.isSecureContext) {
     throw new Error("パスキーには HTTPS または localhost が必要です。");
   }
-}
+};
 
-function requirePasskeyUV(data: unknown, pathname: string): void {
-  if (
-    !pathname.endsWith("/passkey/generate-authenticate-options") &&
-    !pathname.endsWith("/passkey/generate-register-options")
-  ) {
-    return;
+const authenticateOptionsPath = "/passkey/generate-authenticate-options";
+const registerOptionsPath = "/passkey/generate-register-options";
+
+const isPasskeyOptionsPath = (pathname: string): boolean => {
+  return pathname.endsWith(authenticateOptionsPath) || pathname.endsWith(registerOptionsPath);
+};
+
+const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
+
+const isUnknownRecord = (candidate: unknown): candidate is Record<string, unknown> => {
+  return isRecord(candidate);
+};
+
+const registrationWithUserVerification = (
+  passkeyOptions: Readonly<Record<string, unknown>>,
+): Record<string, unknown> => {
+  const selection = passkeyOptions["authenticatorSelection"];
+  if (selection !== undefined && !isUnknownRecord(selection)) {
+    throw new Error("パスキー登録設定の応答形式が不正です。");
   }
-  if (!isUnknownRecord(data)) {
+  return {
+    ...passkeyOptions,
+    authenticatorSelection: { ...selection, userVerification: "required" },
+  };
+};
+
+const passkeyUVOptions = (
+  passkeyOptions: unknown,
+  pathname: string,
+): Readonly<Record<string, unknown>> => {
+  if (!isUnknownRecord(passkeyOptions)) {
     throw new Error("パスキー設定の応答形式が不正です。");
   }
-  if (pathname.endsWith("/passkey/generate-authenticate-options")) {
-    data["userVerification"] = "required";
-  } else {
-    const selection = data["authenticatorSelection"];
-    if (selection !== undefined && !isUnknownRecord(selection)) {
-      throw new Error("パスキー登録設定の応答形式が不正です。");
-    }
-    data["authenticatorSelection"] = { ...selection, userVerification: "required" };
-  }
-}
+  return pathname.endsWith(authenticateOptionsPath)
+    ? { ...passkeyOptions, userVerification: "required" }
+    : registrationWithUserVerification(passkeyOptions);
+};
 
-export { errorMessage, requirePasskeyUV, requireSecureContext, requireSuccess };
+export {
+  errorMessage,
+  isPasskeyOptionsPath,
+  passkeyUVOptions,
+  requireSecureContext,
+  requireSuccess,
+};
 export type { SessionView };

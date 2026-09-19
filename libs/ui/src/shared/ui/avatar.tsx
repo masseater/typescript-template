@@ -14,20 +14,20 @@ const avatarVariants = cva(
 
 const graphemes = new Intl.Segmenter("ja", { granularity: "grapheme" });
 
-function initial(name: string): string {
-  const [first] = graphemes.segment(name.trim());
+const initial = (displayName: string): string => {
+  const [first] = graphemes.segment(displayName.trim());
   return first?.segment.toUpperCase() ?? "";
-}
+};
 
-function Avatar({
+const Avatar = ({
   name,
   size,
-}: Readonly<{ name: string; size?: "large" | "medium" | "small" }>): ReactElement {
+}: Readonly<{ name: string; size?: "large" | "medium" | "small" }>): ReactElement => {
   return (
     <span data-slot="avatar" aria-hidden="true" className={avatarVariants({ size })}>
       {initial(name)}
     </span>
   );
-}
+};
 
 export { Avatar };

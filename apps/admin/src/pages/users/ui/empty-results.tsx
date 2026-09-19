@@ -1,4 +1,4 @@
-import { Status, TextLink } from "@repo/ui";
+import { StatusMessage, TextLink } from "@repo/ui";
 import { omit } from "es-toolkit";
 
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
@@ -11,11 +11,11 @@ function EmptyResults({
   const target = beyondLastPage ? omit(search, ["page"]) : {};
   return (
     <div className="flex flex-col items-start gap-2">
-      <Status>
+      <StatusMessage>
         {beyondLastPage
           ? "このページに該当するユーザーはいません。"
           : "条件に一致するユーザーはいません。"}
-      </Status>
+      </StatusMessage>
       <TextLink to="/" search={target}>
         {beyondLastPage ? "1 ページ目へ" : "条件をクリア"}
       </TextLink>

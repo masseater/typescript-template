@@ -5,7 +5,7 @@ import { SignUpFields } from "./signup-fields";
 
 import type { ReactElement } from "react";
 
-function SignUpForm({ onSent }: Readonly<{ onSent: () => void }>): ReactElement {
+const SignUpForm = ({ onSent }: Readonly<{ onSent: () => void }>): ReactElement => {
   const action = useAction();
   return (
     <FormColumn>
@@ -13,6 +13,6 @@ function SignUpForm({ onSent }: Readonly<{ onSent: () => void }>): ReactElement 
       <ActionStatus action={action} pendingMessage="登録を処理しています。" />
     </FormColumn>
   );
-}
+};
 
 export { SignUpForm };

@@ -10,6 +10,14 @@ describe("workspace lint ownership", () => {
     expect(lintSource).not.toMatch(/libs\/ui\/src\/shared\/ui\/\*\*/u);
   });
 
+  it("does not hardcode libs/ui quality inspection paths in root lint ignores", () => {
+    expect.hasAssertions();
+    expect(lintSource).not.toMatch(/libs\/ui\/design-system/u);
+    expect(lintSource).not.toMatch(/libs\/ui\/part-stories/u);
+    expect(lintSource).not.toMatch(/libs\/ui\/hover-colors/u);
+    expect(lintSource).not.toMatch(/libs\/ui\/record-field/u);
+  });
+
   it("does not hardcode infra/cloudflare new-cap exceptions in root lint overrides", () => {
     expect.hasAssertions();
     expect(lintSource).not.toMatch(/ApiToken\|D1\|Email\|Workers\|Zone/u);
@@ -18,6 +26,7 @@ describe("workspace lint ownership", () => {
   it("imports ui and cloudflare lint knowledge instead of owning it", () => {
     expect.hasAssertions();
     expect(lintSource).toMatch(/@repo\/ui\/lint-settings/u);
+    expect(lintSource).toMatch(/uiQualityInspectionFiles/u);
     expect(lintSource).toMatch(/@repo\/infra-cloudflare\/lint-overrides/u);
   });
 });
