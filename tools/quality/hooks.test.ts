@@ -70,6 +70,35 @@ function workflowRuns(file: string): string[] {
     .filter((command: string) => command.startsWith("vp "));
 }
 
+function lifecycleByJob(file: string): Readonly<Record<string, string[]>> {
+  const workflow = workflows[file];
+  if (workflow === undefined) {
+    throw new Error(`${file} is missing`);
+  }
+  const [, declared = ""] = /^jobs:$(?<declared>[\s\S]*)/mu.exec(workflow) ?? [];
+  const [, ...jobs] = declared.split(/^ {2}(?<job>[\w-]+):$/mu);
+  return Object.fromEntries(
+    jobs.flatMap((entry, index, all) =>
+      index % 2 === 0
+        ? [
+            [
+              entry,
+              [...(all[index + 1] ?? "").matchAll(/^\s*(?:- )?run: (?<command>vp run -r \w+)$/gmu)]
+                .map((match) => match[1] ?? "")
+                .toSorted(),
+            ],
+          ]
+        : [],
+    ),
+  );
+}
+
+function lifecycleOutsideCheck(): string[] {
+  return Object.keys(workflows)
+    .filter((file) => !file.endsWith("check.yml"))
+    .flatMap((file) => workflowRuns(file).filter((command) => command.startsWith("vp run -r ")));
+}
+
 function brokenChain(directory: string): string[] {
   return lifecycles.flatMap((name, index) => {
     const previous = lifecycles.slice(Math.max(index - 1, 0), index);
@@ -136,11 +165,14 @@ describe("lifecycle entry points", () => {
     expect(misplacedHooks()).toStrictEqual([]);
   });
 
-  it("the check workflow runs only the merge gate across every workspace", () => {
+  it("leaves the merge gate to the merge queue and gives a pull request the push gate", () => {
     expect.hasAssertions();
-    expect([...new Set(workflowRuns("../../.github/workflows/check.yml"))]).toStrictEqual([
-      "vp run -r premerge",
-    ]);
+    expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
+      cache: ["vp run -r prepush"],
+      check: ["vp run -r prepush"],
+      "merge-queue": ["vp run -r premerge"],
+    });
+    expect(lifecycleOutsideCheck()).toStrictEqual([]);
   });
 
   it("every workspace declares its tasks where the lifecycle finds them", () => {
@@ -208,7 +240,7 @@ describe("test ownership", () => {
 
   it("leaves the workspace projects out of the root test task", () => {
     expect.hasAssertions();
-    expect(commands(".", "test")).toStrictEqual(["vp test run --project '!@repo/*' $TEST_SCOPE"]);
+    expect(commands(".", "test")).toStrictEqual(["vp test run --project '!@repo/*'"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 });
