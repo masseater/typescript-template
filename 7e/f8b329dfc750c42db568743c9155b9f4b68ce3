@@ -1,0 +1,1 @@
+fix react-doctor.test.ts import.meta.glob path to ./doctor.config.ts after config move so AI rules resolve in MQ/premerge
