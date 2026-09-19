@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/receiver.ts"
+    ".": "./src/receiver.ts",
+    "./image": "./src/receiver-image.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

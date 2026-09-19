@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Cause, Effect } from "effect";
 
 import { annotateLogs } from "./annotations.ts";
 import { Telemetry } from "./telemetry.ts";
@@ -93,5 +93,18 @@ it.effect("hides a secret an annotation carries, not only the attributes of the 
         status: 200,
       },
     ]);
+  }),
+);
+
+const brokenTable = Cause.fail(new Error(`no such table: jwks (AUTH_SECRET=${leaked})`));
+
+it.effect("keeps the cause of a failure in the line, minus the secret it carries", () =>
+  Effect.gen(function* program() {
+    const logs = yield* recorded(Effect.logError("application.error", brokenTable));
+    const [line] = logs.stderr;
+    const reported = JSON.stringify(line);
+    assert.notInclude(reported, leaked);
+    assert.include(reported, "no such table: jwks");
+    assert.include(reported, "error.cause");
   }),
 );

@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { Effect } from "effect";
+import { Cause, Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { annotateLogs, annotateSpan } from "./annotations.ts";
@@ -187,6 +187,20 @@ it.effect("the endpoint receives the severity the status code asks for", () =>
     assert.include(record, '"severityText":"Info"');
     assert.include(record, '"severityText":"Warn"');
     assert.notInclude(record, '"severityText":"Error"');
+  }),
+);
+
+it.effect("a secret the cause of a failure carries reaches no destination", () =>
+  Effect.gen(function* program() {
+    const failing = Effect.logError(
+      "application.error",
+      Cause.fail(new Error(`no such table: jwks (AUTH_SECRET=${leaked})`)),
+    );
+    const telemetry = yield* observed({ authorization, endpoint }, accepted, failing);
+    const exported = JSON.stringify(telemetry.logs);
+    assert.notInclude(exported, leaked);
+    assert.notInclude(exported, '"key":"log.error"');
+    assert.include(exported, "no such table: jwks");
   }),
 );
 
