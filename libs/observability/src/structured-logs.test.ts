@@ -41,7 +41,7 @@ it.effect("hides a secret an authentication failure puts in its attributes", () 
         headers: "authorization: [redacted]",
         reason: "invalid token",
         release: "abc123",
-        service: "user-server",
+        service: "service-member-server",
       },
     ]);
   }),
@@ -62,7 +62,7 @@ it.effect("keeps the error that broke the model readable while hiding the secret
         event: "interview.model_failed",
         reason: "model_failed",
         release: "abc123",
-        service: "user-server",
+        service: "service-member-server",
       },
     ]);
   }),
@@ -83,7 +83,7 @@ it.effect("hides a secret an annotation carries, not only the attributes of the 
         release: "abc123",
         request_id: "abc",
         route: "home",
-        service: "user-server",
+        service: "service-member-server",
         status: 200,
       },
     ]);
