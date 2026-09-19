@@ -62,15 +62,16 @@ export default defineConfig({
       test: { cache: false, command: "vp test run --project '!@repo/*'" },
       ...lifecycle({
         precommit: ["check:code"],
-        premerge: ["test"],
-        prepush: [
+        prepush: ["check:effect"],
+        prepr: [
           "knip",
           "check:client",
           "check:imports",
           "check:react",
-          "check:effect",
           "check:canonical-literal-types",
         ],
+        premerge: ["test"],
+        prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],
     },

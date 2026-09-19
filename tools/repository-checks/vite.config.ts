@@ -8,7 +8,13 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       ...testRun,
-      ...lifecycle({ precommit: [], premerge: ["test"], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: ["test"],
+        prerelease: [],
+      }),
     },
   },
   test: {
