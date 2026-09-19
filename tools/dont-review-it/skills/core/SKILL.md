@@ -35,7 +35,7 @@ export default defineConfig({
 });
 ```
 
-Each function returns the whole object its block must own: the patterns git is told to ignore, and — for `lint` — the rule sets of `@repo/lint-rule-authoring` and `@repo/dont-review-it` together with the JS plugin that holds the custom rules, or — for `fmt` — the formatting choices this repository fixes. Whatever you pass in layers on top: `lint({ rules: { ... } })` keeps your rules, and an `extends` you pass lands after the shipped presets.
+Each function returns the whole object its block must own: the patterns git is told to ignore, and — for `lint` — the rule sets of `@repo/dont-review-it/lint-rule-authoring` and `@repo/dont-review-it` together with the JS plugin that holds the custom rules, or — for `fmt` — the formatting choices this repository fixes. Whatever you pass in layers on top: `lint({ rules: { ... } })` keeps your rules, and an `extends` you pass lands after the shipped presets.
 
 The preset also keeps oxlint's default plugin set and turns `reportUnusedDisableDirectives` into an error, so a suppression comment that has stopped matching anything fails the lint instead of quietly persisting.
 
@@ -265,4 +265,4 @@ dont-review-it check                   the repository-wide checks (see the sibli
 ## See also
 
 - `tools/dont-review-it/skills/repository-checks` — the checks lint cannot express, run from the same package through the `dont-review-it check` CLI.
-- `tools/lint-rule-authoring/skills/core` — adding a rule to this preset starts at the factory that package provides.
+- `tools/dont-review-it/skills/lint-rule-authoring` — adding a rule to this preset starts at the factory that package provides.

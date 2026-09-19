@@ -4,7 +4,7 @@ import { noUncheckedAuthoredPath } from "../../lint/oxlint/rules/toolchain/no-un
 import { requireRegisteredFile } from "../../lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.ts";
 import { noVersionRange, requireCatalogEntry } from "../../plugin.ts";
 
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 
 export const toolchainBundle: readonly WorkspaceLintRule[] = [
   forbidTrackedPath,

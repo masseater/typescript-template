@@ -4,7 +4,7 @@ import { sumBy } from "es-toolkit";
 
 import { counted, pluralized } from "./pluralized.ts";
 
-import type { CheckOutcome } from "@repo/repository-checks";
+import type { CheckOutcome } from "@repo/dont-review-it/repository-checks";
 
 const INDENT = "  ";
 
