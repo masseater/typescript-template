@@ -11,7 +11,7 @@ import { Effect } from "effect";
 
 import { symbolicate } from "./source-maps.ts";
 
-const release = "0123456789abcdef";
+const release = "0".repeat(16);
 
 function sourceMap(source: string): string {
   return JSON.stringify({

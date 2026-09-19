@@ -3,14 +3,18 @@ import { definePlugin, type RuleMeta, type Visitor } from "vite-plus/lint/plugin
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
-import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
+import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
-import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
+import {
+  gitEnvironmentVisitor,
+  tempDirectoryVisitor,
+  testImportGraphVisitor,
+} from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 
 const metadata = (violation: string): RuleMeta => {
@@ -271,7 +275,7 @@ const projectPlugin = definePlugin({
     "example-values": {
       create: exampleValuesVisitor,
       meta: metadata(
-        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleLabels.join(" / ")} のいずれかのラベルを含む例示ドメインか loopback にし、UUID は 11111111-1111-4111-8111-111111111111 のように数字だけで version と variant を満たす合成値にし、secret・token・password・credential の値は大文字を含まない自己申告な文字列にしてください。`,
+        `テストと fixture には実在しそうな値を書けません。ホスト名は ${exampleHostGuidance}・loopback・ドキュメント用 IP、または許可した外部サービスにしてください。UUID は 11111111-1111-4111-8111-111111111111 のように数字だけで version と variant を満たす合成値にし、hex 識別子は同一桁の繰り返しか数字だけにしてください。secret・token・password・credential・authorization などの値は大文字を含まない自己申告な文字列にしてください。`,
       ),
     },
     "git-environment": {
@@ -318,6 +322,12 @@ const projectPlugin = definePlugin({
       create: spanMutationVisitor,
       meta: metadata(
         "Tracer.Span の attribute / event を直接呼べません。OTLP の tracer は span から属性を直接読むため、伏せ字を通さない経路になります。libs/observability の annotateSpan / withSpan を使ってください。",
+      ),
+    },
+    "temp-directory": {
+      create: tempDirectoryVisitor,
+      meta: metadata(
+        "テストと fixture では tmpdir() の戻り値を mkdtemp / mkdtempSync に渡す以外に使えません。固定パスの一時ディレクトリは並行実行で互いの作業ディレクトリを消します。",
       ),
     },
     "test-import-graph": {

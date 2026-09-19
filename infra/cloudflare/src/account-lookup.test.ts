@@ -29,7 +29,7 @@ const { hostname } = new URL(verificationSettings.origins.user);
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
 const SECRETS_STORE_PAGE_LIMIT = 100;
-const tokenId = "0123456789abcdef0123456789abcdef";
+const tokenId = "a".repeat(32);
 const granted = deployTokenPermissions.map((required) => ({ name: required.satisfiedBy[0].name }));
 const withoutRoutes = granted.filter(
   (group: { readonly name: string }) => group.name !== "Workers Routes Write",

@@ -58,8 +58,7 @@ const createPackage = async (root: string, name: string): Promise<void> => {
 };
 
 const createFixture = async (files: Fixture): Promise<string> => {
-  const prefix = path.join(tmpdir(), "template-depcruise-");
-  const root = await realpath(await mkdtemp(prefix));
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), "template-depcruise-")));
   await mkdir(path.join(root, "node_modules/@repo"), { recursive: true });
   await Promise.all(
     Object.entries(workspaces).map(async (workspace: Workspace) =>
