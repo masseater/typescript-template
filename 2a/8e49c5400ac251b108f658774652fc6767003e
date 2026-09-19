@@ -1,0 +1,1 @@
+knip: IndexHit の未使用 export を消し、shell-quote を devDependencies へ。libs/ui の検査モジュールを knip project に載せる。
