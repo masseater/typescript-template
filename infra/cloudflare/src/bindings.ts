@@ -9,6 +9,7 @@ type SharedEnv = Readonly<{
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;
+  OPS_EMAIL: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
   OTLP_ENABLED?: string;
   OTLP_ENDPOINT?: string;
