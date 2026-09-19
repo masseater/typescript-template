@@ -19,6 +19,8 @@ const filename = (inspection: LintContext): string => {
   return inspection.filename.replaceAll("\\", "/");
 };
 
+const fixtureOrTestFile = /(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$/u;
+
 const scopeOf = (inspection: LintContext, node: Node): Scope => {
   return inspection.sourceCode.getScope(node as ESTree.Node);
 };
@@ -66,5 +68,12 @@ const reportViolation = (inspection: LintContext, node: Node): void => {
   inspection.report({ messageId: "violation", node: { range: [node.range[0], node.range[1]] } });
 };
 
-export { declaredVariablesOf, filename, importVisitor, reportViolation, scopeOf };
+export {
+  declaredVariablesOf,
+  filename,
+  fixtureOrTestFile,
+  importVisitor,
+  reportViolation,
+  scopeOf,
+};
 export type { DeepReadonly, LintContext, Node, NodeOf };

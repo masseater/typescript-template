@@ -10,11 +10,10 @@ import { setupServer } from "msw/node";
 import { BinaryUnavailable, installBinary } from "./binary.ts";
 import { downloadUrl, releases } from "./releases.ts";
 
-const prefix = path.join(tmpdir(), "template-k6-");
 const archives = [...releases.values()].map((release) => downloadUrl(release.archive));
 
 const temporaryHome = Effect.acquireRelease(
-  Effect.promise(async () => realpath(await mkdtemp(prefix))),
+  Effect.promise(async () => realpath(await mkdtemp(path.join(tmpdir(), "template-k6-")))),
   (home) => Effect.promise(async () => rm(home, { force: true, recursive: true })),
 );
 

@@ -21,11 +21,10 @@ const GROUP_READABLE_FILE_MODE = 0o640;
 const complete = deploymentKeys
   .map((key) => `${key}=${verificationEnvironment[key] ?? "value"}`)
   .join("\n");
-const temporaryPrefix = path.join(tmpdir(), "template-secrets-");
 
 function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.acquireRelease(
-    Effect.promise(async () => mkdtemp(temporaryPrefix)),
+    Effect.promise(async () => mkdtemp(path.join(tmpdir(), "template-secrets-"))),
     (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
   );
 }

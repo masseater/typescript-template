@@ -33,7 +33,7 @@ const sendingRecords = [
 ];
 const RETURNED_PAGE_SIZE = 50;
 const ACCOUNT_DATABASE_COUNT = 5;
-const tokenId = "0123456789abcdef0123456789abcdef";
+const tokenId = "a".repeat(32);
 const databaseId = "22222222-2222-4222-8222-222222222222";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
 const workers = ["user", "admin", "wiki", "budget", "errors", "health"].map(

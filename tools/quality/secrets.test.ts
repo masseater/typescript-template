@@ -91,7 +91,7 @@ describe("deployment value leaks", () => {
     expect.hasAssertions();
     const values = deploymentValues(
       [
-        "CLOUDFLARE_ACCOUNT_ID=0123456789abcdef0123456789abcdef",
+        "CLOUDFLARE_ACCOUNT_ID=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         `TEMPLATE_PREFIX="${unusablePrefix}"`,
         "TEMPLATE_USER_ORIGIN=https://app.deployment.example",
         "BUDGET_JPY=5000",
@@ -101,7 +101,7 @@ describe("deployment value leaks", () => {
       ].join("\n"),
     );
     expect(values).toStrictEqual([
-      { key: "CLOUDFLARE_ACCOUNT_ID", value: "0123456789abcdef0123456789abcdef" },
+      { key: "CLOUDFLARE_ACCOUNT_ID", value: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
       { key: "TEMPLATE_PREFIX", value: unusablePrefix },
       { key: "TEMPLATE_USER_ORIGIN", value: "https://app.deployment.example" },
     ]);
