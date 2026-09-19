@@ -1,1 +1,1 @@
-fix knip: move @repo/config into service-admin dependencies (used by contracts), drop unused UserKeyword/UserSummary exports
+regenerate pnpm-lock after moving @repo/config into service-admin dependencies
