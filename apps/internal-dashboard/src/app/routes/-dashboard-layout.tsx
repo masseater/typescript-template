@@ -1,4 +1,4 @@
-import { Status, loginPath, useSession } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage, loginPath, useSession } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
@@ -24,9 +24,9 @@ function DashboardLayout(): ReactElement {
     return (
       <div className="flex min-h-dvh items-center justify-center p-4">
         {error === undefined ? (
-          <Status variant="pending">読み込み中です。</Status>
+          <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
         ) : (
-          <Status variant="error">{error}</Status>
+          <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
         )}
       </div>
     );
