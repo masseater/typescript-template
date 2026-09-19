@@ -5,15 +5,13 @@ import { mkdir, stat } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { applicationOrigins, applications, mailpitOrigin } from "@repo/config";
-import { receiverOrigin } from "@repo/local";
+import { applications } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
 import {
   OriginMode,
   credentialsFile,
-  lanOrigin,
   local,
   readCredentials,
   refreshBrowserConfig,
@@ -24,6 +22,7 @@ import {
   replacePrivateFile,
   writePrivateFile,
 } from "./private-files.ts";
+import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentials.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App, Credentials } from "./local-environment.ts";
@@ -63,24 +62,6 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
   },
 );
 
-function appOrigin(app: App, mode: typeof OriginMode.Type): string {
-  return mode === "lan" ? lanOrigin(app) : applicationOrigins[app];
-}
-
-function appVariables(
-  app: App,
-  credentials: Credentials,
-  mode: typeof OriginMode.Type,
-): Readonly<Record<string, string>> {
-  return {
-    APP_ORIGIN: appOrigin(app, mode),
-    AUTH_SECRET: credentials.authSecret,
-    EMAIL_FROM: "no-reply@example.test",
-    MAILPIT_URL: mailpitOrigin,
-    OTLP_ENDPOINT: receiverOrigin("otlp"),
-  };
-}
-
 function writeAppVariables(
   app: App,
   credentials: Credentials,
@@ -116,7 +97,8 @@ const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
     mkdir(new URL("logs/", local), { mode: privateDirectoryMode, recursive: true }),
   );
   yield* refreshBrowserConfig();
-  const credentials = yield* rememberOrigins(args);
+  const credentials =
+    "CI" in process.env ? sharedRunnerCredentials() : yield* rememberOrigins(args);
   yield* Effect.forEach(applications, (app) =>
     writeAppVariables(app, credentials, credentials.origins),
   );
