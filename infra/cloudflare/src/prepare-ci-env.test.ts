@@ -1,0 +1,62 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
+import path from "node:path";
+
+import { assert, it } from "@effect/vitest";
+import { deploymentKeys } from "@repo/config/deployment-keys";
+import { Effect } from "effect";
+
+import { writeCiSecretsFile } from "./ci-env.ts";
+import { verificationEnvironment } from "./verification-fixture.ts";
+
+import type { Scope } from "effect";
+
+const temporaryPrefix = path.join(tmpdir(), "template-ci-env-");
+
+function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.promise(async () => mkdtemp(temporaryPrefix)),
+    (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
+  );
+}
+
+it.effect("writes an owner-only env file from required deployment keys", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const runnerTemp = path.join(directory, "runner");
+    const githubEnv = path.join(directory, "github.env");
+    yield* Effect.promise(async () => writeFile(githubEnv, ""));
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const filename = yield* writeCiSecretsFile({
+      ...required,
+      GITHUB_ENV: githubEnv,
+      RUNNER_TEMP: runnerTemp,
+    });
+    const contents = yield* Effect.promise(async () => readFile(filename, "utf-8"));
+    assert.include(contents, "TEMPLATE_PREFIX=");
+    const pointer = yield* Effect.promise(async () => readFile(githubEnv, "utf-8"));
+    assert.include(pointer, `TEMPLATE_CLOUDFLARE_ENV_FILE=${filename}`);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses when a required deployment key is missing", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const required = Object.fromEntries(
+      deploymentKeys
+        .filter((key) => key !== "CLOUDFLARE_API_TOKEN")
+        .map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const failure = yield* writeCiSecretsFile({
+      ...required,
+      RUNNER_TEMP: path.join(directory, "runner"),
+    }).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "ci_env_incomplete");
+    assert.deepStrictEqual([...failure.keys], ["CLOUDFLARE_API_TOKEN"]);
+  }).pipe(Effect.scoped),
+);
