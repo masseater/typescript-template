@@ -1,1 +1,1 @@
-rename 漏れの wiki-search-dialog を apps/wiki から apps/internal-dashboard へ移し、空の apps/wiki を消す。pre-push oxlint が apps/wiki パスで落ちていた。
+#564 の admin/wiki シェルを rename 先へ載せ直し。rebase で落ちた pages/widgets/app-chrome を main から復元し、wiki-search-dialog も internal-dashboard に置く。
