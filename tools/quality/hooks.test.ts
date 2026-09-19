@@ -1,6 +1,7 @@
 import { generatedDirectories, lifecycles } from "@repo/config/vite";
 import { describe, expect, it } from "vite-plus/test";
 
+import { onDemandGateEntries } from "./on-demand-checks.ts";
 import {
   commands,
   configuredDirectories,
@@ -30,12 +31,6 @@ const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
 );
 
 const gatedTask = /^(?:build|check|verify)(?::|$)/u;
-const runOnDemand = new Set([
-  "infra/cloudflare: verify:account",
-  "tools/observe: verify",
-  "tools/observe: check:exported",
-  ".: check:repository",
-]);
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 
 const hookStages = Object.entries(hooks).map(
@@ -123,7 +118,7 @@ function ungated(directory: string): string[] {
   return [...taskNames(directory), ...scriptNames(directory)]
     .filter((name) => gatedTask.test(name) && !gate.has(name))
     .map((name) => `${directory}: ${name}`)
-    .filter((entry) => !runOnDemand.has(entry));
+    .filter((entry) => !onDemandGateEntries.has(entry));
 }
 
 function slowBeforePush(directory: string): string[] {
