@@ -29,10 +29,13 @@ const repositoryTaskViolations = configuredDirectories.flatMap((directory) =>
   taskViolations(workspaceTasks[directory] ?? {}).map((violation) => `${directory}: ${violation}`),
 );
 
-const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
-  eager: true,
-  import: "default",
-});
+const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../package.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const packageManagerCommands = [
   "pnpm --filter @repo/dev run setup",
@@ -124,7 +127,7 @@ describe("workspace script conventions", () => {
   it("all repository workspace manifests run scripts through Vite+", () => {
     expect.assertions(1);
     const manifests = [
-      { area: ".", file: "package.json", manifest: rootManifest["../../package.json"] },
+      { area: ".", file: "package.json", manifest: rootManifest["../../../../package.json"] },
       ...workspaceManifests,
     ];
     const violations = manifests.flatMap(({ file, manifest }) =>

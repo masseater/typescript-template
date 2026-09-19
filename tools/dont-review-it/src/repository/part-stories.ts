@@ -19,7 +19,7 @@ interface ExportedStory {
 const storySuffix = ".stories.tsx";
 
 const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/src/**/*.stories.tsx",
+  "../../../../libs/ui/src/**/*.stories.tsx",
 );
 
 const storyName = (part: string): string => {
@@ -100,7 +100,7 @@ const a11yRelaxations = (): A11yRelaxation[] => {
     );
 };
 
-const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
+const partsManifest = new URL("../../../../libs/ui/package.json", import.meta.url);
 
 const workerFile = "libs/ui/storybook/public/mockServiceWorker.js";
 

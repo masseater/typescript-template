@@ -10,17 +10,17 @@ import {
 } from "./part-stories.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/storybook/preview.tsx",
+  "../../../../libs/ui/storybook/preview.tsx",
   { eager: true, import: "default" },
 );
 
-const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
+const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../../../vite.config.ts", {
   eager: true,
   import: "default",
 });
 
 const origins: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/config/src/applications.ts",
+  "../../../../libs/config/src/applications.ts",
   { eager: true, import: "storybookOrigin" },
 );
 
@@ -31,7 +31,7 @@ const composedParameters = (preview: unknown): unknown => {
 };
 
 const storybookProjects = (): unknown[] => {
-  const projects: unknown = field(field(configs["../../vite.config.ts"], "test"), "projects");
+  const projects: unknown = field(field(configs["../../../../vite.config.ts"], "test"), "projects");
   return Array.isArray(projects) ? projects : [];
 };
 
@@ -66,7 +66,7 @@ describe("part stories", () => {
 
   it("fails a story on an accessibility violation", () => {
     expect.hasAssertions();
-    const parameters = composedParameters(previews["../../libs/ui/storybook/preview.tsx"]);
+    const parameters = composedParameters(previews["../../../../libs/ui/storybook/preview.tsx"]);
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 
@@ -78,7 +78,7 @@ describe("part stories", () => {
   it("points the agent configuration at the port this repository owns", () => {
     expect.hasAssertions();
     expect(
-      storybookEndpointViolations(String(origins["../../libs/config/src/applications.ts"])),
+      storybookEndpointViolations(String(origins["../../../../libs/config/src/applications.ts"])),
     ).toStrictEqual([]);
   });
 

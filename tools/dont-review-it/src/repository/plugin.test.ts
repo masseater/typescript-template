@@ -5,7 +5,7 @@ import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.
 import { configuredLintRules } from "./lint.ts";
 import plugin from "./plugin.ts";
 
-const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
+const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../../../vite.config.ts", {
   eager: true,
   import: "default",
 });

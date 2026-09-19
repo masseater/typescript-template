@@ -1,5 +1,6 @@
-import { dontReviewItPreset } from "@repo/dont-review-it";
 import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
+
+import { dontReviewItPreset } from "../configs/preset.ts";
 
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
@@ -23,7 +24,7 @@ const awaitingPresetPackages = [
   "tools/commander/**",
   "tools/dev/**",
   "tools/observe/**",
-  "tools/quality/**",
+  "tools/dont-review-it/**",
 ];
 
 const templateWorkspaces = [
@@ -35,7 +36,7 @@ const templateWorkspaces = [
   "tools/e2e/**",
   "tools/load/**",
   "tools/observe/**",
-  "tools/quality/**",
+  "tools/dont-review-it/**",
 ];
 
 const linkComponents = [
@@ -52,7 +53,7 @@ const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages],
   jsPlugins: [
-    { name: "project", specifier: "@repo/quality/plugin" },
+    { name: "project", specifier: "@repo/dont-review-it/repository-plugin" },
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
     "@shadcn/lint",
   ],
