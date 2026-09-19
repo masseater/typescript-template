@@ -79,7 +79,12 @@ const scripts = {
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
   "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
   "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
-  "tools/observe": ["src/cli.ts!", "src/verify.ts!", "src/symbolicate.ts!"],
+  "tools/observe": [
+    "src/cli.ts!",
+    "src/verify.ts!",
+    "src/symbolicate.ts!",
+    "src/receiver-check.ts!",
+  ],
 };
 
 const application = {
