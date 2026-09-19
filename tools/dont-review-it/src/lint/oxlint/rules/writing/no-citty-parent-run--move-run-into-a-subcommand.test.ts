@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
 import { noCittyParentRun } from "./no-citty-parent-run--move-run-into-a-subcommand.ts";
