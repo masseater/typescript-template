@@ -81,6 +81,10 @@ const ServerEvent = Schema.Union([
   Schema.Struct({ data: LedgerState, event: Schema.Literal("ledger") }),
   Schema.Struct({ data: Snapshot, event: Schema.Literal("tasks") }),
   Schema.Struct({ data: ChatEvent, event: Schema.Literal("chat") }),
+  Schema.Struct({
+    data: Schema.Struct({ message: Schema.String, status: Schema.Number }),
+    event: Schema.Literal("failed"),
+  }),
 ]);
 
 type ChatState = typeof Chat.Type;
