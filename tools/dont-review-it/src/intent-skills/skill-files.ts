@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { readUnlessMissing } from "@repo/repository-checks";
+import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 
 import type { IntentSkillsConfig } from "./config.ts";
 import type { PublishedManifest } from "./manifest.ts";
