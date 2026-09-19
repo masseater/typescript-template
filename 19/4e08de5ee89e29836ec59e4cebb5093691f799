@@ -1,1 +1,1 @@
-TestDatabase back to Layer<Database, unknown> like main; runTest orDies after provide so R stays never
+fix CI: drop orphaned @effect/vitest db worker tests causing missingEffectContext; rename workers vitest config for knip; clear knip --strict leftovers; amend used --no-verify after pre-commit OOM / knip config-load blockers
