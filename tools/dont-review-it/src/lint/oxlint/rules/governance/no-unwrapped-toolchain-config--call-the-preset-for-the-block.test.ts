@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
 import { noUnwrappedToolchainConfig } from "./no-unwrapped-toolchain-config--call-the-preset-for-the-block.ts";

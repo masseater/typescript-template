@@ -9,21 +9,16 @@ const loadCommands = ["src/cli.ts!"];
 
 const workspaces = {
   ".": {
-    entry: ["doctor.config.ts"],
+    entry: [],
     ignoreDependencies: [
       "@effect/tsgo",
       "@effect/language-service",
-      "@repo/lint-rule-authoring",
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
     ],
     project: ["*.{js,ts}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
-  },
-  "tools/quality": {
-    entry: ["dependency-cruiser.ts"],
-    project: ["**/*.{ts,mjs}"],
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
@@ -68,13 +63,15 @@ const workspaces = {
     ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
-  "tools/dont-review-it": { ignoreDependencies: ["@tanstack/intent"] },
+  "tools/dont-review-it": {
+    entry: ["src/repository/dependency-cruiser.ts", "doctor.config.ts"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "effect!"],
+    project: ["src/repository/**/*.{ts,mjs}", "src/**/*.{ts,mjs}!", "*.ts"],
+  },
   "tools/e2e": {
     entry: ["src/**/*.test.ts"],
     project: ["src/**/*.ts"],
   },
-  "tools/lint-rule-authoring": { ignoreDependencies: ["@tanstack/intent"] },
-  "tools/stop-ai-slop": { ignoreDependencies: ["@tanstack/intent"] },
 };
 
 const cloudflareStacks = [
@@ -139,7 +136,7 @@ const config = ({
     production || strict ? [...files] : [];
   const app = { ...application, ignore: productionOnly("src/app/routeTree.gen.ts") };
   return {
-    ignoreDependencies: ["vite", "vitest", "@repo/stop-ai-slop"],
+    ignoreDependencies: ["vite", "vitest"],
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,

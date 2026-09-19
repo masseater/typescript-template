@@ -330,7 +330,10 @@ describe("dependencyTypeEntries", () => {
       writeFileSync(
         join(packageDirectory, "package.json"),
         JSON.stringify({
-          dependencies: { "@repo/lint-rule-authoring": "workspace:*", oxlint: "1.76.0" },
+          dependencies: {
+            "@repo/dont-review-it/lint-rule-authoring": "workspace:*",
+            oxlint: "1.76.0",
+          },
         }),
         "utf8",
       );
