@@ -149,8 +149,21 @@ const HealthView = Schema.Struct({
   service: Schema.Literals(applications),
 });
 
+const maximumContactNameLength = 100;
+const maximumContactMessageLength = 4000;
+
+const ContactSubmission = Schema.Struct({
+  email: Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u)),
+  message: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactMessageLength)),
+  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactNameLength)),
+});
+
+const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
 export {
   BooleanText,
+  ContactAccepted,
+  ContactSubmission,
   EmailVerificationRequest,
   EmailVerified,
   ErrorBody,
@@ -173,6 +186,8 @@ export {
   UserListQuery,
   absentSearchKey,
   laterPage,
+  maximumContactMessageLength,
+  maximumContactNameLength,
   maximumKeywordLength,
   maximumMemberPage,
   memberPageSize,

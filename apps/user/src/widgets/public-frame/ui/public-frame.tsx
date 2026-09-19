@@ -1,3 +1,4 @@
+import { PublicFooter } from "./public-footer.tsx";
 import { PublicHeader } from "./public-header.tsx";
 
 import type { ReactElement, ReactNode, ReactPortal } from "react";
@@ -9,6 +10,7 @@ function PublicFrame({
     <>
       <PublicHeader />
       {children}
+      <PublicFooter />
     </>
   );
 }
