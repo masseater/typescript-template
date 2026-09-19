@@ -11,8 +11,7 @@ const iconVariants = cva("shrink-0", {
   },
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function Icon({
+const Icon = ({
   icon: Glyph,
   size,
   tone,
@@ -20,8 +19,8 @@ function Icon({
   icon: LucideIcon;
   size?: "large" | "medium" | "small";
   tone?: "current" | "primary";
-}>): ReactElement {
+}>): ReactElement => {
   return <Glyph data-slot="icon" aria-hidden="true" className={iconVariants({ size, tone })} />;
-}
+};
 
 export { Icon };

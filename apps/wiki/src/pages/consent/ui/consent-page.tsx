@@ -1,5 +1,6 @@
+import { httpStatus } from "@repo/observability/http-status";
 import { decodeJson } from "@repo/runtime/client";
-import { Page, Status } from "@repo/ui";
+import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
 import { Schema } from "effect";
 import { useEffect, useState } from "react";
@@ -9,7 +10,6 @@ import { ConsentActions } from "./consent-actions.tsx";
 
 import type { ReactElement } from "react";
 
-const HTTP_UNAUTHORIZED = 401;
 const consentRoute = getRouteApi("/consent");
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
@@ -18,7 +18,7 @@ async function loadClientName(clientId: string): Promise<string | undefined> {
     `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
     { cache: "no-store", credentials: "same-origin" },
   );
-  if (response.status === HTTP_UNAUTHORIZED) {
+  if (response.status === httpStatus.unauthorized) {
     globalThis.location.assign(`/login${globalThis.location.search}`);
     return undefined;
   }
@@ -68,13 +68,15 @@ function ConsentPage(): ReactElement {
   return (
     <Page title={`${serviceName} との連携`}>
       {clientId === undefined && (
-        <Status variant="error">連携を求めているクライアントが分かりません。</Status>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          連携を求めているクライアントが分かりません。
+        </StatusMessage>
       )}
       {client !== undefined && <ConsentActions client={client} onError={setError} />}
       {clientId !== undefined && client === undefined && error === "" && (
-        <Status variant="pending">読み込み中です。</Status>
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       )}
-      {error !== "" && <Status variant="error">{error}</Status>}
+      {error !== "" && <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>}
     </Page>
   );
 }

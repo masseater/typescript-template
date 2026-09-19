@@ -4,7 +4,7 @@ import { Button } from "./button";
 
 import type { ReactElement } from "react";
 
-interface ConfirmDialogProps {
+type ConfirmDialogProps = {
   readonly confirmLabel: string;
   readonly description: string;
   readonly onConfirm: () => void;
@@ -12,19 +12,19 @@ interface ConfirmDialogProps {
   readonly open: boolean;
   readonly title: string;
   readonly variant?: "danger" | "primary" | undefined;
-}
+};
 
-function ConfirmDialogPopup({
+const ConfirmDialogPopup = ({
   confirmLabel,
   description,
   onConfirm,
   onOpenChange,
   title,
   variant = "primary",
-}: ConfirmDialogProps): ReactElement {
-  function cancel(): void {
+}: ConfirmDialogProps): ReactElement => {
+  const cancel = (): void => {
     onOpenChange(false);
-  }
+  };
   return (
     <AlertDialogPrimitive.Popup
       data-slot="confirm-dialog"
@@ -46,7 +46,7 @@ function ConfirmDialogPopup({
       </div>
     </AlertDialogPrimitive.Popup>
   );
-}
+};
 
 export { ConfirmDialogPopup };
 export type { ConfirmDialogProps };

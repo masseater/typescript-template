@@ -26,15 +26,25 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["@repo/runtime/worker", "**/libs/runtime/src/**"],
   ["@repo/runtime/account", "**/libs/runtime/src/**"],
   ["@repo/runtime/wiki", "**/libs/runtime/src/**"],
+  ["@repo/runtime/contact", "**/libs/runtime/src/**"],
   ["@repo/db", "**/libs/db/src/**"],
   ["@repo/auth", "**/libs/auth/src/**"],
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
 
+function denialReason(error: unknown): string {
+  const text = String(error);
+  return (
+    /Denied by file pattern: (?<pattern>\S+)/u.exec(text)?.groups?.["pattern"] ??
+    /Denied by specifier pattern: (?<pattern>\S+)/u.exec(text)?.groups?.["pattern"] ??
+    (text.includes("Denied by marker") ? "marker" : "denied")
+  );
+}
+
 async function clientBuild(specifiers: readonly string[], outDirectory: string): Promise<string> {
   try {
     await build({
-      build: { outDir: outDirectory },
+      build: { emptyOutDir: true, outDir: outDirectory },
       configFile: path.join(appRoot, "vite.config.ts"),
       logLevel: "silent",
       plugins: [
@@ -58,10 +68,7 @@ async function clientBuild(specifiers: readonly string[], outDirectory: string):
     });
     return "";
   } catch (error: unknown) {
-    return (
-      /Denied by file pattern: (?<pattern>\S+)/u.exec(String(error))?.groups?.["pattern"] ??
-      "denied"
-    );
+    return denialReason(error);
   }
 }
 
@@ -80,28 +87,30 @@ const temporaryOutput = Effect.acquireRelease(
   (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
 );
 
-function serverOnlyProblems(
-  outDirectory: string,
-  [specifier, pattern]: readonly [string, string],
-): Effect.Effect<readonly string[]> {
-  return Effect.promise(async () => clientBuild([specifier], outDirectory)).pipe(
-    Effect.map((denial) =>
-      denial === pattern
-        ? []
-        : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`],
+function serverOnlyProblems([specifier, pattern]: readonly [string, string]): Effect.Effect<
+  readonly string[]
+> {
+  return Effect.scoped(
+    temporaryOutput.pipe(
+      Effect.flatMap((outDirectory) =>
+        Effect.promise(async () => clientBuild([specifier], outDirectory)),
+      ),
+      Effect.map((denial) =>
+        denial === pattern
+          ? []
+          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`],
+      ),
     ),
   );
 }
 
 const inspect = Effect.gen(function* inspect() {
-  const outDirectory = yield* temporaryOutput;
+  const reachableDirectory = yield* temporaryOutput;
   const reachableDenial = yield* Effect.promise(async () =>
-    clientBuild(clientReachable, outDirectory),
+    clientBuild(clientReachable, reachableDirectory),
   );
-  const markers = yield* Effect.promise(async () => bundledMarkers(outDirectory));
-  const denials = yield* Effect.forEach(serverOnly, (entry) =>
-    serverOnlyProblems(outDirectory, entry),
-  );
+  const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
+  const denials = yield* Effect.forEach(serverOnly, serverOnlyProblems);
   return [
     ...(reachableDenial === ""
       ? []

@@ -1,5 +1,5 @@
 import { maximumContactMessageLength, maximumContactNameLength } from "@repo/runtime/contracts";
-import { Button, Field, FormColumn, Status } from "@repo/ui";
+import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ContactFormState } from "#pages/contact/model/contact-form.ts";
 import type { ReactElement } from "react";
@@ -38,8 +38,12 @@ function ContactFormFields({ form }: Readonly<{ form: ContactFormState }>): Reac
         <Button type="submit" variant="primary" disabled={form.blocked}>
           送信する
         </Button>
-        {form.pending ? <Status variant="pending">送信しています。</Status> : undefined}
-        {form.error !== "" ? <Status variant="error">{form.error}</Status> : undefined}
+        {form.pending ? (
+          <StatusMessage variant={STATUS_VARIANT.pending}>送信しています。</StatusMessage>
+        ) : undefined}
+        {form.error !== "" ? (
+          <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
+        ) : undefined}
       </FormColumn>
     </form>
   );

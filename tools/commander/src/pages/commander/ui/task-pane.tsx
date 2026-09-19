@@ -1,4 +1,4 @@
-import { Heading, Status } from "@repo/ui";
+import { Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useState } from "react";
 
 import { TaskDetail } from "./task-detail.tsx";
@@ -29,7 +29,7 @@ function TaskPane({ tasks }: Readonly<{ tasks: Tasks }>): ReactElement {
       <Heading as="h2" size="page">
         タスク
       </Heading>
-      {all.length === 0 ? <Status>タスクはまだありません。</Status> : undefined}
+      {all.length === 0 ? <StatusMessage>タスクはまだありません。</StatusMessage> : undefined}
       {shown.map(([kind, label]) => (
         <TaskGroup
           key={kind}

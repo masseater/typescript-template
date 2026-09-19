@@ -1,3 +1,4 @@
+import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
@@ -7,29 +8,28 @@ import { FormColumn } from "./shared/ui/form-column";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import type { ChallengeMode } from "./challenge-form";
 import type { TextInput } from "./use-text-input";
 
-interface CredentialsFormProps {
+type CredentialsFormProps = {
   readonly action: ActionState;
   readonly email: TextInput;
   readonly password: TextInput;
   readonly onAuthenticated: AuthenticatedHandler;
   readonly onChallenge: (mode: ChallengeMode) => void;
-}
+};
 
-async function signIn({
+const signIn = async ({
   email,
   onAuthenticated,
   onChallenge,
   password,
-}: Omit<CredentialsFormProps, "action">): Promise<void> {
-  const data = requireSuccess(
+}: Omit<CredentialsFormProps, "action">): Promise<void> => {
+  const signedIn = requireSuccess(
     await authClient.signIn.email({ email: email.value, password: password.value }),
   );
   password.handleChange("");
-  if ("twoFactorRedirect" in data && data.twoFactorRedirect === true) {
-    onChallenge("totp");
+  if ("twoFactorRedirect" in signedIn && signedIn.twoFactorRedirect === true) {
+    onChallenge(CHALLENGE_MODE.totp);
     return;
   }
   if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
@@ -37,14 +37,14 @@ async function signIn({
     return;
   }
   await onAuthenticated();
-}
+};
 
-function CredentialsForm(props: CredentialsFormProps): ReactElement {
+const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
   const { action, email, password } = props;
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
-    event.preventDefault();
+  const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
+    submitEvent.preventDefault();
     action.run(async () => signIn(props));
-  }
+  };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>
       <FormColumn>
@@ -72,6 +72,6 @@ function CredentialsForm(props: CredentialsFormProps): ReactElement {
       </FormColumn>
     </form>
   );
-}
+};
 
 export { CredentialsForm };

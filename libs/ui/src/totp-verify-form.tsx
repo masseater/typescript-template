@@ -8,16 +8,18 @@ import { useTextInput } from "./use-text-input";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { ActionState } from "./action";
 
-interface TotpVerifyFormProps {
+const TotpVerifyForm = ({
+  action,
+  onVerified,
+  saved,
+}: {
   readonly action: ActionState;
   readonly saved: boolean;
   readonly onVerified: () => void;
-}
-
-function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): ReactElement {
+}): ReactElement => {
   const code = useTextInput();
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
-    event.preventDefault();
+  const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
+    submitEvent.preventDefault();
     action.run(async () => {
       if (!saved) {
         throw new Error("バックアップコードを保管してください。");
@@ -29,7 +31,7 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
       code.handleChange("");
       globalThis.location.assign("/");
     });
-  }
+  };
   return (
     <form onSubmit={submit}>
       <FormColumn>
@@ -40,6 +42,6 @@ function TotpVerifyForm({ action, onVerified, saved }: TotpVerifyFormProps): Rea
       </FormColumn>
     </form>
   );
-}
+};
 
 export { TotpVerifyForm };

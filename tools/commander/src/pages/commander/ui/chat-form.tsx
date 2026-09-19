@@ -1,4 +1,4 @@
-import { Button, Status } from "@repo/ui";
+import { Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { useChatForm } from "#pages/commander/model/use-chat-form.ts";
 import { MessageBox } from "#shared/ui/index.ts";
@@ -26,7 +26,9 @@ function ChatForm({ busy }: Readonly<{ busy: boolean }>): ReactElement {
         ) : undefined}
       </div>
       {form.failed ? (
-        <Status variant="error">送れませんでした。アプリが動いているか確認してください。</Status>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          送れませんでした。アプリが動いているか確認してください。
+        </StatusMessage>
       ) : undefined}
     </form>
   );

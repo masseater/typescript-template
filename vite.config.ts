@@ -29,7 +29,17 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
-      "check:client": { command: "node tools/quality/client-bundle.ts", input: [...taskInput] },
+      "check:client": {
+        command: "node tools/quality/client-bundle.ts",
+        input: [
+          ...taskInput,
+          "!**/dist/**",
+          "!**/node_modules/.cache/**",
+          { base: "workspace", pattern: "!.local" },
+          { base: "workspace", pattern: "!.local/**" },
+        ],
+        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+      },
       "check:code": { command: "vp check", input: [...taskInput] },
       ...effectDiagnostics,
       "check:imports":
@@ -87,7 +97,9 @@ export default defineConfig({
           exclude: [...defaultExclude, workerTests],
           include: [
             "libs/**/*.test.ts",
+            "libs/**/*.test.tsx",
             "apps/**/*.test.ts",
+            "apps/**/*.test.tsx",
             "tools/dev/**/*.test.ts",
             "tools/quality/**/*.test.ts",
             "tools/load/**/*.test.ts",

@@ -2,19 +2,20 @@ import { expect, screen, userEvent } from "storybook/test";
 
 import preview from "../../../storybook/preview";
 import { Button } from "./button";
+import { STATUS_VARIANT } from "./status-variants.ts";
 import { ToastProvider } from "./toast-provider";
 import { useToast } from "./use-toast";
 
 import type { ReactElement } from "react";
 
-function ToastTrigger(): ReactElement {
+const ToastTrigger = (): ReactElement => {
   const toast = useToast();
-  function success(): void {
-    toast("success", "利用者の権限を変更しました。");
-  }
-  function failure(): void {
-    toast("error", "利用者の権限を変更できませんでした。");
-  }
+  const success = (): void => {
+    toast(STATUS_VARIANT.success, "利用者の権限を変更しました。");
+  };
+  const failure = (): void => {
+    toast(STATUS_VARIANT.failure, "利用者の権限を変更できませんでした。");
+  };
   return (
     <div className="flex gap-2">
       <Button type="button" variant="primary" onClick={success}>
@@ -25,7 +26,7 @@ function ToastTrigger(): ReactElement {
       </Button>
     </div>
   );
-}
+};
 
 const meta = preview.meta({ args: { children: <ToastTrigger /> }, component: ToastProvider });
 

@@ -1,4 +1,4 @@
-import { Heading, Status } from "@repo/ui";
+import { Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { CommentForm } from "./comment-form.tsx";
 import { TaskThread } from "./task-thread.tsx";
@@ -25,7 +25,9 @@ function TaskDetail({ task }: Readonly<{ task: typeof Task.Type }>): ReactElemen
         <p className="whitespace-pre-wrap text-foreground">完了の条件: {task.acceptance}</p>
       )}
       <TaskThread thread={task.thread} />
-      {task.thread.length === 0 ? <Status>コメントはまだありません。</Status> : undefined}
+      {task.thread.length === 0 ? (
+        <StatusMessage>コメントはまだありません。</StatusMessage>
+      ) : undefined}
       <CommentForm taskId={task.id} />
     </section>
   );
