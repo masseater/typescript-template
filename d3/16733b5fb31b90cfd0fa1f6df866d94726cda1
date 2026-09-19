@@ -1,0 +1,7 @@
+Revision history for #666:
+
+rev 3 (content) 2026-09-19 18:03 UTC
+rev 2 (content) 2026-09-19 17:54 UTC
+rev 1 (initial) 2026-09-19 17:54 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":666,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"3d5724e70214e24dcf32a2c7803e1efa1ecbf0c0","timestamp_iso":"2026-09-19T17:54:26Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"3d5724e70214e24dcf32a2c7803e1efa1ecbf0c0","new_sha":"677ebf93066376a1ef741ed2d19e7ae4d41f3624","timestamp_iso":"2026-09-19T17:54:26Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/3d5724e70214e24dcf32a2c7803e1efa1ecbf0c0...677ebf93066376a1ef741ed2d19e7ae4d41f3624"},{"number":3,"change_type":"content","old_sha":"677ebf93066376a1ef741ed2d19e7ae4d41f3624","new_sha":"b1648a475e68aa2949c31f26f0495d4e9f818cfa","timestamp_iso":"2026-09-19T18:03:01Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/677ebf93066376a1ef741ed2d19e7ae4d41f3624...b1648a475e68aa2949c31f26f0495d4e9f818cfa"}]} -->
