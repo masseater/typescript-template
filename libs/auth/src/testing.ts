@@ -1,0 +1,20 @@
+export {
+  Fixture,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_FOUND,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  PASSWORD,
+  TEST_TIMEOUT,
+  bootstrapVerifiedAdmin,
+  decodeOrDie,
+  enableTotp,
+  failureTag,
+  registerVerified,
+  runStatement,
+  signIn,
+  signInAs,
+  withAuth,
+} from "./auth-test-fixture.ts";
+export { BrowserClient, origins } from "./browser-client.ts";

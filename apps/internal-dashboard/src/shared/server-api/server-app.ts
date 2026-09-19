@@ -7,7 +7,7 @@ import { serveMcp } from "./mcp.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { searchWiki } from "./search.ts";
 
-import type { WikiServices } from "@repo/runtime/wiki";
+import type { WikiServices } from "#shared/wiki/index.ts";
 
 const maximumQueryLength = 200;
 const api = apiRoutes(runtime, reporting);
