@@ -2,9 +2,6 @@
   "name": "@repo/load",
   "private": true,
   "type": "module",
-  "scripts": {
-    "load": "node src/cli.ts"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/runtime": "workspace:*",

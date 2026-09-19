@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && node tools/dev/src/prepare-browser.ts"
+    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

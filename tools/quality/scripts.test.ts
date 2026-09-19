@@ -70,13 +70,22 @@ const alchemyCommands = [
   "vp run deploy; alchemy destroy",
 ];
 
+const nodeFileCommands = [
+  "node tools/dev/src/cli.ts",
+  "node src/cli.ts setup",
+  "./node_modules/.bin/node src/cli.ts",
+  "CI=true node src/inspect.ts",
+  "env NODE_ENV=production node src/cli.ts",
+  "vp check && node src/cli.ts",
+];
+
 const vitePlusCommands = [
   "vp run --filter @repo/dev setup",
   "vp run -r build",
   "vp exec knip",
   "vp dlx wrangler deploy",
   "CI=true vp run test",
-  "node tools/dev/src/cli.ts",
+  "node --version",
   "echo 'pnpm run test'",
   "vp run build -- --reporter pnpm",
 ];
@@ -132,7 +141,21 @@ describe("workspace script conventions", () => {
   });
 });
 
+describe("workspace scripts that run a file with node", () => {
+  it.for(nodeFileCommands)("rejects running a file with node: %s", (command) => {
+    expect.assertions(1);
+    expect(scriptViolations({ scripts: { probe: command } })).toContain(
+      `probe: node でファイルを直接実行せず、vite.config.ts の run.tasks に置いて vp run で実行してください: ${command}`,
+    );
+  });
+});
+
 describe("vite task conventions", () => {
+  it.for(nodeFileCommands)("keeps running a file with node available to tasks: %s", (command) => {
+    expect.assertions(1);
+    expect(taskViolations({ probe: { command } })).toStrictEqual([]);
+  });
+
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
     expect.assertions(1);
     expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);

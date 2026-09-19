@@ -17,7 +17,6 @@ const awaitingPresetPackages = [
   "libs/auth/**",
   "libs/config/**",
   "libs/db/**",
-  "libs/dev-boundary/**",
   "libs/interview/**",
   "libs/monitor/**",
   "libs/observability/**",
