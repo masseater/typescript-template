@@ -7,7 +7,7 @@ import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts"
 import { toPosixPath } from "../../lib/posix-path.ts";
 
 import type { ESTree } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import type { StyleClassIndexLoader } from "../../lib/style-classes/class-index.ts";
 import type { StyleClassSite } from "../../lib/style-classes/stylesheet-classes.ts";
 

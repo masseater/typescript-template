@@ -8,7 +8,7 @@ import {
 } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { defaultExportedValue, unwrappedCall, valueAt } from "../lint/oxlint/lib/config-object.ts";
 
-import type { RepositoryProblem, ScannedProblems } from "@repo/repository-checks";
+import type { RepositoryProblem, ScannedProblems } from "@repo/dont-review-it/repository-checks";
 import type { TelemetryWiringConfig } from "./config.ts";
 
 const configDirectoriesIn = (repositoryRoot: string): readonly string[] =>
