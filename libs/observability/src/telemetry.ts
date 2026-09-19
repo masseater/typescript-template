@@ -5,8 +5,8 @@ import { isRoutes } from "./protocol.ts";
 import { serviceLabel, structuredLogs } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 
-import type { ServiceName } from "@repo/config";
 import type { OtlpDestination, TelemetryFlusher } from "./otlp.ts";
+import type { ServiceName } from "./service-name.ts";
 import type { StructuredLogOptions } from "./structured-logs.ts";
 
 interface TelemetryShape {

@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/local": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

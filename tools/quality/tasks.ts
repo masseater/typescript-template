@@ -1,7 +1,7 @@
 import { field, workspaceManifests } from "./dependencies.ts";
 import { directoryOfGlobKey } from "./repository-path.ts";
 
-import type { Tasks } from "@repo/config/vite";
+import type { Tasks } from "@repo/vite-config";
 import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
 
 const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> = import.meta.glob(

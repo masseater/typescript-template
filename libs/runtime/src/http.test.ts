@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { cspNonceHeader, strictTransportSecurity } from "@repo/config/security";
 import { Telemetry, httpStatus } from "@repo/observability";
+import { cspNonceHeader, strictTransportSecurity } from "@repo/runtime/security";
 import { Effect, Layer, Schema } from "effect";
 
 import { ProfileUpdate } from "./contracts.ts";

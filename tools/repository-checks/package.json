@@ -27,8 +27,8 @@
   },
   "devDependencies": {
     "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
-    "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
-    "@repo/config": "workspace:*",
+    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",
