@@ -17,7 +17,7 @@ const sessionUserMatchesRecord: Matches<
 > = true;
 const profileViewMatchesRecord: Matches<
   typeof ProfileView.Type,
-  "email" | "id" | "name" | "profile"
+  "email" | "id" | "name" | "profile" | "socialLinks"
 > = true;
 const userSummaryMatchesRecord: Matches<
   (typeof UserList.Type)["users"][number],
