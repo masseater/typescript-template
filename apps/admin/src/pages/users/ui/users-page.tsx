@@ -13,7 +13,7 @@ function UsersPage(): ReactElement {
   return (
     <main className="flex flex-col gap-4 p-4">
       <Heading as="h1" size="page">
-        ユーザー一覧
+        利用者の一覧
       </Heading>
       <UserFilters key={JSON.stringify(search)} search={search} />
       <UserResults search={search} state={state} onReload={reload} />

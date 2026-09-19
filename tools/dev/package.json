@@ -3,14 +3,20 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@repo/auth": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
     "@repo/local": "workspace:*",
     "agent-browser": "0.37.1",
+    "better-auth": "catalog:",
     "effect": "catalog:",
+    "otpauth": "9.5.2",
     "playwright": "catalog:",
-    "portless": "0.15.6"
+    "portless": "0.15.6",
+    "wrangler": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

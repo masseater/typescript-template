@@ -1,4 +1,5 @@
 import { initBrowserTelemetry } from "@repo/observability/browser";
+import { ToastProvider } from "@repo/ui";
 import { HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 
@@ -24,7 +25,9 @@ function RootDocument(): ReactElement {
         <HeadContent />
       </head>
       <body className="flex min-h-svh flex-col">
-        <WikiProvider />
+        <ToastProvider>
+          <WikiProvider />
+        </ToastProvider>
         <Scripts />
       </body>
     </html>

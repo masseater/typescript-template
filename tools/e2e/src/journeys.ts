@@ -160,7 +160,7 @@ const runOperatorJourney = async (
   const operatorOrigin = environment.originOf("operator");
   await signIn({ account, origin: operatorOrigin, page });
   await answerTotpChallenge(page, enrollment.uri);
-  await seeHeading(page, "ユーザー一覧");
+  await seeHeading(page, "利用者の一覧");
   await seeText(page, account.email);
   return {
     landsOnTheOperatorOrigin: new URL(page.url()).origin === operatorOrigin,
