@@ -1,4 +1,5 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
+import { LazyMotion, MotionConfig, domAnimation } from "motion/react";
 
 import { ToastViewport } from "./toast-viewport";
 
@@ -7,10 +8,14 @@ import type { Children } from "./types";
 
 const ToastProvider = ({ children }: Children): ReactElement => {
   return (
-    <ToastPrimitive.Provider>
-      {children}
-      <ToastViewport />
-    </ToastPrimitive.Provider>
+    <LazyMotion features={domAnimation} strict>
+      <MotionConfig reducedMotion="user">
+        <ToastPrimitive.Provider>
+          {children}
+          <ToastViewport />
+        </ToastPrimitive.Provider>
+      </MotionConfig>
+    </LazyMotion>
   );
 };
 

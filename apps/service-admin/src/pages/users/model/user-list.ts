@@ -1,19 +1,12 @@
 import { apiData } from "@repo/runtime/client";
 import { UserList } from "@repo/runtime/contracts";
-import { errorMessage } from "@repo/ui";
+import { errorMessage, formatWarekiDate } from "@repo/ui";
 import { useEffect, useState } from "react";
 
 import { adminClient } from "#shared/api/index.ts";
 import { userListQuery } from "./users-search.ts";
 
 import type { UsersSearch } from "./users-search.ts";
-
-const registeredDate = new Intl.DateTimeFormat("ja-JP", {
-  day: "numeric",
-  month: "numeric",
-  timeZone: "Asia/Tokyo",
-  year: "numeric",
-});
 
 interface ListedUser {
   readonly email: string;
@@ -50,7 +43,7 @@ async function fetchUsers(query: Readonly<Record<string, string>>): Promise<User
         emailVerified,
         id,
         name,
-        registeredOn: registeredDate.format(createdAt),
+        registeredOn: formatWarekiDate(createdAt),
         role,
         twoFactorEnabled,
       }),

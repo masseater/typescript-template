@@ -109,7 +109,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 4. 和文フォントのフォールバック、アイコンセット、境界線と影の使い分けを揃えます。
 5. ブランド色（`BRAND`）とロゴは移植しません。
 
-状況は一部です。色・角丸・影・文字のトークンの移植と `shared/ui` の部品は入っていて、残っているのは和文フォントのフォールバックです。
+状況は完了です。色・角丸・影・文字のトークンの移植と `shared/ui` の部品に加え、和文フォントのフォールバックも `libs/ui` の body に揃えています。
 
 ### 見た目のルールを lint で守らせる
 
@@ -122,11 +122,11 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | 優先度 | 採用するもの | 役割 | 状況 |
 | --- | --- | --- | --- |
 | ★5 | Paraglide JS | i18n を担います。TanStack Start の公式サンプルがあります | 未着手 |
-| ★5 | `@smarthr/wareki` | 和暦を変換します | 未着手 |
+| ★5 | `@smarthr/wareki` | 和暦を変換します | 導入済み |
 | ★5 | Storybook 10、`@storybook/addon-mcp`、Vitest addon | AI が部品を参照、再利用、テストできるようにします | 導入済み |
 | ★4 | Storybook a11y addon（axe） | 描画結果の a11y 違反を検出します | 導入済み |
-| ★3 | `temporal-polyfill` | Safari でも Temporal を使えるようにします | 未着手 |
-| ★2 | Motion | アニメーションを担います | 未着手 |
+| ★3 | `temporal-polyfill` | Safari でも Temporal を使えるようにします | 導入済み |
+| ★2 | Motion | アニメーションを担います | 導入済み |
 
 ## フィーチャーフラグ
 
