@@ -109,12 +109,13 @@ const scripts = {
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
   "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
-  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
-  "tools/observe": [
+  "tools/dev": [
     "src/cli.ts!",
-    "src/verify.ts!",
-    "src/symbolicate.ts!",
-    "src/receiver-check.ts!",
+    "src/prepare-browser.ts!",
+    "src/observe/cli.ts!",
+    "src/observe/verify.ts!",
+    "src/observe/symbolicate.ts!",
+    "src/observe/receiver-check.ts!",
   ],
 };
 
@@ -173,10 +174,6 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "tools/load": { ...load, entry: [...load.entry, ...productionOnly(...loadCommands)] },
-      "tools/observe": {
-        entry: productionOnly(...scripts["tools/observe"]),
-        project: ["src/**/*.ts!"],
-      },
     },
   };
 };

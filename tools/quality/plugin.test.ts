@@ -129,7 +129,7 @@ const forbiddenCode = [
     "annotations",
   ],
   [
-    "tools/observe/src/probe.ts",
+    "tools/dev/src/observe/probe.ts",
     'import { Effect } from "effect"; export const run = (e: never) => Effect.withLogSpan(e, "x");',
     "annotations",
   ],
@@ -252,7 +252,7 @@ const validBoundaries = [
   ],
   ["libs/config/src/probe.ts", "export const value = import.meta.env;"],
   ["infra/cloudflare/src/probe.ts", "export const value = process.env;"],
-  ["tools/observe/src/probe.ts", "export const value = process.env;"],
+  ["tools/dev/src/observe/probe.ts", "export const value = process.env;"],
   ["libs/db/src/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/probe.test.ts", 'export * from "@repo/db/admin";'],
   ["libs/auth/src/probe-fixture.ts", 'export * from "@repo/db/testing";'],

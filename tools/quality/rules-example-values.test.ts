@@ -8,32 +8,32 @@ const awsAccessKeyProbe = `export const accessKey = "${["AKIA", "A".repeat(16)].
 const forbidden = [
   [
     "real-looking-host",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const origin = "https://probe.private-host.net";',
   ],
   [
     "real-looking-host-in-template",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     "export const origin = `http://probe.private-host.net:3001/`;",
   ],
   [
     "bare-hostname",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const host = "probe.private-host.net";',
   ],
   [
     "reserved-label-bypass",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const origin = "https://internal.example-corp.com";',
   ],
   [
     "websocket-host",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const origin = "wss://probe.private-host.net/ws";',
   ],
   [
     "scheme-relative-host",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const origin = "//probe.private-host.net/path";',
   ],
   [
@@ -43,10 +43,14 @@ const forbidden = [
   ],
   [
     "hex-trace-id",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const traceId = "0123456789abcdeffedcba9876543210";',
   ],
-  ["hex-span-id", "tools/observe/src/probe.test.ts", 'export const spanId = "0123456789abcdef";'],
+  [
+    "hex-span-id",
+    "tools/dev/src/observe/probe.test.ts",
+    'export const spanId = "0123456789abcdef";',
+  ],
   ["github-token", "infra/cloudflare/src/probe-fixture.ts", githubTokenProbe],
   ["aws-access-key", "infra/cloudflare/src/probe-fixture.ts", awsAccessKeyProbe],
   [
@@ -86,33 +90,39 @@ const forbidden = [
   ],
   [
     "array-element-host",
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const hosts = ["probe.private-host.net"];',
   ],
 ] as const;
 
 const allowed = [
-  ["tools/observe/src/probe.ts", 'export const origin = "https://probe.private-host.net";'],
-  ["tools/observe/src/probe.test.ts", 'export const origin = "http://app.example.ts.net:3001/";'],
-  ["tools/observe/src/probe.test.ts", 'export const host = "mac-mini.example.ts.net";'],
-  ["tools/observe/src/probe.test.ts", 'export const origin = "http://127.0.0.1:3001/";'],
-  ["tools/observe/src/probe.test.ts", 'export const origin = "https://api.cloudflare.com/x";'],
+  ["tools/dev/src/observe/probe.ts", 'export const origin = "https://probe.private-host.net";'],
   [
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
+    'export const origin = "http://app.example.ts.net:3001/";',
+  ],
+  ["tools/dev/src/observe/probe.test.ts", 'export const host = "mac-mini.example.ts.net";'],
+  ["tools/dev/src/observe/probe.test.ts", 'export const origin = "http://127.0.0.1:3001/";'],
+  ["tools/dev/src/observe/probe.test.ts", 'export const origin = "https://api.cloudflare.com/x";'],
+  [
+    "tools/dev/src/observe/probe.test.ts",
     'export const schema = "https://opentelemetry.io/schemas/1.20.0";',
   ],
   [
-    "tools/observe/src/probe.test.ts",
+    "tools/dev/src/observe/probe.test.ts",
     'export const registry = "https://registry.npmjs.org/vite-plus";',
   ],
-  ["tools/observe/src/probe.test.ts", 'export const docs = "https://192.0.2.10/status";'],
-  ["tools/observe/src/probe.test.ts", 'export const event = "application.error";'],
+  ["tools/dev/src/observe/probe.test.ts", 'export const docs = "https://192.0.2.10/status";'],
+  ["tools/dev/src/observe/probe.test.ts", 'export const event = "application.error";'],
   [
     "libs/db/src/probe-fixture.ts",
     'export const databaseId = "22222222-2222-4222-8222-222222222222";',
   ],
-  ["tools/observe/src/probe.test.ts", 'export const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";'],
-  ["tools/observe/src/probe.test.tsx", 'export const spanId = "0000000000000000";'],
+  [
+    "tools/dev/src/observe/probe.test.ts",
+    'export const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";',
+  ],
+  ["tools/dev/src/observe/probe.test.tsx", 'export const spanId = "0000000000000000";'],
   [
     "infra/cloudflare/src/probe-fixture.ts",
     'export const authSecret = "verification-test-secret-0123456789abcdef";',
