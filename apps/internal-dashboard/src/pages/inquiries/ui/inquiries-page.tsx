@@ -1,4 +1,4 @@
-import { Status } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { OpsPage } from "#widgets/ops-page/index.ts";
 
@@ -10,7 +10,9 @@ function InquiriesPage(): ReactElement {
       <p className="text-base leading-normal text-muted-foreground">
         読むだけの画面です。返信は管理者アプリで行います。
       </p>
-      <Status variant="pending">問い合わせの一覧はまだありません。</Status>
+      <StatusMessage variant={STATUS_VARIANT.pending}>
+        問い合わせの一覧はまだありません。
+      </StatusMessage>
     </OpsPage>
   );
 }

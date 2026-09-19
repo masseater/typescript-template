@@ -25,7 +25,7 @@ const access = {
 };
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const zone = `https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`;
-const { hostname } = new URL(verificationSettings.origins.user);
+const { hostname } = new URL(verificationSettings.origins["service-member"]);
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
 const SECRETS_STORE_PAGE_LIMIT = 100;
