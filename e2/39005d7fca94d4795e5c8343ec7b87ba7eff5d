@@ -1,0 +1,1 @@
+Route wiki MCP reader lookup and test DB helpers through @repo/auth so no-wiki-to-database stays green after the fold.
