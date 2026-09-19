@@ -9,7 +9,7 @@ import { describeLibraryOwner } from "../../lib/library-vocabulary/owner-descrip
 import { libraryOwnersOf } from "../../lib/library-vocabulary/vocabulary-index.ts";
 import { isOutOfScopeLintSource } from "../../lib/out-of-scope-source.ts";
 
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import type { CanonicalValuesCatalogLoader } from "../../lib/canonical-values/catalog-loader.ts";
 import type { CanonicalValuesEntry } from "../../lib/canonical-values/catalog.ts";
 import type { CanonicalValue } from "../../lib/canonical-values/fingerprint.ts";

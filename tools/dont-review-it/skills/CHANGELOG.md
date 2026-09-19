@@ -5,7 +5,7 @@ What each published version changes for the packages that install it, and for th
 ## 0.0.0
 
 - `dontReviewItPreset`, the single published config, whose `fmt` and `lint` functions each return the object the matching Vite+ block must own outright.
-- `lint` carries the oxlint rule sets of `@repo/lint-rule-authoring`, `@repo/dont-review-it`, and `@mst/verified-specifications`, every rule at error severity, registered together with the js plugin that holds the custom rules.
+- `lint` carries the oxlint rule sets of `@repo/dont-review-it`, and `@mst/verified-specifications`, every rule at error severity, registered together with the js plugin that holds the custom rules.
 - `fmt` fixes the formatting choices that change a diff without changing what a reader sees: markdown paragraphs collapse to one line, and imports sort by origin.
 - Both functions read the three git ignore paths oxlint and oxfmt do not read and turn them into `ignorePatterns`.
 - Shared tsconfig presets published as subpath exports (`./tsconfig/app.json`, `./tsconfig/library.json`).
