@@ -1,4 +1,4 @@
-import { LINT_SEVERITY, type WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import { LINT_SEVERITY, type WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { defineConfig, type OxlintConfig } from "oxlint";
 
 import { noUnregisteredRulePlugin } from "../lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts";

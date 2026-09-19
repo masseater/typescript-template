@@ -1,4 +1,4 @@
-import { EXIT_MISUSE } from "@repo/repository-checks";
+import { EXIT_MISUSE } from "@repo/dont-review-it/repository-checks";
 import { runCommand } from "citty";
 import { describe, expect, it } from "vite-plus/test";
 

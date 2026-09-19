@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe, expect, it } from "vite-plus/test";
 
 import { requireTestAssetsConstants } from "./require-test-assets-constants--move-setup-to-spec.ts";

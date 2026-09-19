@@ -1,4 +1,4 @@
-import { firstToken } from "@repo/lint-rule-authoring";
+import { firstToken } from "@repo/dont-review-it/lint-rule-authoring";
 
 import { DIRECTIVE_GROUNDS_SEPARATOR } from "../directive-comments.ts";
 
