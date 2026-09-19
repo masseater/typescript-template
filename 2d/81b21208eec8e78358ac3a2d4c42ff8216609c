@@ -1,0 +1,1 @@
+Teach knip that the wiki OAuth fixture is test-only and that @repo/db is vite-local-only under --strict after MCP left libs/auth.
