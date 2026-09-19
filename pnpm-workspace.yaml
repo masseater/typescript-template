@@ -95,3 +95,4 @@ peerDependencyRules:
     vitest: "*"
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
+  fumadocs-mdx@15.4.1: patches/fumadocs-mdx@15.4.1.patch
