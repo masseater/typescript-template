@@ -5,7 +5,7 @@ const load = {
   ignoreDependencies: ["k6"],
   project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
 };
-const loadCommands = ["src/cli.ts!"];
+const loadCommands = ["src/cli.ts!", "src/ci.ts!"];
 
 const workspaces = {
   ".": {
@@ -172,7 +172,11 @@ const config = ({
         ignoreDependencies: ["playwright"],
         project: ["src/**/*.ts!"],
       },
-      "tools/load": { ...load, entry: [...load.entry, ...productionOnly(...loadCommands)] },
+      "tools/load": {
+        ...load,
+        entry: [...load.entry, ...productionOnly(...loadCommands)],
+        ignoreBinaries: productionOnly("vp"),
+      },
       "tools/observe": {
         entry: productionOnly(...scripts["tools/observe"]),
         project: ["src/**/*.ts!"],

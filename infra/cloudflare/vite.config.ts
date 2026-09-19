@@ -11,22 +11,22 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
-      "bootstrap:state": { cache: false, command: "node src/bootstrap-state.ts" },
-      "db:bootstrap:remote": { cache: false, command: "node src/database-command.ts bootstrap" },
-      "db:migrate:remote": { cache: false, command: "node src/database-command.ts migrate" },
+      "bootstrap:state": { cache: false, command: "./src/bootstrap-state.ts" },
+      "db:bootstrap:remote": { cache: false, command: "./src/database-command.ts bootstrap" },
+      "db:migrate:remote": { cache: false, command: "./src/database-command.ts migrate" },
       deploy: {
         cache: false,
-        command: "node src/cli.ts deploy",
-        dependsOn: [...stackBuilds, "prerelease", "typescript-template#prerelease"],
+        command: "./src/cli.ts deploy",
+        dependsOn: stackBuilds,
       },
       preview: {
         cache: false,
-        command: "node src/cli.ts plan all",
+        command: "./src/cli.ts plan all",
         dependsOn: stackBuilds,
       },
-      "verify:account": { cache: false, command: "node src/check-account.ts" },
+      "verify:account": { cache: false, command: "./src/check-account.ts" },
       "verify:stacks": {
-        command: "node src/check-stacks.ts",
+        command: "./src/check-stacks.ts",
         dependsOn: stackBuilds,
         input: [...taskInput],
       },

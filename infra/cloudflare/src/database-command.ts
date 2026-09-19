@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { runCli } from "@repo/config/cli";
 import { runRemoteDatabaseCommand } from "@repo/db/remote";
 import { layer } from "alchemy/Alchemist";

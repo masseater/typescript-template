@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
