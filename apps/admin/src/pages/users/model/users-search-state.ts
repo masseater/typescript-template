@@ -6,12 +6,12 @@ import { normalizeUsersSearch } from "./users-search.ts";
 
 import type { UsersSearch } from "./users-search.ts";
 
-const route = getRouteApi("/_admin/");
+const route = getRouteApi("/_admin/members");
 
 function useUsersSearch(): UsersSearch {
   const raw: unknown = route.useSearch();
   const search = normalizeUsersSearch(raw);
-  const navigate = useNavigate({ from: "/" });
+  const navigate = useNavigate({ from: "/members" });
   useEffect(() => {
     if (!isEqual(raw, search)) {
       void navigate({ replace: true, search });
