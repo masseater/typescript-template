@@ -6,11 +6,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { secretsFile } from "@repo/config/deployment";
-import { deploymentKeys } from "@repo/config/deployment-keys";
+import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect } from "effect";
 
 import { verifySecretsFile } from "./credentials.ts";
+import { secretsFile } from "./deployment.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
 
 import type { Scope } from "effect";

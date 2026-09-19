@@ -1,4 +1,4 @@
-import { reportFailed } from "@repo/config/cli";
+import { reportFailed } from "@repo/cli";
 import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 

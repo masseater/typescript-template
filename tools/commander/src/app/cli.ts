@@ -2,9 +2,8 @@
 import { parseArgs } from "node:util";
 
 import { NodeServices } from "@effect/platform-node";
+import { causeRecord, runCli } from "@repo/cli";
 import { loopbackOrigin } from "@repo/config";
-import { causeRecord, runCli } from "@repo/config/cli";
-import { Cause, Console, Effect, Schema } from "effect";
 import open from "open";
 
 import { resolveProject } from "./project.ts";

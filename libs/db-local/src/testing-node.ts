@@ -1,14 +1,12 @@
+import { workerCompatibility } from "@repo/config/worker";
+import { Database } from "@repo/db";
+import { localDatabase } from "@repo/db/local";
+import { prepareBatch } from "@repo/db/migrate-d1";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
-import { Database } from "./database.ts";
-import { localDatabase } from "./local.ts";
-import { prepareBatch } from "./migrate-d1.ts";
-
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
-import type { RemoteFailure } from "./remote-input.ts";
-
-const miniflareCompatibilityDate = "2026-07-30";
+import type { RemoteFailure } from "@repo/db/remote-input";
 
 interface D1HttpBatchResponse {
   readonly result: D1Result[];
@@ -19,8 +17,6 @@ const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
 const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
-
 async function executeD1HttpBatch(
   database: D1Database,
   body: unknown,
@@ -29,6 +25,8 @@ async function executeD1HttpBatch(
   const result = await database.batch(prepareBatch(database, batch));
   return { result, success: true };
 }
+
+class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
 function runStatement(
   sql: string,
@@ -51,7 +49,8 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
     Effect.promise(async () => {
       const runtime = new Miniflare(
         convertV4MiniflareOptions({
-          compatibilityDate: miniflareCompatibilityDate,
+          compatibilityDate: workerCompatibility.date,
+          compatibilityFlags: [...workerCompatibility.flags],
           d1Databases: { [localDatabase.binding]: localDatabase.database_name },
           modules: true,
           script: "export default { fetch() { return new Response('test-database'); } };",
@@ -69,5 +68,5 @@ const EmptyTestDatabase = Layer.unwrap(
   }),
 ).pipe(Layer.provideMerge(testBinding));
 
-export { d1Executor } from "./migrate-d1.ts";
+export { d1Executor } from "@repo/db/migrate-d1";
 export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, runStatement };

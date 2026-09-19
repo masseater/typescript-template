@@ -4,7 +4,7 @@ import { filename, type LintContext } from "./lint-context.ts";
 import type { Visitor } from "vite-plus/lint/plugins";
 import type { Origin } from "./references.ts";
 
-const cliImplementation = "libs/config/src/cli.ts";
+const cliImplementation = "libs/cli/src/cli.ts";
 
 const processMember = (origin: Origin): string | undefined => {
   const [source, ...members] = origin;

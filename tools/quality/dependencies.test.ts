@@ -2,6 +2,8 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   applicationDependencyViolations,
+  developmentOnlyDependencyViolations,
+  libraryMixedSurfaceViolations,
   retiredDependencyViolations,
   rootOnlyDependencyViolations,
   rootOnlyPackages,
@@ -91,5 +93,49 @@ describe("root-only packages", () => {
   it("repository workspaces leave them to the root", () => {
     expect.hasAssertions();
     expect(rootOnlyDependencyViolations(workspaceManifests)).toStrictEqual([]);
+  });
+});
+
+describe("development-only packages", () => {
+  it("rejects miniflare in a shipped library dependencies", () => {
+    expect.hasAssertions();
+    const violations = developmentOnlyDependencyViolations([
+      {
+        area: "libs",
+        file: "libs/db/package.json",
+        manifest: { dependencies: { miniflare: "5.0.0" }, name: "@repo/db" },
+      },
+    ]);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("miniflare");
+  });
+
+  it("repository shipped packages leave them out of dependencies", () => {
+    expect.hasAssertions();
+    expect(developmentOnlyDependencyViolations(workspaceManifests)).toStrictEqual([]);
+  });
+});
+
+describe("library package surfaces", () => {
+  it("rejects a library that declares both bin and exports", () => {
+    expect.hasAssertions();
+    const violations = libraryMixedSurfaceViolations([
+      {
+        area: "libs",
+        file: "libs/config/package.json",
+        manifest: {
+          bin: { "dev-start": "./src/dev-start.ts" },
+          exports: { ".": "./src/index.ts" },
+          name: "@repo/config",
+        },
+      },
+    ]);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("exports");
+  });
+
+  it("repository libraries keep a single surface", () => {
+    expect.hasAssertions();
+    expect(libraryMixedSurfaceViolations(workspaceManifests)).toStrictEqual([]);
   });
 });

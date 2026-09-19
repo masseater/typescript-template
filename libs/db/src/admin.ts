@@ -1,4 +1,4 @@
-import { roles } from "@repo/config";
+import { roles } from "@repo/config/identity";
 import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
@@ -9,7 +9,7 @@ import { LastAdminRequired } from "./last-admin-required.ts";
 import { auditEvent, user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
-import type { Role } from "@repo/config";
+import type { Role } from "@repo/config/identity";
 import type { SQL } from "drizzle-orm";
 import type { DatabaseFailure } from "./database-failure.ts";
 import type { DrizzleDatabase } from "./database.ts";
