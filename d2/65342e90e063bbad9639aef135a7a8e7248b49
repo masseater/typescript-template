@@ -1,0 +1,1 @@
+restore observability withSpan/logCause/logAt APIs removed mid-migration; drop broken session-isolation worker test; re-export AuthenticationMethod
