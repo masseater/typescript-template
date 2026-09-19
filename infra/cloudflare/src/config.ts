@@ -166,13 +166,14 @@ function workerObservability(config: SharedConfig): WorkerObservability {
 }
 
 const PlanCommand = Schema.Tuple([Schema.Literal("plan"), Schema.Literals(["all", ...stackNames])]);
+const DeployAllCommand = Schema.Tuple([Schema.Literal("deploy"), Schema.Literal("all")]);
 const DeployCommand = Schema.Tuple([
   Schema.Literal("deploy"),
   Schema.Literals(stackNames),
   Schema.Literal("--confirm-plan"),
   Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN)),
 ]);
-const DeploymentCommand = Schema.Union([PlanCommand, DeployCommand]);
+const DeploymentCommand = Schema.Union([PlanCommand, DeployAllCommand, DeployCommand]);
 
 const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* parseDeploymentCommand(
   args: readonly string[],
@@ -180,6 +181,9 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   const parsed = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
     Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid", keys: [] })),
   );
+  if (parsed[0] === "deploy" && parsed[1] === "all") {
+    return { operation: "deploy-all", stacks: stackNames } as const;
+  }
   if (parsed[0] === "deploy") {
     return { confirmation: parsed[3], operation: "deploy", stack: parsed[1] } as const;
   }
