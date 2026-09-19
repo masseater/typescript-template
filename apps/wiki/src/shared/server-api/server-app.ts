@@ -18,7 +18,7 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
     ? searchWiki(query.slice(0, maximumQueryLength)).pipe(
         Effect.map((results) => jsonResponse(results)),
       )
-    : Effect.succeed(jsonResponse([]));
+    : Effect.succeed(jsonResponse({ mode: "semantic", results: [] }));
 }
 
 const wikiApi = createApi(apiRoot).use(sessionApi(api)).get("/search", api.raw(search, {}));

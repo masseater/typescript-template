@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { applications } from "@repo/config";
-import { runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 
 import { symbolicate } from "./source-maps.ts";
@@ -62,4 +62,6 @@ const resolveFrames = Effect.gen(function* resolveFrames() {
   );
 });
 
-runCli(values.help ? help : resolveFrames, { event: "observe.symbolicate_failed" });
+runCli(values.help ? help : resolveFrames, (cause) =>
+  causeRecord("observe.symbolicate_failed", cause),
+);

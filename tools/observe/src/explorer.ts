@@ -2,7 +2,8 @@ import { loopbackHosts } from "@repo/config";
 import { Effect, Result, Schema } from "effect";
 
 type Row = Record<string, unknown>;
-type LogRow = Row & { readonly event: Row | undefined };
+type LogEvent = Row | "unparsable" | undefined;
+type LogRow = Row & { readonly event: LogEvent };
 
 interface RequestTelemetry {
   readonly logs: LogRow[];
@@ -100,10 +101,17 @@ function parseStructured(message: string): Row | undefined {
     : undefined;
 }
 
-function structuredMessage(message: unknown): Row | undefined {
-  return typeof message === "string"
-    ? Result.getOrUndefined(Result.try(() => parseStructured(message)))
-    : undefined;
+function structuredMessage(message: unknown): LogEvent {
+  if (typeof message !== "string") {
+    return undefined;
+  }
+  return Result.match(
+    Result.try(() => parseStructured(message)),
+    {
+      onFailure: () => "unparsable" as const,
+      onSuccess: (row) => row,
+    },
+  );
 }
 
 function withEvent({ message, ...row }: Readonly<Row>): LogRow {
