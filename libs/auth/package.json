@@ -23,6 +23,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "otpauth": "catalog:",

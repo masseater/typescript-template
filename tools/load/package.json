@@ -3,12 +3,14 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/runtime": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "@types/k6": "2.2.1",
     "@types/node": "catalog:",
     "msw": "catalog:",

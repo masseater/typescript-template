@@ -5,6 +5,7 @@
   "scripts": {},
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",
     "otpauth": "catalog:",

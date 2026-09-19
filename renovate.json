@@ -7,11 +7,7 @@
   "packageRules": [
     {
       "groupName": "vite-plus",
-      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"]
-    },
-    {
-      "matchPackageNames": ["vitest", "@vitest/**"],
-      "enabled": false
+      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core", "vitest", "@vitest/**"]
     },
     {
       "groupName": "node",

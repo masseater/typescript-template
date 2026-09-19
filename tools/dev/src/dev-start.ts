@@ -2,11 +2,10 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { reportFailed, runCli } from "@repo/cli";
+import { applicationReadyPaths, applications, loopbackAddress } from "@repo/config";
 import { Cause, Console, Effect, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
-
-import { applicationReadyPaths, applications, loopbackAddress } from "./applications.ts";
-import { reportFailed, runCli } from "./cli.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,

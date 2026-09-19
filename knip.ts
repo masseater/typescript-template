@@ -110,9 +110,9 @@ const scripts = {
     "src/verify-origins.ts!",
   ],
   "infra/local": ["src/compose.ts!"],
-  "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+  "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
   "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
-  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!"],
+  "tools/dev": ["src/cli.ts!", "src/prepare-browser.ts!", "src/dev-start.ts!"],
   "tools/observe": [
     "src/cli.ts!",
     "src/verify.ts!",
@@ -162,9 +162,12 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "libs/db": {
-        entry: ["src/testing-node.ts!", ...productionOnly(...scripts["libs/db"])],
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!", "!src/records-fixture.ts!"],
+      },
+      "libs/db-local": {
+        entry: productionOnly(...scripts["libs/db-local"]),
+        project: ["src/**/*.ts!"],
       },
       "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
       "tools/dev": {

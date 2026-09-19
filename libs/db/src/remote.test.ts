@@ -2,6 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 
 import { assert, it } from "@effect/vitest";
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "@repo/db-local";
 import { Effect } from "effect";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
@@ -15,7 +16,6 @@ import {
 } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
-import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
 
 import type { Database } from "./database.ts";
 import type { RemoteFailure } from "./remote-input.ts";
