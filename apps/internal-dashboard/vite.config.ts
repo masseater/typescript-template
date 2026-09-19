@@ -2,6 +2,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   appRun,
   appServer,
+  devBoundary,
   failOnBrokenSourceMaps,
   previewDevVars,
   privateSourceMaps,
@@ -11,7 +12,6 @@ import {
 } from "@repo/config/vite";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase, localDatabasePersistence } from "@repo/db/local";
-import { devBoundary } from "@repo/dev-boundary";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
