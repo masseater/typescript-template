@@ -1,4 +1,4 @@
-import { reportFailure } from "@repo/observability";
+import { annotateSpan, reportFailure } from "@repo/observability";
 import { Embedder } from "@repo/runtime/wiki";
 import { Cause, Effect } from "effect";
 import { createFromSource } from "fumadocs-core/search/server";
@@ -28,6 +28,13 @@ type WikiPageView = Readonly<{
     }
   >;
 }>;
+
+type SearchMode = "semantic" | "keyword_only";
+
+interface WikiSearchResult {
+  readonly mode: SearchMode;
+  readonly results: SortedResult[];
+}
 
 const DEFAULT_PAGE_LIMIT = 5;
 const LEXICAL_HEADING_LIMIT = 2;
@@ -139,12 +146,19 @@ function pageResults(
 const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(query: string) {
   const { available } = yield* Embedder;
   if (!available) {
-    return [];
+    yield* annotateSpan({
+      "wiki.search.mode": "keyword_only",
+      "wiki.search.reason": "embedder_unavailable",
+    });
+    return { matches: [] as SemanticMatch[], mode: "keyword_only" as const };
   }
   return yield* semantic(query).pipe(
     Effect.matchEffect({
-      onFailure: (error) => reportFailure(Cause.fail(error)).pipe(Effect.as([])),
-      onSuccess: (matches) => Effect.succeed(matches),
+      onFailure: (error) =>
+        reportFailure(Cause.fail(error)).pipe(
+          Effect.as({ matches: [] as SemanticMatch[], mode: "keyword_only" as const }),
+        ),
+      onSuccess: (matches) => Effect.succeed({ matches, mode: "semantic" as const }),
     }),
   );
 });
@@ -168,17 +182,27 @@ const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
     ),
   ];
   const pages = rankPages(
-    semanticResults.map((match) => ({ score: match.score, url: pageOf(match.document.url) })),
+    semanticResults.matches.map((match) => ({
+      score: match.score,
+      url: pageOf(match.document.url),
+    })),
     exactMatchesFirst(query, keywordPages, (url) => texts.get(url) ?? ""),
     options?.limit ?? DEFAULT_PAGE_LIMIT,
   );
-  return pages.flatMap((url) => pageResults(url, keywordResults, semanticResults));
+  const results: WikiSearchResult = {
+    mode: semanticResults.mode,
+    results: pages.flatMap((url) => pageResults(url, keywordResults, semanticResults.matches)),
+  };
+  return results;
 });
 
 function searchServer(context: Context.Context<WikiServices>): SearchServer {
   return {
     export: async () => keyword.export(),
-    search: async (query, options) => Effect.runPromiseWith(context)(searchWiki(query, options)),
+    search: async (query, options) => {
+      const { results } = await Effect.runPromiseWith(context)(searchWiki(query, options));
+      return results;
+    },
   };
 }
 
