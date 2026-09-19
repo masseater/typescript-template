@@ -1,1 +1,1 @@
-Fold design-system lint probe and @repo/ui recognition into this PR so merge-queue premerge stops failing on outdated fixtures.
+Rebase onto main (design-system fixture already fixed there); keep @repo/ui recognition in shared lint settings.
