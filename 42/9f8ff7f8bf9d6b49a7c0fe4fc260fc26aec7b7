@@ -1,0 +1,1 @@
+move SNS registry into apps/user so contracts stay browser-reachable; keep https-only validation in contracts
