@@ -57,7 +57,7 @@ const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages],
   jsPlugins: [
-    "./tools/quality/plugin.ts",
+    { name: "project", specifier: "@repo/quality/plugin" },
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
     "@shadcn/lint",
   ],
