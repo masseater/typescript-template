@@ -1,1 +1,6 @@
-rebase onto main: resolve cloudflare exports, ui deps, catalog/shadcn, quality package.json
+Revision history for #586:
+
+rev 2 (content) 2026-09-19 10:36 UTC — rebase onto main: resolve cloudflare exports, ui deps, catalog/shadcn, quality package.json
+rev 1 (initial) 2026-09-19 10:36 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":586,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"7c97be23554f1336b654e5f7fb30fb8b1462587c","timestamp_iso":"2026-09-19T10:36:55Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"7c97be23554f1336b654e5f7fb30fb8b1462587c","new_sha":"cf3987cf48c35b24850a923dc03195f256dbb85b","timestamp_iso":"2026-09-19T10:36:55Z","reason":"rebase onto main: resolve cloudflare exports, ui deps, catalog/shadcn, quality package.json","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/7c97be23554f1336b654e5f7fb30fb8b1462587c...cf3987cf48c35b24850a923dc03195f256dbb85b"}]} -->
