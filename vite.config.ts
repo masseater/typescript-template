@@ -5,6 +5,8 @@ import { workerTests } from "@repo/quality/test-runtime";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
+import { rootOnDemandChecks } from "./tools/quality/on-demand-checks.ts";
+
 const importedTools = [
   "./tools/ai-native",
   "./tools/dont-review-it",
@@ -37,11 +39,6 @@ export default defineConfig({
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
-      "check:repository": [
-        "dont-review-it check",
-        "lint-rule-authoring check",
-        "stop-ai-slop check",
-      ],
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
         input: [...taskInput],
@@ -65,6 +62,7 @@ export default defineConfig({
           "check:canonical-literal-types",
         ],
       }),
+      "check:repository": rootOnDemandChecks["check:repository"],
     },
   },
   test: {
