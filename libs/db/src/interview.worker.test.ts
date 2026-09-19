@@ -3,15 +3,23 @@ import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 
 import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
-import { addUser } from "./records-fixture.ts";
-import { TestDatabase } from "./testing.ts";
+import { TestDatabase, runStatement } from "./testing.ts";
 
 const LIMIT = 2;
 const TWICE_STORED = 2;
 
+function addMember(id: string): Effect.Effect<unknown, unknown> {
+  return runStatement(
+    "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
+    id,
+    id,
+    `${id}@example.com`,
+  );
+}
+
 it.effect("of two writers holding the same version only the first one is stored", () =>
   Effect.gen(function* program() {
-    yield* addUser("member");
+    yield* addMember("member");
     yield* startInterview("member", { step: 0 });
     yield* storeInterview("member", 0, { state: { step: 1 } });
     const late = yield* storeInterview("member", 0, { state: { step: 2 } }).pipe(Effect.flip);
@@ -27,7 +35,7 @@ it.effect("of two writers holding the same version only the first one is stored"
 
 it.effect("the saved sheet stays until a write names it", () =>
   Effect.gen(function* program() {
-    yield* addUser("member");
+    yield* addMember("member");
     yield* startInterview("member", { step: 0 });
     yield* storeInterview("member", 0, { savedSheet: { nickname: "たろう" }, state: { step: 1 } });
     yield* storeInterview("member", 1, { state: { step: 2 } });
@@ -44,7 +52,7 @@ it.effect("the saved sheet stays until a write names it", () =>
 
 it.effect("starting again keeps the conversation that already exists", () =>
   Effect.gen(function* program() {
-    yield* addUser("member");
+    yield* addMember("member");
     yield* startInterview("member", { step: 0 });
     yield* startInterview("member", { step: 9 });
     assert.deepStrictEqual((yield* findInterview("member"))?.state, { step: 0 });
@@ -53,7 +61,7 @@ it.effect("starting again keeps the conversation that already exists", () =>
 
 it.effect("turns are counted per day and refused beyond the limit", () =>
   Effect.gen(function* program() {
-    yield* addUser("member");
+    yield* addMember("member");
     yield* startInterview("member", {});
     yield* countInterviewTurn("member", LIMIT);
     yield* countInterviewTurn("member", LIMIT);
