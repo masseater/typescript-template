@@ -84,6 +84,7 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
 
 export {
   applicationDependencyViolations,
+  declaredDependencies,
   field,
   retiredDependencyViolations,
   rootOnlyDependencyViolations,
