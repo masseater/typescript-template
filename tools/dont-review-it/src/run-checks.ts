@@ -6,6 +6,7 @@ import {
   lintRuleIndexProblems,
 } from "@repo/lint-rule-authoring";
 
+import { runCanonicalLiteralTypeChecks } from "./canonical-literal-types/run-canonical-literal-type-checks.ts";
 import { adoptedBundlesIn } from "./configs/bundles/adopted-bundles.ts";
 import { LINT_BUNDLE, LINT_BUNDLE_NAMES, type LintBundle } from "./configs/bundles/bundle-names.ts";
 import { defaultDependencyCatalogChecksConfig } from "./dependency-catalog/config.ts";
@@ -136,12 +137,21 @@ const unrunCheck = ({
 const SOURCE_SCAN_CHECKS: readonly { readonly check: string; readonly unit: string }[] = [
   { check: "canonical-values", unit: "source file" },
   { check: "equivalent-concepts", unit: "concept" },
+  { check: "canonical-literal-types", unit: "declaration source" },
   { check: "duplicated-bodies", unit: "declaration source" },
 ];
 
 const sourceScanOutcomes = (repositoryRoot: string): readonly CheckOutcome[] => {
   const repositoryFiles = listRepositoryFiles(resolve(repositoryRoot));
   const canonicalValues = inspectCanonicalValues({ repositoryRoot });
+  const canonicalLiteralTypes =
+    canonicalValues.problems.length === 0
+      ? runCanonicalLiteralTypeChecks({
+          catalog: canonicalValues.catalog,
+          declarationSources: repositoryFiles.declarationSources,
+          repositoryRoot,
+        })
+      : { problems: [], scanned: repositoryFiles.declarationSources.length };
 
   return [
     {
@@ -164,6 +174,14 @@ const sourceScanOutcomes = (repositoryRoot: string): readonly CheckOutcome[] => 
               .map(formatEquivalentConceptGroup)
               .toSorted()
           : [],
+    },
+    {
+      check: "canonical-literal-types",
+      unit: "declaration source",
+      count: canonicalLiteralTypes.scanned,
+      skippedReason: null,
+      problems: canonicalLiteralTypes.problems.map(formatRepositoryProblem).toSorted(),
+      warnings: [],
     },
     {
       check: "duplicated-bodies",
@@ -306,6 +324,7 @@ const CHECK_BUNDLES: Readonly<Record<string, LintBundle>> = {
   "entry-composition": LINT_BUNDLE.publishing,
   "canonical-values": LINT_BUNDLE.singleOwnership,
   "equivalent-concepts": LINT_BUNDLE.singleOwnership,
+  "canonical-literal-types": LINT_BUNDLE.singleOwnership,
   "duplicated-bodies": LINT_BUNDLE.singleOwnership,
   "workflow-definitions": LINT_BUNDLE.ci,
   "action-updates": LINT_BUNDLE.ci,

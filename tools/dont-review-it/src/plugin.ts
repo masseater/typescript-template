@@ -37,7 +37,6 @@ import { createNoDuplicateValueDeclaration } from "./lint/oxlint/rules/single-ow
 import { createNoDuplicatedBody } from "./lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.ts";
 import { createNoLocalFiniteValueSet } from "./lint/oxlint/rules/single-ownership/no-local-finite-value-set--use-or-register-canonical-values.ts";
 import { createNoSplitTypeAuthority } from "./lint/oxlint/rules/single-ownership/no-split-type-authority--rename-or-unify.ts";
-import { createNoStrictCanonicalLiteralUseRule } from "./lint/oxlint/rules/single-ownership/no-strict-canonical-literal-use--use-canonical-import.ts";
 import { createNoTwinDeclaration } from "./lint/oxlint/rules/single-ownership/no-twin-declaration--merge-into-one-owner.ts";
 import { forbidExpectlessIt } from "./lint/oxlint/rules/testing/forbid-expectless-it--assert-or-delete-it.ts";
 import { forbidItExtend } from "./lint/oxlint/rules/testing/forbid-it-extend--use-test-extend.ts";
@@ -126,10 +125,6 @@ import type { Plugin } from "@oxlint/plugins";
 export const noLocalFiniteValueSet = createNoLocalFiniteValueSet({
   loadCatalog: loadCanonicalValuesCatalogSnapshot,
   loadLibraryVocabulary: createLibraryVocabularyLoader({ openApi: openTypeScriptApi }),
-});
-
-export const noStrictCanonicalLiteralUse = createNoStrictCanonicalLiteralUseRule({
-  loadCatalog: loadCanonicalValuesCatalogSnapshot,
 });
 
 export const noDuplicatedBody = createNoDuplicatedBody({ loadIndex: loadRepositoryBodyIndex });
@@ -244,7 +239,6 @@ const plugin: Plugin = {
     [noSpecSpecificSharedSetup.name]: noSpecSpecificSharedSetup,
     [noSplitTypeAuthority.name]: noSplitTypeAuthority,
     [noStandaloneTsconfig.name]: noStandaloneTsconfig,
-    [noStrictCanonicalLiteralUse.name]: noStrictCanonicalLiteralUse,
     [noSutIndependentAssertion.name]: noSutIndependentAssertion,
     [noTautologicalAssertion.name]: noTautologicalAssertion,
     [noTestContextEscape.name]: noTestContextEscape,

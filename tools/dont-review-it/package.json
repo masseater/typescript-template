@@ -12,7 +12,8 @@
     "directory": "tools/dont-review-it"
   },
   "bin": {
-    "dont-review-it": "./src/cli.ts"
+    "dont-review-it": "./src/cli.ts",
+    "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts"
   },
   "files": [
     "dist",
@@ -31,7 +32,8 @@
   },
   "publishConfig": {
     "bin": {
-      "dont-review-it": "./dist/cli.mjs"
+      "dont-review-it": "./dist/cli.mjs",
+      "dont-review-it-canonical-literal-types": "./dist/canonical-literal-types/run-as-task.mjs"
     },
     "exports": {
       ".": {

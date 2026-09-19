@@ -10,11 +10,7 @@ import { fingerprintValues } from "./lint/oxlint/lib/canonical-values/fingerprin
 
 const NO_LOCAL_RULE = "dont-review-it/no-local-finite-value-set--use-or-register-canonical-values";
 
-const NO_STRICT_RULE = "dont-review-it/no-strict-canonical-literal-use--use-canonical-import";
-
 const NO_LOCAL_CODE = "dont-review-it(no-local-finite-value-set--use-or-register-canonical-values)";
-
-const NO_STRICT_CODE = "dont-review-it(no-strict-canonical-literal-use--use-canonical-import)";
 
 const CANONICAL_VALUES_SUCCESS_LINE =
   /^(?:checked canonical-values \d+ source files? 0 problems 0 warnings|[ \t]+✓ canonical-values[ \t]+\d+ source files?)$/mu;
@@ -58,7 +54,7 @@ const LINT_CONFIG_SOURCE = `export default ${JSON.stringify({
     categories: { correctness: "off" },
     plugins: [],
     jsPlugins: [{ name: "dont-review-it", specifier: PLUGIN_PATH }],
-    rules: { [NO_LOCAL_RULE]: "error", [NO_STRICT_RULE]: "error" },
+    rules: { [NO_LOCAL_RULE]: "error" },
   },
 })};\n`;
 
@@ -257,7 +253,7 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
         const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
         return typeof linted.status === "number" ? linted.status : -1;
       })
-      .extend("theStrictLiteralRuleOnTheConsumerOfACanonicalOwner", ({}, { onCleanup }) => {
+      .extend("theTypeAwareReportOnTheConsumerOfACanonicalOwner", ({}, { onCleanup }) => {
         const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
         onCleanup(rmSync.bind(null, root, { recursive: true, force: true }));
         for (const [relativePath, fileText] of Object.entries(OWNER_AND_CONSUMER_FILES)) {
@@ -265,18 +261,20 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        return linted.stdout.includes(NO_STRICT_CODE);
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("src/consumer.ts");
       });
 
-    it("verifies the repository", ({ theExitCodeOfVerifyingACanonicalOwner }) => {
-      expect(theExitCodeOfVerifyingACanonicalOwner).toBe(0);
+    it("reports the literal consumer through check", ({
+      theExitCodeOfVerifyingACanonicalOwner,
+    }) => {
+      expect(theExitCodeOfVerifyingACanonicalOwner).toBe(1);
     });
 
-    it("stays silent on standard output", ({
+    it("names the consumer on standard output", ({
       theStandardOutputOfVerifyingACanonicalOwnerIsEmpty,
     }) => {
-      expect(theStandardOutputOfVerifyingACanonicalOwnerIsEmpty).toBe(true);
+      expect(theStandardOutputOfVerifyingACanonicalOwnerIsEmpty).toBe(false);
     });
 
     it("announces the canonical-values check on standard error", ({
@@ -289,14 +287,16 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theExitCodeOfLintingACanonicalOwner).toBe(0);
     });
 
-    it("fails the lint of the consumer", ({ theExitCodeOfLintingTheConsumerOfACanonicalOwner }) => {
-      expect(theExitCodeOfLintingTheConsumerOfACanonicalOwner).toBe(1);
+    it("leaves the consumer unreported by oxlint", ({
+      theExitCodeOfLintingTheConsumerOfACanonicalOwner,
+    }) => {
+      expect(theExitCodeOfLintingTheConsumerOfACanonicalOwner).toBe(0);
     });
 
-    it("names the strict-literal rule on the consumer", ({
-      theStrictLiteralRuleOnTheConsumerOfACanonicalOwner,
+    it("reports the consumer through the type-aware check", ({
+      theTypeAwareReportOnTheConsumerOfACanonicalOwner,
     }) => {
-      expect(theStrictLiteralRuleOnTheConsumerOfACanonicalOwner).toBe(true);
+      expect(theTypeAwareReportOnTheConsumerOfACanonicalOwner).toBe(true);
     });
   });
 
@@ -334,17 +334,6 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
         const settings = { ...SPAWN_SETTINGS, cwd: root };
         const linted = spawnSync("vp", ["lint", "src/invalid.ts", ...LINT_TAIL], settings);
         return typeof linted.status === "number" ? linted.status : -1;
-      })
-      .extend("theStrictLiteralRuleOnATopLevelIfAnnotation", ({}, { onCleanup }) => {
-        const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
-        onCleanup(rmSync.bind(null, root, { recursive: true, force: true }));
-        for (const [relativePath, fileText] of Object.entries(TOP_LEVEL_IF_FILES)) {
-          mkdirSync(dirname(join(root, relativePath)), { recursive: true });
-          writeFileSync(join(root, relativePath), fileText, "utf8");
-        }
-        const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/invalid.ts", ...LINT_TAIL], settings);
-        return linted.stdout.includes(NO_STRICT_CODE);
       });
 
     it("fails verification", ({ theExitCodeOfVerifyingATopLevelIfAnnotation }) => {
@@ -355,14 +344,10 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theSiteReportedForATopLevelIfAnnotation).toBe(true);
     });
 
-    it("fails the lint of the annotated file", ({ theExitCodeOfLintingATopLevelIfAnnotation }) => {
-      expect(theExitCodeOfLintingATopLevelIfAnnotation).toBe(1);
-    });
-
-    it("grants the annotated file no exemption", ({
-      theStrictLiteralRuleOnATopLevelIfAnnotation,
+    it("leaves the annotated file unreported by oxlint", ({
+      theExitCodeOfLintingATopLevelIfAnnotation,
     }) => {
-      expect(theStrictLiteralRuleOnATopLevelIfAnnotation).toBe(true);
+      expect(theExitCodeOfLintingATopLevelIfAnnotation).toBe(0);
     });
   });
 
@@ -400,17 +385,6 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
         const settings = { ...SPAWN_SETTINGS, cwd: root };
         const linted = spawnSync("vp", ["lint", "src/invalid.ts", ...LINT_TAIL], settings);
         return typeof linted.status === "number" ? linted.status : -1;
-      })
-      .extend("theStrictLiteralRuleOnANestedAnnotation", ({}, { onCleanup }) => {
-        const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
-        onCleanup(rmSync.bind(null, root, { recursive: true, force: true }));
-        for (const [relativePath, fileText] of Object.entries(NESTED_ANNOTATION_FILES)) {
-          mkdirSync(dirname(join(root, relativePath)), { recursive: true });
-          writeFileSync(join(root, relativePath), fileText, "utf8");
-        }
-        const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/invalid.ts", ...LINT_TAIL], settings);
-        return linted.stdout.includes(NO_STRICT_CODE);
       });
 
     it("fails verification", ({ theExitCodeOfVerifyingANestedAnnotation }) => {
@@ -421,12 +395,10 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theSiteReportedForANestedAnnotation).toBe(true);
     });
 
-    it("fails the lint of the baiting file", ({ theExitCodeOfLintingANestedAnnotation }) => {
-      expect(theExitCodeOfLintingANestedAnnotation).toBe(1);
-    });
-
-    it("turns the bait into no exempt owner", ({ theStrictLiteralRuleOnANestedAnnotation }) => {
-      expect(theStrictLiteralRuleOnANestedAnnotation).toBe(true);
+    it("leaves the baiting file unreported by oxlint", ({
+      theExitCodeOfLintingANestedAnnotation,
+    }) => {
+      expect(theExitCodeOfLintingANestedAnnotation).toBe(0);
     });
   });
 
@@ -495,15 +467,8 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("real.status");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("real.status");
       });
 
     it("fails verification", ({ theExitCodeOfVerifyingStoryAndFixtureAnnotations }) => {
@@ -528,10 +493,10 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theAlreadyDeclaredComplaintForStoryAndFixtureAnnotations).toBe(false);
     });
 
-    it("fails the lint of the consumer", ({
+    it("leaves the consumer unreported by oxlint", ({
       theExitCodeOfLintingTheConsumerBesideStoryAnnotations,
     }) => {
-      expect(theExitCodeOfLintingTheConsumerBesideStoryAnnotations).toBe(1);
+      expect(theExitCodeOfLintingTheConsumerBesideStoryAnnotations).toBe(0);
     });
 
     it("names the production concept on the consumer", ({
@@ -575,17 +540,6 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
         const settings = { ...SPAWN_SETTINGS, cwd: root };
         const linted = spawnSync("vp", ["lint", "src/invalid.ts", ...LINT_TAIL], settings);
         return typeof linted.status === "number" ? linted.status : -1;
-      })
-      .extend("theStrictLiteralRuleOnAnAnnotatedReExport", ({}, { onCleanup }) => {
-        const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
-        onCleanup(rmSync.bind(null, root, { recursive: true, force: true }));
-        for (const [relativePath, fileText] of Object.entries(ANNOTATED_RE_EXPORT_FILES)) {
-          mkdirSync(dirname(join(root, relativePath)), { recursive: true });
-          writeFileSync(join(root, relativePath), fileText, "utf8");
-        }
-        const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/invalid.ts", ...LINT_TAIL], settings);
-        return linted.stdout.includes(NO_STRICT_CODE);
       });
 
     it("fails verification", ({ theExitCodeOfVerifyingAnAnnotatedReExport }) => {
@@ -596,14 +550,10 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theSiteReportedForAnAnnotatedReExport).toBe(true);
     });
 
-    it("fails the lint of the re-exporting file", ({ theExitCodeOfLintingAnAnnotatedReExport }) => {
-      expect(theExitCodeOfLintingAnAnnotatedReExport).toBe(1);
-    });
-
-    it("grants the re-export no range exemption", ({
-      theStrictLiteralRuleOnAnAnnotatedReExport,
+    it("leaves the re-exporting file unreported by oxlint", ({
+      theExitCodeOfLintingAnAnnotatedReExport,
     }) => {
-      expect(theStrictLiteralRuleOnAnAnnotatedReExport).toBe(true);
+      expect(theExitCodeOfLintingAnAnnotatedReExport).toBe(0);
     });
   });
 
@@ -644,14 +594,16 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           return CANONICAL_VALUES_SUCCESS_LINE.test(checked.stderr);
         });
 
-      it("verifies the workspace", ({ theExitCodeOfVerifyingThePackageRoutes }) => {
-        expect(theExitCodeOfVerifyingThePackageRoutes).toBe(0);
+      it("reports the shadow vocabulary literals through check", ({
+        theExitCodeOfVerifyingThePackageRoutes,
+      }) => {
+        expect(theExitCodeOfVerifyingThePackageRoutes).toBe(1);
       });
 
-      it("stays silent on standard output", ({
+      it("names the shadow package on standard output", ({
         theStandardOutputOfVerifyingThePackageRoutesIsEmpty,
       }) => {
-        expect(theStandardOutputOfVerifyingThePackageRoutesIsEmpty).toBe(true);
+        expect(theStandardOutputOfVerifyingThePackageRoutesIsEmpty).toBe(false);
       });
 
       it("announces the canonical-values check on standard error", ({
@@ -1035,26 +987,8 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        spawnSync("vp", ["lint", "src/owner.ts", ...LINT_TAIL], settings);
-        const cachePath = join(root, CACHE_RELATIVE_PATH);
-        const cached = JSON.parse(readFileSync(cachePath, "utf8")) as {
-          readonly fingerprint: string;
-        };
-        const poisoned = JSON.stringify({
-          version: 4,
-          fingerprint: cached.fingerprint,
-          entries: [POISON_CACHE_ENTRY],
-        });
-        writeFileSync(cachePath, poisoned, "utf8");
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("real.status");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("real.status");
       })
       .extend("thePoisonedConceptReportedAgainstAPoisonedCache", ({}, { onCleanup }) => {
         const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
@@ -1064,26 +998,8 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        spawnSync("vp", ["lint", "src/owner.ts", ...LINT_TAIL], settings);
-        const cachePath = join(root, CACHE_RELATIVE_PATH);
-        const cached = JSON.parse(readFileSync(cachePath, "utf8")) as {
-          readonly fingerprint: string;
-        };
-        const poisoned = JSON.stringify({
-          version: 4,
-          fingerprint: cached.fingerprint,
-          entries: [POISON_CACHE_ENTRY],
-        });
-        writeFileSync(cachePath, poisoned, "utf8");
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("poison.cache");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("poison.cache");
       })
       .extend("theCacheVersionWrittenBackOverAPoisonedCache", ({}, { onCleanup }) => {
         const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
@@ -1142,10 +1058,10 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theExitCodeOfLintingTheOwnerThatFillsTheCache).toBe(0);
     });
 
-    it("fails the lint of the consumer", ({
+    it("leaves the consumer unreported by oxlint", ({
       theExitCodeOfLintingTheConsumerAgainstAPoisonedCache,
     }) => {
-      expect(theExitCodeOfLintingTheConsumerAgainstAPoisonedCache).toBe(1);
+      expect(theExitCodeOfLintingTheConsumerAgainstAPoisonedCache).toBe(0);
     });
 
     it("reports the concept the repository really declares", ({
@@ -1249,15 +1165,8 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("retry.outcome");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("retry.outcome");
       })
       .extend("theObjectKeyConceptReportedOnTheConsumer", ({}, { onCleanup }) => {
         const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
@@ -1267,15 +1176,8 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("order.status");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("order.status");
       })
       .extend("theNegativeNumberReportedOnTheConsumer", ({}, { onCleanup }) => {
         const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
@@ -1285,15 +1187,8 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("-1");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("-1");
       })
       .extend("theNullValueReportedOnTheConsumer", ({}, { onCleanup }) => {
         const root = mkdtempSync(join(tmpdir(), "canonical-values-e2e-"));
@@ -1303,25 +1198,20 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
           writeFileSync(join(root, relativePath), fileText, "utf8");
         }
         const settings = { ...SPAWN_SETTINGS, cwd: root };
-        const linted = spawnSync("vp", ["lint", "src/consumer.ts", ...LINT_TAIL], settings);
-        const messagesIn = (jsonNode: unknown): readonly string[] => {
-          if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-          if (jsonNode === null || typeof jsonNode !== "object") return [];
-          return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
-            fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
-          );
-        };
-        return messagesIn(JSON.parse(linted.stdout)).join("\n").includes("null");
+        const checked = spawnSync(process.execPath, [...CHECK_ARGUMENTS, root], settings);
+        return checked.stdout.includes("null");
       });
 
-    it("verifies the repository", ({ theExitCodeOfVerifyingNegativeAndNullValues }) => {
-      expect(theExitCodeOfVerifyingNegativeAndNullValues).toBe(0);
+    it("reports literal consumers through check", ({
+      theExitCodeOfVerifyingNegativeAndNullValues,
+    }) => {
+      expect(theExitCodeOfVerifyingNegativeAndNullValues).toBe(1);
     });
 
-    it("stays silent on standard output", ({
+    it("names the consumer on standard output", ({
       theStandardOutputOfVerifyingNegativeAndNullValuesIsEmpty,
     }) => {
-      expect(theStandardOutputOfVerifyingNegativeAndNullValuesIsEmpty).toBe(true);
+      expect(theStandardOutputOfVerifyingNegativeAndNullValuesIsEmpty).toBe(false);
     });
 
     it("leaves the base owner unreported", ({ theExitCodeOfLintingTheBaseOwner }) => {
@@ -1336,10 +1226,10 @@ describe("canonical values process e2e", { timeout: PROCESS_TIMEOUT * 4 }, () =>
       expect(theExitCodeOfLintingTheObjectKeyOwner).toBe(0);
     });
 
-    it("fails the lint of the consumer", ({
+    it("leaves the consumer unreported by oxlint", ({
       theExitCodeOfLintingTheConsumerOfNegativeAndNullValues,
     }) => {
-      expect(theExitCodeOfLintingTheConsumerOfNegativeAndNullValues).toBe(1);
+      expect(theExitCodeOfLintingTheConsumerOfNegativeAndNullValues).toBe(0);
     });
 
     it("names the spread concept on the consumer", ({ theSpreadConceptReportedOnTheConsumer }) => {
