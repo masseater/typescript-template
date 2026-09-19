@@ -44,7 +44,9 @@ const Rules = Schema.fromJsonString(
   ),
 );
 
-const executable = fileURLToPath(new URL("../../node_modules/.bin/react-doctor", import.meta.url));
+const executable = fileURLToPath(
+  new URL("../../../../node_modules/.bin/react-doctor", import.meta.url),
+);
 
 const scan = (args: readonly string[]): Effect.Effect<Scan> => {
   return Effect.promise(

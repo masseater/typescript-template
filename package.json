@@ -13,7 +13,6 @@
     "@repo/dont-review-it": "workspace:*",
     "@repo/lint-rule-authoring": "workspace:*",
     "@repo/monitor": "workspace:*",
-    "@repo/quality": "workspace:*",
     "@repo/stop-ai-slop": "workspace:*",
     "@shadcn/lint": "catalog:",
     "@stryker-mutator/core": "10.0.0",

@@ -21,10 +21,6 @@ const workspaces = {
     project: ["*.{js,ts}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
   },
-  "tools/quality": {
-    entry: ["dependency-cruiser.ts"],
-    project: ["**/*.{ts,mjs}"],
-  },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
     project: ["src/**/*.ts!"],
@@ -61,7 +57,11 @@ const workspaces = {
     ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
-  "tools/dont-review-it": { ignoreDependencies: ["@tanstack/intent"] },
+  "tools/dont-review-it": {
+    entry: ["src/repository/dependency-cruiser.ts"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "effect!"],
+    project: ["src/repository/**/*.{ts,mjs}", "src/**/*.{ts,mjs}!", "*.ts"],
+  },
   "tools/e2e": {
     entry: ["src/**/*.test.ts"],
     project: ["src/**/*.ts"],

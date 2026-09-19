@@ -4,20 +4,25 @@ import type { Tasks } from "@repo/config/vite";
 import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
 
 const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> = import.meta.glob(
-  ["../../vite.config.ts", "../../{apps,libs,infra,tools}/*/vite.config.ts"],
+  ["../../../../vite.config.ts", "../../../../{apps,libs,infra,tools}/*/vite.config.ts"],
   { eager: true, import: "default" },
 );
 
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
-  eager: true,
-  import: "default",
-});
+const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../package.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const serveEnv: ConfigEnv = { command: "serve", mode: "development" };
 const repository = "file:///repository/";
 
 function directoryOf(file: string): string {
-  const resolved = new URL(file, `${repository}tools/quality/`).href.slice(repository.length);
+  const resolved = new URL(file, `${repository}tools/dont-review-it/src/repository/`).href.slice(
+    repository.length,
+  );
   return resolved.replace(/\/?[^/]+$/u, "") || ".";
 }
 
@@ -27,7 +32,7 @@ function scriptsOf(manifest: unknown): Readonly<Record<string, unknown>> {
 }
 
 const workspaceScripts: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  ".": scriptsOf(rootManifests["../../package.json"]),
+  ".": scriptsOf(rootManifests["../../../../package.json"]),
   ...Object.fromEntries(
     workspaceManifests.map(({ file, manifest }) => [
       file.replace(/\/package\.json$/u, ""),

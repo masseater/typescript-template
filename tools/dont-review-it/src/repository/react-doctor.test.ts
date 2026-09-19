@@ -4,27 +4,30 @@ import { field } from "./dependencies.ts";
 
 import type { ReactDoctorConfig } from "react-doctor/api";
 
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
-  eager: true,
-  import: "default",
-});
+const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../package.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const workspaceConfigs: Readonly<Record<string, Readonly<ReactDoctorConfig>>> = import.meta.glob(
-  "../../{apps,libs}/*/doctor.config.json",
+  "../../../../{apps,libs}/*/doctor.config.json",
   { eager: true, import: "default" },
 );
 
 const workflows: Readonly<Record<string, string>> = import.meta.glob(
-  "../../.github/workflows/*.yml",
+  "../../../../.github/workflows/*.yml",
   { eager: true, import: "default" },
 );
 
 const sources: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../{apps,libs}/*/src/**/*.{ts,tsx}",
+  "../../../../{apps,libs}/*/src/**/*.{ts,tsx}",
   { eager: false },
 );
 
-const scripts = field(rootManifests["../../package.json"], "scripts");
+const scripts = field(rootManifests["../../../../package.json"], "scripts");
 const runStep = /^\s*- run: (?<command>.+)$/gmu;
 
 const workflowRuns = (): string[] => {

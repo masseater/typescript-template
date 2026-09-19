@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 
 import { parseSync } from "vite-plus";
 
+import { RESPONSE_FACTORY_MEMBER } from "../lint/oxlint/lib/spec-syntax/host-object-constructions.ts";
 import { field } from "./dependencies.ts";
 
 interface A11yRelaxation {
@@ -19,7 +20,7 @@ interface ExportedStory {
 const storySuffix = ".stories.tsx";
 
 const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/src/**/*.stories.tsx",
+  "../../../../libs/ui/src/**/*.stories.tsx",
 );
 
 const storyName = (part: string): string => {
@@ -62,7 +63,9 @@ const disabledRules = (a11y: unknown): string[] => {
     },
   );
   const test: unknown = literal(property(a11y, "test"));
-  return typeof test !== "string" || test === "error" ? disabled : [...disabled, `test:${test}`];
+  return typeof test !== "string" || test === RESPONSE_FACTORY_MEMBER.error
+    ? disabled
+    : [...disabled, `test:${test}`];
 };
 
 const exportedStories = (body: readonly unknown[]): ExportedStory[] => {
@@ -100,7 +103,7 @@ const a11yRelaxations = (): A11yRelaxation[] => {
     );
 };
 
-const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
+const partsManifest = new URL("../../../../libs/ui/package.json", import.meta.url);
 
 const workerFile = "libs/ui/storybook/public/mockServiceWorker.js";
 

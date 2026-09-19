@@ -9,7 +9,12 @@ export default defineConfig({
       ...effectDiagnostics,
       ...intentValidation,
       ...testRun,
-      ...lifecycle({ precommit: [], premerge: ["test"], prepush: ["check:effect", "check"] }),
+      "check:staged": { cache: false, command: "node src/repository/check-staged.ts" },
+      ...lifecycle({
+        precommit: ["check:staged"],
+        premerge: ["test"],
+        prepush: ["check:effect", "check"],
+      }),
     },
   },
   test: {
@@ -23,9 +28,10 @@ export default defineConfig({
     mockReset: true,
     restoreMocks: true,
     coverage: {
-      exclude: ["specs/**"],
+      exclude: ["specs/**", "src/repository/**"],
       thresholds: { 100: true, perFile: true },
     },
+    exclude: ["**/node_modules/**", "**/dist/**", "src/repository/**"],
     unstubEnvs: true,
     unstubGlobals: true,
   },

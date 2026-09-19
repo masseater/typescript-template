@@ -2,9 +2,9 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { reported } from "./lint-harness.ts";
 
-const fixtureFile = "tools/quality/probe-fixture.ts";
-const testFile = "tools/quality/probe.test.ts";
-const productionFile = "tools/quality/probe.ts";
+const fixtureFile = "tools/dont-review-it/src/repository/probe-fixture.ts";
+const testFile = "tools/dont-review-it/src/repository/probe.test.ts";
+const productionFile = "tools/dont-review-it/src/repository/probe.ts";
 
 const start = 'import { execFile } from "node:child_process";\n';
 

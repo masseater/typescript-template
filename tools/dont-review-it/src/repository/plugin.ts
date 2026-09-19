@@ -1,5 +1,6 @@
 import { definePlugin, type RuleMeta, type Visitor } from "vite-plus/lint/plugins";
 
+import { RESPONSE_FACTORY_MEMBER } from "../lint/oxlint/lib/spec-syntax/host-object-constructions.ts";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
@@ -163,8 +164,8 @@ const workerFetchVisitor = (inspection: LintContext): Visitor => {
     Property(node: Node): void {
       if (
         node.type === "Property" &&
-        propertyName(inspection, node) === "redirect" &&
-        staticText(inspection, node.value) === "error"
+        propertyName(inspection, node) === RESPONSE_FACTORY_MEMBER.redirect &&
+        staticText(inspection, node.value) === RESPONSE_FACTORY_MEMBER.error
       ) {
         reportViolation(inspection, node);
       }
@@ -184,7 +185,7 @@ const projectPlugin = definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/quality/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
+        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/dont-review-it/src/repository/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
       ),
     },
     "cross-request-state": {
