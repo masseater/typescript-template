@@ -1,6 +1,1 @@
-Revision history for #564:
-
-rev 2 (content) 2026-09-19 13:52 UTC — add Change-Id; single PR absorbs auth+shells to reduce CI queue
-rev 1 (initial) 2026-09-19 13:52 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":564,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"212799c22007e286876328d9afacc14f6762d4ef","timestamp_iso":"2026-09-19T13:52:37Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"212799c22007e286876328d9afacc14f6762d4ef","new_sha":"d9a2fd133d1fd4993e4a20789c9a2b8c9609034f","timestamp_iso":"2026-09-19T13:52:37Z","reason":"add Change-Id; single PR absorbs auth+shells to reduce CI queue","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/212799c22007e286876328d9afacc14f6762d4ef...d9a2fd133d1fd4993e4a20789c9a2b8c9609034f"}]} -->
+fix FSD: move chrome to shared; export loadWikiPage via pages/docs public API
