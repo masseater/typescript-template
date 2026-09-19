@@ -13,7 +13,7 @@ async function enterPublicFrame(pathname: string): Promise<void> {
   }
   const session = await loadSession();
   if (session !== undefined) {
-    throw redirect({ params: { id: session.user.id }, to: "/users/$id" });
+    throw redirect({ to: "/home" });
   }
 }
 

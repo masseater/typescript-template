@@ -14,7 +14,7 @@ const documentPaths = async (application: Application): Promise<readonly string[
   const paths = found
     .filter((candidate) => candidate.isFile() && markdown.test(candidate.name))
     .map((document) => path.relative(root, path.join(document.parentPath, document.name)))
-    .map((file) => `/${file.replace(markdown, "")}`)
+    .map((file) => `/wiki/${file.replace(markdown, "").replace(/\/index$/u, "")}`)
     .toSorted();
   if (paths.length < minimumPages) {
     throw new Error("E2E_NOT_ENOUGH_DOCUMENT_PAGES");

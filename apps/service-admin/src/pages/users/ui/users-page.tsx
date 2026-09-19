@@ -2,6 +2,7 @@ import { Heading } from "@repo/ui";
 
 import { useUserList } from "#pages/users/model/user-list.ts";
 import { useUsersSearch } from "#pages/users/model/users-search-state.ts";
+import { MembersQueueSummary } from "./members-queue-summary.tsx";
 import { UserFilters } from "./user-filters.tsx";
 import { UserResults } from "./user-results.tsx";
 
@@ -15,6 +16,7 @@ function UsersPage(): ReactElement {
       <Heading as="h1" size="page">
         利用者の一覧
       </Heading>
+      <MembersQueueSummary />
       <UserFilters key={JSON.stringify(search)} search={search} />
       <UserResults search={search} state={state} onReload={reload} />
     </main>
