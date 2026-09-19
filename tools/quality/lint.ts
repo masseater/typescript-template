@@ -38,6 +38,31 @@ const templateWorkspaces = [
   "tools/quality/**",
 ];
 
+const linkWrapperFiles = [
+  "libs/ui/src/shared/ui/button-link.tsx",
+  "libs/ui/src/shared/ui/card-link.tsx",
+  "libs/ui/src/shared/ui/dropdown-menu-link-item.tsx",
+  "libs/ui/src/shared/ui/navigation-link.tsx",
+  "libs/ui/src/shared/ui/pagination-link.tsx",
+  "libs/ui/src/shared/ui/text-link.tsx",
+];
+
+const reactElementTypeFiles = [...linkWrapperFiles, "libs/ui/src/shared/ui/icon.tsx"];
+
+const alchemyStackFiles = [
+  "infra/cloudflare/src/admin.ts",
+  "infra/cloudflare/src/budget-monitor.ts",
+  "infra/cloudflare/src/database.ts",
+  "infra/cloudflare/src/email.ts",
+  "infra/cloudflare/src/error-monitor.ts",
+  "infra/cloudflare/src/health-monitor.ts",
+  "infra/cloudflare/src/observability.ts",
+  "infra/cloudflare/src/tokens.ts",
+  "infra/cloudflare/src/user.ts",
+  "infra/cloudflare/src/wiki.ts",
+  "infra/cloudflare/src/zone.ts",
+];
+
 const linkComponents = [
   "ButtonLink",
   "CardLink",
@@ -72,10 +97,21 @@ const lintOptions = {
     },
     {
       files: ["libs/ui/src/shared/ui/**"],
+      plugins: ["react"],
       rules: {
         "react/forbid-component-props": [LINT_SEVERITY.ERROR, { forbid: ["style"] }],
+      },
+    },
+    {
+      files: ["libs/ui/src/shared/ui/**"],
+      rules: {
         "shadcn/no-restyle": LINT_SEVERITY.OFF,
       },
+    },
+    {
+      files: linkWrapperFiles,
+      plugins: ["react"],
+      rules: { "react/jsx-props-no-spreading": LINT_SEVERITY.OFF },
     },
     {
       files: [
@@ -116,7 +152,7 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           {
             location: "anywhere",
-            terms: ["todo", "fixme", "xxx", "eslint-disable", "react-doctor"],
+            terms: ["todo", "fixme", "xxx", "eslint-disable", "oxlint-disable", "react-doctor"],
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
@@ -138,14 +174,8 @@ const lintOptions = {
         "shadcn/no-raw-colors": LINT_SEVERITY.ERROR,
         "shadcn/no-restyle": [LINT_SEVERITY.ERROR, { allow: ["layout", "spacing"] }],
         "shadcn/no-unknown-classes": LINT_SEVERITY.ERROR,
-        "typescript/explicit-function-return-type": [
-          LINT_SEVERITY.ERROR,
-          { allowedNames: ["createApi", "createAuth"] },
-        ],
-        "typescript/explicit-module-boundary-types": [
-          LINT_SEVERITY.ERROR,
-          { allowedNames: ["createApi", "createAuth"] },
-        ],
+        "typescript/explicit-function-return-type": LINT_SEVERITY.ERROR,
+        "typescript/explicit-module-boundary-types": LINT_SEVERITY.ERROR,
         "typescript/only-throw-error": [
           LINT_SEVERITY.ERROR,
           {
@@ -196,6 +226,16 @@ const lintOptions = {
       },
     },
     {
+      files: reactElementTypeFiles,
+      rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
+    },
+    {
+      files: alchemyStackFiles,
+      rules: {
+        "dont-review-it/no-default-export--use-named-export": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: ["tools/ai-native/**", "tools/lint-rule-authoring/**"],
       rules: {
         "dont-review-it/no-handmade-standard-io-double--use-standard-io-test": LINT_SEVERITY.OFF,
@@ -212,10 +252,12 @@ const lintOptions = {
     },
   ],
   rules: {
+    "import/no-default-export": LINT_SEVERITY.OFF,
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
       {
         toolRequiredFileNames: [
+          "cold-start-fixture.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
           "knip.ts",
@@ -289,4 +331,46 @@ const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
   ...lintOptions.overrides.map((override) => override.rules ?? {}),
 );
 
-export { configuredLintRules, generatedFiles, lintOptions };
+const builtInPlugins = new Set([
+  "eslint",
+  "import",
+  "jest",
+  "jsdoc",
+  "jsx-a11y",
+  "nextjs",
+  "node",
+  "oxc",
+  "promise",
+  "react",
+  "react-perf",
+  "typescript",
+  "unicorn",
+  "vitest",
+  "vue",
+]);
+
+const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
+  return overrides.flatMap((override, index) => {
+    const plugins = override.plugins;
+    if (plugins === undefined) {
+      return [];
+    }
+    const enabled = new Set(plugins);
+    return Object.keys(override.rules ?? {}).flatMap((rule) => {
+      const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
+      if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {
+        return [];
+      }
+      return [`overrides[${String(index)}] ${rule} needs plugins to include ${plugin}`];
+    });
+  });
+};
+
+export {
+  awaitingPresetPackages,
+  configuredLintRules,
+  generatedFiles,
+  lintOptions,
+  overridePluginMismatches,
+  templateWorkspaces,
+};

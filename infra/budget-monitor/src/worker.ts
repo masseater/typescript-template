@@ -54,5 +54,4 @@ export class BudgetMonitor extends Monitor<Bindings> {
   }
 }
 
-// oxlint-disable-next-line import/no-default-export
 export default monitorHandler("budget");

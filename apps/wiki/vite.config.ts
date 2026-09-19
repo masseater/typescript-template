@@ -19,7 +19,6 @@ import { defineConfig } from "vite-plus";
 
 import type { ConfigEnv, UserConfig } from "vite-plus";
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
   build: { sourcemap: "hidden" },
   plugins: [

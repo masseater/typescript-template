@@ -17,27 +17,34 @@ const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
     const rules = secretViolations(entry, credentials.values, scan);
     return rules.length > 0 ? [{ file: entry.filename, rules }] : [];
   });
-  return { credentials: credentials.source, failures, scan };
+  const status =
+    failures.length > 0
+      ? ("failed" as const)
+      : credentials.source === "absent"
+        ? ("degraded" as const)
+        : ("passed" as const);
+  return { credentials: credentials.source, failures, scan, status };
 });
 
 const uncheckedRecord = (
   detail: Readonly<Record<string, unknown>>,
 ): Readonly<Record<string, unknown>> => {
-  return { event: "quality.staged_secrets_failed", ok: false, ...detail };
+  return { event: "quality.staged_secrets_failed", ok: false, status: "failed", ...detail };
 };
 
 runCli(
   scanStaged().pipe(
-    Effect.flatMap(({ credentials, failures, scan }) =>
+    Effect.flatMap(({ credentials, failures, scan, status }) =>
       Console.log(
         JSON.stringify({
           credentials,
           event: "quality.staged_secrets",
           failures,
-          ok: failures.length === 0,
+          ok: status !== "failed",
           prefixScan: scan,
+          status,
         }),
-      ).pipe(Effect.andThen(failures.length > 0 ? markFailed : Effect.void)),
+      ).pipe(Effect.andThen(status === "failed" ? markFailed : Effect.void)),
     ),
   ),
   (cause) => {
