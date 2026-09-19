@@ -1,4 +1,4 @@
-import { Status } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { OpsPage } from "#widgets/ops-page/index.ts";
 
@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 function AuditPage(): ReactElement {
   return (
     <OpsPage title="監査ログ">
-      <Status variant="pending">監査ログはまだありません。</Status>
+      <StatusMessage variant={STATUS_VARIANT.pending}>監査ログはまだありません。</StatusMessage>
     </OpsPage>
   );
 }
