@@ -25,7 +25,7 @@ description: テンプレートの概要と、含まれているもの、使い�
 
 ## 書き換えるところ
 
-- サービス名。利用者アプリでは `apps/user/src/shared/config/service.ts` が持っている
+- サービス名。利用者アプリでは `apps/service-member/src/shared/config/service.ts` が持っている
 - LP の文言と、見本として入っている AI インタビューの題材
 - 画面の仕様。画面を変えたら、ページ構成の節の文書も合わせて書き換える
 - デプロイ先のドメインやメールの送信元など、環境ごとの値。デプロイするときに環境変数で渡し、受け付けるキーは `libs/config/src/deployment-keys.ts` が持っている
