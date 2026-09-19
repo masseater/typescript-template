@@ -20,8 +20,7 @@ function TotpSettings({ context }: Readonly<{ context: SettingsContext }>): Reac
           : "認証アプリは未設定です。"}
       </Status>
       <p className="text-sm text-muted-foreground">
-        設定用 URI
-        とバックアップコードは秘密情報です。ログやチャットに貼らず、安全な場所に保管してください。
+        設定用のリンクとバックアップコードは秘密情報です。ログやチャットに貼らず、安全な場所に保管してください。
       </p>
       <TotpPasswordForm
         context={context}

@@ -27,5 +27,4 @@ async function dispose(): Promise<void> {
 }
 
 export { dispose, ready };
-// oxlint-disable-next-line import/no-default-export
 export default server;
