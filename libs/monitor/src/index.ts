@@ -1,4 +1,4 @@
-import { Console, Effect, Exit, Schema, SchemaGetter } from "effect";
+import { Cause, Console, Effect, Exit, Schema, SchemaGetter } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 
@@ -30,6 +30,18 @@ const MAX_ALERT_RECIPIENTS = 10;
 const ISO_DATE_LENGTH = 10;
 const NOT_FOUND_STATUS = 404;
 const CHECK_FAILED_STATUS = 500;
+
+const UNRECOGNIZED_REASON = "unrecognized";
+const declaredFailure = Schema.Struct({
+  _tag: Schema.String.check(Schema.isPattern(/^[A-Za-z][A-Za-z0-9]{0,63}$/u)),
+  code: Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9_]{0,63}$/u)),
+});
+const isDeclaredFailure = Schema.is(declaredFailure);
+
+function failureReason(cause: Readonly<Cause.Cause<unknown>>): string {
+  const error: unknown = Cause.squash(cause);
+  return isDeclaredFailure(error) ? `${error._tag}.${error.code}` : UNRECOGNIZED_REASON;
+}
 
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, MAX_ALERT_RECIPIENTS));
@@ -65,7 +77,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
           Effect.flatMap((outcome) =>
             Exit.isSuccess(outcome)
               ? this.reportSuccess(outcome.value, started)
-              : this.reportFailure(notify, started),
+              : this.reportFailure(notify, started, failureReason(outcome.cause)),
           ),
         );
       }),
@@ -101,11 +113,15 @@ abstract class Monitor<Bindings extends MonitorBindings> {
     );
   }
 
-  private reportFailure(notify: Notify, started: number): Effect.Effect<Response> {
+  private reportFailure(notify: Notify, started: number, reason: string): Effect.Effect<Response> {
     const { ctx, event, failure } = this;
     return Effect.gen(function* reportFailure() {
       yield* Console.error(
-        JSON.stringify({ durationMs: Date.now() - started, event: `${event}.check_failed` }),
+        JSON.stringify({
+          durationMs: Date.now() - started,
+          event: `${event}.check_failed`,
+          reason,
+        }),
       );
       const day = new Date(started).toISOString().slice(0, ISO_DATE_LENGTH);
       if (
@@ -114,7 +130,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
         yield* notify(failure);
         yield* Effect.promise(async () => ctx.storage.put("failureNotifiedDay", day));
       }
-      return Response.json({ ok: false }, { status: CHECK_FAILED_STATUS });
+      return Response.json({ ok: false, reason }, { status: CHECK_FAILED_STATUS });
     });
   }
 

@@ -39,6 +39,10 @@ function fail(code: ArtifactFailure["code"]): Effect.Effect<never, ArtifactFailu
   return Effect.fail(new ArtifactFailure({ code }));
 }
 
+function isMissing(cause: unknown): boolean {
+  return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
+}
+
 function io<Value>(run: () => Promise<Value>): Effect.Effect<Value, ArtifactFailure> {
   return Effect.tryPromise({
     catch: () => new ArtifactFailure({ code: "artifact_io_failed" }),
@@ -109,6 +113,7 @@ export {
   fileSha256,
   files,
   io,
+  isMissing,
   jsonSha256,
   sameContent,
 };

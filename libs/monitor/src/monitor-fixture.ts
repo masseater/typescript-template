@@ -6,7 +6,7 @@ import { Monitor, monitorHandler } from "./index.ts";
 import type { MonitorBindings, Notify } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 
-type Outcome = "fail" | "notify" | "succeed";
+type Outcome = "die" | "fail" | "notify" | "succeed";
 
 declare global {
   // oxlint-disable-next-line typescript/no-namespace
@@ -34,6 +34,9 @@ class ProbeMonitor extends Monitor<MonitorBindings> {
       const outcome = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
       if (outcome === "fail") {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
+      }
+      if (outcome === "die") {
+        return yield* Effect.die("the probe was asked to defect");
       }
       if (outcome === "notify") {
         yield* notify(probeAlert);

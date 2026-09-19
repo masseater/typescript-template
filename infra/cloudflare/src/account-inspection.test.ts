@@ -95,6 +95,21 @@ it.effect("reads the state store as the source of the names this deployment owns
   }).pipe(Effect.scoped),
 );
 
+it.effect("reports a database it cannot check ownership of as unreadable, not as taken", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      ...accountHandlers({ databases: [{ name: `${config.prefix}-db`, uuid: databaseId }] }),
+    );
+    const inspection = yield* inspectAccount(
+      access,
+      config,
+      Effect.fail("the state store cannot be read"),
+    );
+    assert.deepStrictEqual(inspection.database, { unreadable: [STATE_STORE_SOURCE] });
+    assert.include(blocked(inspection), "database");
+  }).pipe(Effect.scoped),
+);
+
 it.effect("holds the records of a hostname no worker of this deployment answers", () =>
   Effect.gen(function* program() {
     yield* mockServer(...accountHandlers({ records: hosts }));
