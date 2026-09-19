@@ -1,5 +1,5 @@
 import { applications } from "@repo/config";
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/monitors.ts";

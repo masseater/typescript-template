@@ -119,7 +119,7 @@ const detected: readonly Case[] = [
   ["no-wiki-to-database", { "apps/wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' }],
   [
     "no-deployment-config-in-shipped-code",
-    { "apps/user/src/index.ts": 'export * from "@repo/config/deployment";\n' },
+    { "apps/user/src/index.ts": 'export * from "@repo/infra-cloudflare/deployment";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -129,7 +129,7 @@ const detected: readonly Case[] = [
     "no-deployment-config-in-shipped-code",
     {
       "libs/auth/src/index.ts": 'export * from "./settings.ts";\n',
-      "libs/auth/src/settings.ts": 'export * from "@repo/config/deployment";\n',
+      "libs/auth/src/settings.ts": 'export * from "@repo/infra-cloudflare/deployment";\n',
     },
   ],
   [
@@ -231,7 +231,7 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-deployment-config-in-shipped-code",
-    { "tools/dev/src/index.ts": 'export * from "@repo/config/deployment";\n' },
+    { "tools/dev/src/index.ts": 'export * from "@repo/infra-cloudflare/deployment";\n' },
   ],
   [
     "no-worker-runtime-in-node-test",

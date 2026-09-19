@@ -5,10 +5,10 @@ import { lstat, open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { secretsFile } from "@repo/config/deployment";
-import { deploymentKeys } from "@repo/config/deployment-keys";
+import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, Schema } from "effect";
 
+import { secretsFile } from "./deployment.ts";
 import { projectName } from "./project.ts";
 
 // oxlint-disable-next-line import/no-nodejs-modules

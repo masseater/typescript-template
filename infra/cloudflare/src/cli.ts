@@ -1,4 +1,4 @@
-import { runCli } from "@repo/config/cli";
+import { runCli } from "@repo/cli";
 import { Effect } from "effect";
 
 import { parseDeploymentCommand } from "./config.ts";

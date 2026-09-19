@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { effectDiagnostics, lifecycle, testRun } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle, testRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({

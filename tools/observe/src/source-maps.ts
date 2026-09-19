@@ -5,7 +5,7 @@ import { SourceMap } from "node:module";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { sourceMapDirectories } from "@repo/config/source-maps";
+import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, Schema } from "effect";
 
 // oxlint-disable-next-line import/no-nodejs-modules

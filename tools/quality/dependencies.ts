@@ -70,6 +70,51 @@ const rootOnlyPackages: Readonly<Record<string, string>> = {
   "react-doctor": "ルートの vp run check:react",
 };
 
+const developmentOnlyPackages: Readonly<Record<string, string>> = {
+  miniflare: "ローカル DB / Worker テストの実行環境",
+  wrangler: "ローカル DB の構築とマイグレーション",
+};
+
+const developmentOnlyDependencyViolations = (
+  workspaces: readonly WorkspaceManifest[],
+): string[] => {
+  return workspaces.flatMap(({ area, file, manifest }) => {
+    if (area !== "apps" && area !== "libs") {
+      return [];
+    }
+    if (file === "libs/db-local/package.json") {
+      return [];
+    }
+    const dependencies = field(manifest, "dependencies");
+    if (typeof dependencies !== "object" || dependencies === null) {
+      return [];
+    }
+    return Object.keys(dependencies)
+      .filter((dependency) => dependency in developmentOnlyPackages)
+      .map(
+        (dependency) =>
+          `${file}: ${dependency} は ${developmentOnlyPackages[dependency]}用です。配布物側の dependencies に置かず、ローカル実行を所有するパッケージへ移してください。`,
+      );
+  });
+};
+
+const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
+  return workspaces.flatMap(({ area, file, manifest }) => {
+    if (area !== "libs") {
+      return [];
+    }
+    const bin = field(manifest, "bin");
+    const exportsField = field(manifest, "exports");
+    if (bin === undefined || exportsField === undefined) {
+      return [];
+    }
+    const name = field(manifest, "name");
+    return [
+      `${file}: ${typeof name === "string" ? name : file} は取り込み面（exports）とコマンド面（bin）を同時に宣言しています。コマンド入口は tools/ 側の所有パッケージへ移してください。`,
+    ];
+  });
+};
+
 const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
@@ -84,7 +129,9 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
 
 export {
   applicationDependencyViolations,
+  developmentOnlyDependencyViolations,
   field,
+  libraryMixedSurfaceViolations,
   retiredDependencyViolations,
   rootOnlyDependencyViolations,
   rootOnlyPackages,

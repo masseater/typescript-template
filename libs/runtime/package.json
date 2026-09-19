@@ -10,7 +10,8 @@
     "./wiki": "./src/wiki.ts",
     "./account": "./src/account.ts",
     "./contact": "./src/contact.ts",
-    "./contracts": "./src/contracts.ts"
+    "./contracts": "./src/contracts.ts",
+    "./security": "./src/security.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -27,6 +28,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
