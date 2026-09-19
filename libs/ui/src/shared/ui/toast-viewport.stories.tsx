@@ -8,18 +8,18 @@ import { useToast } from "./use-toast";
 
 import type { ReactElement } from "react";
 
-function ShowToasts(): ReactElement {
+const ShowToasts = (): ReactElement => {
   const toast = useToast();
-  function show(): void {
+  const show = (): void => {
     toast("success", "利用者の権限を変更しました。");
     toast("success", "確認メールを再送しました。");
-  }
+  };
   return (
     <Button type="button" variant="primary" onClick={show}>
       通知を 2 件出す
     </Button>
   );
-}
+};
 
 const meta = preview.meta({
   component: ToastViewport,

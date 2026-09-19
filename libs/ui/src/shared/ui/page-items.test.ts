@@ -1,12 +1,19 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { pageItems } from "./page-items";
+import { pageItems } from "./page-items.ts";
 
 describe("pagination items without gaps", () => {
-  it("lists every page when there are few", () => {
-    expect.hasAssertions();
-    expect(pageItems({ current: 1, last: 1 })).toStrictEqual([{ kind: "page", page: 1 }]);
-    expect(pageItems({ current: 4, last: 7 })).toStrictEqual([
+  const it = test
+    .extend("theItemsOfASinglePage", () => pageItems({ current: 1, last: 1 }))
+    .extend("theItemsOfSevenPages", () => pageItems({ current: 4, last: 7 }))
+    .extend("theItemsOfNoPages", () => pageItems({ current: 1, last: 0 }));
+
+  it("lists the only page", ({ theItemsOfASinglePage }) => {
+    expect(theItemsOfASinglePage).toStrictEqual([{ kind: "page", page: 1 }]);
+  });
+
+  it("lists every page when there are few", ({ theItemsOfSevenPages }) => {
+    expect(theItemsOfSevenPages).toStrictEqual([
       { kind: "page", page: 1 },
       { kind: "page", page: 2 },
       { kind: "page", page: 3 },
@@ -17,23 +24,33 @@ describe("pagination items without gaps", () => {
     ]);
   });
 
-  it("returns no items when there are no pages", () => {
-    expect.hasAssertions();
-    expect(pageItems({ current: 1, last: 0 })).toStrictEqual([]);
+  it("returns no items when there are no pages", ({ theItemsOfNoPages }) => {
+    expect(theItemsOfNoPages).toStrictEqual([]);
   });
 });
 
 describe("pagination items with gaps", () => {
-  it("collapses distant pages into gaps around the current page", () => {
-    expect.hasAssertions();
-    expect(pageItems({ current: 1, last: 10 })).toStrictEqual([
+  const it = test
+    .extend("theItemsAroundTheFirstOfTenPages", () => pageItems({ current: 1, last: 10 }))
+    .extend("theItemsAroundTheMiddleOfTenPages", () => pageItems({ current: 5, last: 10 }))
+    .extend("theItemsAroundTheLastOfTenPages", () => pageItems({ current: 10, last: 10 }));
+
+  it("collapses the pages after the first page into a gap", ({
+    theItemsAroundTheFirstOfTenPages,
+  }) => {
+    expect(theItemsAroundTheFirstOfTenPages).toStrictEqual([
       { kind: "page", page: 1 },
       { kind: "page", page: 2 },
       { kind: "page", page: 3 },
       { after: 3, kind: "gap" },
       { kind: "page", page: 10 },
     ]);
-    expect(pageItems({ current: 5, last: 10 })).toStrictEqual([
+  });
+
+  it("collapses the pages on both sides of the current page into gaps", ({
+    theItemsAroundTheMiddleOfTenPages,
+  }) => {
+    expect(theItemsAroundTheMiddleOfTenPages).toStrictEqual([
       { kind: "page", page: 1 },
       { after: 1, kind: "gap" },
       { kind: "page", page: 4 },
@@ -42,7 +59,12 @@ describe("pagination items with gaps", () => {
       { after: 6, kind: "gap" },
       { kind: "page", page: 10 },
     ]);
-    expect(pageItems({ current: 10, last: 10 })).toStrictEqual([
+  });
+
+  it("collapses the pages before the last page into a gap", ({
+    theItemsAroundTheLastOfTenPages,
+  }) => {
+    expect(theItemsAroundTheLastOfTenPages).toStrictEqual([
       { kind: "page", page: 1 },
       { after: 1, kind: "gap" },
       { kind: "page", page: 8 },
@@ -53,9 +75,14 @@ describe("pagination items with gaps", () => {
 });
 
 describe("pagination gap boundaries", () => {
-  it("does not hide a single page behind a gap", () => {
-    expect.hasAssertions();
-    expect(pageItems({ current: 4, last: 10 })).toStrictEqual([
+  const it = test
+    .extend("theItemsWhoseLeadingGapWouldHideOnePage", () => pageItems({ current: 4, last: 10 }))
+    .extend("theItemsWhoseTrailingGapWouldHideOnePage", () => pageItems({ current: 7, last: 10 }));
+
+  it("does not hide a single leading page behind a gap", ({
+    theItemsWhoseLeadingGapWouldHideOnePage,
+  }) => {
+    expect(theItemsWhoseLeadingGapWouldHideOnePage).toStrictEqual([
       { kind: "page", page: 1 },
       { kind: "page", page: 2 },
       { kind: "page", page: 3 },
@@ -64,7 +91,12 @@ describe("pagination gap boundaries", () => {
       { after: 5, kind: "gap" },
       { kind: "page", page: 10 },
     ]);
-    expect(pageItems({ current: 7, last: 10 })).toStrictEqual([
+  });
+
+  it("does not hide a single trailing page behind a gap", ({
+    theItemsWhoseTrailingGapWouldHideOnePage,
+  }) => {
+    expect(theItemsWhoseTrailingGapWouldHideOnePage).toStrictEqual([
       { kind: "page", page: 1 },
       { after: 1, kind: "gap" },
       { kind: "page", page: 6 },

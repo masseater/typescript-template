@@ -7,7 +7,7 @@ import { PasskeySettings } from "./passkey-settings";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";
 
-const context = {
+const settingsContext = {
   action: { blocked: false, error: undefined, pending: false, run: noop },
   onNotice: noop,
   onNoticeClear: noop,
@@ -24,7 +24,7 @@ const context = {
   },
 } as const;
 
-const meta = preview.meta({ args: { context }, component: PasskeySettings });
+const meta = preview.meta({ args: { context: settingsContext }, component: PasskeySettings });
 
 export const Registered = meta.story({
   beforeEach: ({ msw }) => {

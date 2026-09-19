@@ -6,6 +6,6 @@ const meta = preview.meta({
   component: PaginationLink,
 });
 
-export const Other = meta.story();
+export const OtherPage = meta.story();
 
-export const Current = meta.story({ args: { current: true } });
+export const CurrentPage = meta.story({ args: { current: true } });

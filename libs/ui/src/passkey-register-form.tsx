@@ -8,30 +8,31 @@ import { useTextInput } from "./use-text-input";
 import type { ReactElement, SyntheticEvent } from "react";
 import type { SettingsContext } from "./mfa-types";
 
-interface PasskeyRegisterFormProps {
-  readonly context: SettingsContext;
-  readonly onRegistered: () => Promise<void>;
-}
-
 const REGISTERED_NOTICE =
   "パスキーを登録しました。強認証への切り替えにはパスキーでログインし直してください。";
 
-function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps): ReactElement {
+const PasskeyRegisterForm = ({
+  context,
+  onRegistered,
+}: {
+  readonly context: SettingsContext;
+  readonly onRegistered: () => Promise<void>;
+}): ReactElement => {
   const { action, onNotice, onNoticeClear, recovery, session } = context;
-  const name = useTextInput();
-  function submit(event: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
-    event.preventDefault();
+  const passkeyName = useTextInput();
+  const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
+    submitEvent.preventDefault();
     action.run(async () => {
       onNoticeClear();
       requireSecureContext();
       requireSuccess(
-        await authClient.passkey.addPasskey({ createSession: false, name: name.value }),
+        await authClient.passkey.addPasskey({ createSession: false, name: passkeyName.value }),
       );
-      name.handleChange("");
+      passkeyName.handleChange("");
       onNotice(REGISTERED_NOTICE);
       await onRegistered();
     });
-  }
+  };
   const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
@@ -41,8 +42,8 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
           name="passkey-name"
           maxLength={100}
           required
-          value={name.value}
-          onValueChange={name.handleChange}
+          value={passkeyName.value}
+          onValueChange={passkeyName.handleChange}
         />
         <Button type="submit" disabled={action.blocked || recoveringAdmin}>
           パスキーを登録
@@ -50,6 +51,6 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
       </FormColumn>
     </form>
   );
-}
+};
 
 export { PasskeyRegisterForm };

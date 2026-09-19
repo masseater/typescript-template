@@ -14,9 +14,9 @@ const meta = preview.meta({
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole("button", { name: "アカウント" });
     await userEvent.click(trigger);
-    const item = await screen.findByRole("menuitem", { name: "認証設定" });
-    await expect(item).toHaveAttribute("href", "/");
-    await userEvent.click(item);
+    const menuItem = await screen.findByRole("menuitem", { name: "認証設定" });
+    await expect(menuItem).toHaveAttribute("href", "/");
+    await userEvent.click(menuItem);
     await waitFor(async () => {
       await expect(trigger).toHaveAttribute("aria-expanded", "false");
     });

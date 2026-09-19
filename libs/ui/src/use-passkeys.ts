@@ -1,43 +1,44 @@
+import { Effect, Fiber } from "effect";
 import { useEffect, useState } from "react";
 
-import { authClient } from "./client";
-import { errorMessage, requireSuccess } from "./protocol";
+import { authClient } from "./client.ts";
+import { errorMessage, requireSuccess } from "./protocol.ts";
 
-import type { PasskeySummary } from "./mfa-types";
+import type { PasskeySummary } from "./mfa-types.ts";
 
-interface PasskeyListing {
+type PasskeyListing = {
   readonly passkeys: readonly PasskeySummary[] | undefined;
   readonly listError: string | undefined;
-}
+};
 
-interface PasskeysState extends PasskeyListing {
-  readonly reload: () => Promise<void>;
-}
-
-async function fetchPasskeys(): Promise<PasskeyListing> {
+const fetchPasskeys = async (): Promise<PasskeyListing> => {
   try {
-    const result = await authClient.passkey.listUserPasskeys();
-    return { listError: undefined, passkeys: requireSuccess(result) };
-  } catch (error) {
-    return { listError: errorMessage(error), passkeys: undefined };
+    const listed = await authClient.passkey.listUserPasskeys();
+    return { listError: undefined, passkeys: requireSuccess(listed) };
+  } catch (failure) {
+    return { listError: errorMessage(failure), passkeys: undefined };
   }
-}
+};
 
-function usePasskeys(): PasskeysState {
+const usePasskeys = (): PasskeyListing & { readonly reload: () => Promise<void> } => {
   const [listing, setListing] = useState<PasskeyListing>({
     listError: undefined,
     passkeys: undefined,
   });
-  async function reload(): Promise<void> {
+  const reload = async (): Promise<void> => {
     setListing(await fetchPasskeys());
-  }
+  };
   useEffect(() => {
-    async function load(): Promise<void> {
-      setListing(await fetchPasskeys());
-    }
-    void load();
+    const loading = Effect.runFork(
+      Effect.map(Effect.promise(fetchPasskeys), (loaded) => {
+        setListing(loaded);
+      }),
+    );
+    return (): void => {
+      Effect.runFork(Fiber.interrupt(loading));
+    };
   }, []);
   return { listError: listing.listError, passkeys: listing.passkeys, reload };
-}
+};
 
 export { usePasskeys };

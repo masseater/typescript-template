@@ -1,25 +1,30 @@
 import { PasskeyItem } from "./passkey-item";
-import { Status } from "./shared/ui/status";
+import { StatusMessage } from "./shared/ui/status";
+import { STATUS_VARIANT } from "./shared/ui/status-variants.ts";
 
 import type { ReactElement } from "react";
 import type { ActionState } from "./action";
 import type { PasskeySummary } from "./mfa-types";
 
-interface PasskeyListProps {
+const PasskeyList = ({
+  action,
+  listError,
+  passkeys,
+}: {
   readonly action: ActionState;
   readonly listError: string | undefined;
   readonly passkeys: readonly PasskeySummary[] | undefined;
-}
-
-function PasskeyList({ action, listError, passkeys }: PasskeyListProps): ReactElement {
+}): ReactElement => {
   if (listError !== undefined && listError !== "") {
-    return <Status variant="error">{listError}</Status>;
+    return <StatusMessage variant={STATUS_VARIANT.failure}>{listError}</StatusMessage>;
   }
   if (passkeys === undefined) {
-    return <Status variant="pending">パスキーを取得しています。</Status>;
+    return (
+      <StatusMessage variant={STATUS_VARIANT.pending}>パスキーを取得しています。</StatusMessage>
+    );
   }
   if (passkeys.length === 0) {
-    return <Status>登録されたパスキーはありません。</Status>;
+    return <StatusMessage>登録されたパスキーはありません。</StatusMessage>;
   }
   return (
     <ul>
@@ -28,6 +33,6 @@ function PasskeyList({ action, listError, passkeys }: PasskeyListProps): ReactEl
       ))}
     </ul>
   );
-}
+};
 
 export { PasskeyList };

@@ -19,7 +19,6 @@ const awaitingPresetPackages = [
   "libs/monitor/**",
   "libs/observability/**",
   "libs/runtime/**",
-  "libs/ui/**",
   "tools/commander/**",
   "tools/dev/**",
   "tools/e2e/**",
@@ -39,6 +38,17 @@ const templateWorkspaces = [
   "tools/observe/**",
   "tools/quality/**",
 ];
+
+const linkWrapperFiles = [
+  "libs/ui/src/shared/ui/button-link.tsx",
+  "libs/ui/src/shared/ui/card-link.tsx",
+  "libs/ui/src/shared/ui/dropdown-menu-link-item.tsx",
+  "libs/ui/src/shared/ui/navigation-link.tsx",
+  "libs/ui/src/shared/ui/pagination-link.tsx",
+  "libs/ui/src/shared/ui/text-link.tsx",
+];
+
+const reactElementTypeFiles = [...linkWrapperFiles, "libs/ui/src/shared/ui/icon.tsx"];
 
 const linkComponents = [
   "ButtonLink",
@@ -74,10 +84,15 @@ const lintOptions = {
     },
     {
       files: ["libs/ui/src/shared/ui/**"],
+      plugins: ["react"],
       rules: {
         "react/forbid-component-props": [LINT_SEVERITY.ERROR, { forbid: ["style"] }],
-        "shadcn/no-restyle": LINT_SEVERITY.OFF,
       },
+    },
+    {
+      files: linkWrapperFiles,
+      plugins: ["react"],
+      rules: { "react/jsx-props-no-spreading": LINT_SEVERITY.OFF },
     },
     {
       files: [
@@ -196,6 +211,10 @@ const lintOptions = {
         "unicorn/text-encoding-identifier-case": [LINT_SEVERITY.ERROR, { withDash: true }],
         "vite-plus/prefer-vite-plus-imports": LINT_SEVERITY.ERROR,
       },
+    },
+    {
+      files: reactElementTypeFiles,
+      rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
     },
     {
       files: ["tools/ai-native/**", "tools/lint-rule-authoring/**"],

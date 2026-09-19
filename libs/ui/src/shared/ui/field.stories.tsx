@@ -6,7 +6,9 @@ import { Field } from "./field";
 
 const meta = preview.meta({ args: { onValueChange: noop, value: "" }, component: Field });
 
-export const Text = meta.story({ args: { label: "ユーザー名", name: "name", required: true } });
+export const TextField = meta.story({
+  args: { label: "ユーザー名", name: "name", required: true },
+});
 
 export const Email = meta.story({
   args: {
