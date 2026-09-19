@@ -1,0 +1,1 @@
+Drop unused auth oauth-provider and internal-dashboard vitest-plugin so knip --strict stays green after the MCP fold.
