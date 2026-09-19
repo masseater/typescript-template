@@ -148,6 +148,14 @@ const config = ({
         ...app,
         project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
       },
+      "apps/service-admin": {
+        ...app,
+        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+      },
+      "apps/service-member": {
+        ...app,
+        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+      },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
         project: ["src/**/*.ts!"],
