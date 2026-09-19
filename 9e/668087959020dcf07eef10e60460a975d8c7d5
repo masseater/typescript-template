@@ -1,1 +1,1 @@
-fix format on auth-request and add missing sendContactEmail body
+replace canonical vocabulary literals with APPLICATION/ROLE/AUTHENTICATION_METHOD bindings; derive MAILPIT_SEND_URL; wire OpsMail to MailSettings
