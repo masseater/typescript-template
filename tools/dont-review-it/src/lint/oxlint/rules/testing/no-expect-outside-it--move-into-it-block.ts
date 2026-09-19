@@ -44,6 +44,31 @@ const blockBodiesOf = (call: ESTree.CallExpression): readonly BlockBody[] => {
   }));
 };
 
+const STORY_FILE_NAME = /\.stories\.[cm]?[jt]sx?$/u;
+
+const STORY_BEHAVIOUR_PROPERTY = "play";
+
+const carriesStoryBehaviour = (holder: ESTree.Node): boolean =>
+  holder.type === "Property" &&
+  holder.kind === "init" &&
+  !holder.computed &&
+  holder.key.type === "Identifier" &&
+  holder.key.name === STORY_BEHAVIOUR_PROPERTY;
+
+const storyBehaviourBodiesIn = (
+  program: ESTree.Program,
+  filename: string,
+): readonly { readonly start: number; readonly end: number }[] => {
+  if (!STORY_FILE_NAME.test(filename)) return [];
+
+  return [
+    ...nodesOfType(program, "ArrowFunctionExpression"),
+    ...nodesOfType(program, "FunctionExpression"),
+  ]
+    .filter((behaviour) => carriesStoryBehaviour(behaviour.parent))
+    .map((behaviour) => ({ start: behaviour.start, end: behaviour.end }));
+};
+
 const innermostBodyAround = (
   assertion: ESTree.CallExpression,
   blockBodies: readonly BlockBody[],
@@ -266,8 +291,13 @@ export const noExpectOutsideIt = createDontReviewItRule({
         const entryRootNames = assertionEntryRootNames(program);
         const calls = nodesOfType(program, "CallExpression");
         const blockBodies = calls.flatMap((call) => blockBodiesOf(call));
+        const storyBehaviourBodies = storyBehaviourBodiesIn(program, inspection.filename);
 
         for (const call of calls) {
+          const withinStoryBehaviour = storyBehaviourBodies.some(
+            (behaviour) => behaviour.start <= call.start && call.end <= behaviour.end,
+          );
+          if (withinStoryBehaviour) continue;
           reportCall({
             call,
             body: innermostBodyAround(call, blockBodies),
