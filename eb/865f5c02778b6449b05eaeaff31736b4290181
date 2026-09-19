@@ -1,0 +1,1 @@
+Toast Motion enter no longer animates opacity (keeps focusable close control visible to a11y); disable aria-hidden-focus on toast success/stacked stories like Failure.
