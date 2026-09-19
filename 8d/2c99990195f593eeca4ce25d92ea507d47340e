@@ -1,0 +1,1 @@
+Wareki helpers follow func-style and fixture tests; toast Motion/a11y; cast Effect.fn commands in tools/dev cli Map so effect-tsgo accepts Command context after new ui deps.
