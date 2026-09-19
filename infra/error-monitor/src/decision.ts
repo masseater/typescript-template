@@ -49,7 +49,7 @@ function formatMessage(notifications: readonly Notification[]): string {
     `Cloudflare Workers で ${notifications.length} 件のエラーを検出しました。`,
     ...notifications.map(
       (item) =>
-        `- [${item.reason === "new" ? "新規" : "再発"}] ${reported(item.service)} ${reported(item.event)} ${reported(item.type)} (fingerprint ${item.fingerprint}, ${item.count} 件)`,
+        `- [${item.reason === "new" ? "新規" : "再発"}] ${reported(item.service)} ${reported(item.event)} ${reported(item.tag)} ${reported(item.type)} (fingerprint ${item.fingerprint}, ${item.count} 件)`,
     ),
     "Workers Observability で error.fingerprint を指定して検索してください。",
   ].join("\n");

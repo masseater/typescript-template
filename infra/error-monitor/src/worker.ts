@@ -27,7 +27,7 @@ export class ErrorMonitor extends Monitor<Bindings> {
     return Effect.gen(function* program() {
       const config = yield* parseErrorMonitorConfig(env);
       const now = Date.now();
-      const groups = yield* fetchErrorGroups({
+      const { dropped, groups } = yield* fetchErrorGroups({
         accountId: config.CLOUDFLARE_ACCOUNT_ID,
         from: now - LOOKBACK_MS,
         to: now,
@@ -42,7 +42,7 @@ export class ErrorMonitor extends Monitor<Bindings> {
         });
       }
       yield* Effect.promise(async () => ctx.storage.put("seen", decision.seen));
-      return { groups: groups.length, notified: decision.notifications.length };
+      return { dropped, groups: groups.length, notified: decision.notifications.length };
     }).pipe(Effect.withSpan("ErrorMonitor.check"));
   }
 }
