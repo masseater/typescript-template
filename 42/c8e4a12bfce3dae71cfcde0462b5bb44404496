@@ -1,0 +1,7 @@
+Revision history for #667:
+
+rev 3 (content) 2026-09-19 18:16 UTC
+rev 2 (content) 2026-09-19 18:06 UTC — export resolveWikiDocHref via shared/content public API so steiger no-public-api-sidestep passes
+rev 1 (initial) 2026-09-19 18:06 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":667,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"797f6ff9bb421faaf6e233d02773aea4066890f8","timestamp_iso":"2026-09-19T18:06:36Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"797f6ff9bb421faaf6e233d02773aea4066890f8","new_sha":"e2c2d93cf1376c41f4c456c8aa679e2b9f15f47f","timestamp_iso":"2026-09-19T18:06:36Z","reason":"export resolveWikiDocHref via shared/content public API so steiger no-public-api-sidestep passes","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/797f6ff9bb421faaf6e233d02773aea4066890f8...e2c2d93cf1376c41f4c456c8aa679e2b9f15f47f"},{"number":3,"change_type":"content","old_sha":"e2c2d93cf1376c41f4c456c8aa679e2b9f15f47f","new_sha":"42c8e4a12bfce3dae71cfcde0462b5bb44404496","timestamp_iso":"2026-09-19T18:16:48Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/e2c2d93cf1376c41f4c456c8aa679e2b9f15f47f...42c8e4a12bfce3dae71cfcde0462b5bb44404496"}]} -->
