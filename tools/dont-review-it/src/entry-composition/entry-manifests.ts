@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalize } from "node:path/posix";
 
-import { readUnlessMissing } from "@repo/repository-checks";
+import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { attempt, uniq } from "es-toolkit";
 import { parseTree, type Node, type ParseError } from "jsonc-parser";
 import { parse } from "yaml";

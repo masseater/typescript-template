@@ -1,6 +1,0 @@
-{
-  "extends": "@repo/dont-review-it/tsconfig/library.json",
-  "compilerOptions": {
-    "types": ["vite-plus/client", "node"]
-  }
-}
