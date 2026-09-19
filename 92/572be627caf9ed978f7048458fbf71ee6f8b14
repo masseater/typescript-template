@@ -1,1 +1,6 @@
-fix CI format: remove trailing blank line in tools/quality/lint.ts
+Revision history for #523:
+
+rev 2 (rebase) 2026-09-19 12:58 UTC — fix CI format: remove trailing blank line in tools/quality/lint.ts
+rev 1 (initial) 2026-09-19 12:58 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":523,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"cd2444ae1b936a545f42d29ee451b90c5278e52f","timestamp_iso":"2026-09-19T12:58:10Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"cd2444ae1b936a545f42d29ee451b90c5278e52f","new_sha":"92572be627caf9ed978f7048458fbf71ee6f8b14","timestamp_iso":"2026-09-19T12:58:10Z","reason":"fix CI format: remove trailing blank line in tools/quality/lint.ts","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/cd2444ae1b936a545f42d29ee451b90c5278e52f...92572be627caf9ed978f7048458fbf71ee6f8b14"}]} -->
