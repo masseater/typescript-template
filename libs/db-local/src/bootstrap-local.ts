@@ -1,24 +1,9 @@
-import { reportFailed, runCli } from "@repo/config/cli";
+import { reportFailed, runCli } from "@repo/cli";
+import { Database } from "@repo/db";
+import { EmailAddress, bootstrapAdmin } from "@repo/db/bootstrap";
 import { Console, Effect, Schema } from "effect";
-import { getPlatformProxy } from "wrangler";
 
-import { EmailAddress, bootstrapAdmin } from "./bootstrap-statement.ts";
-import { Database } from "./database.ts";
-import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
-
-import type { D1Database } from "@cloudflare/workers-types";
-
-const platform = Effect.acquireRelease(
-  Effect.promise(async () =>
-    getPlatformProxy<{ DB: D1Database }>({
-      configPath: await writeLocalDatabaseConfig(),
-      envFiles: [],
-      persist: { path: localDatabaseStore },
-      remoteBindings: false,
-    }),
-  ),
-  (proxy) => Effect.promise(async () => proxy.dispose()),
-);
+import { localDatabasePlatform } from "./local-platform.ts";
 
 function failed(error: string): Readonly<Record<string, unknown>> {
   return { action: "admin_bootstrap", error, success: false };
@@ -27,7 +12,7 @@ function failed(error: string): Readonly<Record<string, unknown>> {
 runCli(
   Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(EmailAddress)(process.argv[2]);
-    const { env } = yield* platform;
+    const { env } = yield* localDatabasePlatform;
     const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
     yield* Console.log(
       JSON.stringify({
