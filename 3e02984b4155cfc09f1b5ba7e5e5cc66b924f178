@@ -1,0 +1,1 @@
+レビュー反映: new Response(body, response) で webSocket/cf を落とさない、呼び出しを 1 か所に、wiki の参照先を serveWorker に、テストを 200 の 2 経路＋既存の 503 に整理、E2E に実 Worker の応答の検査を追加
