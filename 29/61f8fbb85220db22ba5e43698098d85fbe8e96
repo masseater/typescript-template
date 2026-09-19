@@ -1,1 +1,7 @@
-rebase onto main after merge-queue dequeue: resolve conflicts with landed quality ownership and main tip
+Revision history for #556:
+
+rev 3 (rebase) 2026-09-19 10:57 UTC — rebase onto main after merge-queue dequeue: resolve conflicts with landed quality ownership and main tip
+rev 2 (rebase) 2026-09-19 09:44 UTC
+rev 1 (initial) 2026-09-19 09:44 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":556,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"7b23ae64573e3e1cc7345ea1bbdb4d791be6bd31","timestamp_iso":"2026-09-19T09:44:29Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"7b23ae64573e3e1cc7345ea1bbdb4d791be6bd31","new_sha":"d54190dfce34f2c9b518b6772a367759c7c9037e","timestamp_iso":"2026-09-19T09:44:29Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/7b23ae64573e3e1cc7345ea1bbdb4d791be6bd31...d54190dfce34f2c9b518b6772a367759c7c9037e"},{"number":3,"change_type":"rebase","old_sha":"d54190dfce34f2c9b518b6772a367759c7c9037e","new_sha":"2961f8fbb85220db22ba5e43698098d85fbe8e96","timestamp_iso":"2026-09-19T10:57:58Z","reason":"rebase onto main after merge-queue dequeue: resolve conflicts with landed quality ownership and main tip","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/d54190dfce34f2c9b518b6772a367759c7c9037e...2961f8fbb85220db22ba5e43698098d85fbe8e96"}]} -->
