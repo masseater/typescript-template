@@ -49,7 +49,7 @@ const suppressedFiles = (): string[] => {
 };
 
 const rootDoctorConfigs: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../doctor.config.ts",
+  "./doctor.config.ts",
   { eager: true, import: "default" },
 );
 
@@ -71,7 +71,7 @@ describe("react-doctor integration", () => {
 
   it("keeps AI-operable UI rules enabled at error", () => {
     expect.hasAssertions();
-    const config = rootDoctorConfigs["../../doctor.config.ts"];
+    const config = rootDoctorConfigs["./doctor.config.ts"];
     const rules = field(config, "rules");
     expect(
       Object.fromEntries(aiOperableDoctorRules.map((rule) => [rule, field(rules, rule)])),
