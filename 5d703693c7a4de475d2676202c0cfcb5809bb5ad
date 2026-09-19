@@ -1,1 +1,1 @@
-fix knip workspace entry/project so quality merge passes knip and knip --strict
+Refs #501 instead of Closes: this PR only folds quality; other tool packages remain
