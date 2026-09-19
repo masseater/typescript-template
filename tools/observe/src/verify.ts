@@ -41,7 +41,7 @@ const VerifyInput = Schema.Struct({
 const { values } = parseArgs({
   options: {
     app: { type: "string" },
-    service: { default: "user-server", type: "string" },
+    service: { default: "service-member-server", type: "string" },
   },
 });
 

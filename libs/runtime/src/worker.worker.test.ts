@@ -93,7 +93,7 @@ describe("a worker whose layer cannot be built", () => {
           "error.tag": tag,
           "error.type": "Error",
           event: "application.runtime_unavailable",
-          service: "user-server",
+          service: "service-member-server",
         });
         assert.match(fingerprint ?? "", /^[0-9a-f]{8}$/u);
         assert.include(causeSummary ?? "", tag);
@@ -120,7 +120,10 @@ describe("a wiki worker whose database has not been migrated", () => {
       const reported = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(
         Effect.orDie,
       );
-      assert.deepInclude(reported, { "error.tag": "AuthFailure", service: "wiki-server" });
+      assert.deepInclude(reported, {
+        "error.tag": "AuthFailure",
+        service: "internal-dashboard-server",
+      });
       assert.include(reported["error.chain"] ?? "", "no such table: oauth_resource");
     }),
   );
