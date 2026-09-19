@@ -14,6 +14,8 @@ const ruleNames = [
   "layers",
   "no-internal-mocks",
   "no-manual-memoization",
+  "process-boundary",
+  "retired-imports",
   "test-import-graph",
   "worker-fetch",
 ] as const;

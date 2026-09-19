@@ -5,7 +5,6 @@ const failedExitCode = 1;
 
 function exitWith(code: number): Effect.Effect<void> {
   return Effect.sync(() => {
-    // oxlint-disable-next-line eslint/no-restricted-properties
     process.exitCode = code;
   });
 }
@@ -24,7 +23,6 @@ function runCli<Failure>(
   program: Effect.Effect<unknown, Failure>,
   onFailure: FailureReport<Failure>,
 ): void {
-  // oxlint-disable-next-line eslint/no-restricted-properties
   NodeRuntime.runMain(
     program.pipe(
       Effect.catchCause((cause) =>
