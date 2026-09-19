@@ -25,7 +25,7 @@
     "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
-    "otpauth": "9.5.2",
+    "otpauth": "catalog:",
     "typescript": "catalog:"
   }
 }

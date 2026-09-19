@@ -7,7 +7,7 @@
     "@repo/config": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",
-    "otpauth": "9.5.2",
+    "otpauth": "catalog:",
     "playwright": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
