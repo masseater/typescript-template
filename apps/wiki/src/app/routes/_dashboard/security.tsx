@@ -6,7 +6,7 @@ import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
-const Route = createFileRoute("/security")({
+const Route = createFileRoute("/_dashboard/security")({
   component: (): ReactElement => <SecurityPage title={`${serviceName} の認証設定`} />,
   head: () => ({ links: [{ href: uiStyles, rel: "stylesheet" }] }),
 });
