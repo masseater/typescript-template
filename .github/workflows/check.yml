@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 2
       - &clean-workspace
         if: vars.CI_RUNNER != ''
-        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy
+        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy -e .artifacts -e .spool
       - &browser-cache
         if: vars.CI_RUNNER == ''
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

@@ -104,11 +104,20 @@ function appServer(app: Application): ServerOptions {
   };
 }
 
-const generatedDirectories = ["node_modules", ".local", "dist", ".wrangler", ".alchemy"] as const;
+const generatedDirectories = [
+  "node_modules",
+  ".local",
+  "dist",
+  ".wrangler",
+  ".alchemy",
+  ".artifacts",
+  ".spool",
+] as const;
 
 const taskInput = [
   { auto: true },
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
 ] as const;
 
 function withoutGenerated(...directories: readonly string[]): string[] {
