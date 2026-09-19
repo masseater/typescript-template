@@ -21,7 +21,12 @@ const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
 async function servedUnavailable(
   layer: () => Layer.Layer<AppServices, unknown>,
   reporting: Reporting,
-): Promise<{ readonly body: unknown; readonly policy: string | null; readonly status: number }> {
+): Promise<{
+  readonly body: unknown;
+  readonly policy: string | null;
+  readonly robots: string | null;
+  readonly status: number;
+}> {
   const worker = serveApp(
     workerRuntime(layer),
     () => Effect.succeed(new Response("reached the route")),
@@ -33,6 +38,7 @@ async function servedUnavailable(
   return {
     body: await response.json(),
     policy: response.headers.get("content-security-policy"),
+    robots: response.headers.get("x-robots-tag"),
     status: response.status,
   };
 }
@@ -163,13 +169,28 @@ describe("a worker serving a rendered document", () => {
     }),
   );
 
-  it.effect("forbids every resource when the runtime cannot answer", () =>
+  it.effect("forbids every resource and indexing when the runtime cannot answer", () =>
     Effect.gen(function* program() {
       const response = yield* Effect.promise(async () =>
         servedUnavailable(brokenLayers[0].layer, { log: recordingSink().sink, service: "user" }),
       );
       assert.include(response.policy ?? "", "default-src 'none'");
       assert.notInclude(response.policy ?? "", "nonce-");
+      assert.strictEqual(response.robots, "noindex, nofollow");
     }),
   );
+});
+
+describe("a worker answering any request", () => {
+  const paths = ["/", "/assets/app.js"] as const;
+  for (const path of paths) {
+    it.effect(`keeps ${path} out of search indexes`, () =>
+      Effect.gen(function* program() {
+        const response = yield* Effect.promise(async () =>
+          servedDocument(`https://user.example.test${path}`),
+        );
+        assert.strictEqual(response.headers.get("x-robots-tag"), "noindex, nofollow");
+      }),
+    );
+  }
 });
