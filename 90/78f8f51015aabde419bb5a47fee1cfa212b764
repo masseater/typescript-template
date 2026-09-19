@@ -1,1 +1,1 @@
-fix FSD public API, stable draft ids, and knip unused exports so pre-push passes
+trim unused shared social-link public exports for knip
