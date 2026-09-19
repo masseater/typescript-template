@@ -21,7 +21,7 @@ function SecurityPage({
         </>
       )}
       {!loading && !session && <a href="/login">ログインしてください。</a>}
-      {(error ?? "") !== "" && <Status variant="error">{error}</Status>}
+      {error !== undefined && <Status variant="error">{error}</Status>}
     </Page>
   );
 }

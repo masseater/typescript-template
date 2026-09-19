@@ -16,9 +16,7 @@ function ActionStatus({ action, notice, pendingMessage }: ActionStatusProps): Re
         <Status variant="pending">{pendingMessage}</Status>
       )}
       {notice !== undefined && <Status variant="success">{notice}</Status>}
-      {action.error !== undefined && action.error !== "" && (
-        <Status variant="error">{action.error}</Status>
-      )}
+      {action.error !== undefined && <Status variant="error">{action.error}</Status>}
     </>
   );
 }

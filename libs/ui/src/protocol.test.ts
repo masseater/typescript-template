@@ -129,4 +129,21 @@ describe("認証の失敗理由", () => {
       }),
     ).toThrow("Upstream wording");
   });
+
+  it("コードが無い失敗を空キーの辞書引きで汎用文言にしない", () => {
+    expect.hasAssertions();
+    expect(() => requireSuccess({ data: undefined, error: {} })).toThrow(
+      "認証サーバーが失敗理由のコードを返しませんでした。",
+    );
+    expect(() => requireSuccess({ data: undefined, error: { message: "message only" } })).toThrow(
+      "message only",
+    );
+  });
+
+  it("未知のコードをメッセージ欠落のまま汎用文言にしない", () => {
+    expect.hasAssertions();
+    expect(() => requireSuccess({ data: undefined, error: { code: "SOMETHING_ELSE" } })).toThrow(
+      "認証サーバーが未知の失敗コードを返しました: SOMETHING_ELSE",
+    );
+  });
 });
