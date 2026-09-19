@@ -7,7 +7,6 @@ import { Effect, Layer } from "effect";
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { OpsMail } from "./ops-mail.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
@@ -19,7 +18,6 @@ type AppServices =
   | Auth
   | Database
   | DatabaseHealth
-  | OpsMail
   | Telemetry
   | TelemetryFlusher;
 
@@ -50,12 +48,6 @@ function configuredAppLayer(
     auth,
     Layer.succeed(AppOrigin, config.APP_ORIGIN),
     Layer.succeed(Assets, config.ASSETS),
-    Layer.succeed(OpsMail, {
-      EMAIL: config.EMAIL,
-      EMAIL_FROM: config.EMAIL_FROM,
-      MAILPIT_URL: config.MAILPIT_URL,
-      OPS_EMAIL: config.OPS_EMAIL,
-    }),
   );
   return services.pipe(Layer.provideMerge(telemetry));
 }

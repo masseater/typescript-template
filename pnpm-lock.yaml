@@ -613,6 +613,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -656,9 +659,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@repo/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
