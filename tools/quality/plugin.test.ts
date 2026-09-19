@@ -50,10 +50,10 @@ const forbiddenCode = [
   ["infra/cloudflare/src/probe.ts", 'export * from "@pulumi/aws";', "retired-imports"],
   [
     "tools/dev/src/probe.ts",
-    'import legacy = require("react-intl"); export { legacy };',
+    'import legacy = require("styled-components"); export { legacy };',
     "retired-imports",
   ],
-  ["tools/dev/src/probe.ts", 'export const load = () => import("react-intl");', "retired-imports"],
+  ["tools/dev/src/probe.ts", 'export const load = () => import("pulumi");', "retired-imports"],
   [
     "tools/dev/src/probe.ts",
     "export const done = () => { process.exitCode = 0; };",
