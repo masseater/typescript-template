@@ -1,8 +1,6 @@
 import { dontReviewItPreset } from "@repo/dont-review-it";
 import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
 
-import { retiredImports } from "./retired-packages.ts";
-
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
 const awaitingPresetPackages = [
@@ -115,25 +113,6 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           { capIsNewExceptionPattern: "^(?:Schema|Context|Data)\\." },
         ],
-        "no-restricted-imports": [LINT_SEVERITY.ERROR, retiredImports],
-        "no-restricted-properties": [
-          LINT_SEVERITY.ERROR,
-          ...["stdout", "stderr"].map((property) => ({
-            message: "effect の Console で出力してください。",
-            object: "process",
-            property,
-          })),
-          {
-            message: "@repo/config/cli の reportFailed / markFailed / exitWith を使ってください。",
-            object: "process",
-            property: "exitCode",
-          },
-          {
-            message: "@repo/config/cli の runCli で起動してください。",
-            object: "NodeRuntime",
-            property: "runMain",
-          },
-        ],
         "no-underscore-dangle": [LINT_SEVERITY.ERROR, { allow: ["_tag"] }],
         "no-warning-comments": [
           LINT_SEVERITY.ERROR,
@@ -153,6 +132,8 @@ const lintOptions = {
         "project/layers": LINT_SEVERITY.ERROR,
         "project/no-internal-mocks": LINT_SEVERITY.ERROR,
         "project/no-manual-memoization": LINT_SEVERITY.ERROR,
+        "project/process-boundary": LINT_SEVERITY.ERROR,
+        "project/retired-imports": LINT_SEVERITY.ERROR,
         "project/test-import-graph": LINT_SEVERITY.ERROR,
         "project/worker-fetch": LINT_SEVERITY.ERROR,
         "shadcn/no-arbitrary-values": LINT_SEVERITY.ERROR,

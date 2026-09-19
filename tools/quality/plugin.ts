@@ -6,7 +6,10 @@ import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
 import { exampleLabels, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
+import { retiredImportsVisitor } from "./retired-imports.ts";
+import { retiredImportGuidance } from "./retired-packages.ts";
 import { gitEnvironmentVisitor, testImportGraphVisitor } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 
@@ -19,12 +22,7 @@ const metadata = (violation: string): RuleMeta => {
 };
 
 const isEnvironment = (origin: Origin): boolean => {
-  const [source, ...members] = origin;
-  return (
-    ((source === "node:process" || source === "process" || source === "import.meta") &&
-      members[0] === "env") ||
-    (source === "global" && members[0] === "process" && members[1] === "env")
-  );
+  return processMember(origin) === "env";
 };
 
 const environmentVisitor = (inspection: LintContext): Visitor => {
@@ -242,6 +240,16 @@ const projectPlugin = definePlugin({
       meta: metadata(
         "手作業のメモ化は禁止です。React Compiler が最適化するので useMemo・useCallback・React.memo は別名や分割代入も含めて使わず、素の値と関数宣言のまま書いてください。",
       ),
+    },
+    "process-boundary": {
+      create: processBoundaryVisitor,
+      meta: metadata(
+        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console、終了コードは @repo/config/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.exitCode と NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、そこでも process.stdout と process.stderr は参照できません。`,
+      ),
+    },
+    "retired-imports": {
+      create: retiredImportsVisitor,
+      meta: metadata(`引退した package は import できません。${retiredImportGuidance}`),
     },
     "test-import-graph": {
       create: testImportGraphVisitor,
