@@ -1,0 +1,6 @@
+Revision history for #537:
+
+rev 2 (content) 2026-09-19 07:37 UTC — Unexport AccessibleNameCount so knip stops flagging an unused exported type.
+rev 1 (initial) 2026-09-19 07:37 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":537,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"765c3548574485a99ab7c3f66129bcb0d8777a5a","timestamp_iso":"2026-09-19T07:37:56Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"765c3548574485a99ab7c3f66129bcb0d8777a5a","new_sha":"7d0a6e9118f21c49ab4e45508bc06e95671790b5","timestamp_iso":"2026-09-19T07:37:56Z","reason":"Unexport AccessibleNameCount so knip stops flagging an unused exported type.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/765c3548574485a99ab7c3f66129bcb0d8777a5a...7d0a6e9118f21c49ab4e45508bc06e95671790b5"}]} -->
