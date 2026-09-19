@@ -1,6 +1,6 @@
 import { Cause, Effect, Tracer } from "effect";
 
-import { annotateLogs, annotateSpan } from "./annotations.ts";
+import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
 import { CurrentRequest } from "./current-request.ts";
 import { errorAttributes, errorFingerprint } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
@@ -40,7 +40,7 @@ function failureAttributesOf(error: unknown): FailureAttributes {
 
 function reportFailure(cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> {
   const attributes = failureAttributesOf(Cause.squash(cause));
-  return Effect.logError("application.error").pipe(annotateLogs({ ...attributes }));
+  return logAt("Error", "application.error", { ...attributes });
 }
 
 function incomingParent(headers: Readonly<Pick<Headers, "get">>): Tracer.ExternalSpan | undefined {
@@ -127,7 +127,7 @@ function observeRequest<Requirements>(
 ): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> {
   return Effect.orDie(Effect.currentSpan).pipe(
     Effect.flatMap((span) => respond(request, requestContext(span), handler)),
-    Effect.withSpan("http.server.request", {
+    withSpan("http.server.request", {
       kind: "server",
       parent: incomingParent(request.headers),
     }),

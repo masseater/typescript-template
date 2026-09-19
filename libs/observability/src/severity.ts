@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Cause, Effect } from "effect";
 
 import { annotateLogs } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
@@ -25,9 +25,21 @@ function statusSeverity(status: number | undefined): Severity {
   return refusals.has(status) ? "Info" : "Warn";
 }
 
-function logAt(severity: Severity, event: string, attributes: Attributes): Effect.Effect<void> {
+function logAt(
+  severity: Severity,
+  event: string,
+  attributes: Attributes = {},
+): Effect.Effect<void> {
   return Effect.logWithLevel(severity)(event).pipe(annotateLogs(attributes));
 }
 
-export { logAt, statusSeverity };
+function logCause(
+  event: string,
+  cause: Readonly<Cause.Cause<unknown>>,
+  attributes: Attributes = {},
+): Effect.Effect<void> {
+  return Effect.logWithLevel("Error")(event, cause).pipe(annotateLogs(attributes));
+}
+
+export { logAt, logCause, statusSeverity };
 export type { Severity };

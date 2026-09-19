@@ -4,6 +4,7 @@ import {
   startInterview,
   storeInterview,
 } from "@repo/db/interview";
+import { logAt } from "@repo/observability";
 import { Effect, Option, Schema } from "effect";
 
 import { viewOf } from "./contracts.ts";
@@ -39,7 +40,7 @@ const replace = Effect.fn("interview.replace")(function* replace(
 
 const discard = Effect.fn("interview.discard")(function* discard(userId: string, version: number) {
   const state = begin();
-  yield* Effect.logWarning("interview.state_discarded", { version });
+  yield* logAt("Warn", "interview.state_discarded", { version });
   yield* replace(userId, version, { state });
   return { state, version: version + 1 };
 });
@@ -72,8 +73,8 @@ const understood = Effect.fn("interview.understand")(function* understood(
     Effect.map((understanding): Reading => ({ source: "model", understanding })),
     Effect.catchTag("UnderstandingFailed", (failure) =>
       Effect.as(
-        Effect.logWarning("interview.model_failed", {
-          cause: failure.cause,
+        logAt("Warn", "interview.model_failed", {
+          ...(failure.cause === undefined ? {} : { cause: String(failure.cause) }),
           reason: failure.reason,
         }),
         { source: failure.reason } satisfies Reading,
@@ -98,7 +99,7 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
   const { source, understanding }: Reading = yield* understood(state, utterance, userId);
   const next = advance(state, utterance, understanding);
   const view = yield* replace(userId, version, { state: next });
-  yield* Effect.logInfo("interview.turn", {
+  yield* logAt("Info", "interview.turn", {
     answered: fieldKeys.filter((key) => next.sheet[key] !== undefined).length,
     phase: next.phase,
     question: next.messages.at(-1)?.text === understanding?.message ? "model" : "scripted",

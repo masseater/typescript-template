@@ -1,4 +1,4 @@
-export { annotateLogs, annotateSpan } from "./annotations.ts";
+export { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
 export { CurrentRequest } from "./current-request.ts";
 export { RequestRejected, readJson, rejectionStatus } from "./request.ts";
 export { Telemetry } from "./telemetry.ts";
@@ -8,7 +8,10 @@ export { TelemetryInvalid } from "./telemetry-invalid.ts";
 export { httpStatus } from "./http-status.ts";
 export { ingestBrowser } from "./ingress.ts";
 export { observeRequest, reportFailure } from "./request-span.ts";
+export { logAt, logCause, statusSeverity } from "./severity.ts";
+export type { Severity } from "./severity.ts";
 export { reportUnavailable } from "./unavailable.ts";
 export type { Correlation } from "./protocol.ts";
 export type { RequestContext } from "./current-request.ts";
 export type { Reporting } from "./unavailable.ts";
+export type { Attributes } from "./annotations.ts";

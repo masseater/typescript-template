@@ -2,6 +2,7 @@ import { assert, it } from "@effect/vitest";
 import { Cause, Effect } from "effect";
 
 import { annotateLogs } from "./annotations.ts";
+import { logAt, logCause } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 import { recordingSink } from "./testing.ts";
 
@@ -26,23 +27,19 @@ function recorded(program: Effect.Effect<void>): Effect.Effect<ReturnType<typeof
 it.effect("hides a secret an authentication failure puts in its attributes", () =>
   Effect.gen(function* program() {
     const logs = yield* recorded(
-      Effect.logError("authentication.failed", {
-        cause: {
-          AUTH_SECRET: leaked,
-          headers: `authorization: Bearer ${leaked}`,
-          reason: "invalid token",
-        },
+      logAt("Error", "authentication.failed", {
+        AUTH_SECRET: leaked,
+        headers: `authorization: Bearer ${leaked}`,
+        reason: "invalid token",
       }),
     );
     assert.notInclude(JSON.stringify(logs.stderr), leaked);
     assert.deepStrictEqual(logs.stderr, [
       {
-        cause: {
-          AUTH_SECRET: "[redacted]",
-          headers: "authorization: [redacted]",
-          reason: "invalid token",
-        },
+        AUTH_SECRET: "[redacted]",
         event: "authentication.failed",
+        headers: "authorization: [redacted]",
+        reason: "invalid token",
         release: "abc123",
         service: "user-server",
       },
@@ -53,18 +50,15 @@ it.effect("hides a secret an authentication failure puts in its attributes", () 
 it.effect("keeps the error that broke the model readable while hiding the secret it carries", () =>
   Effect.gen(function* program() {
     const logs = yield* recorded(
-      Effect.logWarning("interview.model_failed", {
-        cause: new Error(`D1_ERROR: no such table: jwks (AUTH_SECRET=${leaked})`),
+      logAt("Warn", "interview.model_failed", {
+        cause: `D1_ERROR: no such table: jwks (AUTH_SECRET=${leaked})`,
         reason: "model_failed",
       }),
     );
     assert.notInclude(JSON.stringify(logs.stdwarn), leaked);
     assert.deepStrictEqual(logs.stdwarn, [
       {
-        cause: {
-          message: "D1_ERROR: no such table: jwks (AUTH_SECRET=[redacted])",
-          name: "Error",
-        },
+        cause: "D1_ERROR: no such table: jwks (AUTH_SECRET=[redacted])",
         event: "interview.model_failed",
         reason: "model_failed",
         release: "abc123",
@@ -77,7 +71,7 @@ it.effect("keeps the error that broke the model readable while hiding the secret
 it.effect("hides a secret an annotation carries, not only the attributes of the call", () =>
   Effect.gen(function* program() {
     const logs = yield* recorded(
-      Effect.logInfo("http.server.request", { route: "home", status: 200 }).pipe(
+      logAt("Info", "http.server.request", { route: "home", status: 200 }).pipe(
         annotateLogs({ cookie: `template-user.session=${leaked}`, request_id: "abc" }),
       ),
     );
@@ -100,7 +94,7 @@ const brokenTable = Cause.fail(new Error(`no such table: jwks (AUTH_SECRET=${lea
 
 it.effect("keeps the cause of a failure in the line, minus the secret it carries", () =>
   Effect.gen(function* program() {
-    const logs = yield* recorded(Effect.logError("application.error", brokenTable));
+    const logs = yield* recorded(logCause("application.error", brokenTable));
     const [line] = logs.stderr;
     const reported = JSON.stringify(line);
     assert.notInclude(reported, leaked);

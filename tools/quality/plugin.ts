@@ -99,8 +99,12 @@ const annotationApis = new Set([
   "annotateLogsScoped",
   "annotateSpans",
   "withLogSpan",
+  "withSpan",
+  "withSpanScoped",
 ]);
 const effectModule = /^effect(?:\/|$)/u;
+const observabilityAnnotations = "/libs/observability/src/annotations.ts";
+const observabilitySeverity = "/libs/observability/src/severity.ts";
 
 const isRawAnnotation = (origin: Origin): boolean => {
   const [source, ...members] = origin;
@@ -113,9 +117,62 @@ const isRawAnnotation = (origin: Origin): boolean => {
 };
 
 const annotationVisitor = (inspection: LintContext): Visitor => {
-  return filename(inspection).endsWith("/libs/observability/src/annotations.ts")
+  return filename(inspection).endsWith(observabilityAnnotations)
     ? {}
     : originVisitor(inspection, isRawAnnotation);
+};
+
+const logApis = new Set([
+  "log",
+  "logDebug",
+  "logError",
+  "logFatal",
+  "logInfo",
+  "logTrace",
+  "logWarning",
+  "logWithLevel",
+]);
+
+const isRawLog = (origin: Origin): boolean => {
+  const [source, ...members] = origin;
+  if (source === undefined || !effectModule.test(source)) {
+    return false;
+  }
+  return source === "effect"
+    ? members[0] === "Effect" && logApis.has(members[1] ?? "")
+    : logApis.has(members[0] ?? "");
+};
+
+const logVisitor = (inspection: LintContext): Visitor => {
+  return filename(inspection).endsWith(observabilitySeverity)
+    ? {}
+    : originVisitor(inspection, isRawLog);
+};
+
+const spanMutationApis = new Set(["attribute", "event"]);
+
+const spanMutationVisitor = (inspection: LintContext): Visitor => {
+  if (filename(inspection).endsWith(observabilityAnnotations)) {
+    return {};
+  }
+  return {
+    CallExpression(node: Node): void {
+      if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression") {
+        return;
+      }
+      const { object, property } = node.callee;
+      if (object.type !== "Identifier" || !/span$/iu.test(object.name)) {
+        return;
+      }
+      const name =
+        !node.callee.computed && property.type === "Identifier"
+          ? property.name
+          : staticText(inspection, property);
+      if (spanMutationApis.has(name ?? "")) {
+        reportViolation(inspection, node.callee);
+      }
+    },
+  };
 };
 
 const sharedWaitApis = new Set(["cached", "cachedInvalidateWithTTL", "cachedWithTTL"]);
@@ -178,7 +235,7 @@ const projectPlugin = definePlugin({
     annotations: {
       create: annotationVisitor,
       meta: metadata(
-        "Effect.annotateLogs と Effect.annotateCurrentSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
+        "Effect.annotateLogs / annotateCurrentSpan / withSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan / withSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
       ),
     },
     boundaries: {
@@ -229,6 +286,12 @@ const projectPlugin = definePlugin({
         "Feature-Sliced Design のアプリでは、src の直下に置けるのは app・pages・widgets・features・entities・shared の各レイヤーだけです。ファイルをいずれかのレイヤーのスライスかセグメントへ移してください。レイヤーの外は steiger の検査が届きません。",
       ),
     },
+    logs: {
+      create: logVisitor,
+      meta: metadata(
+        "Effect.log / logError / logWarning / logInfo などを直接呼べません。水準の判定を迂回すると、同じ事象が宛先によって違う厳しさで出ます。libs/observability の logAt / logCause を通してください。",
+      ),
+    },
     "no-internal-mocks": {
       create: mockVisitor,
       meta: metadata(
@@ -250,6 +313,12 @@ const projectPlugin = definePlugin({
     "retired-imports": {
       create: retiredImportsVisitor,
       meta: metadata(`引退した package は import できません。${retiredImportGuidance}`),
+    },
+    "span-mutation": {
+      create: spanMutationVisitor,
+      meta: metadata(
+        "Tracer.Span の attribute / event を直接呼べません。OTLP の tracer は span から属性を直接読むため、伏せ字を通さない経路になります。libs/observability の annotateSpan / withSpan を使ってください。",
+      ),
     },
     "test-import-graph": {
       create: testImportGraphVisitor,
