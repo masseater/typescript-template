@@ -8,7 +8,7 @@ import type { SubmitEventHandler } from "react";
 
 interface ProfileForm {
   readonly blocked: boolean;
-  readonly error: string;
+  readonly error: string | undefined;
   readonly handleNameChange: (value: string) => void;
   readonly handleProfileChange: (value: string) => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
@@ -30,7 +30,7 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
   }
   return {
     blocked: action.blocked,
-    error: action.error ?? "",
+    error: action.error,
     handleNameChange: setName,
     handleProfileChange: setProfile,
     handleSubmit,

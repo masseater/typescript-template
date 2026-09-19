@@ -23,7 +23,7 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
         <Field label="メールアドレス" name="email" type="email" readOnly value={initial.email} />
       </FormColumn>
       <ProfileEditor form={form} homeId={initial.id} />
-      {form.error !== "" && <Status variant="error">{form.error}</Status>}
+      {form.error !== undefined && <Status variant="error">{form.error}</Status>}
     </Page>
   );
 }
