@@ -1,1 +1,1 @@
-keep @repo/config in app dependencies only (drop unused devDependency)
+CI: config を environment 所有者へ切り出し、observability の withSpan/logCause/logAt を復元し、プリセット違反の呼び出しと壊れた fixture を直す。
