@@ -1,1 +1,6 @@
-format doctor.config; suppress socket/low-supply-chain-score for folded tanstack-ai
+Revision history for #697:
+
+rev 2 (rebase) 2026-09-19 20:39 UTC — format doctor.config; suppress socket/low-supply-chain-score for folded tanstack-ai
+rev 1 (initial) 2026-09-19 20:39 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":697,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"c5f1c8fe1a19325acabf215167b354188ff49837","timestamp_iso":"2026-09-19T20:39:09Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"c5f1c8fe1a19325acabf215167b354188ff49837","new_sha":"e41926655fb8e28b1b4ebc137d4ac95805543f21","timestamp_iso":"2026-09-19T20:39:09Z","reason":"format doctor.config; suppress socket/low-supply-chain-score for folded tanstack-ai","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/c5f1c8fe1a19325acabf215167b354188ff49837...e41926655fb8e28b1b4ebc137d4ac95805543f21"}]} -->
