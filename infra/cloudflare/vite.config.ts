@@ -6,7 +6,6 @@ import { monitorStacks } from "./src/monitors.ts";
 
 const stackBuilds = [...applications, ...monitorStacks].map((unit) => `@repo/${unit}#build`);
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   run: {
     tasks: {
