@@ -2,6 +2,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   appRun,
   appServer,
+  failOnBrokenSourceMaps,
   previewDevVars,
   privateSourceMaps,
   reactCompiler,
@@ -22,6 +23,7 @@ import type { ConfigEnv, UserConfig } from "vite-plus";
 export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
   build: { sourcemap: "hidden" },
   plugins: [
+    failOnBrokenSourceMaps(),
     previewDevVars(import.meta.dirname),
     privateSourceMaps("wiki"),
     devBoundary("wiki"),

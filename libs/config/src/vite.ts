@@ -204,5 +204,5 @@ export {
   testRun,
   withoutEnvFileLoader,
 };
-export { privateSourceMaps } from "./private-source-maps.ts";
+export { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 export type { Tasks };

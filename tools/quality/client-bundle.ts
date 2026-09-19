@@ -43,11 +43,14 @@ async function clientBuild(specifiers: readonly string[], outDirectory: string):
             environment.name === "client",
           enforce: "post",
           name: "client-bundle-probe",
-          transform(code: string, id: string): string | undefined {
+          transform(code: string, id: string) {
+            if (id !== probeModule) {
+              return;
+            }
             const injected = specifiers
               .map((specifier) => `import ${JSON.stringify(specifier)};`)
               .join("\n");
-            return id === probeModule ? `${injected}\n${code}` : undefined;
+            return { code: `${injected}\n${code}`, map: { mappings: "" } };
           },
         },
       ],
