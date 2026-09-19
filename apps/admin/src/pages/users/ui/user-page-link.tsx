@@ -12,7 +12,7 @@ function UserPageLink({
 }: Readonly<{ search: UsersSearch; target: PageTarget }>): ReactElement {
   return (
     <PaginationLink
-      to="/"
+      to="/members"
       search={normalizeUsersSearch({ ...search, page: target.page })}
       current={target.current}
       aria-label={target.label}

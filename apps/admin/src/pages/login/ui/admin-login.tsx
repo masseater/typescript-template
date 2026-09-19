@@ -7,7 +7,8 @@ import type { ReactElement } from "react";
 function AdminLogin(): ReactElement {
   const { searchStr } = useLocation();
   function goToRedirect(): void {
-    globalThis.location.assign(redirectTarget(new URLSearchParams(searchStr).get("redirect")));
+    const target = redirectTarget(new URLSearchParams(searchStr).get("redirect"));
+    globalThis.location.assign(target === "/" ? "/members" : target);
   }
   return <LoginPage title="管理者ログイン" signUp={false} onAuthenticated={goToRedirect} />;
 }
