@@ -41,9 +41,9 @@ interface StatusReport {
 
 const statusTimeoutMilliseconds = 3000;
 
-function httpStatus(app: App): Effect.Effect<number | null> {
+function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
   return Effect.tryPromise(async (signal) =>
-    fetch(`${applicationOrigins[app]}${applicationReadyPaths[app]}`, {
+    fetch(`${origin}${applicationReadyPaths[app]}`, {
       redirect: "manual",
       signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
     }),
@@ -56,20 +56,28 @@ function httpStatus(app: App): Effect.Effect<number | null> {
   );
 }
 
-function appStatus(app: App): Effect.Effect<AppStatus> {
-  return Effect.all({ httpStatus: httpStatus(app), processRunning: running(app) }).pipe(
+function appOrigin(app: App, origins: "lan" | "loopback" | undefined): string {
+  return origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
+}
+
+function appStatus(app: App, origins: "lan" | "loopback" | undefined): Effect.Effect<AppStatus> {
+  const origin = appOrigin(app, origins);
+  return Effect.all({ httpStatus: httpStatus(app, origin), processRunning: running(app) }).pipe(
     Effect.map((observed) => ({
       app,
       logFile: fileURLToPath(logFileUrl(app)),
-      origin: lanOrigin(app),
+      origin,
       ...observed,
     })),
   );
 }
 
 const status = Effect.fn("status")(function* status() {
+  const credentials = yield* readCredentials();
   const report: StatusReport = {
-    apps: yield* Effect.forEach(applications, appStatus, { concurrency: "unbounded" }),
+    apps: yield* Effect.forEach(applications, (app) => appStatus(app, credentials.origins), {
+      concurrency: "unbounded",
+    }),
     event: "local.application_status",
     functionalVerification: "not-proven-by-status",
   };
@@ -109,8 +117,10 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
 });
 
 const start = Effect.fn("start")(function* start(app: App) {
-  yield* readCredentials();
-  yield* ensureGateway();
+  const credentials = yield* readCredentials();
+  if (credentials.origins !== "loopback") {
+    yield* ensureGateway();
+  }
   if (!(yield* running(app))) {
     yield* launch(app);
   }
