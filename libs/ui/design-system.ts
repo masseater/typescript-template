@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { project } from "@shadcn/lint";
 
-const smarthrTokens: Readonly<Record<string, string>> = {
+const designTokens: Readonly<Record<string, string>> = {
   "--danger": "#e01e5a",
   "--danger-darken": "#ca1b51",
   "--font-sans": "system-ui, sans-serif",
@@ -68,7 +68,7 @@ const read = (file: string): string => {
   return readFileSync(file, "utf-8");
 };
 
-const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
+const designSystemProbe = "libs/ui/src/shared/ui/button.tsx";
 
 const stylesheetPath = (): string => {
   return project.themeFileFor(designSystemProbe) ?? "";
@@ -218,11 +218,11 @@ const appStylesheetViolations = (apps: readonly string[]): string[] => {
 
 const tokenViolations = (css: string): string[] => {
   const declared = declarations(css);
-  const drifted = Object.keys(smarthrTokens).flatMap((name) =>
-    declared.get(name) === smarthrTokens[name]
+  const drifted = Object.keys(designTokens).flatMap((name) =>
+    declared.get(name) === designTokens[name]
       ? []
       : [
-          `${name} は smarthr-ui の ${smarthrTokens[name] ?? ""} を移植した値である必要があります（現在: ${declared.get(name) ?? "未定義"}）。`,
+          `${name} は設計トークン表の ${designTokens[name] ?? ""} である必要があります（現在: ${declared.get(name) ?? "未定義"}）。`,
         ],
   );
   const redefined = untouchedTokens.flatMap((name) =>
@@ -240,10 +240,10 @@ export {
   designSystemComponents,
   declarations,
   designSystemProbe,
+  designTokens,
   linkParts,
   linkViolations,
   partsDirectory,
-  smarthrTokens,
   sourceViolations,
   stylesheetPath,
   stylesheetSource,

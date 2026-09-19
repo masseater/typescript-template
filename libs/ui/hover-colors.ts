@@ -68,7 +68,7 @@ const hoverViolations = (css: string): string[] => {
       return hovered < base
         ? []
         : [
-            `${name} は ${resting} より明るいか同じです。smarthr-ui の hover は darken(0.05) なので、暗い側のトークンを指してください。`,
+            `${name} は ${resting} より明るいか同じです。hover は darken(0.05) 相当なので、暗い側のトークンを指してください。`,
           ];
     })
     .toSorted();
