@@ -1,3 +1,4 @@
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
 import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
@@ -84,7 +85,7 @@ function sendVerificationEmail(
     subject: mailSubjects.verification,
     text: `次のリンクでメールアドレスを確認してください。\n${url}`,
     to,
-  }).pipe(Effect.withSpan("email.verification"));
+  }).pipe(withSpan("email.verification"));
 }
 
 function sendExistingAccountNotice(
@@ -96,7 +97,7 @@ function sendExistingAccountNotice(
     subject: mailSubjects.existingAccount,
     text: `このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。\n${url}`,
     to,
-  }).pipe(Effect.withSpan("email.existing_account_notice"));
+  }).pipe(withSpan("email.existing_account_notice"));
 }
 
 /** @internal */

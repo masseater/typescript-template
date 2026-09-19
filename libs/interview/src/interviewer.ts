@@ -1,5 +1,6 @@
 import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
 import { readAi } from "@repo/config";
+import { withSpan } from "@repo/observability";
 import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Schema } from "effect";
 
@@ -77,7 +78,7 @@ function complete(
       duration: patience,
       orElse: () => Effect.fail(new UnderstandingFailed({ reason: "timed_out" })),
     }),
-    Effect.withSpan("interview.complete"),
+    withSpan("interview.complete"),
   );
 }
 

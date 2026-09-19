@@ -141,6 +141,31 @@ const forbiddenCode = [
     "annotations",
   ],
   [
+    "libs/runtime/src/probe.ts",
+    'import { Effect } from "effect"; export const run = (e: never) => Effect.withSpan(e, "x");',
+    "annotations",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'import { Effect } from "effect"; export const run = () => Effect.logError("boom");',
+    "logs",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'import { logWarning } from "effect/Effect"; export const run = () => logWarning;',
+    "logs",
+  ],
+  [
+    "apps/user/src/probe.ts",
+    'export const mark = (span: { attribute: (key: string, value: string) => void }) => span.attribute("a", "b");',
+    "span-mutation",
+  ],
+  [
+    "libs/runtime/src/probe.ts",
+    'export const mark = (span: { event: (name: string) => void }) => span.event("x");',
+    "span-mutation",
+  ],
+  [
     "apps/user/src/probe.ts",
     'import { ManagedRuntime } from "effect"; export const run = () => ManagedRuntime;',
     "cross-request-state",
@@ -233,6 +258,14 @@ const validBoundaries = [
   [
     "libs/observability/src/annotations.ts",
     'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',
+  ],
+  [
+    "libs/observability/src/annotations.ts",
+    'import { Effect } from "effect"; export const run = (e: never) => Effect.withSpan(e, "x");',
+  ],
+  [
+    "libs/observability/src/severity.ts",
+    'import { Effect } from "effect"; export const run = () => Effect.logError("boom");',
   ],
 ] as const;
 
