@@ -14,11 +14,11 @@ Which lint rules of this repository declare each normative document as their gro
 | [require-catalog-entry--register-shared-dependency](../tools/dont-review-it/docs/lint/require-catalog-entry--register-shared-dependency.md) | Require every package that more than one workspace declares to be registered in the catalog, so the version they resolve to is decided in one place instead of workspace by workspace |
 | [require-spec-directory-outside-coverage--exclude-it-from-the-measurement](../tools/dont-review-it/docs/lint/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.md) | Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch |
 
-## [apps/wiki/content/docs/guidelines/documents.md](../apps/wiki/content/docs/guidelines/documents.md)
+## [apps/internal-dashboard/content/docs/guidelines/documents.md](../apps/internal-dashboard/content/docs/guidelines/documents.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/wiki/content/docs/guidelines/enforcement.md](../apps/wiki/content/docs/guidelines/enforcement.md)
+## [apps/internal-dashboard/content/docs/guidelines/enforcement.md](../apps/internal-dashboard/content/docs/guidelines/enforcement.md)
 
 | Rule | Description |
 | --- | --- |
@@ -40,19 +40,19 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [require-spec-lint-coverage--lint-every-spec-file](../tools/dont-review-it/docs/lint/require-spec-lint-coverage--lint-every-spec-file.md) | Require every file declaring a test block to sit inside the reach of the spec discipline bundle, with those rules failing a run and their shared settings handed out from one declaration, so a run that reports nothing stands apart from a bundle that reaches nothing |
 | [require-test-block-for-spec-file--add-test-or-delete-file](../tools/dont-review-it/docs/lint/require-test-block-for-spec-file--add-test-or-delete-file.md) | Require a file named as a spec to declare at least one test block that runs, so naming a file a spec costs a check that actually executes rather than buying the standing of a spec for free |
 
-## [apps/wiki/content/docs/guidelines/frontend.md](../apps/wiki/content/docs/guidelines/frontend.md)
+## [apps/internal-dashboard/content/docs/guidelines/frontend.md](../apps/internal-dashboard/content/docs/guidelines/frontend.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/wiki/content/docs/guidelines/infrastructure.md](../apps/wiki/content/docs/guidelines/infrastructure.md)
+## [apps/internal-dashboard/content/docs/guidelines/infrastructure.md](../apps/internal-dashboard/content/docs/guidelines/infrastructure.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/wiki/content/docs/guidelines/observability.md](../apps/wiki/content/docs/guidelines/observability.md)
+## [apps/internal-dashboard/content/docs/guidelines/observability.md](../apps/internal-dashboard/content/docs/guidelines/observability.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/wiki/content/docs/guidelines/placement-and-tools.md](../apps/wiki/content/docs/guidelines/placement-and-tools.md)
+## [apps/internal-dashboard/content/docs/guidelines/placement-and-tools.md](../apps/internal-dashboard/content/docs/guidelines/placement-and-tools.md)
 
 | Rule | Description |
 | --- | --- |
@@ -64,22 +64,22 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-unwrapped-toolchain-config--call-the-preset-for-the-block](../tools/dont-review-it/docs/lint/no-unwrapped-toolchain-config--call-the-preset-for-the-block.md) | Require the lint and fmt blocks of a Vite+ configuration to be what the matching `dontReviewItPreset` function returns, so the rule set, the formatting decisions, and what git is told to ignore all arrive without the caller restating them |
 | [require-registered-file--restore-it-at-the-registered-path](../tools/dont-review-it/docs/lint/require-registered-file--restore-it-at-the-registered-path.md) | Require every path the required-file table registers to hold a file that is not empty, so a file whose readers sit outside the source keeps its place instead of leaving with the change that stopped mentioning it |
 
-## [apps/wiki/content/docs/guidelines/principles.md](../apps/wiki/content/docs/guidelines/principles.md)
+## [apps/internal-dashboard/content/docs/guidelines/principles.md](../apps/internal-dashboard/content/docs/guidelines/principles.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/wiki/content/docs/guidelines/review-findings.md](../apps/wiki/content/docs/guidelines/review-findings.md)
+## [apps/internal-dashboard/content/docs/guidelines/review-findings.md](../apps/internal-dashboard/content/docs/guidelines/review-findings.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/wiki/content/docs/guidelines/secrets-and-permissions.md](../apps/wiki/content/docs/guidelines/secrets-and-permissions.md)
+## [apps/internal-dashboard/content/docs/guidelines/secrets-and-permissions.md](../apps/internal-dashboard/content/docs/guidelines/secrets-and-permissions.md)
 
 | Rule | Description |
 | --- | --- |
 | [forbid-tracked-path--untrack-and-ignore](../tools/dont-review-it/docs/lint/forbid-tracked-path--untrack-and-ignore.md) | Require every path registered as untrackable to stay out of the tracked file list and to stand in the ignore settings, so values that belong to one machine and output that a build produces never ride a commit into another clone |
 | [no-hardcoded-provider-id--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-provider-id--read-from-configuration.md) | Disallow text written out in the source at an identity argument of a client built from a provider package, so which account a deployment acts as is decided by its configuration rather than by the file that builds the client |
 
-## [apps/wiki/content/docs/guidelines/tests.md](../apps/wiki/content/docs/guidelines/tests.md)
+## [apps/internal-dashboard/content/docs/guidelines/tests.md](../apps/internal-dashboard/content/docs/guidelines/tests.md)
 
 | Rule | Description |
 | --- | --- |
@@ -136,7 +136,7 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [require-test-block-spelling--use-configured-fn](../tools/dont-review-it/docs/lint/require-test-block-spelling--use-configured-fn.md) | Require every test block declaration to be rooted at one configured spelling, so a scan of the test surface settles what an identifier means without reading the block behind it |
 | [require-vitest-extend-builder--infer-fixture-type](../tools/dont-review-it/docs/lint/require-vitest-extend-builder--infer-fixture-type.md) | Require every fixture to be declared as its own builder call whose type is inferred from what the factory returns, so the shape a test destructures is the shape the factory produces rather than a hand-written copy that drifts away from it |
 
-## [apps/wiki/content/docs/guidelines/writing-code.md](../apps/wiki/content/docs/guidelines/writing-code.md)
+## [apps/internal-dashboard/content/docs/guidelines/writing-code.md](../apps/internal-dashboard/content/docs/guidelines/writing-code.md)
 
 | Rule | Description |
 | --- | --- |

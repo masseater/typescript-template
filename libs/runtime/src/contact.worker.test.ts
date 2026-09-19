@@ -12,7 +12,7 @@ import { appLayer } from "./index.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 const routes = { "/api/contact": "contact-api" };
-const reporting = { log: recordingSink().sink, service: "user" } as const;
+const reporting = { log: recordingSink().sink, service: "service-member" } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 const opsEmail = "ops@example.test";
 
@@ -34,7 +34,7 @@ function drainMailbox(): Effect.Effect<
 
 function contactApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer(appEnvironment({ OPS_EMAIL: opsEmail }), "user", routes)),
+    Layer.orDie(appLayer(appEnvironment({ OPS_EMAIL: opsEmail }), "service-member", routes)),
   );
   return createApi(apiRoot).use(contactApi(apiRoutes(runtime, reporting)));
 }
