@@ -1,0 +1,1 @@
+Expand #512 from quality-only fold to full #501: absorb repository-checks, lint-rule-authoring, and stop-ai-slop into dont-review-it; unify check:repository; larger PR grain to cut CI queue churn.
