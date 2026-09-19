@@ -3,9 +3,27 @@ import { describe } from "vite-plus/test";
 
 import { noExpectOutsideIt } from "./no-expect-outside-it--move-into-it-block.ts";
 
+const STORY_FILE = "src/button.stories.tsx";
+const PLAIN_FILE = "src/button.tsx";
+
 describe("dont-review-it/no-expect-outside-it--move-into-it-block", () => {
   testLintRule(noExpectOutsideIt, {
     valid: [
+      {
+        name: "an assertion inside the play of a story stands in the block the runner turns that story into",
+        filename: STORY_FILE,
+        code: "const meta = preview.meta({ play: async ({ canvas }) => { await expect(canvas.getByRole('button')).toBeVisible(); } });",
+      },
+      {
+        name: "a play written as a plain function expression is read the same way",
+        filename: STORY_FILE,
+        code: "const meta = preview.meta({ play: function ({ canvas }) { expect(canvas).toBeTruthy(); } });",
+      },
+      {
+        name: "an assertion nested inside a waiter within the play still stands inside it",
+        filename: STORY_FILE,
+        code: "const meta = preview.meta({ play: async () => { await waitFor(async () => { await expect(trigger).toHaveAttribute('aria-expanded', 'false'); }); } });",
+      },
       {
         name: "an assertion in the body of the canonical test block is where the rule wants it",
         documented: true,
@@ -127,6 +145,24 @@ describe("dont-review-it/no-expect-outside-it--move-into-it-block", () => {
       },
     ],
     invalid: [
+      {
+        name: "a play outside a story file carries no block the runner declares",
+        filename: PLAIN_FILE,
+        code: "const meta = { play: async ({ canvas }) => { await expect(canvas).toBeTruthy(); } };",
+        errors: [{ messageId: "detachedAssertion" }],
+      },
+      {
+        name: "an assertion standing in a story file outside every play is still detached",
+        filename: STORY_FILE,
+        code: "const meta = preview.meta({ render: () => null });\nexpect(meta).toBeTruthy();",
+        errors: [{ messageId: "detachedAssertion" }],
+      },
+      {
+        name: "a property of a story that is not the play declares no block either",
+        filename: STORY_FILE,
+        code: "const meta = preview.meta({ render: () => { expect(meta).toBeTruthy(); } });",
+        errors: [{ messageId: "detachedAssertion" }],
+      },
       {
         name: "an imported factory used as the block itself answers for its own spelling",
         code: "import { standardIoTest } from './vitest/standard-io-test.ts';\nstandardIoTest('adds', () => { expect(sum).toBe(3); });",
