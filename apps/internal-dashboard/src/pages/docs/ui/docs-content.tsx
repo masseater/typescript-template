@@ -7,11 +7,12 @@ import {
 import defaultMdxComponents from "fumadocs-ui/mdx";
 
 import { Mermaid } from "./mermaid.tsx";
+import { WikiDocLink } from "./wiki-doc-link.tsx";
 
 import type { docs } from "#shared/content/index.ts";
 import type { ReactElement } from "react";
 
-const mdxComponents = { ...defaultMdxComponents, Mermaid };
+const mdxComponents = { ...defaultMdxComponents, Mermaid, a: WikiDocLink };
 
 type DocsEntry = NonNullable<ReturnType<typeof docs.getPage>>;
 

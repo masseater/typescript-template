@@ -48,14 +48,14 @@ describe("alchemy stacks", () => {
     expect.hasAssertions();
     expect(violationsWhenLast(onboardingStack)).toStrictEqual([...sendingStacks].toSorted());
     expect(violationsWhenLast("database")).toStrictEqual([
+      "internal-dashboard",
       "service-admin",
       "service-member",
-      "internal-dashboard",
     ]);
     expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
+      "internal-dashboard",
       "service-admin",
       "service-member",
-      "internal-dashboard",
     ]);
   });
 
