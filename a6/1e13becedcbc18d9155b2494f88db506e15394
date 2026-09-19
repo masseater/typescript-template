@@ -1,0 +1,1 @@
+also fix deployment-access redaction keys via originKeys (hyphenated apps break toUpperCase); restore hooks.test to match coupled premerge lifecycle
