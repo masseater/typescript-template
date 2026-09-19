@@ -1,4 +1,4 @@
-import { lifecycles } from "@repo/config/vite";
+import { generatedDirectories, lifecycles } from "@repo/config/vite";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -45,6 +45,15 @@ function misplacedHooks(): string[] {
         !lifecycles.some((name) => name === stage) || source !== `vp run -r ${stage}\n`,
     )
     .map(([stage]) => stage);
+}
+
+function cleanExclusions(file: string): string[] {
+  const workflow = workflows[file];
+  if (workflow === undefined) {
+    throw new Error(`${file} is missing`);
+  }
+  const clean = /^\s*(?:- )?run: git clean [^\n]*$/mu.exec(workflow)?.[0] ?? "";
+  return [...clean.matchAll(/-e (?<path>\S+)/gu)].map((match) => match[1] ?? "");
 }
 
 function workflowRuns(file: string): string[] {
@@ -109,6 +118,15 @@ describe("lifecycle entry points", () => {
       /^packages:\n {2}- apps\/\*\n {2}- libs\/\*\n {2}- infra\/\*\n {2}- tools\/\*\n(?! {2}-)/u,
     );
     expect(configuredDirectories).toStrictEqual(workspaceDirectories);
+  });
+});
+
+describe("generated paths", () => {
+  it("keeps the workspace clean step and the task inputs on one list", () => {
+    expect.hasAssertions();
+    expect(cleanExclusions("../../.github/workflows/check.yml")).toStrictEqual([
+      ...generatedDirectories,
+    ]);
   });
 });
 

@@ -104,6 +104,8 @@ function appServer(app: Application): ServerOptions {
   };
 }
 
+const generatedDirectories = ["node_modules", ".local", "dist", ".wrangler", ".alchemy"] as const;
+
 const taskInput = [
   { auto: true },
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
@@ -171,6 +173,7 @@ export {
   reactCompiler,
   serverOnlyMarkers,
   serverOnlyPackages,
+  generatedDirectories,
   startOptions,
   taskInput,
   withoutEnvFileLoader,
