@@ -17,6 +17,8 @@ class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("Loc
     "browser_command_required",
     "ci_runner_root_required",
     "ci_runner_service_invalid",
+    "operator_credentials_stale",
+    "operator_provision_failed",
   ]),
 }) {}
 
