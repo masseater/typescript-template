@@ -31,6 +31,7 @@ function appVariables(
     AUTH_SECRET: credentials.authSecret,
     EMAIL_FROM: "no-reply@example.test",
     MAILPIT_URL: mailpitOrigin,
+    OPS_EMAIL: "ops@example.test",
     OTLP_ENDPOINT: receiverOrigin("otlp"),
   };
 }

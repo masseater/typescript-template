@@ -23,12 +23,12 @@ async function receiveMail({ request }: { readonly request: Request }): Promise<
   if (
     message.From.Email !== mailConfig.EMAIL_FROM ||
     !knownSubjects.has(message.Subject) ||
-    url === undefined
+    (message.Subject !== mailSubjects.contact && url === undefined)
   ) {
     return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: HTTP_BAD_REQUEST });
   }
   for (const recipient of message.To) {
-    mailbox.set(recipient.Email, { subject: message.Subject, url });
+    mailbox.set(recipient.Email, { subject: message.Subject, url: url ?? "" });
   }
   return HttpResponse.json({ ID: crypto.randomUUID() });
 }

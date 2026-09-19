@@ -19,6 +19,7 @@ interface EmailMessage {
 }
 
 const mailSubjects = {
+  contact: "お問い合わせ",
   existingAccount: "このメールアドレスは登録済みです",
   verification: "メールアドレスの確認",
 } as const;
@@ -100,7 +101,19 @@ function sendExistingAccountNotice(
   }).pipe(withSpan("email.existing_account_notice"));
 }
 
+function sendContactEmail(
+  settings: MailSettings,
+  to: string,
+  submission: Readonly<{ email: string; message: string; name: string }>,
+): Effect.Effect<void, EmailDeliveryFailed> {
+  return deliver(settings, {
+    subject: mailSubjects.contact,
+    text: `名前: ${submission.name}\nメール: ${submission.email}\n\n${submission.message}`,
+    to,
+  }).pipe(withSpan("email.contact"));
+}
+
 /** @internal */
 export { mailSubjects };
-export { sendExistingAccountNotice, sendVerificationEmail };
+export { sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
 export type { MailSettings };
