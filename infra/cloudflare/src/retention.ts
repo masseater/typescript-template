@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { Effect } from "effect";
 
-import { io } from "./artifact-io.ts";
+import { io, isMissing } from "./artifact-io.ts";
 
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
@@ -23,9 +23,16 @@ function newestFirst(left: Generation, right: Generation): number {
 }
 
 const generations = Effect.fn("generations")(function* generations(parent: string) {
-  const entries = yield* io(async () => readdir(parent, { withFileTypes: true })).pipe(
-    Effect.orElseSucceed((): GenerationEntry[] => []),
-  );
+  const entries = yield* io(async (): Promise<readonly GenerationEntry[]> => {
+    try {
+      return await readdir(parent, { withFileTypes: true });
+    } catch (cause) {
+      if (isMissing(cause)) {
+        return [];
+      }
+      throw cause;
+    }
+  });
   return yield* Effect.all(
     entries
       .filter((entry: GenerationEntry) => entry.isDirectory())
