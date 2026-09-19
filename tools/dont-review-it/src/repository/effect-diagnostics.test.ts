@@ -1,21 +1,26 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { effectDiagnostics } from "@repo/config/vite";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
+import { repositoryRoot } from "./repository-root.ts";
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../{apps,libs,infra,tools}/*/vite.config.ts",
+  "../../../../{apps,libs,infra,tools}/*/vite.config.ts",
   { eager: true, import: "default" },
 );
 const projects: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../{apps,libs,infra,tools}/*/tsconfig.json",
+  "../../../../{apps,libs,infra,tools}/*/tsconfig.json",
   { eager: true },
 );
 
 const environment = { command: "serve", mode: "development" };
 
 const workspace = (file: string): string => {
-  return file.replace(/^(?:\.\.\/)+/u, "").replace(/\/[^/]+$/u, "");
+  const absolute = path.isAbsolute(file) ? file : fileURLToPath(new URL(file, import.meta.url));
+  return path.relative(repositoryRoot, path.dirname(absolute)).split(path.sep).join("/");
 };
 
 const diagnosticsTask = (config: unknown): unknown => {

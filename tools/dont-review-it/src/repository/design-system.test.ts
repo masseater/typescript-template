@@ -23,12 +23,12 @@ import {
 import { hoverViolations } from "./hover-colors.ts";
 import { configuredLintRules } from "./lint.ts";
 
-const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
+const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../../../vite.config.ts", {
   eager: true,
   import: "default",
 });
 
-const lint = field(configs["../../vite.config.ts"], "lint");
+const lint = field(configs["../../../../vite.config.ts"], "lint");
 
 const lintSettings = field(lint, "settings");
 

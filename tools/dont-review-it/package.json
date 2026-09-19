@@ -24,6 +24,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./plugin": "./src/plugin.ts",
+    "./lint": "./src/repository/lint.ts",
+    "./repository-plugin": "./src/repository/plugin.ts",
+    "./test-runtime": "./src/repository/test-runtime.ts",
     "./vitest": "./src/vitest/standard-io-test.ts",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json",
@@ -54,7 +57,10 @@
   "dependencies": {
     "@repo/lint-rule-authoring": "workspace:*",
     "@repo/repository-checks": "workspace:*",
+    "@shadcn/lint": "catalog:",
     "citty": "0.2.2",
+    "dependency-cruiser": "catalog:",
+    "effect": "catalog:",
     "es-toolkit": "catalog:",
     "jsonc-parser": "3.3.1",
     "oxc-parser": "catalog:",

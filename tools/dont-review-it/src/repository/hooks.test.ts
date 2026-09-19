@@ -13,18 +13,18 @@ import {
   workspaceNames,
 } from "./tasks.ts";
 
-const hooks: Readonly<Record<string, string>> = import.meta.glob("../../.vite-hooks/pre-*", {
+const hooks: Readonly<Record<string, string>> = import.meta.glob("../../../../.vite-hooks/pre-*", {
   eager: true,
   import: "default",
 });
 
 const workflows: Readonly<Record<string, string>> = import.meta.glob(
-  "../../.github/workflows/*.yml",
+  "../../../../.github/workflows/*.yml",
   { eager: true, import: "default" },
 );
 
 const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
-  "../../pnpm-workspace.yaml",
+  "../../../../pnpm-workspace.yaml",
   { eager: true, import: "default" },
 );
 
@@ -167,7 +167,7 @@ describe("lifecycle entry points", () => {
 
   it("leaves the merge gate to the merge queue and gives a pull request the push gate", () => {
     expect.hasAssertions();
-    expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
+    expect(lifecycleByJob("../../../../.github/workflows/check.yml")).toStrictEqual({
       cache: ["vp run -r prepush"],
       check: ["vp run -r prepush"],
       "merge-queue": ["vp run -r premerge"],
@@ -177,7 +177,7 @@ describe("lifecycle entry points", () => {
 
   it("every workspace declares its tasks where the lifecycle finds them", () => {
     expect.hasAssertions();
-    expect(pnpmWorkspaces["../../pnpm-workspace.yaml"]).toMatch(
+    expect(pnpmWorkspaces["../../../../pnpm-workspace.yaml"]).toMatch(
       /^packages:\n {2}- apps\/\*\n {2}- libs\/\*\n {2}- infra\/\*\n {2}- tools\/\*\n(?! {2}-)/u,
     );
     expect(configuredDirectories).toStrictEqual(workspaceDirectories);
@@ -187,7 +187,7 @@ describe("lifecycle entry points", () => {
 describe("generated paths", () => {
   it("keeps the workspace clean step and the task inputs on one list", () => {
     expect.hasAssertions();
-    expect(cleanExclusions("../../.github/workflows/check.yml")).toStrictEqual([
+    expect(cleanExclusions("../../../../.github/workflows/check.yml")).toStrictEqual([
       ...generatedDirectories,
     ]);
   });
@@ -215,7 +215,7 @@ describe("lifecycle contents", () => {
       configuredDirectories.filter((directory) =>
         reachable(directory, ["precommit"]).includes("check:staged"),
       ),
-    ).toStrictEqual(["tools/quality"]);
+    ).toStrictEqual(["tools/dont-review-it"]);
   });
 
   it("leaves tests, builds and work in other workspaces to ci", () => {

@@ -112,11 +112,11 @@ const linkParts = (): string[] => {
 };
 
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../apps/*/src/**/*.css",
+  "../../../../apps/*/src/**/*.css",
 );
 
 const appModules: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../apps/*/src/**/*.{ts,tsx}",
+  "../../../../apps/*/src/**/*.{ts,tsx}",
 );
 
 const partsImport = '@import "@repo/ui/styles.css"';
