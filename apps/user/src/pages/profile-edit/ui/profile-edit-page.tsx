@@ -1,4 +1,4 @@
-import { Field, FormColumn, Page, Status, useToast } from "@repo/ui";
+import { Field, FormColumn, Page, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
@@ -23,7 +23,9 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
         <Field label="メールアドレス" name="email" type="email" readOnly value={initial.email} />
       </FormColumn>
       <ProfileEditor form={form} homeId={initial.id} />
-      {form.error !== "" && <Status variant="error">{form.error}</Status>}
+      {form.error !== "" && (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
+      )}
     </Page>
   );
 }

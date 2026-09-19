@@ -12,21 +12,13 @@ const validationMessages: readonly (readonly [keyof ValidityState, string])[] = 
   ["tooLong", "文字数が多すぎます。"],
 ];
 
-const errors = validationMessages.map(([match, message]) => (
+const validationErrorElements = validationMessages.map(([match, validationMessage]) => (
   <FieldPrimitive.Error key={match} match={match} className={errorClassName}>
-    {message}
+    {validationMessage}
   </FieldPrimitive.Error>
 ));
 
-type AutoComplete =
-  | "current-password"
-  | "name"
-  | "new-password"
-  | "off"
-  | "one-time-code"
-  | "username";
-
-function Field({
+const Field = ({
   autoComplete,
   inputMode,
   label,
@@ -45,7 +37,13 @@ function Field({
     ComponentProps<"input">,
     "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
   > & {
-    autoComplete?: AutoComplete;
+    autoComplete?:
+      | "current-password"
+      | "name"
+      | "new-password"
+      | "off"
+      | "one-time-code"
+      | "username";
     label: string;
     onValueChange?: (value: string) => void;
   }
@@ -53,7 +51,7 @@ function Field({
   Readonly<
     | { multiline: true; pattern?: never; type?: never }
     | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
-  >): ReactElement {
+  >): ReactElement => {
   return (
     <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
@@ -72,9 +70,9 @@ function Field({
         onValueChange={onValueChange}
         className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
       />
-      {errors}
+      {validationErrorElements}
     </FieldPrimitive.Root>
   );
-}
+};
 
 export { Field };

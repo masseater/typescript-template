@@ -2,21 +2,25 @@ const HOME = "/";
 const LOGIN = "/login";
 const localOrigin = "https://app.invalid";
 
-function redirectTarget(value: unknown): string {
-  if (typeof value !== "string" || !value.startsWith("/") || /^\/[/\\]/u.test(value)) {
+const redirectTarget = (candidateLocation: unknown): string => {
+  if (
+    typeof candidateLocation !== "string" ||
+    !candidateLocation.startsWith("/") ||
+    /^\/[/\\]/u.test(candidateLocation)
+  ) {
     return HOME;
   }
-  const url = new URL(value, localOrigin);
-  return url.origin === localOrigin && url.pathname !== LOGIN ? value : HOME;
-}
+  const url = new URL(candidateLocation, localOrigin);
+  return url.origin === localOrigin && url.pathname !== LOGIN ? candidateLocation : HOME;
+};
 
-function loginPath(current: string): string {
-  if (new URL(current, localOrigin).pathname === LOGIN) {
-    return current;
+const loginPath = (currentLocation: string): string => {
+  if (new URL(currentLocation, localOrigin).pathname === LOGIN) {
+    return currentLocation;
   }
-  return current === HOME
+  return currentLocation === HOME
     ? LOGIN
-    : `${LOGIN}?${new URLSearchParams({ redirect: current }).toString()}`;
-}
+    : `${LOGIN}?${new URLSearchParams({ redirect: currentLocation }).toString()}`;
+};
 
 export { loginPath, redirectTarget };

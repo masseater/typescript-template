@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/server.ts",
     "./browser": "./src/browser.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./http-status": "./src/http-status.ts"
   },
   "scripts": {},
   "dependencies": {

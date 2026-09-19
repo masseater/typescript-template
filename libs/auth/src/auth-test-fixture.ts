@@ -20,7 +20,6 @@ const PASSWORD = "test-password-safe-123";
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
 const HTTP_FOUND = 302;
-const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 const TEST_TIMEOUT = { timeout: 60_000 };
@@ -150,7 +149,6 @@ export {
   HTTP_FOUND,
   HTTP_NOT_FOUND,
   HTTP_OK,
-  HTTP_UNAUTHORIZED,
   PASSWORD,
   TEST_TIMEOUT,
   authFor,
