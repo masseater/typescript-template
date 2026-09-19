@@ -67,6 +67,7 @@ const workspaces = {
     ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
+  "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/e2e": {
     entry: ["src/**/*.test.ts"],

@@ -204,7 +204,7 @@ const lintOptions = {
       rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
     },
     {
-      files: ["tools/ai-native/**", "tools/lint-rule-authoring/**"],
+      files: ["tools/ai-native/**", "tools/ai-native-telemetry/**", "tools/lint-rule-authoring/**"],
       rules: {
         "dont-review-it/no-handmade-standard-io-double--use-standard-io-test": LINT_SEVERITY.OFF,
       },
@@ -267,7 +267,7 @@ const lintOptions = {
       LINT_SEVERITY.ERROR,
       {
         externalIoPackages: [
-          "@repo/ai-native/telemetry",
+          "@repo/ai-native-telemetry",
           "@opentelemetry/exporter-logs-otlp-http",
           "@opentelemetry/exporter-metrics-otlp-http",
           "@opentelemetry/exporter-trace-otlp-http",
