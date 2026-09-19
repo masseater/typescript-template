@@ -13,9 +13,11 @@ const isPrefix = (retired: string): boolean => {
   return retired.endsWith("/");
 };
 
-const replacementFor = (dependency: string): string | undefined => {
-  const matched = Object.keys(retiredPackages).find(
-    (retired) => dependency === retired || (isPrefix(retired) && dependency.startsWith(retired)),
+const replacementFor = (specifier: string): string | undefined => {
+  const matched = Object.keys(retiredPackages).find((retired) =>
+    isPrefix(retired)
+      ? specifier.startsWith(retired)
+      : specifier === retired || specifier.startsWith(`${retired}/`),
   );
   return matched === undefined ? undefined : retiredPackages[matched];
 };
@@ -24,11 +26,8 @@ const replacementMessage = (replacement: string): string => {
   return `${replacement}を使ってください。`;
 };
 
-const retiredImports = {
-  patterns: Object.entries(retiredPackages).map(([retired, replacement]) => ({
-    message: replacementMessage(replacement),
-    regex: `^${RegExp.escape(retired)}${isPrefix(retired) ? ".+" : "(?:/.*)?"}$`,
-  })),
-};
+const retiredImportGuidance = Object.entries(retiredPackages)
+  .map(([retired, replacement]) => `${retired} は${replacementMessage(replacement)}`)
+  .join("");
 
-export { replacementFor, replacementMessage, retiredImports, retiredPackages };
+export { replacementFor, replacementMessage, retiredImportGuidance, retiredPackages };
