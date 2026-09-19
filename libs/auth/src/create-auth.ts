@@ -2,6 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { applications, authenticationMethods, roles } from "@repo/config";
 import { schema } from "@repo/db";
 import { claimMailSlot, findUser } from "@repo/db/security";
+import { logAt } from "@repo/observability";
 import { betterAuth } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
 import { Effect } from "effect";
@@ -63,7 +64,7 @@ const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExist
   const until = new Date(Date.now() + EXISTING_ACCOUNT_NOTICE_MILLISECONDS);
   const identifier = `existing-account-notice:${user.email}`;
   if (!(yield* claimMailSlot(identifier, options.audience, until))) {
-    yield* Effect.logWarning("authentication.existing_account_notice_throttled");
+    yield* logAt("Warn", "authentication.existing_account_notice_throttled");
     return;
   }
   if (user.emailVerified) {
@@ -132,10 +133,12 @@ function createLogger(run: Run): LoggerOptions {
       const cause = details.find((detail) => detail instanceof Error);
       void run(
         level === "error"
-          ? Effect.logError("authentication.failed", { cause })
-          : Effect.logWithLevel(level === "warn" ? "Warn" : "Info")("authentication.diagnostic", {
-              level,
-            }),
+          ? logAt("Error", "authentication.failed", {
+              ...(cause === undefined
+                ? {}
+                : { "error.message": cause.message, "error.type": cause.name }),
+            })
+          : logAt(level === "warn" ? "Warn" : "Info", "authentication.diagnostic", { level }),
       );
     },
   };

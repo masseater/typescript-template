@@ -3,10 +3,10 @@ import { setupNetwork } from "@msw/cloudflare";
 import { Cause, Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
-import { annotateLogs, annotateSpan } from "./annotations.ts";
+import { annotateSpan, withSpan } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
 import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
-import { logAt } from "./severity.ts";
+import { logAt, logCause } from "./severity.ts";
 
 import type { OtlpDestination } from "./otlp.ts";
 
@@ -139,17 +139,16 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
     const telemetry = yield* observed(
       { authorization, endpoint },
       accepted,
-      Effect.logError("authentication.failed", {
-        cause: { AUTH_SECRET: leaked, reason: "invalid token" },
+      logAt("Error", "authentication.failed", {
+        AUTH_SECRET: leaked,
+        reason: "invalid token",
       }),
     );
     const exported = JSON.stringify(telemetry.logs);
     assert.notInclude(exported, leaked);
     assert.include(exported, "authentication.failed");
     assert.include(exported, "[redacted]");
-    assert.containSubset(telemetry.lines, [
-      { cause: { AUTH_SECRET: "[redacted]", reason: "invalid token" } },
-    ]);
+    assert.containSubset(telemetry.lines, [{ AUTH_SECRET: "[redacted]", reason: "invalid token" }]);
   }),
 );
 
@@ -164,10 +163,14 @@ const refused = Effect.gen(function* refused() {
 
 const annotated = Effect.gen(function* annotated() {
   yield* annotateSpan({ "session.cookie": `template-user.session=${leaked}` });
-  yield* Effect.logInfo("interview.started").pipe(
-    annotateLogs({ auth_token: leaked, interview_id: "abc" }),
-  );
+  yield* logAt("Info", "interview.started", { auth_token: leaked, interview_id: "abc" });
 });
+
+const spanned = Effect.void.pipe(
+  withSpan("interview.complete", {
+    attributes: { auth_token: leaked, interview_id: "abc" },
+  }),
+);
 
 it.effect("a secret an annotation or a span attribute carries reaches no destination", () =>
   Effect.gen(function* program() {
@@ -177,6 +180,16 @@ it.effect("a secret an annotation or a span attribute carries reaches no destina
     assert.include(exported, "[redacted]");
     assert.include(JSON.stringify(telemetry.logs), '{"key":"interview_id","value":');
     assert.containSubset(telemetry.lines, [{ auth_token: "[redacted]", interview_id: "abc" }]);
+  }),
+);
+
+it.effect("a secret withSpan attributes carry reaches no destination", () =>
+  Effect.gen(function* program() {
+    const telemetry = yield* observed({ authorization, endpoint }, accepted, spanned);
+    const exported = JSON.stringify(telemetry.traces);
+    assert.notInclude(exported, leaked);
+    assert.include(exported, "[redacted]");
+    assert.include(exported, '{"key":"interview_id","value":');
   }),
 );
 
@@ -192,7 +205,7 @@ it.effect("the endpoint receives the severity the status code asks for", () =>
 
 it.effect("a secret the cause of a failure carries reaches no destination", () =>
   Effect.gen(function* program() {
-    const failing = Effect.logError(
+    const failing = logCause(
       "application.error",
       Cause.fail(new Error(`no such table: jwks (AUTH_SECRET=${leaked})`)),
     );
