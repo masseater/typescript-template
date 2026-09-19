@@ -1,1 +1,6 @@
-export normalizeUsersSearch and InvalidUsersSearch so member search tests resolve the helper instead of getting undefined
+Revision history for #642:
+
+rev 2 (content) 2026-09-19 16:38 UTC — export normalizeUsersSearch and InvalidUsersSearch so member search tests resolve the helper instead of getting undefined
+rev 1 (initial) 2026-09-19 16:38 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":642,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"586fdd7894cd81647b045d2c9e3ec28726272eb3","timestamp_iso":"2026-09-19T16:38:40Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"586fdd7894cd81647b045d2c9e3ec28726272eb3","new_sha":"986488b0135aae9d6fe0d6255b90f59e630bd267","timestamp_iso":"2026-09-19T16:38:40Z","reason":"export normalizeUsersSearch and InvalidUsersSearch so member search tests resolve the helper instead of getting undefined","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/586fdd7894cd81647b045d2c9e3ec28726272eb3...986488b0135aae9d6fe0d6255b90f59e630bd267"}]} -->
