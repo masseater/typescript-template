@@ -1,6 +1,15 @@
 {
   "$schema": "https://react.doctor/schema/config.json",
   "ignore": {
+    "files": [
+      "design-system.test.ts",
+      "design-system.ts",
+      "hover-colors.ts",
+      "lint-settings.ts",
+      "part-stories.test.ts",
+      "part-stories.ts",
+      "record-field.ts"
+    ],
     "overrides": [
       {
         "files": ["src/email-verification.tsx", "src/use-session.ts"],

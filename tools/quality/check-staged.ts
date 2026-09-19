@@ -3,21 +3,12 @@ import { Cause, Console, Effect, Option } from "effect";
 
 import { deploymentCredentials } from "./credentials.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { prefixScan, secretViolations } from "./secrets.ts";
-import { stagedFiles, type StagedFile } from "./staged.ts";
+import { indexSecretHits } from "./staged.ts";
 
-const scanStaged = Effect.fn("scanStaged")(function* scanStaged() {
+const scanIndex = Effect.fn("scanIndex")(function* scanIndex() {
   const credentials = yield* deploymentCredentials(repositoryRoot);
-  const staged = yield* stagedFiles(repositoryRoot);
-  const scan = prefixScan(
-    credentials.values,
-    staged.map((entry: StagedFile) => entry.content),
-  );
-  const failures = staged.flatMap((entry: StagedFile) => {
-    const rules = secretViolations(entry, credentials.values, scan);
-    return rules.length > 0 ? [{ file: entry.filename, rules }] : [];
-  });
-  return { credentials: credentials.source, failures, scan };
+  const { hits, scan } = yield* indexSecretHits(repositoryRoot, credentials.values);
+  return { credentials: credentials.source, failures: hits, scan };
 });
 
 const uncheckedRecord = (
@@ -27,7 +18,7 @@ const uncheckedRecord = (
 };
 
 runCli(
-  scanStaged().pipe(
+  scanIndex().pipe(
     Effect.flatMap(({ credentials, failures, scan }) =>
       Console.log(
         JSON.stringify({
