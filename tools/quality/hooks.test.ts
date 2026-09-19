@@ -32,6 +32,7 @@ const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
 
 const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
+const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
 
 const hookStages = Object.entries(hooks).map(
   ([file, source]) => [file.replace(/^.*\/pre-/u, "pre"), source] as const,
@@ -89,9 +90,9 @@ function lifecycleByJob(file: string): Readonly<Record<string, string[]>> {
   );
 }
 
-function lifecycleOutsideCheck(): string[] {
+function lifecycleOutsideGates(): string[] {
   return Object.keys(workflows)
-    .filter((file) => !file.endsWith("check.yml"))
+    .filter((file) => ![...lifecycleWorkflows].some((name) => file.endsWith(name)))
     .flatMap((file) => workflowRuns(file).filter((command) => command.startsWith("vp run -r ")));
 }
 
@@ -114,7 +115,7 @@ function scriptedGate(directory: string): string[] {
 }
 
 function ungated(directory: string): string[] {
-  const gate = new Set(reachable(directory, ["premerge"]));
+  const gate = new Set(reachable(directory, ["prerelease"]));
   return [...taskNames(directory), ...scriptNames(directory)]
     .filter((name) => gatedTask.test(name) && !gate.has(name))
     .map((name) => `${directory}: ${name}`)
@@ -161,14 +162,18 @@ describe("lifecycle entry points", () => {
     expect(misplacedHooks()).toStrictEqual([]);
   });
 
-  it("leaves the merge gate to the merge queue and gives a pull request the push gate", () => {
+  it("gives a pull request the pr gate and leaves merge and release to their own gates", () => {
     expect.hasAssertions();
     expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
-      cache: ["vp run -r prepush"],
-      check: ["vp run -r prepush"],
+      cache: ["vp run -r prepr"],
+      check: ["vp run -r prepr"],
       "merge-queue": ["vp run -r premerge"],
     });
-    expect(lifecycleOutsideCheck()).toStrictEqual([]);
+    expect(lifecycleByJob("../../.github/workflows/prerelease.yml")).toStrictEqual({
+      load: [],
+      prerelease: ["vp run -r prerelease"],
+    });
+    expect(lifecycleOutsideGates()).toStrictEqual([]);
   });
 
   it("every workspace declares its tasks where the lifecycle finds them", () => {
@@ -190,12 +195,12 @@ describe("generated paths", () => {
 });
 
 describe("lifecycle contents", () => {
-  it("every workspace chains precommit into prepush into premerge", () => {
+  it("every workspace chains precommit through prerelease", () => {
     expect.hasAssertions();
     expect(configuredDirectories.flatMap((directory) => brokenChain(directory))).toStrictEqual([]);
   });
 
-  it("the merge gate runs every check, build and verification", () => {
+  it("the release gate reaches every check, build and verification", () => {
     expect.hasAssertions();
     expect(configuredDirectories.flatMap((directory) => ungated(directory))).toStrictEqual([]);
   });
@@ -205,10 +210,12 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => scriptedGate(directory))).toStrictEqual([]);
   });
 
-  it("replays every merge gate task from the cache but the ones still tied to run time state", () => {
+  it("replays every release gate task from the cache but the ones still tied to run time state", () => {
     expect.hasAssertions();
     expect(uncachedGateTasks()).toStrictEqual([
+      ".#mutation",
       ".#test",
+      "infra/cloudflare#verify:account",
       "libs/db#db:migrate:local",
       "tools/commander#check:start",
       "tools/dev#setup",

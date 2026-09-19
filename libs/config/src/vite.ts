@@ -140,7 +140,7 @@ const effectDiagnostics = {
 type RunConfig = NonNullable<UserConfig["run"]>;
 type Tasks = NonNullable<RunConfig["tasks"]>;
 
-const lifecycles = ["precommit", "prepush", "premerge"] as const;
+const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
 type Lifecycle = (typeof lifecycles)[number];
 
 function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
@@ -180,7 +180,13 @@ const intentValidation = {
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
-    ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect"] }),
+    ...lifecycle({
+      precommit: [],
+      prepush: ["check:effect"],
+      prepr: [],
+      premerge: [],
+      prerelease: [],
+    }),
   },
 } satisfies RunConfig;
 
@@ -208,8 +214,10 @@ const appRun = {
     },
     ...lifecycle({
       precommit: [],
+      prepush: ["check:effect"],
+      prepr: ["check"],
       premerge: ["build", "check:dev"],
-      prepush: ["check:effect", "check"],
+      prerelease: [],
     }),
   },
 } satisfies RunConfig;

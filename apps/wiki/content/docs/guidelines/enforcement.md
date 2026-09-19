@@ -54,7 +54,7 @@ description: 何が違反を判定し、その判定をどの経路で走らせ�
 
 ## 何を守れる機構かで選ぶ
 
-判定する側は 3 種類ある。**強制**は不正な状態を自動的に拒否するもので、各 workspace の `vite.config.ts` が `precommit`・`prepush`・`premerge` に依存させたタスク（`.vite-hooks/` と `.github/workflows/check.yml` がそれぞれを起動する）と、`infra/` の各適用単位の `plan` と `deploy` がこれにあたる。**記録**はなぜそう決めたかを保つもので、コミットログと、この `apps/wiki/content/docs/guidelines/` がこれにあたり、違反を止めありません。**安定した基準**は、要求される状態と違反の境界の両方が決着しているもので、方向性だけあって境界が決まっていないものはここに入らありません。
+判定する側は 3 種類ある。**強制**は不正な状態を自動的に拒否するもので、各 workspace の `vite.config.ts` が `precommit`・`prepush`・`prepr`・`premerge`・`prerelease` に依存させたタスク（`.vite-hooks/` と `.github/workflows/check.yml`・`.github/workflows/prerelease.yml` がそれぞれを起動する）と、`infra/` の各適用単位の `plan` と `deploy` がこれにあたる。**記録**はなぜそう決めたかを保つもので、コミットログと、この `apps/wiki/content/docs/guidelines/` がこれにあたり、違反を止めありません。**安定した基準**は、要求される状態と違反の境界の両方が決着しているもので、方向性だけあって境界が決まっていないものはここに入らません。
 
 違反を判定するのに何を見る必要があるかで、載せられる機構がほぼ一意に決まる。1 ファイルの構文だけで決まるものは型と lint が、実行して初めて分かるものはテストが、複数のファイルや宣言をまたぐ突き合わせは検証コマンドが、宣言と外に残る状態の突き合わせは `alchemy plan` が受ける。どの材料も揃わないものだけが、規範の散文とレビューで見る項目に残る。
 

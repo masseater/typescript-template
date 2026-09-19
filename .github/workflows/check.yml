@@ -59,7 +59,7 @@ jobs:
           mkdir -p "$SHARED_TASK_CACHE" node_modules/.vite
           rm -rf node_modules/.vite/task-cache
           ln -s "$SHARED_TASK_CACHE" node_modules/.vite/task-cache
-      - run: vp run -r prepush
+      - run: vp run -r prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && vars.CI_RUNNER == ''
         with:
@@ -88,7 +88,7 @@ jobs:
       - *browser-cache
       - *setup
       - *mise
-      - run: vp run -r prepush
+      - run: vp run -r prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache

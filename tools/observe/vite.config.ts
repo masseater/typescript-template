@@ -10,7 +10,13 @@ export default defineConfig({
       observe: { cache: false, command: "node src/cli.ts" },
       symbolicate: { cache: false, command: "node src/symbolicate.ts" },
       verify: { cache: false, command: "node src/verify.ts" },
-      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: [],
+        prerelease: [],
+      }),
     },
   },
 });
