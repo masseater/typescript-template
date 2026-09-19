@@ -149,6 +149,31 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   protected abstract check(notify: Notify): Effect.Effect<object, unknown>;
 }
 
+function monitorWorker<Bindings extends MonitorBindings>(definition: {
+  readonly check: (
+    scope: { readonly ctx: DurableObjectState; readonly env: Bindings },
+    notify: Notify,
+  ) => Effect.Effect<object, unknown>;
+  readonly className: string;
+  readonly event: string;
+  readonly failure: Alert;
+}): {
+  readonly Worker: new (ctx: DurableObjectState, env: Bindings) => Monitor<Bindings>;
+  readonly handler: MonitorHandler;
+} {
+  const { check, className, event, failure } = definition;
+  class Worker extends Monitor<Bindings> {
+    protected readonly event = event;
+    protected readonly failure = failure;
+
+    protected check(notify: Notify): Effect.Effect<object, unknown> {
+      return check({ ctx: this.ctx, env: this.env }, notify);
+    }
+  }
+  Object.defineProperty(Worker, "name", { value: className });
+  return { Worker, handler: monitorHandler(event) };
+}
+
 function monitorHandler(event: string): MonitorHandler {
   return {
     fetch: () => new Response("Not found", { status: NOT_FOUND_STATUS }),
@@ -166,5 +191,5 @@ function monitorHandler(event: string): MonitorHandler {
   };
 }
 
-export { AlertEnvironment, Monitor, monitorBinding, monitorHandler };
-export type { Alert, MonitorBindings, Notify };
+export { AlertEnvironment, monitorBinding, monitorWorker };
+export type { MonitorBindings };
