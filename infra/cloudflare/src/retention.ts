@@ -5,11 +5,10 @@ import path from "node:path";
 
 import { Effect } from "effect";
 
-import { io, isMissing } from "./artifact-io.ts";
+import { ArtifactFailure, io, isMissing } from "./artifact-io.ts";
 
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
-import type { ArtifactFailure } from "./artifact-io.ts";
 
 type GenerationEntry = Readonly<Pick<Dirent, "isDirectory" | "name">>;
 
@@ -23,15 +22,12 @@ function newestFirst(left: Generation, right: Generation): number {
 }
 
 const generations = Effect.fn("generations")(function* generations(parent: string) {
-  const entries = yield* io(async (): Promise<readonly GenerationEntry[]> => {
-    try {
-      return await readdir(parent, { withFileTypes: true });
-    } catch (cause) {
-      if (isMissing(cause)) {
-        return [];
-      }
-      throw cause;
-    }
+  const entries = yield* Effect.tryPromise({
+    catch: (cause): ArtifactFailure =>
+      isMissing(cause)
+        ? new ArtifactFailure({ code: "generations_missing" })
+        : new ArtifactFailure({ code: "artifact_io_failed" }),
+    try: async (): Promise<readonly GenerationEntry[]> => readdir(parent, { withFileTypes: true }),
   });
   return yield* Effect.all(
     entries
