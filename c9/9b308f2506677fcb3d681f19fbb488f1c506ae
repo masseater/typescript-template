@@ -1,1 +1,6 @@
-Route wiki MCP reader lookup and test DB helpers through @repo/auth so no-wiki-to-database stays green after the fold.
+Revision history for #672:
+
+rev 2 (content) 2026-09-19 18:33 UTC — Route wiki MCP reader lookup and test DB helpers through @repo/auth so no-wiki-to-database stays green after the fold.
+rev 1 (initial) 2026-09-19 18:33 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":672,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"e239005d7fca94d4795e5c8343ec7b87ba7eff5d","timestamp_iso":"2026-09-19T18:33:02Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"e239005d7fca94d4795e5c8343ec7b87ba7eff5d","new_sha":"c99b308f2506677fcb3d681f19fbb488f1c506ae","timestamp_iso":"2026-09-19T18:33:02Z","reason":"Route wiki MCP reader lookup and test DB helpers through @repo/auth so no-wiki-to-database stays green after the fold.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/e239005d7fca94d4795e5c8343ec7b87ba7eff5d...c99b308f2506677fcb3d681f19fbb488f1c506ae"}]} -->
