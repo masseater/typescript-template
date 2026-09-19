@@ -57,6 +57,10 @@ it.effect(
         yield* parseDeploymentCommand(["deploy", "user", "--confirm-plan", confirmation]),
         { confirmation, operation: "deploy", stack: "user" },
       );
+      assert.deepStrictEqual(yield* parseDeploymentCommand(["deploy", "all"]), {
+        operation: "deploy-all",
+        stacks: [...stackNames],
+      });
       for (const args of [
         ["deploy", "user"],
         ["deploy", "all", "--confirm-plan", confirmation],
