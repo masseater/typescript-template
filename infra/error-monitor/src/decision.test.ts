@@ -17,7 +17,8 @@ function group(fingerprint: string): ErrorGroup {
     event: "browser.error",
     fingerprint,
     service: "user-browser",
-    type: "TypeError",
+    tag: "TypeError",
+    type: "Error",
   };
 }
 
@@ -52,7 +53,7 @@ describe("error notifications", () => {
     expect.hasAssertions();
     const message = formatMessage(decideNotifications([group("0000000a")], {}, now).notifications);
     expect(message).toContain(
-      "[新規] user-browser browser.error TypeError (fingerprint 0000000a, 3 件)",
+      "[新規] user-browser browser.error TypeError Error (fingerprint 0000000a, 3 件)",
     );
     expect(message).toContain("error.fingerprint");
   });
@@ -61,11 +62,21 @@ describe("error notifications", () => {
     expect.hasAssertions();
     const message = formatMessage(
       decideNotifications(
-        [{ ...group("0000000a"), event: undefined, service: undefined, type: undefined }],
+        [
+          {
+            ...group("0000000a"),
+            event: undefined,
+            service: undefined,
+            tag: undefined,
+            type: undefined,
+          },
+        ],
         { "0000000a": now - (hoursPerDay + 1) * hour },
         now,
       ).notifications,
     );
-    expect(message).toContain("[再発] (値なし) (値なし) (値なし) (fingerprint 0000000a, 3 件)");
+    expect(message).toContain(
+      "[再発] (値なし) (値なし) (値なし) (値なし) (fingerprint 0000000a, 3 件)",
+    );
   });
 });

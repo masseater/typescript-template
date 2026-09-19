@@ -6,8 +6,8 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
     "telemetry_account_invalid",
     "telemetry_http_failed",
     "telemetry_response_invalid",
-    "telemetry_response_truncated",
   ]),
+  keys: Schema.Array(Schema.String),
 }) {}
 
 const MIN_OBSERVABILITY_TOKEN_LENGTH = 20;
@@ -24,7 +24,9 @@ function parseErrorMonitorConfig(
   ErrorMonitorFailure
 > {
   return Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
-    Effect.mapError(() => new ErrorMonitorFailure({ code: "error_monitor_config_invalid" })),
+    Effect.mapError(
+      () => new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
+    ),
   );
 }
 

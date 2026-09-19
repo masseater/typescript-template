@@ -1,4 +1,4 @@
-import { Cause, Console, Effect, Exit, Schema, SchemaGetter } from "effect";
+import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 
@@ -40,7 +40,19 @@ const isDeclaredFailure = Schema.is(declaredFailure);
 
 function failureReason(cause: Readonly<Cause.Cause<unknown>>): string {
   const error: unknown = Cause.squash(cause);
-  return isDeclaredFailure(error) ? `${error._tag}.${error.code}` : UNRECOGNIZED_REASON;
+  if (!isDeclaredFailure(error)) {
+    return UNRECOGNIZED_REASON;
+  }
+  const base = `${error._tag}.${error.code}`;
+  if (
+    !Predicate.hasProperty(error, "keys") ||
+    !Array.isArray(error.keys) ||
+    error.keys.length === 0 ||
+    !error.keys.every((key) => typeof key === "string")
+  ) {
+    return base;
+  }
+  return `${base}:${error.keys.join(",")}`;
 }
 
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
