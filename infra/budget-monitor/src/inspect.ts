@@ -1,4 +1,4 @@
-import { runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/config/cli";
 import { Console, Effect } from "effect";
 
 import { fetchUsage } from "./billing.ts";
@@ -17,5 +17,5 @@ runCli(
     const decision = yield* evaluateBudget(usage, config);
     yield* Console.log(JSON.stringify({ event: "budget.inspected", ...decision }));
   }),
-  { event: "budget.inspect_failed" },
+  (cause) => causeRecord("budget.inspect_failed", cause),
 );

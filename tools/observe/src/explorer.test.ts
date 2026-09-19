@@ -28,8 +28,12 @@ it.effect("structured console lines are decoded from the Local Explorer message 
       event: { event: "application.error", request_id: "x" },
       trace_id: "t",
     });
-    assert.isUndefined(withEvent({ message: JSON.stringify(["GET http://localhost/"]) }).event);
+    assert.strictEqual(
+      withEvent({ message: JSON.stringify(["GET http://localhost/"]) }).event,
+      "unparsable",
+    );
     assert.isUndefined(withEvent({ message: unrelatedMessage }).event);
+    assert.strictEqual(withEvent({ message: "{not-json" }).event, "unparsable");
   }),
 );
 

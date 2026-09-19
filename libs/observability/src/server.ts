@@ -10,6 +10,7 @@ export { ingestBrowser } from "./ingress.ts";
 export { observeRequest, reportFailure } from "./request-span.ts";
 export { logAt, logCause, statusSeverity } from "./severity.ts";
 export type { Severity } from "./severity.ts";
+export { redactSecrets, redactedField } from "./redact.ts";
 export { reportUnavailable } from "./unavailable.ts";
 export type { Correlation } from "./protocol.ts";
 export type { RequestContext } from "./current-request.ts";

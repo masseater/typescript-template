@@ -16,9 +16,15 @@ function reportFailed(record: Readonly<Record<string, unknown>>): Effect.Effect<
   return Console.error(JSON.stringify(record)).pipe(Effect.andThen(markFailed));
 }
 
-type FailureReport<Failure> =
-  | Readonly<Record<string, unknown>>
-  | ((cause: Cause.Cause<Failure>) => Readonly<Record<string, unknown>>);
+function causeRecord(
+  event: string,
+  cause: Cause.Cause<unknown>,
+  fields: Readonly<Record<string, unknown>> = {},
+): Readonly<Record<string, unknown>> {
+  return { cause: Cause.pretty(cause), event, ok: false, ...fields };
+}
+
+type FailureReport<Failure> = (cause: Cause.Cause<Failure>) => Readonly<Record<string, unknown>>;
 
 function runCli<Failure>(
   program: Effect.Effect<unknown, Failure>,
@@ -27,13 +33,11 @@ function runCli<Failure>(
   NodeRuntime.runMain(
     program.pipe(
       Effect.catchCause((cause) =>
-        Cause.hasInterruptsOnly(cause)
-          ? Effect.failCause(cause)
-          : reportFailed(typeof onFailure === "function" ? onFailure(cause) : onFailure),
+        Cause.hasInterruptsOnly(cause) ? Effect.failCause(cause) : reportFailed(onFailure(cause)),
       ),
     ),
     { disableErrorReporting: true },
   );
 }
 
-export { exitWith, firstUserArgumentIndex, markFailed, reportFailed, runCli };
+export { causeRecord, exitWith, firstUserArgumentIndex, markFailed, reportFailed, runCli };
