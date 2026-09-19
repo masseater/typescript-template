@@ -9,7 +9,13 @@ export default defineConfig({
       ...effectDiagnostics,
       ...intentValidation,
       ...testRun,
-      ...lifecycle({ precommit: [], premerge: ["test"], prepush: ["check:effect", "check"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: ["check"],
+        premerge: ["test"],
+        prerelease: [],
+      }),
     },
   },
   test: {
