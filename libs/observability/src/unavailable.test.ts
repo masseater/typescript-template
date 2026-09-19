@@ -30,7 +30,7 @@ describe("reporting a runtime that could not be built", () => {
       "error.fields": '{"_tag":"LayerFailed","cause":{"_tag":"LayerFailed","cause":"select 1"}}',
       "error.tag": "LayerFailed",
       event: "application.runtime_unavailable",
-      service: "wiki-server",
+      service: "internal-dashboard-server",
     });
   });
 
