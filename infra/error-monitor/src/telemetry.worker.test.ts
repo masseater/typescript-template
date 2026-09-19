@@ -32,7 +32,7 @@ const fingerprintedAggregate = {
   count: GROUPED_EVENTS,
   groups: [
     { key: "error.fingerprint", value: "0123abcd" },
-    { key: "service", value: "user-server" },
+    { key: "service", value: "service-member-server" },
     { key: "event", value: "application.error" },
     { key: "error.tag", value: "RangeError" },
     { key: "error.type", value: "Error" },
@@ -109,7 +109,7 @@ it.effect("groups fingerprinted error logs through the Workers Observability que
           count: GROUPED_EVENTS,
           event: "application.error",
           fingerprint: "0123abcd",
-          service: "user-server",
+          service: "service-member-server",
           tag: "RangeError",
           type: "Error",
         },
