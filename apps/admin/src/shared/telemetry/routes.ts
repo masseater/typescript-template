@@ -1,12 +1,17 @@
 export const routes = {
-  "/": "users",
+  "/": "home",
+  "/admins": "admins",
   "/api/auth/*": "auth",
   "/api/health": "health",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
   "/api/users": "users-api",
   "/api/verify-email": "verify-email-api",
+  "/inquiries": "inquiries",
   "/login": "login",
+  "/members": "members",
+  "/reports": "reports",
   "/security": "security",
+  "/terms": "terms",
   "/verify-email": "verify-email",
 } as const;
