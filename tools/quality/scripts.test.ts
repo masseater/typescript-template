@@ -145,15 +145,17 @@ describe("workspace scripts that run a file with node", () => {
   it.for(nodeFileCommands)("rejects running a file with node: %s", (command) => {
     expect.assertions(1);
     expect(scriptViolations({ scripts: { probe: command } })).toContain(
-      `probe: node でファイルを直接実行せず、vite.config.ts の run.tasks に置いて vp run で実行してください: ${command}`,
+      `probe: node でファイルを直接実行せず、パッケージの bin か vp run で実行してください: ${command}`,
     );
   });
 });
 
 describe("vite task conventions", () => {
-  it.for(nodeFileCommands)("keeps running a file with node available to tasks: %s", (command) => {
+  it.for(nodeFileCommands)("rejects running a file with node from tasks: %s", (command) => {
     expect.assertions(1);
-    expect(taskViolations({ probe: { command } })).toStrictEqual([]);
+    expect(taskViolations({ probe: { command } })).toContain(
+      `probe: node でファイルを直接実行せず、パッケージの bin か vp run で実行してください: ${command}`,
+    );
   });
 
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {

@@ -1,6 +1,14 @@
 {
   "name": "@repo/dev",
   "private": true,
+  "bin": {
+    "repo-dev": "./src/cli.ts",
+    "repo-dev-prepare-browser": "./src/prepare-browser.ts",
+    "repo-dev-observe": "./src/observe/cli.ts",
+    "repo-dev-check-exported": "./src/observe/receiver-check.ts",
+    "repo-dev-symbolicate": "./src/observe/symbolicate.ts",
+    "repo-dev-verify": "./src/observe/verify.ts"
+  },
   "type": "module",
   "dependencies": {
     "@repo/auth": "workspace:*",

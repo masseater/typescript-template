@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { applications } from "@repo/config";
 import { runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";

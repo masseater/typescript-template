@@ -223,6 +223,7 @@ describe("lifecycle entry points", () => {
     expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
       cache: ["vp run -r prepr"],
       check: ["vp run -r prepr"],
+      e2e: [],
       "merge-queue": ["vp run -r premerge"],
     });
     expect(lifecycleByJob("../../.github/workflows/prerelease.yml")).toStrictEqual({
@@ -281,13 +282,11 @@ describe("lifecycle contents", () => {
     expect.hasAssertions();
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
-      ".#test",
       ".#test:dev-server",
       "infra/cloudflare#verify:account",
       "libs/db#db:migrate:local",
       "tools/commander#check:start",
       "tools/dev#setup",
-      "tools/e2e#test:e2e",
       "tools/quality#check:staged",
     ]);
   });

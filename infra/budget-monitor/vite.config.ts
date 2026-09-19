@@ -9,7 +9,7 @@ export default defineConfig({
   run: {
     tasks: {
       ...worker.run.tasks,
-      inspect: { cache: false, command: "node src/inspect.ts" },
+      inspect: { cache: false, command: "./src/inspect.ts" },
     },
   },
 });

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { markFailed, runCli } from "@repo/config/cli";
 import { Cause, Console, Effect, Option } from "effect";
 
