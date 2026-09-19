@@ -9,9 +9,13 @@ import type { Scope } from "effect";
 
 type Network = ReturnType<typeof setupNetwork>;
 
+type RequestParams = Record<string, string>;
+interface AskedQuery {
+  readonly parameters: { readonly limit: number };
+}
+
 const ACCOUNT_ID_LENGTH = 32;
 const GROUPED_EVENTS = 4;
-const QUERY_LIMIT = 50;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const token = "test-token-000000000000";
@@ -106,7 +110,6 @@ it.effect("groups fingerprinted error logs through the Workers Observability que
     assert.deepNestedInclude(body, {
       "parameters.calculations[0].operator": "count",
       "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
-      "parameters.limit": QUERY_LIMIT,
     });
   }).pipe(Effect.scoped),
 );
@@ -115,12 +118,7 @@ it.effect("a response without the calculations key is an error rather than zero 
   Effect.gen(function* program() {
     yield* withServer(
       http.post(endpoint, () =>
-        HttpResponse.json({
-          errors: [],
-          messages: [],
-          result: { run: {}, statistics: {} },
-          success: true,
-        }),
+        HttpResponse.json({ ...queryResult, result: { run: {}, statistics: {} } }),
       ),
     );
     const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
@@ -131,14 +129,15 @@ it.effect("a response without the calculations key is an error rather than zero 
 it.effect("a result filling the query limit is an error rather than a partial list", () =>
   Effect.gen(function* program() {
     yield* withServer(
-      http.post(endpoint, () =>
-        HttpResponse.json({
-          errors: [],
-          messages: [],
+      http.post<RequestParams, AskedQuery>(endpoint, async ({ request }) => {
+        const { parameters } = await request.json();
+        return HttpResponse.json({
+          ...queryResult,
           result: {
+            ...queryResult.result,
             calculations: [
               {
-                aggregates: Array.from({ length: QUERY_LIMIT }, (_unused, index) => ({
+                aggregates: Array.from({ length: parameters.limit }, (_unused, index) => ({
                   ...fingerprintedAggregate,
                   groups: [
                     { key: "error.fingerprint", value: index.toString(16).padStart(8, "0") },
@@ -148,12 +147,9 @@ it.effect("a result filling the query limit is an error rather than a partial li
                 series: [],
               },
             ],
-            run: {},
-            statistics: {},
           },
-          success: true,
-        }),
-      ),
+        });
+      }),
     );
     const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
     assert.strictEqual(failure.code, "telemetry_response_truncated");
@@ -165,9 +161,9 @@ it.effect("reports a group value the query did not return as absent", () =>
     yield* withServer(
       http.post(endpoint, () =>
         HttpResponse.json({
-          errors: [],
-          messages: [],
+          ...queryResult,
           result: {
+            ...queryResult.result,
             calculations: [
               {
                 aggregates: [
@@ -180,10 +176,7 @@ it.effect("reports a group value the query did not return as absent", () =>
                 series: [],
               },
             ],
-            run: {},
-            statistics: {},
           },
-          success: true,
         }),
       ),
     );

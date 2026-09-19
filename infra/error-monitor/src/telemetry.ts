@@ -53,6 +53,7 @@ function errorGroup(item: typeof Aggregate.Type): ErrorGroup[] {
 
 function queryBody(window: QueryWindow): string {
   return JSON.stringify({
+    limit: QUERY_LIMIT,
     parameters: {
       calculations: [{ alias: "events", operator: "count" }],
       datasets: [],

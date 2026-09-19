@@ -6,7 +6,7 @@ import path from "node:path";
 import { sourceMapDirectories, sourceMapManifest } from "@repo/config/source-maps";
 import { Effect, Schema } from "effect";
 
-import { ArtifactFailure, fail, io } from "./artifact-io.ts";
+import { ArtifactFailure, fail, io, isMissing } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
 
 // oxlint-disable-next-line import/no-nodejs-modules
@@ -19,10 +19,6 @@ const OWNER_ONLY_FILE_MODE = 0o600;
 const ARCHIVED_RELEASES_KEPT = 5;
 
 type MapEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
-
-function isMissing(cause: unknown): boolean {
-  return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
-}
 
 function directoryExists(source: string): Effect.Effect<boolean, ArtifactFailure> {
   return Effect.tryPromise({

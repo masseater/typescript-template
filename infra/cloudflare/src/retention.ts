@@ -3,12 +3,13 @@ import { readdir, rm, stat } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { Effect, Schema } from "effect";
+import { Effect } from "effect";
 
-import { ArtifactFailure, io } from "./artifact-io.ts";
+import { io, isMissing } from "./artifact-io.ts";
 
 // oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
+import type { ArtifactFailure } from "./artifact-io.ts";
 
 type GenerationEntry = Readonly<Pick<Dirent, "isDirectory" | "name">>;
 
@@ -21,23 +22,17 @@ function newestFirst(left: Generation, right: Generation): number {
   return right.modified - left.modified;
 }
 
-const NOT_CREATED = "not_created";
-
-const notCreated = Schema.is(Schema.Struct({ code: Schema.Literal("ENOENT") }));
-
 const generations = Effect.fn("generations")(function* generations(parent: string) {
-  const listed: Effect.Effect<readonly GenerationEntry[], ArtifactFailure | typeof NOT_CREATED> =
-    Effect.tryPromise({
-      catch: (error): ArtifactFailure | typeof NOT_CREATED =>
-        notCreated(error) ? NOT_CREATED : new ArtifactFailure({ code: "artifact_io_failed" }),
-      try: async (): Promise<readonly GenerationEntry[]> =>
-        readdir(parent, { withFileTypes: true }),
-    });
-  const entries = yield* listed.pipe(
-    Effect.catch((error) =>
-      error === NOT_CREATED ? Effect.succeed<readonly GenerationEntry[]>([]) : Effect.fail(error),
-    ),
-  );
+  const entries = yield* io(async (): Promise<readonly GenerationEntry[]> => {
+    try {
+      return await readdir(parent, { withFileTypes: true });
+    } catch (cause) {
+      if (isMissing(cause)) {
+        return [];
+      }
+      throw cause;
+    }
+  });
   return yield* Effect.all(
     entries
       .filter((entry: GenerationEntry) => entry.isDirectory())

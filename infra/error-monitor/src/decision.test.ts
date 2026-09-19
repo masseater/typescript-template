@@ -2,6 +2,8 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { decideNotifications, formatMessage } from "./decision.ts";
 
+import type { ErrorGroup } from "./telemetry.ts";
+
 const now = Date.parse("2026-09-17T12:00:00Z");
 const hour = 3_600_000;
 const hoursPerDay = 24;
@@ -9,13 +11,7 @@ const daysBeforeForgotten = 8;
 const recentHours = 2;
 const occurrences = 3;
 
-function group(fingerprint: string): {
-  count: number;
-  event: string;
-  fingerprint: string;
-  service: string;
-  type: string;
-} {
+function group(fingerprint: string): ErrorGroup {
   return {
     count: occurrences,
     event: "browser.error",

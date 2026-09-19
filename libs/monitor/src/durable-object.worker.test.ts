@@ -37,6 +37,11 @@ async function check(): Promise<number> {
   return response.status;
 }
 
+async function checkReason(): Promise<unknown> {
+  const response = await stub().fetch("https://monitor.internal/check", { method: "POST" });
+  return response.json();
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, isoDayLength);
 }
@@ -59,6 +64,21 @@ describe("a monitor check running inside its durable object", () => {
 
     await expect(check()).resolves.toBe(checkFailed);
     await expect(env.EMAIL.taken()).resolves.toStrictEqual([]);
+  });
+
+  it("names the failure the check declared so the alert can be traced to it", async () => {
+    expect.hasAssertions();
+    await seed("fail");
+    await expect(checkReason()).resolves.toStrictEqual({
+      ok: false,
+      reason: "MonitorFailure.alert_config_invalid",
+    });
+  });
+
+  it("reports a failure the check never declared as unrecognized", async () => {
+    expect.hasAssertions();
+    await seed("die");
+    await expect(checkReason()).resolves.toStrictEqual({ ok: false, reason: "unrecognized" });
   });
 
   it("alerts again once a successful check has cleared the day it alerted", async () => {
