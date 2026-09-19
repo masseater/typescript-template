@@ -8,7 +8,7 @@ import {
 } from "./published-entries.ts";
 import { readShippableWorkspaces, type ShippableWorkspace } from "./workspace-manifests.ts";
 
-import type { ScannedProblems } from "@repo/repository-checks";
+import type { ScannedProblems } from "@repo/dont-review-it/repository-checks";
 import type { RepositoryProblem } from "../problem.ts";
 import type { ShippablePackagesConfig } from "./config.ts";
 

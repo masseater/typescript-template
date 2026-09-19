@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
-import { readUnlessMissing } from "@repo/repository-checks";
+import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { memoize } from "es-toolkit";
 
 import { toPosixPath } from "../posix-path.ts";
