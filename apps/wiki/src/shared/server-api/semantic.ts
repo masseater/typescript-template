@@ -1,7 +1,5 @@
-import { Embedder } from "@repo/runtime/wiki";
+import { Embedder, EmbeddingFailed } from "@repo/runtime/wiki";
 import { Effect } from "effect";
-
-import type { EmbeddingFailed } from "@repo/runtime/wiki";
 
 interface SemanticDocument {
   readonly id: string;
@@ -44,6 +42,9 @@ const buildIndex = Effect.fn("buildIndex")(function* buildIndex(
   const { embed } = yield* Embedder;
   const documents = loadDocuments();
   const vectors = yield* embed(documents.map((document) => `${document.title}\n${document.text}`));
+  if (vectors.length !== documents.length) {
+    return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+  }
   const index: SemanticIndex = { documents, vectors: vectors.map((vector) => normalize(vector)) };
   return index;
 });
@@ -63,14 +64,26 @@ function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): 
   );
   return Effect.fn("semanticSearch")(function* semanticSearch(query: string) {
     const { embed } = yield* Embedder;
-    const [{ documents, vectors }, [queryVector = []]] = yield* Effect.all([load, embed([query])], {
+    const [{ documents, vectors }, queryVectors] = yield* Effect.all([load, embed([query])], {
       concurrency: "unbounded",
     });
+    if (queryVectors.length !== 1 || vectors.length !== documents.length) {
+      return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+    }
+    const [queryVector] = queryVectors;
+    if (queryVector === undefined) {
+      return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+    }
     const target = normalize(queryVector);
-    return documents.map((document, index) => ({
-      document,
-      score: similarity(vectors[index] ?? [], target),
-    }));
+    const matches: SemanticMatch[] = [];
+    for (const [index, document] of documents.entries()) {
+      const vector = vectors[index];
+      if (vector === undefined) {
+        return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+      }
+      matches.push({ document, score: similarity(vector, target) });
+    }
+    return matches;
   });
 }
 

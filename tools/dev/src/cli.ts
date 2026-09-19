@@ -1,4 +1,4 @@
-import { runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/config/cli";
 import { Console, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
@@ -50,9 +50,9 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), {
-  event: "local.application_command_failed",
-  ok: false,
-  remediation:
-    "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-});
+runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), (cause) =>
+  causeRecord("local.application_command_failed", cause, {
+    remediation:
+      "Check vp run --filter @repo/dev setup, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+  }),
+);
