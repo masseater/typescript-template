@@ -32,7 +32,7 @@ const restyled = [
   ["no-restyle", "bg-destructive"],
   ["no-raw-colors", "text-red-500"],
   ["no-arbitrary-values", "text-[13px]"],
-  ["no-unknown-classes", "shadow-xs"],
+  ["no-unknown-classes", "flooblenorf-999"],
 ] as const;
 
 const runDirectly = (_text: string, run: () => void): void => {
@@ -46,7 +46,7 @@ const tester = new RuleTester({});
 
 type RuleName = (typeof restyled)[number][0];
 
-const restyleProbe = "apps/wiki/src/pages/consent/ui/consent-actions.tsx";
+const restyleProbe = "libs/ui/src/shared/ui/button.tsx";
 
 const reports = (rule: RuleName, className: string): boolean => {
   try {
@@ -56,7 +56,7 @@ const reports = (rule: RuleName, className: string): boolean => {
         {
           code: `import { Button } from "@repo/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
           filename: restyleProbe,
-          options: [{ allow: ["layout", "spacing"] }],
+          options: [{ allow: ["layout", "spacing"], componentImports: ["^@repo/ui(/|$)"] }],
         },
       ],
     });
