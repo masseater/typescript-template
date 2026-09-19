@@ -33,6 +33,20 @@ async function recordEmitted(destination: string, maps: readonly string[]): Prom
   );
 }
 
+const BROKEN_SOURCE_MAP = "SOURCEMAP_BROKEN";
+
+function failOnBrokenSourceMaps(): Plugin {
+  return {
+    apply: "build",
+    name: "template-fail-on-broken-source-maps",
+    onLog(_level, log) {
+      if (log.code === BROKEN_SOURCE_MAP) {
+        this.error(log);
+      }
+    },
+  };
+}
+
 function privateSourceMaps(app: Application): Plugin {
   const destination = sourceMapDirectories(repositoryRoot, app).client;
   return {
@@ -60,4 +74,4 @@ function privateSourceMaps(app: Application): Plugin {
   };
 }
 
-export { privateSourceMaps };
+export { failOnBrokenSourceMaps, privateSourceMaps };

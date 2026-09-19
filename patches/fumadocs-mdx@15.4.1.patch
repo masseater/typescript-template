@@ -1,0 +1,20 @@
+diff --git a/dist/meta-BR_rkCyY.js b/dist/meta-BR_rkCyY.js
+index 6e59bbfda58e1e8b688882fa21636b2ef65e1aeb..57f5a6a8ef8966f9c80d94ade86000f08fc2ea2e 100644
+--- a/dist/meta-BR_rkCyY.js
++++ b/dist/meta-BR_rkCyY.js
+@@ -61,11 +61,13 @@ function createMetaLoader({ getCore }, resolve = {}) {
+ 			const data = await result();
+ 			if (input.filePath.endsWith(".json")) return {
+ 				moduleType: resolveJson,
+-				code: resolveJson === "json" ? JSON.stringify(data) : `export default ${JSON.stringify(data)}`
++				code: resolveJson === "json" ? JSON.stringify(data) : `export default ${JSON.stringify(data)}`,
++				map: { mappings: "" }
+ 			};
+ 			else return {
+ 				moduleType: "js",
+-				code: `export default ${JSON.stringify(data)}`
++				code: `export default ${JSON.stringify(data)}`,
++				map: { mappings: "" }
+ 			};
+ 		},
+ 		bun: { load(source, input) {
