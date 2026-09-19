@@ -43,6 +43,10 @@ const workspaceNames: Readonly<Record<string, string>> = Object.fromEntries(
   }),
 );
 
+const packageDirectories: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(workspaceNames).map(([directory, name]) => [name, directory]),
+);
+
 const workspaceConfigs: Readonly<Record<string, UserConfig>> = Object.fromEntries(
   Object.entries(configModules).map(([file, config]) => [
     directoryOf(file),
@@ -103,11 +107,39 @@ function reachable(directory: string, names: readonly string[]): string[] {
   return next.length === 0 ? [...names] : reachable(directory, [...names, ...new Set(next)]);
 }
 
+function located(directory: string, name: string): string {
+  const [owner = "", task] = name.split("#");
+  return task === undefined
+    ? `${directory}#${name}`
+    : `${packageDirectories[owner] ?? owner}#${task}`;
+}
+
+function expanded(entries: readonly string[]): string[] {
+  const next = entries
+    .flatMap((entry) => {
+      const [directory = "", name = ""] = entry.split("#");
+      return dependencies(directory, name).map((dependency) => located(directory, dependency));
+    })
+    .filter((entry) => !entry.startsWith("*#") && !entries.includes(entry));
+  return next.length === 0 ? [...entries] : expanded([...entries, ...new Set(next)]);
+}
+
+function uncachedGateTasks(): string[] {
+  return expanded(configuredDirectories.map((directory) => `${directory}#premerge`))
+    .filter((entry) => {
+      const [directory = "", name = ""] = entry.split("#");
+      const task = workspaceTasks[directory]?.[name];
+      return typeof task === "object" && !Array.isArray(task) && task.cache === false;
+    })
+    .toSorted();
+}
+
 export {
   commands,
   configuredDirectories,
   dependencies,
   reachable,
+  uncachedGateTasks,
   scriptNames,
   taskNames,
   testProjectDirectories,

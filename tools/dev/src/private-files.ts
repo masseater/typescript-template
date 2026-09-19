@@ -34,10 +34,24 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
   return entry;
 });
 
+function unchangedPrivateFile(
+  location: FileLocation,
+  content: string,
+): Effect.Effect<boolean, never> {
+  return assertOwnerOnly(location).pipe(
+    Effect.flatMap(() => fileIo(async () => readFile(location, "utf-8"))),
+    Effect.map((existing) => existing === content),
+    Effect.catch(() => Effect.succeed(false)),
+  );
+}
+
 const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePrivateFile(
   location: FileLocation,
   content: string,
 ) {
+  if (yield* unchangedPrivateFile(location, content)) {
+    return;
+  }
   yield* Effect.acquireUseRelease(
     fileIo(async () => open(location, "w", privateFileMode)),
     (file) => fileIo(async () => file.writeFile(content)),

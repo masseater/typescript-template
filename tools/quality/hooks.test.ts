@@ -9,6 +9,7 @@ import {
   scriptNames,
   taskNames,
   testProjectDirectories,
+  uncachedGateTasks,
   workspaceDirectories,
   workspaceNames,
 } from "./tasks.ts";
@@ -207,6 +208,18 @@ describe("lifecycle contents", () => {
   it("runs every gated check as a task so it can be cached", () => {
     expect.hasAssertions();
     expect(configuredDirectories.flatMap((directory) => scriptedGate(directory))).toStrictEqual([]);
+  });
+
+  it("replays every merge gate task from the cache but the ones still tied to run time state", () => {
+    expect.hasAssertions();
+    expect(uncachedGateTasks()).toStrictEqual([
+      ".#test",
+      "libs/db#db:migrate:local",
+      "tools/commander#check:start",
+      "tools/dev#setup",
+      "tools/e2e#test:e2e",
+      "tools/quality#check:staged",
+    ]);
   });
 
   it("checks staged secrets before a commit", () => {

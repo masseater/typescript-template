@@ -111,6 +111,15 @@ const taskInput = [
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
 ] as const;
 
+function withoutGenerated(...directories: readonly string[]): string[] {
+  return directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
+}
+
+const withoutLocalState = [
+  { base: "workspace", pattern: "!.local" },
+  { base: "workspace", pattern: "!.local/**" },
+] as const;
+
 const effectDiagnostics = {
   "check:effect": {
     command:
@@ -170,11 +179,22 @@ const appRun = {
   tasks: {
     ...effectDiagnostics,
     ...sliceBoundaries,
-    build: { command: "vp build", input: [...taskInput, "!.wrangler/**", "!dist"] },
+    build: {
+      command: "vp build",
+      dependsOn: ["@repo/dev#setup"],
+      input: [...taskInput, ...withoutGenerated(".wrangler", "dist")],
+    },
     "check:dev": {
-      cache: false,
       command: "dev-start",
       dependsOn: ["@repo/dev#setup", "@repo/db#db:migrate:local"],
+      input: [
+        ...taskInput,
+        ...withoutGenerated(".wrangler", "dist"),
+        "!node_modules/.mf/**",
+        ...withoutLocalState,
+        { base: "workspace", pattern: "libs/db/migrations/**" },
+      ],
+      output: [],
     },
     ...lifecycle({
       precommit: [],
