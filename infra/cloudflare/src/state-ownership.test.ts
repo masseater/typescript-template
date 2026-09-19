@@ -7,11 +7,15 @@ import { verificationSettings } from "./verification-fixture.ts";
 
 const prefix = verificationSettings.prefix;
 
-it.effect("treats a path the store has never held as holding no records", () =>
+it.effect("fails when a path the store has never held rather than inventing empty ownership", () =>
   Effect.gen(function* program() {
     const store = InMemoryService({});
-    assert.deepStrictEqual(yield* recordedWorkerNames(store, prefix), []);
-    assert.deepStrictEqual(yield* recordedDatabaseIds(store, prefix), []);
+    const workers = yield* recordedWorkerNames(store, prefix).pipe(Effect.flip);
+    assert.strictEqual(workers._tag, "InvalidStatePath");
+    assert.strictEqual(workers.reason, "path does not exist");
+    const databases = yield* recordedDatabaseIds(store, prefix).pipe(Effect.flip);
+    assert.strictEqual(databases._tag, "InvalidStatePath");
+    assert.strictEqual(databases.reason, "path does not exist");
   }),
 );
 
