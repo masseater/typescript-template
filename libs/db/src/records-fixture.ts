@@ -12,7 +12,8 @@ import {
   user,
 } from "./schema.ts";
 
-import type { Application, Role } from "@repo/config";
+import type { Application } from "@repo/config";
+import type { Role } from "@repo/config/identity";
 import type { DatabaseFailure } from "./database-failure.ts";
 import type { Database } from "./database.ts";
 

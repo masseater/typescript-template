@@ -1,9 +1,13 @@
 {
   "name": "@repo/dev",
   "private": true,
+  "bin": {
+    "dev-start": "./src/dev-start.ts"
+  },
   "type": "module",
   "dependencies": {
     "@repo/auth": "workspace:*",
+    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/local": "workspace:*",
@@ -13,10 +17,12 @@
     "otpauth": "9.5.2",
     "playwright": "catalog:",
     "portless": "0.15.6",
+    "vite-plus": "catalog:",
     "wrangler": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

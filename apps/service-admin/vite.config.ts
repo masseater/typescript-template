@@ -1,5 +1,8 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { localDatabase, localDatabasePersistence } from "@repo/db/local";
+import { devBoundary } from "@repo/dev-boundary";
 import {
+  appCloudflare,
   appRun,
   appServer,
   failOnBrokenSourceMaps,
@@ -8,10 +11,7 @@ import {
   reactCompiler,
   startOptions,
   withoutEnvFileLoader,
-} from "@repo/config/vite";
-import { workerCompatibility } from "@repo/config/worker";
-import { localDatabase, localDatabasePersistence } from "@repo/db/local";
-import { devBoundary } from "@repo/dev-boundary";
+} from "@repo/vite-config";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite-plus";
@@ -26,19 +26,14 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     previewDevVars(import.meta.dirname),
     privateSourceMaps("service-admin"),
     devBoundary("service-admin"),
-    cloudflare({
-      config: {
-        assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
-        compatibility_date: workerCompatibility.date,
-        compatibility_flags: [...workerCompatibility.flags],
-        d1_databases: [localDatabase],
-        main: "./src/app/server.ts",
-        name: "template-admin",
-      },
-      inspectorPort: false,
-      persistState: { path: localDatabasePersistence },
-      viteEnvironment: { name: "ssr" },
-    }),
+    cloudflare(
+      appCloudflare("service-admin", {
+        command,
+        database: localDatabase,
+        isPreview,
+        persistState: localDatabasePersistence,
+      }),
+    ),
     tailwindcss(),
     ...withoutEnvFileLoader(tanstackStart(startOptions)),
     reactCompiler(),

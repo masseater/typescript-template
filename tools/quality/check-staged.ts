@@ -1,4 +1,4 @@
-import { markFailed, runCli } from "@repo/config/cli";
+import { markFailed, runCli } from "@repo/cli";
 import { Cause, Console, Effect, Option } from "effect";
 
 import { deploymentCredentials } from "./credentials.ts";

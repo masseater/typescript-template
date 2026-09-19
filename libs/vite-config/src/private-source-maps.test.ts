@@ -1,24 +1,20 @@
-import { build } from "vite-plus";
+import { build, type PluginOption } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
 
 import { failOnBrokenSourceMaps } from "./private-source-maps.ts";
 
-import type { Plugin } from "vite-plus";
+const bundleEntry = new URL("./source-maps.ts", import.meta.url).pathname;
 
-const entry = new URL("./applications.ts", import.meta.url).pathname;
+const transformWithoutMap = (): PluginOption => ({
+  name: "transform-without-map",
+  transform: (code: string, moduleId: string) =>
+    moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
+});
 
-function transformWithoutMap(): Plugin {
-  return {
-    name: "transform-without-map",
-    transform: (code: string, id: string) =>
-      id === entry ? { code: `${code}export const added = 2;\n` } : null,
-  };
-}
-
-function bundle(plugins: readonly Plugin[]): Promise<unknown> {
-  return build({
+const bundle = (plugins: readonly PluginOption[]): Promise<unknown> =>
+  build({
     build: {
-      lib: { entry, fileName: "entry", formats: ["es"] },
+      lib: { entry: bundleEntry, fileName: "entry", formats: ["es"] },
       sourcemap: true,
       write: false,
     },
@@ -26,7 +22,6 @@ function bundle(plugins: readonly Plugin[]): Promise<unknown> {
     logLevel: "silent",
     plugins: [...plugins],
   });
-}
 
 describe("failOnBrokenSourceMaps", () => {
   it("fails the build when a transform drops the source map", async () => {
