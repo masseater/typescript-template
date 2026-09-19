@@ -1,3 +1,5 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
+
 import { Field } from "./shared/ui/field";
 import { TotpField } from "./totp-field";
 
@@ -12,7 +14,7 @@ function ChallengeCodeField({
     <Field
       label="バックアップコード"
       name="backup-code"
-      type="password"
+      type={AUTHENTICATION_METHOD.password}
       autoComplete="off"
       required
       value={code.value}

@@ -36,7 +36,7 @@ const submitContact = Effect.fn("contact.submit")(function* submitContact(reques
     contactRateLimitWindowMilliseconds,
   );
   const mail = yield* OpsMail;
-  yield* sendContactEmail(mail, mail.OPS_EMAIL, submission);
+  yield* sendContactEmail(mail, { submission, to: mail.OPS_EMAIL });
   return { ok: true as const };
 });
 

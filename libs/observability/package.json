@@ -5,17 +5,19 @@
   "exports": {
     ".": "./src/server.ts",
     "./browser": "./src/browser.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./otlp-testing": "./src/otlp-fixture.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@msw/cloudflare": "catalog:",
     "@repo/config": "workspace:*",
     "effect": "catalog:",
+    "msw": "catalog:",
     "web-vitals": "6.2.2"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@msw/cloudflare": "catalog:",
-    "msw": "catalog:"
+    "@repo/dont-review-it": "workspace:*"
   }
 }

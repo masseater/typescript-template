@@ -1,27 +1,23 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { URL, fileURLToPath } from "node:url";
 
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { SQLiteDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
 
-import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
+import { BootstrappedAdmin, bootstrapStatement, type Email } from "./bootstrap-statement.ts";
 import { remoteExecutor } from "./remote-http.ts";
-import { RemoteFailure, fail } from "./remote-input.ts";
+import { RemoteFailure, fail, type MigrationStatusTarget } from "./remote-input.ts";
 
-import type { EmailAddress } from "./bootstrap-statement.ts";
-import type { MigrationStatusTarget } from "./remote-input.ts";
-
-interface RemoteQuery {
+type RemoteQuery = {
   readonly params: readonly (string | number | null)[];
   readonly sql: string;
-}
+};
 
-interface DatabaseExecutor {
+type DatabaseExecutor = {
   readonly batch: (
     queries: readonly RemoteQuery[],
   ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
-}
+};
 
 const Statement = Schema.Trim.check(Schema.isMinLength(1));
 const MigrationFile = Schema.Struct({
@@ -58,7 +54,8 @@ const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRem
   );
   if (
     migrations.some(
-      (item, index) => index > 0 && item.folderMillis <= (migrations[index - 1]?.folderMillis ?? 0),
+      (migration, index) =>
+        index > 0 && migration.folderMillis <= (migrations[index - 1]?.folderMillis ?? 0),
     )
   ) {
     return yield* fail("REMOTE_MIGRATIONS_INVALID");
@@ -70,16 +67,17 @@ const readHistory = Effect.fn("readHistory")(function* readHistory(
   executor: DatabaseExecutor,
   migrations: readonly Migration[],
 ) {
-  const [rows] = yield* executor.batch([
+  const [historyRows] = yield* executor.batch([
     { params: [], sql: "SELECT hash, name FROM __drizzle_migrations ORDER BY id" },
   ]);
-  const history = yield* Schema.decodeUnknownEffect(History)(rows).pipe(
+  const history = yield* Schema.decodeUnknownEffect(History)(historyRows).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISMATCH" })),
   );
   if (
     history.some(
-      (item, index) =>
-        item.hash !== migrations.at(index)?.hash || item.name !== migrations.at(index)?.name,
+      (appliedMigration, index) =>
+        appliedMigration.hash !== migrations.at(index)?.hash ||
+        appliedMigration.name !== migrations.at(index)?.name,
     )
   ) {
     return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
@@ -115,11 +113,11 @@ const migrateDatabase = Effect.fn("migrateDatabase")(function* migrateDatabase(
 const applicationTables = Effect.fn("applicationTables")(function* applicationTables(
   executor: DatabaseExecutor,
 ) {
-  const [rows] = yield* executor.batch([{ params: [], sql: APPLICATION_TABLES }]);
-  if (rows === undefined) {
+  const [listedTables] = yield* executor.batch([{ params: [], sql: APPLICATION_TABLES }]);
+  if (listedTables === undefined) {
     return yield* fail("REMOTE_RESPONSE_INVALID");
   }
-  return rows.length;
+  return listedTables.length;
 });
 
 const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
@@ -142,37 +140,37 @@ const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
 });
 
 const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(
-  target: typeof MigrationStatusTarget.Type,
+  d1Database: typeof MigrationStatusTarget.Type,
 ) {
-  return yield* migrationStatus(remoteExecutor(target), yield* loadRemoteMigrations());
+  return yield* migrationStatus(remoteExecutor(d1Database), yield* loadRemoteMigrations());
 });
 
 const bootstrapDatabase = Effect.fn("bootstrapDatabase")(function* bootstrapDatabase(
   executor: DatabaseExecutor,
-  email: typeof EmailAddress.Type,
+  email: typeof Email.Type,
 ) {
   const migrations = yield* loadRemoteMigrations();
   if ((yield* readHistory(executor, migrations)) !== migrations.length) {
     return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
   }
   const compiled = new SQLiteDialect().sqlToQuery(bootstrapStatement(email));
-  const params = yield* Schema.decodeUnknownEffect(StatementParams)(compiled.params).pipe(
+  const statementParams = yield* Schema.decodeUnknownEffect(StatementParams)(compiled.params).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" })),
   );
-  const [rows] = yield* executor.batch([{ params, sql: compiled.sql }]);
-  if (rows?.length !== 1) {
+  const [promotedRows] = yield* executor.batch([{ params: statementParams, sql: compiled.sql }]);
+  if (promotedRows?.length !== 1) {
     return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
   }
-  yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(rows[0]).pipe(
+  yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(promotedRows[0]).pipe(
     Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
   );
 });
 
 export {
   APPLICATION_TABLES,
+  MIGRATIONS_TABLE_PRESENT,
   MigrationFiles,
   bootstrapDatabase,
-  MIGRATIONS_TABLE_PRESENT,
   loadRemoteMigrations,
   migrateDatabase,
   readMigrationStatus,

@@ -1,4 +1,5 @@
 import { Monitor, monitorHandler } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
 import { parseErrorMonitorConfig } from "./config.ts";
@@ -16,7 +17,7 @@ interface Bindings extends MonitorBindings {
 const LOOKBACK_MS = 900_000;
 
 export class ErrorMonitor extends Monitor<Bindings> {
-  protected readonly event = "error_monitor";
+  protected readonly eventName = "error_monitor";
   protected readonly failure = {
     subject: "Cloudflare Workers error monitoring failed",
     text: "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",
@@ -43,7 +44,7 @@ export class ErrorMonitor extends Monitor<Bindings> {
       }
       yield* Effect.promise(async () => ctx.storage.put("seen", decision.seen));
       return { dropped, groups: groups.length, notified: decision.notifications.length };
-    }).pipe(Effect.withSpan("ErrorMonitor.check"));
+    }).pipe(withSpan("ErrorMonitor.check"));
   }
 }
 

@@ -1,3 +1,5 @@
+import { ROLE } from "@repo/config";
+
 import { authClient } from "./client";
 import { requireSecureContext, requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
@@ -32,7 +34,8 @@ function PasskeyRegisterForm({ context, onRegistered }: PasskeyRegisterFormProps
       await onRegistered();
     });
   }
-  const recoveringAdmin = session.user.role === "admin" && !session.strong && recovery === "1";
+  const recoveringAdmin =
+    session.user.role === ROLE.administrator && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
       <FormColumn>

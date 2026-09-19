@@ -1,4 +1,4 @@
-import { applications } from "@repo/config";
+import { APPLICATION, applications } from "@repo/config";
 import { providers, state } from "alchemy/Cloudflare";
 
 import { monitorStacks } from "./monitors.ts";
@@ -44,9 +44,9 @@ const stackNames = [
   "observability",
   "tokens",
   ...monitorStacks,
-  "user",
-  "admin",
-  "wiki",
+  APPLICATION.user,
+  APPLICATION.admin,
+  APPLICATION.wiki,
 ] as const satisfies readonly StackName[];
 
 const applicationStacks: readonly StackName[] = applications;
@@ -54,9 +54,9 @@ const applicationStacks: readonly StackName[] = applications;
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
   ...monitorStacks,
-  "user",
-  "admin",
-  "wiki",
+  APPLICATION.user,
+  APPLICATION.admin,
+  APPLICATION.wiki,
 ] as const satisfies readonly StackName[];
 
 function applyOrderViolations(order: readonly StackName[]): readonly StackName[] {

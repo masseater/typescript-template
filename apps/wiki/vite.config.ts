@@ -1,4 +1,5 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { APPLICATION } from "@repo/config";
 import {
   appRun,
   appServer,
@@ -25,8 +26,8 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
   plugins: [
     failOnBrokenSourceMaps(),
     previewDevVars(import.meta.dirname),
-    privateSourceMaps("wiki"),
-    devBoundary("wiki"),
+    privateSourceMaps(APPLICATION.wiki),
+    devBoundary(APPLICATION.wiki),
     cloudflare({
       config: {
         assets: { binding: "ASSETS", run_worker_first: command !== "serve" || isPreview === true },
@@ -45,7 +46,7 @@ export default defineConfig(({ command, isPreview }: Readonly<ConfigEnv>): UserC
     ...withoutEnvFileLoader(tanstackStart(startOptions)),
     reactCompiler(),
   ],
-  preview: appServer("wiki"),
+  preview: appServer(APPLICATION.wiki),
   run: appRun,
-  server: appServer("wiki"),
+  server: appServer(APPLICATION.wiki),
 }));

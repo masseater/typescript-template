@@ -1,3 +1,5 @@
+import { AUTHENTICATION_METHOD, ROLE } from "@repo/config";
+
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
@@ -17,7 +19,7 @@ interface TotpPasswordFormProps {
 
 function adminLocked(session: SessionView, recovery: string | undefined): boolean {
   return (
-    session.user.role === "admin" &&
+    session.user.role === ROLE.administrator &&
     (session.user.twoFactorEnabled || (recovery === "1" && !session.strong))
   );
 }
@@ -60,8 +62,8 @@ function TotpPasswordForm({ context, enrolling, onEnroll }: TotpPasswordFormProp
         />
         <Field
           label="設定変更を確認するパスワード"
-          name="password"
-          type="password"
+          name={AUTHENTICATION_METHOD.password}
+          type={AUTHENTICATION_METHOD.password}
           autoComplete="current-password"
           required
           value={password.value}

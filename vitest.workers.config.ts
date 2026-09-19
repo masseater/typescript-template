@@ -4,7 +4,7 @@ import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
-import { monitorBinding } from "@repo/monitor";
+import { monitorBinding } from "@repo/monitor/binding";
 import { workerTests } from "@repo/quality/test-runtime";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";

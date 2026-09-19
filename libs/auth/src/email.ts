@@ -3,21 +3,6 @@ import { Effect } from "effect";
 
 import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
-import type { SendEmail } from "@cloudflare/workers-types";
-
-interface MailSettings {
-  readonly EMAIL?: SendEmail;
-  readonly EMAIL_FROM: string;
-  readonly MAILPIT_URL?: string;
-}
-
-interface EmailMessage {
-  readonly from: string;
-  readonly subject: string;
-  readonly text: string;
-  readonly to: string;
-}
-
 const mailSubjects = {
   contact: "お問い合わせ",
   existingAccount: "このメールアドレスは登録済みです",
@@ -26,19 +11,26 @@ const mailSubjects = {
 
 const mailpitTimeoutMilliseconds = 10_000;
 
-function sendThroughMailpit(
-  mailpit: string,
-  email: EmailMessage,
-): Effect.Effect<void, EmailDeliveryFailed> {
+type OutboundEmail = {
+  readonly from: string;
+  readonly subject: string;
+  readonly text: string;
+  readonly to: string;
+};
+
+const sendThroughMailpit = (
+  mailpitSendUrl: string,
+  outbound: OutboundEmail,
+): Effect.Effect<void, EmailDeliveryFailed> => {
   return Effect.tryPromise({
-    catch: (cause) => new EmailDeliveryFailed({ cause, reason: "unreachable" }),
+    catch: () => new EmailDeliveryFailed({ reason: "unreachable" }),
     try: async (signal) =>
-      fetch(`${mailpit}/api/v1/send`, {
+      fetch(mailpitSendUrl, {
         body: JSON.stringify({
-          From: { Email: email.from },
-          Subject: email.subject,
-          Text: email.text,
-          To: [{ Email: email.to }],
+          From: { Email: outbound.from },
+          Subject: outbound.subject,
+          Text: outbound.text,
+          To: [{ Email: outbound.to }],
         }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -46,74 +38,91 @@ function sendThroughMailpit(
         signal: AbortSignal.any([signal, AbortSignal.timeout(mailpitTimeoutMilliseconds)]),
       }),
   }).pipe(
-    Effect.flatMap((response) =>
-      response.ok
-        ? Effect.void
-        : Effect.fail(new EmailDeliveryFailed({ cause: response.status, reason: "rejected" })),
+    Effect.flatMap((delivery) =>
+      delivery.ok ? Effect.void : Effect.fail(new EmailDeliveryFailed({ reason: "rejected" })),
     ),
   );
-}
+};
 
-function sendThroughBinding(
-  binding: SendEmail | undefined,
-  email: EmailMessage,
-): Effect.Effect<void, EmailDeliveryFailed> {
+type MailBinding = {
+  readonly send: (email: {
+    readonly from: string;
+    readonly subject: string;
+    readonly text: string;
+    readonly to: string;
+  }) => Promise<unknown>;
+};
+
+const sendThroughBinding = (
+  binding: MailBinding | undefined,
+  outbound: OutboundEmail,
+): Effect.Effect<void, EmailDeliveryFailed> => {
   if (binding === undefined) {
     return Effect.fail(new EmailDeliveryFailed({ reason: "unreachable" }));
   }
   return Effect.tryPromise({
-    catch: (cause) => new EmailDeliveryFailed({ cause, reason: "rejected" }),
-    try: async () => binding.send(email),
+    catch: () => new EmailDeliveryFailed({ reason: "rejected" }),
+    try: async () => binding.send(outbound),
   }).pipe(Effect.asVoid);
-}
+};
 
-function deliver(
-  settings: MailSettings,
-  email: Omit<EmailMessage, "from">,
-): Effect.Effect<void, EmailDeliveryFailed> {
-  const message: EmailMessage = { ...email, from: settings.EMAIL_FROM };
-  return settings.MAILPIT_URL === undefined
-    ? sendThroughBinding(settings.EMAIL, message)
-    : sendThroughMailpit(settings.MAILPIT_URL, message);
-}
+type MailSettings = {
+  readonly APP_ORIGIN: string;
+  readonly EMAIL?: MailBinding;
+  readonly EMAIL_FROM: string;
+  readonly MAILPIT_SEND_URL?: string;
+};
 
-function sendVerificationEmail(
+const deliver = (
   settings: MailSettings,
-  to: string,
-  url: string,
-): Effect.Effect<void, EmailDeliveryFailed> {
+  outbound: Omit<OutboundEmail, "from">,
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  const addressed: OutboundEmail = { ...outbound, from: settings.EMAIL_FROM };
+  return settings.MAILPIT_SEND_URL === undefined
+    ? sendThroughBinding(settings.EMAIL, addressed)
+    : sendThroughMailpit(settings.MAILPIT_SEND_URL, addressed);
+};
+
+const sendVerificationEmail = (
+  settings: MailSettings,
+  verification: { readonly email: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(verification.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
   return deliver(settings, {
     subject: mailSubjects.verification,
-    text: `次のリンクでメールアドレスを確認してください。\n${url}`,
-    to,
+    text: `次のリンクでメールアドレスを確認してください。\n${verification.url}`,
+    to: verification.email,
   }).pipe(withSpan("email.verification"));
-}
+};
 
-function sendExistingAccountNotice(
+const sendExistingAccountNotice = (
   settings: MailSettings,
-  to: string,
-  url: string,
-): Effect.Effect<void, EmailDeliveryFailed> {
+  notice: { readonly email: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(notice.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
   return deliver(settings, {
     subject: mailSubjects.existingAccount,
-    text: `このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。\n${url}`,
-    to,
+    text: `このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。\n${notice.url}`,
+    to: notice.email,
   }).pipe(withSpan("email.existing_account_notice"));
-}
+};
 
-function sendContactEmail(
+const sendContactEmail = (
   settings: MailSettings,
-  to: string,
-  submission: Readonly<{ email: string; message: string; name: string }>,
-): Effect.Effect<void, EmailDeliveryFailed> {
-  return deliver(settings, {
+  outbound: Readonly<{
+    readonly to: string;
+    readonly submission: Readonly<{ email: string; message: string; name: string }>;
+  }>,
+): Effect.Effect<void, EmailDeliveryFailed> =>
+  deliver(settings, {
     subject: mailSubjects.contact,
-    text: `名前: ${submission.name}\nメール: ${submission.email}\n\n${submission.message}`,
-    to,
+    text: `名前: ${outbound.submission.name}\nメール: ${outbound.submission.email}\n\n${outbound.submission.message}`,
+    to: outbound.to,
   }).pipe(withSpan("email.contact"));
-}
 
-/** @internal */
-export { mailSubjects };
-export { sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
+export { mailSubjects, sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
 export type { MailSettings };

@@ -67,7 +67,7 @@ function readJsonBody<Contract extends Decodable>(
   request: Request,
 ): Effect.Effect<Contract["Type"], RequestRejected | InputInvalid, AppOrigin> {
   return Effect.gen(function* readJsonBodyProgram() {
-    const input = yield* readJson(request, yield* AppOrigin);
+    const input = yield* readJson({ expectedOrigin: yield* AppOrigin, incoming: request });
     return yield* decodeInput(schema, input);
   });
 }

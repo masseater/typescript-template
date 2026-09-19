@@ -1,4 +1,5 @@
 import { Monitor, monitorHandler } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
 import { fetchUsage } from "./billing.ts";
@@ -17,7 +18,7 @@ interface Bindings extends MonitorBindings {
 }
 
 export class BudgetMonitor extends Monitor<Bindings> {
-  protected readonly event = "budget";
+  protected readonly eventName = "budget";
   protected readonly failure = {
     subject: "Cloudflare budget monitoring failed",
     text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
@@ -50,7 +51,7 @@ export class BudgetMonitor extends Monitor<Bindings> {
         );
       }
       return decision;
-    }).pipe(Effect.withSpan("BudgetMonitor.check"));
+    }).pipe(withSpan("BudgetMonitor.check"));
   }
 }
 
