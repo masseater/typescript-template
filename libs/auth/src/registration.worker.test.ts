@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { getSchemaShape } from "@repo/db/testing";
 import { getSchema } from "better-auth/db";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import {
   Fixture,
@@ -10,19 +10,29 @@ import {
   HTTP_OK,
   PASSWORD,
   TEST_TIMEOUT,
+  decodeOrDie,
+  receivedLink,
   register,
   registerVerified,
   signIn,
+  verifyEmail,
   withAuth,
 } from "./auth-test-fixture.ts";
-import { BrowserClient } from "./browser-client.ts";
+import { BrowserClient, origins } from "./browser-client.ts";
+import { mailSubjects } from "./email.ts";
 import { mailbox } from "./mail-fixture.ts";
 
-const verifyEmailOf = Effect.fn("verifyEmailOf")(function* verifyEmailOf(email: string) {
+const SignUpResponse = Schema.Struct({
+  token: Schema.NullOr(Schema.String),
+  user: Schema.Record(Schema.String, Schema.Unknown),
+});
+
+const signUpShape = Effect.fn("signUpShape")(function* signUpShape(email: string) {
   const { user } = yield* Fixture;
-  const link = new URL(mailbox.get(email) ?? "http://invalid.test/");
-  const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
-  yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
+  const signUp = { email, name: email, password: PASSWORD };
+  const response = yield* new BrowserClient(user).json("/sign-up/email", signUp);
+  const body = yield* decodeOrDie(SignUpResponse, response.body);
+  return { fields: Object.keys(body.user).toSorted(), status: response.status, token: body.token };
 });
 
 it.effect(
@@ -32,13 +42,61 @@ it.effect(
       Effect.gen(function* program() {
         const client = yield* register("alice@example.com");
         assert.strictEqual((yield* signIn(client, "alice@example.com")).status, HTTP_FORBIDDEN);
-        yield* verifyEmailOf("alice@example.com");
+        yield* verifyEmail("alice@example.com");
         assert.strictEqual((yield* signIn(client, "alice@example.com")).status, HTTP_OK);
         const current = yield* client.verify();
         assert.deepStrictEqual(
           [current.user.emailVerified, current.user.twoFactorEnabled, current.strong],
           [true, false, false],
         );
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+it.effect(
+  "signing up with a registered address answers exactly like a new sign-up",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        yield* registerVerified("taken@example.com");
+        const fresh = yield* signUpShape("fresh@example.com");
+        const taken = yield* signUpShape("taken@example.com");
+        assert.deepStrictEqual(taken, fresh);
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+it.effect(
+  "a verified owner gets one login link per notice window and keeps the account",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        yield* registerVerified("taken@example.com");
+        mailbox.delete("taken@example.com");
+        const client = yield* register("taken@example.com");
+        const notice = receivedLink("taken@example.com", mailSubjects.existingAccount);
+        assert.strictEqual(notice.href, new URL("/login", origins.user).href);
+        mailbox.delete("taken@example.com");
+        yield* register("taken@example.com");
+        assert.isFalse(mailbox.has("taken@example.com"));
+        assert.strictEqual((yield* signIn(client, "taken@example.com")).status, HTTP_OK);
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+it.effect(
+  "an unverified owner signing up again gets a fresh verification link",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        yield* register("unverified@example.com");
+        mailbox.delete("unverified@example.com");
+        const client = yield* register("unverified@example.com");
+        yield* verifyEmail("unverified@example.com");
+        assert.strictEqual((yield* signIn(client, "unverified@example.com")).status, HTTP_OK);
       }),
     ),
   TEST_TIMEOUT,

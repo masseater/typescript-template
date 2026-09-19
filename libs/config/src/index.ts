@@ -159,7 +159,5 @@ export type {
   StrongAuthenticationMethod,
 } from "./applications.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
-export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
-export { sendVerificationEmail } from "./email.ts";
 export { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };
 export type { AppConfig, AssetFetcher, WikiConfig };
