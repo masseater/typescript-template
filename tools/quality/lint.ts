@@ -126,6 +126,7 @@ const lintOptions = {
         "project/span-mutation": LINT_SEVERITY.ERROR,
         "project/temp-directory": LINT_SEVERITY.ERROR,
         "project/test-import-graph": LINT_SEVERITY.ERROR,
+        "project/wareki-format": LINT_SEVERITY.ERROR,
         "project/worker-fetch": LINT_SEVERITY.ERROR,
         "shadcn/no-arbitrary-values": LINT_SEVERITY.ERROR,
         "shadcn/no-raw-colors": LINT_SEVERITY.ERROR,

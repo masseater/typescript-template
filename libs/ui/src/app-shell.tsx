@@ -1,3 +1,4 @@
+import "./temporal.ts";
 import { initBrowserTelemetry } from "@repo/observability/browser";
 import { HeadContent } from "@tanstack/react-router";
 import { useEffect } from "react";
