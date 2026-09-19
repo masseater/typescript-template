@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
@@ -7,25 +7,24 @@ import { RecoveryNotice } from "./recovery-notice";
 import { Heading } from "./shared/ui/heading";
 import { TotpSettings } from "./totp-settings";
 
-import type { ReactElement } from "react";
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";
 
-function readRecovery(): string | undefined {
+const readRecovery = (): string | undefined => {
   if (!("location" in globalThis)) {
     return undefined;
   }
   return new URLSearchParams(globalThis.location.search).get("recovery") ?? undefined;
-}
+};
 
-function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElement {
+const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElement => {
   const [notice, setNotice] = useState<string>();
   const recovery = readRecovery();
   const action = useAction();
-  function clearNotice(): void {
+  const clearNotice = (): void => {
     setNotice(undefined);
-  }
-  const context: SettingsContext = {
+  };
+  const settingsContext: SettingsContext = {
     action,
     onNotice: setNotice,
     onNoticeClear: clearNotice,
@@ -36,12 +35,12 @@ function MFASettings({ session }: Readonly<{ session: SessionView }>): ReactElem
     <div className="flex w-full flex-col gap-4">
       <Heading>認証アプリとパスキー</Heading>
       <RecoveryNotice recovery={recovery} role={session.user.role} />
-      <TotpSettings context={context} />
+      <TotpSettings context={settingsContext} />
       <Heading>パスキー</Heading>
-      <PasskeySettings context={context} />
+      <PasskeySettings context={settingsContext} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
     </div>
   );
-}
+};
 
 export { MFASettings };

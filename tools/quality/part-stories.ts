@@ -27,7 +27,9 @@ const storyName = (part: string): string => {
 };
 
 const storylessParts = (directory: string): string[] => {
-  const files = readdirSync(directory).filter((file) => file.endsWith(".tsx"));
+  const files = readdirSync(directory).filter(
+    (file) => file.endsWith(".tsx") && !file.endsWith(".test.tsx"),
+  );
   const stories = new Set(files.filter((file) => file.endsWith(storySuffix)));
   return files
     .filter((file) => !stories.has(file) && !stories.has(storyName(file)))

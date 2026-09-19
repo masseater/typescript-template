@@ -1,4 +1,4 @@
-import { Status } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ChatNotice, ChatState } from "#shared/contract/index.ts";
 import type { ReactElement } from "react";
@@ -28,7 +28,11 @@ function ChatEntry({ body }: Readonly<{ body: Body }>): ReactElement {
   if (body.kind === "tool") {
     return <p className="truncate text-sm text-muted-foreground">› {body.summary}</p>;
   }
-  return <Status variant={calm.has(body.notice) ? "info" : "error"}>{notices[body.notice]}</Status>;
+  return (
+    <StatusMessage variant={calm.has(body.notice) ? STATUS_VARIANT.info : STATUS_VARIANT.failure}>
+      {notices[body.notice]}
+    </StatusMessage>
+  );
 }
 
 export { ChatEntry };

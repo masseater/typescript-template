@@ -4,9 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import type { StorybookConfig } from "@storybook/react-vite";
 import type { InlineConfig } from "vite-plus";
 
-function withAppTransforms(config: InlineConfig): InlineConfig {
+const withAppTransforms = (config: InlineConfig): InlineConfig => {
   return { ...config, plugins: [...(config.plugins ?? []), tailwindcss(), reactCompiler()] };
-}
+};
 
 const config: StorybookConfig = {
   addons: ["@storybook/addon-a11y", "@storybook/addon-vitest", "@storybook/addon-mcp"],
@@ -18,5 +18,4 @@ const config: StorybookConfig = {
   viteFinal: withAppTransforms,
 };
 
-// oxlint-disable-next-line import/no-default-export
 export default config;

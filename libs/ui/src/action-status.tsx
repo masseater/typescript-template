@@ -1,26 +1,31 @@
-import { Status } from "./shared/ui/status";
+import { StatusMessage } from "./shared/ui/status";
+import { STATUS_VARIANT } from "./shared/ui/status-variants.ts";
 
 import type { ReactElement } from "react";
 import type { ActionState } from "./action";
 
-interface ActionStatusProps {
+const ActionStatus = ({
+  action,
+  notice,
+  pendingMessage,
+}: {
   readonly action: ActionState;
   readonly notice?: string | undefined;
   readonly pendingMessage?: string;
-}
-
-function ActionStatus({ action, notice, pendingMessage }: ActionStatusProps): ReactElement {
+}): ReactElement => {
   return (
     <>
       {action.pending && pendingMessage !== undefined && (
-        <Status variant="pending">{pendingMessage}</Status>
+        <StatusMessage variant={STATUS_VARIANT.pending}>{pendingMessage}</StatusMessage>
       )}
-      {notice !== undefined && <Status variant="success">{notice}</Status>}
+      {notice !== undefined && (
+        <StatusMessage variant={STATUS_VARIANT.success}>{notice}</StatusMessage>
+      )}
       {action.error !== undefined && action.error !== "" && (
-        <Status variant="error">{action.error}</Status>
+        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
       )}
     </>
   );
-}
+};
 
 export { ActionStatus };
