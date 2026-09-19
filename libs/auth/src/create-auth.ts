@@ -1,26 +1,27 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { applications, authenticationMethods, roles } from "@repo/config";
 import { schema } from "@repo/db";
-import { findUser } from "@repo/db/security";
+import { claimMailSlot, findUser } from "@repo/db/security";
 import { betterAuth } from "better-auth";
+import { createEmailVerificationToken } from "better-auth/api";
 import { Effect } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
+import { sendExistingAccountNotice, sendVerificationEmail } from "./email.ts";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
 import { createRequestHooks } from "./request-hooks.ts";
 
 import type { Application } from "@repo/config";
 import type { DrizzleDatabase } from "@repo/db";
 import type { BetterAuthOptions } from "better-auth";
+import type { MailSettings } from "./email.ts";
 import type { Run } from "./runner.ts";
 
 interface AuthOptions {
   readonly baseURL: string;
   readonly secret: string;
   readonly audience: Application;
-  readonly sendVerificationEmail: (
-    message: Readonly<{ email: string; url: string }>,
-  ) => Effect.Effect<void, unknown>;
+  readonly mail: MailSettings;
 }
 
 type AdvancedOptions = NonNullable<BetterAuthOptions["advanced"]>;
@@ -43,6 +44,37 @@ const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
 const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
 const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
 const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
+const EXISTING_ACCOUNT_NOTICE_MINUTES = 10;
+const MILLISECONDS_PER_SECOND = 1000;
+const EXISTING_ACCOUNT_NOTICE_MILLISECONDS =
+  EXISTING_ACCOUNT_NOTICE_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+
+function verificationLink(origin: string, token: string): string {
+  const link = new URL("/verify-email", origin);
+  link.hash = new URLSearchParams({ token }).toString();
+  return link.href;
+}
+
+const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExistingAccount(
+  options: AuthOptions,
+  origin: string,
+  user: Readonly<{ email: string; emailVerified: boolean }>,
+) {
+  const until = new Date(Date.now() + EXISTING_ACCOUNT_NOTICE_MILLISECONDS);
+  const identifier = `existing-account-notice:${user.email}`;
+  if (!(yield* claimMailSlot(identifier, options.audience, until))) {
+    yield* Effect.logWarning("authentication.existing_account_notice_throttled");
+    return;
+  }
+  if (user.emailVerified) {
+    yield* sendExistingAccountNotice(options.mail, user.email, new URL("/login", origin).href);
+    return;
+  }
+  const token = yield* Effect.promise(async () =>
+    createEmailVerificationToken(options.secret, user.email),
+  );
+  yield* sendVerificationEmail(options.mail, user.email, verificationLink(origin, token));
+});
 
 function createDatabaseHooks(run: Run, audience: Application): DatabaseHooks {
   return {
@@ -88,9 +120,7 @@ function createEmailVerification(
       user,
       token,
     }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
-      const link = new URL("/verify-email", origin);
-      link.hash = new URLSearchParams({ token }).toString();
-      await run(options.sendVerificationEmail({ email: user.email, url: link.href }));
+      await run(sendVerificationEmail(options.mail, user.email, verificationLink(origin, token)));
     },
   };
 }
@@ -144,11 +174,19 @@ function createSessionOptions(audience: Application): SessionOptions {
   };
 }
 
-function createEmailAndPassword(audience: Application): EmailAndPasswordOptions {
+function createEmailAndPassword(
+  options: AuthOptions,
+  { origin, run }: Readonly<{ origin: string; run: Run }>,
+): EmailAndPasswordOptions {
   return {
-    disableSignUp: audience !== "user",
+    disableSignUp: options.audience !== "user",
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
+    onExistingUserSignUp: async ({
+      user,
+    }: Readonly<{ user: Readonly<{ email: string; emailVerified: boolean }> }>) => {
+      await run(mailExistingAccount(options, origin, user));
+    },
     requireEmailVerification: true,
   };
 }
@@ -162,7 +200,7 @@ function createAuth(options: AuthOptions, database: DrizzleDatabase, run: Run) {
     baseURL: options.baseURL,
     database: drizzleAdapter(database, { provider: "sqlite", schema, transaction: false }),
     databaseHooks: createDatabaseHooks(run, audience),
-    emailAndPassword: createEmailAndPassword(audience),
+    emailAndPassword: createEmailAndPassword(options, { origin, run }),
     emailVerification: createEmailVerification(options, { origin, run }),
     hooks: createRequestHooks(run, audience),
     logger: createLogger(run),

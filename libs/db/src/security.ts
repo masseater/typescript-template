@@ -1,4 +1,4 @@
-import { and, count, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { query } from "./database.ts";
@@ -145,8 +145,37 @@ const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(user
   return record ?? null;
 });
 
+const claimMailSlot = Effect.fn("claimMailSlot")(function* claimMailSlot(
+  identifier: string,
+  audience: Application,
+  until: Date,
+) {
+  const now = new Date();
+  yield* query((database) =>
+    database
+      .delete(verification)
+      .where(and(eq(verification.identifier, identifier), lte(verification.expiresAt, now))),
+  );
+  if (yield* hasVerificationAudience(identifier, audience)) {
+    return false;
+  }
+  yield* query((database) =>
+    database.insert(verification).values({
+      audience,
+      createdAt: now,
+      expiresAt: until,
+      id: crypto.randomUUID(),
+      identifier,
+      updatedAt: now,
+      value: "",
+    }),
+  );
+  return true;
+});
+
 export {
   SessionRevoked,
+  claimMailSlot,
   findPasskeyUser,
   findUser,
   findWikiReader,

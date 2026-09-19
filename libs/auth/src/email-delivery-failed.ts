@@ -1,7 +1,8 @@
 import { Schema } from "effect";
 
 class EmailDeliveryFailed extends Schema.TaggedError<EmailDeliveryFailed>()("EmailDeliveryFailed", {
-  reason: Schema.Literals(["origin_mismatch", "rejected", "unreachable"]),
+  cause: Schema.optionalKey(Schema.Defect()),
+  reason: Schema.Literals(["rejected", "unreachable"]),
 }) {}
 
 export { EmailDeliveryFailed };
