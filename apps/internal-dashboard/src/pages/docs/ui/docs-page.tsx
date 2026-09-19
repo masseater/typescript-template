@@ -2,12 +2,12 @@ import { notFound } from "@tanstack/react-router";
 import { useFumadocsLoader } from "fumadocs-core/source/client";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 
-import { docs } from "#shared/content/index.ts";
+import { docs, WIKI_DOCS_BASE_URL } from "#shared/content/index.ts";
 import { DocsContent } from "./docs-content.tsx";
 
 import type { ReactElement } from "react";
 
-const nav = { title: "Wiki", url: "/wiki" };
+const nav = { title: "Wiki", url: WIKI_DOCS_BASE_URL };
 
 type DocsLoaderData = Readonly<{
   pageTree: unknown;

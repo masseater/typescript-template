@@ -15,27 +15,27 @@ describe("health alerts", () => {
       {},
     );
     expect(decision.notifications).toStrictEqual([down]);
-    expect(decision.state).toStrictEqual({ user: false, wiki: true });
+    expect(decision.state).toStrictEqual({ "internal-dashboard": true, "service-member": false });
   });
 
   it("an application that stays down is not notified again", () => {
     expect.hasAssertions();
-    expect(decideHealthAlerts([down], { user: false }).notifications).toStrictEqual([]);
+    expect(decideHealthAlerts([down], { "service-member": false }).notifications).toStrictEqual([]);
   });
 
   it("recovery is notified so the operator learns the outage ended", () => {
     expect.hasAssertions();
-    const decision = decideHealthAlerts([healthy], { user: false });
+    const decision = decideHealthAlerts([healthy], { "service-member": false });
     expect(decision.notifications).toStrictEqual([healthy]);
-    expect(decision.state).toStrictEqual({ user: true });
+    expect(decision.state).toStrictEqual({ "service-member": true });
   });
 
   it("the message names every changed application and points at the log event", () => {
     expect.hasAssertions();
     expect(formatHealthMessage([down, { ...healthy, service: "internal-dashboard" }])).toBe(
       [
-        "- [停止] user (status_500)",
-        "- [復旧] wiki (release_abc)",
+        "- [停止] service-member (status_500)",
+        "- [復旧] internal-dashboard (release_abc)",
         "Workers Observability で health_monitor.checked のログを確認してください。",
       ].join("\n"),
     );

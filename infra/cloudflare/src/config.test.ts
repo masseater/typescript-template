@@ -48,7 +48,7 @@ it.effect(
     Effect.gen(function* program() {
       assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "service-admin"]), {
         operation: "plan",
-        stacks: ["admin"],
+        stacks: ["service-admin"],
       });
       assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "all"]), {
         operation: "plan",
