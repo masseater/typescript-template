@@ -1,0 +1,1 @@
+fix FSD: move chrome to shared; export loadWikiPage via pages/docs public API
