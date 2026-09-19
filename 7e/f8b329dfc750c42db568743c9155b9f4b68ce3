@@ -1,1 +1,6 @@
-fix react-doctor.test.ts import.meta.glob path to ./doctor.config.ts after config move so AI rules resolve in MQ/premerge
+Revision history for #585:
+
+rev 2 (content) 2026-09-19 12:52 UTC — fix react-doctor.test.ts import.meta.glob path to ./doctor.config.ts after config move so AI rules resolve in MQ/premerge
+rev 1 (initial) 2026-09-19 12:52 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":585,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"233abac87ee80397914ac2d481be9db476f525ab","timestamp_iso":"2026-09-19T12:52:49Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"233abac87ee80397914ac2d481be9db476f525ab","new_sha":"7ef8b329dfc750c42db568743c9155b9f4b68ce3","timestamp_iso":"2026-09-19T12:52:49Z","reason":"fix react-doctor.test.ts import.meta.glob path to ./doctor.config.ts after config move so AI rules resolve in MQ/premerge","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/233abac87ee80397914ac2d481be9db476f525ab...7ef8b329dfc750c42db568743c9155b9f4b68ce3"}]} -->
