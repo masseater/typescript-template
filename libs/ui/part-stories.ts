@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 
 import { parseSync } from "vite-plus";
 
-import { field } from "./dependencies.ts";
+import { field } from "./record-field.ts";
 
 interface A11yRelaxation {
   readonly file: string;
@@ -18,9 +18,7 @@ interface ExportedStory {
 
 const storySuffix = ".stories.tsx";
 
-const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/src/**/*.stories.tsx",
-);
+const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob("./src/**/*.stories.tsx");
 
 const storyName = (part: string): string => {
   return part.replace(/\.tsx$/u, storySuffix);
@@ -89,7 +87,7 @@ const fileRelaxations = (file: string): A11yRelaxation[] => {
 
 const a11yRelaxations = (): A11yRelaxation[] => {
   return Object.keys(storyFiles)
-    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
+    .map((key) => key.replace(/^\.\//u, "libs/ui/"))
     .toSorted()
     .flatMap((file) => fileRelaxations(file))
     .toSorted(
@@ -100,7 +98,7 @@ const a11yRelaxations = (): A11yRelaxation[] => {
     );
 };
 
-const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
+const partsManifest = new URL("./package.json", import.meta.url);
 
 const workerFile = "libs/ui/storybook/public/mockServiceWorker.js";
 

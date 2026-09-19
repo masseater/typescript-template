@@ -1,64 +1,43 @@
-import { execFile, spawn } from "node:child_process";
-import { buffer } from "node:stream/consumers";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { Effect, Schema } from "effect";
 
-interface StagedFile {
-  readonly content: string;
-  readonly filename: string;
-}
+import {
+  contentRules,
+  PREFIX_KEY,
+  privateFile,
+  wordPattern,
+  type DeploymentValue,
+  type PrefixScan,
+} from "./secrets.ts";
 
-interface IndexEntry {
+interface IndexHit {
   readonly filename: string;
-  readonly object: string;
-  readonly stage: string;
-}
-
-interface FramedBlob {
-  readonly content: string;
-  readonly end: number;
+  readonly rules: readonly string[];
 }
 
 const MAX_OUTPUT_BYTES = 33_554_432;
-const NEWLINE = 10;
-const NOT_FOUND = -1;
-const SIZE_FIELD = 2;
-const MERGED_STAGE = "0";
-const ENTRY_PATTERN = /^\d+ (?<object>[0-9a-f]+) (?<stage>\d+)\t(?<filename>[^]*)$/u;
-const LIST_INDEX = ["ls-files", "--cached", "--stage", "-z"] as const;
-const READ_BLOBS = ["cat-file", "--batch"] as const;
-
 const run = promisify(execFile);
 
-class StagedUnreadable extends Schema.TaggedError<StagedUnreadable>()("StagedUnreadable", {
+class IndexUnreadable extends Schema.TaggedError<IndexUnreadable>()("IndexUnreadable", {
   command: Schema.optional(Schema.String),
-  entry: Schema.optional(Schema.String),
   exitCode: Schema.optional(Schema.Number),
   files: Schema.optional(Schema.Array(Schema.String)),
-  object: Schema.optional(Schema.String),
-  reason: Schema.Literals([
-    "blob-unreadable",
-    "git-command-failed",
-    "index-entry-unreadable",
-    "unmerged-index",
-  ]),
+  reason: Schema.Literals(["git-command-failed", "unmerged-index"]),
 }) {
   public get report(): Readonly<Record<string, unknown>> {
     const fields: Readonly<Record<string, unknown>> = {
       command: this.command,
-      entry: this.entry,
       exitCode: this.exitCode,
       files: this.files,
-      object: this.object,
       reason: this.reason,
     };
-    const present = Object.entries(fields).filter(([, value]) => value !== undefined);
-    return Object.fromEntries(present);
+    return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
   }
 }
 
-const exitCode = (error: unknown): number | undefined => {
+const exitCodeOf = (error: unknown): number | undefined => {
   return typeof error === "object" &&
     error !== null &&
     "code" in error &&
@@ -67,111 +46,155 @@ const exitCode = (error: unknown): number | undefined => {
     : undefined;
 };
 
-const commandFailed = (args: readonly string[]): ((error: unknown) => StagedUnreadable) => {
-  return (error) =>
-    new StagedUnreadable({
-      command: args.join(" "),
-      exitCode: exitCode(error),
-      reason: "git-command-failed",
-    });
-};
-
-const listIndex = (root: string): Effect.Effect<string, StagedUnreadable> => {
-  return Effect.tryPromise({
-    catch: commandFailed(LIST_INDEX),
-    try: async () => {
-      const listing = await run("git", [...LIST_INDEX], {
-        cwd: root,
-        maxBuffer: MAX_OUTPUT_BYTES,
-      });
-      return listing.stdout;
-    },
-  });
-};
-
-const merged = (
-  entries: readonly IndexEntry[],
-): Effect.Effect<readonly IndexEntry[], StagedUnreadable> => {
-  const unmerged = entries.filter(({ stage }) => stage !== MERGED_STAGE);
-  const files = [...new Set(unmerged.map(({ filename }) => filename))];
-  return files.length > 0
-    ? Effect.fail(new StagedUnreadable({ files, reason: "unmerged-index" }))
-    : Effect.succeed(entries);
-};
-
-const parseEntry = (entry: string): Effect.Effect<IndexEntry, StagedUnreadable> => {
-  const groups = ENTRY_PATTERN.exec(entry)?.groups;
-  const filename = groups?.filename;
-  const object = groups?.object;
-  const stage = groups?.stage;
-  return filename === undefined || object === undefined || stage === undefined
-    ? Effect.fail(new StagedUnreadable({ entry, reason: "index-entry-unreadable" }))
-    : Effect.succeed({ filename, object, stage });
-};
-
-const indexEntries = (listing: string): Effect.Effect<readonly IndexEntry[], StagedUnreadable> => {
-  const listed = listing.split("\0").filter((entry) => entry !== "");
-  return Effect.forEach(listed, parseEntry).pipe(Effect.flatMap(merged));
-};
-
-const blobAt = (
-  output: Readonly<Buffer>,
-  offset: number,
-  object: string,
-): FramedBlob | undefined => {
-  const headerEnd = output.indexOf(NEWLINE, offset);
-  const header =
-    headerEnd === NOT_FOUND ? [] : output.toString("utf-8", offset, headerEnd).split(" ");
-  const size = Number(header[SIZE_FIELD]);
-  if (header[0] !== object || !Number.isInteger(size)) {
-    return undefined;
-  }
-  const start = headerEnd + 1;
-  return { content: output.toString("utf-8", start, start + size), end: start + size + 1 };
-};
-
-const blobContents = (
-  output: Readonly<Buffer>,
-  objects: readonly string[],
-): Effect.Effect<ReadonlyMap<string, string>, StagedUnreadable> => {
-  const framed = Effect.reduce(
-    objects,
-    () => ({ contents: new Map<string, string>(), offset: 0 }),
-    (state, object) => {
-      const blob = blobAt(output, state.offset, object);
-      return blob === undefined
-        ? Effect.fail(new StagedUnreadable({ object, reason: "blob-unreadable" }))
-        : Effect.succeed({ contents: state.contents.set(object, blob.content), offset: blob.end });
-    },
-  );
-  return Effect.map(framed, ({ contents }) => contents);
-};
-
-const readBlobs = (
+const gitOutput = (
   root: string,
-  objects: readonly string[],
-): Effect.Effect<ReadonlyMap<string, string>, StagedUnreadable> => {
-  const output = Effect.tryPromise({
-    catch: commandFailed(READ_BLOBS),
+  args: readonly string[],
+  emptyOnNoMatch: boolean,
+): Effect.Effect<string, IndexUnreadable> => {
+  return Effect.tryPromise({
+    catch: (error) =>
+      new IndexUnreadable({
+        command: args.join(" "),
+        exitCode: exitCodeOf(error),
+        reason: "git-command-failed",
+      }),
     try: async () => {
-      const child = spawn("git", [...READ_BLOBS], { cwd: root });
-      child.stdin.end(objects.map((object) => `${object}\n`).join(""));
-      return buffer(child.stdout);
+      try {
+        const listing = await run("git", [...args], {
+          cwd: root,
+          maxBuffer: MAX_OUTPUT_BYTES,
+        });
+        return listing.stdout;
+      } catch (error) {
+        if (emptyOnNoMatch && exitCodeOf(error) === 1) {
+          return "";
+        }
+        throw error;
+      }
     },
   });
-  return Effect.flatMap(output, (framed) => blobContents(framed, objects));
 };
 
-const stagedFiles = Effect.fn("stagedFiles")(function* stagedFiles(root: string) {
-  const entries = yield* Effect.flatMap(listIndex(root), indexEntries);
-  const contents = yield* readBlobs(root, [...new Set(entries.map(({ object }) => object))]);
-  return yield* Effect.forEach(entries, ({ filename, object }) => {
-    const content = contents.get(object);
-    return content === undefined
-      ? Effect.fail(new StagedUnreadable({ object, reason: "blob-unreadable" }))
-      : Effect.succeed({ content, filename });
+const zeroSeparated = (listing: string): string[] => {
+  return listing.split("\0").filter((entry) => entry !== "");
+};
+
+const listCachedFiles = (root: string): Effect.Effect<readonly string[], IndexUnreadable> => {
+  return Effect.map(gitOutput(root, ["ls-files", "--cached", "-z"], false), zeroSeparated);
+};
+
+const refuseUnmerged = (root: string): Effect.Effect<void, IndexUnreadable> => {
+  return Effect.flatMap(gitOutput(root, ["ls-files", "--unmerged", "-z"], false), (listing) => {
+    const files = [
+      ...new Set(zeroSeparated(listing).map((entry) => entry.split("\t").at(-1) ?? entry)),
+    ];
+    return files.length > 0
+      ? Effect.fail(new IndexUnreadable({ files, reason: "unmerged-index" }))
+      : Effect.void;
   });
+};
+
+const filesMatchingFixed = (
+  root: string,
+  value: string,
+): Effect.Effect<readonly string[], IndexUnreadable> => {
+  return Effect.map(
+    gitOutput(root, ["grep", "--cached", "-l", "-z", "-F", "-e", value], true),
+    zeroSeparated,
+  );
+};
+
+const filesMatchingPerl = (
+  root: string,
+  pattern: string,
+): Effect.Effect<readonly string[], IndexUnreadable> => {
+  return Effect.map(
+    gitOutput(root, ["grep", "--cached", "-l", "-z", "-P", "-e", pattern], true),
+    zeroSeparated,
+  );
+};
+
+const showCached = (root: string, filename: string): Effect.Effect<string, IndexUnreadable> => {
+  return gitOutput(root, ["show", `:${filename}`], false);
+};
+
+const prefixScanForIndex = Effect.fn("prefixScanForIndex")(function* prefixScanForIndex(
+  root: string,
+  environmentValues: readonly DeploymentValue[],
+) {
+  const prefix = environmentValues.find((entry) => entry.key === PREFIX_KEY)?.value;
+  if (prefix === undefined) {
+    return "word" as const satisfies PrefixScan;
+  }
+  const files = yield* filesMatchingFixed(root, prefix);
+  if (files.length === 0) {
+    return "word" as const satisfies PrefixScan;
+  }
+  const contents = yield* Effect.forEach(files, (filename) => showCached(root, filename));
+  return contents.some((content) => wordPattern(prefix).test(content))
+    ? ("separated" as const satisfies PrefixScan)
+    : ("word" as const satisfies PrefixScan);
 });
 
-export { blobContents, stagedFiles };
-export type { StagedFile };
+const indexSecretHits = Effect.fn("indexSecretHits")(function* indexSecretHits(
+  root: string,
+  environmentValues: readonly DeploymentValue[],
+) {
+  yield* refuseUnmerged(root);
+  const scan = yield* prefixScanForIndex(root, environmentValues);
+  const cached = yield* listCachedFiles(root);
+  const hits = new Map<string, string[]>();
+
+  const add = (filename: string, rule: string): void => {
+    const existing = hits.get(filename) ?? [];
+    if (!existing.includes(rule)) {
+      hits.set(filename, [...existing, rule]);
+    }
+  };
+
+  for (const filename of cached) {
+    if (privateFile(filename)) {
+      add(filename, "private-file");
+    }
+  }
+
+  for (const [rule, pattern] of Object.entries(contentRules)) {
+    const matched = yield* filesMatchingPerl(root, pattern.source);
+    for (const filename of matched) {
+      add(filename, rule);
+    }
+  }
+
+  for (const entry of environmentValues) {
+    if (entry.key === PREFIX_KEY) {
+      const candidates = yield* filesMatchingFixed(root, entry.value);
+      for (const filename of candidates) {
+        const content = yield* showCached(root, filename);
+        const pattern =
+          scan === "word"
+            ? wordPattern(entry.value)
+            : new RegExp(
+                `(?<![0-9A-Za-z_-])${entry.value.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}(?=[-/])`,
+                "u",
+              );
+        if (pattern.test(content)) {
+          add(filename, `deployment-value:${entry.key}`);
+        }
+      }
+      continue;
+    }
+    const matched = yield* filesMatchingFixed(root, entry.value);
+    for (const filename of matched) {
+      add(filename, `deployment-value:${entry.key}`);
+    }
+  }
+
+  return {
+    hits: [...hits.entries()]
+      .map(([filename, rules]) => ({ filename, rules: rules.toSorted() }))
+      .toSorted((left, right) => left.filename.localeCompare(right.filename)),
+    scan,
+  };
+});
+
+export { indexSecretHits };
