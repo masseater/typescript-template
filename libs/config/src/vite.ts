@@ -182,7 +182,8 @@ const appRun = {
     build: {
       command: "vp build",
       dependsOn: ["@repo/dev#setup"],
-      input: [...taskInput, ...withoutGenerated(".wrangler", "dist")],
+      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
+      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
     "check:dev": {
       command: "dev-start",
