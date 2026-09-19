@@ -10,16 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
-import { Route as SecurityRouteImport } from './routes/security'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known.$'
+import { Route as DashboardIndexRouteImport } from './routes/_dashboard/index'
+import { Route as DashboardAuditRouteImport } from './routes/_dashboard/audit'
+import { Route as DashboardFlagsRouteImport } from './routes/_dashboard/flags'
+import { Route as DashboardInquiriesRouteImport } from './routes/_dashboard/inquiries'
+import { Route as DashboardSecurityRouteImport } from './routes/_dashboard/security'
+import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/_dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsentRoute = ConsentRouteImport.update({
@@ -37,15 +47,40 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SecurityRoute = SecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
   id: '/.well-known/$',
   path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAuditRoute = DashboardAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardFlagsRoute = DashboardFlagsRouteImport.update({
+  id: '/flags',
+  path: '/flags',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardInquiriesRoute = DashboardInquiriesRouteImport.update({
+  id: '/inquiries',
+  path: '/inquiries',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSecurityRoute = DashboardSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardStaffRoute = DashboardStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
@@ -55,11 +90,16 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
+  '/': typeof DashboardIndexRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
-  '/security': typeof SecurityRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/audit': typeof DashboardAuditRoute
+  '/flags': typeof DashboardFlagsRoute
+  '/inquiries': typeof DashboardInquiriesRoute
+  '/security': typeof DashboardSecurityRoute
+  '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
 }
 export interface FileRoutesByTo {
@@ -67,29 +107,45 @@ export interface FileRoutesByTo {
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
-  '/security': typeof SecurityRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/audit': typeof DashboardAuditRoute
+  '/flags': typeof DashboardFlagsRoute
+  '/inquiries': typeof DashboardInquiriesRoute
+  '/security': typeof DashboardSecurityRoute
+  '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/$': typeof SplatRoute
+  '/_dashboard': typeof DashboardRouteWithChildren
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
-  '/security': typeof SecurityRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/_dashboard/audit': typeof DashboardAuditRoute
+  '/_dashboard/flags': typeof DashboardFlagsRoute
+  '/_dashboard/inquiries': typeof DashboardInquiriesRoute
+  '/_dashboard/security': typeof DashboardSecurityRoute
+  '/_dashboard/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/_dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/$'
+    | '/'
     | '/consent'
     | '/login'
     | '/mcp'
-    | '/security'
     | '/.well-known/$'
+    | '/audit'
+    | '/flags'
+    | '/inquiries'
+    | '/security'
+    | '/staff'
     | '/api/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,26 +153,37 @@ export interface FileRouteTypes {
     | '/consent'
     | '/login'
     | '/mcp'
-    | '/security'
     | '/.well-known/$'
+    | '/audit'
+    | '/flags'
+    | '/inquiries'
+    | '/security'
+    | '/staff'
     | '/api/$'
+    | '/'
   id:
     | '__root__'
     | '/$'
+    | '/_dashboard'
     | '/consent'
     | '/login'
     | '/mcp'
-    | '/security'
     | '/.well-known/$'
+    | '/_dashboard/audit'
+    | '/_dashboard/flags'
+    | '/_dashboard/inquiries'
+    | '/_dashboard/security'
+    | '/_dashboard/staff'
     | '/api/$'
+    | '/_dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   ConsentRoute: typeof ConsentRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
-  SecurityRoute: typeof SecurityRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
@@ -128,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_dashboard': {
+      id: '/_dashboard'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/consent': {
@@ -151,19 +225,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/security': {
-      id: '/security'
-      path: '/security'
-      fullPath: '/security'
-      preLoaderRoute: typeof SecurityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/.well-known/$': {
       id: '/.well-known/$'
       path: '/.well-known/$'
       fullPath: '/.well-known/$'
       preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_dashboard/': {
+      id: '/_dashboard/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/audit': {
+      id: '/_dashboard/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof DashboardAuditRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/flags': {
+      id: '/_dashboard/flags'
+      path: '/flags'
+      fullPath: '/flags'
+      preLoaderRoute: typeof DashboardFlagsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/inquiries': {
+      id: '/_dashboard/inquiries'
+      path: '/inquiries'
+      fullPath: '/inquiries'
+      preLoaderRoute: typeof DashboardInquiriesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/security': {
+      id: '/_dashboard/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof DashboardSecurityRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/staff': {
+      id: '/_dashboard/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof DashboardStaffRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/api/$': {
       id: '/api/$'
@@ -175,12 +284,34 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardRouteChildren {
+  DashboardAuditRoute: typeof DashboardAuditRoute
+  DashboardFlagsRoute: typeof DashboardFlagsRoute
+  DashboardInquiriesRoute: typeof DashboardInquiriesRoute
+  DashboardSecurityRoute: typeof DashboardSecurityRoute
+  DashboardStaffRoute: typeof DashboardStaffRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAuditRoute: DashboardAuditRoute,
+  DashboardFlagsRoute: DashboardFlagsRoute,
+  DashboardInquiriesRoute: DashboardInquiriesRoute,
+  DashboardSecurityRoute: DashboardSecurityRoute,
+  DashboardStaffRoute: DashboardStaffRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   ConsentRoute: ConsentRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
-  SecurityRoute: SecurityRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
 }
