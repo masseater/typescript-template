@@ -1,0 +1,1 @@
+merge-queue で TaggedError の error.type が tag 名になることを worker テストに反映
