@@ -2,7 +2,7 @@ import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { captureObservers } from "./browser-observers.ts";
 import { BrowserEventQueue } from "./browser-queue.ts";
-import { errorAttributes } from "./errors.ts";
+import { errorAttributes, wireErrorType } from "./errors.ts";
 import { maximumMeasurement } from "./events.ts";
 import {
   httpMethod,
@@ -166,7 +166,7 @@ function recordException(
   const attributes = errorAttributes(error);
   recorder.queue.enqueue({
     ...documentFields(recorder),
-    errorType: attributes["error.type"],
+    errorType: wireErrorType(attributes["error.type"]),
     kind: "exception",
     locations: attributes["error.locations"],
     name,
