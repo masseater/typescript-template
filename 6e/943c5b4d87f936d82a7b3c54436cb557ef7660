@@ -1,7 +1,1 @@
-Revision history for #667:
-
-rev 3 (content) 2026-09-19 18:53 UTC — StatusMessage 修正にリネーム後の旧識別子期待の揃えを畳み、premerge を一塊で通す
-rev 2 (content) 2026-09-19 18:06 UTC — export resolveWikiDocHref via shared/content public API so steiger no-public-api-sidestep passes
-rev 1 (initial) 2026-09-19 18:06 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":667,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"797f6ff9bb421faaf6e233d02773aea4066890f8","timestamp_iso":"2026-09-19T18:06:36Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"797f6ff9bb421faaf6e233d02773aea4066890f8","new_sha":"e2c2d93cf1376c41f4c456c8aa679e2b9f15f47f","timestamp_iso":"2026-09-19T18:06:36Z","reason":"export resolveWikiDocHref via shared/content public API so steiger no-public-api-sidestep passes","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/797f6ff9bb421faaf6e233d02773aea4066890f8...e2c2d93cf1376c41f4c456c8aa679e2b9f15f47f"},{"number":3,"change_type":"content","old_sha":"42c8e4a12bfce3dae71cfcde0462b5bb44404496","new_sha":"6e943c5b4d87f936d82a7b3c54436cb557ef7660","timestamp_iso":"2026-09-19T18:53:45Z","reason":"StatusMessage 修正にリネーム後の旧識別子期待の揃えを畳み、premerge を一塊で通す","replay_sha":"3cc0856c9fa788ee9880fc071aac727abb3ce062","compare_url":"https://github.com/masseater/typescript-template/compare/42c8e4a12bfce3dae71cfcde0462b5bb44404496...3cc0856c9fa788ee9880fc071aac727abb3ce062"}]} -->
+premerge で落ちる旧サービスラベル・role 期待を揃える
