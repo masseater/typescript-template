@@ -1,1 +1,7 @@
-rebase onto main after dequeue; resolve conflict and notes lease race
+Revision history for #556:
+
+rev 3 (rebase) 2026-09-19 11:47 UTC — rebase onto main after dequeue; resolve conflict and notes lease race
+rev 2 (rebase) 2026-09-19 09:44 UTC
+rev 1 (initial) 2026-09-19 09:44 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":556,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"7b23ae64573e3e1cc7345ea1bbdb4d791be6bd31","timestamp_iso":"2026-09-19T09:44:29Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"7b23ae64573e3e1cc7345ea1bbdb4d791be6bd31","new_sha":"d54190dfce34f2c9b518b6772a367759c7c9037e","timestamp_iso":"2026-09-19T09:44:29Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/7b23ae64573e3e1cc7345ea1bbdb4d791be6bd31...d54190dfce34f2c9b518b6772a367759c7c9037e"},{"number":3,"change_type":"rebase","old_sha":"d54190dfce34f2c9b518b6772a367759c7c9037e","new_sha":"5374b8c2c774333a7d6ae489c44566ab1cc62f10","timestamp_iso":"2026-09-19T11:47:45Z","reason":"rebase onto main after dequeue; resolve conflict and notes lease race","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/d54190dfce34f2c9b518b6772a367759c7c9037e...5374b8c2c774333a7d6ae489c44566ab1cc62f10"}]} -->
