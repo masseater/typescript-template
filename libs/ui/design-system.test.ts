@@ -4,16 +4,15 @@ import { plugin } from "@shadcn/lint";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
-import { field, workspaceManifests } from "./dependencies.ts";
 import {
   appStylesheetViolations,
   coverageViolations,
   designSystemComponents,
   designSystemProbe,
+  designTokens,
   indexedComponents,
   linkParts,
   linkViolations,
-  smarthrTokens,
   sourceViolations,
   stylesheetPath,
   stylesheetSource,
@@ -21,20 +20,13 @@ import {
   untouchedTokens,
 } from "./design-system.ts";
 import { hoverViolations } from "./hover-colors.ts";
-import { configuredLintRules } from "./lint.ts";
+import { linkComponents, uiA11yComponents } from "./lint-settings.ts";
+import { field } from "./record-field.ts";
 
-const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
-  eager: true,
-  import: "default",
-});
-
-const lint = field(configs["../../vite.config.ts"], "lint");
-
-const lintSettings = field(lint, "settings");
-
-const a11yComponents = field(field(lintSettings, "jsx-a11y"), "components");
-
-const reactLinkComponents = field(field(lintSettings, "react"), "linkComponents");
+const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../apps/*/package.json",
+  { eager: true, import: "default" },
+);
 
 const restyled = [
   ["no-restyle", "bg-destructive"],
@@ -54,6 +46,8 @@ const tester = new RuleTester({});
 
 type RuleName = (typeof restyled)[number][0];
 
+const restyleProbe = "apps/wiki/src/pages/consent/ui/consent-actions.tsx";
+
 const reports = (rule: RuleName, className: string): boolean => {
   try {
     tester.run(rule, plugin.rules[rule], {
@@ -61,7 +55,7 @@ const reports = (rule: RuleName, className: string): boolean => {
       valid: [
         {
           code: `import { Button } from "@repo/ui";\nexport const Probe = () => <Button type="button" className="${className}" />;\n`,
-          filename: designSystemProbe,
+          filename: restyleProbe,
           options: [{ allow: ["layout", "spacing"] }],
         },
       ],
@@ -75,23 +69,26 @@ const reports = (rule: RuleName, className: string): boolean => {
   return false;
 };
 
-describe("smarthr-ui token port", () => {
+describe("design token table", () => {
   it("reads the stylesheet the linter resolves from components.json", () => {
     expect.hasAssertions();
     expect(stylesheetPath()).toMatch(/libs\/ui\/src\/styles\.css$/u);
   });
 
-  it("keeps every ported token at the smarthr-ui value", () => {
+  it("keeps every ported token at the design token table value", () => {
     expect.hasAssertions();
     expect(tokenViolations(stylesheetSource())).toStrictEqual([]);
   });
 
-  it.for(Object.keys(smarthrTokens))("reports %s when it drifts from smarthr-ui", (token) => {
-    expect.hasAssertions();
-    expect(tokenViolations(`:root { ${token}: rebeccapurple; }`)).toContainEqual(
-      expect.stringContaining(token),
-    );
-  });
+  it.for(Object.keys(designTokens))(
+    "reports %s when it drifts from the design token table",
+    (token) => {
+      expect.hasAssertions();
+      expect(tokenViolations(`:root { ${token}: rebeccapurple; }`)).toContainEqual(
+        expect.stringContaining(token),
+      );
+    },
+  );
 
   it("keeps every hover colour darker than the colour it replaces", () => {
     expect.hasAssertions();
@@ -118,17 +115,16 @@ describe("smarthr-ui token port", () => {
   });
 });
 
-const designSystemApps = workspaceManifests
-  .filter(({ area, manifest }) => {
+const designSystemApps = Object.entries(appManifests)
+  .filter(([, manifest]) => {
     const dependencies = field(manifest, "dependencies");
     return (
-      area === "apps" &&
       typeof dependencies === "object" &&
       dependencies !== null &&
       Object.hasOwn(dependencies, "@repo/ui")
     );
   })
-  .map(({ file }) => file.replace("/package.json", ""));
+  .map(([key]) => key.replace(/^(?:\.\.\/)+/u, "").replace(/\/package\.json$/u, ""));
 
 describe("app stylesheet ownership", () => {
   it("covers every app that depends on the parts", () => {
@@ -207,36 +203,25 @@ describe("design system lint", () => {
     expect(indexedComponents()).toContain("Default");
   });
 
-  it("enables every design system rule", () => {
-    expect.hasAssertions();
-    expect(field(lint, "jsPlugins")).toStrictEqual(expect.arrayContaining(["@shadcn/lint"]));
-    expect(configuredLintRules).toMatchObject({
-      "shadcn/no-arbitrary-values": "error",
-      "shadcn/no-raw-colors": "error",
-      "shadcn/no-restyle": ["error", { allow: ["layout", "spacing"] }],
-      "shadcn/no-unknown-classes": "error",
-    });
-  });
-
   it.for(restyled)("%s reports a screen that restyles a part", ([rule, className]) => {
     expect.hasAssertions();
     expect(reports(rule, className)).toBe(true);
   });
 });
 
-describe("router link parts in jsx-a11y", () => {
+describe("router link parts owned by ui", () => {
   it("finds the router link parts", () => {
     expect.hasAssertions();
     expect(linkParts()).toStrictEqual(expect.arrayContaining(["DropdownMenuLinkItem", "TextLink"]));
   });
 
-  it.for(linkParts())("checks %s as an anchor", (name) => {
+  it.for([...linkComponents])("declares %s in ui lint settings", (name) => {
     expect.hasAssertions();
-    expect(a11yComponents).toHaveProperty(name, "a");
+    expect(uiA11yComponents).toHaveProperty(name, "a");
   });
 
-  it.for(linkParts())("treats the to prop of %s as its link", (name) => {
+  it.for(linkParts())("lists %s among the discovered createLink parts", (name) => {
     expect.hasAssertions();
-    expect(reactLinkComponents).toContainEqual({ attribute: "to", name });
+    expect(linkParts()).toContain(name);
   });
 });

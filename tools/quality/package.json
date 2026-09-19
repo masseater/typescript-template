@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@repo/dont-review-it": "workspace:*",
-    "@repo/lint-rule-authoring": "workspace:*"
+    "@repo/infra-cloudflare": "workspace:*",
+    "@repo/lint-rule-authoring": "workspace:*",
+    "@repo/ui": "workspace:*"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
@@ -17,6 +19,7 @@
     "@types/node": "catalog:",
     "dependency-cruiser": "catalog:",
     "effect": "catalog:",
+    "shell-quote": "1.10.0",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
