@@ -43,10 +43,13 @@ it.effect("keeps the pinned generation and the newest of the rest", () =>
   }).pipe(Effect.scoped),
 );
 
-it.effect("treats a parent directory that was never created as holding no generations", () =>
+it.effect("fails when the parent directory was never created rather than retaining nothing", () =>
   Effect.gen(function* program() {
     const root = yield* temporaryRoot;
-    assert.isUndefined(yield* retainGenerations(path.join(root, "absent"), "current", 1));
+    const failure = yield* retainGenerations(path.join(root, "absent"), "current", 1).pipe(
+      Effect.flip,
+    );
+    assert.strictEqual(failure.code, "generations_missing");
   }).pipe(Effect.scoped),
 );
 
