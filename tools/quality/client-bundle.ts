@@ -7,7 +7,7 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { markFailed, runCli } from "@repo/config/cli";
+import { causeRecord, markFailed, runCli } from "@repo/config/cli";
 import { serverOnlyMarkers } from "@repo/config/vite";
 import { Console, Effect } from "effect";
 import { build } from "vite-plus";
@@ -124,5 +124,5 @@ runCli(
       ).pipe(Effect.andThen(unexpected.length > 0 ? markFailed : Effect.void)),
     ),
   ),
-  { event: "quality.client_bundle_failed", ok: false },
+  (cause) => causeRecord("quality.client_bundle_failed", cause),
 );
