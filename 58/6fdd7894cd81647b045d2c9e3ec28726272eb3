@@ -1,0 +1,1 @@
+trim unused page public exports so knip --strict passes
