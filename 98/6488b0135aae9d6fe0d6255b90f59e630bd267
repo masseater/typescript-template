@@ -1,1 +1,1 @@
-Wire normalizeUsersSearch into route validateSearch so knip sees the exports as used (tests alone do not count).
+Route validateSearch uses normalizeUsersSearch so knip counts the exports; format index exports.
