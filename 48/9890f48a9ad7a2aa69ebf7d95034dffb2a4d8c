@@ -1,1 +1,6 @@
-drop unused exports that failed pre-push; keep single PR for shells+auth
+Revision history for #564:
+
+rev 2 (content) 2026-09-19 14:23 UTC — drop unused exports that failed pre-push; keep single PR for shells+auth
+rev 1 (initial) 2026-09-19 14:23 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":564,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"212799c22007e286876328d9afacc14f6762d4ef","timestamp_iso":"2026-09-19T14:23:16Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"212799c22007e286876328d9afacc14f6762d4ef","new_sha":"489890f48a9ad7a2aa69ebf7d95034dffb2a4d8c","timestamp_iso":"2026-09-19T14:23:16Z","reason":"drop unused exports that failed pre-push; keep single PR for shells+auth","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/212799c22007e286876328d9afacc14f6762d4ef...489890f48a9ad7a2aa69ebf7d95034dffb2a4d8c"}]} -->
