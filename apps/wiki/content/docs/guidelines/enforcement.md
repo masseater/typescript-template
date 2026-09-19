@@ -145,7 +145,7 @@ main に変更が入る経路は、ブランチを転送して PR を merge す�
 
 ## 機械だけが読み書きする成果物
 
-読み手も保守する側も機械である成果物がある。このリポジトリでは `pnpm-lock.yaml`、`.git/hooks/`、`node_modules/.cache/`、Alchemy の state がこれにあたる。
+読み手も保守する側も機械である成果物がある。このリポジトリでは `pnpm-lock.yaml`、`.vite-hooks/`、`node_modules/.cache/`、Alchemy の state がこれにあたる。
 
 - 置かれているパスだけを根拠に、機械向けの成果物として分類してはいけません。
 - 人も機械も読む文書である場合は、人間向けとして扱います。
