@@ -1,0 +1,1 @@
+#564 の admin/wiki シェルを rename 先へ載せ直し。rebase で落ちた pages/widgets/app-chrome を main から復元し、wiki-search-dialog も internal-dashboard に置く。
