@@ -1,0 +1,6 @@
+Revision history for #404:
+
+rev 2 (content) 2026-09-19 00:02 UTC
+rev 1 (initial) 2026-09-19 00:02 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":404,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"74c10acc3bb309c406bfe7f0aea7c613be1c09fd","timestamp_iso":"2026-09-19T00:02:02Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"74c10acc3bb309c406bfe7f0aea7c613be1c09fd","new_sha":"6486f7e8c97a17e49901ba83c8b7b5d6585636c3","timestamp_iso":"2026-09-19T00:02:02Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/74c10acc3bb309c406bfe7f0aea7c613be1c09fd...6486f7e8c97a17e49901ba83c8b7b5d6585636c3"}]} -->
