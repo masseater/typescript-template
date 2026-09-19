@@ -110,7 +110,7 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
   store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
-    Effect.catchCause(unreadableState),
+    Effect.catch(unreadableState),
   );
   const email = yield* emailVerdicts(access, config, store);
   const scripts = yield* workerNames(access).pipe(

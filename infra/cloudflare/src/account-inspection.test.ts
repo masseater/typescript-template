@@ -78,12 +78,9 @@ it.effect("reads the state store as the source of the names this deployment owns
         scripts: [...workers, STATE_STORE_SCRIPT_NAME],
       }),
     );
-    const unreadable = { unreadable: [STATE_STORE_SOURCE] };
-    const inspection = yield* inspectAccount(
-      access,
-      config,
-      Effect.fail("the state store cannot be read"),
-    );
+    const reason = "the state store cannot be read";
+    const unreadable = { unreadable: [STATE_STORE_SOURCE, reason] };
+    const inspection = yield* inspectAccount(access, config, Effect.fail(reason));
     assert.deepStrictEqual(inspection.workerNames, unreadable);
     assert.deepStrictEqual(inspection.workerDomains, unreadable);
     assert.deepStrictEqual(inspection.dnsRecords, unreadable);
@@ -100,13 +97,37 @@ it.effect("reports a database it cannot check ownership of as unreadable, not as
     yield* mockServer(
       ...accountHandlers({ databases: [{ name: `${config.prefix}-db`, uuid: databaseId }] }),
     );
-    const inspection = yield* inspectAccount(
+    const reason = "the state store cannot be read";
+    const inspection = yield* inspectAccount(access, config, Effect.fail(reason));
+    assert.deepStrictEqual(inspection.database, { unreadable: [STATE_STORE_SOURCE, reason] });
+    assert.include(blocked(inspection), "database");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("does not turn a state store defect into an unreadable verdict", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({}));
+    const outcome = yield* inspectAccount(
       access,
       config,
-      Effect.fail("the state store cannot be read"),
+      Effect.die("the state store code path is broken"),
+    ).pipe(Effect.exit);
+    assert.isTrue(outcome._tag === "Failure");
+    assert.isTrue(
+      outcome.cause.reasons.some(
+        (reason) =>
+          reason._tag === "Die" && reason.defect === "the state store code path is broken",
+      ),
     );
-    assert.deepStrictEqual(inspection.database, { unreadable: [STATE_STORE_SOURCE] });
-    assert.include(blocked(inspection), "database");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("does not turn an interruption into an unreadable verdict", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({}));
+    const outcome = yield* inspectAccount(access, config, Effect.interrupt).pipe(Effect.exit);
+    assert.isTrue(outcome._tag === "Failure");
+    assert.isTrue(outcome.cause.reasons.some((reason) => reason._tag === "Interrupt"));
   }).pipe(Effect.scoped),
 );
 

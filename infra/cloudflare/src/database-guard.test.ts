@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { mockServer } from "./account-fixture.ts";
+import { STATE_STORE_SOURCE } from "./account-read.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { describeCause, describeFailure } from "./secrets.ts";
 import { stackName } from "./stacks.ts";
@@ -84,12 +85,33 @@ it.effect("stops when the name resolves to a database this stage never created",
 it.effect("stops instead of guessing when the state store cannot be read", () =>
   Effect.gen(function* program() {
     yield* mockServer(takenName);
-    const outcome = yield* assertDatabaseUnclaimed(
+    const failure = yield* assertDatabaseUnclaimed(
       access,
       target,
       Effect.fail({ _tag: "StateStoreUnreachable" } as const),
+    ).pipe(Effect.flip);
+    assert.deepStrictEqual(describeFailure(failure, []), {
+      code: "account_read_unavailable",
+      keys: [STATE_STORE_SOURCE, "StateStoreUnreachable"],
+    });
+  }).pipe(Effect.scoped),
+);
+
+it.effect("does not treat a state store defect as an unreadable ownership check", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(takenName);
+    const outcome = yield* assertDatabaseUnclaimed(
+      access,
+      target,
+      Effect.die("the state store code path is broken"),
     ).pipe(Effect.exit);
     assert.isTrue(outcome._tag === "Failure");
+    assert.isTrue(
+      outcome.cause.reasons.some(
+        (reason) =>
+          reason._tag === "Die" && reason.defect === "the state store code path is broken",
+      ),
+    );
   }).pipe(Effect.scoped),
 );
 

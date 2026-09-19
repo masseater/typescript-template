@@ -90,7 +90,7 @@ const onboardingVerdict = Effect.fn("onboardingVerdict")(function* onboardingVer
     return "free" as const;
   }
   const recorded = yield* recordedSendingDomains(store, config.prefix, config.zoneId).pipe(
-    Effect.catchCause(unreadableState),
+    Effect.catch(unreadableState),
   );
   return readVerdict(recorded, (names) =>
     names.includes(domain) ? ("owned" as const) : ("taken" as const),
