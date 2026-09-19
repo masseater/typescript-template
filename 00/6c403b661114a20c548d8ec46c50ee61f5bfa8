@@ -1,0 +1,7 @@
+Revision history for #625:
+
+rev 3 (rebase) 2026-09-19 16:22 UTC — rebase onto main after #600 and intervening merges
+rev 2 (rebase) 2026-09-19 15:43 UTC — rebase onto main after #640 (merge queue batch size 5)
+rev 1 (initial) 2026-09-19 15:43 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":625,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"341a8c968e32537583197f8b380125848c8dcfb4","timestamp_iso":"2026-09-19T15:43:12Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"341a8c968e32537583197f8b380125848c8dcfb4","new_sha":"0dce9369ce7a91884adc25b19a66e6a501da7bef","timestamp_iso":"2026-09-19T15:43:12Z","reason":"rebase onto main after #640 (merge queue batch size 5)","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/341a8c968e32537583197f8b380125848c8dcfb4...0dce9369ce7a91884adc25b19a66e6a501da7bef"},{"number":3,"change_type":"rebase","old_sha":"0dce9369ce7a91884adc25b19a66e6a501da7bef","new_sha":"57cf60c1c0365f926dd7c01938ca1e823c432b2a","timestamp_iso":"2026-09-19T16:22:29Z","reason":"rebase onto main after #600 and intervening merges","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/0dce9369ce7a91884adc25b19a66e6a501da7bef...57cf60c1c0365f926dd7c01938ca1e823c432b2a"}]} -->
