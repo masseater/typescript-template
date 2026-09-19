@@ -2,7 +2,7 @@ import { maximumKeywordLength } from "@repo/runtime/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { maximumUsersPage } from "./users-pagination.ts";
-import { normalizeUsersSearch, userListQuery } from "./users-search.ts";
+import { InvalidUsersSearch, normalizeUsersSearch, userListQuery } from "./users-search.ts";
 
 const numericKeyword = 2026;
 
@@ -25,9 +25,9 @@ describe("users page search normalization", () => {
     expect(normalizeUsersSearch(JSON.parse('{"keyword":null}'))).toStrictEqual({ keyword: "null" });
   });
 
-  it("drops the conditions the API would refuse and keeps the rest", () => {
+  it("rejects a broken page or role instead of dropping them into an empty search", () => {
     expect.hasAssertions();
-    expect(
+    expect(() =>
       normalizeUsersSearch({
         extra: "x",
         keyword: "  bob  ",
@@ -35,14 +35,10 @@ describe("users page search normalization", () => {
         role: "owner",
         verified: "yes",
       }),
-    ).toStrictEqual({ keyword: "bob" });
-    expect(normalizeUsersSearch({ verified: 1 })).toStrictEqual({});
-  });
-
-  it("drops a keyword longer than the API accepts", () => {
-    expect.hasAssertions();
-    expect(normalizeUsersSearch({ keyword: "a".repeat(maximumKeywordLength + 1) })).toStrictEqual(
-      {},
+    ).toThrow(InvalidUsersSearch);
+    expect(() => normalizeUsersSearch({ verified: 1 })).toThrow(InvalidUsersSearch);
+    expect(() => normalizeUsersSearch({ keyword: "a".repeat(maximumKeywordLength + 1) })).toThrow(
+      InvalidUsersSearch,
     );
   });
 });
@@ -53,13 +49,13 @@ describe("users page paging in the URL", () => {
     expect(normalizeUsersSearch({ page: maximumUsersPage })).toStrictEqual({
       page: maximumUsersPage,
     });
-    expect(normalizeUsersSearch({ page: maximumUsersPage + 1 })).toStrictEqual({});
-    expect(normalizeUsersSearch({ page: 1e20 })).toStrictEqual({});
+    expect(() => normalizeUsersSearch({ page: maximumUsersPage + 1 })).toThrow(InvalidUsersSearch);
+    expect(() => normalizeUsersSearch({ page: 1e20 })).toThrow(InvalidUsersSearch);
   });
 
-  it("answers with no condition when the search is not a record", () => {
+  it("rejects a search that is not a record", () => {
     expect.hasAssertions();
-    expect(normalizeUsersSearch("not a record")).toStrictEqual({});
+    expect(() => normalizeUsersSearch("not a record")).toThrow(InvalidUsersSearch);
   });
 });
 
