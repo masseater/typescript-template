@@ -17,7 +17,7 @@ const signInFrom = Effect.fn("signInFrom")(function* signInFrom(
   email: string,
   network: Readonly<Record<string, string>>,
 ) {
-  const client = new BrowserClient((yield* Fixture).user, network);
+  const client = new BrowserClient((yield* Fixture)["service-member"], network);
   return (yield* signIn(client, email)).status;
 });
 
