@@ -19,12 +19,19 @@ export default defineConfig({
         command: "node src/cli.ts deploy",
         dependsOn: stackBuilds,
       },
+      "deploy:ordered": {
+        cache: false,
+        command: "node src/cli.ts deploy all",
+        dependsOn: stackBuilds,
+      },
+      "prepare:ci-env": { cache: false, command: "node src/prepare-ci-env.ts" },
       preview: {
         cache: false,
         command: "node src/cli.ts plan all",
         dependsOn: stackBuilds,
       },
       "verify:account": { cache: false, command: "node src/check-account.ts" },
+      "probe:origins": { cache: false, command: "node src/verify-origins.ts" },
       "verify:stacks": {
         command: "node src/check-stacks.ts",
         dependsOn: stackBuilds,
