@@ -1,1 +1,6 @@
-Export normalizeUsersSearch and InvalidUsersSearch so the unit tests and admin form can import them; user module previously only re-exported decodeUsersSearch.
+Revision history for #642:
+
+rev 2 (content) 2026-09-19 16:31 UTC — Export normalizeUsersSearch and InvalidUsersSearch so the unit tests and admin form can import them; user module previously only re-exported decodeUsersSearch.
+rev 1 (initial) 2026-09-19 16:31 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":642,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"586fdd7894cd81647b045d2c9e3ec28726272eb3","timestamp_iso":"2026-09-19T16:31:11Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"586fdd7894cd81647b045d2c9e3ec28726272eb3","new_sha":"ee35048831bad759c43cde1fdbb56eae6c1f6d7d","timestamp_iso":"2026-09-19T16:31:11Z","reason":"Export normalizeUsersSearch and InvalidUsersSearch so the unit tests and admin form can import them; user module previously only re-exported decodeUsersSearch.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/586fdd7894cd81647b045d2c9e3ec28726272eb3...ee35048831bad759c43cde1fdbb56eae6c1f6d7d"}]} -->
