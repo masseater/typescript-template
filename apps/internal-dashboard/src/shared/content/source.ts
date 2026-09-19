@@ -5,6 +5,7 @@ import { defineDocs } from "fumadocs-mdx/macro";
 import { SourceMapGenerator } from "source-map";
 
 import { processedMarkdown } from "./mermaid-markdown.ts";
+import { WIKI_DOCS_BASE_URL } from "./resolve-wiki-doc-href.ts";
 
 const docs = defineDocs({
   dir: "content/docs",
@@ -15,7 +16,7 @@ const docs = defineDocs({
 });
 
 const source = loader({
-  baseUrl: "/wiki",
+  baseUrl: WIKI_DOCS_BASE_URL,
   source: docs.toFumadocsSource(),
 });
 
