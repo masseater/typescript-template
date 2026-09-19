@@ -1,0 +1,23 @@
+---
+title: Wiki
+description: 社内向けの文書と、MCP で文書を配る入口
+---
+
+強い認証を済ませた社内の人が、開発と運用の文書を読む場所である。文書は MCP でも配る。集計や機能フラグなど、まだここに無い画面の仕様は [社内ダッシュボードのレイアウト](/pages/wiki-layout) が持つ。
+
+## 読み始める
+
+1. [このテンプレートは何か](/getting-started/what-is-this)
+2. [アプリの役割](/getting-started/applications)
+3. [LLM ガイドライン](/guidelines/principles)
+
+## 節
+
+| 節 | 中身 |
+| --- | --- |
+| [はじめに](/getting-started/what-is-this) | テンプレートの概要と、使い始めるときに書き換えるところ |
+| [LLM ガイドライン](/guidelines/principles) | 実装とレビューの判断基準 |
+| [ページ構成](/pages/wiki-layout) | 各アプリの画面の仕様 |
+| [計画](/plans/modernization) | 採用する技術と置き換えの計画 |
+
+認証の設定は [/security](/security) にある。
