@@ -1,7 +1,1 @@
-Revision history for #672:
-
-rev 3 (content) 2026-09-19 18:42 UTC — Re-export runStatement via auth-test-fixture so no-testing-entry-outside-tests allows the wiki MCP worker test helper.
-rev 2 (content) 2026-09-19 18:33 UTC — Route wiki MCP reader lookup and test DB helpers through @repo/auth so no-wiki-to-database stays green after the fold.
-rev 1 (initial) 2026-09-19 18:33 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":672,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"e239005d7fca94d4795e5c8343ec7b87ba7eff5d","timestamp_iso":"2026-09-19T18:33:02Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"e239005d7fca94d4795e5c8343ec7b87ba7eff5d","new_sha":"c99b308f2506677fcb3d681f19fbb488f1c506ae","timestamp_iso":"2026-09-19T18:33:02Z","reason":"Route wiki MCP reader lookup and test DB helpers through @repo/auth so no-wiki-to-database stays green after the fold.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/e239005d7fca94d4795e5c8343ec7b87ba7eff5d...c99b308f2506677fcb3d681f19fbb488f1c506ae"},{"number":3,"change_type":"content","old_sha":"c99b308f2506677fcb3d681f19fbb488f1c506ae","new_sha":"78a6323bd8ed2aa3f02d7b726f3aad598f52860d","timestamp_iso":"2026-09-19T18:42:51Z","reason":"Re-export runStatement via auth-test-fixture so no-testing-entry-outside-tests allows the wiki MCP worker test helper.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/c99b308f2506677fcb3d681f19fbb488f1c506ae...78a6323bd8ed2aa3f02d7b726f3aad598f52860d"}]} -->
+Drop unused auth oauth-provider and internal-dashboard vitest-plugin so knip --strict stays green after the MCP fold.
