@@ -1,5 +1,5 @@
 export const routes = {
-  "/": "home",
+  "/": "overview",
   "/*": "page",
   "/.well-known/*": "oauth-discovery",
   "/api/auth/*": "auth",
@@ -7,8 +7,12 @@ export const routes = {
   "/api/search": "search",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
+  "/audit": "audit",
   "/consent": "consent",
+  "/flags": "flags",
+  "/inquiries": "inquiries",
   "/login": "login",
   "/mcp": "mcp",
   "/security": "security",
+  "/staff": "staff",
 } as const;
