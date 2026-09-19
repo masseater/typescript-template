@@ -30,7 +30,13 @@ export default defineConfig({
     unstubGlobals: true,
   },
   pack: {
-    entry: ["src/cli.ts", "src/index.ts", "src/plugin.ts", "src/vitest/standard-io-test.ts"],
+    entry: [
+      "src/cli.ts",
+      "src/canonical-literal-types/run-as-task.ts",
+      "src/index.ts",
+      "src/plugin.ts",
+      "src/vitest/standard-io-test.ts",
+    ],
     external: [/^vite-plus/],
     dts: { generator: "tsgo" },
   },
