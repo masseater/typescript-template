@@ -30,4 +30,4 @@ const privateDeploymentKeys: readonly string[] = [
   ...optionalDeploymentKeys,
 ];
 
-export { deploymentKeys, privateDeploymentKeys };
+export { deploymentKeys, optionalDeploymentKeys, privateDeploymentKeys };

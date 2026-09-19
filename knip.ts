@@ -99,6 +99,8 @@ const scripts = {
     "src/check-account.ts!",
     "src/bootstrap-state.ts!",
     "src/database-command.ts!",
+    "src/prepare-ci-env.ts!",
+    "src/verify-origins.ts!",
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
