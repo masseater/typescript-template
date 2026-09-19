@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { errorAttributes, errorFingerprint } from "./errors.ts";
+import { errorAttributes, errorFingerprint, fingerprintIdentity } from "./errors.ts";
 
 const deepFrames = 6;
 const fingerprintPattern = /^[0-9a-f]{8}$/u;
@@ -26,16 +26,27 @@ describe("error attributes", () => {
     expect(JSON.stringify(attributes)).not.toMatch(/private|secret|Users/u);
   });
 
-  it("does not serialize thrown objects or custom error names", () => {
+  it("does not serialize thrown objects or unsafe custom error names", () => {
     expect.hasAssertions();
     expect(errorAttributes({ password: "secret" })).toStrictEqual({
-      "error.fingerprint": errorFingerprint("Error", ""),
+      "error.fingerprint": errorFingerprint(fingerprintIdentity({ password: "secret" }), ""),
       "error.locations": "",
-      "error.type": "Error",
     });
     const error = new Error("secret");
     error.name = "private@example.test";
-    expect(errorAttributes(error)["error.type"]).toBe("Error");
+    error.stack = "private@example.test";
+    expect(errorAttributes(error)).toStrictEqual({
+      "error.fingerprint": errorFingerprint("private@example.test", ""),
+      "error.locations": "",
+    });
+  });
+
+  it("reports a validated custom error name without collapsing it to Error", () => {
+    expect.hasAssertions();
+    const error = new Error("secret");
+    error.name = "DatabaseTimeout";
+    error.stack = "DatabaseTimeout";
+    expect(errorAttributes(error)["error.type"]).toBe("DatabaseTimeout");
   });
 });
 
@@ -58,5 +69,23 @@ describe("error fingerprints", () => {
     moved.stack = "TypeError\n at a.js:2:1";
     expect(fingerprintOf(moved)).not.toBe(fingerprintOf(first));
     expect(fingerprintOf(new RangeError("range"))).not.toBe(fingerprintOf(new TypeError("type")));
+  });
+
+  it("keeps unknown throwables on distinct fingerprints", () => {
+    expect.hasAssertions();
+    const plain = new Error("plain");
+    plain.stack = "Error";
+    const custom = new Error("custom");
+    custom.name = "DatabaseTimeout";
+    custom.stack = "DatabaseTimeout";
+    const unsafe = new Error("unsafe");
+    unsafe.name = "private@example.test";
+    unsafe.stack = "private@example.test";
+    expect(fingerprintOf({ password: "secret" })).not.toBe(fingerprintOf("boom"));
+    expect(fingerprintOf("boom")).not.toBe(fingerprintOf(42));
+    expect(fingerprintOf(plain)).not.toBe(fingerprintOf({}));
+    expect(fingerprintOf(custom)).not.toBe(fingerprintOf(plain));
+    expect(fingerprintOf(unsafe)).not.toBe(fingerprintOf(plain));
+    expect(fingerprintOf(unsafe)).not.toBe(fingerprintOf(custom));
   });
 });
