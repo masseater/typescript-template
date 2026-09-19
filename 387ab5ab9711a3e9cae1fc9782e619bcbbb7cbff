@@ -1,0 +1,7 @@
+Revision history for #510:
+
+rev 3 (content) 2026-09-19 04:41 UTC — knip: 退役した利用側ヘルパーを削除し、run-as-task を package bin から起動する
+rev 2 (content) 2026-09-19 04:27 UTC — knip: isDependencySource を非 export に（未使用 export）
+rev 1 (initial) 2026-09-19 04:27 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":510,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"c490849400b742c699acc6cf37c03159a5bb68f1","timestamp_iso":"2026-09-19T04:27:40Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"c490849400b742c699acc6cf37c03159a5bb68f1","new_sha":"f03d5a4ce1b8889e7c83ff17fa6663930ef3aa7b","timestamp_iso":"2026-09-19T04:27:40Z","reason":"knip: isDependencySource を非 export に（未使用 export）","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/c490849400b742c699acc6cf37c03159a5bb68f1...f03d5a4ce1b8889e7c83ff17fa6663930ef3aa7b"},{"number":3,"change_type":"content","old_sha":"f03d5a4ce1b8889e7c83ff17fa6663930ef3aa7b","new_sha":"cb923718db5c2b61772c89ea92610cdb45a632c2","timestamp_iso":"2026-09-19T04:41:09Z","reason":"knip: 退役した利用側ヘルパーを削除し、run-as-task を package bin から起動する","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/f03d5a4ce1b8889e7c83ff17fa6663930ef3aa7b...cb923718db5c2b61772c89ea92610cdb45a632c2"}]} -->
