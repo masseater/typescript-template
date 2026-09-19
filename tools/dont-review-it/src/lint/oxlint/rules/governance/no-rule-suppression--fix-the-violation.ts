@@ -1,6 +1,6 @@
 import { dirname, resolve } from "node:path";
 
-import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
+import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
 import { uniq } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";

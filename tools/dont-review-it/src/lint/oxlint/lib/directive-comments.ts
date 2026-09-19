@@ -1,4 +1,4 @@
-import { firstToken } from "@repo/lint-rule-authoring";
+import { firstToken } from "@repo/dont-review-it/lint-rule-authoring";
 
 import type { Comment } from "@oxlint/plugins";
 
