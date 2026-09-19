@@ -1,1 +1,1 @@
-emptyState fixtures keep stack paths present so InvalidStatePath does not mask database/trace guards
+InvalidStatePath callers: empty fixture stacks so ownership reads do not hit missing paths
