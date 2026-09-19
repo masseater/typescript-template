@@ -95,7 +95,7 @@ const unclassifiedRules = Effect.fn("unclassifiedRules")(function* unclassifiedR
 
 const inspect = Effect.fn("inspect")(function* inspect() {
   const [{ failed, stderr, stdout }, listed] = yield* Effect.all(
-    [scan(["--json"]), scan(["rules", "list", "--json"])],
+    [scan(["tools/quality", "--json"]), scan(["rules", "list", "--json", "-c", "tools/quality"])],
     { concurrency: "unbounded" },
   );
   if (failed && stderr !== "") {
