@@ -17,7 +17,7 @@ export default defineConfig({
       deploy: {
         cache: false,
         command: "node src/cli.ts deploy",
-        dependsOn: stackBuilds,
+        dependsOn: [...stackBuilds, "prerelease", "typescript-template#prerelease"],
       },
       preview: {
         cache: false,
@@ -30,7 +30,13 @@ export default defineConfig({
         dependsOn: stackBuilds,
         input: [...taskInput],
       },
-      ...lifecycle({ precommit: [], premerge: ["verify:stacks"], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: ["verify:stacks"],
+        prerelease: ["verify:account"],
+      }),
     },
   },
 });

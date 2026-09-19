@@ -6,7 +6,13 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       load: { cache: false, command: "node src/cli.ts" },
-      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: [],
+        prerelease: [],
+      }),
     },
   },
   test: {

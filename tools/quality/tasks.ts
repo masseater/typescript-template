@@ -120,7 +120,7 @@ function expanded(entries: readonly string[]): string[] {
 }
 
 function uncachedGateTasks(): string[] {
-  return expanded(configuredDirectories.map((directory) => `${directory}#premerge`))
+  return expanded(configuredDirectories.map((directory) => `${directory}#prerelease`))
     .filter((entry) => {
       const [directory = "", name = ""] = entry.split("#");
       const task = workspaceTasks[directory]?.[name];
