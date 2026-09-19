@@ -1,6 +1,7 @@
 import { defineConfig } from "react-doctor/api";
 
 export default defineConfig({
+  rootDir: "../..",
   categories: {
     Accessibility: "error",
     Bugs: "error",

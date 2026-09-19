@@ -9,7 +9,6 @@ const loadCommands = ["src/cli.ts!"];
 
 const workspaces = {
   ".": {
-    entry: ["doctor.config.ts"],
     ignoreDependencies: [
       "@effect/tsgo",
       "@effect/language-service",
@@ -22,7 +21,7 @@ const workspaces = {
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
   },
   "tools/quality": {
-    entry: ["dependency-cruiser.ts"],
+    entry: ["dependency-cruiser.ts", "doctor.config.ts"],
     project: ["**/*.{ts,mjs}"],
   },
   "infra/error-monitor": {
