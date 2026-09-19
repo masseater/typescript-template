@@ -1,0 +1,1 @@
+Also fix StatusMessage callers and tools/dev Effect registry so pre-push and merge-queue premerge can land.
