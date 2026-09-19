@@ -1,0 +1,1 @@
+drop doctor.config supplyChain override — workspace configs may only use schema/ignore (react-doctor.test)
