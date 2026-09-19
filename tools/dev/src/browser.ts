@@ -3,8 +3,8 @@ import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
+import { exitWith, markFailed } from "@repo/cli";
 import { applicationReadyPaths } from "@repo/config";
-import { exitWith, markFailed } from "@repo/config/cli";
 import { Effect } from "effect";
 
 import { failure } from "./failure.ts";

@@ -1,8 +1,8 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
+import { runCli } from "@repo/cli";
 import { applicationOrigins } from "@repo/config";
-import { runCli } from "@repo/config/cli";
 import { receiverOrigin } from "@repo/local";
 import { Console, Effect, Schema } from "effect";
 
