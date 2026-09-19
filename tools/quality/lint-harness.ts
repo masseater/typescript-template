@@ -12,10 +12,12 @@ const ruleNames = [
   "example-values",
   "git-environment",
   "layers",
+  "logs",
   "no-internal-mocks",
   "no-manual-memoization",
   "process-boundary",
   "retired-imports",
+  "span-mutation",
   "test-import-graph",
   "worker-fetch",
 ] as const;

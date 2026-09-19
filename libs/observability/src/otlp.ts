@@ -7,8 +7,8 @@ import {
   OtlpTracer,
 } from "effect/unstable/observability";
 
-import { annotateLogs } from "./annotations.ts";
 import { httpStatus } from "./http-status.ts";
+import { logAt } from "./severity.ts";
 import { redactedLogger } from "./structured-logs.ts";
 
 import type { HttpClientError, HttpClientResponse } from "effect/unstable/http";
@@ -36,14 +36,14 @@ function reportRejection(
   response: Readonly<Pick<HttpClientResponse.HttpClientResponse, "status">>,
 ): Effect.Effect<void> {
   return response.status >= httpStatus.badRequest
-    ? Effect.logWarning("otlp.export_failed").pipe(annotateLogs({ "otlp.status": response.status }))
+    ? logAt("Warn", "otlp.export_failed", { "otlp.status": response.status })
     : Effect.void;
 }
 
 function reportFailure(
   error: Readonly<Pick<HttpClientError.HttpClientError, "_tag">>,
 ): Effect.Effect<void> {
-  return Effect.logWarning("otlp.export_failed").pipe(annotateLogs({ "otlp.error": error._tag }));
+  return logAt("Warn", "otlp.export_failed", { "otlp.error": error._tag });
 }
 
 const reportedHttpClient = Layer.effect(
