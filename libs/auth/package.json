@@ -4,7 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mcp": "./src/mcp.ts"
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {

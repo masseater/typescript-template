@@ -1,9 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { runStatement } from "@repo/db/testing";
-import { httpStatus } from "@repo/observability/http-status";
-import { Effect } from "effect";
-
 import {
+  BrowserClient,
   Fixture,
   HTTP_FORBIDDEN,
   HTTP_OK,
@@ -15,8 +12,11 @@ import {
   signIn,
   signInAs,
   withAuth,
-} from "./auth-test-fixture.ts";
-import { BrowserClient } from "./browser-client.ts";
+} from "@repo/auth/testing";
+import { runStatement } from "@repo/db/testing";
+import { httpStatus } from "@repo/observability/http-status";
+import { Effect } from "effect";
+
 import {
   exchangeCode,
   grantAuthorization,

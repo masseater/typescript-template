@@ -33,7 +33,6 @@ const workspaces = {
       "!src/auth-test-fixture.ts!",
       "!src/browser-client.ts!",
       "!src/mail-fixture.ts!",
-      "!src/wiki-oauth-fixture.ts!",
     ],
   },
   "libs/monitor": {

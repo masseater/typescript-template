@@ -1,13 +1,12 @@
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
+import { Auth } from "@repo/auth";
 import { findWikiReader } from "@repo/db/security";
 import { APIError } from "better-auth/api";
 import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
 import { APIError as ChallengeError } from "better-call";
 import { Effect, Option, Schema } from "effect";
 
-import { Auth } from "./auth.ts";
-
-import type { BetterAuthInstance } from "./create-auth.ts";
+import type { BetterAuthInstance } from "@repo/auth";
 
 type TokenClaims = Awaited<ReturnType<typeof verifyJwsAccessToken>>;
 
