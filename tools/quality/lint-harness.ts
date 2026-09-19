@@ -1,3 +1,5 @@
+import { AssertionError } from "node:assert";
+
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 
 import plugin from "./plugin.ts";
@@ -14,8 +16,6 @@ RuleTester.describe = runImmediately;
 RuleTester.it = runImmediately;
 const tester = new RuleTester({ cwd: "/project" });
 
-const errorCountPattern = /^Should have no errors but had (?<count>\d+)/u;
-
 const reportCount = (
   ruleName: RuleName,
   probe: { readonly code: string; readonly filename: string },
@@ -28,12 +28,10 @@ const reportCount = (
     tester.run(ruleName, rule, { invalid: [], valid: [probe] });
     return 0;
   } catch (caught) {
-    const reportedCount =
-      caught instanceof Error ? errorCountPattern.exec(caught.message)?.groups?.count : undefined;
-    if (reportedCount === undefined) {
-      throw caught;
+    if (caught instanceof AssertionError && typeof caught.actual === "number") {
+      return caught.actual;
     }
-    return Number(reportedCount);
+    throw caught;
   }
 };
 
