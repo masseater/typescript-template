@@ -19,7 +19,13 @@ export default defineConfig({
       status: { cache: false, command: "node src/cli.ts status" },
       stop: { cache: false, command: "node src/cli.ts stop" },
       storybook: { cache: false, command: "node src/cli.ts storybook" },
-      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: [],
+        prerelease: [],
+      }),
     },
   },
 });

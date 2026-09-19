@@ -13,7 +13,13 @@ export default defineConfig({
       },
       "db:bootstrap:local": { cache: false, command: "node src/bootstrap-local.ts" },
       "db:migrate:local": { cache: false, command: "node src/migrate-local.ts" },
-      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect", "check"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: ["check"],
+        premerge: [],
+        prerelease: [],
+      }),
     },
   },
 });

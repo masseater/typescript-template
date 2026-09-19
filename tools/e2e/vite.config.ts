@@ -17,7 +17,13 @@ export default defineConfig({
         command: "vp test run",
         dependsOn: ["@repo/dev#setup", ...applicationChecks],
       },
-      ...lifecycle({ precommit: [], premerge: ["test:e2e"], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: ["test:e2e"],
+        prerelease: [],
+      }),
     },
   },
   test: {

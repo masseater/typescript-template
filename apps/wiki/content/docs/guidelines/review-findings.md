@@ -7,7 +7,7 @@ description: 指摘を 2 つの問いに掛けて扱いを 1 つに決め、修�
 
 決める権限を持つのはオーナー 1 人です。エージェントに正しさが判定できない指摘ではなく、判定はできても決める資格が無い指摘があります。
 
-統合は必ず Mergify の merge queue を通るマージコミットになり、その時点で `.github/workflows/check.yml` の検査が走る。機械が止められるものは分類を待たずに止まっているので、ここで決めるのは、機械が黙って通した範囲を main へ入れてよいかだけです。機械が黙って通す範囲がどこまでかは、`.github/workflows/check.yml` が起動する各 workspace の `premerge` が、`vite.config.ts` で何に依存しているかで決まります。
+統合は必ず Mergify の merge queue を通るマージコミットになり、その時点で `.github/workflows/check.yml` の `premerge` が走る。機械が止められるものは分類を待たずに止まっているので、ここで決めるのは、機械が黙って通した範囲を main へ入れてよいかだけです。機械が黙って通す範囲がどこまでかは、各 workspace の `premerge` が `vite.config.ts` で何に依存しているかで決まります。出荷前の範囲は `prerelease` が持ちます。
 
 ## 指摘に当てる 2 つの問い
 
@@ -137,6 +137,6 @@ description: 指摘を 2 つの問いに掛けて扱いを 1 つに決め、修�
 
 ## 機械が黙って通す側
 
-このリポジトリで機械が拾うのは、各 workspace の `vite.config.ts` が `precommit`・`prepush`・`premerge` に依存させたタスクが見るものと、`alchemy plan` が見る宣言と実体のずれです。
+このリポジトリで機械が拾うのは、各 workspace の `vite.config.ts` が `precommit`・`prepush`・`prepr`・`premerge`・`prerelease` に依存させたタスクが見るものと、`alchemy plan` が見る宣言と実体のずれです。
 
 残りは人が見る側にある。統合後の木で効果を失った変更も、テストの不在も、探索が完了したかどうかも、起動の条件から外れて走らなかった検査もそこに入る。

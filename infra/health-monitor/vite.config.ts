@@ -18,7 +18,13 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       build: { command: "vp pack", input: [...taskInput] },
-      ...lifecycle({ precommit: [], premerge: ["build"], prepush: ["check:effect"] }),
+      ...lifecycle({
+        precommit: [],
+        prepush: ["check:effect"],
+        prepr: [],
+        premerge: ["build"],
+        prerelease: [],
+      }),
     },
   },
 });
