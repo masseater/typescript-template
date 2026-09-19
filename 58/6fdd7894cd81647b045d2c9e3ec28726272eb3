@@ -1,1 +1,1 @@
-trim unused page public exports so knip --strict passes
+Export normalizeUsersSearch and InvalidUsersSearch so the unit tests and admin form can import them; user module previously only re-exported decodeUsersSearch.
