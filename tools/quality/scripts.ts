@@ -77,23 +77,38 @@ function binaryName(word: string): string {
   return word.replace(/^.*\//u, "").replace(/\.cmd$/u, "");
 }
 
-function callsPackageManager(tokens: readonly string[]): boolean {
-  const command = tokens.find(
+function leadingCommand(tokens: readonly string[]): number {
+  return tokens.findIndex(
     (word) => !launchers.has(word) && !/^[A-Za-z_][A-Za-z0-9_]*=/u.test(word),
   );
-  if (command === undefined) {
-    return false;
-  }
-  return packageManagers.has(binaryName(command));
+}
+
+function callsPackageManager(tokens: readonly string[]): boolean {
+  const index = leadingCommand(tokens);
+  return index !== -1 && packageManagers.has(binaryName(tokens[index] ?? ""));
 }
 
 function callsDestructiveBinary(tokens: readonly string[]): boolean {
   return tokens.some((word) => destructiveBinaries.has(binaryName(word)));
 }
 
-function commandViolations(name: string, command: string): string[] {
+function runsFileWithNode(tokens: readonly string[]): boolean {
+  const index = leadingCommand(tokens);
+  return (
+    index !== -1 &&
+    binaryName(tokens[index] ?? "") === "node" &&
+    tokens.slice(index + 1).some((word) => !word.startsWith("-"))
+  );
+}
+
+function commandViolations(name: string, command: string, scripted: boolean): string[] {
   const segments = words(command);
   return [
+    ...(scripted && segments.some((tokens) => runsFileWithNode(tokens))
+      ? [
+          `${name}: node でファイルを直接実行せず、vite.config.ts の run.tasks に置いて vp run で実行してください: ${command}`,
+        ]
+      : []),
     ...(segments.some((tokens) => callsPackageManager(tokens))
       ? [
           `${name}: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
@@ -119,7 +134,7 @@ function scriptViolations(manifest: unknown): string[] {
     if (typeof command !== "string") {
       throw new TypeError(`Script ${name} must be a string`);
     }
-    return commandViolations(name, command);
+    return commandViolations(name, command, true);
   });
 }
 
@@ -129,7 +144,7 @@ type Task = Command | { readonly command: Command };
 function taskViolations(tasks: Readonly<Record<string, Task>>): string[] {
   return Object.entries(tasks).flatMap(([name, task]: readonly [string, Task]) => {
     const command = typeof task === "object" && "command" in task ? task.command : task;
-    return [command].flat().flatMap((entry: string) => commandViolations(name, entry));
+    return [command].flat().flatMap((entry: string) => commandViolations(name, entry, false));
   });
 }
 

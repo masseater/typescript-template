@@ -18,6 +18,7 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       build: { command: "vp pack", input: [...taskInput] },
+      inspect: { cache: false, command: "node src/inspect.ts" },
       ...lifecycle({ precommit: [], premerge: ["build"], prepush: ["check:effect"] }),
     },
   },

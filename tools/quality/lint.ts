@@ -17,7 +17,6 @@ const awaitingPresetPackages = [
   "libs/auth/**",
   "libs/config/**",
   "libs/db/**",
-  "libs/dev-boundary/**",
   "libs/interview/**",
   "libs/monitor/**",
   "libs/observability/**",
@@ -57,7 +56,7 @@ const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages],
   jsPlugins: [
-    "./tools/quality/plugin.ts",
+    { name: "project", specifier: "@repo/quality/plugin" },
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
     "@shadcn/lint",
   ],
