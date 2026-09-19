@@ -30,6 +30,7 @@ const sharedBindings = {
   }),
   EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
   EMAIL_FROM: settings.mailFrom,
+  OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
 const adminBindings: AppBindings<"admin"> = sharedBindings;

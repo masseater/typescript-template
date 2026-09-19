@@ -1,0 +1,47 @@
+import { sendContactEmail } from "@repo/auth";
+import { consumeRateLimit } from "@repo/db";
+import { httpStatus } from "@repo/observability";
+import { Effect } from "effect";
+
+import { unavailable } from "./account.ts";
+import { ContactAccepted, ContactSubmission } from "./contracts.ts";
+import { createApi, readJsonBody } from "./http.ts";
+import { OpsMail } from "./ops-mail.ts";
+
+import type { ApiRoutes } from "./http.ts";
+import type { AppServices } from "./index.ts";
+
+const contactRateLimitMax = 5;
+const contactRateLimitWindowMilliseconds = 60 * 60 * 1000;
+const contactRateLimitPrefix = "contact:";
+
+const failures = {
+  ...unavailable,
+  EmailDeliveryFailed: "unexpected" as const,
+  RateLimitExceeded: {
+    message: "送信回数の上限に達しました。しばらく待ってから再度お試しください。",
+    status: httpStatus.tooManyRequests,
+  },
+};
+
+function clientAddress(headers: Headers): string {
+  return headers.get("cf-connecting-ip") ?? "anonymous";
+}
+
+const submitContact = Effect.fn("contact.submit")(function* submitContact(request: Request) {
+  const submission = yield* readJsonBody(ContactSubmission, request);
+  yield* consumeRateLimit(
+    `${contactRateLimitPrefix}${clientAddress(request.headers)}`,
+    contactRateLimitMax,
+    contactRateLimitWindowMilliseconds,
+  );
+  const mail = yield* OpsMail;
+  yield* sendContactEmail(mail, mail.OPS_EMAIL, submission);
+  return { ok: true as const };
+});
+
+function contactApi(api: ApiRoutes<AppServices>) {
+  return createApi("").post("/contact", api.route(ContactAccepted, submitContact, failures));
+}
+
+export { contactApi, contactRateLimitMax, contactRateLimitWindowMilliseconds };

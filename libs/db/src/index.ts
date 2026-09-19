@@ -48,4 +48,5 @@ export { schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export { getMember, listMembers } from "./members.ts";
 export type { UserRecord } from "./identity-schema.ts";
+export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
 export { checkDatabase, getProfile, updateProfile };

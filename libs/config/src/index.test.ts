@@ -8,6 +8,7 @@ const local = {
   AUTH_SECRET: "test-environment-secret-not-for-any-deployment",
   EMAIL_FROM: "sender@example.test",
   MAILPIT_URL: "http://127.0.0.1:8025",
+  OPS_EMAIL: "ops@example.test",
 };
 
 function reason(
