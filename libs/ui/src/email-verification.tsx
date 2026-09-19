@@ -1,47 +1,54 @@
-import { useEffect, useState } from "react";
+import { Effect, Fiber } from "effect";
+import { useEffect, useState, type ReactElement } from "react";
 
-import { Status } from "./shared/ui/status";
+import { StatusMessage } from "./shared/ui/status";
+import { STATUS_VARIANT } from "./shared/ui/status-variants.ts";
 
-import type { ReactElement } from "react";
+const verificationEndpoint = "/api/verify-email";
 
-async function verifyEmailToken(): Promise<boolean> {
+const verifyEmailToken = async (endpoint: string): Promise<boolean> => {
   const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
   globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
   if (token === null || token === "") {
     return false;
   }
-  try {
-    const response = await fetch("/api/verify-email", {
+  const [verification] = await Promise.allSettled([
+    fetch(endpoint, {
       body: JSON.stringify({ token }),
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
       method: "POST",
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
+    }),
+  ]);
+  return verification.status === "fulfilled" && verification.value.ok;
+};
 
-function EmailVerification(): ReactElement {
+const EmailVerification = (): ReactElement => {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    async function verify(): Promise<void> {
-      if (await verifyEmailToken()) {
-        globalThis.location.replace("/login");
-        return;
-      }
-      setFailed(true);
-    }
-    void verify();
+    const verifying = Effect.runFork(
+      Effect.map(
+        Effect.promise(async () => verifyEmailToken(verificationEndpoint)),
+        (verified) => {
+          if (verified) {
+            globalThis.location.replace("/login");
+            return;
+          }
+          setFailed(true);
+        },
+      ),
+    );
+    return (): void => {
+      Effect.runFork(Fiber.interrupt(verifying));
+    };
   }, []);
   return failed ? (
-    <Status variant="error">
+    <StatusMessage variant={STATUS_VARIANT.failure}>
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
-    </Status>
+    </StatusMessage>
   ) : (
-    <Status variant="pending">メールアドレスを確認しています。</Status>
+    <StatusMessage variant={STATUS_VARIANT.pending}>メールアドレスを確認しています。</StatusMessage>
   );
-}
+};
 
 export { EmailVerification };

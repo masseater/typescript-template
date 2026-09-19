@@ -6,11 +6,11 @@ import { usePasskeys } from "./use-passkeys";
 import type { ReactElement } from "react";
 import type { SettingsContext } from "./mfa-types";
 
-function PasskeySettings({ context }: Readonly<{ context: SettingsContext }>): ReactElement {
+const PasskeySettings = ({ context }: Readonly<{ context: SettingsContext }>): ReactElement => {
   const { listError, passkeys, reload } = usePasskeys();
-  function refresh(): void {
+  const refresh = (): void => {
     void reload();
-  }
+  };
   return (
     <>
       <PasskeyRegisterForm context={context} onRegistered={reload} />
@@ -20,6 +20,6 @@ function PasskeySettings({ context }: Readonly<{ context: SettingsContext }>): R
       </Button>
     </>
   );
-}
+};
 
 export { PasskeySettings };

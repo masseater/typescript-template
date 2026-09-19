@@ -1,4 +1,4 @@
-import { Status } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { ProfileBody } from "./profile-body.tsx";
 
@@ -11,7 +11,9 @@ function ProfilePending(): ReactElement {
         <span className="size-20 shrink-0 rounded-full bg-muted" />
         <span className="h-8 w-48 rounded-md bg-muted" />
       </div>
-      <Status variant="pending">プロフィールを読み込んでいます。</Status>
+      <StatusMessage variant={STATUS_VARIANT.pending}>
+        プロフィールを読み込んでいます。
+      </StatusMessage>
     </ProfileBody>
   );
 }

@@ -1,62 +1,66 @@
+import { Effect, Ref } from "effect";
 import { noop } from "es-toolkit";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
-import { errorMessage } from "./protocol";
+import { errorMessage } from "./protocol.ts";
 
 type Task = () => Promise<void>;
 
-interface ActionState {
+type ActionState = {
   readonly blocked: boolean;
   readonly error: string | undefined;
   readonly pending: boolean;
   readonly run: (task: Task) => void;
-}
+};
 
-function subscribeNothing(): () => void {
+const subscribeNothing = (): (() => void) => {
   return noop;
-}
+};
 
-function clientSnapshot(): boolean {
+const clientSnapshot = (): boolean => {
   return true;
-}
+};
 
-function serverSnapshot(): boolean {
+const serverSnapshot = (): boolean => {
   return false;
-}
+};
 
-async function failureOf(task: Task): Promise<string | undefined> {
+const failureOf = async (task: Task): Promise<string | undefined> => {
   try {
     await task();
-  } catch (error) {
-    return errorMessage(error);
+  } catch (failure) {
+    return errorMessage(failure);
   }
   return undefined;
-}
+};
 
-function useAction(): ActionState {
+const useAction = (): ActionState => {
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
+  const [failure, setFailure] = useState<string>();
   const hydrated = useSyncExternalStore(subscribeNothing, clientSnapshot, serverSnapshot);
-  const active = useRef(false);
-  function run(task: Task): void {
-    if (active.current) {
+  const [running, setRunning] = useState(() => Effect.runSync(Ref.make(false)));
+  const run = (task: Task): void => {
+    void setRunning;
+    if (Effect.runSync(Ref.getAndSet(running, true))) {
       return;
     }
-    active.current = true;
     setPending(true);
-    setError(undefined);
-    async function perform(): Promise<void> {
-      const failure = await failureOf(task);
-      if (failure !== undefined) {
-        setError(failure);
-      }
-      active.current = false;
-      setPending(false);
-    }
-    void perform();
-  }
-  return { blocked: pending || !hydrated, error, pending, run };
-}
+    setFailure(undefined);
+    Effect.runFork(
+      Effect.map(
+        Effect.promise(async () => failureOf(task)),
+        (taskFailure) => {
+          if (taskFailure !== undefined) {
+            setFailure(taskFailure);
+          }
+          Effect.runSync(Ref.set(running, false));
+          setPending(false);
+        },
+      ),
+    );
+  };
+  return { blocked: pending || !hydrated, error: failure, pending, run };
+};
 
 export { useAction };
 export type { ActionState };
