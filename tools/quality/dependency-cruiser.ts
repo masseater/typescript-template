@@ -27,8 +27,18 @@ const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
 const workerRuntimeModule = String.raw`^(?:${anyOf(workerRuntimeModules)})$`;
 
+const generatedRouteTree = String.raw`routeTree\.gen\.ts$`;
+
 const configuration: IConfiguration = {
   forbidden: [
+    {
+      comment:
+        "循環依存です。依存の向きを一方通行にし、共有が必要なら下位のモジュールへ型や関数を移してください。",
+      from: { pathNot: generatedRouteTree },
+      name: "no-circular",
+      severity: "error",
+      to: { circular: true, pathNot: generatedRouteTree },
+    },
     {
       comment:
         "依存先を解決できません。アプリはデプロイ単位で、取り込まれる面を持ちません。相手のパッケージが exports で公開している入口を指定し、その依存を package.json に宣言してください。",

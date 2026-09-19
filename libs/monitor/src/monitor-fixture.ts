@@ -51,5 +51,4 @@ export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
 export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
-// oxlint-disable-next-line import/no-default-export
 export default probeMonitor.handler;

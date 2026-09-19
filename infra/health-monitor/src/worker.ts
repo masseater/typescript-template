@@ -55,5 +55,4 @@ const health = monitorWorker<Bindings>({
 const HealthMonitor = health.Worker;
 
 export { HealthMonitor };
-// oxlint-disable-next-line import/no-default-export
 export default health.handler;

@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
+import { applications } from "@repo/config";
 import { causeRecord, markFailed, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 
@@ -113,16 +114,21 @@ const inspect = Effect.fn("inspect")(function* inspect() {
     ...report.projects.flatMap((entry) => skippedOf(entry)),
     ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
   ];
+  const found = new Set(report.projects.map((entry) => entry.project.projectName));
+  const missing = applications.map((name) => `@repo/${name}`).filter((name) => !found.has(name));
   return {
     error: report.error?.message,
     findings,
+    missing,
     ok:
       !failed &&
       !listed.failed &&
       report.error === null &&
       findings.length === 0 &&
       skipped.length === 0 &&
-      unclassified.length === 0,
+      unclassified.length === 0 &&
+      report.projects.length > 0 &&
+      missing.length === 0,
     projects: report.projects.length,
     skipped,
     unclassified,
