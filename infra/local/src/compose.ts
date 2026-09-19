@@ -7,7 +7,7 @@ import { access } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { runCli } from "@repo/config/cli";
+import { runCli } from "@repo/cli";
 import { Effect, Schema } from "effect";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;

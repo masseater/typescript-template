@@ -1,4 +1,4 @@
-import { effectDiagnostics, lifecycle } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { roleApplications } from "./src/journey-roles.ts";

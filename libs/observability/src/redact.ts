@@ -1,4 +1,4 @@
-import { privateDeploymentKeys } from "@repo/config/deployment-keys";
+import { privateDeploymentKeys } from "./deployment-keys.ts";
 
 const listWords = ["cookie", "params"];
 const secretWords = [

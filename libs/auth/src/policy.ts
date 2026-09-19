@@ -1,4 +1,4 @@
-import { strongAuthenticationMethods } from "@repo/config";
+import { strongAuthenticationMethods } from "@repo/config/identity";
 import { APIError } from "better-auth/api";
 
 import type { Application } from "@repo/config";

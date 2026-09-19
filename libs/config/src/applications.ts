@@ -9,7 +9,6 @@ const MAILPIT_PORT = 8025;
 const applications = ["user", "admin", "wiki"] as const;
 const ApplicationName = Schema.Literals(applications);
 type Application = (typeof applications)[number];
-type ServiceName = Application | "commander";
 const applicationPorts: Readonly<Record<Application, number>> = {
   admin: ADMIN_PORT,
   user: USER_PORT,
@@ -35,11 +34,6 @@ function grants(app: Application, capability: Capability): boolean {
   return granted.includes(capability);
 }
 
-const roles = ["user", "admin"] as const;
-type Role = (typeof roles)[number];
-const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;
-type StrongAuthenticationMethod = (typeof strongAuthenticationMethods)[number];
-const authenticationMethods = ["password", ...strongAuthenticationMethods, "recovery"] as const;
 const loopbackAddress = "127.0.0.1";
 const loopbackHosts: readonly string[] = ["localhost", loopbackAddress, "[::1]"];
 const storybookPort = STORYBOOK_PORT;
@@ -63,23 +57,13 @@ export {
   applicationPorts,
   applicationReadyPaths,
   applications,
-  authenticationMethods,
   grants,
   loopbackAddress,
   loopbackHosts,
   loopbackOrigin,
   mailpitOrigin,
   mailpitPort,
-  roles,
   storybookOrigin,
   storybookPort,
-  strongAuthenticationMethods,
 };
-export type {
-  Application,
-  Capability,
-  CapabilityOf,
-  Role,
-  ServiceName,
-  StrongAuthenticationMethod,
-};
+export type { Application, Capability, CapabilityOf };
