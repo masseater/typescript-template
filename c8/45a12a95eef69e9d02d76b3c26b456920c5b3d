@@ -1,1 +1,6 @@
-align claude.test: contracted out-of-schema stream_event lines emit output_invalid (merge-queue failure)
+Revision history for #579:
+
+rev 2 (content) 2026-09-19 13:55 UTC — align claude.test: contracted out-of-schema stream_event lines emit output_invalid (merge-queue failure)
+rev 1 (initial) 2026-09-19 13:55 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":579,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"0100115af0f011f1047805ebaab3d50a003c09f0","timestamp_iso":"2026-09-19T13:55:18Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"0100115af0f011f1047805ebaab3d50a003c09f0","new_sha":"c845a12a95eef69e9d02d76b3c26b456920c5b3d","timestamp_iso":"2026-09-19T13:55:18Z","reason":"align claude.test: contracted out-of-schema stream_event lines emit output_invalid (merge-queue failure)","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/0100115af0f011f1047805ebaab3d50a003c09f0...c845a12a95eef69e9d02d76b3c26b456920c5b3d"}]} -->
