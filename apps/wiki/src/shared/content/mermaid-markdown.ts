@@ -11,8 +11,8 @@ const isChartAttribute = Schema.is(
 );
 
 const processedMarkdown: LLMsOptions = {
-  // oxlint-disable-next-line max-params
-  stringify(node, parent, state, info) {
+  stringify(...stringifyArguments: Parameters<NonNullable<LLMsOptions["stringify"]>>) {
+    const [node, parent, state, info] = stringifyArguments;
     const chart =
       node.type === "mdxJsxFlowElement" && node.name === "Mermaid"
         ? node.attributes.find((attribute) => isChartAttribute(attribute))

@@ -53,6 +53,12 @@ export const config = { plugins: ["vitest"], rules: { "vitest/no-focused-tests":
 export const config = { rules: { "vitest/no-focused-tests": "off" } };
 ```
 
+```ts
+// the configuration of another tool names rules of its own
+import { defineConfig } from "react-doctor/api";
+export default defineConfig({ rules: { "react-doctor/circular-dependency": "error" } });
+```
+
 <!-- END GENERATED examples -->
 
 ### Forbidden bypasses (do not do this)
