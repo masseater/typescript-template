@@ -1,1 +1,6 @@
-rebase onto latest main after merge-queue flake in cold-start.test.ts (unrelated to contact form)
+Revision history for #550:
+
+rev 2 (content) 2026-09-19 09:51 UTC — rebase onto latest main after merge-queue flake in cold-start.test.ts (unrelated to contact form)
+rev 1 (initial) 2026-09-19 09:51 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":550,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"84ccfd69a6a81a5b41fcc728bb32adc6391123cf","timestamp_iso":"2026-09-19T09:51:54Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"84ccfd69a6a81a5b41fcc728bb32adc6391123cf","new_sha":"ac1176c2f85c88fe3e1925e9dc84d080aecb8864","timestamp_iso":"2026-09-19T09:51:54Z","reason":"rebase onto latest main after merge-queue flake in cold-start.test.ts (unrelated to contact form)","replay_sha":"8d78ad49df07e02216775b1b57f98f1b1dbd16c8","compare_url":"https://github.com/masseater/typescript-template/compare/84ccfd69a6a81a5b41fcc728bb32adc6391123cf...8d78ad49df07e02216775b1b57f98f1b1dbd16c8"}]} -->
