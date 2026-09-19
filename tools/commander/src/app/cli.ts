@@ -2,8 +2,8 @@
 import { parseArgs } from "node:util";
 
 import { NodeServices } from "@effect/platform-node";
+import { runCli } from "@repo/cli";
 import { loopbackOrigin } from "@repo/config";
-import { runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 import open from "open";
 

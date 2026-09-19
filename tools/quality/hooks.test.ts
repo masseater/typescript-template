@@ -1,4 +1,4 @@
-import { generatedDirectories, lifecycles } from "@repo/config/vite";
+import { generatedDirectories, lifecycles } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { onDemandGateEntries } from "./on-demand-checks.ts";

@@ -7,8 +7,8 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { markFailed, runCli } from "@repo/config/cli";
-import { serverOnlyMarkers } from "@repo/config/vite";
+import { markFailed, runCli } from "@repo/cli";
+import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect } from "effect";
 import { build } from "vite-plus";
 

@@ -4,7 +4,7 @@ import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
 import { isRecord, serviceLabel } from "./structured-logs.ts";
 
-import type { ServiceName } from "@repo/config";
+import type { ServiceName } from "./service-name.ts";
 import type { LogSink } from "./structured-logs.ts";
 
 interface Reporting {

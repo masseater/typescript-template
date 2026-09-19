@@ -1,4 +1,4 @@
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 // oxlint-disable-next-line import/no-default-export

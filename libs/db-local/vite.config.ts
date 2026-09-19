@@ -1,0 +1,13 @@
+import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { defineConfig } from "vite-plus";
+
+export default defineConfig({
+  run: {
+    tasks: {
+      ...effectDiagnostics,
+      "db:bootstrap:local": { cache: false, command: "node src/bootstrap-local.ts" },
+      "db:migrate:local": { cache: false, command: "node src/migrate-local.ts" },
+      ...lifecycle({ precommit: [], premerge: [], prepush: ["check:effect"] }),
+    },
+  },
+});

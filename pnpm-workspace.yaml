@@ -15,8 +15,6 @@ allowBuilds:
   esbuild: true
   workerd: true
   vite-plus: true
-  "@parcel/watcher": true
-  canvas: false
   msw: false
   protobufjs: true
   agent-browser: false
@@ -24,20 +22,20 @@ allowBuilds:
   "@google/genai": false
   "@openrouter/sdk": false
   "@swc/core": false
+minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
-  - "@cloudflare/vite-plugin@1.54.10"
-  - "@cloudflare/workers-types@5.20260916.1"
-  - miniflare@5.20260915.0-alpha || 5.20260917.0-alpha
-  - wrangler@4.134.0
-  - "@cloudflare/vitest-plugin@1.1.12"
-  - "@cloudflare/workerd-darwin-64@1.20260917.1"
-  - "@cloudflare/workerd-darwin-arm64@1.20260917.1"
-  - "@cloudflare/workerd-linux-64@1.20260917.1"
-  - "@cloudflare/workerd-linux-arm64@1.20260917.1"
-  - "@cloudflare/workerd-windows-64@1.20260917.1"
-  - workerd@1.20260917.1
+  - "@cloudflare/vite-plugin"
+  - "@cloudflare/workers-types"
+  - miniflare
+  - wrangler
+  - "@cloudflare/vitest-plugin"
+  - workerd
+  - "@cloudflare/workerd-darwin-64"
+  - "@cloudflare/workerd-darwin-arm64"
+  - "@cloudflare/workerd-linux-64"
+  - "@cloudflare/workerd-linux-arm64"
+  - "@cloudflare/workerd-windows-64"
 catalog:
-  alchemy: 2.0.0-beta.77
   "@base-ui/react": 1.8.0
   "@better-auth/passkey": 1.7.5
   "@cloudflare/vite-plugin": 1.54.10
@@ -47,6 +45,7 @@ catalog:
   "@opentelemetry/api": 1.9.1
   "@opentelemetry/core": 2.10.0
   "@opentelemetry/exporter-metrics-otlp-http": 0.221.0
+  "@opentelemetry/exporter-trace-otlp-http": 0.221.0
   "@opentelemetry/sdk-metrics": 2.10.0
   "@oxlint/plugins": 1.82.0
   "@effect/platform-node": 4.0.0-rc.112
@@ -59,12 +58,8 @@ catalog:
   "@types/node": 26.6.1
   "@types/react": 19.3.0
   "@types/react-dom": 19.3.0
-  "@vitejs/plugin-react": 6.1.1
-  "@vitest/browser-playwright": 4.1.11
   "@vitest/coverage-v8": 4.1.11
   better-auth: 1.7.5
-  class-variance-authority: 0.7.1
-  cn: 0.3.0
   dependency-cruiser: 18.3.1
   drizzle-kit: 1.0.0-rc.4
   drizzle-orm: 1.0.0-rc.4
@@ -75,7 +70,6 @@ catalog:
   msw: 2.15.0
   otpauth: 9.5.2
   oxc-parser: 0.149.0
-  oxc-transform-react: 0.145.0
   oxlint: 1.82.0
   playwright: 1.63.0
   react: 19.3.0
@@ -93,9 +87,6 @@ peerDependencyRules:
   allowAny:
     - vite
     - vitest
-  allowedVersions:
-    vite: "*"
-    vitest: "*"
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
   fumadocs-mdx@15.4.1: patches/fumadocs-mdx@15.4.1.patch
