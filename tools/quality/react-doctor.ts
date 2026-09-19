@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { markFailed, runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
 
+import { repositoryRoot } from "./repository-root.ts";
+
 interface Scan {
   readonly failed: boolean;
   readonly stderr: string;
@@ -42,7 +44,6 @@ const Rules = Schema.fromJsonString(
   ),
 );
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
 const executable = fileURLToPath(new URL("../../node_modules/.bin/react-doctor", import.meta.url));
 
 const scan = (args: readonly string[]): Effect.Effect<Scan> => {
@@ -52,7 +53,7 @@ const scan = (args: readonly string[]): Effect.Effect<Scan> => {
         execFile(
           executable,
           [...args, "--no-score"],
-          { cwd: root, maxBuffer: MAX_OUTPUT_BYTES },
+          { cwd: repositoryRoot, maxBuffer: MAX_OUTPUT_BYTES },
           (failure, stdout, stderr) => {
             resolve({ failed: failure !== null, stderr, stdout });
           },
