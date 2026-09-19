@@ -1,5 +1,5 @@
 {
-  "extends": "../../../tsconfig.base.json",
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
   "compilerOptions": { "types": ["k6"] },
   "include": ["**/*.ts"]
 }

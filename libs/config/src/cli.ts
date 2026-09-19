@@ -2,6 +2,7 @@ import { NodeRuntime } from "@effect/platform-node";
 import { Cause, Console, Effect } from "effect";
 
 const failedExitCode = 1;
+const firstUserArgumentIndex = 2;
 
 function exitWith(code: number): Effect.Effect<void> {
   return Effect.sync(() => {
@@ -35,4 +36,4 @@ function runCli<Failure>(
   );
 }
 
-export { exitWith, markFailed, reportFailed, runCli };
+export { exitWith, firstUserArgumentIndex, markFailed, reportFailed, runCli };

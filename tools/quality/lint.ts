@@ -22,8 +22,6 @@ const awaitingPresetPackages = [
   "libs/ui/**",
   "tools/commander/**",
   "tools/dev/**",
-  "tools/e2e/**",
-  "tools/load/**",
   "tools/observe/**",
   "tools/quality/**",
 ];

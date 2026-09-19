@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, rm } from "node:fs/promises";
 
 import { Effect, Schema } from "effect";
@@ -19,43 +18,40 @@ const Summary = Schema.Struct({
   ),
 });
 
-type Metrics = Readonly<Record<string, typeof Metric.Type>>;
-
-interface Report {
+type Report = {
   readonly crossed: readonly string[];
   readonly errorRate: number;
   readonly iterations: number;
   readonly latency: Readonly<Record<string, number>>;
   readonly requests: number;
-}
+};
+
+type Metrics = Readonly<Record<string, typeof Metric.Type>>;
+
+const crossedIn = (metric: string, measured: typeof Metric.Type): readonly string[] =>
+  Object.entries(measured.thresholds ?? {})
+    .filter(([, failed]) => failed)
+    .map(([expression]) => `${metric} ${expression}`);
+
+const crossedThresholds = (metrics: Metrics): readonly string[] =>
+  Object.entries(metrics)
+    .flatMap(([metric, measured]) => crossedIn(metric, measured))
+    .toSorted();
 
 const latencyMetric = /^http_req_duration\{name:(?<name>[^}]+)\}$/u;
 
-function crossedThresholds(metrics: Metrics): string[] {
-  const crossed: string[] = [];
-  for (const [metric, measured] of Object.entries(metrics)) {
-    for (const [expression, failed] of Object.entries(measured.thresholds ?? {})) {
-      if (failed) {
-        crossed.push(`${metric} ${expression}`);
-      }
-    }
-  }
-  return crossed.toSorted();
-}
+const latencies = (metrics: Metrics): Readonly<Record<string, number>> =>
+  Object.fromEntries(
+    Object.entries(metrics).flatMap(([metric, measured]) => {
+      const labelled = latencyMetric.exec(metric)?.groups?.name;
+      const ninetyFifth = measured["p(95)"];
+      return labelled === undefined || ninetyFifth === undefined
+        ? []
+        : [[labelled, Math.round(ninetyFifth)] as const];
+    }),
+  );
 
-function latencies(metrics: Metrics): Record<string, number> {
-  const latency: Record<string, number> = {};
-  for (const [metric, measured] of Object.entries(metrics)) {
-    const name = latencyMetric.exec(metric)?.groups?.["name"];
-    const value = measured["p(95)"];
-    if (name !== undefined && value !== undefined) {
-      latency[name] = Math.round(value);
-    }
-  }
-  return latency;
-}
-
-function summarise(metrics: typeof Summary.Type.metrics): Report {
+const summarise = (metrics: typeof Summary.Type.metrics): Report => {
   return {
     crossed: crossedThresholds(metrics),
     errorRate: metrics.http_req_failed.value,
@@ -63,28 +59,28 @@ function summarise(metrics: typeof Summary.Type.metrics): Report {
     latency: latencies(metrics),
     requests: metrics.http_reqs.count,
   };
-}
+};
 
-function readSummary(file: string): Effect.Effect<Report, unknown> {
+const readSummary = (file: string): Effect.Effect<Report, unknown> => {
   return Effect.tryPromise(async (): Promise<unknown> =>
     JSON.parse(await readFile(file, "utf-8")),
   ).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(Summary)),
     Effect.map((summary) => summarise(summary.metrics)),
   );
-}
+};
 
 class SummaryNotDiscarded extends Schema.TaggedError<SummaryNotDiscarded>()(
   "SummaryNotDiscarded",
   {},
 ) {}
 
-function discardSummary(file: string): Effect.Effect<void, SummaryNotDiscarded> {
+const discardSummary = (file: string): Effect.Effect<void, SummaryNotDiscarded> => {
   return Effect.tryPromise({
     catch: () => new SummaryNotDiscarded(),
     try: async () => rm(file, { force: true }),
   });
-}
+};
 
 export { discardSummary, readSummary };
 export type { Report };

@@ -1,64 +1,59 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { randomBytes } from "node:crypto";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, rm, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { applicationRoot } from "./repository.ts";
 
 import type { Application } from "@repo/config";
 
-const fileMode = 0o600;
 const secretBytes = 48;
-const sender = "no-reply@example.test";
 
-interface DevVars {
+const generateAuthSecret = (): string => {
+  return randomBytes(secretBytes).toString("base64url");
+};
+
+const presentContent = async (file: string): Promise<readonly string[]> => {
+  try {
+    return [await readFile(file, "utf-8")];
+  } catch (unreadable) {
+    if (unreadable instanceof Error && "code" in unreadable && unreadable.code === "ENOENT") {
+      return [];
+    }
+    throw unreadable;
+  }
+};
+
+type DevVars = {
   readonly appOrigin: string;
   readonly authSecret: string;
   readonly mailOrigin: string;
-}
+};
 
-function devVarsFile(application: Application): string {
-  return path.join(applicationRoot(application), ".dev.vars");
-}
-
-function serialize(values: DevVars): string {
-  const entries: readonly (readonly [string, string])[] = [
-    ["APP_ORIGIN", values.appOrigin],
-    ["AUTH_SECRET", values.authSecret],
-    ["EMAIL_FROM", sender],
-    ["MAILPIT_URL", values.mailOrigin],
+const serialize = (devVars: DevVars): string => {
+  const assignments: readonly (readonly [string, string])[] = [
+    ["APP_ORIGIN", devVars.appOrigin],
+    ["AUTH_SECRET", devVars.authSecret],
+    ["EMAIL_FROM", "no-reply@example.test"],
+    ["MAILPIT_URL", devVars.mailOrigin],
   ];
-  return `${entries.map(([key, value]) => `${key}=${JSON.stringify(value)}`).join("\n")}\n`;
-}
+  return `${assignments.map(([variable, assigned]) => `${variable}=${JSON.stringify(assigned)}`).join("\n")}\n`;
+};
 
-function generateAuthSecret(): string {
-  return randomBytes(secretBytes).toString("base64url");
-}
-
-async function presentContent(file: string): Promise<readonly string[]> {
-  try {
-    return [await readFile(file, "utf-8")];
-  } catch {
-    return [];
-  }
-}
-
-async function replaceDevVars(
+const replaceDevVars = async (
   application: Application,
-  values: DevVars,
-): Promise<() => Promise<void>> {
-  const file = devVarsFile(application);
-  const [previous] = await presentContent(file);
-  await writeFile(file, serialize(values), { mode: fileMode });
+  devVars: DevVars,
+): Promise<() => Promise<void>> => {
+  const file = path.join(applicationRoot(application), ".dev.vars");
+  const [replaced] = await presentContent(file);
+  const fileMode = 0o600;
+  await writeFile(file, serialize(devVars), { mode: fileMode });
   return async () => {
-    if (previous === undefined) {
+    if (replaced === undefined) {
       await rm(file, { force: true });
       return;
     }
-    await writeFile(file, previous, { mode: fileMode });
+    await writeFile(file, replaced, { mode: fileMode });
   };
-}
+};
 
 export { generateAuthSecret, replaceDevVars };
