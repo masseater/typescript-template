@@ -14,7 +14,9 @@
     "@repo/ui": "workspace:*"
   },
   "devDependencies": {
-    "@repo/config": "workspace:*",
+    "@repo/cli": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "@shadcn/lint": "catalog:",
     "@types/node": "catalog:",
     "dependency-cruiser": "catalog:",

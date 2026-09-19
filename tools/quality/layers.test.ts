@@ -7,7 +7,7 @@ import { commands } from "./tasks.ts";
 const source = "export const value = 1;\n";
 
 describe("steiger coverage", () => {
-  it("runs the layer check in every application", () => {
+  it("runs the layer check in every application and commander", () => {
     expect.hasAssertions();
     const checks = applications
       .map((app) => `apps/${app}: ${commands(`apps/${app}`, "check").join(" ")}`)
@@ -15,6 +15,7 @@ describe("steiger coverage", () => {
     expect(checks).toStrictEqual(
       applications.map((app) => `apps/${app}: steiger src --fail-on-warnings`).toSorted(),
     );
+    expect(commands("tools/commander", "check")).toStrictEqual(["steiger src --fail-on-warnings"]);
   });
 });
 

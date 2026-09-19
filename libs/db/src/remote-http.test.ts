@@ -1,4 +1,5 @@
 import { assert, it } from "@effect/vitest";
+import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -8,7 +9,6 @@ import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { remoteExecutor } from "./remote-http.ts";
 import { readMigrationStatus } from "./remote-operations.ts";
 import { user } from "./schema.ts";
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 import type { Scope } from "effect";

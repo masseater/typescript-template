@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
 import { ApplicationName, applicationOrigins, mailpitOrigin } from "@repo/config";
-import { firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { memberPageSize } from "@repo/runtime/contracts";
 import { Console, Effect, Schema } from "effect";

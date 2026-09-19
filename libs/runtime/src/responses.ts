@@ -1,5 +1,5 @@
-import { strictTransportSecurity } from "@repo/config/security";
 import { httpStatus } from "@repo/observability";
+import { strictTransportSecurity } from "@repo/runtime/security";
 
 const nonceBytes = 16;
 

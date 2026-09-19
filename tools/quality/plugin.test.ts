@@ -84,7 +84,7 @@ const forbiddenCode = [
     "process-boundary",
   ],
   [
-    "libs/config/src/cli.ts",
+    "libs/cli/src/cli.ts",
     "export const write = (line: string) => process.stdout.write(line);",
     "process-boundary",
   ],
@@ -230,9 +230,9 @@ const validBoundaries = [
   ["libs/shared/src/probe.ts", "export const location = import.meta.url;"],
   ["libs/shared/src/probe.ts", 'export { http } from "msw";'],
   ["libs/config/src/probe.ts", "export const value = process.env;"],
-  ["libs/config/src/cli.ts", "export const done = () => { process.exitCode = 0; };"],
+  ["libs/cli/src/cli.ts", "export const done = () => { process.exitCode = 0; };"],
   [
-    "libs/config/src/cli.ts",
+    "libs/cli/src/cli.ts",
     'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
   ],
   ["libs/ui/src/probe.ts", 'export * from "@repo/ui/button";'],

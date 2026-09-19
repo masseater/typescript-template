@@ -2,7 +2,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 
-import { runCli } from "@repo/config/cli";
+import { runCli } from "@repo/cli";
 import { receiverImage } from "@repo/local/image";
 import { Cause, Console, Effect, Schedule, Schema } from "effect";
 

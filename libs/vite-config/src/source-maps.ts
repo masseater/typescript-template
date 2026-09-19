@@ -1,7 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import type { Application } from "./applications.ts";
+import type { Application } from "@repo/config";
 
 function sourceMapDirectories(
   repositoryRoot: string,
