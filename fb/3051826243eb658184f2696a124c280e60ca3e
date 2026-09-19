@@ -1,6 +1,1 @@
-Revision history for #664:
-
-rev 2 (content) 2026-09-19 17:54 UTC — include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone
-rev 1 (initial) 2026-09-19 17:54 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":664,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"bfc574db0b2f698f4113f9b426735cb64c0ba62a","new_sha":"a0ed7bf44e20b62796cd0def306ec9023b55e91a","timestamp_iso":"2026-09-19T17:54:26Z","reason":"include pnpm-lock.yaml for @repo/config move so frozen-lockfile CI passes on this PR alone","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/bfc574db0b2f698f4113f9b426735cb64c0ba62a...a0ed7bf44e20b62796cd0def306ec9023b55e91a"}]} -->
+move wiki worker coverage with wikiLayer; drop unresolved ./wiki import from runtime worker test; include apps in workers project
