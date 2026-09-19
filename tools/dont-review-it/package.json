@@ -5,6 +5,7 @@
   "keywords": [
     "tanstack-intent"
   ],
+  "homepage": "https://github.com/masseater/typescript-template",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -13,7 +14,9 @@
   },
   "bin": {
     "dont-review-it": "./src/cli.ts",
-    "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts"
+    "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
+    "lint-rule-authoring": "./src/lint-rule-authoring/cli.ts",
+    "stop-ai-slop": "./src/stop-ai-slop/cli.ts"
   },
   "files": [
     "dist",
@@ -26,10 +29,16 @@
     ".": "./src/index.ts",
     "./plugin": "./src/plugin.ts",
     "./record-fields": "./src/dependency-catalog/record-fields.ts",
+    "./lint": "./src/repository/lint.ts",
+    "./repository-plugin": "./src/repository/plugin.ts",
+    "./test-runtime": "./src/repository/test-runtime.ts",
     "./vitest": "./src/vitest/standard-io-test.ts",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json",
-    "./vitest/parsed-fields": "./src/vitest/parsed-fields.ts"
+    "./vitest/parsed-fields": "./src/vitest/parsed-fields.ts",
+    "./repository-checks": "./src/repository-checks/index.ts",
+    "./lint-rule-authoring": "./src/lint-rule-authoring/index.ts",
+    "./lint-rule-authoring/plugin": "./src/lint-rule-authoring/plugin.ts"
   },
   "publishConfig": {
     "bin": {
@@ -55,26 +64,37 @@
     "access": "public"
   },
   "dependencies": {
-    "@repo/lint-rule-authoring": "workspace:*",
-    "@repo/repository-checks": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "@repo/ai-native-telemetry": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@shadcn/lint": "catalog:",
     "citty": "0.2.2",
+    "dependency-cruiser": "catalog:",
+    "effect": "catalog:",
     "es-toolkit": "catalog:",
     "jsonc-parser": "3.3.1",
     "oxc-parser": "catalog:",
     "oxfmt": "0.67.0",
     "oxlint": "catalog:",
+    "parse-git-diff": "0.0.20",
     "std-env": "4.2.0",
     "typescript": "catalog:",
     "typescript-6": "npm:@typescript/typescript6@6.0.2",
     "yaml": "catalog:"
   },
   "devDependencies": {
+    "@opentelemetry/core": "catalog:",
+    "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
+    "@opentelemetry/sdk-metrics": "catalog:",
     "@oxlint/plugins": "catalog:",
-    "@repo/ai-native-telemetry": "workspace:*",
     "@repo/config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "msw": "catalog:",
+    "shell-quote": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
@@ -82,6 +102,7 @@
     "vite-plus": "^0.3.2"
   },
   "lintRules": [
-    "src/lint/oxlint/rules"
+    "src/lint/oxlint/rules",
+    "src/lint-rule-authoring/lint/oxlint/rules"
   ]
 }

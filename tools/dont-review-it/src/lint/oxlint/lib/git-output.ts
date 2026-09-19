@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { gitExecutablePath } from "@repo/repository-checks";
+import { gitExecutablePath } from "@repo/dont-review-it/repository-checks";
 import { attempt, omitBy } from "es-toolkit";
 
 import { isEnvironmentFailure } from "./path-failure.ts";
