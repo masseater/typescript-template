@@ -1,0 +1,1 @@
+align claude.test: contracted out-of-schema stream_event lines emit output_invalid (merge-queue failure)
