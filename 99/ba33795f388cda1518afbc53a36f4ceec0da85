@@ -1,1 +1,1 @@
-Rebase onto latest main after MQ DIRTY dequeue; resolve StatusMessage/ROLE/AUTHENTICATION_METHOD conflicts.
+Rebase onto latest main after MQ DIRTY; keep tip ROLE/AUTHENTICATION_METHOD with main StatusMessage/CHALLENGE_MODE/cli causeRecord.
