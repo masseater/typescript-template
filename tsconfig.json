@@ -3,5 +3,11 @@
   "compilerOptions": {
     "types": ["vite-plus/client", "node"]
   },
-  "include": ["vite.config.ts", "vitest.mutation.config.ts", "vitest.workers.config.ts", "knip.ts"]
+  "include": [
+    "doctor.config.ts",
+    "vite.config.ts",
+    "vitest.mutation.config.ts",
+    "vitest.workers.config.ts",
+    "knip.ts"
+  ]
 }

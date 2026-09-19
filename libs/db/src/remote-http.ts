@@ -2,7 +2,16 @@ import { Effect, Schema } from "effect";
 
 import { RemoteFailure } from "./remote-input.ts";
 
-import type { DatabaseExecutor } from "./remote-operations.ts";
+interface RemoteQuery {
+  readonly params: readonly (string | number | null)[];
+  readonly sql: string;
+}
+
+interface DatabaseExecutor {
+  readonly batch: (
+    queries: readonly RemoteQuery[],
+  ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
+}
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const StatementResult = Schema.Struct({
@@ -61,3 +70,4 @@ function remoteExecutor({
 }
 
 export { remoteExecutor };
+export type { DatabaseExecutor, RemoteQuery };

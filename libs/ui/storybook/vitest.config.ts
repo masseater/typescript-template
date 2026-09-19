@@ -9,7 +9,6 @@ const storybook = await storybookTest({
   storybookUrl: storybookOrigin,
 });
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   plugins: storybook,
   test: {

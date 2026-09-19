@@ -8,7 +8,6 @@ import { itemVariants } from "./dropdown-menu-item-variants";
 
 import type { ComponentProps, ReactElement } from "react";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function DropdownMenuLinkAnchor({
   children,
   ...anchor
@@ -17,7 +16,6 @@ function DropdownMenuLinkAnchor({
   return (
     <MenuPrimitive.LinkItem
       data-slot="dropdown-menu-link-item"
-      // oxlint-disable-next-line react/jsx-props-no-spreading
       render={<a {...anchor} />}
       onClick={close}
       className={cn(itemVariants(), "no-underline hover:text-foreground")}
