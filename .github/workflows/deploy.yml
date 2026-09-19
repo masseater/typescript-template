@@ -1,0 +1,106 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: deployment target
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.target || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.target == 'staging')
+    environment: staging
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: ${{ vars.CI_RUNNER == '' }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.sha }}
+      - if: vars.CI_RUNNER != ''
+        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy
+      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+        with:
+          node-version-file: package.json
+          cache: ${{ vars.CI_RUNNER == '' }}
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        env:
+          MISE_CEILING_PATHS: ${{ runner.workspace }}
+        with:
+          cache: ${{ vars.CI_RUNNER == '' }}
+      - run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+        env:
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
+          TEMPLATE_FIXED_COST_USD: ${{ secrets.TEMPLATE_FIXED_COST_USD }}
+          TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
+          TEMPLATE_JPY_PER_USD: ${{ secrets.TEMPLATE_JPY_PER_USD }}
+          TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
+          TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
+          TEMPLATE_OTLP_ENABLED: ${{ secrets.TEMPLATE_OTLP_ENABLED }}
+          TEMPLATE_OTLP_ENDPOINT: ${{ secrets.TEMPLATE_OTLP_ENDPOINT }}
+          TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
+          TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
+          TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
+          TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
+      - run: vp run --filter @repo/infra-cloudflare deploy:ordered
+      - run: vp run --filter @repo/infra-cloudflare probe:origins
+
+  production:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    environment: production
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: ${{ vars.CI_RUNNER == '' }}
+          ref: main
+      - if: vars.CI_RUNNER != ''
+        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy
+      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+        with:
+          node-version-file: package.json
+          cache: ${{ vars.CI_RUNNER == '' }}
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        env:
+          MISE_CEILING_PATHS: ${{ runner.workspace }}
+        with:
+          cache: ${{ vars.CI_RUNNER == '' }}
+      - run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+        env:
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
+          TEMPLATE_FIXED_COST_USD: ${{ secrets.TEMPLATE_FIXED_COST_USD }}
+          TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
+          TEMPLATE_JPY_PER_USD: ${{ secrets.TEMPLATE_JPY_PER_USD }}
+          TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
+          TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
+          TEMPLATE_OTLP_ENABLED: ${{ secrets.TEMPLATE_OTLP_ENABLED }}
+          TEMPLATE_OTLP_ENDPOINT: ${{ secrets.TEMPLATE_OTLP_ENDPOINT }}
+          TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
+          TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
+          TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
+          TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
+      - run: vp run --filter @repo/infra-cloudflare deploy:ordered
+      - run: vp run --filter @repo/infra-cloudflare probe:origins
