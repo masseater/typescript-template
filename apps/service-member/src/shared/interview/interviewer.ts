@@ -83,7 +83,7 @@ function complete(
 }
 
 class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
-  "@repo/interview/Interviewer",
+  "#shared/interview/Interviewer",
 ) {
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {

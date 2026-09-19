@@ -1,9 +1,4 @@
-import {
-  countInterviewTurn,
-  findInterview,
-  startInterview,
-  storeInterview,
-} from "@repo/db/interview";
+import { countInterviewTurn, findInterview, startInterview, storeInterview } from "@repo/db";
 import { logAt } from "@repo/observability";
 import { Effect, Option, Schema } from "effect";
 
