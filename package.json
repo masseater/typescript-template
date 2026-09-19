@@ -24,7 +24,7 @@
     "dependency-cruiser": "catalog:",
     "effect": "catalog:",
     "knip": "6.35.1",
-    "miniflare": "5.20260917.0-alpha",
+    "miniflare": "catalog:",
     "react-doctor": "0.9.14",
     "typescript": "catalog:",
     "vite": "catalog:",
