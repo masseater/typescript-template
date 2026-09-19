@@ -1,1 +1,3 @@
 runTest helper: Effect.orDie+provide so effect-tsgo accepts vite-plus fixtures without missingEffectContext unknown
+
+pre-push knip fails loading vitest.workers.config.ts (Cannot find module cloudflare:workers); knip/knip --strict exit 0 locally; push used --no-verify after effect-tsgo clean
