@@ -141,7 +141,10 @@ const lintOptions = {
         "project/worker-fetch": LINT_SEVERITY.ERROR,
         "shadcn/no-arbitrary-values": LINT_SEVERITY.ERROR,
         "shadcn/no-raw-colors": LINT_SEVERITY.ERROR,
-        "shadcn/no-restyle": [LINT_SEVERITY.ERROR, { allow: ["layout", "spacing"] }],
+        "shadcn/no-restyle": [
+          LINT_SEVERITY.ERROR,
+          { allow: ["layout", "spacing"], componentImports: ["^@repo/ui(/|$)"] },
+        ],
         "shadcn/no-unknown-classes": LINT_SEVERITY.ERROR,
         "typescript/explicit-function-return-type": [
           LINT_SEVERITY.ERROR,
@@ -283,6 +286,7 @@ const lintOptions = {
       polymorphicPropName: "as",
     },
     react: { linkComponents: linkComponents.map((name) => ({ attribute: "to", name })) },
+    shadcn: { ui: "@repo/ui" },
   },
 } satisfies Parameters<typeof dontReviewItPreset.lint>[0];
 
