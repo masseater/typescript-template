@@ -1,24 +1,32 @@
-import { getSessionSecurity } from "@repo/db/security";
+import { lookupSessionByToken } from "@repo/db/security";
 import { Effect } from "effect";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
-import { authSession } from "./auth-request.ts";
 import { Auth } from "./auth.ts";
-import { isStrongMethod } from "./policy.ts";
+import { isStrongMethod, sessionIsLive } from "./policy.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
+import { sessionTokenFrom } from "./session-token.ts";
 
 const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* requireSessionSecurity(
   headers: Headers,
 ) {
-  const { audience } = yield* Auth;
-  const session = yield* authSession(headers);
-  if (!session) {
+  const { audience, instance } = yield* Auth;
+  const cookiePrefix = instance.options.advanced?.cookiePrefix;
+  const secret = instance.options.secret;
+  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
     return yield* new SessionRequired();
   }
-  const current = yield* getSessionSecurity(session.session.id, audience);
-  if (current?.user.emailVerified !== true) {
+  const token = yield* Effect.promise(async () => sessionTokenFrom(headers, cookiePrefix, secret));
+  if (token === undefined) {
+    return yield* new SessionRequired();
+  }
+  const current = yield* lookupSessionByToken(token);
+  if (current === null || current.session.expiresAt <= new Date()) {
+    return yield* new SessionRequired();
+  }
+  if (!sessionIsLive(current, audience)) {
     return yield* new SessionInvalid();
   }
   return current;

@@ -1,10 +1,12 @@
 import { assert, it } from "@effect/vitest";
 import { setUserRole } from "@repo/db/admin";
+import { capturePrepares } from "@repo/db/testing";
 import { Effect } from "effect";
 
 import {
   Fixture,
   HTTP_FORBIDDEN,
+  HTTP_OK,
   TEST_TIMEOUT,
   authFor,
   bootstrapVerifiedAdmin,
@@ -91,6 +93,22 @@ it.effect(
         const current = yield* target.verify();
         yield* setUserRole(authority.session.id, current.user.id, "admin");
         assert.strictEqual(yield* failureTag(target.verify()), "SessionRequired");
+      }),
+    ),
+  TEST_TIMEOUT,
+);
+
+it.effect(
+  "verifySession reads session and user with one D1 prepare",
+  () =>
+    withAuth(
+      Effect.gen(function* program() {
+        const client = yield* registerVerified("session-once@example.com");
+        assert.strictEqual((yield* signIn(client, "session-once@example.com")).status, HTTP_OK);
+        const statements = yield* capturePrepares(client.verify().pipe(Effect.asVoid));
+        const sessionReads = statements.filter((sql) => /\bsession\b/i.test(sql));
+        assert.strictEqual(sessionReads.length, 1);
+        assert.match(sessionReads[0] ?? "", /\buser\b/i);
       }),
     ),
   TEST_TIMEOUT,
