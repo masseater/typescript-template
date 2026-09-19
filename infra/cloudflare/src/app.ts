@@ -39,6 +39,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       DB: database,
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
+      OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
       ...(config.otlp === undefined
         ? {}
         : {
