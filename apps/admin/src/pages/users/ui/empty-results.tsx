@@ -16,7 +16,7 @@ function EmptyResults({
           ? "このページに該当するユーザーはいません。"
           : "条件に一致するユーザーはいません。"}
       </StatusMessage>
-      <TextLink to="/" search={target}>
+      <TextLink to="/members" search={target}>
         {beyondLastPage ? "1 ページ目へ" : "条件をクリア"}
       </TextLink>
     </div>
