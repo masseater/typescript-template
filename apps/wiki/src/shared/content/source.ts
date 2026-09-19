@@ -15,7 +15,7 @@ const docs = defineDocs({
 });
 
 const source = loader({
-  baseUrl: "/",
+  baseUrl: "/wiki",
   source: docs.toFumadocsSource(),
 });
 

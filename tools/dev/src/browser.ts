@@ -3,15 +3,22 @@ import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { applicationReadyPaths } from "@repo/config";
+import { applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { exitWith, markFailed } from "@repo/config/cli";
 import { Effect } from "effect";
 
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
-import { browserConfig, lanOrigin, refreshBrowserConfig, root, run } from "./local-environment.ts";
+import {
+  browserConfig,
+  lanOrigin,
+  readCredentials,
+  refreshBrowserConfig,
+  root,
+  run,
+} from "./local-environment.ts";
 
-import type { App } from "./local-environment.ts";
+import type { App, Credentials } from "./local-environment.ts";
 
 interface BrowserReport {
   readonly event: "local.browser_opened";
@@ -28,29 +35,34 @@ function sessionName(app: App): string {
   return `template-local-${app}`;
 }
 
-const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(app: App) {
-  return [
-    "--config",
-    fileURLToPath(browserConfig),
-    ...(yield* browserLaunchArguments()),
-    "--session",
-    sessionName(app),
-  ];
+function configuredOrigin(app: App, credentials: Credentials): string {
+  return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
+}
+
+const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(
+  app: App,
+  credentials: Credentials,
+) {
+  const launch =
+    credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
+  return ["--config", fileURLToPath(browserConfig), ...launch, "--session", sessionName(app)];
 });
 
 const browser = Effect.fn("browser")(function* browser(app: App) {
+  const credentials = yield* readCredentials();
   const socketDirectory = yield* refreshBrowserConfig();
-  const args = yield* sessionArguments(app);
+  const args = yield* sessionArguments(app, credentials);
+  const origin = configuredOrigin(app, credentials);
   // oxlint-disable-next-line node/no-process-env
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  yield* run("agent-browser", [...args, "open", `${lanOrigin(app)}${applicationReadyPaths[app]}`], {
+  yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
     cwd: root,
     env,
   });
   const report: BrowserReport = {
     event: "local.browser_opened",
     ok: true,
-    origin: lanOrigin(app),
+    origin,
     secretsPrinted: false,
     session: sessionName(app),
   };
@@ -86,8 +98,12 @@ const browserCommand = Effect.fn("browserCommand")(function* browserCommand(
   if (args.length === 0) {
     return yield* failure("browser_command_required");
   }
+  const credentials = yield* readCredentials();
   const socketDirectory = yield* refreshBrowserConfig();
-  const exit = yield* runBrowser([...(yield* sessionArguments(app)), ...args], socketDirectory);
+  const exit = yield* runBrowser(
+    [...(yield* sessionArguments(app, credentials)), ...args],
+    socketDirectory,
+  );
   if (!exit.started) {
     return yield* failure("browser_start_failed");
   }

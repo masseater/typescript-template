@@ -1,18 +1,21 @@
-import { getRouteApi, notFound } from "@tanstack/react-router";
+import { notFound } from "@tanstack/react-router";
 import { useFumadocsLoader } from "fumadocs-core/source/client";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 
-import { serviceName } from "#shared/config/index.ts";
 import { docs } from "#shared/content/index.ts";
 import { DocsContent } from "./docs-content.tsx";
 
 import type { ReactElement } from "react";
 
-const route = getRouteApi("/$");
-const nav = { title: serviceName };
+const nav = { title: "Wiki", url: "/wiki" };
 
-function DocsPage(): ReactElement {
-  const { path, pageTree } = useFumadocsLoader(route.useLoaderData());
+type DocsLoaderData = Readonly<{
+  pageTree: unknown;
+  path: string;
+}>;
+
+function DocsPage({ data }: Readonly<{ data: DocsLoaderData }>): ReactElement {
+  const { path, pageTree } = useFumadocsLoader(data);
   const page = docs.getPage(path);
   if (!page) {
     throw notFound();
