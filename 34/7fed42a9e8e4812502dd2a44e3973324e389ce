@@ -1,1 +1,6 @@
-export @repo/ui/storybook/preview for auth-ui stories (no-package-escape)
+Revision history for #698:
+
+rev 2 (content) 2026-09-19 20:48 UTC — export @repo/ui/storybook/preview for auth-ui stories (no-package-escape)
+rev 1 (initial) 2026-09-19 20:48 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":698,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"110d0a9ada1f0757164cfb494c3aa41ae233eabc","timestamp_iso":"2026-09-19T20:48:20Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"110d0a9ada1f0757164cfb494c3aa41ae233eabc","new_sha":"347fed42a9e8e4812502dd2a44e3973324e389ce","timestamp_iso":"2026-09-19T20:48:20Z","reason":"export @repo/ui/storybook/preview for auth-ui stories (no-package-escape)","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/110d0a9ada1f0757164cfb494c3aa41ae233eabc...347fed42a9e8e4812502dd2a44e3973324e389ce"}]} -->
