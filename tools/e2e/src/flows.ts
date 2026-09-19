@@ -57,7 +57,7 @@ const answerTotpChallenge = async (page: Page, uri: string): Promise<void> => {
 const enrollButton = "認証アプリの登録を開始";
 
 const beginEnrollment = async (visit: Visit): Promise<void> => {
-  await visit.page.goto(`${visit.origin}/security`);
+  await visit.page.goto(`${visit.origin}/settings/security`);
   await readyButton(visit.page, enrollButton);
   await fill(visit.page, {
     fieldLabel: "設定変更を確認するパスワード",
@@ -98,9 +98,9 @@ const enrollTotp = async (visit: Visit): Promise<Enrollment> => {
 const signOutButton = "ログアウト";
 
 const signOut = async (page: Page, origin: string): Promise<void> => {
-  await page.goto(`${origin}/security`);
+  await page.goto(`${origin}/settings/security`);
   await press(page, signOutButton);
-  await page.waitForURL((url) => !url.pathname.startsWith("/security"), {
+  await page.waitForURL((url) => !url.pathname.startsWith("/settings/security"), {
     timeout: appearanceTimeout,
   });
   await page.goto(`${origin}/login`);

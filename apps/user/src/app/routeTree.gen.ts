@@ -17,7 +17,14 @@ import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as MemberSettingsIndexRouteImport } from './routes/_member/settings.index'
+import { Route as MemberSettingsAiRouteImport } from './routes/_member/settings.ai'
+import { Route as MemberSettingsInterviewRouteImport } from './routes/_member/settings.interview'
+import { Route as MemberSettingsLeaveRouteImport } from './routes/_member/settings.leave'
+import { Route as MemberSettingsNotificationsRouteImport } from './routes/_member/settings.notifications'
+import { Route as MemberSettingsPlanRouteImport } from './routes/_member/settings.plan'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
+import { Route as MemberSettingsSecurityRouteImport } from './routes/_member/settings.security'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 
@@ -59,9 +66,45 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberSettingsIndexRoute = MemberSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsAiRoute = MemberSettingsAiRouteImport.update({
+  id: '/settings/ai',
+  path: '/settings/ai',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsInterviewRoute = MemberSettingsInterviewRouteImport.update({
+  id: '/settings/interview',
+  path: '/settings/interview',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsLeaveRoute = MemberSettingsLeaveRouteImport.update({
+  id: '/settings/leave',
+  path: '/settings/leave',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsNotificationsRoute =
+  MemberSettingsNotificationsRouteImport.update({
+    id: '/settings/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => MemberRoute,
+  } as any)
+const MemberSettingsPlanRoute = MemberSettingsPlanRouteImport.update({
+  id: '/settings/plan',
+  path: '/settings/plan',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberSettingsProfileRoute = MemberSettingsProfileRouteImport.update({
   id: '/settings/profile',
   path: '/settings/profile',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsSecurityRoute = MemberSettingsSecurityRouteImport.update({
+  id: '/settings/security',
+  path: '/settings/security',
   getParentRoute: () => MemberRoute,
 } as any)
 const MemberUsersIndexRoute = MemberUsersIndexRouteImport.update({
@@ -82,8 +125,15 @@ export interface FileRoutesByFullPath {
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/settings/ai': typeof MemberSettingsAiRoute
+  '/settings/interview': typeof MemberSettingsInterviewRoute
+  '/settings/leave': typeof MemberSettingsLeaveRoute
+  '/settings/notifications': typeof MemberSettingsNotificationsRoute
+  '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
+  '/settings/security': typeof MemberSettingsSecurityRoute
   '/users/$id': typeof MemberUsersIdRoute
+  '/settings/': typeof MemberSettingsIndexRoute
   '/users/': typeof MemberUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -93,8 +143,15 @@ export interface FileRoutesByTo {
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/settings/ai': typeof MemberSettingsAiRoute
+  '/settings/interview': typeof MemberSettingsInterviewRoute
+  '/settings/leave': typeof MemberSettingsLeaveRoute
+  '/settings/notifications': typeof MemberSettingsNotificationsRoute
+  '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
+  '/settings/security': typeof MemberSettingsSecurityRoute
   '/users/$id': typeof MemberUsersIdRoute
+  '/settings': typeof MemberSettingsIndexRoute
   '/users': typeof MemberUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -107,8 +164,15 @@ export interface FileRoutesById {
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/_public/': typeof PublicIndexRoute
+  '/_member/settings/ai': typeof MemberSettingsAiRoute
+  '/_member/settings/interview': typeof MemberSettingsInterviewRoute
+  '/_member/settings/leave': typeof MemberSettingsLeaveRoute
+  '/_member/settings/notifications': typeof MemberSettingsNotificationsRoute
+  '/_member/settings/plan': typeof MemberSettingsPlanRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
+  '/_member/settings/security': typeof MemberSettingsSecurityRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
+  '/_member/settings/': typeof MemberSettingsIndexRoute
   '/_member/users/': typeof MemberUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -120,8 +184,15 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/api/$'
+    | '/settings/ai'
+    | '/settings/interview'
+    | '/settings/leave'
+    | '/settings/notifications'
+    | '/settings/plan'
     | '/settings/profile'
+    | '/settings/security'
     | '/users/$id'
+    | '/settings/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -131,8 +202,15 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/api/$'
+    | '/settings/ai'
+    | '/settings/interview'
+    | '/settings/leave'
+    | '/settings/notifications'
+    | '/settings/plan'
     | '/settings/profile'
+    | '/settings/security'
     | '/users/$id'
+    | '/settings'
     | '/users'
   id:
     | '__root__'
@@ -144,8 +222,15 @@ export interface FileRouteTypes {
     | '/_public/verify-email'
     | '/api/$'
     | '/_public/'
+    | '/_member/settings/ai'
+    | '/_member/settings/interview'
+    | '/_member/settings/leave'
+    | '/_member/settings/notifications'
+    | '/_member/settings/plan'
     | '/_member/settings/profile'
+    | '/_member/settings/security'
     | '/_member/users/$id'
+    | '/_member/settings/'
     | '/_member/users/'
   fileRoutesById: FileRoutesById
 }
@@ -213,11 +298,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_member/settings/': {
+      id: '/_member/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof MemberSettingsIndexRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/ai': {
+      id: '/_member/settings/ai'
+      path: '/settings/ai'
+      fullPath: '/settings/ai'
+      preLoaderRoute: typeof MemberSettingsAiRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/interview': {
+      id: '/_member/settings/interview'
+      path: '/settings/interview'
+      fullPath: '/settings/interview'
+      preLoaderRoute: typeof MemberSettingsInterviewRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/leave': {
+      id: '/_member/settings/leave'
+      path: '/settings/leave'
+      fullPath: '/settings/leave'
+      preLoaderRoute: typeof MemberSettingsLeaveRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/notifications': {
+      id: '/_member/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof MemberSettingsNotificationsRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/plan': {
+      id: '/_member/settings/plan'
+      path: '/settings/plan'
+      fullPath: '/settings/plan'
+      preLoaderRoute: typeof MemberSettingsPlanRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/settings/profile': {
       id: '/_member/settings/profile'
       path: '/settings/profile'
       fullPath: '/settings/profile'
       preLoaderRoute: typeof MemberSettingsProfileRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/security': {
+      id: '/_member/settings/security'
+      path: '/settings/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof MemberSettingsSecurityRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_member/users/': {
@@ -239,15 +373,29 @@ declare module '@tanstack/react-router' {
 
 interface MemberRouteChildren {
   MemberSecurityRoute: typeof MemberSecurityRoute
+  MemberSettingsAiRoute: typeof MemberSettingsAiRoute
+  MemberSettingsInterviewRoute: typeof MemberSettingsInterviewRoute
+  MemberSettingsLeaveRoute: typeof MemberSettingsLeaveRoute
+  MemberSettingsNotificationsRoute: typeof MemberSettingsNotificationsRoute
+  MemberSettingsPlanRoute: typeof MemberSettingsPlanRoute
   MemberSettingsProfileRoute: typeof MemberSettingsProfileRoute
+  MemberSettingsSecurityRoute: typeof MemberSettingsSecurityRoute
   MemberUsersIdRoute: typeof MemberUsersIdRoute
+  MemberSettingsIndexRoute: typeof MemberSettingsIndexRoute
   MemberUsersIndexRoute: typeof MemberUsersIndexRoute
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
   MemberSecurityRoute: MemberSecurityRoute,
+  MemberSettingsAiRoute: MemberSettingsAiRoute,
+  MemberSettingsInterviewRoute: MemberSettingsInterviewRoute,
+  MemberSettingsLeaveRoute: MemberSettingsLeaveRoute,
+  MemberSettingsNotificationsRoute: MemberSettingsNotificationsRoute,
+  MemberSettingsPlanRoute: MemberSettingsPlanRoute,
   MemberSettingsProfileRoute: MemberSettingsProfileRoute,
+  MemberSettingsSecurityRoute: MemberSettingsSecurityRoute,
   MemberUsersIdRoute: MemberUsersIdRoute,
+  MemberSettingsIndexRoute: MemberSettingsIndexRoute,
   MemberUsersIndexRoute: MemberUsersIndexRoute,
 }
 
