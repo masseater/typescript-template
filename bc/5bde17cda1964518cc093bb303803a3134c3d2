@@ -1,1 +1,1 @@
-Rebase onto main after #570/#592; fold SNS/settings under service-member.
+rebase onto latest main after queue peers landed
