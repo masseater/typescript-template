@@ -4,8 +4,8 @@ const rootOnDemandChecks = {
 
 const onDemandGateEntries = new Set([
   ...Object.keys(rootOnDemandChecks).map((name) => `.: ${name}`),
-  "tools/observe: verify",
-  "tools/observe: check:exported",
+  "tools/dev: verify",
+  "tools/dev: check:exported",
 ]);
 
 export { onDemandGateEntries, rootOnDemandChecks };

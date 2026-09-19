@@ -104,7 +104,7 @@ export default defineConfig({
             "tools/dev/**/*.test.ts",
             "tools/quality/**/*.test.ts",
             "tools/load/**/*.test.ts",
-            "tools/observe/**/*.test.ts",
+            "tools/dev/src/observe/**/*.test.ts",
             "tools/commander/**/*.test.ts",
             "infra/**/*.test.ts",
           ],

@@ -33,7 +33,7 @@ const awaitingPresetPackages = [
   "libs/runtime/**",
   "tools/commander/**",
   "tools/dev/**",
-  "tools/observe/**",
+  "tools/dev/src/observe/**",
   "tools/quality/**",
 ];
 
@@ -45,7 +45,7 @@ const templateWorkspaces = [
   "tools/dev/**",
   "tools/e2e/**",
   "tools/load/**",
-  "tools/observe/**",
+  "tools/dev/src/observe/**",
   "tools/quality/**",
 ];
 
