@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 
 import { parseSync } from "vite-plus";
 
-import { field } from "./dependencies.ts";
+import { field } from "./record-field.ts";
 
 interface A11yRelaxation {
   readonly file: string;
@@ -18,9 +18,7 @@ interface ExportedStory {
 
 const storySuffix = ".stories.tsx";
 
-const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/src/**/*.stories.tsx",
-);
+const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob("./src/**/*.stories.tsx");
 
 const storyName = (part: string): string => {
   return part.replace(/\.tsx$/u, storySuffix);
@@ -29,13 +27,15 @@ const storyName = (part: string): string => {
 const storylessParts = (directory: string): string[] => {
   const files = readdirSync(directory).filter((file) => file.endsWith(".tsx"));
   const stories = new Set(files.filter((file) => file.endsWith(storySuffix)));
-  return files
-    .filter((file) => !stories.has(file) && !stories.has(storyName(file)))
-    .map(
-      (file) =>
+  const missing: string[] = [];
+  for (const file of files) {
+    if (!stories.has(file) && !stories.has(storyName(file))) {
+      missing.push(
         `${file}: 部品の隣に ${storyName(file)} を置いてください。story がない部品はブラウザテストと a11y 検査を受けません。`,
-    )
-    .toSorted();
+      );
+    }
+  }
+  return missing.toSorted();
 };
 
 const nodes = (node: unknown, key: string): unknown[] => {
@@ -66,13 +66,19 @@ const disabledRules = (a11y: unknown): string[] => {
 };
 
 const exportedStories = (body: readonly unknown[]): ExportedStory[] => {
-  return body
-    .filter((node: unknown) => field(node, "type") === "ExportNamedDeclaration")
-    .flatMap((node: unknown) => nodes(field(node, "declaration"), "declarations"))
-    .map((declaration: unknown) => ({
-      name: String(field(field(declaration, "id"), "name")),
-      options: nodes(field(declaration, "init"), "arguments").at(0),
-    }));
+  const stories: ExportedStory[] = [];
+  for (const node of body) {
+    if (field(node, "type") !== "ExportNamedDeclaration") {
+      continue;
+    }
+    for (const declaration of nodes(field(node, "declaration"), "declarations")) {
+      stories.push({
+        name: String(field(field(declaration, "id"), "name")),
+        options: nodes(field(declaration, "init"), "arguments").at(0),
+      });
+    }
+  }
+  return stories;
 };
 
 const fileRelaxations = (file: string): A11yRelaxation[] => {
@@ -89,7 +95,7 @@ const fileRelaxations = (file: string): A11yRelaxation[] => {
 
 const a11yRelaxations = (): A11yRelaxation[] => {
   return Object.keys(storyFiles)
-    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
+    .map((key) => key.replace(/^\.\//u, "libs/ui/"))
     .toSorted()
     .flatMap((file) => fileRelaxations(file))
     .toSorted(
@@ -100,7 +106,7 @@ const a11yRelaxations = (): A11yRelaxation[] => {
     );
 };
 
-const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
+const partsManifest = new URL("./package.json", import.meta.url);
 
 const workerFile = "libs/ui/storybook/public/mockServiceWorker.js";
 

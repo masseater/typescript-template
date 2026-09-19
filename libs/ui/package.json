@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth": "./src/auth.tsx",
+    "./lint-settings": "./lint-settings.ts",
     "./shell": "./src/shell.ts",
     "./signup": "./src/signup.tsx",
     "./styles.css": "./src/styles.css"
@@ -32,6 +33,7 @@
     "tailwindcss": "catalog:"
   },
   "devDependencies": {
+    "@shadcn/lint": "catalog:",
     "@storybook/addon-a11y": "10.6.0",
     "@storybook/addon-mcp": "10.6.0",
     "@storybook/addon-vitest": "10.6.0",

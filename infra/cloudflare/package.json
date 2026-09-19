@@ -2,6 +2,9 @@
   "name": "@repo/infra-cloudflare",
   "private": true,
   "type": "module",
+  "exports": {
+    "./lint-overrides": "./src/lint-overrides.ts"
+  },
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",

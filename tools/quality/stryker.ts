@@ -6,7 +6,6 @@ const configuration = {
     "**/tsconfig*.json",
     ".local-agents",
     ".local/**",
-    "tools/quality/agents-md.test.ts",
     "tools/quality/dependency-cruiser.test.ts",
     "tools/quality/effect-diagnostics.test.ts",
   ],
