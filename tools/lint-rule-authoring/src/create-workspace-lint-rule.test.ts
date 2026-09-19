@@ -40,7 +40,7 @@ describe("createWorkspaceLintRule", () => {
               "relatedGuidelines": [
                 "docs/guidelines/example.md",
               ],
-              "url": "https://github.com/masseater/mst/blob/main/packages/example/docs/lint/no-example--do-something-else.md",
+              "url": "https://github.com/masseater/typescript-template/blob/main/packages/example/docs/lint/no-example--do-something-else.md",
             },
             "messages": {
               "first": "A debugger statement must not stay in the source. Delete it. See packages/example/docs/lint/no-example--do-something-else.md.",

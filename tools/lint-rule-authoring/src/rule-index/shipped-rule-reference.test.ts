@@ -52,7 +52,7 @@ const WRITTEN_REFERENCE = [
   "",
   "| Rule | What it rejects | Notices |",
   "| --- | --- | --- |",
-  "| [no-thing--allow-it](https://github.com/masseater/mst/blob/main/packages/example/docs/lint/no-thing--allow-it.md) | Disallow the thing |  |",
+  "| [no-thing--allow-it](https://github.com/masseater/typescript-template/blob/main/packages/example/docs/lint/no-thing--allow-it.md) | Disallow the thing |  |",
   "",
   "<!-- END GENERATED shipped-lint-rules -->",
   "",

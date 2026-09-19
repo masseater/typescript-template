@@ -31,7 +31,7 @@ describe("workspaceLintRuleDocsUrl", () => {
 
     it("points at the document with an absolute repository URL", ({ url }) => {
       expect(url).toBe(
-        "https://github.com/masseater/mst/blob/main/packages/example/docs/lint/no-example--do-something-else.md",
+        "https://github.com/masseater/typescript-template/blob/main/packages/example/docs/lint/no-example--do-something-else.md",
       );
     });
   });
