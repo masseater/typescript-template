@@ -117,7 +117,7 @@ it.effect(
         const current = yield* client.verify();
         assert.deepStrictEqual(
           [current.user.role, current.session.audience, current.strong],
-          ["service-member", "service-member", false],
+          ["member", "service-member", false],
         );
       }),
     ),
