@@ -1,1 +1,1 @@
-fix FSD: move chrome to shared; export loadWikiPage via pages/docs public API
+fix FSD: move chrome to shared; export loadWikiPage via pages/docs public API; squash auth+shells into one PR
