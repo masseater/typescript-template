@@ -1,14 +1,25 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { loadavg } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
 
-import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
+import { type Application, applicationOrigins, applicationReadyPaths } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Schedule, Schema } from "effect";
+
+const readinessChecks = 120;
+const readinessInterval = "500 millis";
+const loadAverageDigits = 2;
+
+const oneMinuteLoadAverage = (): number => {
+  const [average = 0] = loadavg();
+  return Number(average.toFixed(loadAverageDigits));
+};
+
+const isMissing = (thrown: unknown): boolean => {
+  return (
+    typeof thrown === "object" && thrown !== null && "code" in thrown && thrown.code === "ENOENT"
+  );
+};
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
   reason: Schema.Literals([
@@ -20,87 +31,73 @@ class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("Env
   ]),
 }) {}
 
-const Application = Schema.Literals(applications);
-const root = fileURLToPath(new URL("../../../", import.meta.url));
-const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;
-const readinessChecks = 120;
-const readinessInterval = "500 millis";
-const loadAverageDigits = 2;
-
-function oneMinuteLoadAverage(): number {
-  const [average = 0] = loadavg();
-  return Number(average.toFixed(loadAverageDigits));
-}
-
-function isMissing(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
-}
-
-function builtVariables(app: typeof Application.Type): Effect.Effect<string, EnvironmentUnusable> {
+const builtVariables = (app: Application): Effect.Effect<string, EnvironmentUnusable> => {
   return Effect.tryPromise({
-    catch: (error) =>
-      new EnvironmentUnusable({ reason: isMissing(error) ? "build_missing" : "file_io_failed" }),
-    try: async () => readFile(path.join(root, "apps", app, "dist/server/.dev.vars"), "utf-8"),
+    catch: (unread) =>
+      new EnvironmentUnusable({ reason: isMissing(unread) ? "build_missing" : "file_io_failed" }),
+    try: async () =>
+      readFile(path.join(repositoryRoot, "apps", app, "dist/server/.dev.vars"), "utf-8"),
   });
-}
+};
+
+const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;
 
 const requireLoopbackOrigin = Effect.fn("requireLoopbackOrigin")(function* requireLoopbackOrigin(
-  app: typeof Application.Type,
+  app: Application,
 ) {
   const origin = applicationOrigins[app];
   const variables = yield* builtVariables(app);
-  if (appOrigin.exec(variables)?.groups?.["origin"] !== origin) {
+  if (appOrigin.exec(variables)?.groups?.origin !== origin) {
     return yield* new EnvironmentUnusable({ reason: "origin_mismatch" });
   }
   return origin;
 });
 
-function answeredStatus(
+const answeredStatus = (
   url: string,
   method: "GET" | "POST",
-): Effect.Effect<number, EnvironmentUnusable> {
+): Effect.Effect<number, EnvironmentUnusable> => {
   return Effect.tryPromise({
     catch: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
     try: async () => {
-      const response = await fetch(url, { method, redirect: "manual" });
-      await response.body?.cancel();
-      return response.status;
+      const answered = await fetch(url, { method, redirect: "manual" });
+      await answered.body?.cancel();
+      return answered.status;
     },
   });
-}
+};
 
-function isSuccessful(status: number): boolean {
+const isSuccessful = (answeredCode: number): boolean => {
   const firstSuccess = 200;
   const firstRedirect = 300;
-  return status >= firstSuccess && status < firstRedirect;
-}
+  return answeredCode >= firstSuccess && answeredCode < firstRedirect;
+};
 
-function awaitReady(app: typeof Application.Type): Effect.Effect<void, EnvironmentUnusable> {
+const awaitReady = (app: Application): Effect.Effect<void, EnvironmentUnusable> => {
   return answeredStatus(`${applicationOrigins[app]}${applicationReadyPaths[app]}`, "GET").pipe(
-    Effect.flatMap((status) =>
-      isSuccessful(status)
+    Effect.flatMap((answeredCode) =>
+      isSuccessful(answeredCode)
         ? Effect.void
         : Effect.fail(new EnvironmentUnusable({ reason: "target_unreachable" })),
     ),
     Effect.retry({ schedule: Schedule.spaced(readinessInterval), times: readinessChecks }),
   );
-}
+};
 
-function clearTraces(origin: string): Effect.Effect<void, EnvironmentUnusable> {
+const clearTraces = (origin: string): Effect.Effect<void, EnvironmentUnusable> => {
   return answeredStatus(
     `${origin}/cdn-cgi/local/explorer/api/local/observability/clear`,
     "POST",
   ).pipe(
-    Effect.flatMap((status) =>
-      isSuccessful(status)
+    Effect.flatMap((answeredCode) =>
+      isSuccessful(answeredCode)
         ? Effect.void
         : Effect.fail(new EnvironmentUnusable({ reason: "traces_not_cleared" })),
     ),
   );
-}
+};
 
 export {
-  Application,
   EnvironmentUnusable,
   awaitReady,
   clearTraces,

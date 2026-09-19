@@ -8,7 +8,6 @@ const applicationChecks = Object.values(roleApplications).flatMap((application) 
   `@repo/${application}#check:dev`,
 ]);
 
-// oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   run: {
     tasks: {
@@ -22,11 +21,14 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
     fileParallelism: false,
     hookTimeout: 900_000,
     include: ["src/**/*.test.ts"],
     maxWorkers: 1,
+    mockReset: true,
     pool: "forks",
+    restoreMocks: true,
     testTimeout: 600_000,
   },
 });

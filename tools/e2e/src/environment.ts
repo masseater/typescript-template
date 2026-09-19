@@ -1,80 +1,61 @@
-import { applications } from "@repo/config";
+import { type Application, applications } from "@repo/config";
 
 import { serveApplication } from "./app-servers.ts";
 import { generateAuthSecret, replaceDevVars } from "./dev-vars.ts";
+import { type Disposer, newDisposerStack } from "./disposers.ts";
 import { documentPaths } from "./documents.ts";
-import { roleApplications } from "./journey-roles.ts";
-import { startIsolatedDatabase } from "./local-database.ts";
-import { startMailSink } from "./mail.ts";
+import { type JourneyRole, roleApplications } from "./journey-roles.ts";
+import { type IsolatedDatabase, startIsolatedDatabase } from "./local-database.ts";
+import { type MailSink, startMailSink } from "./mail.ts";
 import { freePort, loopbackOrigin } from "./ports.ts";
 
-import type { Application } from "@repo/config";
-import type { JourneyRole } from "./journey-roles.ts";
-import type { IsolatedDatabase } from "./local-database.ts";
-import type { MailSink } from "./mail.ts";
-
-type Disposer = () => Promise<void>;
 type Collect = (disposer: Disposer) => void;
 
-interface ConfiguredApplication {
+type ConfiguredApplication = {
   readonly application: Application;
   readonly origin: string;
   readonly port: number;
-}
+};
 
-interface JourneyEnvironment {
-  readonly documents: readonly string[];
-  readonly mail: MailSink;
-  readonly originOf: (role: JourneyRole) => string;
-  readonly promoteToAdministrator: (email: string) => Promise<void>;
-  readonly stop: Disposer;
-}
-
-async function disposeAll(disposers: readonly Disposer[]): Promise<void> {
-  const [first, ...rest] = disposers;
-  if (first === undefined) {
-    return;
-  }
-  await Promise.allSettled([first()]);
-  await disposeAll(rest);
-}
-
-async function configureApplications(
+const configureApplications = async (
   collect: Collect,
   mailOrigin: string,
-): Promise<readonly ConfiguredApplication[]> {
+): Promise<readonly ConfiguredApplication[]> => {
   const authSecret = generateAuthSecret();
   return Promise.all(
     applications.map(async (application) => {
       const port = await freePort();
       const origin = loopbackOrigin(port);
-      const values = { appOrigin: origin, authSecret, mailOrigin };
-      collect(await replaceDevVars(application, values));
+      collect(await replaceDevVars(application, { appOrigin: origin, authSecret, mailOrigin }));
       return { application, origin, port };
     }),
   );
-}
+};
 
-async function serveApplications(
+const serveApplications = async (
   collect: Collect,
-  configured: readonly ConfiguredApplication[],
-  database: IsolatedDatabase,
-): Promise<void> {
-  const [first, ...rest] = configured;
+  pending: {
+    readonly configured: readonly ConfiguredApplication[];
+    readonly database: IsolatedDatabase;
+  },
+): Promise<void> => {
+  const [first, ...rest] = pending.configured;
   if (first === undefined) {
     return;
   }
   const running = await serveApplication({
     application: first.application,
-    environment: database.environment,
-    logDirectory: database.directory,
+    environment: pending.database.environment,
+    logDirectory: pending.database.directory,
     port: first.port,
   });
   collect(running.stop);
-  await serveApplications(collect, rest, database);
-}
+  await serveApplications(collect, { configured: rest, database: pending.database });
+};
 
-function originFinder(configured: readonly ConfiguredApplication[]): (role: JourneyRole) => string {
+const originFinder = (
+  configured: readonly ConfiguredApplication[],
+): ((role: JourneyRole) => string) => {
   return (role) => {
     const wanted = roleApplications[role];
     const found = configured.find(({ application }) => application === wanted);
@@ -83,36 +64,41 @@ function originFinder(configured: readonly ConfiguredApplication[]): (role: Jour
     }
     return found.origin;
   };
-}
+};
 
-async function launch(collect: Collect): Promise<Omit<JourneyEnvironment, "stop">> {
+type JourneyEnvironment = {
+  readonly documents: readonly string[];
+  readonly mail: MailSink;
+  readonly originOf: (role: JourneyRole) => string;
+  readonly promoteToAdministrator: (email: string) => Promise<void>;
+  readonly stop: Disposer;
+};
+
+const launch = async (collect: Collect): Promise<Omit<JourneyEnvironment, "stop">> => {
   const database = await startIsolatedDatabase();
   collect(database.remove);
   const mail = await startMailSink();
   collect(mail.stop);
   const configured = await configureApplications(collect, mail.origin);
-  await serveApplications(collect, configured, database);
+  await serveApplications(collect, { configured, database });
   return {
     documents: await documentPaths(roleApplications.knowledge),
     mail,
     originOf: originFinder(configured),
     promoteToAdministrator: database.promoteToAdministrator,
   };
-}
+};
 
-async function startJourneyEnvironment(): Promise<JourneyEnvironment> {
-  const disposers: Disposer[] = [];
-  function collect(disposer: Disposer): void {
-    disposers.push(disposer);
-  }
+const startJourneyEnvironment = async (): Promise<JourneyEnvironment> => {
+  const { collect, disposeAll } = newDisposerStack();
   try {
     const started = await launch(collect);
-    return { ...started, stop: async () => disposeAll(disposers) };
-  } catch (error) {
-    await disposeAll(disposers);
-    throw error;
+    return { ...started, stop: disposeAll };
+  } catch (unlaunched) {
+    await disposeAll();
+    throw unlaunched;
   }
-}
+};
 
 export { startJourneyEnvironment };
 export type { JourneyEnvironment };

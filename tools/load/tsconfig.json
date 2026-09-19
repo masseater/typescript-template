@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["node"] },
-  "include": ["src/**/*.ts"]
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
+  "compilerOptions": { "types": ["vite-plus/client", "node"] },
+  "include": ["src/**/*.ts", "vite.config.ts"]
 }
