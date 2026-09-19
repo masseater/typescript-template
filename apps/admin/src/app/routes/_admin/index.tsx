@@ -1,10 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { UsersPage, normalizeUsersSearch } from "#pages/users/index.ts";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 const Route = createFileRoute("/_admin/")({
-  component: UsersPage,
-  validateSearch: normalizeUsersSearch,
+  beforeLoad: () => {
+    throw redirect({ to: "/members" });
+  },
 });
 
 export { Route };
