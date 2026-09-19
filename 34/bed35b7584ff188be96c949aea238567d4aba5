@@ -1,6 +1,1 @@
-Revision history for #647:
-
-rev 2 (content) 2026-09-19 18:29 UTC — rebase onto latest main; keep single-command load ci workflow with task-cache
-rev 1 (initial) 2026-09-19 18:29 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":647,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"f930913c04bd2fb9e885a1c35706e0772c03fcc5","timestamp_iso":"2026-09-19T18:29:06Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"f930913c04bd2fb9e885a1c35706e0772c03fcc5","new_sha":"34bed35b7584ff188be96c949aea238567d4aba5","timestamp_iso":"2026-09-19T18:29:06Z","reason":"rebase onto latest main; keep single-command load ci workflow with task-cache","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/f930913c04bd2fb9e885a1c35706e0772c03fcc5...34bed35b7584ff188be96c949aea238567d4aba5"}]} -->
+point load ci dependsOn and workflow at service-member after app rename
