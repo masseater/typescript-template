@@ -1,5 +1,5 @@
 {
-  "title": "LLM ガイドライン",
+  "title": "ガイドライン",
   "pages": [
     "principles",
     "writing-code",
@@ -10,6 +10,7 @@
     "placement-and-tools",
     "infrastructure",
     "observability",
-    "secrets-and-permissions"
+    "secrets-and-permissions",
+    "frontend"
   ]
 }
