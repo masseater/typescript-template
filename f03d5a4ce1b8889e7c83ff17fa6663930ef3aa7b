@@ -1,1 +1,6 @@
-knip: isDependencySource を非 export に（未使用 export）
+Revision history for #510:
+
+rev 2 (content) 2026-09-19 04:27 UTC — knip: isDependencySource を非 export に（未使用 export）
+rev 1 (initial) 2026-09-19 04:27 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":510,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"c490849400b742c699acc6cf37c03159a5bb68f1","timestamp_iso":"2026-09-19T04:27:40Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"c490849400b742c699acc6cf37c03159a5bb68f1","new_sha":"f03d5a4ce1b8889e7c83ff17fa6663930ef3aa7b","timestamp_iso":"2026-09-19T04:27:40Z","reason":"knip: isDependencySource を非 export に（未使用 export）","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/c490849400b742c699acc6cf37c03159a5bb68f1...f03d5a4ce1b8889e7c83ff17fa6663930ef3aa7b"}]} -->
