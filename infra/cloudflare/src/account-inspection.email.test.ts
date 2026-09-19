@@ -58,13 +58,12 @@ it.effect("blocks a sending domain another deployment has already onboarded", ()
 it.effect("does not report an unreadable state store as another deployment's claim", () =>
   Effect.gen(function* program() {
     yield* mockServer(...accountHandlers({ records: sendingRecords, subdomains: [sending] }));
-    const inspection = yield* inspectAccount(
-      access,
-      config,
-      Effect.fail("the state store cannot be read"),
-    );
-    assert.deepStrictEqual(inspection.sendingSubdomain, { unreadable: [STATE_STORE_SOURCE] });
-    assert.deepStrictEqual(inspection.emailSending, { unreadable: [STATE_STORE_SOURCE] });
+    const reason = "the state store cannot be read";
+    const inspection = yield* inspectAccount(access, config, Effect.fail(reason));
+    assert.deepStrictEqual(inspection.sendingSubdomain, {
+      unreadable: [STATE_STORE_SOURCE, reason],
+    });
+    assert.deepStrictEqual(inspection.emailSending, { unreadable: [STATE_STORE_SOURCE, reason] });
   }).pipe(Effect.scoped),
 );
 
