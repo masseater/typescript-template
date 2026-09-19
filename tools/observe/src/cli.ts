@@ -113,7 +113,7 @@ const remediation = {
   explorer:
     "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
   exported:
-    "Start the OTLP receiver with `pnpm --filter @repo/local up` and check that --trace-id and --minutes cover the exported trace.",
+    "Start the OTLP receiver with `vp run --filter @repo/local up` and check that --trace-id and --minutes cover the exported trace.",
 } as const;
 
 const query = Effect.fn("query")(function* query() {
