@@ -60,4 +60,16 @@ describe("error notifications", () => {
     );
     expect(message).toContain("error.fingerprint");
   });
+
+  it("marks a group value the query did not return instead of naming a plausible one", () => {
+    expect.hasAssertions();
+    const message = formatMessage(
+      decideNotifications(
+        [{ ...group("0000000a"), event: undefined, service: undefined, type: undefined }],
+        { "0000000a": now - (hoursPerDay + 1) * hour },
+        now,
+      ).notifications,
+    );
+    expect(message).toContain("[再発] (値なし) (値なし) (値なし) (fingerprint 0000000a, 3 件)");
+  });
 });

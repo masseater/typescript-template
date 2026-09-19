@@ -1,6 +1,7 @@
 import { readMigrationStatus } from "@repo/db/migrations";
 import { Effect } from "effect";
 
+import { readVerdict, unreadableState } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
 import { databaseName, findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
 import { recordedDatabaseIds } from "./state-ownership.ts";
@@ -38,12 +39,15 @@ const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
   target: DeploymentTarget,
   store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
-  if ((yield* findDatabaseId(access, databaseName(target.prefix))) === undefined) {
+  const existing = yield* findDatabaseId(access, databaseName(target.prefix));
+  if (existing === undefined) {
     return "free" as const;
   }
-  return yield* assertDatabaseUnclaimed(access, target, store).pipe(
-    Effect.as("owned" as const),
-    Effect.catchCause(() => Effect.succeed("taken" as const)),
+  const recorded = yield* recordedDatabaseIds(store, target.prefix).pipe(
+    Effect.catchCause(unreadableState),
+  );
+  return readVerdict(recorded, (ids): "owned" | "taken" =>
+    ids.includes(existing) ? "owned" : "taken",
   );
 });
 

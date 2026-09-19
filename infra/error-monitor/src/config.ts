@@ -6,6 +6,7 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
     "telemetry_account_invalid",
     "telemetry_http_failed",
     "telemetry_response_invalid",
+    "telemetry_response_truncated",
   ]),
 }) {}
 
