@@ -10,7 +10,7 @@ import { HttpResponse, http } from "msw";
 import { pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import { databaseName } from "./database-lookup.ts";
 import { deployTokenPermissions } from "./deploy-token.ts";
-import { stackName } from "./stacks.ts";
+import { stackName, stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { StateService } from "alchemy/State";
@@ -66,11 +66,14 @@ const deployedUnits = [
 ] as const;
 
 function emptyState(): Effect.Effect<StateService> {
-  return InMemoryService({});
+  return InMemoryService(
+    Object.fromEntries(stackNames.map((stack) => [stackName(stack), { [config.prefix]: {} }])),
+  );
 }
 
 function deployedState(zoneId: string = config.zoneId): Effect.Effect<StateService> {
   return InMemoryService({
+    ...Object.fromEntries(stackNames.map((stack) => [stackName(stack), { [config.prefix]: {} }])),
     [stackName("email")]: {
       [config.prefix]: {
         Sending: row("Cloudflare.Email.SendingSubdomain", {

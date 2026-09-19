@@ -37,11 +37,11 @@ function storedDatabase(uuid: string): CreatedResourceState {
 }
 
 function store(uuid?: string): Effect.Effect<StateService> {
-  return InMemoryService(
-    uuid === undefined
-      ? {}
-      : { [stackName("database")]: { [target.prefix]: { Database: storedDatabase(uuid) } } },
-  );
+  return InMemoryService({
+    [stackName("database")]: {
+      [target.prefix]: uuid === undefined ? {} : { Database: storedDatabase(uuid) },
+    },
+  });
 }
 
 const unusedName = http.get(endpoint, () => HttpResponse.json({ result: [], success: true }));
