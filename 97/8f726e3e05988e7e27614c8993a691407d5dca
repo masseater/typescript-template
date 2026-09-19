@@ -1,1 +1,6 @@
-rebase onto main: fold in settings routes/pages added under apps/user and regenerate lockfile
+Revision history for #560:
+
+rev 2 (content) 2026-09-19 09:53 UTC — rebase onto main: fold in settings routes/pages added under apps/user and regenerate lockfile
+rev 1 (initial) 2026-09-19 09:53 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":560,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"246120068e07e750a27353030c0b18cbb31af78f","timestamp_iso":"2026-09-19T09:53:51Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"246120068e07e750a27353030c0b18cbb31af78f","new_sha":"978f726e3e05988e7e27614c8993a691407d5dca","timestamp_iso":"2026-09-19T09:53:51Z","reason":"rebase onto main: fold in settings routes/pages added under apps/user and regenerate lockfile","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/246120068e07e750a27353030c0b18cbb31af78f...978f726e3e05988e7e27614c8993a691407d5dca"}]} -->
