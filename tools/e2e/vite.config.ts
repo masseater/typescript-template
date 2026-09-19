@@ -15,7 +15,7 @@ export default defineConfig({
       ...effectDiagnostics,
       "test:e2e": {
         cache: false,
-        command: "vp test run $TEST_SCOPE",
+        command: "vp test run",
         dependsOn: ["@repo/dev#setup", ...applicationChecks],
       },
       ...lifecycle({ precommit: [], premerge: ["test:e2e"], prepush: ["check:effect"] }),
