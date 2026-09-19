@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { causeRecord, markFailed, runCli } from "@repo/config/cli";
+import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, Schema } from "effect";
 
 import { repositoryRoot } from "./repository-root.ts";
