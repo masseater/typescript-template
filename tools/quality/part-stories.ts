@@ -102,7 +102,7 @@ const a11yRelaxations = (): A11yRelaxation[] => {
 
 const partsManifest = new URL("../../libs/ui/package.json", import.meta.url);
 
-const workerFile = "libs/ui/.storybook/public/mockServiceWorker.js";
+const workerFile = "libs/ui/storybook/public/mockServiceWorker.js";
 
 const vendoredWorkerViolations = (): string[] => {
   const { program } = parseSync(workerFile, readFileSync(workerFile, "utf-8"));
@@ -115,7 +115,7 @@ const vendoredWorkerViolations = (): string[] => {
   return vendored === installed
     ? []
     : [
-        `${workerFile}: msw ${String(installed)} に対して ${String(vendored)} のままです。vp exec msw init .storybook/public で取り直してください。`,
+        `${workerFile}: msw ${String(installed)} に対して ${String(vendored)} のままです。vp exec msw init storybook/public で取り直してください。`,
       ];
 };
 

@@ -1,6 +1,6 @@
 import { expect, fn, userEvent } from "storybook/test";
 
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { SelectField } from "./select-field";
 
 const changeRole = fn<(value: string) => void>();

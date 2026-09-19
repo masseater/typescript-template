@@ -1,7 +1,7 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
 import { noop } from "es-toolkit";
 
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { ConfirmDialogPopup } from "./confirm-dialog-popup";
 
 import type { ReactElement } from "react";

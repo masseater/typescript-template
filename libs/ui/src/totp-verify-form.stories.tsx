@@ -1,6 +1,6 @@
 import { noop } from "es-toolkit";
 
-import preview from "../.storybook/preview";
+import preview from "../storybook/preview";
 import { TotpVerifyForm } from "./totp-verify-form";
 
 const meta = preview.meta({

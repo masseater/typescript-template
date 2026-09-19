@@ -1,7 +1,7 @@
 import { HttpResponse, http } from "msw";
 import { expect } from "storybook/test";
 
-import preview from "../.storybook/preview";
+import preview from "../storybook/preview";
 import { MFASettings } from "./mfa";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";

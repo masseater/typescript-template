@@ -10,7 +10,7 @@ import {
 } from "./part-stories.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/.storybook/preview.tsx",
+  "../../libs/ui/storybook/preview.tsx",
   { eager: true, import: "default" },
 );
 
@@ -61,12 +61,12 @@ describe("part stories", () => {
 
   it("runs the stories as a test project of this repository", () => {
     expect.hasAssertions();
-    expect(storybookProjects()).toContain("./libs/ui/.storybook/vitest.config.ts");
+    expect(storybookProjects()).toContain("./libs/ui/storybook/vitest.config.ts");
   });
 
   it("fails a story on an accessibility violation", () => {
     expect.hasAssertions();
-    const parameters = composedParameters(previews["../../libs/ui/.storybook/preview.tsx"]);
+    const parameters = composedParameters(previews["../../libs/ui/storybook/preview.tsx"]);
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 

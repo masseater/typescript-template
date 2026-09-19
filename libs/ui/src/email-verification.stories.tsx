@@ -1,6 +1,6 @@
 import { expect } from "storybook/test";
 
-import preview from "../.storybook/preview";
+import preview from "../storybook/preview";
 import { EmailVerification } from "./email-verification";
 
 const meta = preview.meta({ component: EmailVerification });
