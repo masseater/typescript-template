@@ -2,7 +2,6 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "@pulumi/": "alchemy",
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
   pulumi: "alchemy",
-  "react-intl": "Paraglide JS",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
 

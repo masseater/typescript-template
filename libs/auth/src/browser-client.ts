@@ -1,3 +1,4 @@
+import { applicationOrigins } from "@repo/config";
 import { Effect } from "effect";
 
 import { Auth } from "./auth.ts";
@@ -8,11 +9,7 @@ interface JsonResponse {
   readonly status: number;
 }
 
-const origins = {
-  admin: "http://localhost:4102",
-  user: "http://localhost:4101",
-  wiki: "http://localhost:4103",
-} as const;
+const origins = applicationOrigins;
 
 class BrowserClient {
   public readonly cookies = new Map<string, string>();

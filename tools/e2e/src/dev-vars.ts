@@ -35,6 +35,7 @@ const serialize = (devVars: DevVars): string => {
     ["AUTH_SECRET", devVars.authSecret],
     ["EMAIL_FROM", "no-reply@example.test"],
     ["MAILPIT_URL", devVars.mailOrigin],
+    ["OPS_EMAIL", "ops@example.test"],
   ];
   return `${assignments.map(([variable, assigned]) => `${variable}=${JSON.stringify(assigned)}`).join("\n")}\n`;
 };

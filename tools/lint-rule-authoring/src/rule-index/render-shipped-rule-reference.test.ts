@@ -6,7 +6,7 @@ import type { BundledLintRule } from "./rule-bundle.ts";
 
 const WORKSPACE_DIR = "packages/dont-review-it";
 
-const DOCS_BASE = `https://github.com/masseater/mst/blob/main/${WORKSPACE_DIR}/docs/lint`;
+const DOCS_BASE = `https://github.com/masseater/typescript-template/blob/main/${WORKSPACE_DIR}/docs/lint`;
 
 const plainRule: BundledLintRule = {
   bundle: null,
