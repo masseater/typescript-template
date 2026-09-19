@@ -1,1 +1,6 @@
-main の logs / span-mutation 追加と rebase し、両方を残す
+Revision history for #534:
+
+rev 2 (content) 2026-09-19 06:28 UTC — main の logs / span-mutation 追加と rebase し、両方を残す
+rev 1 (initial) 2026-09-19 06:28 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":534,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"13c37b04832df468a3a35ba97c0f3029912ff0fa","timestamp_iso":"2026-09-19T06:28:21Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"13c37b04832df468a3a35ba97c0f3029912ff0fa","new_sha":"bb0710f59e0c5d8e006ac4b7faa9b61cf8552e66","timestamp_iso":"2026-09-19T06:28:21Z","reason":"main の logs / span-mutation 追加と rebase し、両方を残す","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/13c37b04832df468a3a35ba97c0f3029912ff0fa...bb0710f59e0c5d8e006ac4b7faa9b61cf8552e66"}]} -->
