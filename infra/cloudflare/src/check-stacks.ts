@@ -79,6 +79,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText("EMAIL_FROM", mailFrom),
+      plainText("OPS_EMAIL", budget.recipients[0] ?? mailFrom),
       "OTLP_AUTHORIZATION:secret_text:text=$TEMPLATE_OTLP_AUTHORIZATION",
       plainText("OTLP_ENABLED", String(otlp.enabled)),
       plainText("OTLP_ENDPOINT", otlp.endpoint),

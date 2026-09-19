@@ -2,6 +2,7 @@ import { verifySession } from "@repo/auth";
 import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { accountApi, unavailable } from "@repo/runtime/account";
+import { contactApi } from "@repo/runtime/contact";
 import {
   MemberList,
   MemberListQuery,
@@ -25,6 +26,7 @@ const failures = {
 
 const userApi = createApi(apiRoot)
   .use(accountApi(api))
+  .use(contactApi(api))
   .use(interviewApi(api))
   .get(
     "/profile",

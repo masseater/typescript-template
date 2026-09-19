@@ -21,6 +21,7 @@ function appEnvironment(
     ASSETS: { fetch: async (): Promise<Response> => new Response(undefined) },
     AUTH_SECRET: fixtureAuthSecret,
     EMAIL_FROM: "sender@example.test",
+    OPS_EMAIL: "ops@example.test",
     ...overrides,
   };
 }
