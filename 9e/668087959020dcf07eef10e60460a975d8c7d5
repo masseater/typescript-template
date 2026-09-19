@@ -1,1 +1,1 @@
-replace owned vocabulary literals with APPLICATION/ROLE/AUTHENTICATION_METHOD bindings
+replace vocabulary literals; derive MAILPIT_SEND_URL; wire OpsMail; export AuthenticationMethod
