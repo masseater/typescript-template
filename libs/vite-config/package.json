@@ -1,0 +1,19 @@
+{
+  "name": "@repo/vite-config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/vite.ts",
+    "./source-maps": "./src/source-maps.ts"
+  },
+  "dependencies": {
+    "@repo/config": "workspace:*",
+    "@vitejs/plugin-react": "6.1.1",
+    "vite-plus": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "oxc-transform-react": "0.145.0",
+    "typescript": "catalog:"
+  }
+}

@@ -1,7 +1,7 @@
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
 import { dontReviewItPreset } from "@repo/dont-review-it";
 import { generatedFiles, lintOptions } from "@repo/quality/lint";
 import { workerTests } from "@repo/quality/test-runtime";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -118,5 +118,7 @@ export default defineConfig({
     mockReset: true,
     restoreMocks: true,
     testTimeout: 30_000,
+    unstubEnvs: true,
+    unstubGlobals: true,
   },
 });

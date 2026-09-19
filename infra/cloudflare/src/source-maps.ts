@@ -3,7 +3,7 @@ import { access, chmod, copyFile, lstat, mkdir, readFile, readdir } from "node:f
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { sourceMapDirectories, sourceMapManifest } from "@repo/config/source-maps";
+import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
 import { Effect, Schema } from "effect";
 
 import { ArtifactFailure, fail, io, isMissing } from "./artifact-io.ts";

@@ -11,7 +11,9 @@
     "./testing": "./src/testing.ts",
     "./remote": "./src/remote-command.ts",
     "./migrations": "./src/remote-operations.ts",
-    "./local": "./src/local.ts"
+    "./local": "./src/local.ts",
+    "./migrate-d1": "./src/migrate-d1.ts",
+    "./remote-input": "./src/remote-input.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate"
@@ -19,14 +21,13 @@
   "dependencies": {
     "@repo/config": "workspace:*",
     "drizzle-orm": "catalog:",
-    "effect": "catalog:",
-    "miniflare": "catalog:",
-    "wrangler": "catalog:"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
     "msw": "catalog:",

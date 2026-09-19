@@ -1,14 +1,12 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import { workerCompatibility } from "@repo/config/worker";
 import react from "@vitejs/plugin-react";
-
-import { applicationPorts, loopbackAddress } from "./applications.ts";
+import { defineConfig } from "vite-plus";
 
 import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-import type { Application } from "./applications.ts";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
@@ -42,6 +40,7 @@ const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
+  "libs/runtime/src/security.ts",
 ] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
   ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
@@ -205,7 +204,7 @@ const appRun = {
     },
     "check:dev": {
       command: "dev-start",
-      dependsOn: ["@repo/dev#setup", "@repo/db#db:migrate:local"],
+      dependsOn: ["@repo/dev#setup", "@repo/db-local#db:migrate:local"],
       input: [
         ...taskInput,
         ...withoutGenerated(".wrangler", "dist"),
@@ -225,10 +224,72 @@ const appRun = {
   },
 } satisfies RunConfig;
 
+const toolTest: NonNullable<UserConfig["test"]> = {
+  mockReset: true,
+  restoreMocks: true,
+  coverage: {
+    exclude: ["specs/**"],
+    thresholds: { 100: true, perFile: true },
+  },
+  unstubEnvs: true,
+  unstubGlobals: true,
+};
+
+const workerNames = {
+  "internal-dashboard": "template-wiki",
+  "service-admin": "template-admin",
+  "service-member": "template-user",
+} as const satisfies Readonly<Record<Application, string>>;
+
+function appCloudflare(
+  app: Application,
+  options: {
+    readonly command: "build" | "serve";
+    readonly isPreview: boolean | undefined;
+    readonly database: {
+      readonly binding: string;
+      readonly database_id: string;
+      readonly database_name: string;
+    };
+    readonly persistState: string;
+  },
+): {
+  readonly config: {
+    readonly assets: { readonly binding: "ASSETS"; readonly run_worker_first: boolean };
+    readonly compatibility_date: string;
+    readonly compatibility_flags: readonly string[];
+    readonly d1_databases: readonly unknown[];
+    readonly main: "./src/app/server.ts";
+    readonly name: string;
+  };
+  readonly inspectorPort: false;
+  readonly persistState: { readonly path: string };
+  readonly viteEnvironment: { readonly name: "ssr" };
+} {
+  return {
+    config: {
+      assets: {
+        binding: "ASSETS",
+        run_worker_first: options.command !== "serve" || options.isPreview === true,
+      },
+      compatibility_date: workerCompatibility.date,
+      compatibility_flags: [...workerCompatibility.flags],
+      d1_databases: [options.database],
+      main: "./src/app/server.ts",
+      name: workerNames[app],
+    },
+    inspectorPort: false,
+    persistState: { path: options.persistState },
+    viteEnvironment: { name: "ssr" },
+  };
+}
+
 export {
+  appCloudflare,
   appRun,
   appServer,
   clientReachableModules,
+  defineConfig,
   effectDiagnostics,
   effectRun,
   intentValidation,
@@ -243,6 +304,7 @@ export {
   startOptions,
   taskInput,
   testRun,
+  toolTest,
   withoutEnvFileLoader,
 };
 export { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";

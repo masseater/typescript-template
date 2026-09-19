@@ -7,9 +7,9 @@ import { readJson, rejectionStatus } from "./request.ts";
 import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 
-import type { ServiceName } from "@repo/config";
 import type { BrowserEvent } from "./events.ts";
 import type { JsonRequest } from "./request.ts";
+import type { ServiceName } from "./service-name.ts";
 import type { Severity } from "./severity.ts";
 
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
