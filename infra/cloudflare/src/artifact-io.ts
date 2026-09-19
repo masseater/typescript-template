@@ -32,6 +32,7 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
     "budget_worker_artifact_empty",
     "error_worker_artifact_empty",
     "health_worker_artifact_empty",
+    "generations_missing",
   ]),
 }) {}
 
