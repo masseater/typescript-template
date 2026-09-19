@@ -1,0 +1,1 @@
+Unexport AccessibleNameCount so knip stops flagging an unused exported type.
