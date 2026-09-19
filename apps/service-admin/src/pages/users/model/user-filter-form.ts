@@ -17,6 +17,14 @@ interface UserFilterForm {
   readonly verified: string;
 }
 
+function usersSearchFromFilters(keyword: string, role: string, verified: string): UsersSearch {
+  return normalizeUsersSearch({
+    ...(keyword.trim() === "" ? {} : { keyword }),
+    ...(role === "" ? {} : { role }),
+    ...(verified === "" ? {} : { verified }),
+  });
+}
+
 function useUserFilterForm(search: UsersSearch): UserFilterForm {
   const navigate = useNavigate({ from: "/members" });
   const [keyword, setKeyword] = useState(search.keyword ?? "");
@@ -26,7 +34,7 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
   );
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    void navigate({ search: normalizeUsersSearch({ keyword, role, verified }) });
+    void navigate({ search: usersSearchFromFilters(keyword, role, verified) });
   }
   function handleClear(): void {
     void navigate({ search: {} });
