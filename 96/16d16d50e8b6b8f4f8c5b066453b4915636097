@@ -1,0 +1,1 @@
+Reorder role rename migration after social_links and refresh snapshot so models need no further migration.
