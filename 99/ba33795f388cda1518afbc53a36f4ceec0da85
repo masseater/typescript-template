@@ -1,1 +1,1 @@
-keep auth/config/db/monitor/observability on awaitingPresetPackages until remaining ~90 preset lints are cleared; restore vitest.workers.config name
+Rebase onto latest main after MQ DIRTY dequeue; resolve StatusMessage/ROLE/AUTHENTICATION_METHOD conflicts.
