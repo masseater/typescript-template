@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { project } from "@shadcn/lint";
 
-const smarthrTokens: Readonly<Record<string, string>> = {
+const designTokens: Readonly<Record<string, string>> = {
   "--danger": "#e01e5a",
   "--danger-darken": "#ca1b51",
   "--font-sans": "system-ui, sans-serif",
@@ -68,7 +68,7 @@ const read = (file: string): string => {
   return readFileSync(file, "utf-8");
 };
 
-const designSystemProbe = "apps/user/src/app/routes/probe.tsx";
+const designSystemProbe = "libs/ui/src/shared/ui/button.tsx";
 
 const stylesheetPath = (): string => {
   return project.themeFileFor(designSystemProbe) ?? "";
@@ -86,10 +86,13 @@ const indexedComponents = (): string[] => {
 const storySuffix = ".stories.tsx";
 
 const designSystemComponents = (): string[] => {
-  return [...project.componentsFor(designSystemProbe).files.entries()]
-    .filter((entry: readonly [string, string]) => !entry[1].endsWith(storySuffix))
-    .map((entry: readonly [string, string]) => entry[0])
-    .toSorted();
+  const names: string[] = [];
+  for (const [name, file] of project.componentsFor(designSystemProbe).files.entries()) {
+    if (!file.endsWith(storySuffix)) {
+      names.push(name);
+    }
+  }
+  return names.toSorted();
 };
 
 const partsDirectory = (): string => {
@@ -167,32 +170,53 @@ const sourceViolations = (app: string, file: string, css: string): string[] => {
 };
 
 const appFiles = (files: Readonly<Record<string, unknown>>, app: string): string[] => {
-  return Object.keys(files)
-    .map((key) => key.replace(/^(?:\.\.\/)+/u, ""))
-    .filter((file) => file.startsWith(`${app}/`));
+  const matched: string[] = [];
+  for (const key of Object.keys(files)) {
+    const file = key.replace(/^(?:\.\.\/)+/u, "");
+    if (file.startsWith(`${app}/`)) {
+      matched.push(file);
+    }
+  }
+  return matched;
 };
 
 const styledFiles = (app: string): string[] => {
-  return appFiles(appModules, app).filter(
-    (file) => file.endsWith(".tsx") && read(file).includes("className"),
-  );
+  const styled: string[] = [];
+  for (const file of appFiles(appModules, app)) {
+    if (file.endsWith(".tsx") && read(file).includes("className")) {
+      styled.push(file);
+    }
+  }
+  return styled;
 };
 
 const coverageViolations = (app: string, scanned: readonly string[]): string[] => {
-  return styledFiles(app).flatMap((file) =>
-    scanned.some((directory) => file === directory || file.startsWith(`${directory}/`))
-      ? []
-      : [
-          `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
-        ],
-  );
+  const violations: string[] = [];
+  for (const file of styledFiles(app)) {
+    let covered = false;
+    for (const directory of scanned) {
+      if (file === directory || file.startsWith(`${directory}/`)) {
+        covered = true;
+        break;
+      }
+    }
+    if (!covered) {
+      violations.push(
+        `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
+      );
+    }
+  }
+  return violations;
 };
 
 const linkViolations = (app: string, file: string): string[] => {
   const link = `${file.slice(`${app}/src/`.length)}?url`;
-  return appFiles(appModules, app).some((module) => read(module).includes(link))
-    ? []
-    : [`${file}: ${app} のソースから ${link} で読み込まれていません。`];
+  for (const module of appFiles(appModules, app)) {
+    if (read(module).includes(link)) {
+      return [];
+    }
+  }
+  return [`${file}: ${app} のソースから ${link} で読み込まれていません。`];
 };
 
 const entryViolations = (app: string, entries: readonly string[]): string[] => {
@@ -207,9 +231,12 @@ const entryViolations = (app: string, entries: readonly string[]): string[] => {
 
 const appStylesheetViolations = (apps: readonly string[]): string[] => {
   return apps.flatMap((app) => {
-    const entries = appFiles(appStylesheets, app).filter((file) =>
-      read(file).includes(partsImport),
-    );
+    const entries: string[] = [];
+    for (const file of appFiles(appStylesheets, app)) {
+      if (read(file).includes(partsImport)) {
+        entries.push(file);
+      }
+    }
     return entries.length === 0
       ? [`${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`]
       : entryViolations(app, entries);
@@ -218,11 +245,11 @@ const appStylesheetViolations = (apps: readonly string[]): string[] => {
 
 const tokenViolations = (css: string): string[] => {
   const declared = declarations(css);
-  const drifted = Object.keys(smarthrTokens).flatMap((name) =>
-    declared.get(name) === smarthrTokens[name]
+  const drifted = Object.keys(designTokens).flatMap((name) =>
+    declared.get(name) === designTokens[name]
       ? []
       : [
-          `${name} は smarthr-ui の ${smarthrTokens[name] ?? ""} を移植した値である必要があります（現在: ${declared.get(name) ?? "未定義"}）。`,
+          `${name} は設計トークン表の ${designTokens[name] ?? ""} である必要があります（現在: ${declared.get(name) ?? "未定義"}）。`,
         ],
   );
   const redefined = untouchedTokens.flatMap((name) =>
@@ -240,10 +267,10 @@ export {
   designSystemComponents,
   declarations,
   designSystemProbe,
+  designTokens,
   linkParts,
   linkViolations,
   partsDirectory,
-  smarthrTokens,
   sourceViolations,
   stylesheetPath,
   stylesheetSource,

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { field } from "./dependencies.ts";
 import { partsDirectory } from "./design-system.ts";
 import {
   a11yRelaxations,
@@ -8,11 +7,12 @@ import {
   storylessParts,
   vendoredWorkerViolations,
 } from "./part-stories.ts";
+import { field } from "./record-field.ts";
 
-const previews: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/ui/storybook/preview.tsx",
-  { eager: true, import: "default" },
-);
+const previews: Readonly<Record<string, unknown>> = import.meta.glob("./storybook/preview.tsx", {
+  eager: true,
+  import: "default",
+});
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.config.ts", {
   eager: true,
@@ -20,7 +20,7 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const origins: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../libs/config/src/applications.ts",
+  "../config/src/applications.ts",
   { eager: true, import: "storybookOrigin" },
 );
 
@@ -66,7 +66,7 @@ describe("part stories", () => {
 
   it("fails a story on an accessibility violation", () => {
     expect.hasAssertions();
-    const parameters = composedParameters(previews["../../libs/ui/storybook/preview.tsx"]);
+    const parameters = composedParameters(previews["./storybook/preview.tsx"]);
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 
@@ -78,11 +78,11 @@ describe("part stories", () => {
   it("points the agent configuration at the port this repository owns", () => {
     expect.hasAssertions();
     expect(
-      storybookEndpointViolations(String(origins["../../libs/config/src/applications.ts"])),
+      storybookEndpointViolations(String(origins["../config/src/applications.ts"])),
     ).toStrictEqual([]);
   });
 
-  it("keeps the vendored service worker at the installed msw version", () => {
+  it("keeps the storybook service worker on the installed msw version", () => {
     expect.hasAssertions();
     expect(vendoredWorkerViolations()).toStrictEqual([]);
   });
