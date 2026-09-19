@@ -4,9 +4,24 @@ import {
   cloudflareSourceFiles,
 } from "@repo/infra-cloudflare/lint-overrides";
 import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
-import { linkComponents, uiA11yComponents, uiSharedPartFiles } from "@repo/ui/lint-settings";
+import {
+  linkComponents,
+  linkWrapperFiles,
+  reactElementTypeFiles,
+  uiA11yComponents,
+  uiSharedPartFiles,
+} from "@repo/ui/lint-settings";
 
-const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
+const generatedFiles = [
+  "**/mockServiceWorker.js",
+  "**/routeTree.gen.ts",
+  "libs/ui/design-system.test.ts",
+  "libs/ui/design-system.ts",
+  "libs/ui/hover-colors.ts",
+  "libs/ui/part-stories.test.ts",
+  "libs/ui/part-stories.ts",
+  "libs/ui/record-field.ts",
+];
 
 const awaitingPresetPackages = [
   "apps/admin/**",
@@ -24,7 +39,6 @@ const awaitingPresetPackages = [
   "libs/monitor/**",
   "libs/observability/**",
   "libs/runtime/**",
-  "libs/ui/**",
   "tools/commander/**",
   "tools/dev/**",
   "tools/observe/**",
@@ -74,10 +88,15 @@ const lintOptions = {
     },
     {
       files: uiSharedPartFiles,
+      plugins: ["react"],
       rules: {
         "react/forbid-component-props": [LINT_SEVERITY.ERROR, { forbid: ["style"] }],
-        "shadcn/no-restyle": LINT_SEVERITY.OFF,
       },
+    },
+    {
+      files: linkWrapperFiles,
+      plugins: ["react"],
+      rules: { "react/jsx-props-no-spreading": LINT_SEVERITY.OFF },
     },
     {
       files: apiBoundaryFiles,
@@ -187,6 +206,10 @@ const lintOptions = {
         "unicorn/text-encoding-identifier-case": [LINT_SEVERITY.ERROR, { withDash: true }],
         "vite-plus/prefer-vite-plus-imports": LINT_SEVERITY.ERROR,
       },
+    },
+    {
+      files: reactElementTypeFiles,
+      rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
     },
     {
       files: ["tools/ai-native/**", "tools/lint-rule-authoring/**"],

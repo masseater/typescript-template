@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import type { Children } from "./types";
 
-function DropdownMenuLabel({ children }: Children): ReactElement {
+const DropdownMenuLabel = ({ children }: Children): ReactElement => {
   return (
     <div
       data-slot="dropdown-menu-label"
@@ -10,6 +10,6 @@ function DropdownMenuLabel({ children }: Children): ReactElement {
       {children}
     </div>
   );
-}
+};
 
 export { DropdownMenuLabel };

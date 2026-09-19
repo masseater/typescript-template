@@ -1,4 +1,4 @@
-import { Button, Heading, Status } from "@repo/ui";
+import { Button, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { useCreateLedger } from "#pages/commander/model/actions.ts";
 
@@ -22,7 +22,9 @@ function LedgerMissing({ directory }: Readonly<{ directory: string }>): ReactEle
         ここに作る
       </Button>
       {create.isError ? (
-        <Status variant="error">作れませんでした。bd が入っているか確認してください。</Status>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          作れませんでした。bd が入っているか確認してください。
+        </StatusMessage>
       ) : undefined}
     </main>
   );

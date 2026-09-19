@@ -1,4 +1,4 @@
-import { Button, ConfirmDialog, FormColumn, Page, Status } from "@repo/ui";
+import { Button, ConfirmDialog, FormColumn, Page, StatusMessage } from "@repo/ui";
 import { useState } from "react";
 
 import type { ReactElement } from "react";
@@ -7,7 +7,7 @@ function LeavePage(): ReactElement {
   const [confirming, setConfirming] = useState(false);
   return (
     <Page title="退会">
-      <Status>退会の手続きはまだありません。</Status>
+      <StatusMessage>退会の手続きはまだありません。</StatusMessage>
       <FormColumn>
         <Button type="button" variant="primary" onClick={() => setConfirming(true)}>
           退会する

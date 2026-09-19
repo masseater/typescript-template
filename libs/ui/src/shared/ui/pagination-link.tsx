@@ -16,13 +16,13 @@ const paginationLinkVariants = cva(
   },
 );
 
-type PaginationAnchorProps = Readonly<ComponentProps<"a"> & { current?: boolean }>;
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function PaginationAnchor({ children, current, ...anchor }: PaginationAnchorProps): ReactElement {
+const PaginationAnchor = ({
+  children,
+  current,
+  ...anchor
+}: Readonly<ComponentProps<"a"> & { current?: boolean }>): ReactElement => {
   return (
     <a
-      // oxlint-disable-next-line react/jsx-props-no-spreading
       {...anchor}
       data-slot="pagination-link"
       aria-current={current === true ? "page" : undefined}
@@ -31,7 +31,7 @@ function PaginationAnchor({ children, current, ...anchor }: PaginationAnchorProp
       {children}
     </a>
   );
-}
+};
 
 const PaginationLink = createLink(PaginationAnchor);
 

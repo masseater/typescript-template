@@ -1,4 +1,4 @@
-import { Status } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { TaskPane } from "./task-pane.tsx";
 
@@ -19,13 +19,17 @@ function TaskSide({
   return (
     <div className="flex min-h-0 flex-col border-t border-border lg:border-t-0 lg:border-l">
       {connected ? undefined : (
-        <Status variant="error">アプリとの接続が切れました。つなぎ直しています…</Status>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          アプリとの接続が切れました。つなぎ直しています…
+        </StatusMessage>
       )}
       {ledger.status === "unreadable" ? (
-        <Status variant="error">タスクを読めませんでした。bd が動くか確認してください。</Status>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          タスクを読めませんでした。bd が動くか確認してください。
+        </StatusMessage>
       ) : undefined}
       {tasks === undefined ? (
-        <Status variant="pending">タスクを読み込んでいます…</Status>
+        <StatusMessage variant={STATUS_VARIANT.pending}>タスクを読み込んでいます…</StatusMessage>
       ) : (
         <TaskPane tasks={tasks} />
       )}

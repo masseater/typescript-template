@@ -1,43 +1,51 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 import { Button } from "./shared/ui/button";
 import { ConfirmDialog } from "./shared/ui/confirm-dialog";
 
-import type { ReactElement } from "react";
 import type { ActionState } from "./action";
 import type { PasskeySummary } from "./mfa-types";
 
-interface PasskeyItemProps {
+const passkeyLabel = (storedName: string | null | undefined): string => {
+  return storedName === undefined || storedName === null || storedName === ""
+    ? "名前のないパスキー"
+    : storedName;
+};
+
+const PasskeyItem = ({
+  action,
+  passkey,
+}: {
   readonly action: ActionState;
   readonly passkey: PasskeySummary;
-}
-
-function passkeyLabel(name: string | null | undefined): string {
-  return name === undefined || name === null || name === "" ? "名前のないパスキー" : name;
-}
-
-function PasskeyItem({ action, passkey }: PasskeyItemProps): ReactElement {
+}): ReactElement => {
   const [confirming, setConfirming] = useState(false);
-  const label = passkeyLabel(passkey.name);
-  function remove(): void {
+  const displayedPasskeyName = passkeyLabel(passkey.name);
+  const remove = (): void => {
     setConfirming(false);
     action.run(async () => {
       requireSuccess(await authClient.passkey.deletePasskey({ id: passkey.id }));
       globalThis.location.assign("/login");
     });
-  }
+  };
   return (
     <li>
-      {label}
-      <Button type="button" disabled={action.blocked} onClick={() => setConfirming(true)}>
+      {displayedPasskeyName}
+      <Button
+        type="button"
+        disabled={action.blocked}
+        onClick={() => {
+          setConfirming(true);
+        }}
+      >
         削除
       </Button>
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title={`${label}を削除しますか？`}
+        title={`${displayedPasskeyName}を削除しますか？`}
         description="削除後は再ログインが必要です。この操作は取り消せません。"
         confirmLabel="削除する"
         variant="danger"
@@ -45,6 +53,6 @@ function PasskeyItem({ action, passkey }: PasskeyItemProps): ReactElement {
       />
     </li>
   );
-}
+};
 
 export { PasskeyItem };

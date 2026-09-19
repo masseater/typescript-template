@@ -1,4 +1,4 @@
-import { Status } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { useView } from "#pages/commander/model/view.ts";
 import { ChatPane } from "./chat-pane.tsx";
@@ -10,11 +10,13 @@ import type { ReactElement } from "react";
 function CommanderPage(): ReactElement {
   const view = useView();
   if (view.status === "connecting") {
-    return <Status variant="pending">つないでいます…</Status>;
+    return <StatusMessage variant={STATUS_VARIANT.pending}>つないでいます…</StatusMessage>;
   }
   if (view.status === "invalid") {
     return (
-      <Status variant="error">画面を表示できませんでした。アプリを起動し直してください。</Status>
+      <StatusMessage variant={STATUS_VARIANT.failure}>
+        画面を表示できませんでした。アプリを起動し直してください。
+      </StatusMessage>
     );
   }
   const { chat, ledger, tasks } = view.app;
