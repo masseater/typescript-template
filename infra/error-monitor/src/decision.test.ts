@@ -2,6 +2,8 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { decideNotifications, formatMessage } from "./decision.ts";
 
+import type { ErrorGroup } from "./telemetry.ts";
+
 const now = Date.parse("2026-09-17T12:00:00Z");
 const hour = 3_600_000;
 const hoursPerDay = 24;
@@ -9,13 +11,7 @@ const daysBeforeForgotten = 8;
 const recentHours = 2;
 const occurrences = 3;
 
-function group(fingerprint: string): {
-  count: number;
-  event: string;
-  fingerprint: string;
-  service: string;
-  type: string;
-} {
+function group(fingerprint: string): ErrorGroup {
   return {
     count: occurrences,
     event: "browser.error",
@@ -59,5 +55,17 @@ describe("error notifications", () => {
       "[新規] user-browser browser.error TypeError (fingerprint 0000000a, 3 件)",
     );
     expect(message).toContain("error.fingerprint");
+  });
+
+  it("marks a group value the query did not return instead of naming a plausible one", () => {
+    expect.hasAssertions();
+    const message = formatMessage(
+      decideNotifications(
+        [{ ...group("0000000a"), event: undefined, service: undefined, type: undefined }],
+        { "0000000a": now - (hoursPerDay + 1) * hour },
+        now,
+      ).notifications,
+    );
+    expect(message).toContain("[再発] (値なし) (値なし) (値なし) (fingerprint 0000000a, 3 件)");
   });
 });

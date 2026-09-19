@@ -9,6 +9,11 @@ import type { Scope } from "effect";
 
 type Network = ReturnType<typeof setupNetwork>;
 
+type RequestParams = Record<string, string>;
+interface AskedQuery {
+  readonly parameters: { readonly limit: number };
+}
+
 const ACCOUNT_ID_LENGTH = 32;
 const GROUPED_EVENTS = 4;
 
@@ -106,6 +111,84 @@ it.effect("groups fingerprinted error logs through the Workers Observability que
       "parameters.calculations[0].operator": "count",
       "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
     });
+  }).pipe(Effect.scoped),
+);
+
+it.effect("a response without the calculations key is an error rather than zero errors", () =>
+  Effect.gen(function* program() {
+    yield* withServer(
+      http.post(endpoint, () =>
+        HttpResponse.json({ ...queryResult, result: { run: {}, statistics: {} } }),
+      ),
+    );
+    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "telemetry_response_invalid");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("a result filling the query limit is an error rather than a partial list", () =>
+  Effect.gen(function* program() {
+    yield* withServer(
+      http.post<RequestParams, AskedQuery>(endpoint, async ({ request }) => {
+        const { parameters } = await request.json();
+        return HttpResponse.json({
+          ...queryResult,
+          result: {
+            ...queryResult.result,
+            calculations: [
+              {
+                aggregates: Array.from({ length: parameters.limit }, (_unused, index) => ({
+                  ...fingerprintedAggregate,
+                  groups: [
+                    { key: "error.fingerprint", value: index.toString(16).padStart(8, "0") },
+                  ],
+                })),
+                calculation: "count",
+                series: [],
+              },
+            ],
+          },
+        });
+      }),
+    );
+    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "telemetry_response_truncated");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reports a group value the query did not return as absent", () =>
+  Effect.gen(function* program() {
+    yield* withServer(
+      http.post(endpoint, () =>
+        HttpResponse.json({
+          ...queryResult,
+          result: {
+            ...queryResult.result,
+            calculations: [
+              {
+                aggregates: [
+                  {
+                    ...fingerprintedAggregate,
+                    groups: [{ key: "error.fingerprint", value: "0123abcd" }],
+                  },
+                ],
+                calculation: "count",
+                series: [],
+              },
+            ],
+          },
+        }),
+      ),
+    );
+    assert.deepStrictEqual(yield* fetchErrorGroups(window), [
+      {
+        count: GROUPED_EVENTS,
+        event: undefined,
+        fingerprint: "0123abcd",
+        service: undefined,
+        type: undefined,
+      },
+    ]);
   }).pipe(Effect.scoped),
 );
 

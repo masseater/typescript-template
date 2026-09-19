@@ -4,9 +4,9 @@ import { ErrorMonitorFailure } from "./config.ts";
 
 interface ErrorGroup {
   readonly fingerprint: string;
-  readonly service: string;
-  readonly event: string;
-  readonly type: string;
+  readonly service: string | undefined;
+  readonly event: string | undefined;
+  readonly type: string | undefined;
   readonly count: number;
 }
 
@@ -25,10 +25,8 @@ const GroupValue = Schema.Struct({ key: Schema.String, value: Scalar });
 const GroupValues = Schema.Array(GroupValue);
 const Aggregate = Schema.Struct({ count: Schema.Finite, groups: Schema.optionalKey(GroupValues) });
 const Calculation = Schema.Struct({ aggregates: Schema.Array(Aggregate) });
-const noCalculations = Effect.succeed([]);
-const Calculations = Schema.Array(Calculation).pipe(Schema.withDecodingDefaultKey(noCalculations));
 const QueryEnvelope = Schema.Struct({
-  result: Schema.Struct({ calculations: Calculations }),
+  result: Schema.Struct({ calculations: Schema.Array(Calculation) }),
   success: Schema.Literal(true),
 });
 
@@ -45,16 +43,17 @@ function errorGroup(item: typeof Aggregate.Type): ErrorGroup[] {
   return [
     {
       count: item.count,
-      event: values.get("event") ?? "unknown",
+      event: values.get("event"),
       fingerprint,
-      service: values.get("service") ?? "unknown",
-      type: values.get("error.type") ?? "Error",
+      service: values.get("service"),
+      type: values.get("error.type"),
     },
   ];
 }
 
 function queryBody(window: QueryWindow): string {
   return JSON.stringify({
+    limit: QUERY_LIMIT,
     parameters: {
       calculations: [{ alias: "events", operator: "count" }],
       datasets: [],
@@ -106,9 +105,11 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
   const parsed = yield* Schema.decodeUnknownEffect(QueryEnvelope)(body).pipe(
     Effect.mapError(failure("telemetry_response_invalid")),
   );
-  return parsed.result.calculations.flatMap((entry) =>
-    entry.aggregates.flatMap((item) => errorGroup(item)),
-  );
+  const aggregates = parsed.result.calculations.flatMap((entry) => entry.aggregates);
+  if (aggregates.length >= QUERY_LIMIT) {
+    return yield* failure("telemetry_response_truncated")();
+  }
+  return aggregates.flatMap((item) => errorGroup(item));
 });
 
 export { fetchErrorGroups };
