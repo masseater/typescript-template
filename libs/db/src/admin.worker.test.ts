@@ -4,7 +4,7 @@ import { Effect } from "effect";
 
 import { deleteUser, listUsers, setUserRole } from "./admin.ts";
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
-import { getProfile, query, updateProfile } from "./index.ts";
+import { query } from "./index.ts";
 import { addCredential, addSession, addUser, failureTag, successCount } from "./records-fixture.ts";
 import { account, auditEvent, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
@@ -17,27 +17,6 @@ const page = { limit: 50, offset: 0 };
 function auditRecords(): Effect.Effect<readonly unknown[], unknown, Database> {
   return query(async (database) => database.select().from(auditEvent));
 }
-
-it.effect("persists Unicode profiles", () =>
-  Effect.gen(function* program() {
-    yield* addUser("reader");
-    yield* updateProfile("reader", {
-      name: "日本語 العربية 🐈",
-      profile: "私は開発者です。",
-      socialLinks: ["https://github.com/reader"],
-    });
-    const profile = yield* getProfile("reader");
-    assert.strictEqual(profile?.name, "日本語 العربية 🐈");
-    assert.strictEqual(profile?.profile, "私は開発者です。");
-    assert.deepStrictEqual(profile?.socialLinks, ["https://github.com/reader"]);
-    assert.strictEqual(
-      yield* failureTag(
-        updateProfile("missing", { name: "missing", profile: "", socialLinks: [] }),
-      ),
-      "UserNotFound",
-    );
-  }).pipe(Effect.provide(TestDatabase)),
-);
 
 it.effect("rejects weak admin and cross-audience sessions", () =>
   Effect.gen(function* program() {
@@ -110,7 +89,10 @@ it.effect("deletion removes credentials and all sessions", () =>
     const actor = yield* addSession("actor", "service-admin");
     const target = yield* addSession("target", "service-member");
     yield* deleteUser(actor, "target");
-    assert.isNull(yield* getProfile("target"));
+    assert.lengthOf(
+      yield* query(async (database) => database.select().from(user).where(eq(user.id, "target"))),
+      0,
+    );
     assert.isNull(yield* getSessionSecurity(target, "service-member"));
     assert.strictEqual(yield* failureTag(deleteUser(actor, "target")), "TargetUnavailable");
   }).pipe(Effect.provide(TestDatabase)),
