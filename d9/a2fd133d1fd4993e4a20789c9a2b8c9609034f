@@ -1,1 +1,1 @@
-squash shells+auth into one PR to cut CI queue wait from stacked fine-grained PRs; replace HTML-mock shells with operable /wiki chrome and empty ops pages
+add Change-Id; single PR absorbs auth+shells to reduce CI queue
