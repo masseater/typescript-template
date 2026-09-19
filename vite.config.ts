@@ -50,7 +50,7 @@ export default defineConfig({
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
-      test: { cache: false, command: "vp test run $TEST_SCOPE" },
+      test: { cache: false, command: "vp test run --project '!@repo/*' $TEST_SCOPE" },
       ...lifecycle({
         precommit: ["check:code", "check:staged"],
         premerge: ["test"],

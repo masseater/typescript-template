@@ -137,6 +137,20 @@ function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Task
   );
 }
 
+const testRun = {
+  test: {
+    command: "vp test run",
+    input: [
+      ...taskInput,
+      "!coverage/**",
+      { base: "workspace", pattern: "!**/coverage/**" },
+      { base: "workspace", pattern: "pnpm-lock.yaml" },
+      { base: "workspace", pattern: "pnpm-workspace.yaml" },
+    ],
+    output: [],
+  },
+} satisfies Tasks;
+
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
@@ -176,6 +190,7 @@ export {
   generatedDirectories,
   startOptions,
   taskInput,
+  testRun,
   withoutEnvFileLoader,
 };
 export { privateSourceMaps } from "./private-source-maps.ts";
