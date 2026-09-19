@@ -1,4 +1,4 @@
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { PageNavigation } from "./page-navigation";
 import { PaginationLink } from "./pagination-link";
 

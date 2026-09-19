@@ -51,7 +51,11 @@ const workspaces = {
     project: ["src/**/*.ts!", "!src/*-fixture.ts!"],
   },
   "libs/ui": {
-    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", ".storybook/*.ts", "!src/**/*.stories.tsx!"],
+    project: ["src/**/*.{ts,tsx}!", "src/**/*.css", "storybook/*.ts", "!src/**/*.stories.tsx!"],
+    storybook: {
+      config: ["storybook/{main,test-runner}.{js,mjs,ts}"],
+      entry: ["storybook/{manager,preview,preview-head,preview-body}.{js,jsx,mjs,ts,tsx}"],
+    },
   },
   "tools/ai-native": {
     ignoreBinaries: ["mkfifo"],

@@ -1,6 +1,6 @@
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
 
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { Icon } from "./icon";
 
 const meta = preview.meta({ args: { icon: CircleCheckIcon }, component: Icon });

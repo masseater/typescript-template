@@ -1,7 +1,7 @@
 import { noop } from "es-toolkit";
 import { expect, waitFor } from "storybook/test";
 
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { Field } from "./field";
 
 const meta = preview.meta({ args: { onValueChange: noop, value: "" }, component: Field });

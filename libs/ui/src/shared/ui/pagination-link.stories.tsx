@@ -1,4 +1,4 @@
-import preview from "../../../.storybook/preview";
+import preview from "../../../storybook/preview";
 import { PaginationLink } from "./pagination-link";
 
 const meta = preview.meta({
