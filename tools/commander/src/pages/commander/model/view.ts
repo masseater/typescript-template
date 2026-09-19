@@ -24,7 +24,11 @@ const connecting: Feed = { status: "connecting" };
 
 async function* decoded(incoming: AsyncIterable<unknown>): AsyncGenerator<Published, void> {
   for await (const event of incoming) {
-    yield decodeJson(ServerEvent, event);
+    const published = decodeJson(ServerEvent, event);
+    if (published.event === "failed") {
+      throw new Error(published.data.message);
+    }
+    yield published;
   }
 }
 
@@ -36,7 +40,10 @@ async function events({ signal }: { signal: AbortSignal }): Promise<AsyncIterabl
     : Promise.reject(new Error("司令塔につながりませんでした。"));
 }
 
-function received(app: App, event: Exclude<Published, { readonly event: "state" }>): App {
+function received(
+  app: App,
+  event: Exclude<Published, { readonly event: "state" | "failed" }>,
+): App {
   if (event.event === "chat") {
     return { ...app, chat: receiveChat(app.chat, event.data) };
   }
@@ -44,6 +51,9 @@ function received(app: App, event: Exclude<Published, { readonly event: "state" 
 }
 
 function reduced(feed: Feed, event: Published): Feed {
+  if (event.event === "failed") {
+    return connecting;
+  }
   if (event.event === "state") {
     return { app: event.data, status: "live" };
   }

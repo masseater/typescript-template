@@ -18,13 +18,19 @@ type Decodable = Schema.Top & { readonly DecodingServices: never };
 const Rejection = Schema.fromJsonString(Schema.Struct({ error: Schema.String }));
 const ledgerMissing = "no_beads_directory";
 
-function rejection(stdout: string): Effect.Effect<BdFailure> {
+function rejection(stdout: string, stderr: string, exitCode: number): Effect.Effect<BdFailure> {
   return Schema.decodeUnknownEffect(Rejection)(stdout).pipe(
     Effect.map(
       ({ error }) =>
         new BdFailure({ reason: error === ledgerMissing ? "ledger_missing" : "rejected" }),
     ),
-    Effect.orElseSucceed(() => new BdFailure({ reason: "process_failed" })),
+    Effect.orElseSucceed(
+      () =>
+        new BdFailure({
+          cause: { exitCode, stderr, stdout },
+          reason: "process_failed",
+        }),
+    ),
   );
 }
 
@@ -32,7 +38,7 @@ function run(
   ledger: Ledger,
   args: readonly string[],
 ): Effect.Effect<
-  { readonly exitCode: number; readonly stdout: string },
+  { readonly exitCode: number; readonly stderr: string; readonly stdout: string },
   BdFailure,
   ChildProcessSpawner.ChildProcessSpawner
 > {
@@ -40,15 +46,21 @@ function run(
     cwd: ledger.directory,
     env: childEnvironment({ BEADS_ACTOR: ledger.actor }),
     extendEnv: false,
-    stderr: "ignore",
+    stderr: "pipe",
     stdin: "ignore",
   });
   return Effect.gen(function* spawned() {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const handle = yield* spawner.spawn(command);
-    const stdout = yield* Stream.mkString(Stream.decodeText(handle.stdout));
-    const exitCode = yield* handle.exitCode;
-    return { exitCode, stdout };
+    const [stdout, stderr, exitCode] = yield* Effect.all(
+      [
+        Stream.mkString(Stream.decodeText(handle.stdout)),
+        Stream.mkString(Stream.decodeText(handle.stderr)),
+        handle.exitCode,
+      ],
+      { concurrency: "unbounded" },
+    );
+    return { exitCode, stderr, stdout };
   }).pipe(
     Effect.scoped,
     Effect.mapError((cause) => new BdFailure({ cause, reason: "process_failed" })),
@@ -60,8 +72,12 @@ function bdQuiet(
   args: readonly string[],
 ): Effect.Effect<void, BdFailure, ChildProcessSpawner.ChildProcessSpawner> {
   return run(ledger, ["--quiet", ...args]).pipe(
-    Effect.flatMap(({ exitCode }) =>
-      exitCode === 0 ? Effect.void : Effect.fail(new BdFailure({ reason: "process_failed" })),
+    Effect.flatMap(({ exitCode, stderr, stdout }) =>
+      exitCode === 0
+        ? Effect.void
+        : Effect.fail(
+            new BdFailure({ cause: { exitCode, stderr, stdout }, reason: "process_failed" }),
+          ),
     ),
   );
 }
@@ -72,12 +88,14 @@ function bd<Output extends Decodable>(
   output: Output,
 ): Effect.Effect<Output["Type"], BdFailure, ChildProcessSpawner.ChildProcessSpawner> {
   return run(ledger, ["--json", ...args]).pipe(
-    Effect.flatMap(({ exitCode, stdout }) =>
+    Effect.flatMap(({ exitCode, stderr, stdout }) =>
       exitCode === 0
         ? Schema.decodeUnknownEffect(Schema.fromJsonString(output))(stdout).pipe(
             Effect.mapError((cause) => new BdFailure({ cause, reason: "output_invalid" })),
           )
-        : rejection(stdout).pipe(Effect.flatMap((failure) => Effect.fail(failure))),
+        : rejection(stdout, stderr, exitCode).pipe(
+            Effect.flatMap((failure) => Effect.fail(failure)),
+          ),
     ),
   );
 }

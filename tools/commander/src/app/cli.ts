@@ -3,8 +3,8 @@ import { parseArgs } from "node:util";
 
 import { NodeServices } from "@effect/platform-node";
 import { loopbackOrigin } from "@repo/config";
-import { runCli } from "@repo/config/cli";
-import { Console, Effect, Schema } from "effect";
+import { causeRecord, runCli } from "@repo/config/cli";
+import { Cause, Console, Effect, Schema } from "effect";
 import open from "open";
 
 import { resolveProject } from "./project.ts";
@@ -53,13 +53,10 @@ const start = Effect.fn("start")(function* start() {
   return yield* Effect.never;
 });
 
-function startFailed(cause: unknown): Readonly<Record<string, unknown>> {
-  return {
-    cause: String(cause),
-    event: "commander.start_failed",
-    ok: false,
+function startFailed(cause: Cause.Cause<unknown>): Readonly<Record<string, unknown>> {
+  return causeRecord("commander.start_failed", cause, {
     remediation: `Check that ${origin} is free, that bd and claude are installed, and that the workspace was built (vp run @repo/commander#start builds first).`,
-  };
+  });
 }
 
 const main = Effect.scoped(start()).pipe(Effect.provide(NodeServices.layer));

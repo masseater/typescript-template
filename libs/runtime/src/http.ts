@@ -28,6 +28,10 @@ interface ServerSentEvent {
   readonly data: unknown;
   readonly event: string;
 }
+interface FailedEvent {
+  readonly data: Readonly<{ message: string; status: FailureStatus }>;
+  readonly event: "failed";
+}
 type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
@@ -37,7 +41,7 @@ interface ApiRoutes<Requirements> {
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed>;
+  ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -205,7 +209,9 @@ function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tag
   event: Schema.Codec<Value, Encoded>,
   handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
   failures: FailureTable<Exclude<Failures, CommonFailure>>,
-): (request: Request) => Effect.Effect<EventStream<Encoded> | Failed, never, Requirements> {
+): (
+  request: Request,
+) => Effect.Effect<EventStream<Encoded | FailedEvent> | Failed, never, Requirements> {
   const encode = Schema.encodeEffect(event);
   return (request) =>
     handler(request).pipe(
@@ -213,7 +219,14 @@ function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tag
         Stream.toAsyncIterableEffect(
           Stream.mapEffect(values, (value) => Effect.orDie(encode(value))).pipe(
             Stream.catchCause((cause) =>
-              Stream.drain(Stream.fromEffect(reportedFailure(failures, cause))),
+              Stream.fromEffect(
+                reportedFailure(failures, cause).pipe(
+                  Effect.map((failure): FailedEvent => ({
+                    data: { message: failure.message, status: failure.status },
+                    event: "failed",
+                  })),
+                ),
+              ),
             ),
           ),
         ),

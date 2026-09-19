@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { ApplicationName, applicationOrigins, mailpitOrigin } from "@repo/config";
-import { firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
+import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { memberPageSize } from "@repo/runtime/contracts";
 import { Console, Effect, Schema } from "effect";
@@ -192,5 +192,5 @@ runCli(
         announceFailure({ crossed: failed.crossed, exitCode: failed.code, reason: failed.reason }),
     }),
   ),
-  { event: "load.run_failed", ok: false, reason: "unexpected" },
+  (cause) => causeRecord("load.run_failed", cause, { reason: "unexpected" }),
 );

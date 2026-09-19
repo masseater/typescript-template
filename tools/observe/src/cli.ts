@@ -2,7 +2,7 @@
 import { parseArgs } from "node:util";
 
 import { applicationOrigins } from "@repo/config";
-import { runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/config/cli";
 import { receiverOrigin } from "@repo/local";
 import { Console, Effect, Schema } from "effect";
 
@@ -147,8 +147,8 @@ const query = Effect.fn("query")(function* query() {
   return data;
 });
 
-runCli(values.help ? help : query(), {
-  event: "observability.query_failed",
-  ok: false,
-  remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
-});
+runCli(values.help ? help : query(), (cause) =>
+  causeRecord("observability.query_failed", cause, {
+    remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
+  }),
+);
