@@ -1,3 +1,6 @@
+import { field } from "@repo/dont-review-it/record-fields";
+
+import { repositoryRelative } from "./repository-path.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
 
 interface WorkspaceManifest {
@@ -13,32 +16,14 @@ const dependencyFields = [
   "optionalDependencies",
 ] as const;
 
-const field = (manifest: unknown, key: string): unknown => {
-  return typeof manifest === "object" && manifest !== null
-    ? Object.getOwnPropertyDescriptor(manifest, key)?.value
-    : undefined;
-};
-
 const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../{apps,libs,infra,tools}/*/package.json",
   { eager: true, import: "default" },
 );
 
-const repositoryPath = (key: string): string => {
-  const resolved = ["tools", "quality"];
-  for (const segment of key.split("/")) {
-    if (segment === "..") {
-      resolved.pop();
-    } else if (segment !== ".") {
-      resolved.push(segment);
-    }
-  }
-  return resolved.join("/");
-};
-
 const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifestModules).map(
   ([key, manifest]: readonly [string, unknown]) => {
-    const file = repositoryPath(key);
+    const file = repositoryRelative(key);
     const [area = ""] = file.split("/");
     return { area, file, manifest };
   },

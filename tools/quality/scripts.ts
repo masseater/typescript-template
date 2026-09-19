@@ -1,77 +1,71 @@
-interface ShellWords {
-  readonly escaped: boolean;
-  readonly quote: string | undefined;
-  readonly segment: readonly string[];
-  readonly segments: readonly (readonly string[])[];
-  readonly word: string;
-}
+import { parse } from "shell-quote";
 
-function closeWord(state: ShellWords): ShellWords {
-  return state.word === ""
-    ? state
-    : { ...state, segment: [...state.segment, state.word], word: "" };
-}
+import { launchers, packageManagers, scriptPolicy } from "./script-policy.ts";
 
-function closeSegment(state: ShellWords): ShellWords {
-  const closed = closeWord(state);
-  return closed.segment.length === 0
-    ? closed
-    : { ...closed, segment: [], segments: [...closed.segments, closed.segment] };
-}
+const segmentOperators = new Set(["&&", "||", ";", "|", "&", "|&", ";;"]);
 
-function appendCharacter(state: ShellWords, character: string): ShellWords {
-  return { ...state, word: state.word + character };
-}
-
-function readUnquoted(state: ShellWords, character: string): ShellWords {
-  if (character === "'" || character === '"') {
-    return { ...state, quote: character };
-  }
-  if (";&|\n".includes(character)) {
-    return closeSegment(state);
-  }
-  if (/\s/u.test(character)) {
-    return closeWord(state);
-  }
-  return appendCharacter(state, character);
-}
-
-function readCharacter(state: ShellWords, character: string): ShellWords {
-  if (state.escaped) {
-    const escaped = { ...state, escaped: false };
-    return character === "\n" ? escaped : appendCharacter(escaped, character);
-  }
-  if (character === "\\" && state.quote !== "'") {
-    return { ...state, escaped: true };
-  }
-  if (state.quote !== undefined) {
-    return character === state.quote
-      ? { ...state, quote: undefined }
-      : appendCharacter(state, character);
-  }
-  return readUnquoted(state, character);
-}
-
-function words(command: string): readonly (readonly string[])[] {
-  let state: ShellWords = {
-    escaped: false,
-    quote: undefined,
-    segment: [],
-    segments: [],
-    word: "",
-  };
+const assertBalancedShellQuotes = (command: string): void => {
+  let escaped = false;
+  let quote: string | undefined;
   for (const character of command) {
-    state = readCharacter(state, character);
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === "\\" && quote !== "'") {
+      escaped = true;
+      continue;
+    }
+    if (quote !== undefined) {
+      if (character === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = character;
+    }
   }
-  if (state.quote !== undefined || state.escaped) {
+  if (quote !== undefined || escaped) {
     throw new Error("Script has an unfinished shell quote or escape");
   }
-  return closeSegment(state).segments;
-}
+};
 
-const packageManagers = new Set(["pnpm", "pnpx", "npm", "npx", "yarn", "yarnpkg", "bun", "bunx"]);
-const launchers = new Set(["exec", "command", "env", "corepack"]);
-const destructiveBinaries = new Set(["alchemy"]);
+const stringTokens = (tokens: readonly unknown[]): string[] => {
+  return tokens.flatMap((token) => (typeof token === "string" ? [token] : []));
+};
+
+const words = (command: string): readonly (readonly string[])[] => {
+  assertBalancedShellQuotes(command);
+  return command.split(/\n/u).flatMap((line) => {
+    const tokens = parse(line, () => undefined);
+    const segments: string[][] = [];
+    let current: string[] = [];
+    for (const token of tokens) {
+      if (typeof token === "string") {
+        current.push(token);
+        continue;
+      }
+      if (
+        typeof token === "object" &&
+        token !== null &&
+        "op" in token &&
+        typeof token.op === "string" &&
+        segmentOperators.has(token.op)
+      ) {
+        if (current.length > 0) {
+          segments.push(current);
+          current = [];
+        }
+        continue;
+      }
+    }
+    if (current.length > 0) {
+      segments.push(current);
+    }
+    return segments;
+  });
+};
 
 function binaryName(word: string): string {
   return word.replace(/^.*\//u, "").replace(/\.cmd$/u, "");
@@ -89,7 +83,20 @@ function callsPackageManager(tokens: readonly string[]): boolean {
 }
 
 function callsDestructiveBinary(tokens: readonly string[]): boolean {
-  return tokens.some((word) => destructiveBinaries.has(binaryName(word)));
+  return tokens.some((word) => scriptPolicy.destructiveBinaries.has(binaryName(word)));
+}
+
+function destructiveBinaryMessage(name: string, command: string): string {
+  const binary = stringTokens(parse(command, () => undefined))
+    .map(binaryName)
+    .find((word) => scriptPolicy.destructiveBinaries.has(word));
+  const guidance =
+    binary === undefined
+      ? ""
+      : (scriptPolicy.destructiveBinaryGuidance[
+          binary as keyof typeof scriptPolicy.destructiveBinaryGuidance
+        ] ?? "");
+  return `${name}: alchemy の CLI は unsafe nuke と destroy でアカウント全体を消せるため直接呼べません。${guidance}: ${command}`;
 }
 
 function runsFileWithNode(tokens: readonly string[]): boolean {
@@ -115,9 +122,7 @@ function commandViolations(name: string, command: string, scripted: boolean): st
         ]
       : []),
     ...(segments.some((tokens) => callsDestructiveBinary(tokens))
-      ? [
-          `${name}: alchemy の CLI は unsafe nuke と destroy でアカウント全体を消せるため直接呼べません。infra/cloudflare の src/cli.ts と src/bootstrap-state.ts から実行してください: ${command}`,
-        ]
+      ? [destructiveBinaryMessage(name, command)]
       : []),
   ];
 }
@@ -130,11 +135,11 @@ function scriptViolations(manifest: unknown): string[] {
   if (typeof scripts !== "object" || scripts === null || Array.isArray(scripts)) {
     throw new Error("package.json scripts must be an object");
   }
-  return Object.entries(scripts).flatMap(([name, command]: readonly [string, unknown]) => {
+  return Object.entries(scripts).flatMap(([entryName, command]: readonly [string, unknown]) => {
     if (typeof command !== "string") {
-      throw new TypeError(`Script ${name} must be a string`);
+      throw new TypeError(`Script ${entryName} must be a string`);
     }
-    return commandViolations(name, command, true);
+    return commandViolations(entryName, command, true);
   });
 }
 

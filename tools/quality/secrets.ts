@@ -48,7 +48,7 @@ const prefixPattern = (value: string, scan: PrefixScan): RegExp => {
   return scan === "word" ? wordPattern(value) : separatedPattern(value);
 };
 
-const PREFIX_KEY = "TEMPLATE_PREFIX";
+const PREFIX_KEY = "TEMPLATE_PREFIX" as const;
 
 const prefixScan = (
   environmentValues: readonly DeploymentValue[],
@@ -96,5 +96,13 @@ const secretViolations = (
   ];
 };
 
-export { deploymentValues, prefixScan, secretViolations };
+export {
+  contentRules,
+  deploymentValues,
+  PREFIX_KEY,
+  prefixScan,
+  privateFile,
+  secretViolations,
+  wordPattern,
+};
 export type { DeploymentValue, PrefixScan };
