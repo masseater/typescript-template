@@ -1,6 +1,6 @@
 import { dirname } from "node:path";
 
-import { measureStage } from "@repo/lint-rule-authoring";
+import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { attempt, groupBy, uniqBy } from "es-toolkit";
 import * as ts from "typescript-6";
 

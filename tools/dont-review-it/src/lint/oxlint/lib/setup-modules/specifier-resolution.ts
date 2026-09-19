@@ -1,7 +1,7 @@
 import { realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
-import { readUnlessMissing } from "@repo/repository-checks";
+import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { memoize } from "es-toolkit";
 
 import { isDirectory, isFile } from "../canonical-values/source-files.ts";

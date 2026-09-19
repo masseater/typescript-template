@@ -65,6 +65,12 @@ const referencedHostTypeOf = (node: ESTree.Expression, lookup: HostTypeLookup): 
 /** @canonical-values dont-review-it.response-factory-member */
 const RESPONSE_FACTORY_MEMBERS = ["error", "json", "redirect"] as const;
 
+export const RESPONSE_FACTORY_MEMBER = {
+  error: RESPONSE_FACTORY_MEMBERS[0],
+  json: RESPONSE_FACTORY_MEMBERS[1],
+  redirect: RESPONSE_FACTORY_MEMBERS[2],
+} as const;
+
 const HOST_OBJECT_FACTORY_MEMBERS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ["Response", new Set(RESPONSE_FACTORY_MEMBERS)],
 ]);

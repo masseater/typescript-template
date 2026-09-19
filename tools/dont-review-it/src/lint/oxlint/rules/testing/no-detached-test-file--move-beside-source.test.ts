@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe, expect, it } from "vite-plus/test";
 
 import { noDetachedTestFile } from "./no-detached-test-file--move-beside-source.ts";
