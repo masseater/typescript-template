@@ -19,7 +19,7 @@ import { noUnorderedImport } from "../../lint/oxlint/rules/writing/no-unordered-
 import { requireReExportOnlyFiles } from "../../lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
 import { noUnusedStyleClass } from "../../plugin.ts";
 
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 
 export const writingBundle: readonly WorkspaceLintRule[] = [
   forbidNumberedSiblingFile,

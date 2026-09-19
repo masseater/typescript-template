@@ -1,6 +1,6 @@
 import { dirname, join, resolve } from "node:path";
 
-import { matchesGlobSegment } from "@repo/lint-rule-authoring";
+import { matchesGlobSegment } from "@repo/dont-review-it/lint-rule-authoring";
 import { zip } from "es-toolkit";
 
 import {
