@@ -1,5 +1,8 @@
 {
   "$schema": "https://react.doctor/schema/config.json",
+  "supplyChain": {
+    "minScore": 76
+  },
   "ignore": {
     "overrides": [
       {
