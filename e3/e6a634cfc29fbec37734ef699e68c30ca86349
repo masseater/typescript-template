@@ -1,1 +1,1 @@
-keep @effect/vitest listed in auth/config/db/observability until remaining it.effect specs are converted (knip unlisted deps)
+load vitest.workers via @repo/monitor/binding so knip does not resolve cloudflare:workers; drop unused @cloudflare/workers-types from auth
