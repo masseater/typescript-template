@@ -125,9 +125,7 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
   return workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
     return Object.entries(rootOnlyPackages)
-      .filter(
-        ([dependency, { owners }]) => declared.includes(dependency) && !owners.includes(file),
-      )
+      .filter(([dependency, { owners }]) => declared.includes(dependency) && !owners.includes(file))
       .map(
         ([dependency, { owners, runner }]) =>
           `${file}: ${dependency} はリポジトリ全体の検査なので ${owners.join(" / ")} だけが宣言します。${runner} から実行してください。`,
