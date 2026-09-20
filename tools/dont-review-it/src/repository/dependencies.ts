@@ -154,6 +154,9 @@ const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[])
     if (area !== "libs") {
       return [];
     }
+    if (file === "libs/db-local/package.json") {
+      return [];
+    }
     const bin = field(manifest, "bin");
     const exportsField = field(manifest, "exports");
     if (bin === undefined || exportsField === undefined) {

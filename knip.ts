@@ -190,10 +190,7 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "libs/db-local": {
-        entry: [
-          "src/testing-node.ts!",
-          ...productionOnly(...scripts["libs/db-local"]),
-        ],
+        entry: ["src/testing-node.ts!", ...productionOnly(...scripts["libs/db-local"])],
         project: ["src/**/*.ts!"],
       },
       "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
