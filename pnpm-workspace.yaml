@@ -70,7 +70,7 @@ catalog:
   dependency-cruiser: 18.3.1
   drizzle-kit: 1.0.0-rc.4
   drizzle-orm: 1.0.0-rc.4
-  effect: 4.0.0-rc.112
+  effect: 4.0.0-rc.115
   es-toolkit: 1.52.0
   lucide-react: 1.46.0
   miniflare: 5.20260917.0-alpha
