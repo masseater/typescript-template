@@ -17,6 +17,7 @@ const settingsContext = {
       email: "taro@example.com",
       id: "user_01",
       name: "山田 太郎",
+      permission: null,
       role: "member",
       twoFactorEnabled: false,
     },

@@ -1,10 +1,19 @@
-import { APPLICATION, type Application, type Role } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  APPLICATION,
+  ROLE,
+  STAFF_PERMISSION,
+  type AccountPermission,
+  type Application,
+  type Role,
+} from "@repo/config";
 import {
   EmptyTestDatabase,
   TestDatabase,
   bootstrapAdmin,
   getSchemaShape,
   runStatement,
+  type BootstrapKind,
 } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { getSchema } from "better-auth/db";
@@ -160,9 +169,16 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
+  kind: typeof BootstrapKind.Type = "admin",
 ) {
   yield* registerVerified(email);
-  yield* bootstrapAdmin(email);
+  yield* bootstrapAdmin(email, kind);
+});
+
+const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* bootstrapVerifiedStaff(
+  email: string,
+) {
+  yield* bootstrapVerifiedAdmin(email, "staff");
 });
 
 const signIn = (client: BrowserClient, email: string): Effect.Effect<number> => {
@@ -279,18 +295,34 @@ const audienceInputs = Effect.fn("audienceInputs")(function* audienceInputs(audi
   return [passkey?.fields["audience"]?.input, verification?.fields["audience"]?.input];
 });
 
+const topPermission: Readonly<Record<Role, AccountPermission | null>> = {
+  [ROLE.administrator]: ADMIN_PERMISSION.owner,
+  [ROLE.member]: null,
+  [ROLE.staff]: STAFF_PERMISSION.editor,
+};
+
 const assignRoleByEmail = Effect.fn("assignRoleByEmail")(function* assignRoleByEmail(
   email: string,
   role: Role,
 ) {
-  yield* runStatement("UPDATE user SET role = ? WHERE email = ?", role, email);
+  yield* runStatement(
+    "UPDATE user SET role = ?, permission = ? WHERE email = ?",
+    role,
+    topPermission[role],
+    email,
+  );
 });
 
 const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   userId: string,
   role: Role,
 ) {
-  yield* runStatement("UPDATE user SET role = ? WHERE id = ?", role, userId);
+  yield* runStatement(
+    "UPDATE user SET role = ?, permission = ? WHERE id = ?",
+    role,
+    topPermission[role],
+    userId,
+  );
 });
 
 export {
@@ -302,6 +334,7 @@ export {
   audienceOnEmptyDatabase,
   authTest,
   bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   enableTotp,
   missingSchemaFields,

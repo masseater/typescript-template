@@ -20,7 +20,7 @@ const RecoveryNotice = ({
   return (
     <>
       <StatusMessage>バックアップコードでログインしました。</StatusMessage>
-      {role === ROLE.administrator ? (
+      {role !== ROLE.member ? (
         <StatusMessage>
           復旧コードでは管理者操作はできません。ログアウト後、登録済みのパスキーまたは認証アプリで
           ログインしてください。どちらも使えない場合は、この画面から管理者の認証設定を復旧できません。

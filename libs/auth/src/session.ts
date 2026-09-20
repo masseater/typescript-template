@@ -1,11 +1,11 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { audienceRoles, type Application } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db";
 import { Effect } from "effect";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
 import { Auth } from "./auth.ts";
-import { isStrongMethod, sessionIsLive } from "./policy.ts";
+import { isPrivilegedRole, isStrongMethod, sessionIsLive } from "./policy.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
 import { sessionTokenFrom } from "./session-token.ts";
@@ -33,12 +33,13 @@ const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* req
   return current;
 });
 
-const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(
+const verifyPrivileged = Effect.fn("verifyPrivileged")(function* verifyPrivileged(
   role: string,
+  audience: Application,
   strong: boolean,
   allowEnrollment: boolean,
 ) {
-  if (role !== ROLE.administrator) {
+  if (role !== audienceRoles[audience]) {
     return yield* new AdminRequired();
   }
   if (!allowEnrollment && !strong) {
@@ -53,14 +54,14 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   const { audience } = yield* Auth;
   const current = yield* requireSessionSecurity(headers);
   const strong = isStrongMethod(current.session.authenticationMethod);
-  if (audience !== APPLICATION.user) {
-    yield* verifyAdmin(current.user.role, strong, allowEnrollment);
+  if (isPrivilegedRole(audienceRoles[audience])) {
+    yield* verifyPrivileged(current.user.role, audience, strong, allowEnrollment);
   }
-  const { email, id, name, role, twoFactorEnabled } = current.user;
+  const { email, id, name, permission, role, twoFactorEnabled } = current.user;
   return {
     session: { id: current.session.id },
     strong,
-    user: { email, id, name, role, twoFactorEnabled },
+    user: { email, id, name, permission, role, twoFactorEnabled },
   };
 });
 

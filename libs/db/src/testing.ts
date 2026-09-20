@@ -80,5 +80,5 @@ function capturePrepares<Requirements>(
   });
 }
 
-export { bootstrapAdmin } from "./bootstrap-statement.ts";
+export { BootstrapKind, bootstrapAdmin } from "./bootstrap-statement.ts";
 export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement };

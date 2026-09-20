@@ -1,4 +1,4 @@
-import { roles } from "@repo/config";
+import { accountPermissions, roles } from "@repo/config";
 import { Result, Schema } from "effect";
 
 const SessionView = Schema.Struct({
@@ -7,6 +7,7 @@ const SessionView = Schema.Struct({
     email: Schema.String,
     id: Schema.String,
     name: Schema.String,
+    permission: Schema.NullOr(Schema.Literals(accountPermissions)),
     role: Schema.Literals(roles),
     twoFactorEnabled: Schema.Boolean,
   }),

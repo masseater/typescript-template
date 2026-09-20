@@ -7,6 +7,7 @@ export {
   audienceOnEmptyDatabase,
   authTest,
   bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   enableTotp,
   missingSchemaFields,
@@ -27,4 +28,4 @@ export { BrowserClient, origins } from "./browser-client.ts";
 export { mailSubjects } from "./email.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";
-export { startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth-fixture.ts";
+export { startAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-fixture.ts";
