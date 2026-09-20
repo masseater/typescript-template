@@ -7,7 +7,13 @@ import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect, Schema } from "effect";
 
 import { PaidAlready, Stripe, handleStripeEvent, paidFailures } from "#shared/billing/index.ts";
-import { HostedPage, OfferView, PlanView, WebhookReceipt } from "#shared/contracts/index.ts";
+import {
+  CHECKOUT_RETURN,
+  HostedPage,
+  OfferView,
+  PlanView,
+  WebhookReceipt,
+} from "#shared/contracts/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -42,11 +48,11 @@ const checkout = Effect.fn("billing.api.checkout")(function* checkout(request: R
   const origin = yield* AppOrigin;
   const subscription = yield* findSubscription(user.id);
   const url = yield* (yield* Stripe).createCheckoutSession({
-    cancelUrl: `${origin}/upgrade?checkout=cancel`,
+    cancelUrl: `${origin}/upgrade?checkout=${CHECKOUT_RETURN.cancel}`,
     customer:
       subscription === undefined ? { email: user.email } : { id: subscription.stripeCustomerId },
     memberId: user.id,
-    successUrl: `${origin}/settings/plan?checkout=success`,
+    successUrl: `${origin}/settings/plan?checkout=${CHECKOUT_RETURN.success}`,
   });
   return { url };
 });

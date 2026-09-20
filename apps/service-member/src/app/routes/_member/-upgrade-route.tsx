@@ -1,7 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { CHECKOUT_RETURN } from "#pages/settings/index.ts";
 import { UpgradePage } from "#pages/upgrade/index.ts";
+import { CHECKOUT_RETURN } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 

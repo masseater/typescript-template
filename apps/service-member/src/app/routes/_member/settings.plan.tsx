@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { loadPlan, readCheckoutReturn } from "#pages/settings/index.ts";
+import { loadPlan } from "#pages/settings/index.ts";
+import { readCheckoutReturn } from "#shared/contracts/index.ts";
 import { PlanRoute } from "./-plan-route.tsx";
 
+// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/settings/plan")({
-  component: PlanRoute,
-  gcTime: 0,
-  loader: loadPlan,
   validateSearch: readCheckoutReturn,
+  loader: loadPlan,
+  gcTime: 0,
+  component: PlanRoute,
 });
 
 export { Route };
