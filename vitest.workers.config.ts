@@ -39,7 +39,11 @@ export default defineProject({
     }),
   ],
   test: {
-    include: [`libs/${workerTests}`, `infra/${workerTests}`],
+    include: [
+      `libs/${workerTests}`,
+      `infra/${workerTests}`,
+      "apps/service-member/src/shared/server-api/**/*.worker.test.ts",
+    ],
     name: "workers",
     root,
     testTimeout: 30_000,
