@@ -1,4 +1,4 @@
-import { Role } from "@repo/runtime/contracts";
+import { Role } from "#shared/contracts/index.ts";
 
 const roleLabels: Readonly<Record<typeof Role.Type, string>> = {
   admin: "管理者",
