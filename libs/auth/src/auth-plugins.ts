@@ -3,6 +3,7 @@ import { passkey } from "@better-auth/passkey";
 import { findPasskeyUser } from "@repo/db/security";
 import { jwt, twoFactor } from "better-auth/plugins";
 
+import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
 
@@ -51,7 +52,7 @@ function passkeyPlugin(
     },
     authenticatorSelection: { userVerification: "required" },
     origin,
-    rpID: new URL(origin).hostname,
+    rpID: passkeyRpId(origin),
   });
 }
 
