@@ -34,7 +34,7 @@ const help = Console.info(
   JSON.stringify({
     locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
     readOnly: true,
-    usage: `vp run --filter @repo/observe symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
+    usage: `vp run --filter @repo/dev symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
   }),
 );
 
