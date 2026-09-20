@@ -1,15 +1,19 @@
 import Link from "fumadocs-core/link";
-import { createElement } from "react";
 
 import { resolveWikiDocHref } from "#shared/content/index.ts";
 
 import type { ComponentProps, ReactElement } from "react";
 
-function WikiDocLink({ href, ...props }: ComponentProps<typeof Link>): ReactElement {
-  return createElement(Link, {
-    ...props,
-    href: href === undefined ? href : resolveWikiDocHref(href),
-  });
+function WikiDocLink({
+  children,
+  href,
+  title,
+}: Pick<ComponentProps<typeof Link>, "children" | "href" | "title">): ReactElement {
+  return (
+    <Link href={href === undefined ? href : resolveWikiDocHref(href)} title={title}>
+      {children}
+    </Link>
+  );
 }
 
 export { WikiDocLink };

@@ -1,7 +1,7 @@
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
 import { dontReviewItPreset } from "@repo/dont-review-it";
 import { generatedFiles, lintOptions } from "@repo/quality/lint";
-import { workerTests } from "@repo/quality/test-runtime";
+import { devServerTests, workerTests } from "@repo/quality/test-runtime";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -60,7 +60,11 @@ export default defineConfig({
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
-      test: { cache: false, command: "vp test run --project '!@repo/*'" },
+      test: {
+        cache: false,
+        command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
+      },
+      "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect"],
@@ -70,8 +74,9 @@ export default defineConfig({
           "check:imports",
           "check:react",
           "check:canonical-literal-types",
+          "test",
         ],
-        premerge: ["test"],
+        premerge: ["test:dev-server"],
         prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],
@@ -96,7 +101,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          exclude: [...defaultExclude, workerTests],
+          exclude: [...defaultExclude, workerTests, devServerTests],
           include: [
             "libs/**/*.test.ts",
             "libs/**/*.test.tsx",
@@ -112,6 +117,7 @@ export default defineConfig({
           name: "node",
         },
       },
+      { extends: true, test: { include: [devServerTests], name: "dev-server" } },
       "./vitest.workers.config.ts",
       "./libs/ui/storybook/vitest.config.ts",
       ...importedTools,
