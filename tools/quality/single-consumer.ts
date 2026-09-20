@@ -66,6 +66,7 @@ const singleConsumerAllowlist: readonly string[] = [
   "package:@repo/interview",
   "package:@repo/quality",
   "package:@repo/stop-ai-slop",
+  "subpath:@repo/auth-ui/signup",
   "subpath:@repo/auth/mcp",
   "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/interview",
@@ -85,7 +86,7 @@ const singleConsumerAllowlist: readonly string[] = [
   "subpath:@repo/runtime/testing",
   "subpath:@repo/runtime/wiki",
   "subpath:@repo/ui/lint-settings",
-  "subpath:@repo/ui/signup",
+  "subpath:@repo/ui/storybook/preview",
 ];
 
 const isIdent = (char: string): boolean => /[A-Za-z0-9_$]/u.test(char);

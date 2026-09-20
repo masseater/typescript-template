@@ -1,5 +1,5 @@
+import { LoginPage } from "@repo/auth-ui";
 import { decodeJson } from "@repo/runtime/client";
-import { LoginPage } from "@repo/ui/auth";
 import { Schema } from "effect";
 
 import { serviceName } from "#shared/config/index.ts";

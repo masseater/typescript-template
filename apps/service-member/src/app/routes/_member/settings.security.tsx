@@ -1,4 +1,4 @@
-import { SecurityPage } from "@repo/ui/auth";
+import { SecurityPage } from "@repo/auth-ui";
 import { createFileRoute } from "@tanstack/react-router";
 
 import type { ReactElement } from "react";

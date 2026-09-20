@@ -2,8 +2,6 @@ import { Effect, Ref } from "effect";
 import { noop } from "es-toolkit";
 import { useState, useSyncExternalStore } from "react";
 
-import { errorMessage } from "./protocol.ts";
-
 type Task = () => Promise<void>;
 
 type ActionState = {
@@ -29,7 +27,9 @@ const failureOf = async (task: Task): Promise<string | undefined> => {
   try {
     await task();
   } catch (failure) {
-    return errorMessage(failure);
+    return failure instanceof Error
+      ? failure.message
+      : "操作に失敗しました。もう一度お試しください。";
   }
   return undefined;
 };

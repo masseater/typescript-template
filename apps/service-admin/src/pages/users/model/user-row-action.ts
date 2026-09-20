@@ -1,5 +1,6 @@
+import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { errorMessage, useToast } from "@repo/ui";
+import { useToast } from "@repo/ui";
 import { useState } from "react";
 
 import { adminClient } from "#shared/api/index.ts";

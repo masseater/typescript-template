@@ -1,4 +1,4 @@
-import type { SessionView } from "@repo/ui";
+import type { SessionView } from "@repo/auth-ui";
 
 type Session = SessionView;
 

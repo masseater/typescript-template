@@ -1,4 +1,4 @@
-import { loginPath } from "@repo/ui";
+import { loginPath } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 
 import { loadSession } from "#entities/session/index.ts";
