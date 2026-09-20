@@ -1,11 +1,6 @@
-import { APPLICATION } from "@repo/config";
 import { Auth } from "@repo/auth";
-import {
-  AuthApps,
-  startAuthorization,
-  wikiAdministrator,
-  wikiOrigin,
-} from "@repo/auth/testing";
+import { AuthApps, startAuthorization, wikiAdministrator, wikiOrigin } from "@repo/auth/testing";
+import { APPLICATION } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";

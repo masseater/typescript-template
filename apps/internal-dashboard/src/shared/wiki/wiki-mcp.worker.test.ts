@@ -1,4 +1,3 @@
-import { APPLICATION, ROLE } from "@repo/config";
 import {
   AuthApps,
   PASSWORD,
@@ -11,6 +10,7 @@ import {
   signIn,
   signInAs,
 } from "@repo/auth/testing";
+import { APPLICATION, ROLE } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
