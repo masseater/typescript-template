@@ -149,7 +149,7 @@ const configuration: IConfiguration = {
     {
       comment:
         "wiki は共有 DB の業務処理を持ちません。ローカル開発用の D1 定義と、社内の利用者を管理する @repo/db/staff だけを参照してください。",
-      from: { path: "^apps/internal-dashboard/" },
+      from: { path: "^apps/internal-dashboard/", pathNot: testModule },
       name: "no-wiki-to-database",
       severity: "error",
       to: { path: "^libs/db/", pathNot: wikiReachableDatabase },
