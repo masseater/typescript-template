@@ -44,5 +44,6 @@ export {
   readEnvironment,
   readWikiConfig,
 } from "./environment.ts";
+export { httpStatus } from "./http-status.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type { AppConfig, AssetFetcher, WikiConfig } from "./environment.ts";

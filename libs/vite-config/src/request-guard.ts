@@ -1,11 +1,10 @@
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus, type Application } from "@repo/config";
 
 import { privatePath } from "./private-path.ts";
 
-import type { Application } from "@repo/config";
 import type { Connect } from "vite-plus";
 
 type BoundaryRoots = Readonly<{
