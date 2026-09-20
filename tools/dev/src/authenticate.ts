@@ -90,8 +90,10 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     "fill",
     operator.password,
   ]);
-  yield* agent(app, credentials, socketDirectory, ["find", "label", "パスワード", "click"]);
-  yield* agent(app, credentials, socketDirectory, ["press", "Enter"]);
+  yield* agent(app, credentials, socketDirectory, [
+    "eval",
+    "document.querySelector('form')?.requestSubmit(); true",
+  ]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   yield* agent(app, credentials, socketDirectory, [
     "find",
@@ -101,12 +103,9 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     URI.parse(operator.totpURI).generate(),
   ]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
-    "認証アプリの確認コード",
-    "click",
+    "eval",
+    "document.querySelector('form')?.requestSubmit(); true",
   ]);
-  yield* agent(app, credentials, socketDirectory, ["press", "Enter"]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPath(app)}`]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
