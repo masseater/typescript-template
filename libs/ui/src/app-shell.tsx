@@ -9,8 +9,10 @@ import type { Children } from "./shared/ui/types";
 
 const AppShell = ({
   children,
+  lang = "ja",
   routes,
-}: Children & Readonly<{ routes: Readonly<Record<string, string>> }>): ReactElement => {
+}: Children &
+  Readonly<{ lang?: string; routes: Readonly<Record<string, string>> }>): ReactElement => {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
     return (): void => {
@@ -18,7 +20,7 @@ const AppShell = ({
     };
   }, [routes]);
   return (
-    <html lang="ja">
+    <html lang={lang}>
       <head>
         <HeadContent />
       </head>

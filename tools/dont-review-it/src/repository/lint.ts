@@ -17,7 +17,7 @@ import {
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
 
-const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
+const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages = [
   "apps/service-admin/**",
