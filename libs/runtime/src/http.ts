@@ -82,7 +82,9 @@ function createApi<const Prefix extends string>(prefix: Prefix) {
   return new Elysia({ adapter: WebStandardAdapter, prefix })
     .guard({ parse: "none" })
     .error(({ error }) =>
-      error instanceof NotFound ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+      error instanceof NotFound
+        ? status(httpStatus.notFound, { error: missingMessage })
+        : undefined,
     );
 }
 
