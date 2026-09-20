@@ -11,8 +11,8 @@ export default defineConfig({
       ...testRun,
       ...lifecycle({
         precommit: [],
-        prepush: ["check:effect"],
-        prepr: ["check"],
+        prepush: ["check:effect", "check"],
+        prepr: [],
         premerge: ["test"],
         prerelease: [],
       }),

@@ -15,8 +15,8 @@ export default defineConfig({
       "db:migrate:local": { cache: false, command: "node src/migrate-local.ts" },
       ...lifecycle({
         precommit: [],
-        prepush: ["check:effect"],
-        prepr: ["check"],
+        prepush: ["check:effect", "check"],
+        prepr: [],
         premerge: [],
         prerelease: [],
       }),

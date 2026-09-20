@@ -232,8 +232,8 @@ const appRun = {
     },
     ...lifecycle({
       precommit: [],
-      prepush: ["check:effect"],
-      prepr: ["check"],
+      prepush: ["check:effect", "check"],
+      prepr: [],
       premerge: ["build", "check:dev"],
       prerelease: [],
     }),

@@ -14,6 +14,6 @@ it("packs each monitor from src/worker.ts and builds that artifact before merge"
   assert.strictEqual(build.command, "vp pack");
   assert.deepStrictEqual(config.run.tasks.premerge, {
     command: [],
-    dependsOn: ["prepr", "build"],
+    dependsOn: ["build"],
   });
 });
