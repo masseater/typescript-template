@@ -1,5 +1,4 @@
 import { verifySession } from "@repo/auth";
-import { readWikiConfig } from "#shared/wiki/wiki-config.ts";
 import {
   FeatureFlags,
   FlagEditorRequired,
@@ -13,6 +12,7 @@ import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 
 import { FlagList, FlagToggle, FlagToggled } from "#shared/contracts/index.ts";
+import { readWikiConfig } from "#shared/wiki/wiki-config.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
