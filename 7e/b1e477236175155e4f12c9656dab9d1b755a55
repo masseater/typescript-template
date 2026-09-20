@@ -1,1 +1,1 @@
-Keep tailwindcss on style-owning apps so knip's Tailwind plugin still registers the CSS compiler after @tailwindcss/vite moved into @repo/config; ignore it only there because app CSS imports @repo/ui rather than tailwindcss directly.
+Fix prefer-dvh-over-vh: public-frame min-h-screen blocked check:react once knip stopped failing first.
