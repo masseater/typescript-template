@@ -40,7 +40,7 @@ describe("appConfig", () => {
         const config = appConfig(app)(env);
         expect(config.build).toStrictEqual({ sourcemap: "hidden" });
         expect(config.preview).toStrictEqual(appServer(app));
-        expect(config.run).toBe(appRun);
+        expect(config.run).toStrictEqual(appRun(app));
         expect(config.server).toStrictEqual(appServer(app));
       }
     }
