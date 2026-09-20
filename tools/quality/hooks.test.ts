@@ -1,7 +1,11 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { generatedDirectories, lifecycleInherits, lifecycles } from "@repo/config/vite";
 import { describe, expect, it } from "vite-plus/test";
 
-import { onDemandGateEntries } from "./on-demand-checks.ts";
+import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
 import {
   commands,
   configuredDirectories,
@@ -14,6 +18,7 @@ import {
   workspaceDirectories,
   workspaceNames,
 } from "./tasks.ts";
+import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob("../../.vite-hooks/pre-*", {
   eager: true,
@@ -139,9 +144,13 @@ function slowBeforePush(directory: string): string[] {
     .map((name) => `${directory}: ${name}`);
 }
 
+function reachesTest(directory: string, stages: string[]): boolean {
+  return reachable(directory, stages).some((name) => name === "test" || name.startsWith("test:"));
+}
+
 function ungatedProjects(): string[] {
   return testProjectDirectories.filter(
-    (directory) => !reachable(directory, ["prepr"]).includes("test"),
+    (directory) => !reachesTest(directory, ["prepr", "premerge"]),
   );
 }
 
@@ -157,6 +166,48 @@ function strayTestTasks(): string[] {
 function unmatchedProjectNames(): string[] {
   return testProjectDirectories.filter(
     (directory) => !(workspaceNames[directory] ?? "").startsWith("@repo/"),
+  );
+}
+
+const toolsRoot = fileURLToPath(new URL("../../tools", import.meta.url));
+
+function collectTestPackages(directory: string, packageName: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...collectTestPackages(path, packageName));
+      continue;
+    }
+    if (/\.test\.tsx?$/u.test(entry.name)) {
+      found.push(packageName);
+    }
+  }
+  return found;
+}
+
+function toolsPackagesWithTests(): string[] {
+  return [
+    ...new Set(
+      readdirSync(toolsRoot, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory()
+          ? collectTestPackages(join(toolsRoot, entry.name), `tools/${entry.name}`)
+          : [],
+      ),
+    ),
+  ].toSorted();
+}
+
+function uncoveredToolTestPackages(): string[] {
+  const dedicated = new Set(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, "")));
+  const rootOwned = new Set(
+    rootNodeToolTestIncludes.map((pattern) => pattern.replace(/\/\*\*\/\*\.test\.tsx?$/u, "")),
+  );
+  return toolsPackagesWithTests().filter(
+    (directory) =>
+      !dedicated.has(directory) &&
+      !rootOwned.has(directory) &&
+      !reachesTest(directory, ["prepr", "premerge"]),
   );
 }
 
@@ -304,5 +355,21 @@ describe("test ownership", () => {
     ]);
     expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
+  });
+
+  it("keeps every tools package with tests on a vitest project or pull request gate", () => {
+    expect.hasAssertions();
+    expect(toolsPackagesWithTests().length).toBeGreaterThan(0);
+    expect(uncoveredToolTestPackages()).toStrictEqual([]);
+    expect(testProjectDirectories).toEqual(
+      expect.arrayContaining(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, ""))),
+    );
+  });
+});
+
+describe("on-demand gate escapes", () => {
+  it("keeps the on-demand allowlist frozen so new escapes need an explicit test change", () => {
+    expect.hasAssertions();
+    expect([...onDemandGateEntries].toSorted()).toStrictEqual([...frozenOnDemandGateEntries]);
   });
 });
