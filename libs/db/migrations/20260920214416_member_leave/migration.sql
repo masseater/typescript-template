@@ -16,6 +16,7 @@ CREATE TABLE `withdrawn_member` (
 CREATE TABLE `leave_request` (
 	`member_id` text PRIMARY KEY NOT NULL,
 	`purge_at` integer NOT NULL,
+	`recovery_declined_at` integer,
 	`requested_at` integer NOT NULL,
 	`restored_at` integer,
 	CONSTRAINT `fk_leave_request_member_id_withdrawn_member_member_id_fk` FOREIGN KEY (`member_id`) REFERENCES `withdrawn_member`(`member_id`) ON DELETE CASCADE

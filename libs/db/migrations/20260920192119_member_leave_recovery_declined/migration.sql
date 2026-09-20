@@ -1,1 +1,0 @@
-ALTER TABLE `leave_request` ADD `recovery_declined_at` integer;

@@ -1,8 +1,10 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "685743b5-9dce-4df4-a1ba-9743596c26be",
-  "prevIds": ["714645b4-cc4d-4c04-8441-2705bb063200"],
+  "id": "48658ea3-a6d0-40ad-8ea7-9d2e45bf7152",
+  "prevIds": [
+    "19c6bf9b-7db4-46d0-b977-8288d59b6908"
+  ],
   "ddl": [
     {
       "name": "account",
@@ -10,6 +12,14 @@
     },
     {
       "name": "audit_event",
+      "entityType": "tables"
+    },
+    {
+      "name": "board_post",
+      "entityType": "tables"
+    },
+    {
+      "name": "board_thread",
       "entityType": "tables"
     },
     {
@@ -269,6 +279,116 @@
       "table": "audit_event"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "author_id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "body",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "thread_id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "author_id",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "last_posted_at",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "name": "post_count",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -455,6 +575,16 @@
       "default": null,
       "generated": null,
       "name": "purge_at",
+      "entityType": "columns",
+      "table": "leave_request"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recovery_declined_at",
       "entityType": "columns",
       "table": "leave_request"
     },
@@ -2169,9 +2299,13 @@
       "table": "withdrawn_member"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2180,9 +2314,58 @@
       "table": "account"
     },
     {
-      "columns": ["followee_id"],
+      "columns": [
+        "author_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_board_post_author_id_user_id_fk",
+      "entityType": "fks",
+      "table": "board_post"
+    },
+    {
+      "columns": [
+        "thread_id"
+      ],
+      "tableTo": "board_thread",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_board_post_thread_id_board_thread_id_fk",
+      "entityType": "fks",
+      "table": "board_post"
+    },
+    {
+      "columns": [
+        "author_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_board_thread_author_id_user_id_fk",
+      "entityType": "fks",
+      "table": "board_thread"
+    },
+    {
+      "columns": [
+        "followee_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2191,9 +2374,13 @@
       "table": "follow"
     },
     {
-      "columns": ["follower_id"],
+      "columns": [
+        "follower_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2202,9 +2389,13 @@
       "table": "follow"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2213,9 +2404,13 @@
       "table": "interview"
     },
     {
-      "columns": ["member_id"],
+      "columns": [
+        "member_id"
+      ],
       "tableTo": "withdrawn_member",
-      "columnsTo": ["member_id"],
+      "columnsTo": [
+        "member_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2224,9 +2419,13 @@
       "table": "leave_request"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2235,9 +2434,13 @@
       "table": "member_onboarding"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2246,9 +2449,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["refresh_id"],
+      "columns": [
+        "refresh_id"
+      ],
       "tableTo": "oauth_refresh_token",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2257,9 +2464,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["session_id"],
+      "columns": [
+        "session_id"
+      ],
       "tableTo": "session",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2268,9 +2479,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2279,9 +2494,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2290,9 +2509,13 @@
       "table": "oauth_client"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2301,9 +2524,13 @@
       "table": "oauth_client_resource"
     },
     {
-      "columns": ["resource_id"],
+      "columns": [
+        "resource_id"
+      ],
       "tableTo": "oauth_resource",
-      "columnsTo": ["identifier"],
+      "columnsTo": [
+        "identifier"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2312,9 +2539,13 @@
       "table": "oauth_client_resource"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2323,9 +2554,13 @@
       "table": "oauth_consent"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2334,9 +2569,13 @@
       "table": "oauth_consent"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2345,9 +2584,13 @@
       "table": "oauth_refresh_token"
     },
     {
-      "columns": ["session_id"],
+      "columns": [
+        "session_id"
+      ],
       "tableTo": "session",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2356,9 +2599,13 @@
       "table": "oauth_refresh_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2367,9 +2614,13 @@
       "table": "oauth_refresh_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2378,9 +2629,13 @@
       "table": "passkey"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2389,9 +2644,13 @@
       "table": "session"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2400,147 +2659,208 @@
       "table": "two_factor"
     },
     {
-      "columns": ["follower_id", "followee_id"],
+      "columns": [
+        "follower_id",
+        "followee_id"
+      ],
       "nameExplicit": false,
       "name": "follow_pk",
       "entityType": "pks",
       "table": "follow"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "account_pk",
       "table": "account",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "audit_event_pk",
       "table": "audit_event",
       "entityType": "pks"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "board_post_pk",
+      "table": "board_post",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "board_thread_pk",
+      "table": "board_thread",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
       "nameExplicit": false,
       "name": "interview_pk",
       "table": "interview",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "jwks_pk",
       "table": "jwks",
       "entityType": "pks"
     },
     {
-      "columns": ["member_id"],
+      "columns": [
+        "member_id"
+      ],
       "nameExplicit": false,
       "name": "leave_request_pk",
       "table": "leave_request",
       "entityType": "pks"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "nameExplicit": false,
       "name": "member_onboarding_pk",
       "table": "member_onboarding",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_access_token_pk",
       "table": "oauth_access_token",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_client_pk",
       "table": "oauth_client",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_client_assertion_pk",
       "table": "oauth_client_assertion",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_client_resource_pk",
       "table": "oauth_client_resource",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_consent_pk",
       "table": "oauth_consent",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_refresh_token_pk",
       "table": "oauth_refresh_token",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_resource_pk",
       "table": "oauth_resource",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "passkey_pk",
       "table": "passkey",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "rate_limit_pk",
       "table": "rate_limit",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "session_pk",
       "table": "session",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "two_factor_pk",
       "table": "two_factor",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "user_pk",
       "table": "user",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "verification_pk",
       "table": "verification",
       "entityType": "pks"
     },
     {
-      "columns": ["member_id"],
+      "columns": [
+        "member_id"
+      ],
       "nameExplicit": false,
       "name": "withdrawn_member_pk",
       "table": "withdrawn_member",
@@ -2573,6 +2893,46 @@
       "name": "audit_event_created_at_idx",
       "entityType": "indexes",
       "table": "audit_event"
+    },
+    {
+      "columns": [
+        {
+          "value": "thread_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "board_post_thread_id_idx",
+      "entityType": "indexes",
+      "table": "board_post"
+    },
+    {
+      "columns": [
+        {
+          "value": "last_posted_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "board_thread_last_posted_at_idx",
+      "entityType": "indexes",
+      "table": "board_thread"
     },
     {
       "columns": [
