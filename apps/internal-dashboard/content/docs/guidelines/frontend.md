@@ -13,5 +13,5 @@ description: 画面の部品とページ仕様をどこに置き、何で組む�
 
 ## ページ仕様の置き場所
 
-- 画面の構成と遷移の判断を文書にする場合は、`apps/wiki/content/docs/pages/` に置きます。
+- 画面の構成と遷移の判断を文書にする場合は、`apps/internal-dashboard/content/docs/pages/` に置きます。
 - ページ仕様を `guidelines/` に混ぜることは禁止です。ガイドラインは判断基準だけを持ち、個別画面の手順は持ちません。

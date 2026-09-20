@@ -42,7 +42,7 @@ const assertTotpUriAllowed = Effect.fn("assertTotpUriAllowed")(function* assertT
 });
 
 const recoverySession = Effect.fn("recoverySession")(function* recoverySession(
-  audience: "service-member" | "admin",
+  audience: "service-member" | "service-admin",
 ) {
   yield* bootstrapVerifiedAdmin(email);
   const { backupCodes } = yield* enableTotp(yield* signInAs("service-admin", email));
@@ -163,7 +163,7 @@ it.effect(
         const old = yield* signInAs("service-member", reader);
         yield* enableTotp(enrollment);
         const current = yield* old.verify();
-        assert.deepStrictEqual([current.user.role, current.strong], ["user", false]);
+        assert.deepStrictEqual([current.user.role, current.strong], ["member", false]);
         yield* assertTotpUriAllowed(old);
       }),
     ),
