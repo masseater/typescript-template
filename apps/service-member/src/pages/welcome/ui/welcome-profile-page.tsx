@@ -5,11 +5,13 @@ import { useState } from "react";
 import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 import { saveProfile } from "../api/profile.ts";
+import { useClientReady } from "./client-ready.ts";
 
 import type { ReactElement } from "react";
 
 function WelcomeProfilePage(): ReactElement {
   const navigate = useNavigate();
+  const ready = useClientReady();
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,7 +55,7 @@ function WelcomeProfilePage(): ReactElement {
       </FormColumn>
       {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
       <Button
-        disabled={busy || name.trim() === ""}
+        disabled={busy || !ready || name.trim() === ""}
         onClick={() => void onSave()}
         type="button"
         variant="primary"

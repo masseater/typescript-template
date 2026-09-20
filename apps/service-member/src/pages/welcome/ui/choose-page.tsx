@@ -3,11 +3,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
+import { useClientReady } from "./client-ready.ts";
 
 import type { ReactElement } from "react";
 
 function ChoosePage(): ReactElement {
   const navigate = useNavigate();
+  const ready = useClientReady();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -33,7 +35,7 @@ function ChoosePage(): ReactElement {
       </p>
       {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
       <Button
-        disabled={busy}
+        disabled={busy || !ready}
         onClick={() => void choose("profile")}
         type="button"
         variant="primary"
@@ -41,7 +43,7 @@ function ChoosePage(): ReactElement {
         自分で入力する
       </Button>
       <Button
-        disabled={busy}
+        disabled={busy || !ready}
         onClick={() => void choose("interview")}
         type="button"
         variant="secondary"

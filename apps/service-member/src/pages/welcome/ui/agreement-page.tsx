@@ -3,11 +3,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
+import { useClientReady } from "./client-ready.ts";
 
 import type { ReactElement } from "react";
 
 function AgreementPage(): ReactElement {
   const navigate = useNavigate();
+  const ready = useClientReady();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -36,7 +38,12 @@ function AgreementPage(): ReactElement {
         <li>プライバシーポリシー</li>
       </ul>
       {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
-      <Button disabled={busy} onClick={() => void onAgree()} type="button" variant="primary">
+      <Button
+        disabled={busy || !ready}
+        onClick={() => void onAgree()}
+        type="button"
+        variant="primary"
+      >
         同意して続ける
       </Button>
     </main>
