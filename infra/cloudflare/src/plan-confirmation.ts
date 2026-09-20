@@ -178,10 +178,16 @@ function refusedBindings(row: PlanRow): readonly Refusal[] {
   );
 }
 
+function adoptedZoneSetting(row: PlanRow): boolean {
+  return row.action === "adopted" && row.type === "Cloudflare.Zone.Setting";
+}
+
 function refusedRows(planned: PlannedStack): readonly Refusal[] {
   const rows = planRows(planned);
   return [
-    ...rows.flatMap((row) => refused(rowDisposition[row.action], row.id)),
+    ...rows.flatMap((row) =>
+      adoptedZoneSetting(row) ? [] : refused(rowDisposition[row.action], row.id),
+    ),
     ...rows.flatMap((row) => refusedBindings(row)),
   ];
 }
