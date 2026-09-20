@@ -2,7 +2,6 @@ import { SKIP, visitParents } from "unist-util-visit-parents";
 
 import type { PhrasingContent, Root, Text } from "mdast";
 import type { MdxJsxAttribute, MdxJsxTextElement } from "mdast-util-mdx-jsx";
-import type { Node } from "unist";
 
 const wikiTermPattern = /\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]/g;
 
@@ -62,7 +61,7 @@ function splitText(value: string): PhrasingContent[] {
 
 function remarkWikiTerm() {
   return (tree: Root): void => {
-    visitParents(tree, "text", (node: Text, ancestors: readonly Node[]) => {
+    visitParents(tree, "text", (node: Text, ancestors) => {
       if (ancestors.some((ancestor) => skippedAncestors.has(ancestor.type))) {
         return SKIP;
       }
