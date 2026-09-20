@@ -24,9 +24,12 @@
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/ai": "0.54.0",
+    "@tanstack/devtools-vite": "0.8.5",
+    "@tanstack/react-devtools": "0.10.12",
     "@tanstack/react-form": "catalog:",
     "@tanstack/react-pacer": "0.23.0",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-query-devtools": "5.103.1",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-router-ssr-query": "catalog:",
     "@tanstack/react-start": "catalog:",
@@ -35,10 +38,7 @@
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "@tanstack/devtools-vite": "0.8.5",
-    "@tanstack/react-devtools": "0.10.12",
-    "@tanstack/react-query-devtools": "5.103.1"
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
