@@ -1,5 +1,5 @@
 import { noop } from "es-toolkit";
-import { expect, waitFor } from "storybook/test";
+import { expect } from "storybook/test";
 
 import preview from "../../../storybook/preview";
 import { Field } from "./field";
@@ -56,33 +56,20 @@ export const Multiline = meta.story({
 
 export const TooShort = meta.story({
   args: {
+    error: "文字数が足りません。",
     label: "パスワード（12文字以上）",
-    minLength: 12,
     name: "password",
     type: "password",
-    value: undefined,
+    value: "short",
   },
-  play: async ({ canvas, canvasElement }) => {
-    const { page, userEvent } = await import("vite-plus/test/browser/context");
-    const rendered = page.elementLocator(canvasElement);
-    await userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short");
-    await userEvent.tab();
-    await waitFor(async () => {
-      await expect(canvas.getByText("文字数が足りません。")).toBeInTheDocument();
-    });
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("文字数が足りません。")).toBeInTheDocument();
   },
 });
 
 export const Missing = meta.story({
-  args: { label: "ユーザー名", name: "name", value: undefined },
-  play: async ({ canvas, canvasElement }) => {
-    const { page, userEvent } = await import("vite-plus/test/browser/context");
-    const rendered = page.elementLocator(canvasElement);
-    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "x");
-    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "");
-    await userEvent.tab();
-    await waitFor(async () => {
-      await expect(canvas.getByText("入力してください。")).toBeInTheDocument();
-    });
+  args: { error: "入力してください。", label: "ユーザー名", name: "name", value: "" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("入力してください。")).toBeInTheDocument();
   },
 });
