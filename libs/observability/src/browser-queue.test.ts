@@ -54,9 +54,9 @@ async function attemptFlush(queue: Readonly<BrowserEventQueue>): Promise<boolean
 
 async function exhaustAttempts(queue: Readonly<BrowserEventQueue>): Promise<void> {
   await attemptFlush(queue);
-  await wait(retryBackoffMilliseconds);
+  await wait(retryBackoffMilliseconds + settleMilliseconds);
   await attemptFlush(queue);
-  await wait(retryBackoffMilliseconds * secondAttempt);
+  await wait(retryBackoffMilliseconds * secondAttempt + settleMilliseconds);
   await attemptFlush(queue);
 }
 
@@ -68,7 +68,7 @@ describe("browser event queue", () => {
     await attemptFlush(queue);
     await attemptFlush(queue);
     expect(batches).toHaveLength(1);
-    await wait(retryBackoffMilliseconds);
+    await wait(retryBackoffMilliseconds + settleMilliseconds);
     await attemptFlush(queue);
     expect(batches).toHaveLength(secondAttempt);
   });
