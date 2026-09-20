@@ -8,10 +8,13 @@ import {
   workspaceManifests,
 } from "./dependencies.ts";
 
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
-  eager: true,
-  import: "default",
-});
+const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../package.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const commanderPackage = `@repo/${localExecutableName}`;
 const placeMessage = `${commanderPackage} は tools/${localExecutableName} に 1 つだけ置いてください。デプロイして外部の要求を受けるなら apps/ へ移してください。`;
@@ -25,7 +28,7 @@ const commanderManifest = {
 
 const repositoryManifests = [
   ...workspaceManifests,
-  { area: ".", file: "package.json", manifest: rootManifests["../../package.json"] },
+  { area: ".", file: "package.json", manifest: rootManifests["../../../../package.json"] },
 ];
 
 describe("local executable placement", () => {
@@ -88,7 +91,9 @@ describe("local executable placement", () => {
 
   it("keeps commander in tools while nothing imports it and it is not deployed", () => {
     expect.hasAssertions();
-    expect(rootManifests["../../package.json"]).toMatchObject({ name: "typescript-template" });
+    expect(rootManifests["../../../../package.json"]).toMatchObject({
+      name: "typescript-template",
+    });
     expect(localExecutablePlacementViolations([commanderManifest])).toStrictEqual([]);
     expect(localExecutablePlacementViolations(repositoryManifests)).toStrictEqual([]);
     expect(localExecutableDeployViolations(applications)).toStrictEqual([]);

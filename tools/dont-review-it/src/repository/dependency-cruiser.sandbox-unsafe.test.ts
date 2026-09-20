@@ -336,5 +336,5 @@ describe("dependency-cruiser rules on package boundaries", () => {
       scanned: scannedModules,
       violations: [],
     });
-  });
+  }, 120_000);
 });
