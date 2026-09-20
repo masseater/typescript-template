@@ -56,30 +56,31 @@ it.effect("enqueues a job, runs the workflow steps, and reports completion", () 
     );
     yield* Schema.decodeUnknownEffect(JobPayload)({ jobId: body.id });
 
-    await using instance = await introspectWorkflowInstance(env[jobsWorkflowBinding], body.id);
-    yield* Effect.promise(async () =>
-      instance.modify(async (modifier) => {
+    const view = yield* Effect.promise(async () => {
+      await using instance = await introspectWorkflowInstance(env[jobsWorkflowBinding], body.id);
+      await instance.modify(async (modifier) => {
         await modifier.disableSleeps();
-      }),
-    );
+      });
 
-    const batch = createMessageBatch(jobsQueueName, [
-      { attempts: 1, body: { jobId: body.id }, id: body.id, timestamp: new Date() },
-    ]);
-    const context = createExecutionContext();
-    yield* Effect.promise(async () => consumeJobs(batch, jobs));
-    const queueResult = yield* Effect.promise(async () => getQueueResult(batch, context));
-    assert.deepStrictEqual(queueResult.explicitAcks, [body.id]);
+      const batch = createMessageBatch(jobsQueueName, [
+        { attempts: 1, body: { jobId: body.id }, id: body.id, timestamp: new Date() },
+      ]);
+      const context = createExecutionContext();
+      await consumeJobs(batch, jobs);
+      const queueResult = await getQueueResult(batch, context);
+      assert.deepStrictEqual(queueResult.explicitAcks, [body.id]);
 
-    yield* Effect.promise(async () => instance.waitForStatus("complete"));
-    const output = yield* Effect.promise(async () => instance.getOutput());
-    assert.deepStrictEqual(output, { jobId: body.id, stage: "complete" });
+      await instance.waitForStatus("complete");
+      const output = await instance.getOutput();
+      assert.deepStrictEqual(output, { jobId: body.id, stage: "complete" });
 
-    const statusResponse = yield* Effect.promise(async () =>
-      app.fetch(new Request(`${fixtureOrigin}${apiRoot}/jobs/${body.id}`)),
-    );
-    assert.strictEqual(statusResponse.status, httpStatus.ok);
-    const view = yield* Effect.promise(async () => statusResponse.json());
+      const statusResponse = await app.fetch(
+        new Request(`${fixtureOrigin}${apiRoot}/jobs/${body.id}`),
+      );
+      assert.strictEqual(statusResponse.status, httpStatus.ok);
+      return statusResponse.json();
+    });
+
     assert.deepStrictEqual(view, {
       id: body.id,
       output: { jobId: body.id, stage: "complete" },
