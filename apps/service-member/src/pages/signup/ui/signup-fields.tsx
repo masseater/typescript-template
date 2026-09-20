@@ -21,7 +21,7 @@ const signUp = async (values: typeof SignUpSubmission.Type, onSent: () => void):
       callbackURL: "/login",
       email: values.email,
       name: values.name,
-      password: values.password,
+      password: values[AUTHENTICATION_METHOD.password],
     }),
   );
   onSent();
@@ -35,7 +35,7 @@ const SignUpFields = ({
   onSent: () => void;
 }>): ReactElement => {
   const form = useForm({
-    defaultValues: { email: "", name: "", password: "" },
+    defaultValues: { email: "", name: "", [AUTHENTICATION_METHOD.password]: "" },
     onSubmit: ({ value }) => {
       action.run(async () => signUp(value, onSent));
     },
@@ -75,7 +75,7 @@ const SignUpFields = ({
             />
           )}
         </form.Field>
-        <form.Field name="password">
+        <form.Field name={AUTHENTICATION_METHOD.password}>
           {(field) => (
             <Field
               label="パスワード（12文字以上）"
