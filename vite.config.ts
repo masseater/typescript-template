@@ -27,6 +27,7 @@ export default defineConfig({
     tasks: {
       "check:client": {
         command: "quality-check-client",
+        dependsOn: ["precommit"],
         input: [
           ...taskInput,
           "!**/dist/**",
@@ -38,19 +39,25 @@ export default defineConfig({
       },
       "check:code": { command: "vp check", input: [...taskInput] },
       ...effectDiagnostics,
-      "check:imports":
-        "depcruise --config tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+      "check:imports": {
+        command:
+          "depcruise --config tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+        dependsOn: ["precommit"],
+      },
       "check:react": {
         command: "quality-check-react",
+        dependsOn: ["precommit"],
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
+        dependsOn: ["precommit"],
         input: [...taskInput],
       },
       knip: {
         command: ["knip", "knip --strict"],
+        dependsOn: ["precommit"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
@@ -60,6 +67,7 @@ export default defineConfig({
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
+        dependsOn: ["prepush"],
         input: [
           ...taskInput,
           "!coverage/**",

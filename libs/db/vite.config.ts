@@ -7,6 +7,7 @@ export default defineConfig({
       ...effectDiagnostics,
       check: {
         command: "drizzle-kit check",
+        dependsOn: ["typescript-template#precommit"],
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
