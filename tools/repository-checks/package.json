@@ -22,7 +22,7 @@
   "scripts": {},
   "dependencies": {
     "@opentelemetry/api": "catalog:",
-    "@repo/ai-native": "workspace:*",
+    "@repo/ai-native-telemetry": "workspace:*",
     "es-toolkit": "catalog:"
   },
   "devDependencies": {
