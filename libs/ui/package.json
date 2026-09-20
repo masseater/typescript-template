@@ -18,7 +18,6 @@
     "@better-auth/passkey": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
-    "@repo/runtime": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "better-auth": "catalog:",
