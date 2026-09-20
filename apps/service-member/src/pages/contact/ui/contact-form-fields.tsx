@@ -1,7 +1,7 @@
 import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { maximumContactMessageLength, maximumContactNameLength } from "#shared/contracts/index.ts";
-import { fieldError } from "#shared/forms/field-error.ts";
+import { fieldError } from "#shared/forms/index.ts";
 
 import type { useContactForm } from "#pages/contact/model/contact-form.ts";
 import type { ReactElement, FormEvent } from "react";

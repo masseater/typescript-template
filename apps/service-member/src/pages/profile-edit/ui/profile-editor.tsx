@@ -1,7 +1,7 @@
 import { Field, FormColumn } from "@repo/ui";
 
 import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
-import { fieldError } from "#shared/forms/field-error.ts";
+import { fieldError } from "#shared/forms/index.ts";
 import { ProfileActions } from "./profile-actions.tsx";
 import { SocialLinksEditor } from "./social-links-editor.tsx";
 
