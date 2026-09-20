@@ -4,7 +4,7 @@ import { test } from "vite-plus/test";
 import { agentUserAgent } from "./agent-user-agent.ts";
 import { browserHeaders } from "./client-address.ts";
 import { startJourneyEnvironment } from "./environment.ts";
-import { installVirtualAuthenticator } from "./passkey.ts";
+import { enableVirtualAuthenticator } from "./passkey.ts";
 
 const journeyTest = test
   .extend("browser", { scope: "worker" }, async ({}, { onCleanup }) => {
@@ -29,11 +29,12 @@ const journeyTest = test
       locale: "ja-JP",
       userAgent: agentUserAgent,
     });
-    await installVirtualAuthenticator(session);
+    const page = await session.newPage();
+    await enableVirtualAuthenticator(page);
     onCleanup(async () => {
       await session.close();
     });
-    return session.newPage();
+    return page;
   });
 
 export { journeyTest };

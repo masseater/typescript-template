@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Effect, Ref, Schema } from "effect";
 
 import type { Page, Response } from "playwright";
 
@@ -11,13 +11,6 @@ const SessionBody = Schema.Struct({
 });
 
 const decodeSessionBody = Schema.decodeUnknownPromise(SessionBody);
-
-type ObservabilityCapture = {
-  readonly requestIds: readonly string[];
-  readonly sessionToken: string | undefined;
-  readonly traceIds: readonly string[];
-  readonly userId: string | undefined;
-};
 
 const requestIdHeader = "x-request-id";
 const traceparentHeader = "traceparent";
@@ -32,32 +25,38 @@ const traceIdFromTraceparent = (traceparent: string): string | undefined => {
 
 const attachObservabilityCapture = (
   page: Page,
-): ObservabilityCapture & { readonly stop: () => void } => {
-  const requestIds: string[] = [];
-  const traceIds: string[] = [];
-  const onResponse = (response: Response): void => {
-    const requestId = response.headers()[requestIdHeader];
+): {
+  readonly requestIds: readonly string[];
+  readonly sessionToken: string | undefined;
+  readonly traceIds: readonly string[];
+  readonly userId: string | undefined;
+  readonly stop: () => void;
+} => {
+  const requestIds = Ref.makeUnsafe<readonly string[]>([]);
+  const traceIds = Ref.makeUnsafe<readonly string[]>([]);
+  const onResponse = (httpExchange: Response): void => {
+    const requestId = httpExchange.headers()[requestIdHeader];
     if (requestId !== undefined && requestId !== "") {
-      requestIds.push(requestId);
+      Effect.runSync(Ref.set(requestIds, [...Ref.getUnsafe(requestIds), requestId]));
     }
-    const traceparent = response.headers()[traceparentHeader];
+    const traceparent = httpExchange.headers()[traceparentHeader];
     if (traceparent !== undefined) {
       const traceId = traceIdFromTraceparent(traceparent);
       if (traceId !== undefined) {
-        traceIds.push(traceId);
+        Effect.runSync(Ref.set(traceIds, [...Ref.getUnsafe(traceIds), traceId]));
       }
     }
   };
   page.on("response", onResponse);
   return {
     get requestIds(): readonly string[] {
-      return requestIds;
+      return Ref.getUnsafe(requestIds);
     },
     get sessionToken(): string | undefined {
       return undefined;
     },
     get traceIds(): readonly string[] {
-      return traceIds;
+      return Ref.getUnsafe(traceIds);
     },
     get userId(): string | undefined {
       return undefined;
@@ -70,20 +69,20 @@ const attachObservabilityCapture = (
 
 const readSession = async (
   page: Page,
-  origin: string,
+  sessionUrl: string,
 ): Promise<{ readonly sessionToken: string | undefined; readonly userId: string | undefined }> => {
-  const response = await page.request.get(`${origin}/api/session`);
-  if (!response.ok()) {
+  const sessionHttpReply = await page.request.get(sessionUrl);
+  if (!sessionHttpReply.ok()) {
     return { sessionToken: undefined, userId: undefined };
   }
-  const body = await decodeSessionBody(await response.json());
-  const cookies = await page.context().cookies(origin);
+  const sessionJson = await decodeSessionBody(await sessionHttpReply.json());
+  const sessionOrigin = new URL(sessionUrl).origin;
+  const cookies = await page.context().cookies(sessionOrigin);
   const sessionCookie = cookies.find((cookie) => cookie.name.endsWith(".session_token"));
   return {
     sessionToken: sessionCookie?.value,
-    userId: body.user?.id,
+    userId: sessionJson.user?.id,
   };
 };
 
 export { attachObservabilityCapture, readSession };
-export type { ObservabilityCapture };

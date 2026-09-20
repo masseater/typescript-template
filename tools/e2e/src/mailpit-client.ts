@@ -1,68 +1,55 @@
-import { Schema } from "effect";
-
 import { deliveryTimeout, mailLinkPattern } from "./mail.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
-const MailpitMessage = Schema.Struct({
-  ID: Schema.String,
-  Subject: Schema.String,
-  To: Schema.Array(Schema.Struct({ Address: Schema.String })),
-});
-
-const MailpitSearch = Schema.Struct({
-  messages: Schema.Array(MailpitMessage),
-});
-
-const MailpitBody = Schema.Struct({
-  Text: Schema.optionalKey(Schema.String),
-});
-
-const decodeMailpitSearch = Schema.decodeUnknownPromise(MailpitSearch);
-const decodeMailpitBody = Schema.decodeUnknownPromise(MailpitBody);
-
 const findLink = (search: {
-  readonly messages: readonly string[];
+  readonly deliveries: readonly string[];
   readonly prefix: string;
   readonly recipient: string;
 }): string | undefined => {
-  return search.messages
-    .filter((message) => message.includes(search.recipient))
-    .flatMap((message) => [...message.matchAll(mailLinkPattern)].map(([link]) => link))
+  return search.deliveries
+    .filter((delivery) => delivery.includes(search.recipient))
+    .flatMap((delivery) => [...delivery.matchAll(mailLinkPattern)].map(([link]) => link))
     .find((link) => link.startsWith(search.prefix));
 };
 
-const readMessage = async (mailpitOrigin: string, messageId: string): Promise<string> => {
-  const response = await fetch(`${mailpitOrigin}/api/v1/message/${messageId}`);
-  if (!response.ok) {
+const readMessage = async (messageUrl: string): Promise<string> => {
+  const mailpitHttpReply = await fetch(messageUrl);
+  if (!mailpitHttpReply.ok) {
     throw new Error("MAILPIT_MESSAGE_UNAVAILABLE");
   }
-  const body = await decodeMailpitBody(await response.json());
-  return body.Text ?? "";
+  const mailpitJson = (await mailpitHttpReply.json()) as { Text?: string };
+  return mailpitJson.Text ?? "";
 };
 
-const searchMessages = async (
-  mailpitOrigin: string,
-  recipient: string,
+const searchInbox = async (
+  searchUrl: string,
+  messageUrl: (messageId: string) => string,
 ): Promise<readonly string[]> => {
-  const response = await fetch(
-    `${mailpitOrigin}/api/v1/search?query=${encodeURIComponent(`to:${recipient}`)}`,
-  );
-  if (!response.ok) {
+  const mailpitHttpReply = await fetch(searchUrl);
+  if (!mailpitHttpReply.ok) {
     return [];
   }
-  const search = await decodeMailpitSearch(await response.json());
-  return Promise.all(search.messages.map((message) => readMessage(mailpitOrigin, message.ID)));
+  const mailpitJson = (await mailpitHttpReply.json()) as {
+    messages?: readonly { ID: string }[];
+  };
+  const inboxRows = mailpitJson.messages ?? [];
+  return Promise.all(inboxRows.map((inboxRow) => readMessage(messageUrl(inboxRow.ID))));
 };
 
-const waitForMailpitLink = async (
-  mailpitOrigin: string,
-  recipient: string,
-  prefix: string,
-): Promise<string> => {
+const waitForMailpitLink = async (linkSearch: {
+  readonly messageUrl: (messageId: string) => string;
+  readonly prefix: string;
+  readonly recipient: string;
+  readonly searchUrl: string;
+}): Promise<string> => {
   const link = await until({
     attempt: async () => {
-      const messages = await searchMessages(mailpitOrigin, recipient);
-      return findLink({ messages, prefix, recipient });
+      const deliveries = await searchInbox(linkSearch.searchUrl, linkSearch.messageUrl);
+      return findLink({
+        deliveries,
+        prefix: linkSearch.prefix,
+        recipient: linkSearch.recipient,
+      });
     },
     deadline: deadlineIn(deliveryTimeout),
     reason: "VERIFY_VERIFICATION_MAIL_NOT_DELIVERED",

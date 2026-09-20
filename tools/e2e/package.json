@@ -5,6 +5,7 @@
   "exports": {
     "./agent-user-agent": "./src/agent-user-agent.ts",
     "./client-address": "./src/client-address.ts",
+    "./journeys": "./src/journeys.ts",
     "./passkey": "./src/passkey.ts",
     "./verify-member": "./src/verify-member.ts"
   },

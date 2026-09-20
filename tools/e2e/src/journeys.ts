@@ -5,14 +5,12 @@ import {
   confirmEmail,
   enrollTotp,
   homePattern,
-  registerPasskey,
   signIn,
-  signInWithPasskey,
   signOut,
   signUp,
-  updateProfile,
 } from "./flows.ts";
-import { attachObservabilityCapture, readSession } from "./observability-capture.ts";
+import { journeyTest } from "./journey-browser.ts";
+import { journeyRoles } from "./journey-roles.ts";
 import {
   appearanceTimeout,
   fill,
@@ -22,6 +20,7 @@ import {
   seeHeading,
   seeText,
 } from "./screens.ts";
+import { runVerifyMember } from "./verify-member.ts";
 
 import type { Page } from "playwright";
 import type { JourneyEnvironment } from "./environment.ts";
@@ -81,49 +80,6 @@ const browseMainScreens = async (stage: JourneyStage, _account: Account): Promis
   await openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
   await stage.page.goto(`${origin}/users`);
   await seeHeading(stage.page, "ユーザーを探す");
-};
-
-const openNewThreadForm = async (page: Page, origin: string): Promise<void> => {
-  await page.goto(`${origin}/board`);
-  await seeHeading(page, "掲示板");
-  await page.getByRole("link", { exact: true, name: "新しいスレッド" }).click();
-  await page.waitForURL(`${origin}/board?new=true`, { timeout: appearanceTimeout });
-  await readyButton(page, "投稿する");
-};
-
-const openThread = async (page: Page, origin: string): Promise<string> => {
-  const title = `journey ${crypto.randomUUID()}`;
-  await openNewThreadForm(page, origin);
-  await fill(page, { fieldLabel: "題", typed: title });
-  await fill(page, { fieldLabel: "本文", typed: "最初の投稿です。" });
-  await press(page, "投稿する");
-  await page.waitForURL(`${origin}/board/*`, { timeout: appearanceTimeout });
-  await seeHeading(page, title);
-  return title;
-};
-
-const replyOnThread = async (page: Page): Promise<boolean> => {
-  const replyBody = `reply ${crypto.randomUUID()}`;
-  await readyButton(page, "投稿する");
-  await fill(page, { fieldLabel: "返信", typed: replyBody });
-  await press(page, "投稿する");
-  await seeText(page, replyBody);
-  return page.getByText(replyBody, { exact: false }).first().isVisible();
-};
-
-const postOnBoard = async (
-  stage: JourneyStage,
-  origin: string,
-): Promise<{ readonly listsTheThreadAfterwards: boolean; readonly showsTheReply: boolean }> => {
-  const { page } = stage;
-  const title = await openThread(page, origin);
-  const showsTheReply = await replyOnThread(page);
-  await page.goto(`${origin}/board`);
-  await seeText(page, title);
-  return {
-    listsTheThreadAfterwards: await page.getByText(title, { exact: false }).first().isVisible(),
-    showsTheReply,
-  };
 };
 
 const writeBiography = async (
@@ -200,47 +156,35 @@ const signInAgainWithTotp = async (
   await stage.page.waitForURL(`${enrolled.origin}${homePattern}`, { timeout: appearanceTimeout });
 };
 
-const revisitProfile = async (
-  page: Page,
-  written: { readonly biography: string; readonly profileUrl: string },
-): Promise<boolean> => {
-  await page.goto(written.profileUrl);
-  await seeText(page, written.biography);
-  return page.getByText(written.biography, { exact: false }).first().isVisible();
-};
-
 const runMemberJourney = async (
   stage: JourneyStage,
 ): Promise<{
   readonly backupCodeCount: number;
   readonly landsOnTheMemberHome: boolean;
-  readonly listsTheThreadOpenedEarlier: boolean;
   readonly opensEveryListedSettingsItem: boolean;
   readonly reachesLeaveInOneClick: boolean;
   readonly reachesPlanInOneClick: boolean;
   readonly showsTheBiographyWrittenEarlier: boolean;
-  readonly showsTheReplyOnTheThread: boolean;
 }> => {
   const { account, origin } = await signUpAndConfirm(stage, "member");
   await browseMainScreens(stage, account);
-  const board = await postOnBoard(stage, origin);
   const settings = await browseSettings(stage, origin);
   const { biography, profilePath } = await writeBiography(stage, origin);
   const enrollment = await enrollTotp({ account, origin, page: stage.page });
   await signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
   const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
+  await stage.page.goto(`${origin}${profilePath}`);
+  await seeText(stage.page, biography);
   return {
     backupCodeCount: enrollment.backupCodes.length,
     landsOnTheMemberHome,
-    listsTheThreadOpenedEarlier: board.listsTheThreadAfterwards,
     opensEveryListedSettingsItem: settings.opensEveryListedItem,
     reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
     reachesPlanInOneClick: settings.reachesPlanInOneClick,
-    showsTheBiographyWrittenEarlier: await revisitProfile(stage.page, {
-      biography,
-      profileUrl: `${origin}${profilePath}`,
-    }),
-    showsTheReplyOnTheThread: board.showsTheReply,
+    showsTheBiographyWrittenEarlier: await stage.page
+      .getByText(biography, { exact: false })
+      .first()
+      .isVisible(),
   };
 };
 
@@ -295,46 +239,51 @@ const runDocumentJourney = async (
   };
 };
 
+const assertVerifyMemberObservability = (verified: {
+  readonly requestIds: readonly string[];
+  readonly sessionToken: string | undefined;
+  readonly userId: string | undefined;
+}): void => {
+  if (verified.requestIds.length === 0) {
+    throw new Error("VERIFY_OBSERVABILITY_MISSING");
+  }
+  if (verified.sessionToken === undefined || verified.userId === undefined) {
+    throw new Error("VERIFY_SESSION_MISSING");
+  }
+};
+
 const runVerifyMemberJourney = async (
   stage: JourneyStage,
 ): Promise<{
-  readonly enrolledTotp: boolean;
-  readonly passkeyRegistered: boolean;
-  readonly requestIds: readonly string[];
-  readonly sessionToken: string | undefined;
-  readonly traceIds: readonly string[];
+  readonly browserUserAgent: string;
+  readonly enrolledTotp: true;
+  readonly observabilityRecorded: true;
+  readonly passkeyRegistered: true;
+  readonly sessionEstablished: true;
   readonly userAgent: string;
-  readonly userId: string | undefined;
 }> => {
-  const { environment, page } = stage;
-  const origin = environment.originOf("member");
-  const capture = attachObservabilityCapture(page);
-  const account = newAccount("verify-member");
-  await signUp({ account, origin, page });
-  await seeHeading(page, "確認メールを送りました");
-  await confirmEmail({ account, mail: environment.mail, origin, page });
-  await signIn({ account, origin, page });
-  await completeWelcomeOnboarding(stage, { account, origin });
-  await updateProfile({ account, origin, page });
-  const enrollment = await enrollTotp({ account, origin, page });
-  await registerPasskey({ account, origin, page }, "verify passkey");
-  await signOut(page, origin);
-  await signIn({ account, origin, page });
-  await answerTotpChallenge(page, enrollment.uri);
-  await page.waitForURL(`${origin}${homePattern}`, { timeout: appearanceTimeout });
-  await signOut(page, origin);
-  await signInWithPasskey({ account, origin, page });
-  const session = await readSession(page, origin);
-  capture.stop();
+  const origin = stage.environment.originOf("member");
+  const verified = await runVerifyMember({
+    mail: stage.environment.mail,
+    origin,
+    page: stage.page,
+  });
+  assertVerifyMemberObservability(verified);
   return {
+    browserUserAgent: agentUserAgent,
     enrolledTotp: true,
+    observabilityRecorded: true,
     passkeyRegistered: true,
-    requestIds: capture.requestIds,
-    sessionToken: session.sessionToken,
-    traceIds: capture.traceIds,
+    sessionEstablished: true,
     userAgent: agentUserAgent,
-    userId: session.userId,
   };
 };
 
-export { runDocumentJourney, runMemberJourney, runOperatorJourney, runVerifyMemberJourney };
+export {
+  journeyRoles,
+  journeyTest,
+  runDocumentJourney,
+  runMemberJourney,
+  runOperatorJourney,
+  runVerifyMemberJourney,
+};

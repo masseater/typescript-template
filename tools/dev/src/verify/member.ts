@@ -1,6 +1,6 @@
 import { agentUserAgent } from "@repo/e2e/agent-user-agent";
 import { browserHeaders } from "@repo/e2e/client-address";
-import { installVirtualAuthenticator } from "@repo/e2e/passkey";
+import { enableVirtualAuthenticator } from "@repo/e2e/passkey";
 import { mailDelivery, runVerifyMember } from "@repo/e2e/verify-member";
 import { Effect } from "effect";
 import { chromium } from "playwright";
@@ -34,18 +34,20 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   const context = yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
     try: async () => {
-      const session = await browser.newContext({
+      return browser.newContext({
         extraHTTPHeaders: headers,
         locale: "ja-JP",
         userAgent: agentUserAgent,
       });
-      await installVirtualAuthenticator(session);
-      return session;
     },
   });
   const page = yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
-    try: async () => context.newPage(),
+    try: async () => {
+      const openedPage = await context.newPage();
+      await enableVirtualAuthenticator(openedPage);
+      return openedPage;
+    },
   });
   const verified = yield* Effect.tryPromise({
     catch: () => failure("browser_authentication_failed"),
@@ -80,4 +82,3 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
 });
 
 export { verifyMember };
-export type { MemberVerifyReport };

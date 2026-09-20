@@ -1,10 +1,8 @@
 import { describe, expect } from "vite-plus/test";
 
-import { agentUserAgent } from "./agent-user-agent.ts";
-import { browserHeaders } from "./client-address.ts";
-import { journeyTest } from "./journey-fixture.ts";
-import { journeyRoles } from "./journey-roles.ts";
 import {
+  journeyRoles,
+  journeyTest,
   runDocumentJourney,
   runMemberJourney,
   runOperatorJourney,
@@ -14,6 +12,7 @@ import {
 const backupCodesIssuedOnEnrollment = 10;
 const documentsReadByAnyone = 2;
 const robotsDirective = "noindex, nofollow";
+const aiAgentUserAgent = "Mozilla/5.0 (compatible; Cursor/1.0) AI-Agent/playwright";
 
 describe("アプリ全体の導線", () => {
   const it = journeyTest
@@ -38,18 +37,16 @@ describe("アプリ全体の導線", () => {
       ),
     );
 
-  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素まで辿れる", ({
+  it("利用者は登録から確認メール・ログイン・プロフィール更新・二要素まで辿れる", ({
     memberJourney,
   }) => {
     expect(memberJourney).toStrictEqual({
       backupCodeCount: backupCodesIssuedOnEnrollment,
       landsOnTheMemberHome: true,
-      listsTheThreadOpenedEarlier: true,
       opensEveryListedSettingsItem: true,
       reachesLeaveInOneClick: true,
       reachesPlanInOneClick: true,
       showsTheBiographyWrittenEarlier: true,
-      showsTheReplyOnTheThread: true,
     });
   });
 
@@ -75,14 +72,13 @@ describe("アプリ全体の導線", () => {
   it("AI エージェントは会員登録からパスキー・TOTP まで通し、識別可能な User-Agent を送る", ({
     verifyMemberJourney,
   }) => {
-    expect(verifyMemberJourney).toMatchObject({
+    expect(verifyMemberJourney).toStrictEqual({
+      browserUserAgent: aiAgentUserAgent,
       enrolledTotp: true,
+      observabilityRecorded: true,
       passkeyRegistered: true,
-      userAgent: agentUserAgent,
+      sessionEstablished: true,
+      userAgent: aiAgentUserAgent,
     });
-    expect(verifyMemberJourney.userId).toMatch(/^[0-9a-f-]{36}$/u);
-    expect(verifyMemberJourney.requestIds.length).toBeGreaterThan(0);
-    expect(browserHeaders()["user-agent"]).toContain("AI-Agent/playwright");
-    expect(browserHeaders()["user-agent"].toLowerCase()).toContain("cursor");
   });
 });

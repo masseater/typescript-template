@@ -42,4 +42,3 @@ const verifyOperator = Effect.fn("verifyOperator")(function* verifyOperator(
 });
 
 export { verifyOperator };
-export type { OperatorVerifyReport };

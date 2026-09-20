@@ -124,30 +124,41 @@ const signInWithPasskey = async (visit: Visit): Promise<void> => {
   await visit.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout });
 };
 
-const registerPasskey = async (visit: Visit, name: string): Promise<void> => {
+const waitForPasskeyRegistration = (visit: Visit): ReturnType<Page["waitForResponse"]> =>
+  visit.page.waitForResponse(
+    (httpExchange) => httpExchange.url().includes("/passkey/verify-registration"),
+    { timeout: appearanceTimeout },
+  );
+
+const waitForPasskeyOptions = (visit: Visit): ReturnType<Page["waitForResponse"]> =>
+  visit.page.waitForResponse(
+    (httpExchange) => httpExchange.url().includes("/passkey/generate-register-options"),
+    { timeout: appearanceTimeout },
+  );
+
+const assertPasskeyHttpOk = async (
+  httpExchange: Awaited<ReturnType<typeof waitForPasskeyOptions>>,
+  failureLabel: string,
+): Promise<void> => {
+  if (!httpExchange.ok()) {
+    throw new Error(`${failureLabel} ${httpExchange.status()} ${await httpExchange.text()}`);
+  }
+};
+
+const submitPasskeyRegistration = async (visit: Visit, passkeyLabel: string): Promise<void> => {
+  const generateOptionsHttpReply = waitForPasskeyOptions(visit);
+  const verifyRegistrationHttpReply = waitForPasskeyRegistration(visit);
+  await press(visit.page, "パスキーを登録");
+  await assertPasskeyHttpOk(await generateOptionsHttpReply, "PASSKEY_OPTIONS_FAILED");
+  await assertPasskeyHttpOk(await verifyRegistrationHttpReply, "PASSKEY_REGISTRATION_FAILED");
+  await seeText(visit.page, passkeyLabel);
+};
+
+const registerPasskey = async (visit: Visit, passkeyLabel: string): Promise<void> => {
   await visit.page.goto(`${visit.origin}/settings/security`);
   await readyButton(visit.page, "パスキーを登録");
-  await fill(visit.page, { fieldLabel: "パスキーの名前", typed: name });
-  const options = visit.page.waitForResponse(
-    (response) => response.url().includes("/passkey/generate-register-options"),
-    { timeout: appearanceTimeout },
-  );
-  const registration = visit.page.waitForResponse(
-    (response) => response.url().includes("/passkey/verify-registration"),
-    { timeout: appearanceTimeout },
-  );
-  await press(visit.page, "パスキーを登録");
-  const optionsResponse = await options;
-  if (!optionsResponse.ok()) {
-    throw new Error(
-      `PASSKEY_OPTIONS_FAILED ${optionsResponse.status()} ${await optionsResponse.text()}`,
-    );
-  }
-  const response = await registration;
-  if (!response.ok()) {
-    throw new Error(`PASSKEY_REGISTRATION_FAILED ${response.status()} ${await response.text()}`);
-  }
-  await seeText(visit.page, name);
+  await fill(visit.page, { fieldLabel: "パスキーの名前", typed: passkeyLabel });
+  await submitPasskeyRegistration(visit, passkeyLabel);
 };
 
 const updateProfile = async (

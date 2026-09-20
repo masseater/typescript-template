@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from "playwright";
+import type { Page } from "playwright";
 
 const authenticatorOptions = {
   automaticPresenceSimulation: true,
@@ -22,16 +22,4 @@ const enableVirtualAuthenticator = async (page: Page): Promise<void> => {
   });
 };
 
-const installVirtualAuthenticator = async (context: BrowserContext): Promise<void> => {
-  const prepare = async (page: Page): Promise<void> => {
-    await enableVirtualAuthenticator(page);
-  };
-  context.on("page", (page) => {
-    void prepare(page);
-  });
-  for (const page of context.pages()) {
-    await prepare(page);
-  }
-};
-
-export { enableVirtualAuthenticator, installVirtualAuthenticator };
+export { enableVirtualAuthenticator };

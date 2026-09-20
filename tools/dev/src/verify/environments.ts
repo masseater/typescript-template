@@ -3,6 +3,8 @@ import { Effect, Schema } from "effect";
 
 import { failure } from "../failure.ts";
 
+import type { LocalCommandFailure } from "../failure.ts";
+
 const verifyEnvironments = ["local", "staging", "production"] as const;
 
 const VerifyEnvironment = Schema.Literals(verifyEnvironments);
@@ -18,7 +20,10 @@ type ResolvedVerifyEnvironment = {
   readonly wikiOrigin: string;
 };
 
-const requiredOrigin = (variable: string, value: string | undefined): Effect.Effect<string> => {
+const requiredOrigin = (
+  variable: string,
+  value: string | undefined,
+): Effect.Effect<string, LocalCommandFailure> => {
   if (value === undefined || value === "") {
     return Effect.fail(failure("credentials_invalid"));
   }
@@ -70,5 +75,5 @@ const resolveVerifyEnvironment = Effect.fn("resolveVerifyEnvironment")(
   },
 );
 
-export { resolveVerifyEnvironment, VerifyEnvironment, verifyEnvironments };
-export type { ResolvedVerifyEnvironment, VerifyEnvironmentName };
+export { resolveVerifyEnvironment, VerifyEnvironment };
+export type { ResolvedVerifyEnvironment };

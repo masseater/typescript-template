@@ -2,7 +2,8 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { causeRecord, runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/cli";
+import { ROLE } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { failure } from "../failure.ts";
@@ -13,7 +14,7 @@ import { verifyStaff } from "./staff.ts";
 
 import type { LocalCommandFailure } from "../failure.ts";
 
-const verifyRoles = ["member", "operator", "staff"] as const;
+const verifyRoles = [ROLE.member, "operator", "staff"] as const;
 
 const VerifyRole = Schema.Literals(verifyRoles);
 
@@ -55,7 +56,7 @@ const runSelfServiceVerify = Effect.fn("runSelfServiceVerify")(function* runSelf
     Effect.mapError(() => failure("command_unsupported")),
   );
   const resolved = yield* resolveVerifyEnvironment(environment);
-  if (role === "member") {
+  if (role === ROLE.member) {
     return yield* verifyMember(resolved);
   }
   if (role === "operator") {
