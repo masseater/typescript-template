@@ -187,6 +187,20 @@ it.effect("refuses to publish a build whose client source maps were never kept",
   }).pipe(Effect.scoped),
 );
 
+it.effect("refuses to publish when the client source map directory is missing", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    yield* run(async () =>
+      rm(sourceMapDirectories(root, "service-member").client, { recursive: true }),
+    );
+    assert.strictEqual(yield* failureCode(root, "service-member"), "source_maps_missing");
+    assert.deepStrictEqual(
+      yield* run(async () => readdir(path.join(root, "infra")).catch(() => [])),
+      [],
+    );
+  }).pipe(Effect.scoped),
+);
+
 it.effect("describes a build without its private source maps", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;

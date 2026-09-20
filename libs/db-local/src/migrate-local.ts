@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { reportFailed, runCli } from "@repo/cli";
-import { Console, Effect } from "effect";
+import { Cause, Console, Effect } from "effect";
 
 import { migrateD1 } from "../../db/src/migrate-d1.ts";
 import { localDatabasePlatform } from "./local-platform.ts";
@@ -18,5 +18,5 @@ runCli(
     Effect.scoped,
     Effect.catchTag("RemoteFailure", (failure) => reportFailed(failed(failure.code))),
   ),
-  failed("LOCAL_MIGRATION_FAILED"),
+  (cause) => ({ ...failed("LOCAL_MIGRATION_FAILED"), cause: Cause.pretty(cause) }),
 );

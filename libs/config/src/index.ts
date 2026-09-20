@@ -53,3 +53,4 @@ export {
   readWikiConfig,
 } from "./environment.ts";
 export type { AppConfig, AssetFetcher, WikiConfig } from "./environment.ts";
+export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";

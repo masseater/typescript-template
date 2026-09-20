@@ -11,7 +11,12 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 import { reportFailed, runCli } from "@repo/cli";
-import { applicationReadyPaths, applications, loopbackAddress } from "@repo/config";
+import {
+  applicationReadyPaths,
+  applications,
+  loopbackAddress,
+  waitUntilResponds,
+} from "@repo/config";
 import { localDatabaseVariable } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Cause, Console, Effect, Result, Schema } from "effect";
@@ -96,24 +101,15 @@ const listeningOrigin = isolatedDatabase.pipe(
 );
 
 function probe(origin: string, pathname: string): Effect.Effect<number, DevStartFailure> {
-  return Effect.tryPromise({
-    catch: (error) =>
+  return waitUntilResponds({
+    accept: (status) => status === successStatus,
+    method: "GET",
+    onStatus: (status) => new DevStartFailure({ reason: `${pathname} responded ${status}` }),
+    onUnreachable: (error) =>
       new DevStartFailure({ reason: `${pathname} did not answer: ${describe(error)}` }),
-    try: async () => {
-      const response = await fetch(new URL(pathname, origin), {
-        redirect: "manual",
-        signal: AbortSignal.timeout(requestTimeoutMilliseconds),
-      });
-      await response.body?.cancel();
-      return response.status;
-    },
-  }).pipe(
-    Effect.flatMap((status) =>
-      status === successStatus
-        ? Effect.succeed(status)
-        : Effect.fail(new DevStartFailure({ reason: `${pathname} responded ${status}` })),
-    ),
-  );
+    timeoutMilliseconds: requestTimeoutMilliseconds,
+    url: new URL(pathname, origin).href,
+  });
 }
 
 const line = { app: path.basename(process.cwd()), event: "quality.dev_start" };
