@@ -4,14 +4,28 @@ import { Effect } from "effect";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { createApi, readJsonBody } from "./http.ts";
+import { createApi, failureBy } from "./http.ts";
 
 import type { EmailVerificationFailed } from "@repo/auth";
-import type { Failure } from "./failures.ts";
+import type { Failure, FailureTable } from "./failures.ts";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 
-const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
+const forbidden = {
+  message: "この操作は許可されていません。",
+  status: httpStatus.forbidden,
+} as const;
+const authUnavailable = { AuthFailure: "unexpected" } as const;
+const databaseUnavailable = { DatabaseFailure: "unexpected" } as const;
+
+const sessionFailures = {
+  ...authUnavailable,
+  ...databaseUnavailable,
+  AdminMfaRequired: forbidden,
+  AdminRequired: forbidden,
+  SessionInvalid: forbidden,
+  SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized },
+} as const satisfies FailureTable<Effect.Error<ReturnType<typeof verifySession>>>;
 
 const health = Effect.fn("health")(function* health() {
   yield* (yield* DatabaseHealth).check;
@@ -20,20 +34,34 @@ const health = Effect.fn("health")(function* health() {
 });
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function emailVerificationFailure(error: EmailVerificationFailed): Failure {
+function emailVerificationFailure(
+  error: EmailVerificationFailed,
+): Failure<typeof httpStatus.tooManyRequests | typeof httpStatus.badRequest> {
   return error.rateLimited
     ? { message: "しばらく待ってから再度お試しください。", status: httpStatus.tooManyRequests }
     : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
 }
 
+const verificationFailures = {
+  ...authUnavailable,
+  EmailVerificationFailed: failureBy(
+    [httpStatus.tooManyRequests, httpStatus.badRequest],
+    emailVerificationFailure,
+  ),
+};
+
 function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
-    .all("/auth/*", api.raw(handleAuthRequest, unavailable))
-    .post("/telemetry", api.raw(ingestBrowser, {}))
-    .get("/health", api.route(HealthView, health, unavailable))
+    .all("/auth/*", ...api.raw(handleAuthRequest, authUnavailable))
+    .post("/telemetry", ...api.raw(ingestBrowser, {}))
+    .get("/health", ...api.route({ response: HealthView }, health, databaseUnavailable))
     .get(
       "/session",
-      api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
+      ...api.route(
+        { response: SessionView },
+        (request) => verifySession(request.headers, true),
+        sessionFailures,
+      ),
     );
 }
 
@@ -42,18 +70,12 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     .use(sessionApi(api))
     .post(
       "/verify-email",
-      api.route(
-        EmailVerified,
-        (request) =>
-          readJsonBody(EmailVerificationRequest, request).pipe(
-            Effect.flatMap(({ token }) => verifyEmailToken(token, request.headers)),
-          ),
-        {
-          ...unavailable,
-          EmailVerificationFailed: (error) => emailVerificationFailure(error),
-        },
+      ...api.route(
+        { body: EmailVerificationRequest, response: EmailVerified },
+        (request, { token }) => verifyEmailToken(token, request.headers),
+        verificationFailures,
       ),
     );
 }
 
-export { accountApi, sessionApi, unavailable };
+export { accountApi, authUnavailable, databaseUnavailable, forbidden, sessionApi, sessionFailures };

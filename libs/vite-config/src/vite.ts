@@ -1,8 +1,14 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import {
+  applicationPorts,
+  loopbackAddress,
+  scalarReferencePath,
+  type Application,
+} from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { workerCompatibility } from "@repo/config/worker";
@@ -14,6 +20,7 @@ import { defineConfig } from "vite-plus";
 import { devBoundary } from "./dev-boundary.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
+import type { ServerResponse } from "node:http";
 import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
@@ -41,6 +48,42 @@ function previewDevVars(appRoot: string): Plugin {
       this.emitFile({ fileName: ".dev.vars", source, type: "asset" });
     },
     name: "template-preview-dev-vars",
+  };
+}
+
+const scalarReferenceEntry = fileURLToPath(import.meta.resolve("@scalar/api-reference"));
+const scalarReferenceSource = path.join(
+  path.dirname(scalarReferenceEntry),
+  "browser/standalone.js",
+);
+
+async function readScalarReference(): Promise<string> {
+  return readFile(scalarReferenceSource, "utf-8");
+}
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+async function writeScalarReference(response: ServerResponse): Promise<void> {
+  const source = await readScalarReference();
+  response.setHeader("content-type", "text/javascript");
+  response.end(source);
+}
+
+function scalarReference(): Plugin {
+  return {
+    applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
+    configureServer(server) {
+      server.middlewares.use(scalarReferencePath, (_request, response, next) => {
+        void writeScalarReference(response).catch(next);
+      });
+    },
+    async generateBundle() {
+      this.emitFile({
+        fileName: scalarReferencePath.slice(1),
+        source: await readScalarReference(),
+        type: "asset",
+      });
+    },
+    name: "template-scalar-reference",
   };
 }
 
@@ -261,6 +304,7 @@ function appConfig(
       failOnBrokenSourceMaps(),
       previewDevVars(appRoot),
       privateSourceMaps(app),
+      scalarReference(),
       devBoundary(app),
       cloudflare({
         config: {
@@ -303,6 +347,8 @@ export {
   lifecycles,
   previewDevVars,
   reactCompiler,
+  readScalarReference,
+  scalarReference,
   serverOnlyMarkers,
   serverOnlyPackages,
   generatedDirectories,

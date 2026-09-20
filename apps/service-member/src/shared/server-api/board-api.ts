@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
-import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import {
@@ -31,12 +31,11 @@ function boardApi(api: ApiRoutes<AppServices>) {
   return createApi("/board")
     .get(
       "/threads",
-      api.route(
-        BoardThreadList,
-        (request) =>
+      ...api.route(
+        { query: BoardThreadListQuery, response: BoardThreadList },
+        (request, { page }) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { page } = yield* readSearchParams(BoardThreadListQuery, request);
             const list = yield* listBoardThreads(user.id, {
               limit: boardThreadPageSize,
               offset: (page - 1) * boardThreadPageSize,
@@ -48,12 +47,11 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/threads",
-      api.route(
-        BoardThreadCreated,
-        (request) =>
+      ...api.route(
+        { body: BoardThreadCreate, response: BoardThreadCreated },
+        (request, draft) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const draft = yield* readJsonBody(BoardThreadCreate, request);
             return { id: yield* createBoardThread(user.id, draft) };
           }),
         failures,
@@ -61,12 +59,11 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/thread",
-      api.route(
-        BoardThreadView,
-        (request) =>
+      ...api.route(
+        { query: BoardThreadQuery, response: BoardThreadView },
+        (request, { id, page }) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { id, page } = yield* readSearchParams(BoardThreadQuery, request);
             const found = yield* findBoardThread(user.id, id, {
               limit: boardPostPageSize,
               offset: (page - 1) * boardPostPageSize,
@@ -78,12 +75,11 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/posts",
-      api.route(
-        BoardPostCreated,
-        (request) =>
+      ...api.route(
+        { body: BoardPostCreate, response: BoardPostCreated },
+        (request, { body, threadId }) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { body, threadId } = yield* readJsonBody(BoardPostCreate, request);
             return { id: yield* createBoardPost(user.id, threadId, body) };
           }),
         failures,

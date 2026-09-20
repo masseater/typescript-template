@@ -2,6 +2,8 @@ import { applications } from "@repo/config";
 import { roles } from "@repo/config/identity";
 import { Schema } from "effect";
 
+type Decodable = Schema.Top & { readonly DecodingServices: never };
+
 const maximumTokenLength = 4096;
 
 const Role = Schema.Literals(roles);
@@ -32,3 +34,4 @@ const HealthView = Schema.Struct({
 });
 
 export { EmailVerificationRequest, EmailVerified, ErrorBody, HealthView, SessionView };
+export type { Decodable };
