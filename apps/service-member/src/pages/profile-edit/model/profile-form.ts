@@ -7,24 +7,40 @@ import { ProfileUpdate } from "#shared/contracts/index.ts";
 
 import type { Profile, ProfileDraft } from "#entities/profile/index.ts";
 
+type SocialLinkRow = {
+  readonly id: string;
+  readonly url: string;
+};
+
 type ProfileFormValues = {
   readonly name: string;
   readonly profile: string;
-  readonly socialLinks: readonly string[];
+  readonly socialLinks: readonly SocialLinkRow[];
 };
 
-function socialLinksForEditor(links: readonly string[]): readonly string[] {
+function newSocialLinkRow(url = ""): SocialLinkRow {
+  return { id: crypto.randomUUID(), url };
+}
+
+function socialLinksForEditor(links: readonly string[]): readonly SocialLinkRow[] {
   if (links.length === 0) {
-    return [""];
+    return [newSocialLinkRow()];
   }
-  return links;
+  return links.map((url) => newSocialLinkRow(url));
 }
 
 function profileDraft(values: ProfileFormValues): ProfileDraft {
+  const socialLinks: string[] = [];
+  for (const link of values.socialLinks) {
+    const trimmed = link.url.trim();
+    if (trimmed !== "") {
+      socialLinks.push(trimmed);
+    }
+  }
   return {
     name: values.name,
     profile: values.profile,
-    socialLinks: values.socialLinks.map((link) => link.trim()).filter((link) => link !== ""),
+    socialLinks,
   };
 }
 
@@ -59,5 +75,5 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
   };
 }
 
-export { useProfileForm };
-export type { ProfileFormValues };
+export { newSocialLinkRow, useProfileForm };
+export type { ProfileFormValues, SocialLinkRow };
