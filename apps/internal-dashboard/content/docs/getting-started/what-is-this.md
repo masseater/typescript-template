@@ -34,14 +34,14 @@ AI エージェントと人間が協調して高速に開発・運用サイク�
 
 ## 主な技術スタック
 
-| 領域 | 採用技術 |
-| --- | --- |
-| ランタイム / 実行基盤 | Cloudflare Workers, D1, Durable Objects, Workflows |
-| IaC | Alchemy v2 |
-| 言語 / ビルド / モノレポ | TypeScript, Vite+ (Vite, Oxlint, Vitest), pnpm workspaces |
-| アプリケーションフレームワーク | TanStack Start (React 19, Tailwind CSS 4), Elysia |
-| ロジック / スキーマ / 認証 | Effect v4 (Schema, Layer), Better Auth, Drizzle ORM |
-| 観測性 | OpenTelemetry (OTLP), Workers Observability |
+| 領域                           | 採用技術                                                  |
+| ------------------------------ | --------------------------------------------------------- |
+| ランタイム / 実行基盤          | Cloudflare Workers, D1, Durable Objects, Workflows        |
+| IaC                            | Alchemy v2                                                |
+| 言語 / ビルド / モノレポ       | TypeScript, Vite+ (Vite, Oxlint, Vitest), pnpm workspaces |
+| アプリケーションフレームワーク | TanStack Start (React 19, Tailwind CSS 4), Elysia         |
+| ロジック / スキーマ / 認証     | Effect v4 (Schema, Layer), Better Auth, Drizzle ORM       |
+| 観測性                         | OpenTelemetry (OTLP), Workers Observability               |
 
 ## 使い始める手順
 
