@@ -31,15 +31,22 @@ describe("FlagEditorAccess", () => {
 });
 
 describe("toggleFlag", () => {
-  it.effect("enables member-board, updates evaluation, and records an audit row", () =>
-    Effect.gen(function* enableBoard() {
-      const toggledFlag = yield* toggleFlag({
+  it.effect("turns member-board off then on, and records each audit row", () =>
+    Effect.gen(function* toggleBoard() {
+      const disabledFlag = yield* toggleFlag({
+        actorId: "staff-actor",
+        enabled: false,
+        key: FLAG_KEY.memberBoard,
+      });
+      assert.strictEqual(disabledFlag.enabled, false);
+
+      const enabledFlag = yield* toggleFlag({
         actorId: "staff-actor",
         enabled: true,
         key: FLAG_KEY.memberBoard,
       });
-      assert.strictEqual(toggledFlag.enabled, true);
-      assert.strictEqual(toggledFlag.key, FLAG_KEY.memberBoard);
+      assert.strictEqual(enabledFlag.enabled, true);
+      assert.strictEqual(enabledFlag.key, FLAG_KEY.memberBoard);
 
       const featureFlags = yield* FeatureFlags;
       const memberBoardEnabled = yield* featureFlags.getBoolean(FLAG_KEY.memberBoard);
@@ -48,14 +55,17 @@ describe("toggleFlag", () => {
       const auditRows = yield* query((database) =>
         database.select().from(auditEvent).orderBy(auditEvent.createdAt),
       );
-      const flagToggleAuditRow = auditRows.find(
+      const flagToggleAuditRows = auditRows.filter(
         (auditEventRecord) => auditEventRecord.action === AUDIT_ACTION.flagToggled,
       );
-      assert.isDefined(flagToggleAuditRow);
-      assert.strictEqual(flagToggleAuditRow.action, AUDIT_ACTION.flagToggled);
-      assert.strictEqual(flagToggleAuditRow.actorId, "staff-actor");
+      assert.strictEqual(flagToggleAuditRows.length, 2);
+      assert.strictEqual(flagToggleAuditRows[0]?.actorId, "staff-actor");
       assert.strictEqual(
-        flagToggleAuditRow.targetId,
+        flagToggleAuditRows[0]?.targetId,
+        auditTargetForToggle({ flagKey: FLAG_KEY.memberBoard, from: true, to: false }),
+      );
+      assert.strictEqual(
+        flagToggleAuditRows[1]?.targetId,
         auditTargetForToggle({ flagKey: FLAG_KEY.memberBoard, from: false, to: true }),
       );
     }).pipe(Effect.provide(services)),
