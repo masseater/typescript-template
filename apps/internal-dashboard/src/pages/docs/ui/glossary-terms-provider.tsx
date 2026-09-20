@@ -2,7 +2,7 @@
 
 import { createContext, use } from "react";
 
-import type { GlossaryTerm } from "#shared/content/glossary-term.ts";
+import type { GlossaryTerm } from "#shared/content/index.ts";
 import type { ReactElement, ReactNode } from "react";
 
 const GlossaryTermsContext = createContext<readonly GlossaryTerm[]>([]);

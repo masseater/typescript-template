@@ -6,7 +6,7 @@ import {
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 
-import { glossaryTerms } from "#shared/content/glossary-terms.ts";
+import { glossaryTerms } from "#shared/content/index.ts";
 import { GlossaryTermsProvider } from "./glossary-terms-provider.tsx";
 import { Mermaid } from "./mermaid.tsx";
 import { TermLink } from "./term-link.tsx";

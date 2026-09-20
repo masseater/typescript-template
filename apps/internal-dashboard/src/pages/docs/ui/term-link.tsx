@@ -2,7 +2,7 @@
 
 import Link from "fumadocs-core/link";
 
-import { findGlossaryTerm } from "#shared/content/glossary-term.ts";
+import { findGlossaryTerm } from "#shared/content/index.ts";
 import { useGlossaryTerms } from "./glossary-terms-provider.tsx";
 
 import type { ReactElement } from "react";
