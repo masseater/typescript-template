@@ -1,4 +1,4 @@
-import { APPLICATION, CloudflareId, Email } from "@repo/config";
+import { APPLICATION, CloudflareId, Email, ROLE } from "@repo/config";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
 import { workerCompatibility } from "@repo/config/worker";
 import { otlpSignalUrl } from "@repo/observability";
@@ -127,8 +127,8 @@ function deriveOrigins(prefix: string, appDomain: string): SharedConfig["origins
   const origin = (label: string): string => `https://${prefix}-${label}.${appDomain}`;
   return {
     "internal-dashboard": origin("dashboard"),
-    "service-admin": origin("admin"),
-    "service-member": origin("member"),
+    "service-admin": origin(ROLE.administrator),
+    "service-member": origin(ROLE.member),
   };
 }
 
