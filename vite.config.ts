@@ -6,14 +6,10 @@ import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
 import { rootOnDemandChecks } from "./tools/quality/on-demand-checks.ts";
-
-const importedTools = [
-  "./tools/ai-native",
-  "./tools/dont-review-it",
-  "./tools/lint-rule-authoring",
-  "./tools/repository-checks",
-  "./tools/stop-ai-slop",
-];
+import {
+  dedicatedToolVitestProjects,
+  rootNodeToolTestIncludes,
+} from "./tools/quality/tool-test-projects.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
@@ -106,11 +102,7 @@ export default defineConfig({
             "libs/**/*.test.tsx",
             "apps/**/*.test.ts",
             "apps/**/*.test.tsx",
-            "tools/dev/**/*.test.ts",
-            "tools/quality/**/*.test.ts",
-            "tools/load/**/*.test.ts",
-            "tools/observe/**/*.test.ts",
-            "tools/commander/**/*.test.ts",
+            ...rootNodeToolTestIncludes,
             "infra/**/*.test.ts",
           ],
           name: "node",
@@ -118,7 +110,7 @@ export default defineConfig({
       },
       "./vitest.workers.config.ts",
       "./libs/ui/storybook/vitest.config.ts",
-      ...importedTools,
+      ...dedicatedToolVitestProjects,
     ],
     mockReset: true,
     restoreMocks: true,
