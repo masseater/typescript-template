@@ -3,6 +3,7 @@ import { Avatar, ButtonLink, Heading } from "@repo/ui";
 import { SocialLinks } from "#shared/social-link";
 import { Biography } from "./biography.tsx";
 import { ProfileBody } from "./profile-body.tsx";
+import { ProfileShare } from "./profile-share.tsx";
 
 import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
@@ -27,7 +28,12 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
       <p className="text-sm leading-normal text-muted-foreground">
         {joinedMonth.format(new Date(`${member.joined}-01T00:00:00Z`))}に登録
       </p>
-      {own && <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>}
+      {own && (
+        <>
+          <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>
+          <ProfileShare memberId={member.id} privateProfile={false} />
+        </>
+      )}
     </ProfileBody>
   );
 }

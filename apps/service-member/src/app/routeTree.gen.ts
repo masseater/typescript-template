@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MemberRouteImport } from './routes/_member'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as WelcomeRouteImport } from './routes/_welcome'
 import { Route as MemberBoardRouteImport } from './routes/_member/board'
 import { Route as MemberHomeRouteImport } from './routes/_member/home'
 import { Route as MemberMessagesRouteImport } from './routes/_member/messages'
@@ -35,6 +36,11 @@ import { Route as MemberSettingsProfileRouteImport } from './routes/_member/sett
 import { Route as MemberSettingsSecurityRouteImport } from './routes/_member/settings.security'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
+import { Route as WelcomeWelcomeIndexRouteImport } from './routes/_welcome/welcome.index'
+import { Route as WelcomeWelcomeAgreementRouteImport } from './routes/_welcome/welcome.agreement'
+import { Route as WelcomeWelcomeChooseRouteImport } from './routes/_welcome/welcome.choose'
+import { Route as WelcomeWelcomeInterviewRouteImport } from './routes/_welcome/welcome.interview'
+import { Route as WelcomeWelcomeProfileRouteImport } from './routes/_welcome/welcome.profile'
 
 const MemberRoute = MemberRouteImport.update({
   id: '/_member',
@@ -42,6 +48,10 @@ const MemberRoute = MemberRouteImport.update({
 } as any)
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/_welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MemberBoardRoute = MemberBoardRouteImport.update({
@@ -165,6 +175,31 @@ const MemberUsersIdRoute = MemberUsersIdRouteImport.update({
   path: '/users/$id',
   getParentRoute: () => MemberRoute,
 } as any)
+const WelcomeWelcomeIndexRoute = WelcomeWelcomeIndexRouteImport.update({
+  id: '/welcome/',
+  path: '/welcome/',
+  getParentRoute: () => WelcomeRoute,
+} as any)
+const WelcomeWelcomeAgreementRoute = WelcomeWelcomeAgreementRouteImport.update({
+  id: '/welcome/agreement',
+  path: '/welcome/agreement',
+  getParentRoute: () => WelcomeRoute,
+} as any)
+const WelcomeWelcomeChooseRoute = WelcomeWelcomeChooseRouteImport.update({
+  id: '/welcome/choose',
+  path: '/welcome/choose',
+  getParentRoute: () => WelcomeRoute,
+} as any)
+const WelcomeWelcomeInterviewRoute = WelcomeWelcomeInterviewRouteImport.update({
+  id: '/welcome/interview',
+  path: '/welcome/interview',
+  getParentRoute: () => WelcomeRoute,
+} as any)
+const WelcomeWelcomeProfileRoute = WelcomeWelcomeProfileRouteImport.update({
+  id: '/welcome/profile',
+  path: '/welcome/profile',
+  getParentRoute: () => WelcomeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -189,8 +224,13 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
   '/users/$id': typeof MemberUsersIdRoute
+  '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
+  '/welcome/choose': typeof WelcomeWelcomeChooseRoute
+  '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
+  '/welcome/profile': typeof WelcomeWelcomeProfileRoute
   '/settings/': typeof MemberSettingsIndexRoute
   '/users/': typeof MemberUsersIndexRoute
+  '/welcome/': typeof WelcomeWelcomeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
@@ -215,13 +255,19 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
   '/users/$id': typeof MemberUsersIdRoute
+  '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
+  '/welcome/choose': typeof WelcomeWelcomeChooseRoute
+  '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
+  '/welcome/profile': typeof WelcomeWelcomeProfileRoute
   '/settings': typeof MemberSettingsIndexRoute
   '/users': typeof MemberUsersIndexRoute
+  '/welcome': typeof WelcomeWelcomeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_member': typeof MemberRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_welcome': typeof WelcomeRouteWithChildren
   '/_member/board': typeof MemberBoardRoute
   '/_member/home': typeof MemberHomeRoute
   '/_member/messages': typeof MemberMessagesRoute
@@ -244,8 +290,13 @@ export interface FileRoutesById {
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
   '/_member/settings/security': typeof MemberSettingsSecurityRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
+  '/_welcome/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
+  '/_welcome/welcome/choose': typeof WelcomeWelcomeChooseRoute
+  '/_welcome/welcome/interview': typeof WelcomeWelcomeInterviewRoute
+  '/_welcome/welcome/profile': typeof WelcomeWelcomeProfileRoute
   '/_member/settings/': typeof MemberSettingsIndexRoute
   '/_member/users/': typeof MemberUsersIndexRoute
+  '/_welcome/welcome/': typeof WelcomeWelcomeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -272,8 +323,13 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/users/$id'
+    | '/welcome/agreement'
+    | '/welcome/choose'
+    | '/welcome/interview'
+    | '/welcome/profile'
     | '/settings/'
     | '/users/'
+    | '/welcome/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -298,12 +354,18 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/users/$id'
+    | '/welcome/agreement'
+    | '/welcome/choose'
+    | '/welcome/interview'
+    | '/welcome/profile'
     | '/settings'
     | '/users'
+    | '/welcome'
   id:
     | '__root__'
     | '/_member'
     | '/_public'
+    | '/_welcome'
     | '/_member/board'
     | '/_member/home'
     | '/_member/messages'
@@ -326,13 +388,19 @@ export interface FileRouteTypes {
     | '/_member/settings/profile'
     | '/_member/settings/security'
     | '/_member/users/$id'
+    | '/_welcome/welcome/agreement'
+    | '/_welcome/welcome/choose'
+    | '/_welcome/welcome/interview'
+    | '/_welcome/welcome/profile'
     | '/_member/settings/'
     | '/_member/users/'
+    | '/_welcome/welcome/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   MemberRoute: typeof MemberRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
+  WelcomeRoute: typeof WelcomeRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
 }
 
@@ -350,6 +418,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_welcome': {
+      id: '/_welcome'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_member/board': {
@@ -520,6 +595,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberUsersIdRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_welcome/welcome/': {
+      id: '/_welcome/welcome/'
+      path: '/welcome'
+      fullPath: '/welcome/'
+      preLoaderRoute: typeof WelcomeWelcomeIndexRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
+    '/_welcome/welcome/agreement': {
+      id: '/_welcome/welcome/agreement'
+      path: '/welcome/agreement'
+      fullPath: '/welcome/agreement'
+      preLoaderRoute: typeof WelcomeWelcomeAgreementRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
+    '/_welcome/welcome/choose': {
+      id: '/_welcome/welcome/choose'
+      path: '/welcome/choose'
+      fullPath: '/welcome/choose'
+      preLoaderRoute: typeof WelcomeWelcomeChooseRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
+    '/_welcome/welcome/interview': {
+      id: '/_welcome/welcome/interview'
+      path: '/welcome/interview'
+      fullPath: '/welcome/interview'
+      preLoaderRoute: typeof WelcomeWelcomeInterviewRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
+    '/_welcome/welcome/profile': {
+      id: '/_welcome/welcome/profile'
+      path: '/welcome/profile'
+      fullPath: '/welcome/profile'
+      preLoaderRoute: typeof WelcomeWelcomeProfileRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
   }
 }
 
@@ -587,9 +697,29 @@ const PublicRouteChildren: PublicRouteChildren = {
 const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
+interface WelcomeRouteChildren {
+  WelcomeWelcomeAgreementRoute: typeof WelcomeWelcomeAgreementRoute
+  WelcomeWelcomeChooseRoute: typeof WelcomeWelcomeChooseRoute
+  WelcomeWelcomeInterviewRoute: typeof WelcomeWelcomeInterviewRoute
+  WelcomeWelcomeProfileRoute: typeof WelcomeWelcomeProfileRoute
+  WelcomeWelcomeIndexRoute: typeof WelcomeWelcomeIndexRoute
+}
+
+const WelcomeRouteChildren: WelcomeRouteChildren = {
+  WelcomeWelcomeAgreementRoute: WelcomeWelcomeAgreementRoute,
+  WelcomeWelcomeChooseRoute: WelcomeWelcomeChooseRoute,
+  WelcomeWelcomeInterviewRoute: WelcomeWelcomeInterviewRoute,
+  WelcomeWelcomeProfileRoute: WelcomeWelcomeProfileRoute,
+  WelcomeWelcomeIndexRoute: WelcomeWelcomeIndexRoute,
+}
+
+const WelcomeRouteWithChildren =
+  WelcomeRoute._addFileChildren(WelcomeRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   MemberRoute: MemberRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
+  WelcomeRoute: WelcomeRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport

@@ -26,6 +26,30 @@ type JourneyStage = {
   readonly page: Page;
 };
 
+const completeWelcomeOnboarding = async (
+  stage: JourneyStage,
+  visit: { readonly account: Account; readonly origin: string },
+): Promise<void> => {
+  const { page } = stage;
+  await page.waitForURL((url) => url.pathname.includes("/welcome"), { timeout: appearanceTimeout });
+  await seeHeading(page, "規約への同意");
+  await Promise.all([
+    page.waitForURL((url) => url.pathname.includes("/welcome/choose"), {
+      timeout: appearanceTimeout,
+    }),
+    press(page, "同意して続ける"),
+  ]);
+  await seeHeading(page, "プロフィールの作り方");
+  await readyButton(page, "自分で入力する");
+  await press(page, "自分で入力する");
+  await seeHeading(page, "基本項目の入力");
+  await fill(page, { fieldLabel: "ユーザー名", typed: visit.account.name });
+  await Promise.all([
+    page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout }),
+    press(page, "保存してホームへ"),
+  ]);
+};
+
 const signUpAndConfirm = async (
   stage: JourneyStage,
   role: "member" | "operator",
@@ -36,7 +60,7 @@ const signUpAndConfirm = async (
   await seeHeading(stage.page, "確認メールを送りました");
   await confirmEmail({ account, mail: stage.environment.mail, origin, page: stage.page });
   await signIn({ account, origin, page: stage.page });
-  await stage.page.waitForURL(`${origin}${homePattern}`, { timeout: appearanceTimeout });
+  await completeWelcomeOnboarding(stage, { account, origin });
   return { account, origin };
 };
 
