@@ -1,11 +1,11 @@
-import { Monitor, monitorHandler } from "@repo/monitor";
+import { monitorWorker } from "@repo/monitor";
 import { Effect } from "effect";
 
 import { parseErrorMonitorConfig } from "./config.ts";
 import { decideNotifications, formatMessage } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
 
-import type { MonitorBindings, Notify } from "@repo/monitor";
+import type { MonitorBindings } from "@repo/monitor";
 import type { SeenFingerprints } from "./decision.ts";
 
 interface Bindings extends MonitorBindings {
@@ -15,15 +15,8 @@ interface Bindings extends MonitorBindings {
 
 const LOOKBACK_MS = 900_000;
 
-export class ErrorMonitor extends Monitor<Bindings> {
-  protected readonly event = "error_monitor";
-  protected readonly failure = {
-    subject: "Cloudflare Workers error monitoring failed",
-    text: "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",
-  };
-
-  protected check(notify: Notify): Effect.Effect<object, unknown> {
-    const { env, ctx } = this;
+const errorMonitor = monitorWorker<Bindings>({
+  check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseErrorMonitorConfig(env);
       const now = Date.now();
@@ -44,8 +37,17 @@ export class ErrorMonitor extends Monitor<Bindings> {
       yield* Effect.promise(async () => ctx.storage.put("seen", decision.seen));
       return { dropped, groups: groups.length, notified: decision.notifications.length };
     }).pipe(Effect.withSpan("ErrorMonitor.check"));
-  }
-}
+  },
+  className: "ErrorMonitor",
+  event: "error_monitor",
+  failure: {
+    subject: "Cloudflare Workers error monitoring failed",
+    text: "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",
+  },
+});
 
+const ErrorMonitor = errorMonitor.Worker;
+
+export { ErrorMonitor };
 // oxlint-disable-next-line import/no-default-export
-export default monitorHandler("error_monitor");
+export default errorMonitor.handler;
