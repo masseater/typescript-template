@@ -1,19 +1,13 @@
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
 import { dontReviewItPreset } from "@repo/dont-review-it";
-import { generatedFiles, lintOptions } from "@repo/quality/lint";
-import { workerTests } from "@repo/quality/test-runtime";
+import { generatedFiles, lintOptions } from "@repo/dont-review-it/lint";
+import { workerTests } from "@repo/dont-review-it/test-runtime";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
-import { rootOnDemandChecks } from "./tools/quality/on-demand-checks.ts";
+import { rootOnDemandChecks } from "./tools/dont-review-it/src/repository/on-demand-checks.ts";
 
-const importedTools = [
-  "./tools/ai-native",
-  "./tools/dont-review-it",
-  "./tools/lint-rule-authoring",
-  "./tools/repository-checks",
-  "./tools/stop-ai-slop",
-];
+const importedTools = ["./tools/ai-native", "./tools/dont-review-it"];
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
@@ -30,7 +24,7 @@ export default defineConfig({
   run: {
     tasks: {
       "check:client": {
-        command: "node tools/quality/client-bundle.ts",
+        command: "node tools/dont-review-it/src/repository/client-bundle.ts",
         input: [
           ...taskInput,
           "!**/dist/**",
@@ -43,9 +37,9 @@ export default defineConfig({
       "check:code": { command: "vp check", input: [...taskInput] },
       ...effectDiagnostics,
       "check:imports":
-        "depcruise --config tools/quality/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+        "depcruise --config tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
-        command: "node tools/quality/react-doctor.ts",
+        command: "node tools/dont-review-it/src/repository/react-doctor.ts",
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
@@ -58,7 +52,10 @@ export default defineConfig({
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
-      mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
+      mutation: {
+        cache: false,
+        command: "stryker run tools/dont-review-it/src/repository/stryker.ts",
+      },
       test: { cache: false, command: "vp test run --project '!@repo/*'" },
       ...lifecycle({
         precommit: ["check:code"],
@@ -89,7 +86,7 @@ export default defineConfig({
       "libs/ui/storybook/**",
       "libs/db/migrations/**",
       "libs/config/src/worker.ts",
-      "tools/quality/test-runtime.ts",
+      "tools/dont-review-it/src/repository/test-runtime.ts",
     ].map((pattern) => `${import.meta.dirname}/${pattern}`),
     projects: [
       {
@@ -102,7 +99,7 @@ export default defineConfig({
             "apps/**/*.test.ts",
             "apps/**/*.test.tsx",
             "tools/dev/**/*.test.ts",
-            "tools/quality/**/*.test.ts",
+            "tools/dont-review-it/src/repository/**/*.test.ts",
             "tools/load/**/*.test.ts",
             "tools/observe/**/*.test.ts",
             "tools/commander/**/*.test.ts",

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
 import { noDryTestSetup } from "./no-dry-test-setup--inline-owned-setup.ts";

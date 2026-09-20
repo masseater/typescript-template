@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
 import { requireTestBlockForSpecFile } from "./require-test-block-for-spec-file--add-test-or-delete-file.ts";
@@ -83,22 +83,22 @@ describe("dont-review-it/require-test-block-for-spec-file--add-test-or-delete-fi
       {
         name: "a call into another module inside a group may declare the blocks this reading cannot see",
         filename: SPEC_FILE,
-        code: 'import { testLintRule } from "@repo/lint-rule-authoring";\nimport { describe } from "vite-plus/test";\ndescribe("the summary", () => {\n  testLintRule(summariseRule, { valid: [], invalid: [] });\n});',
+        code: 'import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";\nimport { describe } from "vite-plus/test";\ndescribe("the summary", () => {\n  testLintRule(summariseRule, { valid: [], invalid: [] });\n});',
       },
       {
         name: "a call into another module at module scope may declare them just as well",
         filename: SPEC_FILE,
-        code: 'import { runSuite } from "@repo/lint-rule-authoring";\nrunSuite(summariseRule);',
+        code: 'import { runSuite } from "@repo/dont-review-it/lint-rule-authoring";\nrunSuite(summariseRule);',
       },
       {
         name: "a member call into another module is read the same way",
         filename: SPEC_FILE,
-        code: 'import * as authoring from "@repo/lint-rule-authoring";\nauthoring.runSuite(summariseRule);',
+        code: 'import * as authoring from "@repo/dont-review-it/lint-rule-authoring";\nauthoring.runSuite(summariseRule);',
       },
       {
         name: "a declarer bound to a local name still reaches the module it came from",
         filename: SPEC_FILE,
-        code: 'import { runSuite } from "@repo/lint-rule-authoring";\nconst run = runSuite;\nconst declare = run;\ndeclare(summariseRule);',
+        code: 'import { runSuite } from "@repo/dont-review-it/lint-rule-authoring";\nconst run = runSuite;\nconst declare = run;\ndeclare(summariseRule);',
       },
       {
         name: "a file that is not a spec file is outside this reading",
