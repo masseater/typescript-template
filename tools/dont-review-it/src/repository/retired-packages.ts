@@ -71,5 +71,4 @@ export {
   replacementForImport,
   replacementMessage,
   retiredImportGuidance,
-  retiredPackages,
 };
