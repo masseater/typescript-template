@@ -21,7 +21,7 @@ export default defineConfig({
       "deploy:ordered": {
         cache: false,
         command: "./src/cli.ts deploy all",
-        dependsOn: stackBuilds,
+        dependsOn: [...stackBuilds, "verify:account"],
       },
       "prepare:ci-env": { cache: false, command: "./src/prepare-ci-env.ts" },
       preview: {
