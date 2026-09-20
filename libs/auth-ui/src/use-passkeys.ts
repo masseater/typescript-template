@@ -1,56 +1,25 @@
-import { Effect, Fiber, Schema } from "effect";
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { authClient } from "./client.ts";
-import { errorMessage, requireSuccess } from "./protocol.ts";
+import { passkeysKey, passkeysOptions } from "./passkeys.ts";
+import { errorMessage } from "./protocol.ts";
 
 import type { PasskeySummary } from "./mfa-types.ts";
 
-type PasskeyListing = {
-  readonly passkeys: readonly PasskeySummary[] | undefined;
+const usePasskeys = (): {
   readonly listError: string | undefined;
-};
-
-class PasskeyListFailed extends Schema.TaggedError<PasskeyListFailed>()("PasskeyListFailed", {
-  cause: Schema.optionalKey(Schema.Defect()),
-}) {}
-
-const fetchPasskeys = (): Effect.Effect<PasskeyListing> =>
-  Effect.tryPromise({
-    try: async () => {
-      const listed = await authClient.passkey.listUserPasskeys();
-      return { listError: undefined, passkeys: requireSuccess(listed) };
-    },
-    catch: (cause) => new PasskeyListFailed({ cause }),
-  }).pipe(
-    Effect.match({
-      onFailure: (failure) => ({
-        listError: errorMessage(failure.cause ?? failure),
-        passkeys: undefined,
-      }),
-      onSuccess: (listing) => listing,
-    }),
-  );
-
-const usePasskeys = (): PasskeyListing & { readonly reload: () => Promise<void> } => {
-  const [listing, setListing] = useState<PasskeyListing>({
-    listError: undefined,
-    passkeys: undefined,
-  });
+  readonly passkeys: readonly PasskeySummary[] | undefined;
+  readonly reload: () => Promise<void>;
+} => {
+  const queries = useQueryClient();
+  const listed = useQuery(passkeysOptions);
   const reload = async (): Promise<void> => {
-    setListing(await Effect.runPromise(fetchPasskeys()));
+    await queries.invalidateQueries({ queryKey: passkeysKey });
   };
-  useEffect(() => {
-    const loading = Effect.runFork(
-      Effect.map(fetchPasskeys(), (loaded) => {
-        setListing(loaded);
-      }),
-    );
-    return (): void => {
-      Effect.runFork(Fiber.interrupt(loading));
-    };
-  }, []);
-  return { ...listing, reload };
+  return {
+    listError: listed.error === null ? undefined : errorMessage(listed.error),
+    passkeys: listed.data,
+    reload,
+  };
 };
 
 export { usePasskeys };

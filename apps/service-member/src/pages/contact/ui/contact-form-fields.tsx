@@ -1,49 +1,70 @@
 import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { maximumContactMessageLength, maximumContactNameLength } from "#shared/contracts/index.ts";
+import { fieldError } from "#shared/forms/index.ts";
 
-import type { ContactFormState } from "#pages/contact/model/contact-form.ts";
-import type { ReactElement } from "react";
+import type { useContactForm } from "#pages/contact/model/contact-form.ts";
+import type { ReactElement, FormEvent } from "react";
 
-function ContactFormFields({ form }: Readonly<{ form: ContactFormState }>): ReactElement {
+function ContactFormFields({
+  formState,
+}: Readonly<{ formState: ReturnType<typeof useContactForm> }>): ReactElement {
+  const { blocked, error, form, pending } = formState;
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    event.stopPropagation();
+    void form.handleSubmit();
+  }
   return (
-    <form onSubmit={form.handleSubmit}>
+    <form noValidate onSubmit={handleSubmit}>
       <FormColumn>
-        <Field
-          label="お名前"
-          name="name"
-          autoComplete="name"
-          required
-          maxLength={maximumContactNameLength}
-          value={form.name}
-          onValueChange={form.handleNameChange}
-        />
-        <Field
-          label="メールアドレス"
-          name="email"
-          type="email"
-          autoComplete="username"
-          required
-          value={form.email}
-          onValueChange={form.handleEmailChange}
-        />
-        <Field
-          label="内容"
-          name="message"
-          multiline
-          required
-          maxLength={maximumContactMessageLength}
-          value={form.message}
-          onValueChange={form.handleMessageChange}
-        />
-        <Button type="submit" variant="primary" disabled={form.blocked}>
+        <form.Field name="name">
+          {(field) => (
+            <Field
+              label="お名前"
+              name="name"
+              autoComplete="name"
+              maxLength={maximumContactNameLength}
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              error={fieldError(field.state.meta.errors)}
+            />
+          )}
+        </form.Field>
+        <form.Field name="email">
+          {(field) => (
+            <Field
+              label="メールアドレス"
+              name="email"
+              type="email"
+              autoComplete="username"
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              error={fieldError(field.state.meta.errors)}
+            />
+          )}
+        </form.Field>
+        <form.Field name="message">
+          {(field) => (
+            <Field
+              label="内容"
+              name="message"
+              multiline
+              maxLength={maximumContactMessageLength}
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              error={fieldError(field.state.meta.errors)}
+            />
+          )}
+        </form.Field>
+        <Button type="submit" variant="primary" disabled={blocked}>
           送信する
         </Button>
-        {form.pending ? (
+        {pending ? (
           <StatusMessage variant={STATUS_VARIANT.pending}>送信しています。</StatusMessage>
         ) : undefined}
-        {form.error !== "" ? (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
+        {error !== "" ? (
+          <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
         ) : undefined}
       </FormColumn>
     </form>

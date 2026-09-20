@@ -8,12 +8,25 @@ const timedOut = (project: string): string[] => [
   `${project} dead-code Maintainability analysis failed: Error: ${ANALYSIS_TIMEOUT}.\n    at settle`,
 ];
 
+const fspyFailed = (project: string): string[] => [
+  `${project} incomplete`,
+  `${project} dead-code`,
+  `${project} dead-code Maintainability analysis failed: Error: Project analysis worker exited with code null: fspy: failed to claim frame in shared memory`,
+];
+
 describe("react-doctor analysis timeouts", () => {
   it("retries when every skipped check traces back to a timed out analysis worker", () => {
     expect.hasAssertions();
     expect(
       skippedOnlyByTimeout([...timedOut("@repo/ui"), ...timedOut("@repo/service-member")]),
     ).toBe(true);
+  });
+
+  it("retries when every skipped check traces back to an fspy shared-memory failure", () => {
+    expect.hasAssertions();
+    expect(skippedOnlyByTimeout([...fspyFailed("@repo/ui"), ...fspyFailed("@repo/auth-ui")])).toBe(
+      true,
+    );
   });
 
   it("does not retry a clean scan", () => {

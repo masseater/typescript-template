@@ -1,48 +1,32 @@
 import { useAction } from "@repo/ui";
-import { useState } from "react";
+import { useForm } from "@tanstack/react-form";
+import { Schema } from "effect";
 
 import { submitContact } from "#pages/contact/api/submit-contact.ts";
+import { ContactSubmission } from "#shared/contracts/index.ts";
 
-import type { SubmitEventHandler } from "react";
+const contactSchema = Schema.toStandardSchemaV1(ContactSubmission);
 
-interface ContactFormState {
-  readonly blocked: boolean;
-  readonly email: string;
-  readonly error: string;
-  readonly handleEmailChange: (value: string) => void;
-  readonly handleMessageChange: (value: string) => void;
-  readonly handleNameChange: (value: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly message: string;
-  readonly name: string;
-  readonly pending: boolean;
-}
+type ContactValues = typeof ContactSubmission.Type;
 
-function useContactForm(onSent: () => void): ContactFormState {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
+function useContactForm(onSent: () => void) {
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(async () => {
-      await submitContact({ email, message, name });
-      onSent();
-    });
-  }
+  const form = useForm({
+    defaultValues: { email: "", message: "", name: "" } satisfies ContactValues,
+    onSubmit: ({ value }) => {
+      action.run(async () => {
+        await submitContact(value);
+        onSent();
+      });
+    },
+    validators: { onSubmit: contactSchema },
+  });
   return {
     blocked: action.blocked,
-    email,
     error: action.error ?? "",
-    handleEmailChange: setEmail,
-    handleMessageChange: setMessage,
-    handleNameChange: setName,
-    handleSubmit,
-    message,
-    name,
+    form,
     pending: action.pending,
   };
 }
 
 export { useContactForm };
-export type { ContactFormState };
