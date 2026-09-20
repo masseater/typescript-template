@@ -1,5 +1,5 @@
 import { roles } from "@repo/config";
-import { Effect, Option, Schema, SchemaGetter } from "effect";
+import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
 const maximumKeywordLength = 100;
@@ -37,10 +37,6 @@ function laterPage(maximum: number): Schema.Codec<number, number | string> {
     Schema.isInt(),
     Schema.isBetween({ maximum, minimum: secondPage }),
   );
-}
-
-function absentSearchKey(): Effect.Effect<Option.Option<never>> {
-  return Effect.succeed(Option.none());
 }
 
 const UserListQuery = Schema.Struct({
@@ -81,7 +77,6 @@ export {
   UserDeletion,
   UserList,
   UserListQuery,
-  absentSearchKey,
   laterPage,
   maximumKeywordLength,
 };

@@ -1,29 +1,27 @@
 import { Option, Schema } from "effect";
 
-import {
-  BooleanText,
-  Role,
-  SearchKeyword,
-  absentSearchKey,
-  laterPage,
-} from "#shared/contracts/index.ts";
+import { BooleanText, Role, SearchKeyword, laterPage } from "#shared/contracts/index.ts";
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);
 
 const UsersSearchParams = Schema.Struct({
-  keyword: Schema.optionalKey(SearchKeyword).pipe(Schema.catchDecoding(absentSearchKey)),
-  page: Schema.optionalKey(laterPage(maximumUsersPage)).pipe(Schema.catchDecoding(absentSearchKey)),
-  role: Schema.optionalKey(Role).pipe(Schema.catchDecoding(absentSearchKey)),
-  verified: Schema.optionalKey(Verified).pipe(Schema.catchDecoding(absentSearchKey)),
+  keyword: Schema.optionalKey(SearchKeyword),
+  page: Schema.optionalKey(laterPage(maximumUsersPage)),
+  role: Schema.optionalKey(Role),
+  verified: Schema.optionalKey(Verified),
 });
 
 type UsersSearch = typeof UsersSearchParams.Type;
 
+class InvalidUsersSearch extends Error {
+  override readonly name = "InvalidUsersSearch";
+}
+
 const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
 
 function normalizeUsersSearch(raw: unknown): UsersSearch {
-  return Option.getOrElse(decodeUsersSearch(raw), () => ({}));
+  return Option.getOrThrowWith(decodeUsersSearch(raw), () => new InvalidUsersSearch());
 }
 
 function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
@@ -36,5 +34,5 @@ function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
   };
 }
 
-export { normalizeUsersSearch, userListQuery };
+export { InvalidUsersSearch, normalizeUsersSearch, userListQuery };
 export type { UsersSearch };

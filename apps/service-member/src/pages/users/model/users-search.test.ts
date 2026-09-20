@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { maximumKeywordLength, maximumMemberPage } from "#shared/contracts/index.ts";
-import { normalizeUsersSearch } from "./users-search.ts";
+import { InvalidUsersSearch, normalizeUsersSearch } from "./users-search.ts";
 
 describe("member list search in the URL", () => {
   it("keeps a trimmed keyword and a later page", () => {
@@ -17,17 +17,17 @@ describe("member list search in the URL", () => {
     expect(normalizeUsersSearch({ page: maximumMemberPage })).toStrictEqual({
       page: maximumMemberPage,
     });
-    expect(normalizeUsersSearch({ page: maximumMemberPage + 1 })).toStrictEqual({});
+    expect(() => normalizeUsersSearch({ page: maximumMemberPage + 1 })).toThrow(InvalidUsersSearch);
   });
 
-  it("drops a keyword longer than the member API accepts", () => {
+  it("rejects a keyword longer than the member API accepts", () => {
     expect.hasAssertions();
-    expect(normalizeUsersSearch({ keyword: "あ".repeat(maximumKeywordLength + 1) })).toStrictEqual(
-      {},
+    expect(() => normalizeUsersSearch({ keyword: "あ".repeat(maximumKeywordLength + 1) })).toThrow(
+      InvalidUsersSearch,
     );
   });
 
-  it("drops the conditions this page does not have", () => {
+  it("ignores conditions this page does not have", () => {
     expect.hasAssertions();
     expect(normalizeUsersSearch({ role: "admin", verified: true })).toStrictEqual({});
   });
