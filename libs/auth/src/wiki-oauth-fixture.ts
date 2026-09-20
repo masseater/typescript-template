@@ -1,15 +1,16 @@
 import { APPLICATION } from "@repo/config";
+import { assignStaff } from "@repo/db/bootstrap";
 import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
 import {
   AuthApps,
   PASSWORD,
-  bootstrapVerifiedAdmin,
   clientOf,
   enableTotp,
   requireStatus,
   signInAs,
+  registerVerified,
 } from "./auth-test-fixture.ts";
 import { origins, type BrowserClient } from "./browser-client.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
@@ -29,8 +30,10 @@ const Registration = Schema.Struct({ client_id: Schema.String });
 const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
   email: string,
 ) {
-  yield* bootstrapVerifiedAdmin(email);
-  const { authenticator } = yield* enableTotp(yield* signInAs(APPLICATION.admin, email));
+  yield* registerVerified(email);
+  yield* assignStaff(email);
+  const enrolled = yield* signInAs(APPLICATION.wiki, email);
+  const { authenticator } = yield* enableTotp(enrolled);
   const client = yield* clientOf(APPLICATION.wiki);
   yield* requireStatus(httpStatus.ok, {
     client,
