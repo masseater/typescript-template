@@ -14,6 +14,17 @@
       {
         "files": ["src/email-verification.tsx", "src/use-session.ts"],
         "rules": ["react-doctor/no-fetch-in-effect"]
+      },
+      {
+        "files": [
+          "src/shared/ui/button-link.tsx",
+          "src/shared/ui/card-link.tsx",
+          "src/shared/ui/dropdown-menu-link-item.tsx",
+          "src/shared/ui/navigation-link.tsx",
+          "src/shared/ui/pagination-link.tsx",
+          "src/shared/ui/text-link.tsx"
+        ],
+        "rules": ["react-doctor/jsx-props-no-spreading"]
       }
     ]
   }
