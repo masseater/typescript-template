@@ -19,6 +19,7 @@
     "@repo/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/dev-boundary": "workspace:*",
     "@tailwindcss/vite": "catalog:",
