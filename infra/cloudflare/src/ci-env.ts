@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { deploymentKeys, optionalDeploymentKeys } from "@repo/config/deployment-keys";
+import { budgetKeys, deploymentKeys, optionalDeploymentKeys } from "@repo/config/deployment-keys";
 import { Effect, Schema } from "effect";
 
 const OWNER_ONLY_FILE_MODE = 0o600;
@@ -48,9 +48,13 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
       new PrepareCiEnvFailure({ code: "ci_env_incomplete", keys: missing }),
     );
   }
+  const carried = [
+    ...optionalDeploymentKeys,
+    ...budgetKeys.filter((key) => !deploymentKeys.some((required) => required === key)),
+  ];
   const lines = [
     ...required.flatMap(({ key, value }) => (value === undefined ? [] : [dotenvLine(key, value)])),
-    ...optionalDeploymentKeys.flatMap((key) => {
+    ...carried.flatMap((key) => {
       const value = envValue(key, environment);
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),

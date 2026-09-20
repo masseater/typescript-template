@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { deploymentKeys } from "@repo/config/deployment-keys";
+import { budgetKeys, deploymentKeys, optionalDeploymentKeys } from "@repo/config/deployment-keys";
 import { Effect } from "effect";
 
 import { writeCiSecretsFile } from "./ci-env.ts";
@@ -72,5 +72,36 @@ it.effect("refuses when a required deployment key is missing", () =>
     }).pipe(Effect.flip);
     assert.strictEqual(failure.code, "ci_env_incomplete");
     assert.deepStrictEqual([...failure.keys], ["CLOUDFLARE_API_TOKEN"]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("carries optional budget amounts and drops the ones left empty", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const carried = budgetKeys.filter(
+      (key) => !deploymentKeys.some((requiredKey) => requiredKey === key),
+    );
+    const [kept, dropped] = [carried[0], carried[1]];
+    if (kept === undefined || dropped === undefined) {
+      return yield* Effect.die("budget keys to carry");
+    }
+    const preparation = yield* writeCiSecretsFile({
+      ...required,
+      [kept]: verificationEnvironment[kept] ?? "1",
+      RUNNER_TEMP: path.join(directory, "runner"),
+    });
+    assert.strictEqual(preparation.status, "ready");
+    if (preparation.status !== "ready") {
+      return;
+    }
+    const contents = yield* Effect.promise(async () => readFile(preparation.filename, "utf-8"));
+    assert.include(contents, `${kept}=`);
+    assert.notInclude(contents, `${dropped}=`);
+    for (const key of optionalDeploymentKeys) {
+      assert.notInclude(contents, `${key}=`);
+    }
   }).pipe(Effect.scoped),
 );
