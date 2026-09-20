@@ -39,5 +39,5 @@ function membersOptions(search: UsersSearch) {
   });
 }
 
-export { loadMembers, membersKey, membersOptions };
+export { membersOptions };
 export type { Member, Members };
