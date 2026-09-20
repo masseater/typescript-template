@@ -1,6 +1,10 @@
 {
   "name": "@repo/commander",
   "private": true,
+  "bin": {
+    "repo-commander": "./src/app/cli.ts",
+    "repo-commander-check-start": "./src/app/check-start.ts"
+  },
   "type": "module",
   "imports": {
     "#*": "./src/*"

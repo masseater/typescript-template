@@ -1,6 +1,11 @@
 {
   "name": "@repo/quality",
   "private": true,
+  "bin": {
+    "quality-check-client": "./client-bundle.ts",
+    "quality-check-react": "./react-doctor.ts",
+    "quality-check-staged": "./check-staged.ts"
+  },
   "type": "module",
   "exports": {
     "./lint": "./lint.ts",
@@ -8,17 +13,18 @@
     "./test-runtime": "./test-runtime.ts"
   },
   "dependencies": {
+    "@repo/config": "workspace:*",
     "@repo/dont-review-it": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "@repo/lint-rule-authoring": "workspace:*",
-    "@repo/ui": "workspace:*"
+    "@repo/ui": "workspace:*",
+    "effect": "catalog:",
+    "react-doctor": "0.9.14"
   },
   "devDependencies": {
-    "@repo/config": "workspace:*",
     "@shadcn/lint": "catalog:",
     "@types/node": "catalog:",
     "dependency-cruiser": "catalog:",
-    "effect": "catalog:",
     "shell-quote": "1.10.0",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

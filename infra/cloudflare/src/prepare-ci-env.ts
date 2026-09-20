@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { runCli } from "@repo/config/cli";
 import { Effect } from "effect";
 

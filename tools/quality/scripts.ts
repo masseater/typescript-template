@@ -108,12 +108,12 @@ function runsFileWithNode(tokens: readonly string[]): boolean {
   );
 }
 
-function commandViolations(name: string, command: string, scripted: boolean): string[] {
+function commandViolations(name: string, command: string): string[] {
   const segments = words(command);
   return [
-    ...(scripted && segments.some((tokens) => runsFileWithNode(tokens))
+    ...(segments.some((tokens) => runsFileWithNode(tokens))
       ? [
-          `${name}: node でファイルを直接実行せず、vite.config.ts の run.tasks に置いて vp run で実行してください: ${command}`,
+          `${name}: node でファイルを直接実行せず、パッケージの bin か vp run で実行してください: ${command}`,
         ]
       : []),
     ...(segments.some((tokens) => callsPackageManager(tokens))
@@ -139,7 +139,7 @@ function scriptViolations(manifest: unknown): string[] {
     if (typeof command !== "string") {
       throw new TypeError(`Script ${entryName} must be a string`);
     }
-    return commandViolations(entryName, command, true);
+    return commandViolations(entryName, command);
   });
 }
 
@@ -149,7 +149,7 @@ type Task = Command | { readonly command: Command };
 function taskViolations(tasks: Readonly<Record<string, Task>>): string[] {
   return Object.entries(tasks).flatMap(([name, task]: readonly [string, Task]) => {
     const command = typeof task === "object" && "command" in task ? task.command : task;
-    return [command].flat().flatMap((entry: string) => commandViolations(name, entry, false));
+    return [command].flat().flatMap((entry: string) => commandViolations(name, entry));
   });
 }
 

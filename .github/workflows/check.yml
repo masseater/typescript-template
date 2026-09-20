@@ -45,7 +45,8 @@ jobs:
           MISE_CEILING_PATHS: ${{ runner.workspace }}
         with:
           cache: ${{ vars.CI_RUNNER == '' }}
-      - id: vite-task-cache
+      - &vite-task-cache
+        id: vite-task-cache
         if: vars.CI_RUNNER == ''
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -79,8 +80,23 @@ jobs:
       - *browser-cache
       - *setup
       - *mise
+      - *vite-task-cache
       - *task-cache-share
       - run: vp run -r premerge
+
+  e2e:
+    if: startsWith(github.head_ref, 'mergify/merge-queue/')
+    runs-on: *runner
+    timeout-minutes: 45
+    steps:
+      - *checkout
+      - *clean-workspace
+      - *browser-cache
+      - *setup
+      - *mise
+      - *vite-task-cache
+      - *task-cache-share
+      - run: vp run --filter @repo/e2e test:e2e
 
   cache:
     if: github.event_name == 'push' && vars.CI_RUNNER == ''
