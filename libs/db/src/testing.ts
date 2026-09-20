@@ -81,4 +81,5 @@ function capturePrepares<Requirements>(
 }
 
 export { BootstrapKind, bootstrapAdmin } from "./bootstrap-statement.ts";
+export { addSession, addUser, auditActionsOf } from "./records-fixture.ts";
 export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement };

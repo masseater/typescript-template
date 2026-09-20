@@ -93,6 +93,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
   readonly userId: string;
   readonly audience: Application;
   readonly strong?: boolean;
+  readonly token?: string;
 }) {
   const sessionId = crypto.randomUUID();
   const owners = yield* query(async (database) =>
@@ -110,7 +111,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
       expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
       id: sessionId,
       securityVersion,
-      token: crypto.randomUUID(),
+      token: opened.token ?? crypto.randomUUID(),
       updatedAt: new Date(),
       userId: opened.userId,
     });
