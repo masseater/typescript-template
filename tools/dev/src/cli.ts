@@ -30,14 +30,14 @@ const operator = Effect.fn("operator")(function* operator(_args: readonly string
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["ci-runner", ciRunner],
   ["connect", connection],
-  ["operator", operator],
+  ["operator", operator as (args: readonly string[]) => Command],
   ["setup", setup],
   ["status", status],
-  ["storybook", storybook],
+  ["storybook", (_args) => storybook()],
 ]);
 
 const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
-  ["authenticate", authenticate],
+  ["authenticate", authenticate as (app: App, args: readonly string[]) => Command],
   ["browser", browser],
   ["browser-command", browserCommand],
   ["logs", logs],
