@@ -12,6 +12,7 @@ description: テンプレートの概要と、含まれているもの、使い�
 ## 含まれているもの
 
 - 利用者アプリ・管理者アプリ・wiki・司令塔アプリ（`tools/commander`）。それぞれの役割は [アプリの役割](/getting-started/applications) にある
+- 主要な技術スタック。Vite+、Cloudflare Workers、Alchemy、TypeScript、TanStack Start、Elysia、Effect、Better Auth、Drizzle ORM
 - 各画面の仕様。ページ構成の節（[利用者アプリのレイアウト](/pages/member-layout) ほか）にあり、使い始めた後も、画面の仕様を書き足していく場所としてそのまま使う
 - データの概念と関係。[データモデル](/data-model/overview) に ER 図があり、本格開発のときに節ごと差し替える
 - ドメイン用語。[用語集](/glossary) にあり、文書中の `[[用語]]` からホバーで解説を見て移れる
@@ -20,8 +21,6 @@ description: テンプレートの概要と、含まれているもの、使い�
 - Cloudflare の資源を宣言する Alchemy のコード
 
 ## AI が自分で操作して確かめられること
-
-いま通るのはローカルの一部だけで、残りは [#296](https://github.com/masseater/typescript-template/issues/296) で整える。
 
 目指しているのは、AI エージェントが人と同じ手順でログインして画面を操作し、作業と検証を行える状態である。対象は本番を含むすべての環境で、AI は検証専用ではない普通のアカウントを使う。AI の操作は集計から外さず、User-Agent で区別できるようにする。
 
@@ -36,4 +35,4 @@ description: テンプレートの概要と、含まれているもの、使い�
 
 ## まだ無い機能
 
-決まっていて、まだ実装していない機能の仕様は、GitHub の Project「[会員サービスの機能](https://github.com/users/masseater/projects/5)」にある issue が持つ。
+決まっていて、まだ実装していない機能の仕様は、GitHub の Project「会員サービスの機能」にある issue が持つ。
