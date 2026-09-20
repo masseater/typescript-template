@@ -5,7 +5,6 @@ import { unstable_dev } from "wrangler";
 import { coldStartFixturePath } from "./cold-start-fixture.ts";
 
 const concurrentRequests = 4;
-const abortAfter = 50;
 const okStatus = 200;
 
 async function settled(request: Promise<unknown>): Promise<string> {
@@ -46,10 +45,11 @@ describe("a worker whose runtime is still building its layer", () => {
     const worker = await startedWorker();
     const cutOff = new AbortController();
     const abandoned = settled(worker.fetch("/", { signal: cutOff.signal }));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
     const waiting = worker.fetch("/");
-    setTimeout(() => {
-      cutOff.abort();
-    }, abortAfter);
+    cutOff.abort();
     const second = await waiting;
     expect([await abandoned, second.status, await second.text()]).toStrictEqual([
       "cut off",
