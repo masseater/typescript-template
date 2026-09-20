@@ -3,17 +3,24 @@ import { mkdir, writeFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { localDatabase, localDatabasePersistence } from "@repo/config/local-database-path";
+import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { workerCompatibility } from "@repo/config/worker";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
 
-const localDatabaseStore = path.join(localDatabasePersistence, "v3");
+function localDatabasePersistence(): string {
+  return localDatabaseDirectory();
+}
+
+function localDatabaseStore(): string {
+  return path.join(localDatabasePersistence(), "v3");
+}
 
 async function writeLocalDatabaseConfig(): Promise<string> {
-  await mkdir(localDatabasePersistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
-  const file = path.join(localDatabasePersistence, "wrangler.generated.json");
+  const persistence = localDatabasePersistence();
+  await mkdir(persistence, { mode: OWNER_ONLY_DIRECTORY_MODE, recursive: true });
+  const file = path.join(persistence, "wrangler.generated.json");
   const config = {
     compatibility_date: workerCompatibility.date,
     compatibility_flags: workerCompatibility.flags,

@@ -1,12 +1,22 @@
 #!/usr/bin/env node
 // oxlint-disable-next-line import/no-nodejs-modules
+import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { mkdtemp, rm } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { promisify } from "node:util";
 
 import { Cause, Console, Effect, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
 
 import { applicationReadyPaths, applications, loopbackAddress } from "./applications.ts";
 import { reportFailed, runCli } from "./cli.ts";
+import { localDatabaseVariable } from "./local-database-path.ts";
+import { repositoryRoot } from "./repository-root.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,
@@ -16,10 +26,41 @@ const Application = Schema.Literals(applications);
 const successStatus = 200;
 const requestTimeoutMilliseconds = 120_000;
 const startTimeout = "5 minutes";
+const closeTimeout = "30 seconds";
+const databasePrefix = "template-check-dev-";
+const runFile = promisify(execFile);
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+const isolatedDatabase = Effect.acquireRelease(
+  Effect.tryPromise({
+    catch: (error) =>
+      new DevStartFailure({ reason: `failed to prepare database: ${describe(error)}` }),
+    try: async () => {
+      const directory = await mkdtemp(path.join(tmpdir(), databasePrefix));
+      // oxlint-disable-next-line node/no-process-env
+      process.env[localDatabaseVariable] = directory;
+      await runFile(
+        path.join(repositoryRoot, "node_modules/.bin/vp"),
+        ["run", "--filter", "@repo/db", "db:migrate:local"],
+        {
+          cwd: repositoryRoot,
+          // oxlint-disable-next-line node/no-process-env
+          env: process.env,
+        },
+      );
+      return directory;
+    },
+  }),
+  (directory) =>
+    Effect.promise(async () => {
+      // oxlint-disable-next-line node/no-process-env
+      delete process.env[localDatabaseVariable];
+      await rm(directory, { force: true, recursive: true });
+    }),
+);
 
 const devServer = Effect.acquireRelease(
   Effect.tryPromise({
@@ -30,10 +71,17 @@ const devServer = Effect.acquireRelease(
         server: { host: loopbackAddress, port: 0, strictPort: false },
       }),
   }),
-  (server) => Effect.promise(async () => server.close()),
+  (server) =>
+    Effect.ignore(
+      Effect.timeout(
+        Effect.promise(async () => server.close()),
+        closeTimeout,
+      ),
+    ),
 );
 
-const listeningOrigin = devServer.pipe(
+const listeningOrigin = isolatedDatabase.pipe(
+  Effect.flatMap(() => devServer),
   Effect.flatMap((server) =>
     Effect.tryPromise({
       catch: (error) => new DevStartFailure({ reason: `failed to listen: ${describe(error)}` }),
