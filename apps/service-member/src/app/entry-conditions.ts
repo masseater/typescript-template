@@ -33,7 +33,8 @@ async function enterMemberFrame(href: string, pathname: string): Promise<{ sessi
   }
   const step = await loadOnboardingStep();
   if (step !== "done") {
-    throw redirect({ to: welcomePath[step] });
+    const next = welcomePath[step];
+    throw redirect(step === "choose" ? { href: "/welcome/" } : { to: next });
   }
   if (pathname.startsWith("/welcome")) {
     throw redirect({ to: "/home" });
