@@ -12,7 +12,6 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
   code: Schema.Literals([
     "deployment_command_invalid",
     "account_read_unavailable",
-    "app_origins_must_differ",
     "budget_has_no_usage_allowance",
     "database_input_invalid",
     "database_migration_history_missing",
@@ -66,6 +65,14 @@ const Origin = Schema.String.check(
     );
   }),
 );
+const Domain = Schema.String.check(
+  Schema.makeFilter(
+    (value: string) =>
+      URL.parse(`https://${value}`)?.hostname === value &&
+      value.includes(".") &&
+      !value.endsWith(".workers.dev"),
+  ),
+);
 const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
@@ -117,11 +124,14 @@ const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSett
     : { enabled: otlp.enabled ?? true, endpoint: otlp.endpoint };
 });
 
-const originKeys = {
-  "internal-dashboard": "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
-  "service-admin": "TEMPLATE_SERVICE_ADMIN_ORIGIN",
-  "service-member": "TEMPLATE_SERVICE_MEMBER_ORIGIN",
-} as const;
+function deriveOrigins(prefix: string, appDomain: string): SharedConfig["origins"] {
+  const origin = (label: string): string => `https://${prefix}-${label}.${appDomain}`;
+  return {
+    "internal-dashboard": origin("dashboard"),
+    "service-admin": origin("admin"),
+    "service-member": origin("member"),
+  };
+}
 
 const hstsSetting = {
   strict_transport_security: {
@@ -202,24 +212,9 @@ function sendingDomain(mailFrom: string): string {
   return mailFrom.slice(mailFrom.indexOf("@") + 1);
 }
 
-function duplicatedOrigins(config: SharedConfig): readonly string[] {
-  const origins = [
-    [originKeys["service-admin"], config.origins["service-admin"]],
-    [originKeys["service-member"], config.origins["service-member"]],
-    [originKeys["internal-dashboard"], config.origins["internal-dashboard"]],
-  ] as const;
-  return origins.flatMap(([key, origin]) =>
-    origins.some(([other, value]) => other !== key && value === origin) ? [key] : [],
-  );
-}
-
 const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedConfig(
   config: SharedConfig,
 ) {
-  const duplicated = duplicatedOrigins(config);
-  if (duplicated.length > 0) {
-    return yield* fail("app_origins_must_differ", duplicated);
-  }
   if (
     config.budget.budgetJpy / config.budget.jpyPerUsd <=
     config.budget.fixedCostUsd + config.budget.reserveUsd
@@ -244,6 +239,7 @@ export {
   CONFIRMATION_LENGTH,
   SamplingRate,
   CloudflareFailure,
+  Domain,
   Email,
   HttpsUrl,
   Id,
@@ -255,8 +251,8 @@ export {
   SharedSettings,
   checkOtlpSettings,
   checkSharedConfig,
+  deriveOrigins,
   hstsSetting,
-  originKeys,
   parseDeploymentCommand,
   sendingDomain,
   traceDestination,
