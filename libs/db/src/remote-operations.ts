@@ -4,11 +4,11 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { SQLiteDialect } from "drizzle-orm/sqlite-core";
 import { Effect, Schema } from "effect";
 
-import { BootstrappedAdmin, bootstrapStatement, type Email } from "./bootstrap-statement.ts";
+import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
 import { remoteExecutor } from "./remote-http.ts";
-import { RemoteFailure, fail, type MigrationStatusTarget } from "./remote-input.ts";
+import { RemoteFailure, fail } from "./remote-input.ts";
 
-import type { EmailAddress } from "./bootstrap-statement.ts";
+import type { Email, EmailAddress } from "./bootstrap-statement.ts";
 import type { DatabaseExecutor } from "./remote-http.ts";
 import type { MigrationStatusTarget } from "./remote-input.ts";
 
