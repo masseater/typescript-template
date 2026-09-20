@@ -1,6 +1,6 @@
-import { testLintRule } from "../../../../index.ts";
 import { describe, expect, it } from "vite-plus/test";
 
+import { testLintRule } from "../../../../index.ts";
 import { forbidSymbolPrefixedName } from "./forbid-symbol-prefixed-name--rename-to-alphanumeric-start.ts";
 
 const declaredOptionsSchema = forbidSymbolPrefixedName.meta.schema;
