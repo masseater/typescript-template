@@ -2,7 +2,15 @@ import { assert, it } from "@effect/vitest";
 import { Effect, Redacted, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
-import { AuthSecret, Origin, Prefix, SharedSettings, checkSharedConfig } from "./config.ts";
+import {
+  AuthSecret,
+  Domain,
+  Origin,
+  Prefix,
+  SharedSettings,
+  checkSharedConfig,
+  deriveOrigins,
+} from "./config.ts";
 import { describeFailure } from "./secrets.ts";
 import { authSecret, settings as deploymentSettings } from "./settings.ts";
 import {
@@ -79,19 +87,31 @@ it.effect("the accepted secret stays redacted", () =>
   }),
 );
 
-it.effect("names the origins that collide instead of the values", () =>
+for (const domain of ["", "example.com/path", "localhost", "Example.com", "app.workers.dev"]) {
+  it.effect(`rejects unusable base domain ${domain}`, () => rejects(Domain, domain));
+}
+
+it.effect("derives one distinct origin per app from the single base domain", () =>
   Effect.gen(function* program() {
-    const config = yield* Schema.decodeUnknownEffect(SharedSettings)({
-      ...settings,
-      origins: { ...settings.origins, "service-admin": settings.origins["service-member"] },
-    });
-    const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "app_origins_must_differ");
-    assert.deepStrictEqual(
-      [...failure.keys],
-      ["TEMPLATE_SERVICE_ADMIN_ORIGIN", "TEMPLATE_SERVICE_MEMBER_ORIGIN"],
+    assert.deepStrictEqual(deriveOrigins(settings.prefix, "example.com"), settings.origins);
+    const config = yield* Effect.provideService(
+      deploymentSettings,
+      ConfigProvider,
+      environment({}),
     );
-    assert.notInclude(JSON.stringify(failure), settings.origins["service-member"]);
+    assert.deepStrictEqual(config.origins, settings.origins);
+    assert.strictEqual(new Set(Object.values(config.origins)).size, 3);
+  }),
+);
+
+it.effect("refuses a base domain that is not a bare hostname", () =>
+  Effect.gen(function* program() {
+    const failure = yield* Effect.provideService(
+      deploymentSettings,
+      ConfigProvider,
+      environment({ TEMPLATE_APP_DOMAIN: "https://example.com" }),
+    ).pipe(Effect.flip);
+    assert.include(JSON.stringify(describeFailure(failure, [])), "TEMPLATE_APP_DOMAIN");
   }),
 );
 
