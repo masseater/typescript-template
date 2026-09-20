@@ -44,6 +44,7 @@ const completeWelcomeOnboarding = async (
     press(page, "同意して続ける"),
   ]);
   await seeHeading(page, "プロフィールの作り方");
+  await readyButton(page, "自分で入力する");
   await Promise.all([
     page.waitForURL((url) => url.pathname.includes("/welcome/profile"), {
       timeout: appearanceTimeout,

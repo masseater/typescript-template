@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { followMember, homeFeed } from "./member-social.ts";
+import { advanceOnboarding, followMember, homeFeed, stepOf } from "./member-social.ts";
 import { addUser } from "./records-fixture.ts";
 import { TestDatabase } from "./testing.ts";
 
@@ -25,5 +25,20 @@ it.effect("omits unverified followees from the feed", () =>
     yield* addUser("unverified", "member", false);
     yield* followMember("viewer", "unverified");
     assert.deepStrictEqual(yield* homeFeed("viewer"), []);
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("treats missing onboarding rows as the agreement step", () =>
+  Effect.gen(function* program() {
+    yield* addUser("newcomer");
+    assert.strictEqual(yield* stepOf("newcomer"), "agreement");
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("advances and reads the saved onboarding step", () =>
+  Effect.gen(function* program() {
+    yield* addUser("newcomer");
+    yield* advanceOnboarding("newcomer", "choose");
+    assert.strictEqual(yield* stepOf("newcomer"), "choose");
   }).pipe(Effect.provide(TestDatabase)),
 );
