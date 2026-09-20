@@ -1,9 +1,11 @@
 import { Button, Field } from "@repo/ui";
 
+import { newSocialLinkRow } from "#pages/profile-edit/model/profile-form.ts";
 import { maximumSocialLinks } from "#shared/contracts/index.ts";
 import { fieldError } from "#shared/forms/index.ts";
 import { SocialLinkIcon, classifySocialUrl } from "#shared/social-link";
 
+import type { SocialLinkRow } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
 
 function SocialLinksEditor({
@@ -12,38 +14,38 @@ function SocialLinksEditor({
   values,
 }: Readonly<{
   errors: readonly unknown[];
-  onChange: (values: readonly string[]) => void;
-  values: readonly string[];
+  onChange: (values: readonly SocialLinkRow[]) => void;
+  values: readonly SocialLinkRow[];
 }>): ReactElement {
   const canAdd = values.length < maximumSocialLinks;
   const linkError = fieldError(errors);
-  function updateAt(index: number, url: string): void {
-    onChange(values.map((current, currentIndex) => (currentIndex === index ? url : current)));
+  function updateAt(id: string, url: string): void {
+    onChange(values.map((current) => (current.id === id ? { ...current, url } : current)));
   }
-  function removeAt(index: number): void {
-    const next = values.filter((_, currentIndex) => currentIndex !== index);
-    onChange(next.length === 0 ? [""] : next);
+  function removeAt(id: string): void {
+    const next = values.filter((current) => current.id !== id);
+    onChange(next.length === 0 ? [newSocialLinkRow()] : next);
   }
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm leading-normal font-bold">SNS の URL</p>
-      {values.map((url, index) => {
-        const classified = url === "" ? null : classifySocialUrl(url);
+      {values.map((link, index) => {
+        const classified = link.url === "" ? null : classifySocialUrl(link.url);
         const invalid = classified !== null && !classified.ok;
         return (
-          <div key={`${index}-${url}`} className="flex items-start gap-2">
+          <div key={link.id} className="flex items-start gap-2">
             <div className="mt-8 text-muted-foreground">
-              {url !== "" && <SocialLinkIcon url={url} />}
+              {link.url !== "" && <SocialLinkIcon url={link.url} />}
             </div>
             <div className="min-w-0 flex-1">
               <Field
                 label={`URL ${index + 1}`}
-                name={`socialLink-${index}`}
+                name={`socialLink-${link.id}`}
                 type="text"
                 inputMode="url"
-                value={url}
+                value={link.url}
                 onValueChange={(next) => {
-                  updateAt(index, next);
+                  updateAt(link.id, next);
                 }}
               />
               {invalid && (
@@ -58,7 +60,7 @@ function SocialLinksEditor({
               size="small"
               aria-label={`URL ${index + 1} を削除`}
               onClick={() => {
-                removeAt(index);
+                removeAt(link.id);
               }}
             >
               削除
@@ -71,7 +73,7 @@ function SocialLinksEditor({
           type="button"
           variant="secondary"
           onClick={() => {
-            onChange([...values, ""]);
+            onChange([...values, newSocialLinkRow()]);
           }}
         >
           URL を追加
