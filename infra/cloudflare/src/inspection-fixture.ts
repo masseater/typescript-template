@@ -1,4 +1,4 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
 import {
   APPLICATION_TABLES,
   MIGRATIONS_TABLE_PRESENT,
@@ -22,8 +22,8 @@ const config = verificationSettings;
 const access = { accountId: config.accountId, apiToken: "inspection-test-not-a-real-token" };
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const zone = `https://api.cloudflare.com/client/v4/zones/${config.zoneId}`;
-const NOT_FOUND_STATUS = 404;
-const FORBIDDEN_STATUS = 403;
+const NOT_FOUND_STATUS = httpStatus.notFound;
+const FORBIDDEN_STATUS = httpStatus.forbidden;
 const SECRETS_STORE_PAGE_LIMIT = 100;
 const ADDRESS_PAGE_LIMIT = 50;
 const sending = `${config.prefix}.example.com`;

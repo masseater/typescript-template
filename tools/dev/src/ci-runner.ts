@@ -5,7 +5,7 @@ import { homedir, userInfo } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
 
