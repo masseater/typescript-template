@@ -26,7 +26,7 @@ const EmailChangeForm = ({
   const code = useTextInput();
   const action = useAction();
   const [notice, setNotice] = useState<string>();
-  const confirm = (method: StrongAuthenticationMethod): void => {
+  const confirmChange = (method: StrongAuthenticationMethod): void => {
     setNotice(undefined);
     action.run(async () => {
       if (newEmail.value === "") {
@@ -42,7 +42,7 @@ const EmailChangeForm = ({
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     if (session.user.twoFactorEnabled) {
-      confirm(AUTHENTICATION_METHOD.passwordTotp);
+      confirmChange(AUTHENTICATION_METHOD.passwordTotp);
     }
   };
   return (
@@ -66,7 +66,7 @@ const EmailChangeForm = ({
         <StrongAuthControls
           action={action}
           code={code}
-          onConfirm={confirm}
+          onConfirm={confirmChange}
           securityHref={securityHref}
           session={session}
         />
