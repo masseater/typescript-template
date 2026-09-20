@@ -4,6 +4,7 @@ import { APPLICATION, type Application } from "@repo/config";
 import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 
+import { memberApiKeyPlugin } from "./member-api-key-options.ts";
 import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
@@ -81,6 +82,7 @@ const authPlugins = ({
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin({ audience, origin, run }),
+    ...(audience === APPLICATION.user ? [memberApiKeyPlugin()] : []),
     ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
   ];
 };
