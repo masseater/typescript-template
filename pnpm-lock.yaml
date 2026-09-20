@@ -440,6 +440,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../libs/db
       '@repo/feature-flags':
         specifier: workspace:*
         version: link:../../libs/feature-flags
@@ -1001,6 +1004,9 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../observability
+      '@repo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@repo/ui':
         specifier: workspace:*
         version: link:../ui

@@ -300,7 +300,7 @@ describe("member suspension", () => {
         ],
         listed: [["member", ACCOUNT_STATE.suspended]],
         restored: { accountState: ACCOUNT_STATE.active, id: "member" },
-        session: null,
+        session: undefined,
       });
     });
   });
