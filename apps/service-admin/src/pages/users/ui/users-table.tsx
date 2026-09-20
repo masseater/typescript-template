@@ -17,7 +17,7 @@ import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
 
 interface UsersTableMeta {
-  readonly onChanged: () => void;
+  readonly handleChanged: () => void;
 }
 
 const usersTableFeatures = tableFeatures({
@@ -62,7 +62,7 @@ const usersTableColumns = columnHelper.columns([
       if (tableMeta === undefined) {
         throw new Error("利用者一覧の操作を実行できません。");
       }
-      return <UserRowActions onChanged={tableMeta.onChanged} user={cellContext.row.original} />;
+      return <UserRowActions onChanged={tableMeta.handleChanged} user={cellContext.row.original} />;
     },
     header: "操作",
     id: "actions",
@@ -78,7 +78,7 @@ function UsersTable({
     data: users ?? emptyListedUsers,
     features: usersTableFeatures,
     getRowId: listedUserRowId,
-    meta: { onChanged },
+    meta: { handleChanged: onChanged },
   });
   return (
     <Table>
