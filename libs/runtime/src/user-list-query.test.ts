@@ -13,7 +13,7 @@ describe("user list query parameters", () => {
     Effect.gen(function* program() {
       const query = yield* readSearchParams(
         UserListQuery,
-        usersRequest("limit=50&offset=100&keyword=%20Alice%20&role=user&emailVerified=false"),
+        usersRequest("limit=50&offset=100&keyword=%20Alice%20&role=member&emailVerified=false"),
       );
       assert.deepStrictEqual(query, {
         emailVerified: false,
