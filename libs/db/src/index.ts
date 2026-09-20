@@ -9,6 +9,7 @@ const checkDatabase = Effect.fn("checkDatabase")(function* checkDatabase() {
 });
 
 export { containsKeyword } from "./contains-keyword.ts";
+export { profileListed, profileVisibleTo } from "./member-profile.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";

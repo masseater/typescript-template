@@ -1,4 +1,4 @@
-import { applications } from "@repo/config";
+import { PROFILE_VISIBILITY, applications, profileVisibilities } from "@repo/config";
 import { AUTHENTICATION_METHOD, ROLE, authenticationMethods, roles } from "@repo/config/identity";
 import { getAuthTables } from "better-auth/db";
 import { sql } from "drizzle-orm";
@@ -26,9 +26,13 @@ const user = sqliteTable(
       .notNull()
       .default([]),
     role: text("role", { enum: roles }).notNull().default(ROLE.member),
+    searchable: integer("searchable", { mode: "boolean" }).notNull().default(false),
     securityVersion: integer("security_version").notNull().default(0),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+    visibility: text("visibility", { enum: profileVisibilities })
+      .notNull()
+      .default(PROFILE_VISIBILITY.allMembers),
   },
 
   (table) => [

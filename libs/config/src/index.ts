@@ -57,6 +57,8 @@ export {
   readWikiConfig,
   stripeKeyModes,
 } from "./environment.ts";
+export { PROFILE_VISIBILITY, profileVisibilities } from "./member-profile.ts";
+export type { ProfileVisibility } from "./member-profile.ts";
 export { httpStatus } from "./http-status.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type {
