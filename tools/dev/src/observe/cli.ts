@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { causeRecord, runCli } from "@repo/cli";
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
+import { TraceId } from "@repo/observability";
 import { Console, Effect, Schema } from "effect";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
@@ -19,7 +20,6 @@ const minutesPerDay = 1440;
 const maxQueryLimit = 500;
 const millisecondsPerMinute = 60_000;
 
-const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/u));
 const QueryLimit = Schema.Int.check(Schema.isBetween({ maximum: maxQueryLimit, minimum: 1 }));
 const QueryMinutes = Schema.Int.check(Schema.isBetween({ maximum: minutesPerDay, minimum: 1 }));
 const Level = Schema.Literals(["debug", "info", "log", "warn", "error"]);

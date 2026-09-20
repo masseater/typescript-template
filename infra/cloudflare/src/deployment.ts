@@ -27,4 +27,4 @@ const secretsFile = (project: string): string => {
     : path.resolve(configured);
 };
 
-export { secretsFile, secretsFileConfigured };
+export { ENVIRONMENT_FILE_VARIABLE, secretsFile, secretsFileConfigured };

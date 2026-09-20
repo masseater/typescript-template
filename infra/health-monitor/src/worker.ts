@@ -1,18 +1,19 @@
 import { monitorWorker } from "@repo/monitor";
 import { Effect } from "effect";
 
-import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
+import {
+  healthMonitorWorker,
+  healthTargets,
+  parseHealthMonitorConfig,
+  type HealthMonitorEnv,
+} from "./config.ts";
 import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
 import type { MonitorBindings } from "@repo/monitor";
 import type { HealthState } from "./decision.ts";
 
-interface Bindings extends MonitorBindings {
-  SERVICE_MEMBER_ORIGIN: string;
-  SERVICE_ADMIN_ORIGIN: string;
-  INTERNAL_DASHBOARD_ORIGIN: string;
-}
+interface Bindings extends MonitorBindings, HealthMonitorEnv {}
 
 const health = monitorWorker<Bindings>({
   check({ ctx, env }, notify) {
@@ -44,8 +45,8 @@ const health = monitorWorker<Bindings>({
       };
     }).pipe(Effect.withSpan("HealthMonitor.check"));
   },
-  className: "HealthMonitor",
-  event: "health_monitor",
+  className: healthMonitorWorker.className,
+  event: healthMonitorWorker.event,
   failure: {
     subject: "Cloudflare Workers health monitoring failed",
     text: "アプリの死活監視が失敗しました。health_monitor.check_failed のログを確認してください。アプリが稼働しているとは判断しないでください。",

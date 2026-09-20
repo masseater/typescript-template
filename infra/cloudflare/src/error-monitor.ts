@@ -1,3 +1,4 @@
+import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { Stack } from "alchemy";
 import { Effect } from "effect";
 
@@ -9,14 +10,17 @@ import { accountTokenRef } from "./tokens.ts";
 const stack = Stack(
   stackName("error-monitor"),
   stackOptions,
-  monitorProgram("error", {
+  monitorProgram(errorMonitorWorker.name, {
     artifact: monitorArtifact("error-monitor"),
-    className: "ErrorMonitor",
-    cron: "*/5 * * * *",
-    name: "errors",
+    className: errorMonitorWorker.className,
+    cron: errorMonitorWorker.cron,
+    name: errorMonitorWorker.name,
     variables: Effect.fn("errorVariables")(function* errorVariables(config) {
       const token = yield* accountTokenRef("ObservabilityQuery");
-      return { CLOUDFLARE_ACCOUNT_ID: config.accountId, OBSERVABILITY_TOKEN: token.value };
+      return {
+        [errorMonitorEnv.accountId]: config.accountId,
+        [errorMonitorEnv.observabilityToken]: token.value,
+      };
     }),
   }),
 );

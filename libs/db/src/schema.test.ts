@@ -10,8 +10,7 @@ import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqli
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { migrateD1 } from "./migrate-d1.ts";
-import { loadRemoteMigrations } from "./remote-operations.ts";
+import { loadRemoteMigrations, migrateD1 } from "./remote-operations.ts";
 import { schema } from "./schema.ts";
 
 const snapshots: Readonly<Record<string, Parameters<typeof generateMigration>[0]>> =

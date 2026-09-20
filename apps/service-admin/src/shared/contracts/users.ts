@@ -1,11 +1,10 @@
 import { accountStates } from "@repo/config";
+import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
 import { Identifier } from "@repo/runtime/contracts";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumKeywordLength = 100;
 const secondPage = 2;
-const defaultPageSize = 50;
-const maximumPageSize = 100;
 
 const AccountState = Schema.Literals(accountStates);
 
@@ -42,7 +41,7 @@ const UserListQuery = Schema.Struct({
   accountState: Schema.optionalKey(AccountState),
   emailVerified: Schema.optionalKey(BooleanText),
   keyword: Schema.optionalKey(UserKeyword),
-  limit: pageNumber(defaultPageSize, 1, maximumPageSize),
+  limit: pageNumber(adminPageSize, 1, maximumAdminPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
 });
 

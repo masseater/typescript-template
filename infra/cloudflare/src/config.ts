@@ -1,6 +1,16 @@
-import { APPLICATION, CloudflareId, Email, ROLE } from "@repo/config";
+import {
+  CloudflareId,
+  Email,
+  HttpsOrigin,
+  ROLE,
+  distinctOrigins,
+  minimumAuthSecretLength,
+  usageAllowanceRemains,
+} from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
+import { maximumAlertRecipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
 import { Config, Effect, Schema } from "effect";
 
@@ -23,6 +33,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "deploy_token_permissions_missing",
     "mail_from_outside_deployment",
     "otlp_enabled_without_endpoint",
+    "origins_must_differ",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
     "plan_removes_bindings",
@@ -42,8 +53,6 @@ function fail(
   return Effect.fail(new CloudflareFailure({ code, keys }));
 }
 
-const MAX_BUDGET_RECIPIENTS = 10;
-const MIN_AUTH_SECRET_LENGTH = 32;
 const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
@@ -51,17 +60,10 @@ const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
-const Origin = Schema.String.check(
-  Schema.makeFilter((value: string) => URL.canParse(value)),
+const Origin = HttpsOrigin.check(
   Schema.makeFilter((value: string) => {
     const url = URL.parse(value);
-    return (
-      url?.protocol === "https:" &&
-      url.origin === value &&
-      !url.hostname.endsWith(".workers.dev") &&
-      !url.username &&
-      !url.password
-    );
+    return url !== null && !url.hostname.endsWith(".workers.dev");
   }),
 );
 const Domain = Schema.String.check(
@@ -75,13 +77,13 @@ const Domain = Schema.String.check(
 const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
-const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, MAX_BUDGET_RECIPIENTS));
+const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const SamplingRate = Schema.Number.check(
   Schema.isFinite(),
   Schema.isBetween({ maximum: 1, minimum: 0 }),
 );
 const AuthSecret = Schema.String.check(
-  Schema.isMinLength(MIN_AUTH_SECRET_LENGTH),
+  Schema.isMinLength(minimumAuthSecretLength),
   Schema.makeFilter((value: string) => value.trim() === value),
   Schema.makeFilter((value: string) => new Set(value).size >= MIN_AUTH_SECRET_VARIETY),
 );
@@ -114,8 +116,8 @@ const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSett
 ) {
   if (otlp.endpoint === undefined && otlp.enabled !== undefined) {
     return yield* fail("otlp_enabled_without_endpoint", [
-      "TEMPLATE_OTLP_ENABLED",
-      "TEMPLATE_OTLP_ENDPOINT",
+      deploymentKey.otlpEnabled,
+      deploymentKey.otlpEndpoint,
     ]);
   }
   return otlp.endpoint === undefined
@@ -214,18 +216,21 @@ function sendingDomain(mailFrom: string): string {
 const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedConfig(
   config: SharedConfig,
 ) {
-  if (
-    config.budget.budgetJpy / config.budget.jpyPerUsd <=
-    config.budget.fixedCostUsd + config.budget.reserveUsd
-  ) {
+  if (!usageAllowanceRemains(config.budget)) {
     return yield* fail("budget_has_no_usage_allowance", [
-      "BUDGET_JPY",
-      "TEMPLATE_FIXED_COST_USD",
-      "TEMPLATE_RESERVE_USD",
+      deploymentKey.budgetJpy,
+      deploymentKey.fixedCostUsd,
+      deploymentKey.reserveUsd,
     ]);
   }
+  if (!distinctOrigins(Object.values(config.origins))) {
+    return yield* fail("origins_must_differ", [deploymentKey.appDomain, deploymentKey.prefix]);
+  }
   if (!sendingDomain(config.mailFrom).startsWith(`${config.prefix}.`)) {
-    return yield* fail("mail_from_outside_deployment", ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
+    return yield* fail("mail_from_outside_deployment", [
+      deploymentKey.mailFrom,
+      deploymentKey.prefix,
+    ]);
   }
   return config;
 });

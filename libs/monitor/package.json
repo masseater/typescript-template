@@ -8,6 +8,8 @@
   },
   "scripts": {},
   "dependencies": {
+    "@repo/config": "workspace:*",
+    "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "effect": "catalog:"
   },

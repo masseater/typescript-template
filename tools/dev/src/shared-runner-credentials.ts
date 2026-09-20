@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { createHash } from "node:crypto";
 
-import { applicationOrigins, mailpitOrigin } from "@repo/config";
+import { appEnvKey, applicationOrigins, mailpitOrigin } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
 
 import { OriginMode, lanOrigin } from "./local-environment.ts";
@@ -27,12 +27,12 @@ function appVariables(
   mode: typeof OriginMode.Type,
 ): Readonly<Record<string, string>> {
   return {
-    APP_ORIGIN: appOrigin(app, mode),
-    AUTH_SECRET: credentials.authSecret,
-    EMAIL_FROM: "no-reply@example.test",
-    MAILPIT_URL: mailpitOrigin,
-    OPS_EMAIL: "ops@example.test",
-    OTLP_ENDPOINT: receiverOrigin("otlp"),
+    [appEnvKey.appOrigin]: appOrigin(app, mode),
+    [appEnvKey.authSecret]: credentials.authSecret,
+    [appEnvKey.emailFrom]: "no-reply@example.test",
+    [appEnvKey.mailpitUrl]: mailpitOrigin,
+    [appEnvKey.opsEmail]: "ops@example.test",
+    [appEnvKey.otlpEndpoint]: receiverOrigin("otlp"),
   };
 }
 

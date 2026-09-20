@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { applicationRoot } from "./repository.ts";
+import { appEnvKey, type Application } from "@repo/config";
 
-import type { Application } from "@repo/config";
+import { applicationRoot } from "./repository.ts";
 
 const secretBytes = 48;
 
@@ -31,11 +31,11 @@ type DevVars = {
 
 const serialize = (devVars: DevVars): string => {
   const assignments: readonly (readonly [string, string])[] = [
-    ["APP_ORIGIN", devVars.appOrigin],
-    ["AUTH_SECRET", devVars.authSecret],
-    ["EMAIL_FROM", "no-reply@example.test"],
-    ["MAILPIT_URL", devVars.mailOrigin],
-    ["OPS_EMAIL", "ops@example.test"],
+    [appEnvKey.appOrigin, devVars.appOrigin],
+    [appEnvKey.authSecret, devVars.authSecret],
+    [appEnvKey.emailFrom, "no-reply@example.test"],
+    [appEnvKey.mailpitUrl, devVars.mailOrigin],
+    [appEnvKey.opsEmail, "ops@example.test"],
   ];
   return `${assignments.map(([variable, assigned]) => `${variable}=${JSON.stringify(assigned)}`).join("\n")}\n`;
 };
