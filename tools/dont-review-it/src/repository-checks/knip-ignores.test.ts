@@ -286,10 +286,7 @@ const filesForDirectory = (directory: string, nested: boolean): readonly string[
   const files = [
     ...new Set([
       ...owned,
-      ...followedFiles([
-        ...roots,
-        ...(nested ? workspaceDependencyEntries(directory) : []),
-      ]),
+      ...followedFiles([...roots, ...(nested ? workspaceDependencyEntries(directory) : [])]),
     ]),
   ];
   filesByDirectory.set(key, files);
