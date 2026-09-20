@@ -1,7 +1,28 @@
 import { assert, describe, it } from "@effect/vitest";
+import { getSchemaShape } from "@repo/db/testing";
 import { Effect, Schema } from "effect";
+import { expect } from "vite-plus/test";
 
-import { MemberList, MemberListQuery, MemberView, maximumMemberPage } from "./contracts.ts";
+import {
+  MemberList,
+  MemberListQuery,
+  MemberView,
+  ProfileView,
+  maximumMemberPage,
+} from "./member.ts";
+
+import type { UserRecord } from "@repo/db";
+
+type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserRecord, Fields>]
+  ? [Pick<UserRecord, Fields>] extends [View]
+    ? true
+    : false
+  : false;
+
+const profileViewMatchesRecord: Matches<
+  typeof ProfileView.Type,
+  "email" | "id" | "name" | "profile" | "socialLinks"
+> = true;
 
 const encode = Schema.encodeUnknownEffect(MemberView);
 
@@ -113,4 +134,15 @@ describe("member list response", () => {
       });
     }),
   );
+});
+
+describe("profile view", () => {
+  it("describes the same field types as the user row", () => {
+    expect.hasAssertions();
+    expect(profileViewMatchesRecord).toBe(true);
+    const shape = getSchemaShape("user");
+    for (const [field, schema] of Object.entries(ProfileView.fields)) {
+      expect(shape[field], `ProfileView.${field}`).toBe(schema.ast._tag);
+    }
+  });
 });

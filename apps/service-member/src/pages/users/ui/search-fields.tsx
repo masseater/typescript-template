@@ -1,7 +1,8 @@
-import { maximumKeywordLength } from "@repo/runtime/contracts";
 import { Button, Field } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+
+import { maximumKeywordLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 
