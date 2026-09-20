@@ -203,8 +203,7 @@ const checkCode = {
 
 const workspaceCheckImports = {
   "check:imports": {
-    command:
-      "depcruise --config ../../tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long .",
+    command: "quality-check-imports",
     input: [...taskInput],
   },
 } satisfies Tasks;
