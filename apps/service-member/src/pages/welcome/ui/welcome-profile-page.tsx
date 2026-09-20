@@ -3,12 +3,12 @@ import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { Schema } from "effect";
 
-import { saveProfile } from "#pages/profile-edit/api/profile.ts";
+import { saveProfile } from "#entities/profile/index.ts";
 import { ProfileUpdate, maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
-import { fieldError } from "#shared/forms/field-error.ts";
+import { fieldError } from "#shared/forms/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
-import type { ProfileDraft } from "#pages/profile-edit/api/profile.ts";
+import type { ProfileDraft } from "#entities/profile/index.ts";
 import type { ReactElement, FormEvent } from "react";
 
 function welcomeDraft(values: { readonly name: string; readonly profile: string }): ProfileDraft {
