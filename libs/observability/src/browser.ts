@@ -1,7 +1,7 @@
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
-import { errorAttributes } from "./errors.ts";
+import { errorAttributes, wireErrorType } from "./errors.ts";
 import { maximumMeasurement, type BrowserEvent } from "./events.ts";
 import {
   httpMethod,
@@ -137,7 +137,7 @@ const recordException = (
   const attributes = errorAttributes(exception.thrown);
   recorder.queue.enqueue({
     ...documentFields(recorder),
-    errorType: attributes["error.type"],
+    errorType: wireErrorType(attributes["error.type"]),
     kind: "exception",
     locations: attributes["error.locations"],
     name: exception.name,

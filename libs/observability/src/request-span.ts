@@ -2,10 +2,17 @@ import { Cause, Context, Effect, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
 import { CurrentRequest, type RequestContext } from "./current-request.ts";
-import { errorAttributes, errorFingerprint, type ErrorAttributes } from "./errors.ts";
+import {
+  errorAttributes,
+  errorFingerprint,
+  fingerprintIdentity,
+  identifierPattern,
+  type ErrorAttributes,
+} from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
 import { logAt, logCause, statusSeverity } from "./severity.ts";
+import { isRecord } from "./structured-logs.ts";
 import { Telemetry } from "./telemetry.ts";
 
 type Entropy = {
@@ -66,21 +73,18 @@ const correlatedResponse = (correlated: {
   });
 };
 
-const tagPattern = /^[A-Za-z]{1,64}$/u;
-
 export const failureAttributesOf = (
   failed: unknown,
 ): ErrorAttributes & { readonly "error.tag"?: string } => {
   const attributes = errorAttributes(failed);
-  const failureTag =
-    typeof failed === "object" && failed !== null && "_tag" in failed ? failed._tag : undefined;
-  if (typeof failureTag !== "string" || !tagPattern.test(failureTag)) {
+  const failureTag = isRecord(failed) ? failed["_tag"] : undefined;
+  if (typeof failureTag !== "string" || !identifierPattern.test(failureTag)) {
     return attributes;
   }
-  const fingerprint = errorFingerprint({
-    errorType: attributes["error.type"],
-    locations: `${failureTag}\n${attributes["error.locations"]}`,
-  });
+  const fingerprint = errorFingerprint(
+    fingerprintIdentity(failed),
+    `${failureTag}\n${attributes["error.locations"]}`,
+  );
   return { ...attributes, "error.fingerprint": fingerprint, "error.tag": failureTag };
 };
 
