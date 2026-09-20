@@ -5,6 +5,8 @@ import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
 const mailSubjects = {
   contact: "お問い合わせ",
+  emailChangeNotice: "メールアドレスの変更が申請されました",
+  emailChangeVerification: "新しいメールアドレスの確認",
   existingAccount: "このメールアドレスは登録済みです",
   verification: "メールアドレスの確認",
 } as const;
@@ -111,6 +113,34 @@ const sendExistingAccountNotice = (
   }).pipe(withSpan("email.existing_account_notice"));
 };
 
+const sendEmailChangeVerification = (
+  settings: MailSettings,
+  verification: { readonly email: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(verification.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
+  return deliver(settings, {
+    subject: mailSubjects.emailChangeVerification,
+    text: `このメールアドレスへの変更が申請されました。次のリンクを開くと変更が確定します。心当たりがない場合は、このメールを破棄してください。\n${verification.url}`,
+    to: verification.email,
+  }).pipe(withSpan("email.email_change_verification"));
+};
+
+const sendEmailChangeNotice = (
+  settings: MailSettings,
+  notice: { readonly email: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(notice.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
+  return deliver(settings, {
+    subject: mailSubjects.emailChangeNotice,
+    text: `このアカウントのメールアドレスを変更する申請がありました。新しいメールアドレスに届いたリンクが開かれると、変更が確定します。心当たりがない場合は、次のリンクからセキュリティ設定を確認し、パスワードを変更してください。\n${notice.url}`,
+    to: notice.email,
+  }).pipe(withSpan("email.email_change_notice"));
+};
+
 const sendContactEmail = (
   settings: MailSettings,
   outbound: Readonly<{
@@ -126,5 +156,11 @@ const sendContactEmail = (
 
 /** @internal */
 export { mailSubjects };
-export { sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
+export {
+  sendContactEmail,
+  sendEmailChangeNotice,
+  sendEmailChangeVerification,
+  sendExistingAccountNotice,
+  sendVerificationEmail,
+};
 export type { MailSettings };
