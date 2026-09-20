@@ -67,15 +67,15 @@ export default defineConfig({
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect"],
-        prepr: [
+        prepush: [
+          "check:effect",
           "knip",
           "check:client",
           "check:imports",
           "check:react",
           "check:canonical-literal-types",
-          "test",
         ],
+        prepr: ["test"],
         premerge: ["test:dev-server"],
         prerelease: ["mutation"],
       }),
