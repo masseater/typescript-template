@@ -73,5 +73,6 @@ const deleteMemberPhotos = Effect.fn("deleteMemberPhotos")(function* deleteMembe
   return stored.length;
 });
 
-export { deleteMemberPhotos, readPhoto, removePhoto, uploadPhoto };
-export type { PhotoState };
+/** @public */
+export { deleteMemberPhotos };
+export { readPhoto, removePhoto, uploadPhoto };

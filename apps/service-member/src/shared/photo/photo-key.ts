@@ -1,6 +1,6 @@
 import type { PhotoSlot } from "@repo/config";
 
-const keyPrefix = "members";
+const keyPrefix = "photos";
 const separator = "/";
 
 function photoKey(memberId: string, slot: PhotoSlot, version: string): string {

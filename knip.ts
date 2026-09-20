@@ -183,6 +183,7 @@ const config = ({
       },
       "apps/service-member": {
         ...app,
+        entry: [...app.entry, "src/shared/photo/image-fixture.ts"],
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
       },
       "infra/budget-monitor": {

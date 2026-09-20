@@ -93,7 +93,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       ...(grants(app, "ai") ? ["AI:ai"] : []),
       ...(grants(app, "storage")
         ? [
-            `${photoBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Photos.bucketName:jurisdiction=<unresolved apply>`,
+            `${photoBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Photos.bucketName:jurisdiction=<unresolved ApplyExpr>`,
           ]
         : []),
     ].toSorted(),

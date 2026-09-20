@@ -42,7 +42,7 @@ it.effect("visibility defaults to every member without a search listing", () =>
     yield* addUser({ userId: "member" });
     assert.deepStrictEqual(yield* readVisibility("member"), {
       searchable: false,
-      visibility: PROFILE_VISIBILITY.members,
+      visibility: PROFILE_VISIBILITY.allMembers,
     });
     const updated = yield* updateVisibility("member", {
       searchable: true,

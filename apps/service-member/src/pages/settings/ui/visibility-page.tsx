@@ -23,7 +23,7 @@ import type { ReactElement } from "react";
 const isVisibility = Schema.is(Schema.Literals(profileVisibilities));
 
 const visibilityOptions = [
-  { label: "全会員", value: PROFILE_VISIBILITY.members },
+  { label: "全会員", value: PROFILE_VISIBILITY.allMembers },
   { label: "自分だけ", value: PROFILE_VISIBILITY.self },
 ] as const satisfies readonly Readonly<{ label: string; value: ProfileVisibility }>[];
 

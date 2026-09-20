@@ -49,4 +49,3 @@ function usePhotoForm(
 }
 
 export { usePhotoForm };
-export type { PhotoForm };

@@ -273,4 +273,3 @@ function sanitizeImage(bytes: Uint8Array): SanitizedImage | undefined {
 }
 
 export { sanitizeImage };
-export type { SanitizedImage };

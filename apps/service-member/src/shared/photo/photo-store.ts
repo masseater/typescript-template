@@ -84,4 +84,3 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
 }
 
 export { PhotoStore };
-export type { StoredPhoto };

@@ -51,7 +51,7 @@ function failureTag<Value, Failure extends { readonly _tag: string }, Requiremen
 
 function addUser(
   id: string,
-  visibility: ProfileVisibility = PROFILE_VISIBILITY.members,
+  visibility: ProfileVisibility = PROFILE_VISIBILITY.allMembers,
 ): Effect.Effect<void, DatabaseFailure, Database> {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
@@ -97,7 +97,7 @@ it.effect("stores an uploaded JPEG without its EXIF segment and serves it to the
     assert.strictEqual(state.slot, PHOTO_SLOT.face);
     assert.isString(state.version);
     const keys = yield* photoKeysOf("owner");
-    assert.strictEqual(keys.face, `members/owner/face/${state.version ?? ""}`);
+    assert.strictEqual(keys.face, `photos/owner/face/${state.version ?? ""}`);
     const stored = yield* storedBytes(keys.face ?? "");
     assert.isDefined(stored);
     assert.isFalse(containsExifMarker(stored ?? new Uint8Array()));
@@ -141,7 +141,7 @@ it.effect("deletes the previous object when a photo is replaced or removed", () 
     const first = yield* uploadPhoto("owner", PHOTO_SLOT.face, jpegWithExif);
     const second = yield* uploadPhoto("owner", PHOTO_SLOT.face, pngWithText);
     assert.notStrictEqual(first.version, second.version);
-    assert.deepStrictEqual(yield* storedKeys(), [`members/owner/face/${second.version ?? ""}`]);
+    assert.deepStrictEqual(yield* storedKeys(), [`photos/owner/face/${second.version ?? ""}`]);
     const removed = yield* removePhoto("owner", PHOTO_SLOT.face);
     assert.deepStrictEqual(removed, { slot: PHOTO_SLOT.face, version: null });
     assert.deepStrictEqual(yield* storedKeys(), []);
@@ -160,7 +160,7 @@ it.effect("deleteMemberPhotos clears both slots and their objects", () =>
     const kept = yield* uploadPhoto("stayer", PHOTO_SLOT.face, jpegWithExif);
     assert.strictEqual(yield* deleteMemberPhotos("leaver"), 2);
     assert.deepStrictEqual(yield* photoKeysOf("leaver"), { company: null, face: null });
-    assert.deepStrictEqual(yield* storedKeys(), [`members/stayer/face/${kept.version ?? ""}`]);
+    assert.deepStrictEqual(yield* storedKeys(), [`photos/stayer/face/${kept.version ?? ""}`]);
     assert.strictEqual(yield* deleteMemberPhotos("leaver"), 0);
     assert.strictEqual(yield* failureTag(deleteMemberPhotos("missing")), "UserNotFound");
   }).pipe(Effect.provide(services)),

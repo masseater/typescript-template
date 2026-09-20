@@ -34,7 +34,7 @@ const user = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     visibility: text("visibility", { enum: profileVisibilities })
       .notNull()
-      .default(PROFILE_VISIBILITY.members),
+      .default(PROFILE_VISIBILITY.allMembers),
   },
 
   (table) => [

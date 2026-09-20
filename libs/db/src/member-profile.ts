@@ -10,7 +10,7 @@ import type { PhotoSlot, ProfileVisibility } from "@repo/config";
 import type { SQL } from "drizzle-orm";
 
 const openProfile: SQL | undefined = and(
-  eq(user.visibility, PROFILE_VISIBILITY.members),
+  eq(user.visibility, PROFILE_VISIBILITY.allMembers),
   eq(user.emailVerified, true),
   eq(user.role, ROLE.member),
 );

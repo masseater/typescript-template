@@ -18,4 +18,3 @@ async function removePhoto(slot: PhotoSlot): Promise<PhotoState> {
 }
 
 export { removePhoto, uploadPhoto };
-export type { PhotoState };

@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "4df74e32-7768-4fb9-9499-02bba0e4b4df",
+  "id": "14e4a92d-1dce-48ed-885c-6e999aea1b73",
   "prevIds": ["714645b4-cc4d-4c04-8441-2705bb063200"],
   "ddl": [
     {
@@ -1964,7 +1964,7 @@
       "type": "text",
       "notNull": true,
       "autoincrement": false,
-      "default": "'members'",
+      "default": "'all_members'",
       "generated": null,
       "name": "visibility",
       "entityType": "columns",
