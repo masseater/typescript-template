@@ -5,16 +5,24 @@ import { Effect } from "effect";
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
-import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { authSecret, otlpAuthorization, settings, stripeSettings } from "./settings.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
+import type { BillingEnv, DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+function appEnv(
+  target: Application,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shared: SharedEnv,
+  billing: BillingEnv | undefined,
+): DeclaredEnv {
+  return {
+    ...shared,
+    ...(grants(target, "ai") ? { AI: Workers.AI("AI") } : {}),
+    ...(billing ?? {}),
+  };
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
@@ -23,6 +31,9 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const config: SharedConfig = yield* Effect.orDie(settings);
   const secret: Redacted.Redacted = yield* authSecret;
   const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
+  const billing: BillingEnv | undefined = grants(target, "billing")
+    ? yield* stripeSettings
+    : undefined;
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
@@ -32,22 +43,26 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     bundle: false,
     compatibility: workerCompatibilityOptions,
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
-    env: appEnv(target, {
-      APP_ORIGIN: origin,
-      APP_RELEASE: artifacts.release,
-      AUTH_SECRET: secret,
-      DB: database,
-      EMAIL: email,
-      EMAIL_FROM: config.mailFrom,
-      OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-      ...(config.otlp === undefined
-        ? {}
-        : {
-            OTLP_ENABLED: String(config.otlp.enabled),
-            OTLP_ENDPOINT: config.otlp.endpoint,
-            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-          }),
-    }),
+    env: appEnv(
+      target,
+      {
+        APP_ORIGIN: origin,
+        APP_RELEASE: artifacts.release,
+        AUTH_SECRET: secret,
+        DB: database,
+        EMAIL: email,
+        EMAIL_FROM: config.mailFrom,
+        OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
+        ...(config.otlp === undefined
+          ? {}
+          : {
+              OTLP_ENABLED: String(config.otlp.enabled),
+              OTLP_ENDPOINT: config.otlp.endpoint,
+              ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+            }),
+      },
+      billing,
+    ),
     main: artifacts.mainModule,
     name: `${config.prefix}-${target}`,
     observability: workerObservability(config),
