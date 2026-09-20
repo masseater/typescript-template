@@ -1,16 +1,11 @@
 import { SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, subscriptionStatuses } from "@repo/config";
-import {
-  attachCheckout,
-  markPaymentFailed,
-  memberOfCustomer,
-  recordSubscription,
-} from "@repo/db/billing";
+import { attachCheckout, markPaymentFailed, memberOfCustomer, recordSubscription } from "@repo/db";
 import { Effect, Schema } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 
 import type { WebhookOutcome } from "@repo/config";
-import type { StripeEventRecord, SubscriptionRecord } from "@repo/db/billing";
+import type { StripeEventRecord, SubscriptionRecord } from "@repo/db";
 import type { StripeEvent } from "./stripe.ts";
 
 const millisecondsPerSecond = 1000;
