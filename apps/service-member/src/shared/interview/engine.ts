@@ -21,7 +21,8 @@ type Progress = Pick<InterviewState, "messages" | "sheet" | "skipped">;
 type Message = InterviewState["messages"][number];
 
 function nextField(sheet: SheetData, skipped: readonly FieldName[]): FieldName | undefined {
-  return fieldKeys.find((key) => sheet[key] === undefined && !skipped.includes(key));
+  const skippedFields = new Set(skipped);
+  return fieldKeys.find((key) => sheet[key] === undefined && !skippedFields.has(key));
 }
 
 function cannedQuestion(key: FieldName, opening: string): Asked {
@@ -75,10 +76,11 @@ function offered(reply: ReplyForm | undefined, values: readonly string[]): boole
     return false;
   }
   const limit = reply.kind === "multiple" ? maximumInterests : 1;
+  const options = new Set(reply.options);
   return (
     values.length <= limit &&
     new Set(values).size === values.length &&
-    values.every((value) => reply.options.includes(value))
+    values.every((value) => options.has(value))
   );
 }
 
