@@ -1,10 +1,13 @@
 import { PaginationLink } from "@repo/ui";
 
-import { normalizeUsersSearch } from "#pages/users/model/users-search.ts";
-
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 import type { PageTarget } from "@repo/ui";
 import type { ReactElement } from "react";
+
+function usersSearchAtPage(search: UsersSearch, page: number): UsersSearch {
+  const { page: _current, ...filters } = search;
+  return page <= 1 ? filters : { ...filters, page };
+}
 
 function UserPageLink({
   search,
@@ -13,7 +16,7 @@ function UserPageLink({
   return (
     <PaginationLink
       to="/members"
-      search={normalizeUsersSearch({ ...search, page: target.page })}
+      search={usersSearchAtPage(search, target.page)}
       current={target.current}
       aria-label={target.label}
     >
