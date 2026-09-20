@@ -180,7 +180,7 @@ const testTaskInput = [
 
 const testRun = {
   test: {
-    command: "vp test run",
+    command: "vp test run --exclude '**/*.worker.test.ts'",
     input: [...testTaskInput],
     output: [],
   },
@@ -339,22 +339,26 @@ function appConfig(
       previewDevVars(appRoot),
       privateSourceMaps(app),
       devBoundary(app),
-      cloudflare({
-        config: {
-          assets: {
-            binding: "ASSETS",
-            run_worker_first: command !== "serve" || isPreview === true,
-          },
-          compatibility_date: workerCompatibility.date,
-          compatibility_flags: [...workerCompatibility.flags],
-          d1_databases: [localDatabase],
-          main: "./src/app/server.ts",
-          name: `template-${app}`,
-        },
-        inspectorPort: false,
-        persistState: { path: localDatabaseDirectory() },
-        viteEnvironment: { name: "ssr" },
-      }),
+      ...(process.env.VITEST === undefined
+        ? [
+            cloudflare({
+              config: {
+                assets: {
+                  binding: "ASSETS",
+                  run_worker_first: command !== "serve" || isPreview === true,
+                },
+                compatibility_date: workerCompatibility.date,
+                compatibility_flags: [...workerCompatibility.flags],
+                d1_databases: [localDatabase],
+                main: "./src/app/server.ts",
+                name: `template-${app}`,
+              },
+              inspectorPort: false,
+              persistState: { path: localDatabaseDirectory() },
+              viteEnvironment: { name: "ssr" },
+            }),
+          ]
+        : []),
       ...plugins,
       tailwindcss(),
       ...withoutEnvFileLoader(tanstackStart(startOptions)),
