@@ -11,10 +11,15 @@ const entrances: ReadonlySet<string> = new Set(["/", "/login", "/signup"]);
 
 const welcomePath = {
   agreement: "/welcome/agreement",
-  choose: "/welcome",
+  choose: "/welcome/choose",
   interview: "/welcome/interview",
   profile: "/welcome/profile",
 } as const satisfies Readonly<Record<Exclude<OnboardingStep, "done">, string>>;
+
+function normalizedPath(pathname: string): string {
+  const trimmed = pathname.replace(/\/+$/u, "");
+  return trimmed === "" ? "/" : trimmed;
+}
 
 async function enterPublicFrame(pathname: string): Promise<void> {
   if (!entrances.has(pathname)) {
@@ -33,8 +38,7 @@ async function enterMemberFrame(href: string, pathname: string): Promise<{ sessi
   }
   const step = await loadOnboardingStep();
   if (step !== "done") {
-    const next = welcomePath[step];
-    throw redirect(step === "choose" ? { href: "/welcome/" } : { to: next });
+    throw redirect({ to: welcomePath[step] });
   }
   if (pathname.startsWith("/welcome")) {
     throw redirect({ to: "/home" });
@@ -44,6 +48,7 @@ async function enterMemberFrame(href: string, pathname: string): Promise<{ sessi
 
 async function enterWelcomeFrame(
   href: string,
+  pathname: string,
 ): Promise<{ session: Session; step: OnboardingStep }> {
   const session = await loadSession();
   if (session === undefined) {
@@ -52,6 +57,10 @@ async function enterWelcomeFrame(
   const step = await loadOnboardingStep();
   if (step === "done") {
     throw redirect({ to: "/home" });
+  }
+  const expected = welcomePath[step];
+  if (normalizedPath(pathname) !== normalizedPath(expected)) {
+    throw redirect({ to: expected });
   }
   return { session, step };
 }

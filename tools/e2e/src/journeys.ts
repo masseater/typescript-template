@@ -34,6 +34,9 @@ const completeWelcomeOnboarding = async (
   await page.waitForURL((url) => url.pathname.includes("/welcome"), { timeout: appearanceTimeout });
   await seeHeading(page, "規約への同意");
   await press(page, "同意して続ける");
+  await page.waitForURL((url) => url.pathname.includes("/welcome/choose"), {
+    timeout: appearanceTimeout,
+  });
   await seeHeading(page, "プロフィールの作り方");
   await readyButton(page, "自分で入力する");
   await press(page, "自分で入力する");

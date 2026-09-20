@@ -38,6 +38,7 @@ import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.ind
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 import { Route as WelcomeWelcomeIndexRouteImport } from './routes/_welcome/welcome.index'
 import { Route as WelcomeWelcomeAgreementRouteImport } from './routes/_welcome/welcome.agreement'
+import { Route as WelcomeWelcomeChooseRouteImport } from './routes/_welcome/welcome.choose'
 import { Route as WelcomeWelcomeInterviewRouteImport } from './routes/_welcome/welcome.interview'
 import { Route as WelcomeWelcomeProfileRouteImport } from './routes/_welcome/welcome.profile'
 
@@ -184,6 +185,11 @@ const WelcomeWelcomeAgreementRoute = WelcomeWelcomeAgreementRouteImport.update({
   path: '/welcome/agreement',
   getParentRoute: () => WelcomeRoute,
 } as any)
+const WelcomeWelcomeChooseRoute = WelcomeWelcomeChooseRouteImport.update({
+  id: '/welcome/choose',
+  path: '/welcome/choose',
+  getParentRoute: () => WelcomeRoute,
+} as any)
 const WelcomeWelcomeInterviewRoute = WelcomeWelcomeInterviewRouteImport.update({
   id: '/welcome/interview',
   path: '/welcome/interview',
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/settings/security': typeof MemberSettingsSecurityRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
+  '/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/welcome/profile': typeof WelcomeWelcomeProfileRoute
   '/settings/': typeof MemberSettingsIndexRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/settings/security': typeof MemberSettingsSecurityRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
+  '/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/welcome/profile': typeof WelcomeWelcomeProfileRoute
   '/settings': typeof MemberSettingsIndexRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/_member/settings/security': typeof MemberSettingsSecurityRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
   '/_welcome/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
+  '/_welcome/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/_welcome/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/_welcome/welcome/profile': typeof WelcomeWelcomeProfileRoute
   '/_member/settings/': typeof MemberSettingsIndexRoute
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/settings/security'
     | '/users/$id'
     | '/welcome/agreement'
+    | '/welcome/choose'
     | '/welcome/interview'
     | '/welcome/profile'
     | '/settings/'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/settings/security'
     | '/users/$id'
     | '/welcome/agreement'
+    | '/welcome/choose'
     | '/welcome/interview'
     | '/welcome/profile'
     | '/settings'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/_member/settings/security'
     | '/_member/users/$id'
     | '/_welcome/welcome/agreement'
+    | '/_welcome/welcome/choose'
     | '/_welcome/welcome/interview'
     | '/_welcome/welcome/profile'
     | '/_member/settings/'
@@ -597,6 +609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeWelcomeAgreementRouteImport
       parentRoute: typeof WelcomeRoute
     }
+    '/_welcome/welcome/choose': {
+      id: '/_welcome/welcome/choose'
+      path: '/welcome/choose'
+      fullPath: '/welcome/choose'
+      preLoaderRoute: typeof WelcomeWelcomeChooseRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
     '/_welcome/welcome/interview': {
       id: '/_welcome/welcome/interview'
       path: '/welcome/interview'
@@ -680,6 +699,7 @@ const PublicRouteWithChildren =
 
 interface WelcomeRouteChildren {
   WelcomeWelcomeAgreementRoute: typeof WelcomeWelcomeAgreementRoute
+  WelcomeWelcomeChooseRoute: typeof WelcomeWelcomeChooseRoute
   WelcomeWelcomeInterviewRoute: typeof WelcomeWelcomeInterviewRoute
   WelcomeWelcomeProfileRoute: typeof WelcomeWelcomeProfileRoute
   WelcomeWelcomeIndexRoute: typeof WelcomeWelcomeIndexRoute
@@ -687,6 +707,7 @@ interface WelcomeRouteChildren {
 
 const WelcomeRouteChildren: WelcomeRouteChildren = {
   WelcomeWelcomeAgreementRoute: WelcomeWelcomeAgreementRoute,
+  WelcomeWelcomeChooseRoute: WelcomeWelcomeChooseRoute,
   WelcomeWelcomeInterviewRoute: WelcomeWelcomeInterviewRoute,
   WelcomeWelcomeProfileRoute: WelcomeWelcomeProfileRoute,
   WelcomeWelcomeIndexRoute: WelcomeWelcomeIndexRoute,
