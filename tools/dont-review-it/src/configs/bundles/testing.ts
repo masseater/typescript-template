@@ -54,7 +54,7 @@ import { requireTestBlockSpelling } from "../../lint/oxlint/rules/testing/requir
 import { requireVitestExtendBuilder } from "../../lint/oxlint/rules/testing/require-vitest-extend-builder--infer-fixture-type.ts";
 import { noNonBoundaryDouble } from "../../plugin.ts";
 
-import type { WorkspaceLintRule } from "@repo/lint-rule-authoring";
+import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 
 export const testingBundle: readonly WorkspaceLintRule[] = [
   forbidExpectlessIt,

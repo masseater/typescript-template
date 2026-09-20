@@ -1,4 +1,4 @@
-import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
+import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { listedUnder } from "../../lib/declared-replacements/option-lists.ts";

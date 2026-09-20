@@ -1,0 +1,40 @@
+import { sandboxUnsafeTestPattern } from "./stryker-sandbox.ts";
+
+const configuration = {
+  coverageAnalysis: "perTest",
+  dryRunTimeoutMinutes: 25,
+  htmlReporter: { fileName: ".local/stryker-report.html" },
+  ignorePatterns: ["**/tsconfig*.json", ".local-agents", ".local/**", sandboxUnsafeTestPattern],
+  ignoreStatic: true,
+  mutate: [
+    "libs/config/src/index.ts",
+    "libs/runtime/src/failures.ts",
+    "libs/runtime/src/http.ts",
+    "libs/runtime/src/responses.ts",
+    "tools/dont-review-it/src/repository/alias-visitor.ts",
+    "tools/dont-review-it/src/repository/d1-references.ts",
+    "tools/dont-review-it/src/repository/d1-types.ts",
+    "tools/dont-review-it/src/repository/effect-rules.ts",
+    "tools/dont-review-it/src/repository/layers.ts",
+    "tools/dont-review-it/src/repository/lint-context.ts",
+    "tools/dont-review-it/src/repository/module-specifiers.ts",
+    "tools/dont-review-it/src/repository/references.ts",
+    "tools/dont-review-it/src/repository/plugin.ts",
+    "tools/dont-review-it/src/repository/process-boundary.ts",
+    "tools/dont-review-it/src/repository/retired-imports.ts",
+    "tools/dont-review-it/src/repository/retired-packages.ts",
+    "tools/dont-review-it/src/repository/scripts.ts",
+    "tools/dont-review-it/src/repository/secrets.ts",
+    "tools/dont-review-it/src/repository/test-import-graph.ts",
+    "tools/dont-review-it/src/repository/test-runtime.ts",
+  ],
+  packageManager: "pnpm",
+  plugins: ["@stryker-mutator/vitest-runner"],
+  reporters: ["progress", "clear-text", "html"],
+  tempDirName: ".local/stryker",
+  testRunner: "vitest",
+  thresholds: { break: 70, high: 80, low: 71 },
+  vitest: { configFile: "vitest.mutation.config.ts" },
+};
+
+export default configuration;
