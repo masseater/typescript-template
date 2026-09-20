@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+// oxlint-disable-next-line import/no-nodejs-modules
+import { resolve4, resolve6 } from "node:dns/promises";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { request } from "node:https";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { URL } from "node:url";
+
 import { applications } from "@repo/config";
 import { runCli } from "@repo/config/cli";
 import { Console, Effect, Schema } from "effect";
@@ -18,6 +25,67 @@ class OriginVerifyFailure extends Schema.TaggedError<OriginVerifyFailure>()("Ori
   keys: Schema.Array(Schema.String),
 }) {}
 
+async function resolveAddress(hostname: string): Promise<string> {
+  try {
+    const [address] = await resolve4(hostname);
+    if (address !== undefined) {
+      return address;
+    }
+  } catch {
+    // Prefer A; fall through to AAAA when A is absent.
+  }
+  const [address] = await resolve6(hostname);
+  if (address === undefined) {
+    throw new Error("origin_dns_empty");
+  }
+  return address;
+}
+
+function fetchHealth(
+  origin: string,
+  signal: AbortSignal,
+): Promise<{ readonly ok: boolean; readonly json: unknown }> {
+  const target = new URL("/api/health", origin);
+  return resolveAddress(target.hostname).then(
+    async (address) =>
+      new Promise<{ readonly ok: boolean; readonly json: unknown }>((resolve, reject) => {
+        const req = request(
+          {
+            family: address.includes(":") ? 6 : 4,
+            headers: { accept: "application/json", host: target.host },
+            hostname: address,
+            method: "GET",
+            path: `${target.pathname}${target.search}`,
+            port: target.port === "" ? 443 : Number(target.port),
+            servername: target.hostname,
+            signal,
+          },
+          (response) => {
+            const chunks: Buffer[] = [];
+            response.on("data", (chunk: Buffer) => {
+              chunks.push(chunk);
+            });
+            response.on("end", () => {
+              const text = Buffer.concat(chunks).toString("utf8");
+              const status = response.statusCode ?? 0;
+              if (status < 200 || status > 299) {
+                resolve({ json: undefined, ok: false });
+                return;
+              }
+              try {
+                resolve({ json: JSON.parse(text) as unknown, ok: true });
+              } catch {
+                resolve({ json: undefined, ok: false });
+              }
+            });
+          },
+        );
+        req.on("error", reject);
+        req.end();
+      }),
+  );
+}
+
 const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   service: (typeof applications)[number],
   origin: string,
@@ -25,21 +93,14 @@ const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   const response = yield* Effect.tryPromise({
     catch: () => new OriginVerifyFailure({ code: "origin_unreachable", keys: [service] }),
     try: async (signal) =>
-      fetch(`${origin}/api/health`, {
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]),
-      }),
+      fetchHealth(origin, AbortSignal.any([signal, AbortSignal.timeout(15_000)])),
   });
   if (!response.ok) {
     return yield* Effect.fail(
       new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] }),
     );
   }
-  const body = yield* Effect.tryPromise({
-    catch: () => new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] }),
-    try: async () => response.json(),
-  });
-  const health = yield* Schema.decodeUnknownEffect(HealthView)(body).pipe(
+  const health = yield* Schema.decodeUnknownEffect(HealthView)(response.json).pipe(
     Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] })),
   );
   if (health.service !== service) {
