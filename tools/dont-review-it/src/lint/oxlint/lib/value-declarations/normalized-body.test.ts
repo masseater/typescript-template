@@ -224,4 +224,17 @@ describe("normalizedBodyOf", () => {
       expect(bodyOfArrowReportingDraft).not.toBe(bodyOfArrowReportingPublished);
     });
   });
+
+  describe("a bigint literal", () => {
+    const it = test.extend("bodyOfBigint", () =>
+      normalizedBodyOf({
+        body: parseSync("body.ts", "const amount = 1n;").program.body,
+        routes: NO_ROUTES,
+      }),
+    );
+
+    it("keeps the literal in the spelling", ({ bodyOfBigint }) => {
+      expect(bodyOfBigint).toContain("1n");
+    });
+  });
 });
