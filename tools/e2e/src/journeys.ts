@@ -40,25 +40,39 @@ const signUpAndConfirm = async (
   return { account, origin };
 };
 
-const browseMainScreens = async (stage: JourneyStage, account: Account): Promise<void> => {
-  const origin = stage.environment.originOf("member");
-  await seeHeading(stage.page, account.name);
-  await stage.page.goto(`${origin}/users`);
-  await seeHeading(stage.page, "ユーザーを探す");
-  await stage.page.getByRole("link", { exact: true, name: "ホーム" }).first().click();
-  await seeHeading(stage.page, account.name);
+const openMainNav = async (
+  stage: JourneyStage,
+  destination: Readonly<{ heading: string; linkName: string }>,
+): Promise<void> => {
+  await stage.page.getByRole("link", { exact: true, name: destination.linkName }).first().click();
+  await seeHeading(stage.page, destination.heading);
 };
 
-const writeBiography = async (stage: JourneyStage, origin: string): Promise<string> => {
+const browseMainScreens = async (stage: JourneyStage, _account: Account): Promise<void> => {
+  const origin = stage.environment.originOf("member");
+  await seeHeading(stage.page, "ホーム");
+  await openMainNav(stage, { heading: "有料プラン", linkName: "探す" });
+  await openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
+  await openMainNav(stage, { heading: "メッセージ", linkName: "メッセージ" });
+  await openMainNav(stage, { heading: "通知", linkName: "通知" });
+  await openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
+  await stage.page.goto(`${origin}/users`);
+  await seeHeading(stage.page, "ユーザーを探す");
+};
+
+const writeBiography = async (
+  stage: JourneyStage,
+  origin: string,
+): Promise<{ readonly biography: string; readonly profilePath: string }> => {
   const biography = `journey ${crypto.randomUUID()}`;
   await stage.page.goto(`${origin}/settings/profile`);
   await seeHeading(stage.page, "プロフィールの編集");
   await readyButton(stage.page, "保存");
   await fill(stage.page, { fieldLabel: "自己紹介", typed: biography });
   await press(stage.page, "保存");
-  await stage.page.waitForURL(`${origin}${homePattern}`, { timeout: appearanceTimeout });
+  await stage.page.waitForURL(`${origin}/users/*`, { timeout: appearanceTimeout });
   await seeText(stage.page, biography);
-  return biography;
+  return { biography, profilePath: new URL(stage.page.url()).pathname };
 };
 
 type ListedSetting = { readonly heading: string; readonly name: string };
@@ -130,13 +144,15 @@ const runMemberJourney = async (
   const { account, origin } = await signUpAndConfirm(stage, "member");
   await browseMainScreens(stage, account);
   const settings = await browseSettings(stage, origin);
-  const biography = await writeBiography(stage, origin);
+  const { biography, profilePath } = await writeBiography(stage, origin);
   const enrollment = await enrollTotp({ account, origin, page: stage.page });
   await signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
+  const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
+  await stage.page.goto(`${origin}${profilePath}`);
   await seeText(stage.page, biography);
   return {
     backupCodeCount: enrollment.backupCodes.length,
-    landsOnTheMemberHome: stage.page.url().startsWith(`${origin}/users/`),
+    landsOnTheMemberHome,
     opensEveryListedSettingsItem: settings.opensEveryListedItem,
     reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
     reachesPlanInOneClick: settings.reachesPlanInOneClick,

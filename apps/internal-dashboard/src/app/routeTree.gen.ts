@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SplatRouteImport } from './routes/$'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as LoginRouteImport } from './routes/login'
@@ -25,6 +26,11 @@ import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as WikiIndexRouteImport } from './routes/wiki/index'
 import { Route as WikiSplatRouteImport } from './routes/wiki/$'
 
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/_dashboard',
   getParentRoute: () => rootRouteImport,
@@ -102,6 +108,7 @@ const WikiSplatRoute = WikiSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/wiki': typeof WikiRouteRouteWithChildren
+  '/$': typeof SplatRoute
   '/': typeof DashboardIndexRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRoutesByTo {
+  '/$': typeof SplatRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
@@ -134,6 +142,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/wiki': typeof WikiRouteRouteWithChildren
+  '/$': typeof SplatRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/wiki'
+    | '/$'
     | '/'
     | '/consent'
     | '/login'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/wiki/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/$'
     | '/consent'
     | '/login'
     | '/mcp'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/wiki'
+    | '/$'
     | '/_dashboard'
     | '/consent'
     | '/login'
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   WikiRouteRoute: typeof WikiRouteRouteWithChildren
+  SplatRoute: typeof SplatRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ConsentRoute: typeof ConsentRoute
   LoginRoute: typeof LoginRoute
@@ -212,6 +225,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_dashboard': {
       id: '/_dashboard'
       path: ''
@@ -358,6 +378,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   WikiRouteRoute: WikiRouteRouteWithChildren,
+  SplatRoute: SplatRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ConsentRoute: ConsentRoute,
   LoginRoute: LoginRoute,

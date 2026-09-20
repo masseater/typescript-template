@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { AppChrome } from "#shared/app-chrome/index.ts";
 import { AccountMenu } from "./account-menu.tsx";
 import { DashboardHeader } from "./dashboard-header.tsx";
 import { DashboardNavigation } from "./dashboard-navigation.tsx";
@@ -28,63 +27,44 @@ function DashboardFrame({
     setCollapsed((value) => !value);
   }
   return (
-    <div className="flex min-h-dvh flex-col bg-muted">
-      <AppChrome
-        tools={
-          <>
-            <a
-              href="https://analytics.google.com/"
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-sm text-link underline outline-none hover:text-link-hover focus-visible:focus-indicator-outer"
-            >
-              Google Analytics
-            </a>
-            <span className="hidden text-sm leading-tight text-muted-foreground sm:inline">
-              {name}
-            </span>
-          </>
-        }
-      />
-      <div className="flex min-h-0 flex-1">
-        <aside
-          className={`flex shrink-0 flex-col border-r border-border bg-card ${collapsed ? "md:w-14" : "md:w-56"} ${navigationOpen ? "absolute inset-y-0 top-12 left-0 z-20 w-56 shadow-sm md:static md:shadow-none" : "hidden md:flex"}`}
-        >
-          <div className={`border-b border-border py-3 ${collapsed ? "px-2 text-center" : "px-3"}`}>
-            {collapsed ? (
-              <p className="text-sm leading-tight font-bold text-foreground">社</p>
-            ) : (
-              <>
-                <p className="text-base leading-tight font-bold text-foreground">
-                  社内ダッシュボード
-                </p>
-                <p className="text-sm leading-tight text-muted-foreground">状況と運営</p>
-              </>
-            )}
-          </div>
-          <DashboardNavigation collapsed={collapsed} onNavigate={closeNavigation} />
-          <div className="mt-auto border-t border-border p-2">
-            <AccountMenu collapsed={collapsed} email={email} name={name} />
-          </div>
-        </aside>
-        {navigationOpen ? (
-          <button
-            type="button"
-            aria-label="メニューを閉じる"
-            onClick={closeNavigation}
-            className="fixed inset-0 z-10 bg-foreground/20 md:hidden"
+    <div className="flex min-h-dvh bg-muted">
+      <aside
+        className={`flex shrink-0 flex-col border-r border-border bg-card ${collapsed ? "md:w-14" : "md:w-56"} ${navigationOpen ? "absolute inset-y-0 left-0 z-20 w-56 shadow-sm md:static md:shadow-none" : "hidden md:flex"}`}
+      >
+        <div className={`border-b border-border py-3 ${collapsed ? "px-2 text-center" : "px-3"}`}>
+          {collapsed ? (
+            <p className="text-sm leading-tight font-bold text-foreground">社</p>
+          ) : (
+            <>
+              <p className="text-base leading-tight font-bold text-foreground">
+                社内ダッシュボード
+              </p>
+              <p className="text-sm leading-tight text-muted-foreground">状況と運営</p>
+            </>
+          )}
+        </div>
+        <DashboardNavigation collapsed={collapsed} onNavigate={closeNavigation} />
+        <div className="mt-auto border-t border-border p-2">
+          <AccountMenu collapsed={collapsed} email={email} name={name} />
+        </div>
+      </aside>
+      {navigationOpen ? (
+        <button
+          type="button"
+          aria-label="メニューを閉じる"
+          onClick={closeNavigation}
+          className="fixed inset-0 z-10 bg-foreground/20 md:hidden"
+        />
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col p-2 md:p-3">
+        <div className="rounded-xl flex min-h-0 flex-1 flex-col overflow-hidden border border-border bg-card shadow-sm">
+          <DashboardHeader
+            collapsed={collapsed}
+            navigationOpen={navigationOpen}
+            onToggleCollapsed={toggleCollapsed}
+            onToggleNavigation={toggleNavigation}
           />
-        ) : null}
-        <div className="flex min-w-0 flex-1 flex-col p-2 md:p-3">
-          <div className="rounded-xl flex min-h-0 flex-1 flex-col overflow-hidden border border-border bg-card shadow-sm">
-            <DashboardHeader
-              collapsed={collapsed}
-              navigationOpen={navigationOpen}
-              onToggleCollapsed={toggleCollapsed}
-              onToggleNavigation={toggleNavigation}
-            />
-            <div className="min-h-0 flex-1 overflow-auto">{children}</div>
-          </div>
+          <div className="min-h-0 flex-1 overflow-auto">{children}</div>
         </div>
       </div>
     </div>
