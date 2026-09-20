@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import { applicationPorts, coreEntrypoints, loopbackAddress, type Application } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { workerCompatibility } from "@repo/config/worker";
@@ -250,6 +250,16 @@ const toolTest: NonNullable<UserConfig["test"]> = {
 
 const noExtraPlugins: readonly PluginOption[] = [];
 
+const coreDevWorker = {
+  config: {
+    compatibility_date: workerCompatibility.date,
+    compatibility_flags: [...workerCompatibility.flags],
+    d1_databases: [localDatabase],
+    main: path.join(repositoryRoot, "apps/core/src/worker.ts"),
+    name: "template-core",
+  },
+};
+
 function appConfig(
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
@@ -263,7 +273,9 @@ function appConfig(
       privateSourceMaps(app),
       devBoundary(app),
       cloudflare({
-        config: {
+        auxiliaryWorkers: [coreDevWorker],
+        config: (config) => ({
+          ...config,
           assets: {
             binding: "ASSETS",
             run_worker_first: command !== "serve" || isPreview === true,
@@ -273,7 +285,15 @@ function appConfig(
           d1_databases: [localDatabase],
           main: "./src/app/server.ts",
           name: `template-${app}`,
-        },
+          services: [
+            ...(config.services ?? []),
+            {
+              binding: "CORE",
+              entrypoint: coreEntrypoints[app],
+              service: "template-core",
+            },
+          ],
+        }),
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },
         viteEnvironment: { name: "ssr" },

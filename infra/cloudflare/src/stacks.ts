@@ -8,9 +8,12 @@ import type { MonitorStack } from "./monitors.ts";
 
 const application = ["database", "flagship"] as const;
 const wikiApplication = [...application, "tokens"] as const;
+const servedApplication = [...application, "core"] as const;
+const wikiServed = [...wikiApplication, "core"] as const;
 const stackReferences = {
-  "service-admin": application,
+  "service-admin": servedApplication,
   "budget-monitor": ["tokens"],
+  core: ["database"],
   database: [],
   email: [],
   flagship: [],
@@ -18,13 +21,13 @@ const stackReferences = {
   "health-monitor": [],
   observability: [],
   tokens: [],
-  "service-member": application,
-  "internal-dashboard": wikiApplication,
+  "service-member": servedApplication,
+  "internal-dashboard": wikiServed,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
-    Record<Exclude<Application, typeof APPLICATION.wiki>, typeof application> &
-      Record<typeof APPLICATION.wiki, typeof wikiApplication>
+    Record<Exclude<Application, typeof APPLICATION.wiki>, typeof servedApplication> &
+      Record<typeof APPLICATION.wiki, typeof wikiServed>
   > &
   Readonly<Record<MonitorStack, readonly string[]>>;
 
@@ -33,10 +36,11 @@ type StackName = keyof typeof stackReferences;
 const traceDestinationStack = "observability" as const satisfies StackName;
 
 const dependenciesByName: Readonly<Partial<Record<StackName, readonly StackName[]>>> = {
+  core: [traceDestinationStack],
   "service-admin": [traceDestinationStack],
   "service-member": [traceDestinationStack],
   "internal-dashboard": [traceDestinationStack],
-} satisfies Readonly<Record<Application, readonly StackName[]>>;
+} satisfies Readonly<Record<Application | "core", readonly StackName[]>>;
 
 function stackDependencies(stack: StackName): readonly StackName[] {
   return [...stackReferences[stack], ...(dependenciesByName[stack] ?? [])];
@@ -48,6 +52,7 @@ const stackNames = [
   "database",
   "flagship",
   "observability",
+  "core",
   "tokens",
   ...monitorStacks,
   APPLICATION.user,
@@ -59,6 +64,7 @@ const applicationStacks: readonly StackName[] = applications;
 
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
+  "core",
   ...monitorStacks,
   APPLICATION.user,
   APPLICATION.admin,
