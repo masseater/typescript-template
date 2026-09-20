@@ -24,7 +24,7 @@
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/vite-config": "workspace:*",
-    "alchemy": "2.0.0-beta.77",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

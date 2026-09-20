@@ -1522,6 +1522,9 @@ importers:
       '@repo/infra-cloudflare':
         specifier: workspace:*
         version: link:../../infra/cloudflare
+      '@repo/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
       '@repo/ui':
         specifier: workspace:*
         version: link:../../libs/ui
