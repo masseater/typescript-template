@@ -28,13 +28,12 @@ function probeResult(target: HealthTarget, healthy: boolean, detail: string): Pr
 }
 
 function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
-  return Effect.tryPromise(
-    async (signal): Promise<ProbeResponse> =>
-      fetch(`${target.origin}/api/health`, {
-        headers: { accept: "application/json" },
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-      }),
+  return Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
+    fetch(`${target.origin}/api/health`, {
+      headers: { accept: "application/json" },
+      redirect: "manual",
+      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+    }),
   ).pipe(Effect.option);
 }
 

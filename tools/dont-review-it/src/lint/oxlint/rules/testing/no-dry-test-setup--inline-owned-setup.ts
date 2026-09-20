@@ -71,20 +71,18 @@ export const noDryTestSetup = createDontReviewItRule({
 
     const fromFile = resolve(inspection.cwd, inspection.filename);
 
-    const policyOf = memoize(
-      (): SetupModulePolicy => ({
-        workspaceRoot: findWorkspaceRoot(dirname(fromFile)),
-        namePatterns:
-          configuredStrings(inspection.options, "setupModuleNamePatterns") ??
-          DEFAULT_SETUP_MODULE_NAME_PATTERNS,
-        allowedPackageSpecifiers:
-          configuredStrings(inspection.options, "allowedFixturePackages") ?? [],
-        assetsNameMarkers: assetsNameMarkersFrom(inspection.options),
-      }),
-    );
+    const policyOf = memoize((): SetupModulePolicy => ({
+      workspaceRoot: findWorkspaceRoot(dirname(fromFile)),
+      namePatterns:
+        configuredStrings(inspection.options, "setupModuleNamePatterns") ??
+        DEFAULT_SETUP_MODULE_NAME_PATTERNS,
+      allowedPackageSpecifiers:
+        configuredStrings(inspection.options, "allowedFixturePackages") ?? [],
+      assetsNameMarkers: assetsNameMarkersFrom(inspection.options),
+    }));
 
-    const constantsOf = memoize(
-      (): ReadonlyMap<string, string> => constantSpecifiersIn(inspection.sourceCode.ast.body),
+    const constantsOf = memoize((): ReadonlyMap<string, string> =>
+      constantSpecifiersIn(inspection.sourceCode.ast.body),
     );
 
     const reportCoupling = (node: ESTree.Node): void => {

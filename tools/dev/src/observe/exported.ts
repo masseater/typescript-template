@@ -97,14 +97,12 @@ const exportedSpans = Effect.fn("exportedSpans")(function* exportedSpans(
   const trace = yield* decoded(TempoTrace, body);
   return trace.batches.flatMap((batch) =>
     batch.scopeSpans.flatMap((scope) =>
-      scope.spans.map(
-        (span): ExportedSpan => ({
-          name: span.name,
-          service: serviceName(batch.resource.attributes),
-          spanId: hexIdentifier(span.spanId),
-          traceId: hexIdentifier(span.traceId),
-        }),
-      ),
+      scope.spans.map((span): ExportedSpan => ({
+        name: span.name,
+        service: serviceName(batch.resource.attributes),
+        spanId: hexIdentifier(span.spanId),
+        traceId: hexIdentifier(span.traceId),
+      })),
     ),
   );
 });
@@ -125,15 +123,13 @@ const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(
   const body = yield* receiverJson(url.href);
   const streams = yield* decoded(LokiStreams, body);
   return streams.data.result.flatMap((entry) =>
-    entry.values.map(
-      ([, message]): ExportedLog => ({
-        message,
-        requestId: entry.stream["request_id"],
-        service: entry.stream["service_name"],
-        spanId: entry.stream["span_id"],
-        traceId: entry.stream["trace_id"],
-      }),
-    ),
+    entry.values.map(([, message]): ExportedLog => ({
+      message,
+      requestId: entry.stream["request_id"],
+      service: entry.stream["service_name"],
+      spanId: entry.stream["span_id"],
+      traceId: entry.stream["trace_id"],
+    })),
   );
 });
 

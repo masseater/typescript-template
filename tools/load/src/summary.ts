@@ -62,8 +62,8 @@ const summarise = (metrics: typeof Summary.Type.metrics): Report => {
 };
 
 const readSummary = (file: string): Effect.Effect<Report, unknown> => {
-  return Effect.tryPromise(
-    async (): Promise<unknown> => JSON.parse(await readFile(file, "utf-8")),
+  return Effect.tryPromise(async (): Promise<unknown> =>
+    JSON.parse(await readFile(file, "utf-8")),
   ).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(Summary)),
     Effect.map((summary) => summarise(summary.metrics)),

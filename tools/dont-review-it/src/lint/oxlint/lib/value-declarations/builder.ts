@@ -38,9 +38,8 @@ const buildRepositoryValueDeclarationIndex = ({
   );
 };
 
-const valueDeclarationIndexAt = memoize(
-  (repositoryRoot: string): ValueDeclarationIndex =>
-    buildRepositoryValueDeclarationIndex({ repositoryRoot }),
+const valueDeclarationIndexAt = memoize((repositoryRoot: string): ValueDeclarationIndex =>
+  buildRepositoryValueDeclarationIndex({ repositoryRoot }),
 );
 
 export const loadRepositoryValueDeclarationIndex = ({

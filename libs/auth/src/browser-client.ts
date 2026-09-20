@@ -87,12 +87,10 @@ class BrowserClient {
   ): Effect.Effect<JsonReply> {
     return this.request(endpoint, jsonFields).pipe(
       Effect.flatMap((handled) =>
-        Effect.promise(
-          async (): Promise<JsonReply> => ({
-            body: await handled.json(),
-            status: handled.status,
-          }),
-        ),
+        Effect.promise(async (): Promise<JsonReply> => ({
+          body: await handled.json(),
+          status: handled.status,
+        })),
       ),
     );
   }

@@ -78,16 +78,14 @@ const duplicateConceptsIn = (
   return {
     conceptIds: new Set(duplicates.map(([first]) => first.conceptId)),
     problems: duplicates.flatMap(([first, ...rest]) => {
-      return rest.map(
-        (declaration): CanonicalValuesDuplicateProblem => ({
-          kind: "duplicate-concept",
-          filePath: declaration.relativePath,
-          line: declaration.line,
-          conceptId: declaration.conceptId,
-          declaredFilePath: first.relativePath,
-          declaredLine: first.line,
-        }),
-      );
+      return rest.map((declaration): CanonicalValuesDuplicateProblem => ({
+        kind: "duplicate-concept",
+        filePath: declaration.relativePath,
+        line: declaration.line,
+        conceptId: declaration.conceptId,
+        declaredFilePath: first.relativePath,
+        declaredLine: first.line,
+      }));
     }),
   };
 };

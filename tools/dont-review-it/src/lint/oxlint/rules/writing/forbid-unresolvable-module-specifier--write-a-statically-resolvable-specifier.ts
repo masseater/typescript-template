@@ -78,8 +78,8 @@ export const forbidUnresolvableModuleSpecifier = createDontReviewItRule({
       option: STATICALLY_RESOLVED_FORMS_OPTION,
       fallback: STATICALLY_RESOLVED_FORMS,
     });
-    const constantsOf = memoize(
-      (): ReadonlyMap<string, string> => constantSpecifiersIn(inspection.sourceCode.ast.body),
+    const constantsOf = memoize((): ReadonlyMap<string, string> =>
+      constantSpecifiersIn(inspection.sourceCode.ast.body),
     );
 
     const reportRequested = (node: ESTree.Node): void => {

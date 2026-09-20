@@ -3,7 +3,6 @@ name: core
 description: >
   Adopt @repo/dont-review-it in a Vite+ repository: call `dontReviewItPreset.fmt()` and `dontReviewItPreset.lint()` inside the `fmt` and `lint` blocks of `vite.config.ts`. The preset rejects `function` declarations, `export default`, `interface`, truthiness tests, type assertions, reassignment and in-place mutation, `.then` chains, `console`, explanatory comments, `beforeEach`, and every form of rule suppression, and caps `max-params` at 2 and `max-statements` at 10. Extend `@repo/dont-review-it/tsconfig/app.json` or `library.json` from every tsconfig, capture process output with `standardIoTest` from `@repo/dont-review-it/vitest`, and prove a custom rule is wired with a violating probe file. Load when configuring oxlint or oxfmt with this preset, when a `dont-review-it/*` rule reports, when you need to know what the preset actually rejects, or when `ignorePatterns` or `lint.plugins` seem to have no effect.
 
-
 metadata:
   type: core
   library: "@repo/dont-review-it"

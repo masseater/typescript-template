@@ -221,12 +221,10 @@ function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tag
             Stream.catchCause((cause) =>
               Stream.fromEffect(
                 reportedFailure(failures, cause).pipe(
-                  Effect.map(
-                    (failure): FailedEvent => ({
-                      data: { message: failure.message, status: failure.status },
-                      event: "failed",
-                    }),
-                  ),
+                  Effect.map((failure): FailedEvent => ({
+                    data: { message: failure.message, status: failure.status },
+                    event: "failed",
+                  })),
                 ),
               ),
             ),
