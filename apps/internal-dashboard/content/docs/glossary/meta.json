@@ -1,0 +1,31 @@
+{
+  "title": "用語集",
+  "pages": [
+    "index",
+    "admin-account",
+    "agreement-acceptance",
+    "agreement-version",
+    "audit-event",
+    "block",
+    "board-post",
+    "board-thread",
+    "conversation",
+    "feature-flag",
+    "feed-event",
+    "follow",
+    "group",
+    "inquiry",
+    "interview-sheet",
+    "invite",
+    "leave-request",
+    "member-account",
+    "member-profile",
+    "message",
+    "moderation-action",
+    "notification",
+    "plan-subscription",
+    "report",
+    "session",
+    "staff-account"
+  ]
+}

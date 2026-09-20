@@ -1,0 +1,13 @@
+{
+  "title": "データモデル",
+  "pages": [
+    "overview",
+    "accounts",
+    "member-graph",
+    "messaging",
+    "board",
+    "billing",
+    "trust",
+    "platform"
+  ]
+}
