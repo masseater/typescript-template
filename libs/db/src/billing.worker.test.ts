@@ -1,9 +1,9 @@
 import { assert, it } from "@effect/vitest";
+import { SUBSCRIPTION_STATUS } from "@repo/config";
 import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 
 import {
-  SUBSCRIPTION_STATUS,
   attachCheckout,
   findSubscription,
   isPaidMember,

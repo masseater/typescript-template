@@ -95,9 +95,9 @@ function applicationResource(app: Application, release: string): ResourceInvento
       ...(grants(app, "ai") ? ["AI:ai"] : []),
       ...(grants(app, "billing")
         ? [
-            "STRIPE_PRICE_ID:secret_text:text=$TEMPLATE_STRIPE_PRICE_ID",
-            "STRIPE_SECRET_KEY:secret_text:text=$TEMPLATE_STRIPE_SECRET_KEY",
-            "STRIPE_WEBHOOK_SECRET:secret_text:text=$TEMPLATE_STRIPE_WEBHOOK_SECRET",
+            `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
+            `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
+            `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
           ]
         : []),
     ].toSorted(),
