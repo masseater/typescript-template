@@ -6,7 +6,13 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { text } from "node:stream/consumers";
 
 import { APPLICATION, loopbackAddress, loopbackOrigin } from "@repo/config";
-import { flushTelemetry, httpStatus, observeRequest, Telemetry, TraceId } from "@repo/observability";
+import {
+  flushTelemetry,
+  httpStatus,
+  observeRequest,
+  Telemetry,
+  TraceId,
+} from "@repo/observability";
 import { Cause, Effect, Schema } from "effect";
 
 const spanName = "http.server.request";
