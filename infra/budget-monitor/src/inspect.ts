@@ -1,4 +1,5 @@
-import { causeRecord, runCli } from "@repo/config/cli";
+#!/usr/bin/env node
+import { runCli } from "@repo/config/cli";
 import { Console, Effect } from "effect";
 
 import { fetchUsage } from "./billing.ts";

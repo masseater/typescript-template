@@ -1,6 +1,9 @@
 {
   "name": "@repo/local",
   "private": true,
+  "bin": {
+    "repo-local": "./src/compose.ts"
+  },
   "type": "module",
   "exports": {
     ".": "./src/receiver.ts",

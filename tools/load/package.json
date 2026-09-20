@@ -1,6 +1,10 @@
 {
   "name": "@repo/load",
   "private": true,
+  "bin": {
+    "repo-load": "./src/cli.ts",
+    "repo-load-ci": "./src/ci.ts"
+  },
   "type": "module",
   "dependencies": {
     "@repo/config": "workspace:*",

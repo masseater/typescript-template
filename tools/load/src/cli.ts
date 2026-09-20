@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ApplicationName, applicationOrigins, mailpitOrigin } from "@repo/config";
+import { applicationOrigins, mailpitOrigin } from "@repo/config";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Console, Effect, Schema } from "effect";
@@ -15,6 +16,7 @@ import {
   oneMinuteLoadAverage,
   requireLoopbackOrigin,
 } from "./environment.ts";
+import { loadCliArguments } from "./load-arguments.ts";
 import { discardSummary, readSummary, type Report } from "./summary.ts";
 
 class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFailure", {
@@ -35,15 +37,6 @@ type Failure = BinaryUnavailable | EnvironmentUnusable | LoadTestFailure;
 const scenarios = fileURLToPath(new URL("../scenarios/", import.meta.url));
 const home = path.join(repositoryRoot, ".local/k6");
 const summaryFile = path.join(home, "summary.json");
-const thresholdsExitCode = 99;
-const standardErrorDescriptor = 2;
-const profiles = {
-  peak: { LOAD_HOLD: "40s", LOAD_PEAK_USERS: "20", LOAD_RAMP: "20s" },
-  smoke: { LOAD_HOLD: "10s", LOAD_PEAK_USERS: "5", LOAD_RAMP: "5s" },
-} as const;
-const peak = Effect.succeed("peak" as const);
-const Profile = Schema.Literals(["peak", "smoke"]).pipe(Schema.withDecodingDefaultKey(peak));
-const Arguments = Schema.Struct({ app: ApplicationName, profile: Profile });
 const usage =
   "vp run --filter @repo/load load <service-member|service-admin|internal-dashboard> [smoke|peak]";
 const rebuild = "vp run --filter @repo/dev setup loopback, then vp run --filter @repo/<app> build";
@@ -59,6 +52,8 @@ const runScenario = (
   measured: { readonly binary: string; readonly scenario: string },
   environment: Readonly<Record<string, string>>,
 ): Effect.Effect<boolean, LoadTestFailure> => {
+  const thresholdsExitCode = 99;
+  const standardErrorDescriptor = 2;
   return Effect.callback<boolean, LoadTestFailure>((resume) => {
     const child = spawn(
       measured.binary,
@@ -92,6 +87,11 @@ const requireMeasurement = (): Effect.Effect<Report, LoadTestFailure> => {
   );
 };
 
+const profiles = {
+  peak: { LOAD_HOLD: "40s", LOAD_PEAK_USERS: "20", LOAD_RAMP: "20s" },
+  smoke: { LOAD_HOLD: "10s", LOAD_PEAK_USERS: "5", LOAD_RAMP: "5s" },
+} as const;
+
 const scenarioEnvironment = (
   profile: keyof typeof profiles,
   origin: string,
@@ -114,7 +114,7 @@ type Measured = {
 };
 
 const prepare = Effect.fn("prepare")(function* prepare(
-  app: typeof ApplicationName.Type,
+  app: (typeof loadCliArguments.Type)["app"],
   origin: string,
 ) {
   const scenario = path.join(scenarios, `${app}-journey.ts`);
@@ -131,7 +131,7 @@ const prepare = Effect.fn("prepare")(function* prepare(
   return { binary, scenario };
 });
 
-const measure = Effect.fn("measure")(function* measure(input: typeof Arguments.Type) {
+const measure = Effect.fn("measure")(function* measure(input: typeof loadCliArguments.Type) {
   const { app, profile } = input;
   const origin = applicationOrigins[app];
   const { binary, scenario } = yield* prepare(app, origin);
@@ -181,7 +181,9 @@ const announceFailure = (described: {
 const [app, profile] = process.argv.slice(firstUserArgumentIndex);
 
 runCli(
-  Schema.decodeUnknownEffect(Arguments)(profile === undefined ? { app } : { app, profile }).pipe(
+  Schema.decodeUnknownEffect(loadCliArguments)(
+    profile === undefined ? { app } : { app, profile },
+  ).pipe(
     Effect.mapError(() => new LoadTestFailure({ reason: "usage_invalid" })),
     Effect.flatMap(measure),
     Effect.flatMap(announce),

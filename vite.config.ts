@@ -26,7 +26,7 @@ export default defineConfig({
   run: {
     tasks: {
       "check:client": {
-        command: "node tools/quality/client-bundle.ts",
+        command: "quality-check-client",
         input: [
           ...taskInput,
           "!**/dist/**",
@@ -41,7 +41,7 @@ export default defineConfig({
       "check:imports":
         "depcruise --config tools/quality/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
-        command: "node tools/quality/react-doctor.ts",
+        command: "quality-check-react",
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
@@ -56,8 +56,15 @@ export default defineConfig({
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
       test: {
-        cache: false,
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
+        input: [
+          ...taskInput,
+          "!coverage/**",
+          { base: "workspace", pattern: "!**/coverage/**" },
+          { base: "workspace", pattern: "pnpm-lock.yaml" },
+          { base: "workspace", pattern: "pnpm-workspace.yaml" },
+        ],
+        output: [],
       },
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({

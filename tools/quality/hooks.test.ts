@@ -148,9 +148,22 @@ function reachesTest(directory: string, stages: string[]): boolean {
   return reachable(directory, stages).some((name) => name === "test" || name.startsWith("test:"));
 }
 
+function filterCoveredTestProjects(): Set<string> {
+  const packages = new Set(
+    workflowRuns("../../.github/workflows/check.yml").flatMap((command) => {
+      const match = /^vp run --filter (@repo\/[\w-]+) (test(?::[\w-]+)?)$/u.exec(command);
+      return match?.[1] === undefined ? [] : [match[1]];
+    }),
+  );
+  return new Set(
+    testProjectDirectories.filter((directory) => packages.has(workspaceNames[directory] ?? "")),
+  );
+}
+
 function ungatedProjects(): string[] {
+  const covered = filterCoveredTestProjects();
   return testProjectDirectories.filter(
-    (directory) => !reachesTest(directory, ["prepr", "premerge"]),
+    (directory) => !reachesTest(directory, ["prepr", "premerge"]) && !covered.has(directory),
   );
 }
 
@@ -223,6 +236,7 @@ describe("lifecycle entry points", () => {
     expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
       cache: ["vp run -r prepr"],
       check: ["vp run -r prepr"],
+      e2e: [],
       "merge-queue": ["vp run -r premerge"],
     });
     expect(lifecycleByJob("../../.github/workflows/prerelease.yml")).toStrictEqual({
@@ -281,12 +295,10 @@ describe("lifecycle contents", () => {
     expect.hasAssertions();
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
-      ".#test",
       ".#test:dev-server",
       "infra/cloudflare#verify:account",
       "tools/commander#check:start",
       "tools/dev#setup",
-      "tools/e2e#test:e2e",
       "tools/quality#check:staged",
     ]);
   });

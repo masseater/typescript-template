@@ -25,10 +25,10 @@ export default defineConfig({
       build: { command: "vp build", input: [...taskInput, "!dist"] },
       "check:start": {
         cache: false,
-        command: "node src/app/check-start.ts",
+        command: "./src/app/check-start.ts",
         dependsOn: ["build"],
       },
-      start: { cache: false, command: "node src/app/cli.ts", dependsOn: ["build"] },
+      start: { cache: false, command: "./src/app/cli.ts", dependsOn: ["build"] },
       ...lifecycle({
         precommit: [],
         prepush: ["check:effect", "check"],
