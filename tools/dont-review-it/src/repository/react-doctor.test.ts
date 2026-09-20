@@ -138,6 +138,22 @@ describe("react-doctor integration", () => {
     ).toBe(true);
   });
 
+  it("application doctor configs ignore build output the same way the root config does", () => {
+    expect.hasAssertions();
+    expect(
+      Object.entries(workspaceConfigs)
+        .filter(([file]) => file.includes("/apps/"))
+        .map(([file, config]) => [file, config.ignore?.files ?? []])
+        .toSorted(([left], [right]) => left.localeCompare(right)),
+    ).toStrictEqual(
+      [
+        ["../../../../apps/internal-dashboard/doctor.config.json", ["dist/**"]],
+        ["../../../../apps/service-admin/doctor.config.json", ["dist/**"]],
+        ["../../../../apps/service-member/doctor.config.json", ["dist/**"]],
+      ].toSorted(([left], [right]) => left.localeCompare(right)),
+    );
+  });
+
   it("every suppressed file still exists", () => {
     expect.hasAssertions();
     expect(
