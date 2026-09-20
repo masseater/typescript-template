@@ -243,8 +243,35 @@ describe("lifecycle contents", () => {
     ).toStrictEqual(["tools/quality"]);
   });
 
-  it("leaves tests, builds and work in other workspaces to ci", () => {
+  it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
+    expect(reachable(".", ["prepush"])).toEqual(
+      expect.arrayContaining([
+        "check:effect",
+        "knip",
+        "check:client",
+        "check:imports",
+        "check:react",
+        "check:canonical-literal-types",
+      ]),
+    );
+    expect(reachable(".", ["prepush"])).not.toContain("test");
+    expect(
+      configuredDirectories.filter((directory) =>
+        reachable(directory, ["prepush"]).includes("check"),
+      ),
+    ).toStrictEqual([
+      "apps/internal-dashboard",
+      "apps/service-admin",
+      "apps/service-member",
+      "libs/db",
+      "tools/ai-native",
+      "tools/ai-native-telemetry",
+      "tools/commander",
+      "tools/dont-review-it",
+      "tools/lint-rule-authoring",
+      "tools/stop-ai-slop",
+    ]);
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
