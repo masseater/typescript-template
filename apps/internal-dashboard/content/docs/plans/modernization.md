@@ -51,7 +51,7 @@ Worker が実行時に受け取るのは文字列だけではなく、D1、メ�
 | ★5 | `@cloudflare/vitest-plugin` | 本物の D1 と Durable Objects を相手にテストします（`@cloudflare/vitest-pool-workers` の改名後の名前です） | 導入済み |
 | ★5 | D1 | 共有データを保存します。トランザクションがないので、まとめて書き込むときは Drizzle の `batch` を使います | 導入済み |
 | ★5 | Durable Objects（SQLite） | ユーザー単位の状態を持ち、通知や新着投稿を WebSocket で届けます | 一部。監視 Worker の状態を持つ Durable Object だけがあり、WebSocket の配信は残っています |
-| ★5 | Cloudflare Flagship | OpenFeature のプロバイダです。サーバー側で評価した値をローダーで画面に渡します | 未着手 |
+| ★5 | Cloudflare Flagship | OpenFeature のプロバイダです。サーバー側で評価した値をローダーで画面に渡します | 導入済み |
 | ★5 | Alchemy v2 | IaC です | 導入済み |
 | ★4 | Cloudflare Workflows V2 | 途中で落ちても再開できる多段処理を担います | 未着手 |
 | ★4 | Queues | 非同期処理のキューです | 未着手 |
@@ -132,7 +132,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 
 | 優先度 | 採用するもの | 役割 | 状況 |
 | --- | --- | --- | --- |
-| ★5 | `@openfeature/react-sdk` とサーバー SDK | フラグを評価し、値が変わると該当箇所を再描画します | 未着手 |
+| ★5 | `@openfeature/react-sdk` とサーバー SDK | フラグを評価し、値が変わると該当箇所を再描画します | 一部。サーバー SDK と Flagship プロバイダーは導入済み。React SDK は未着手 |
 
 ## 品質と運用
 

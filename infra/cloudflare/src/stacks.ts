@@ -6,21 +6,26 @@ import { monitorStacks } from "./monitors.ts";
 import type { Application } from "@repo/config";
 import type { MonitorStack } from "./monitors.ts";
 
-const application = ["database"] as const;
+const application = ["database", "flagship"] as const;
+const wikiApplication = [...application, "tokens"] as const;
 const stackReferences = {
   "service-admin": application,
   "budget-monitor": ["tokens"],
   database: [],
   email: [],
+  flagship: [],
   "error-monitor": ["tokens"],
   "health-monitor": [],
   observability: [],
   tokens: [],
   "service-member": application,
-  "internal-dashboard": application,
+  "internal-dashboard": wikiApplication,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
-  Readonly<Record<Application, typeof application>> &
+  Readonly<
+    Record<Exclude<Application, typeof APPLICATION.wiki>, typeof application> &
+      Record<typeof APPLICATION.wiki, typeof wikiApplication>
+  > &
   Readonly<Record<MonitorStack, readonly string[]>>;
 
 type StackName = keyof typeof stackReferences;
@@ -41,6 +46,7 @@ const stackNames = [
   "zone",
   "email",
   "database",
+  "flagship",
   "observability",
   "tokens",
   ...monitorStacks,

@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Tracer } from "effect";
+import { Cause, Context, Effect, Predicate, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
 import { CurrentRequest, type RequestContext } from "./current-request.ts";
@@ -12,7 +12,6 @@ import {
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
 import { logAt, statusSeverity } from "./severity.ts";
-import { isRecord } from "./structured-logs.ts";
 import { Telemetry } from "./telemetry.ts";
 
 type Entropy = {
@@ -77,7 +76,7 @@ export const failureAttributesOf = (
   failed: unknown,
 ): ErrorAttributes & { readonly "error.tag"?: string } => {
   const attributes = errorAttributes(failed);
-  const failureTag = isRecord(failed) ? failed["_tag"] : undefined;
+  const failureTag = Predicate.isObject(failed) ? failed["_tag"] : undefined;
   if (typeof failureTag !== "string" || !identifierPattern.test(failureTag)) {
     return attributes;
   }

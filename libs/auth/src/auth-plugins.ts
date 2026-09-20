@@ -48,7 +48,7 @@ const passkeyPlugin = ({
           deny("PASSKEY_UV_REQUIRED");
         }
         const passkeyOwner = await run(findPasskeyUser(clientData.id, audience));
-        assertEligibleUser(passkeyOwner ?? undefined, audience);
+        assertEligibleUser(passkeyOwner, audience);
       },
     },
     authenticatorSelection: { userVerification: "required" },

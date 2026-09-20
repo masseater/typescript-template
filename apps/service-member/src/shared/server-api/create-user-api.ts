@@ -15,7 +15,9 @@ import {
   memberPageSize,
 } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
+import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { socialApi } from "./social-api.ts";
 
@@ -32,6 +34,7 @@ function createUserApi<Requirements>(api: ApiRoutes<AppServices | Requirements>)
   return createApi(apiRoot)
     .use(accountApi(api))
     .use(contactApi(api))
+    .use(flagsApi(api))
     .use(interviewApi(api))
     .use(socialApi(api))
     .get(
@@ -90,7 +93,8 @@ function createUserApi<Requirements>(api: ApiRoutes<AppServices | Requirements>)
           }),
         failures,
       ),
-    );
+    )
+    .use(boardApi(api));
 }
 
 export { createUserApi };
