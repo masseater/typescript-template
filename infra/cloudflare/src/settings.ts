@@ -2,18 +2,18 @@ import { Config, Effect, Option, Redacted } from "effect";
 
 import {
   AuthSecret,
+  Domain,
   Email,
   HttpsUrl,
   Id,
   Nonnegative,
-  Origin,
   Positive,
   Prefix,
   Recipients,
   SamplingRate,
   checkOtlpSettings,
   checkSharedConfig,
-  originKeys,
+  deriveOrigins,
 } from "./config.ts";
 
 const DEFAULT_JPY_PER_USD = 150;
@@ -46,23 +46,21 @@ const otlpDestination = Config.all({
 
 const settings = Config.all({
   accountId: Config.schema(Id, "CLOUDFLARE_ACCOUNT_ID"),
+  appDomain: Config.schema(Domain, "TEMPLATE_APP_DOMAIN"),
   budget,
   mailFrom: Config.schema(Email, "TEMPLATE_MAIL_FROM"),
   observabilitySampling: Config.schema(SamplingRate, "TEMPLATE_OBSERVABILITY_SAMPLING").pipe(
     Config.withDefault(FULL_SAMPLING),
   ),
-  origins: Config.all({
-    "internal-dashboard": Config.schema(Origin, originKeys["internal-dashboard"]),
-    "service-admin": Config.schema(Origin, originKeys["service-admin"]),
-    "service-member": Config.schema(Origin, originKeys["service-member"]),
-  }),
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
   zoneId: Config.schema(Id, "CLOUDFLARE_ZONE_ID"),
 }).pipe(
-  Effect.flatMap((config) =>
+  Effect.flatMap(({ appDomain, ...config }) =>
     checkOtlpSettings(config.otlp).pipe(
-      Effect.flatMap((otlp) => checkSharedConfig({ ...config, otlp })),
+      Effect.flatMap((otlp) =>
+        checkSharedConfig({ ...config, origins: deriveOrigins(config.prefix, appDomain), otlp }),
+      ),
     ),
   ),
 );
