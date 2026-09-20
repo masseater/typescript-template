@@ -528,6 +528,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -568,9 +571,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@repo/dev-boundary':
         specifier: workspace:*
         version: link:../../libs/dev-boundary
@@ -650,6 +653,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1143,9 +1149,6 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../observability
-      '@repo/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1590,9 +1593,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@repo/runtime':
-        specifier: workspace:*
-        version: link:../../libs/runtime
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112

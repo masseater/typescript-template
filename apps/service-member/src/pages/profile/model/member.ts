@@ -1,4 +1,4 @@
-import type { MemberView } from "@repo/runtime/contracts";
+import type { MemberView } from "#shared/contracts/index.ts";
 
 type Member = typeof MemberView.Type;
 

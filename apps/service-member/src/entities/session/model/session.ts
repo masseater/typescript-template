@@ -1,5 +1,5 @@
-import type { SessionView } from "@repo/runtime/contracts";
+import type { SessionView } from "@repo/ui";
 
-type Session = typeof SessionView.Type;
+type Session = SessionView;
 
 export type { Session };
