@@ -46,6 +46,5 @@ function accountTokenRef(resource: TokenResource): Effect.Effect<ApiToken.Accoun
   return ApiToken.AccountApiToken.ref(resource, { stack: stackName("tokens") });
 }
 
-// oxlint-disable-next-line import/no-default-export
 export default stack;
 export { accountTokenRef, accountTokens };

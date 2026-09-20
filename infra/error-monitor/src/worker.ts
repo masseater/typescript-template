@@ -49,5 +49,4 @@ const errorMonitor = monitorWorker<Bindings>({
 const ErrorMonitor = errorMonitor.Worker;
 
 export { ErrorMonitor };
-// oxlint-disable-next-line import/no-default-export
 export default errorMonitor.handler;
