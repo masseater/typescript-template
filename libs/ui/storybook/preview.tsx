@@ -3,13 +3,14 @@ import { RegistryProvider } from "@effect/atom-react";
 import a11y from "@storybook/addon-a11y";
 import vitest from "@storybook/addon-vitest";
 import { definePreview } from "@storybook/react-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/react-router";
 import msw from "msw-storybook-addon";
-
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 const router = createRouter({ routeTree: createRootRoute() });
 
+<<<<<<< HEAD
 const withProviders = (Story: () => ReactElement): ReactElement => {
   return (
     <RegistryProvider>
@@ -17,8 +18,27 @@ const withProviders = (Story: () => ReactElement): ReactElement => {
         <Story />
       </RouterContextProvider>
     </RegistryProvider>
+=======
+const Providers = ({ children }: Readonly<{ children: ReactElement }>): ReactElement => {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      }),
+  );
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterContextProvider router={router}>{children}</RouterContextProvider>
+    </QueryClientProvider>
+>>>>>>> 8242aaaf (fix: restore Field error stories and QueryClient for auth-ui Storybook)
   );
 };
+
+const withProviders = (Story: () => ReactElement): ReactElement => (
+  <Providers>
+    <Story />
+  </Providers>
+);
 
 const preview = definePreview({
   addons: [a11y(), vitest(), msw()],
