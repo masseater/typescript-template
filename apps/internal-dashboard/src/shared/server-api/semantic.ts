@@ -1,5 +1,6 @@
-import { Embedder, EmbeddingFailed } from "@repo/runtime/wiki";
 import { Effect } from "effect";
+
+import { Embedder, EmbeddingFailed } from "#shared/wiki/index.ts";
 
 interface SemanticDocument {
   readonly id: string;
