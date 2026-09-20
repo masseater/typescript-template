@@ -117,7 +117,7 @@ it.effect("spans, logs and the response share one trace id at the OTLP endpoint"
     assert.deepStrictEqual(traceIds(telemetry.traces), [traceId]);
     assert.deepStrictEqual(traceIds(telemetry.logs), [traceId]);
     assert.containSubset(telemetry.lines, [
-      { event: "http.server.request", service: "user-server", trace_id: traceId },
+      { event: "http.server.request", service: "service-member-server", trace_id: traceId },
     ]);
     assert.deepStrictEqual(new Set(telemetry.authorization), new Set([authorization]));
     assertLogAttributes(telemetry.logs);

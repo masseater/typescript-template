@@ -32,7 +32,7 @@ describe("application package boundaries", () => {
       ]);
       expect(violations).toHaveLength(1);
       expect(violations[0]).toMatch(
-        /^apps\/batch\/package\.json: @repo\/user はデプロイ単位のアプリです。/u,
+        /^apps\/batch\/package\.json: @repo\/service-member はデプロイ単位のアプリです。/u,
       );
     },
   );
