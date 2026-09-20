@@ -1,9 +1,13 @@
 #!/usr/bin/env node
+<<<<<<< HEAD
 // oxlint-disable-next-line import/no-nodejs-modules
 import { appendFile } from "node:fs/promises";
 
 import { runCli } from "@repo/config/cli";
 import { deploymentKeys } from "@repo/config/deployment-keys";
+=======
+import { runCli } from "@repo/cli";
+>>>>>>> 8d5995a7 (fix: clear prepr knip and ownership import regressions)
 import { Effect } from "effect";
 
 import { PrepareCiEnvFailure, writeCiSecretsFile } from "./ci-env.ts";

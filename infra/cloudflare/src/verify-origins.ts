@@ -7,7 +7,7 @@ import { request } from "node:https";
 import { URL } from "node:url";
 
 import { applications } from "@repo/config";
-import { runCli } from "@repo/config/cli";
+import { runCli } from "@repo/cli";
 import { Console, Effect, Schema } from "effect";
 
 import { deploymentAccess } from "./deployment-access.ts";
