@@ -1,8 +1,8 @@
 import { PLAN } from "@repo/config";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { readCheckoutReturn } from "#pages/settings/index.ts";
-import { loadUpgrade } from "#pages/upgrade/index.ts";
+import { UpgradeFailed, loadUpgrade } from "#pages/upgrade/index.ts";
+import { readCheckoutReturn } from "#shared/contracts/index.ts";
 import { UpgradeRoute } from "./-upgrade-route.tsx";
 
 import type { Upgrade } from "#pages/upgrade/index.ts";
@@ -15,11 +15,13 @@ async function loadOrLeave(): Promise<Upgrade> {
   return upgrade;
 }
 
+// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/upgrade")({
-  component: UpgradeRoute,
-  gcTime: 0,
-  loader: loadOrLeave,
   validateSearch: readCheckoutReturn,
+  loader: loadOrLeave,
+  gcTime: 0,
+  component: UpgradeRoute,
+  errorComponent: UpgradeFailed,
 });
 
 export { Route };
