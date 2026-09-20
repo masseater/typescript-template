@@ -1,6 +1,9 @@
 import {
+  ACCOUNT_STATE,
   AUTHENTICATION_METHOD,
   ROLE,
+  accountPermissions,
+  accountStates,
   applications,
   authenticationMethods,
   roles,
@@ -25,7 +28,11 @@ const user = sqliteTable(
     id: text("id").primaryKey(),
     image: text("image"),
     name: text("name").notNull(),
+    permission: text("permission", { enum: accountPermissions }),
     profile: text("profile").notNull().default(""),
+    accountState: text("account_state", { enum: accountStates })
+      .notNull()
+      .default(ACCOUNT_STATE.active),
     socialLinks: text("social_links", { mode: "json" })
       .$type<readonly string[]>()
       .notNull()
@@ -38,7 +45,16 @@ const user = sqliteTable(
 
   (table) => [
     uniqueIndex("user_email_unique").on(table.email),
-    check("user_role", sql`${table.role} IN ('member', 'admin')`),
+    check("user_role", sql`${table.role} IN ('member', 'admin', 'staff')`),
+    check(
+      "user_permission",
+      sql`(
+        (${table.role} = 'member' AND ${table.permission} IS NULL) OR
+        (${table.role} = 'admin' AND ${table.permission} IN ('view', 'operate', 'manage')) OR
+        (${table.role} = 'staff' AND ${table.permission} IN ('view', 'edit'))
+      )`,
+    ),
+    check("user_account_state", sql`${table.accountState} IN ('active', 'suspended', 'left')`),
   ],
 );
 

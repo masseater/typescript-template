@@ -1,4 +1,4 @@
-import { APPLICATION, ROLE, strongAuthenticationMethods } from "@repo/config";
+import { ACCOUNT_STATE, APPLICATION, ROLE, strongAuthenticationMethods } from "@repo/config";
 import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
@@ -13,6 +13,7 @@ const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId:
   const actor = yield* getSessionSecurity(sessionId, APPLICATION.admin);
   if (
     actor?.user.role !== ROLE.administrator ||
+    actor.user.accountState !== ACCOUNT_STATE.active ||
     !actor.user.emailVerified ||
     !strongAuthenticationMethods.some((method) => method === actor.session.authenticationMethod)
   ) {
@@ -28,6 +29,7 @@ const liveAdmin = (database: DrizzleDatabase, sessionId: string): SQL => {
     eq(session.id, sessionId),
     eq(session.audience, APPLICATION.admin),
     eq(actor.role, ROLE.administrator),
+    eq(actor.accountState, ACCOUNT_STATE.active),
     eq(actor.emailVerified, true),
     eq(session.securityVersion, actor.securityVersion),
     gt(session.expiresAt, checkedAt),

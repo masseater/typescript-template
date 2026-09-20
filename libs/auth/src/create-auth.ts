@@ -1,8 +1,10 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import {
+  ACCOUNT_STATE,
   APPLICATION,
   AUTHENTICATION_METHOD,
   ROLE,
+  accountStates,
   applications,
   authenticationMethods,
   roles,
@@ -51,7 +53,14 @@ const createDatabaseHooks = (
     user: {
       create: {
         before: (createdUser: Readonly<Record<string, unknown>>) =>
-          Promise.resolve({ data: { ...createdUser, role: ROLE.member, securityVersion: 0 } }),
+          Promise.resolve({
+            data: {
+              ...createdUser,
+              accountState: ACCOUNT_STATE.active,
+              role: ROLE.member,
+              securityVersion: 0,
+            },
+          }),
       },
     },
   };
@@ -261,6 +270,12 @@ export const createAuth = ({
     trustedOrigins: [origin],
     user: {
       additionalFields: {
+        accountState: {
+          defaultValue: ACCOUNT_STATE.active,
+          input: false,
+          required: true,
+          type: [...accountStates],
+        },
         role: { defaultValue: ROLE.member, input: false, required: true, type: [...roles] },
         securityVersion: { defaultValue: 0, input: false, required: true, type: "number" },
       },

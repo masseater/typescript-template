@@ -1,12 +1,21 @@
-import { roles, type Role } from "@repo/config";
+import {
+  ACCOUNT_STATE,
+  ADMIN_PERMISSION,
+  APPLICATION,
+  ROLE,
+  type AccountState,
+  type AdminPermission,
+} from "@repo/config";
 import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
+import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
-import { AUDIT_ACTION, auditEvent, user, type AuditAction } from "./schema.ts";
+import { OperationForbidden } from "./operation-forbidden.ts";
+import { AUDIT_ACTION, auditEvent, session, user, type AuditAction } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
@@ -14,11 +23,11 @@ import type { DatabaseFailure } from "./database-failure.ts";
 const MAX_PAGE_SIZE = 100;
 
 export const UserPage = Schema.Struct({
+  accountState: Schema.optionalKey(Schema.Literals([ACCOUNT_STATE.active, ACCOUNT_STATE.suspended, ACCOUNT_STATE.left])),
   emailVerified: Schema.optionalKey(Schema.Boolean),
   keyword: Schema.optionalKey(Schema.String),
   limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  role: Schema.optionalKey(Schema.Literals(roles)),
 });
 
 const mentionsLastAdmin = (cause: unknown): boolean =>
@@ -36,12 +45,13 @@ const protectLastAdmin = <Value, Requirements>(
 };
 
 const matchesPage = (page: typeof UserPage.Type): SQL | undefined => {
-  const { emailVerified, keyword, role } = page;
+  const { accountState, emailVerified, keyword } = page;
   return and(
+    eq(user.role, ROLE.member),
     keyword === undefined
       ? undefined
       : or(containsKeyword(user.name, keyword), containsKeyword(user.email, keyword)),
-    role === undefined ? undefined : eq(user.role, role),
+    accountState === undefined ? undefined : eq(user.accountState, accountState),
     emailVerified === undefined ? undefined : eq(user.emailVerified, emailVerified),
   );
 };
@@ -55,12 +65,12 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   const users = yield* query((database) =>
     database
       .select({
+        accountState: user.accountState,
         createdAt: user.createdAt,
         email: user.email,
         emailVerified: user.emailVerified,
         id: user.id,
         name: user.name,
-        role: user.role,
         twoFactorEnabled: user.twoFactorEnabled,
       })
       .from(user)
@@ -112,34 +122,167 @@ const auditWhenTargeted = (
   return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
 };
 
-export const setUserRole = Effect.fn("setUserRole")(function* setUserRole(roleChange: {
-  readonly sessionId: string;
-  readonly targetId: string;
-  readonly role: Role;
-}) {
-  const { role, sessionId, targetId } = roleChange;
+const requirePermission = Effect.fn("requirePermission")(function* requirePermission(
+  sessionId: string,
+  accepted: readonly AdminPermission[],
+) {
   const actor = yield* requireAdmin(sessionId);
-  const change = {
-    action: AUDIT_ACTION.roleChanged,
-    actorId: actor.user.id,
-    sessionId,
-    targetId,
-  } as const;
+  if (actor.user.permission === null || !accepted.includes(actor.user.permission)) {
+    return yield* new OperationForbidden();
+  }
+  return actor;
+});
 
-  const [, promotedUsers] = yield* query(async (database) => {
-    const audit = database.run(auditWhenTargeted(database, change));
-    const promotion = database
+const operatingPermissions = [ADMIN_PERMISSION.operate, ADMIN_PERMISSION.manage] as const;
+
+export const setMemberAccountState = Effect.fn("setMemberAccountState")(
+  function* setMemberAccountState(change: {
+    readonly accountState: Extract<AccountState, "active" | "suspended">;
+    readonly sessionId: string;
+    readonly memberId: string;
+  }) {
+    const actor = yield* requirePermission(change.sessionId, operatingPermissions);
+    const action =
+      change.accountState === ACCOUNT_STATE.suspended
+        ? AUDIT_ACTION.memberSuspended
+        : AUDIT_ACTION.memberUnsuspended;
+    const [, changedMembers] = yield* query(async (database) => {
+      const audit = database.run(
+        auditWhenTargeted(database, {
+          action,
+          actorId: actor.user.id,
+          sessionId: change.sessionId,
+          targetId: change.memberId,
+        }),
+      );
+      const membership = database
+        .update(user)
+        .set({ accountState: change.accountState, updatedAt: new Date() })
+        .where(
+          and(
+            eq(user.id, change.memberId),
+            eq(user.role, ROLE.member),
+            liveAdmin(database, change.sessionId),
+          ),
+        )
+        .returning({ accountState: user.accountState, id: user.id });
+      return database.batch([audit, membership] as const);
+    });
+    const [changed] = changedMembers;
+    if (!changed) {
+      return yield* new TargetUnavailable();
+    }
+    yield* query((database) => database.delete(session).where(eq(session.userId, change.memberId)));
+    return changed;
+  },
+);
+
+export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {
+  yield* requirePermission(sessionId, [ADMIN_PERMISSION.manage]);
+  return yield* query((database) =>
+    database
+      .select({
+        accountState: user.accountState,
+        email: user.email,
+        id: user.id,
+        name: user.name,
+        permission: user.permission,
+      })
+      .from(user)
+      .where(and(eq(user.role, ROLE.administrator), liveAdmin(database, sessionId)))
+      .orderBy(desc(user.createdAt), user.id),
+  );
+});
+
+export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft: {
+  readonly email: string;
+  readonly permission: AdminPermission;
+  readonly sessionId: string;
+}) {
+  const actor = yield* requirePermission(draft.sessionId, [ADMIN_PERMISSION.manage]);
+  return yield* issueInvite({
+    action: AUDIT_ACTION.adminInvited,
+    audience: APPLICATION.admin,
+    email: draft.email,
+    inviterId: actor.user.id,
+    permission: draft.permission,
+  });
+});
+
+export const setAdminPermission = Effect.fn("setAdminPermission")(function* setAdminPermission(
+  change: {
+    readonly permission: AdminPermission;
+    readonly sessionId: string;
+    readonly adminId: string;
+  },
+) {
+  const actor = yield* requirePermission(change.sessionId, [ADMIN_PERMISSION.manage]);
+  const [, changedAdmins] = yield* query(async (database) => {
+    const audit = database.run(
+      auditWhenTargeted(database, {
+        action: AUDIT_ACTION.adminPermissionChanged,
+        actorId: actor.user.id,
+        sessionId: change.sessionId,
+        targetId: change.adminId,
+      }),
+    );
+    const permissionChange = database
       .update(user)
-      .set({ role, updatedAt: new Date() })
-      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
-      .returning({ id: user.id, role: user.role });
-    return database.batch([audit, promotion] as const);
+      .set({ permission: change.permission, updatedAt: new Date() })
+      .where(
+        and(
+          eq(user.id, change.adminId),
+          eq(user.role, ROLE.administrator),
+          liveAdmin(database, change.sessionId),
+        ),
+      )
+      .returning({ id: user.id, permission: user.permission });
+    return database.batch([audit, permissionChange] as const);
   }).pipe(protectLastAdmin);
-  const [promoted] = promotedUsers;
-  if (!promoted) {
+  const [changed] = changedAdmins;
+  if (!changed) {
     return yield* new TargetUnavailable();
   }
-  return promoted;
+  return changed;
+});
+
+export const disableAdmin = Effect.fn("disableAdmin")(function* disableAdmin(
+  sessionId: string,
+  adminId: string,
+) {
+  const actor = yield* requirePermission(sessionId, [ADMIN_PERMISSION.manage]);
+  if (actor.user.id === adminId) {
+    return yield* new TargetUnavailable();
+  }
+  const [, disabledAdmins] = yield* query(async (database) => {
+    const audit = database.run(
+      auditWhenTargeted(database, {
+        action: AUDIT_ACTION.adminDisabled,
+        actorId: actor.user.id,
+        sessionId,
+        targetId: adminId,
+      }),
+    );
+    const disabling = database
+      .update(user)
+      .set({ accountState: ACCOUNT_STATE.suspended, updatedAt: new Date() })
+      .where(
+        and(
+          eq(user.id, adminId),
+          eq(user.role, ROLE.administrator),
+          eq(user.accountState, ACCOUNT_STATE.active),
+          liveAdmin(database, sessionId),
+        ),
+      )
+      .returning({ id: user.id });
+    return database.batch([audit, disabling] as const);
+  }).pipe(protectLastAdmin);
+  const [disabled] = disabledAdmins;
+  if (!disabled) {
+    return yield* new TargetUnavailable();
+  }
+  yield* query((database) => database.delete(session).where(eq(session.userId, adminId)));
+  return disabled;
 });
 
 export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
@@ -170,5 +313,7 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
 });
 
 export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+export { InviteRejected } from "./invite-rejected.ts";
 export { LastAdminRequired } from "./last-admin-required.ts";
+export { OperationForbidden } from "./operation-forbidden.ts";
 export { TargetUnavailable } from "./target-unavailable.ts";

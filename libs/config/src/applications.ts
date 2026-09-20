@@ -42,9 +42,48 @@ export const grants = (app: Application, capability: Capability): boolean => {
 };
 
 /** @canonical-values config.role */
-export const roles = ["member", "admin"] as const;
+export const roles = ["member", "admin", "staff"] as const;
 export type Role = (typeof roles)[number];
-export const ROLE = { member: roles[0], administrator: roles[1] } as const;
+export const ROLE = { member: roles[0], administrator: roles[1], staff: roles[2] } as const;
+
+/** @canonical-values config.account-state */
+export const accountStates = ["active", "suspended", "left"] as const;
+export type AccountState = (typeof accountStates)[number];
+export const ACCOUNT_STATE = {
+  active: accountStates[0],
+  suspended: accountStates[1],
+  left: accountStates[2],
+} as const;
+
+/** @canonical-values config.admin-permission */
+export const adminPermissions = ["view", "operate", "manage"] as const;
+export type AdminPermission = (typeof adminPermissions)[number];
+export const ADMIN_PERMISSION = {
+  view: adminPermissions[0],
+  operate: adminPermissions[1],
+  manage: adminPermissions[2],
+} as const;
+
+/** @canonical-values config.staff-permission */
+export const staffPermissions = ["view", "edit"] as const;
+export type StaffPermission = (typeof staffPermissions)[number];
+export const STAFF_PERMISSION = {
+  view: staffPermissions[0],
+  edit: staffPermissions[1],
+} as const;
+
+/** @canonical-values config.account-permission */
+export const accountPermissions = ["view", "operate", "manage", "edit"] as const;
+export type AccountPermission = (typeof accountPermissions)[number];
+
+export const adminOperates = (permission: string | null | undefined): boolean =>
+  permission === ADMIN_PERMISSION.operate || permission === ADMIN_PERMISSION.manage;
+
+export const adminManages = (permission: string | null | undefined): boolean =>
+  permission === ADMIN_PERMISSION.manage;
+
+export const staffEdits = (permission: string | null | undefined): boolean =>
+  permission === STAFF_PERMISSION.edit;
 
 /** @canonical-values config.strong-authentication-method */
 export const strongAuthenticationMethods = ["password_totp", "passkey_uv"] as const;

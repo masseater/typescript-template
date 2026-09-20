@@ -1,4 +1,4 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { ACCOUNT_STATE, APPLICATION, ROLE } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db/security";
 import { Effect } from "effect";
 
@@ -33,34 +33,31 @@ const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* req
   return current;
 });
 
-const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(
-  role: string,
-  strong: boolean,
-  allowEnrollment: boolean,
-) {
-  if (role !== ROLE.administrator) {
-    return yield* new AdminRequired();
-  }
-  if (!allowEnrollment && !strong) {
-    return yield* new AdminMfaRequired();
-  }
-});
-
 const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProgram(
   headers: Headers,
   allowEnrollment: boolean,
 ) {
   const { audience } = yield* Auth;
   const current = yield* requireSessionSecurity(headers);
-  const strong = isStrongMethod(current.session.authenticationMethod);
-  if (audience !== APPLICATION.user) {
-    yield* verifyAdmin(current.user.role, strong, allowEnrollment);
+  if (current.user.accountState !== ACCOUNT_STATE.active) {
+    return yield* new SessionInvalid();
   }
-  const { email, id, name, role, twoFactorEnabled } = current.user;
+  const strong = isStrongMethod(current.session.authenticationMethod);
+  const { role } = current.user;
+  if (audience === APPLICATION.admin && role !== ROLE.administrator) {
+    return yield* new AdminRequired();
+  }
+  if (audience === APPLICATION.wiki && role !== ROLE.staff) {
+    return yield* new AdminRequired();
+  }
+  if (audience !== APPLICATION.user && !allowEnrollment && !strong) {
+    return yield* new AdminMfaRequired();
+  }
+  const { accountState, email, id, name, permission, twoFactorEnabled } = current.user;
   return {
     session: { id: current.session.id },
     strong,
-    user: { email, id, name, role, twoFactorEnabled },
+    user: { accountState, email, id, name, permission, role, twoFactorEnabled },
   };
 });
 

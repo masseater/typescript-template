@@ -172,19 +172,25 @@ type SessionPolicyInput = {
   readonly userId: string;
 };
 
-const enforceAdminAccess = function enforceAdminAccess({
+const enforcePrivilegedAccess = ({
   audience,
   path,
   role,
   strong,
-}: SessionPolicyInput): void {
-  if (role === ROLE.administrator && path === "/two-factor/get-totp-uri" && !strong) {
+}: SessionPolicyInput): void => {
+  const privileged =
+    (audience === APPLICATION.admin && role === ROLE.administrator) ||
+    (audience === APPLICATION.wiki && role === ROLE.staff);
+  if ((role === ROLE.administrator || role === ROLE.staff) && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
   if (audience === APPLICATION.user) {
+    if (role !== ROLE.member) {
+      deny("MEMBER_REQUIRED");
+    }
     return;
   }
-  if (role !== ROLE.administrator) {
+  if (!privileged) {
     deny("ADMIN_REQUIRED");
   }
   if (!strong && !enrollmentPaths.has(path)) {
@@ -202,7 +208,7 @@ const enforceFactorChanges = async function enforceFactorChanges(
   { audience, path, role, strong, userId }: SessionPolicyInput,
   run: Run,
 ): Promise<void> {
-  if (role !== ROLE.administrator) {
+  if (role !== ROLE.administrator && role !== ROLE.staff) {
     return;
   }
   if (
@@ -231,7 +237,7 @@ const enforceSessionPolicy = function enforceSessionPolicy(
     strong: isStrongMethod(current.session.authenticationMethod),
     userId: current.user.id,
   };
-  enforceAdminAccess(input);
+  enforcePrivilegedAccess(input);
   return enforceFactorChanges(input, run);
 };
 

@@ -1,4 +1,11 @@
-import { AUTHENTICATION_METHOD, ROLE, type Application, type Role } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  STAFF_PERMISSION,
+  type Application,
+  type Role,
+} from "@repo/config";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -29,6 +36,12 @@ export const addUser = (added: {
       emailVerified: added.emailVerified ?? true,
       id: added.userId,
       name: added.userId,
+      permission:
+        (added.role ?? ROLE.member) === ROLE.administrator
+          ? ADMIN_PERMISSION.manage
+          : (added.role ?? ROLE.member) === ROLE.staff
+            ? STAFF_PERMISSION.edit
+            : null,
       role: added.role ?? ROLE.member,
       updatedAt: recordedAt,
     });

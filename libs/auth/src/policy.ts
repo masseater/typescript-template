@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_STATE,
   APPLICATION,
   AUTHENTICATION_METHOD,
   ROLE,
@@ -57,16 +58,32 @@ const authenticationMethodFor = (path: string | undefined): AuthenticationMethod
   (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
   AUTHENTICATION_METHOD.password;
 
-const assertEligibleUser: <
-  TUser extends { readonly emailVerified: boolean; readonly role: string },
->(
+type EligibleUser = {
+  readonly accountState?: string;
+  readonly emailVerified: boolean;
+  readonly role: string;
+};
+
+const assertEligibleUser: <TUser extends EligibleUser>(
   eligibleUser: TUser | undefined,
   audience: Application,
 ) => asserts eligibleUser is TUser = (eligibleUser, audience) => {
   if (eligibleUser === undefined || !eligibleUser.emailVerified) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }
-  if (audience !== APPLICATION.user && eligibleUser.role !== ROLE.administrator) {
+  if (
+    eligibleUser.accountState !== undefined &&
+    eligibleUser.accountState !== ACCOUNT_STATE.active
+  ) {
+    deny("ACCOUNT_INACTIVE");
+  }
+  if (audience === APPLICATION.user && eligibleUser.role !== ROLE.member) {
+    deny("MEMBER_REQUIRED");
+  }
+  if (audience === APPLICATION.admin && eligibleUser.role !== ROLE.administrator) {
+    deny("ADMIN_REQUIRED");
+  }
+  if (audience === APPLICATION.wiki && eligibleUser.role !== ROLE.staff) {
     deny("ADMIN_REQUIRED");
   }
 };
