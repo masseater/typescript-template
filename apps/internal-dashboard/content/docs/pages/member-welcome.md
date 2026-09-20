@@ -5,11 +5,11 @@ description: メール確認のあと、規約同意とプロフィールの作�
 
 パスは次のとおりで、すべて [登録の枠](/pages/member-layout#登録の枠) に入る。
 
-| ページ | パス |
-| --- | --- |
-| 規約への同意 | `/welcome/agreement` |
-| プロフィールの作り方を選ぶ | `/welcome` |
-| 基本項目の入力 | `/welcome/profile` |
+| ページ                     | パス                 |
+| -------------------------- | -------------------- |
+| 規約への同意               | `/welcome/agreement` |
+| プロフィールの作り方を選ぶ | `/welcome`           |
+| 基本項目の入力             | `/welcome/profile`   |
 
 AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。規約の再同意は [規約への同意](/pages/member-agreement) が持つ。
 
