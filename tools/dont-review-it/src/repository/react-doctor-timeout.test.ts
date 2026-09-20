@@ -24,9 +24,9 @@ describe("react-doctor analysis timeouts", () => {
 
   it("retries when every skipped check traces back to an fspy shared-memory failure", () => {
     expect.hasAssertions();
-    expect(
-      skippedOnlyByTimeout([...fspyFailed("@repo/ui"), ...fspyFailed("@repo/auth-ui")]),
-    ).toBe(true);
+    expect(skippedOnlyByTimeout([...fspyFailed("@repo/ui"), ...fspyFailed("@repo/auth-ui")])).toBe(
+      true,
+    );
   });
 
   it("does not retry a clean scan", () => {
