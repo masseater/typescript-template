@@ -64,6 +64,21 @@ export const AUTHENTICATION_METHOD = {
   recovery: authenticationMethods[3],
 } as const satisfies Record<string, AuthenticationMethod>;
 
+/** @canonical-values config.profile-visibility */
+export const profileVisibilities = ["members", "self"] as const;
+export type ProfileVisibility = (typeof profileVisibilities)[number];
+
+/** @canonical-values config.profile-image-type */
+export const profileImageTypes = ["image/jpeg", "image/png"] as const;
+export type ProfileImageType = (typeof profileImageTypes)[number];
+
+/** @canonical-values config.profile-photo-kind */
+export const profilePhotoKinds = ["portrait", "company"] as const;
+export type ProfilePhotoKind = (typeof profilePhotoKinds)[number];
+
+const TWO_MEBIBYTES = 2_097_152;
+export const maximumProfilePhotoBytes = TWO_MEBIBYTES;
+
 export const loopbackAddress = "127.0.0.1";
 export const loopbackHosts: readonly string[] = ["localhost", loopbackAddress, "[::1]"];
 export const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);
