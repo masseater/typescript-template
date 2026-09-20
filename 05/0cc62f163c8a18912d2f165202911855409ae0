@@ -1,1 +1,6 @@
-WIP: stop calling dependency-cruiser and steiger through pnpm run, because the repository task check rejects package-manager scripts. Invoke the binaries from the vite tasks and keep the knip ignores knip cannot see otherwise.
+Revision history for #878:
+
+rev 2 (content) 2026-09-20 14:56 UTC — WIP: stop calling dependency-cruiser and steiger through pnpm run, because the repository task check rejects package-manager scripts. Invoke the binaries from the vite tasks and keep the knip ignores knip cannot see otherwise.
+rev 1 (initial) 2026-09-20 14:56 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":878,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"fdd137144e7be334d747d1da2f9d4e1649ddd48a","timestamp_iso":"2026-09-20T14:56:15Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"fdd137144e7be334d747d1da2f9d4e1649ddd48a","new_sha":"050cc62f163c8a18912d2f165202911855409ae0","timestamp_iso":"2026-09-20T14:56:15Z","reason":"WIP: stop calling dependency-cruiser and steiger through pnpm run, because the repository task check rejects package-manager scripts. Invoke the binaries from the vite tasks and keep the knip ignores knip cannot see otherwise.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/fdd137144e7be334d747d1da2f9d4e1649ddd48a...050cc62f163c8a18912d2f165202911855409ae0"}]} -->
