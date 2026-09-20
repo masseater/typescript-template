@@ -1,3 +1,5 @@
+import { CloudflareApiToken, CloudflareId, usageAllowanceRemains } from "@repo/config";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Effect, Schema, SchemaTransformation } from "effect";
 
 class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
@@ -21,7 +23,21 @@ function fail(code: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> 
   return Effect.fail(new BudgetFailure({ code }));
 }
 
-const MIN_BILLING_TOKEN_LENGTH = 20;
+const budgetMonitorWorker = {
+  className: "BudgetMonitor",
+  cron: "17 */6 * * *",
+  event: "budget",
+  name: "budget",
+} as const;
+
+const budgetMonitorEnv = {
+  accountId: deploymentKey.cloudflareAccountId,
+  billingReadToken: "BILLING_READ_TOKEN",
+  budgetJpy: deploymentKey.budgetJpy,
+  fixedCostUsd: "FIXED_COST_USD",
+  jpyPerUsd: "JPY_PER_USD",
+  reserveUsd: "RESERVE_USD",
+} as const;
 
 const DecimalText = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/u));
 const FiniteNumber = Schema.Number.check(Schema.isFinite());
@@ -30,15 +46,16 @@ const Decimal = DecimalText.pipe(
 );
 
 const BudgetEnvironment = Schema.Struct({
-  BILLING_READ_TOKEN: Schema.String.check(Schema.isMinLength(MIN_BILLING_TOKEN_LENGTH)),
-  BUDGET_JPY: Decimal.check(Schema.isGreaterThan(0)),
-  CLOUDFLARE_ACCOUNT_ID: Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u)),
-  FIXED_COST_USD: Decimal,
-  JPY_PER_USD: Decimal.check(Schema.isGreaterThan(0)),
-  RESERVE_USD: Decimal,
+  [budgetMonitorEnv.billingReadToken]: CloudflareApiToken,
+  [budgetMonitorEnv.budgetJpy]: Decimal.check(Schema.isGreaterThan(0)),
+  [budgetMonitorEnv.accountId]: CloudflareId,
+  [budgetMonitorEnv.fixedCostUsd]: Decimal,
+  [budgetMonitorEnv.jpyPerUsd]: Decimal.check(Schema.isGreaterThan(0)),
+  [budgetMonitorEnv.reserveUsd]: Decimal,
 });
 
 type BudgetConfig = typeof BudgetEnvironment.Type;
+type BudgetMonitorEnv = typeof BudgetEnvironment.Encoded;
 
 const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetConfig(
   input: unknown,
@@ -46,11 +63,18 @@ const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetCo
   const config = yield* Schema.decodeUnknownEffect(BudgetEnvironment)(input).pipe(
     Effect.mapError(() => new BudgetFailure({ code: "budget_config_invalid" })),
   );
-  if (config.BUDGET_JPY / config.JPY_PER_USD <= config.FIXED_COST_USD + config.RESERVE_USD) {
+  if (
+    !usageAllowanceRemains({
+      budgetJpy: config[budgetMonitorEnv.budgetJpy],
+      fixedCostUsd: config[budgetMonitorEnv.fixedCostUsd],
+      jpyPerUsd: config[budgetMonitorEnv.jpyPerUsd],
+      reserveUsd: config[budgetMonitorEnv.reserveUsd],
+    })
+  ) {
     return yield* fail("budget_has_no_usage_allowance");
   }
   return config;
 });
 
-export { BudgetFailure, fail, parseBudgetConfig };
-export type { BudgetConfig };
+export { BudgetFailure, budgetMonitorEnv, budgetMonitorWorker, fail, parseBudgetConfig };
+export type { BudgetConfig, BudgetMonitorEnv };

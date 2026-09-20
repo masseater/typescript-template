@@ -1,4 +1,4 @@
-import { Cause, Console, Logger, References } from "effect";
+import { Cause, Console, Logger, Predicate, References } from "effect";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 
@@ -28,9 +28,7 @@ const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
   Warn: "warn",
 };
 
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const isRecord = Predicate.isObject;
 
 function messageParts(message: unknown): readonly unknown[] {
   return Array.isArray(message) ? message : [message];

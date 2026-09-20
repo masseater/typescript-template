@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { serverOnlyMarkers } from "@repo/vite-config";
+import { isSecretFileName } from "@repo/vite-config/private-path";
 import { Context, Effect } from "effect";
 
 import {
@@ -74,9 +75,7 @@ function privateArtifact(relative: string): boolean {
   return relative
     .split(path.sep)
     .some(
-      (name) =>
-        /^(?:\.env.*|\.dev\.vars.*|\.git|\.vite|\.npmrc|wrangler\..*)$/u.test(name) ||
-        /\.(?:pem|key)$/u.test(name),
+      (name) => isSecretFileName(name) || /^(?:\.git|\.vite|\.npmrc|wrangler\..*)$/u.test(name),
     );
 }
 

@@ -1,3 +1,4 @@
+import { CloudflareId } from "@repo/config";
 import { Effect, Schema, SchemaIssue } from "effect";
 
 import { ErrorMonitorFailure } from "./config.ts";
@@ -25,6 +26,7 @@ interface QueryWindow {
   readonly to: number;
 }
 
+const isCloudflareId = Schema.is(CloudflareId);
 const REQUEST_TIMEOUT_MS = 15_000;
 const QUERY_LIMIT = 2000;
 const WHOLE_BODY = "$";
@@ -152,7 +154,7 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
 const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroups(
   window: QueryWindow,
 ) {
-  if (!/^[a-f0-9]{32}$/u.test(window.accountId)) {
+  if (!isCloudflareId(window.accountId)) {
     return yield* failure("telemetry_account_invalid")();
   }
   const aggregates: (typeof Aggregate.Type)[] = [];

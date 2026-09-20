@@ -17,9 +17,12 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
+    "@repo/budget-monitor": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/error-monitor": "workspace:*",
+    "@repo/health-monitor": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",

@@ -1,9 +1,10 @@
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 
+import { httpStatus, type Application } from "@repo/config";
+
 import { privatePath } from "./private-path.ts";
 
-import type { Application } from "@repo/config";
 import type { Connect } from "vite-plus";
 
 type BoundaryRoots = Readonly<{
@@ -79,9 +80,6 @@ const boundaryVerdict = async (
   }
 };
 
-const forbiddenStatus = 403;
-const badRequestStatus = 400;
-
 type RequestGuard = (
   ...guardArguments: readonly [
     Readonly<Pick<Parameters<Connect.NextHandleFunction>[0], "url">>,
@@ -101,7 +99,7 @@ const createRequestGuard =
     }
     const undecidable = "undecidable" in verdict;
     serverResponse.writeHead(
-      undecidable ? badRequestStatus : forbiddenStatus,
+      undecidable ? httpStatus.badRequest : httpStatus.forbidden,
       undecidable ? {} : { "cache-control": "no-store" },
     );
     serverResponse.end(undecidable ? "Invalid request" : "Private development resource denied");

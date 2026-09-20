@@ -115,6 +115,19 @@ it.effect("refuses a base domain that is not a bare hostname", () =>
   }),
 );
 
+it.effect("refuses origins that collapse onto one host and names the keys", () =>
+  Effect.gen(function* program() {
+    const shared = settings.origins["service-member"];
+    const config = yield* Schema.decodeUnknownEffect(SharedSettings)({
+      ...settings,
+      origins: { ...settings.origins, "internal-dashboard": shared, "service-admin": shared },
+    });
+    const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "origins_must_differ");
+    assert.deepStrictEqual([...failure.keys], ["TEMPLATE_APP_DOMAIN", "TEMPLATE_PREFIX"]);
+  }),
+);
+
 it.effect("refuses a budget exhausted by fixed fees and names the keys", () =>
   Effect.gen(function* program() {
     const config = yield* Schema.decodeUnknownEffect(SharedSettings)({
