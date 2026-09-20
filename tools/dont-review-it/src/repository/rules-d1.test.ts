@@ -148,7 +148,6 @@ const rawD1OutsideAdapter = [
 ] as const;
 
 const rawD1Adapters = [
-  ["libs/db/src/migrate-d1.ts"],
   ["libs/db/src/testing.ts"],
   ["libs/db-local/src/testing-node.ts"],
 ] as const;

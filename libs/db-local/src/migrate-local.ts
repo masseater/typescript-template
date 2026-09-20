@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import { reportFailed, runCli } from "@repo/cli";
+<<<<<<< HEAD
 import { Cause, Console, Effect } from "effect";
+=======
+import { migrateD1 } from "@repo/db/migrations";
+import { Console, Effect } from "effect";
+>>>>>>> e11030bf (fix: apply D1 migrations with Drizzle's migrator)
 
-import { migrateD1 } from "../../db/src/migrate-d1.ts";
 import { localDatabasePlatform } from "./local-platform.ts";
 
 function failed(error: string): Readonly<Record<string, unknown>> {

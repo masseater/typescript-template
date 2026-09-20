@@ -1,10 +1,16 @@
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
+import {
+  EmptyTestDatabase,
+  TestBinding,
+  executeD1HttpBatch,
+  executeD1RawBatch,
+} from "@repo/db-local";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
-import { remoteExecutor } from "./remote-http.ts";
+import { runRemoteDatabaseCommand } from "../../../infra/cloudflare/src/remote-command.ts";
+import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure } from "./remote-input.ts";
 import { loadRemoteMigrations, migrateDatabase, readMigrationStatus } from "./remote-operations.ts";
 
@@ -14,7 +20,7 @@ const d1Target = {
   databaseId: "22222222-2222-4222-8222-222222222222",
 };
 
-describe("remoteExecutor", () => {
+describe("remoteDatabase", () => {
   describe.for([
     [
       "a redirect elsewhere",
@@ -37,7 +43,7 @@ describe("remoteExecutor", () => {
     const it = test.extend("queryFailure", async ({}, { onCleanup }) => {
       const d1Api = setupServer(
         http.post(
-          `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/query`,
+          `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/raw`,
           d1Answer,
         ),
       );
@@ -46,7 +52,12 @@ describe("remoteExecutor", () => {
         d1Api.close();
       });
       return Effect.runPromise(
-        Effect.flip(remoteExecutor(d1Target).batch([{ params: [], sql: "SELECT 1" }])),
+        Effect.flip(
+          runRemoteDatabaseCommand(
+            ["migrate", "--execute", "--confirm-database", d1Target.databaseId],
+            d1Target,
+          ),
+        ),
       );
     });
 
@@ -57,6 +68,7 @@ describe("remoteExecutor", () => {
 });
 
 const d1QueryEndpoint = `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/query`;
+const d1RawEndpoint = `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/raw`;
 
 describe("the migration status of a database reached over the D1 API", () => {
   const it = test
@@ -87,12 +99,16 @@ describe("the migration status of a database reached over the D1 API", () => {
             http.post(d1QueryEndpoint, async ({ request }) =>
               HttpResponse.json(await executeD1HttpBatch(binding, await request.json())),
             ),
+            http.post(d1RawEndpoint, async ({ request }) =>
+              HttpResponse.json(await executeD1RawBatch(binding, await request.json())),
+            ),
           );
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
             d1Api.close();
           });
-          yield* migrateDatabase(remoteExecutor(d1Target), yield* loadRemoteMigrations());
+          const { apply, database } = remoteDatabase(d1Target);
+          yield* migrateDatabase(database, apply);
           return yield* readMigrationStatus(d1Target);
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
@@ -157,6 +173,9 @@ describe("a database whose tables were made without a recorded history", () => {
             http.post(d1QueryEndpoint, async ({ request }) =>
               HttpResponse.json(await executeD1HttpBatch(binding, await request.json())),
             ),
+            http.post(d1RawEndpoint, async ({ request }) =>
+              HttpResponse.json(await executeD1RawBatch(binding, await request.json())),
+            ),
           );
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
@@ -165,9 +184,8 @@ describe("a database whose tables were made without a recorded history", () => {
           yield* remoteExecutor(d1Target).batch([
             { params: [], sql: "CREATE TABLE made_by_hand (id TEXT)" },
           ]);
-          return yield* Effect.flip(
-            migrateDatabase(remoteExecutor(d1Target), yield* loadRemoteMigrations()),
-          );
+          const { apply, database } = remoteDatabase(d1Target);
+          return yield* Effect.flip(migrateDatabase(database, apply));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     );
