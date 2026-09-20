@@ -1,7 +1,6 @@
 import { createAppRouter } from "@repo/ui/shell";
 
 import { deLocalizeUrl, localizeUrl } from "#shared/i18n/index.ts";
-
 import { routeTree } from "./routeTree.gen";
 
 declare module "@tanstack/react-router" {
