@@ -9,10 +9,10 @@ export default defineConfig({
       ...effectDiagnostics,
       ...intentValidation,
       ...testRun,
-      "check:staged": { cache: false, command: "node src/repository/check-staged.ts" },
+      "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
       "clean:shared-task-cache": {
         cache: false,
-        command: "node src/repository/clean-shared-task-cache.ts",
+        command: "./src/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
         precommit: ["check:staged"],
