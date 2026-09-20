@@ -217,9 +217,7 @@ function workspacesWithTests(): Set<string> {
       if (directory === ".") {
         return false;
       }
-      return (
-        collectTestPackages(join(repositoryRoot, directory), directory).length > 0
-      );
+      return collectTestPackages(join(repositoryRoot, directory), directory).length > 0;
     }),
   );
 }
