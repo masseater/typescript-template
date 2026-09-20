@@ -70,5 +70,4 @@ const provideSessionLoader = (queries: QueryClient, load: SessionLoader): void =
   queries.setQueryDefaults(sessionKey, { queryFn: load, retry: false });
 };
 
-export { loadBrowserSession, provideSessionLoader, sessionKey, sessionOptions };
-export type { SessionLoader };
+export { loadBrowserSession, provideSessionLoader, sessionOptions };

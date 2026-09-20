@@ -1,9 +1,4 @@
-export {
-  loadOnboardingStep,
-  onboardingOptions,
-  saveOnboardingOptions,
-  saveOnboardingStep,
-} from "./api/onboarding.ts";
+export { loadOnboardingStep, onboardingOptions } from "./api/onboarding.ts";
 export { AgreementPage } from "./ui/agreement-page.tsx";
 export { ChoosePage } from "./ui/choose-page.tsx";
 export { WelcomeInterviewPage } from "./ui/welcome-interview-page.tsx";
