@@ -4,88 +4,119 @@ import { Effect } from "effect";
 import { Auth } from "./auth.ts";
 import { verifySession } from "./session.ts";
 
-interface JsonResponse {
+type JsonReply = {
   readonly body: unknown;
   readonly status: number;
-}
+};
 
 const origins = applicationOrigins;
 
 class BrowserClient {
-  public readonly cookies = new Map<string, string>();
   readonly #auth: Auth["Service"];
+  readonly #cookies: Map<string, string>;
   readonly #network: Readonly<Record<string, string>>;
 
   public constructor(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     auth: Auth["Service"],
-    network: Readonly<Record<string, string>> = {},
+    initial: {
+      readonly cookies?: ReadonlyMap<string, string>;
+      readonly network?: Readonly<Record<string, string>>;
+    } = {},
   ) {
     this.#auth = auth;
-    this.#network = network;
+    this.#cookies = new Map(initial.cookies);
+    this.#network = initial.network ?? {};
   }
 
   public get origin(): string {
     return origins[this.#auth.audience];
   }
 
-  public headers(): Headers {
-    const cookie = [...this.cookies]
-      .map(([key, value]: readonly [string, string]) => `${key}=${value}`)
+  public cookieHeaders(): Headers {
+    const cookie = [...this.#cookies]
+      .map(([cookieName, cookieValue]: readonly [string, string]) => `${cookieName}=${cookieValue}`)
       .join("; ");
     return new Headers({ ...this.#network, cookie, origin: this.origin });
   }
 
   public request(
     endpoint: string,
-    body?: Readonly<Record<string, unknown>>,
+    jsonFields?: Readonly<Record<string, unknown>>,
   ): Effect.Effect<Response> {
-    const headers = this.headers();
-    headers.set("content-type", "application/json");
     return this.send(
       new Request(`${this.origin}/api/auth${endpoint}`, {
-        headers,
-        method: body ? "POST" : "GET",
-        ...(body ? { body: JSON.stringify(body) } : {}),
+        headers: {
+          ...Object.fromEntries(this.cookieHeaders()),
+          "content-type": "application/json",
+        },
+        method: jsonFields ? "POST" : "GET",
+        ...(jsonFields ? { body: JSON.stringify(jsonFields) } : {}),
       }),
     );
   }
 
-  public navigate(url: string): Effect.Effect<Response> {
-    const headers = this.headers();
-    headers.set("accept", "text/html");
-    return this.send(new Request(url, { headers, redirect: "manual" }));
+  public status(
+    endpoint: string,
+    jsonFields?: Readonly<Record<string, unknown>>,
+  ): Effect.Effect<number> {
+    return this.request(endpoint, jsonFields).pipe(Effect.map((handled) => handled.status));
   }
 
-  public send(request: Request): Effect.Effect<Response> {
+  public navigate(url: string): Effect.Effect<Response> {
+    return this.send(
+      new Request(url, {
+        headers: { ...Object.fromEntries(this.cookieHeaders()), accept: "text/html" },
+        redirect: "manual",
+      }),
+    );
+  }
+
+  public send(outgoing: Request): Effect.Effect<Response> {
     return Effect.promise(async () => {
-      const response = await this.#auth.instance.handler(request);
-      for (const cookie of response.headers.getSetCookie()) {
+      const handled = await this.#auth.instance.handler(outgoing);
+      for (const cookie of handled.headers.getSetCookie()) {
         this.#storeCookie(cookie);
       }
-      return response;
+      return handled;
     });
   }
 
   public json(
     endpoint: string,
-    body?: Readonly<Record<string, unknown>>,
-  ): Effect.Effect<JsonResponse> {
-    return this.request(endpoint, body).pipe(
-      Effect.flatMap((response) =>
-        Effect.promise(async (): Promise<JsonResponse> => ({
-          body: await response.json(),
-          status: response.status,
+    jsonFields?: Readonly<Record<string, unknown>>,
+  ): Effect.Effect<JsonReply> {
+    return this.request(endpoint, jsonFields).pipe(
+      Effect.flatMap((handled) =>
+        Effect.promise(async (): Promise<JsonReply> => ({
+          body: await handled.json(),
+          status: handled.status,
         })),
       ),
     );
   }
 
-  // oxlint-disable-next-line typescript/explicit-function-return-type, typescript/explicit-module-boundary-types
-  public verify(allowEnrollment = false) {
-    return verifySession(this.headers(), allowEnrollment).pipe(
+  public verify(
+    allowEnrollment?: boolean,
+  ): Effect.Effect<
+    Effect.Success<ReturnType<typeof verifySession>>,
+    Effect.Error<ReturnType<typeof verifySession>>,
+    Exclude<Effect.Services<ReturnType<typeof verifySession>>, Auth>
+  > {
+    return verifySession(this.cookieHeaders(), allowEnrollment).pipe(
       Effect.provideService(Auth, this.#auth),
     );
+  }
+
+  public transferTo(auth: Auth["Service"]): BrowserClient {
+    const from = `template-${this.#auth.audience}`;
+    const to = `template-${auth.audience}`;
+    const cookies = new Map(
+      [...this.#cookies].map(([cookieName, cookieValue]) => [
+        cookieName.replaceAll(from, to),
+        cookieValue,
+      ]),
+    );
+    return new BrowserClient(auth, { cookies });
   }
 
   #storeCookie(header: string): void {
@@ -94,13 +125,13 @@ class BrowserClient {
       return;
     }
     const separator = pair.indexOf("=");
-    const key = pair.slice(0, separator);
-    const value = pair.slice(separator + 1);
-    if (value === "") {
-      this.cookies.delete(key);
+    const cookieName = pair.slice(0, separator);
+    const cookieValue = pair.slice(separator + 1);
+    if (cookieValue === "") {
+      this.#cookies.delete(cookieName);
       return;
     }
-    this.cookies.set(key, value);
+    this.#cookies.set(cookieName, cookieValue);
   }
 }
 

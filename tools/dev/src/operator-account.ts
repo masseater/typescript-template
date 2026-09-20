@@ -6,7 +6,7 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 
 import { Auth } from "@repo/auth";
-import { applicationOrigins } from "@repo/config";
+import { APPLICATION, applicationOrigins } from "@repo/config";
 import { Database } from "@repo/db";
 import { ensureAdminRole } from "@repo/db/bootstrap";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "@repo/db/local";
@@ -239,15 +239,19 @@ const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
     return yield* readOperator();
   }
   const credentials = yield* readCredentials();
-  const origin = applicationOrigins["service-member"];
+  const origin = applicationOrigins[APPLICATION.user];
   return yield* Effect.scoped(
     Effect.gen(function* provision() {
       const sink = yield* mailSink;
       const { env } = yield* platform;
       const authLayer = Auth.layer({
-        audience: "service-member",
+        audience: APPLICATION.user,
         baseURL: origin,
-        mail: { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: sink.origin },
+        mail: {
+          APP_ORIGIN: origin,
+          EMAIL_FROM: "no-reply@example.test",
+          MAILPIT_SEND_URL: `${sink.origin}/api/v1/send`,
+        },
         secret: credentials.authSecret,
       }).pipe(Layer.provideMerge(Database.layer(env.DB)));
       return yield* Effect.gen(function* useAuth() {

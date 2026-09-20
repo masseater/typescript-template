@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { readConfig } from "@repo/config";
+import { APPLICATION, readConfig } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
@@ -16,7 +16,7 @@ import { opsMailLayer } from "./ops-mail.ts";
 const contactRateLimitMax = 5;
 
 const routes = { "/api/contact": "contact-api" };
-const reporting = { log: recordingSink().sink, service: "service-member" } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 const opsEmail = "ops@example.test";
 
@@ -40,7 +40,7 @@ function contactApp() {
   const environment = appEnvironment({ OPS_EMAIL: opsEmail });
   const runtime = workerRuntime(() =>
     Layer.merge(
-      Layer.orDie(appLayer(environment, "service-member", routes)),
+      Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
       Layer.unwrap(readConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
     ),
   );

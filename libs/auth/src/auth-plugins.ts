@@ -1,5 +1,6 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
+import { APPLICATION, type Application } from "@repo/config";
 import { findPasskeyUser } from "@repo/db/security";
 import { jwt, twoFactor } from "better-auth/plugins";
 
@@ -7,13 +8,12 @@ import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
 
-import type { Application } from "@repo/config";
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
 type AuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
 
-function verificationAudiencePlugin(audience: Application): AuthPlugin {
+const verificationAudiencePlugin = (audience: Application): AuthPlugin => {
   const audienceField = {
     defaultValue: audience,
     input: false,
@@ -27,13 +27,13 @@ function verificationAudiencePlugin(audience: Application): AuthPlugin {
       verification: { fields: { audience: audienceField } },
     },
   };
-}
+};
 
-function passkeyPlugin(
-  origin: string,
-  run: Run,
-  audience: Application,
-): ReturnType<typeof passkey> {
+const passkeyPlugin = ({
+  audience,
+  origin,
+  run,
+}: Readonly<{ audience: Application; origin: string; run: Run }>): ReturnType<typeof passkey> => {
   return passkey({
     authentication: {
       afterVerification: async ({
@@ -46,17 +46,17 @@ function passkeyPlugin(
         if (!verification.authenticationInfo.userVerified) {
           deny("PASSKEY_UV_REQUIRED");
         }
-        const user = await run(findPasskeyUser(clientData.id, audience));
-        assertEligibleUser(user ?? undefined, audience);
+        const passkeyOwner = await run(findPasskeyUser(clientData.id, audience));
+        assertEligibleUser(passkeyOwner ?? undefined, audience);
       },
     },
     authenticatorSelection: { userVerification: "required" },
     origin,
     rpID: passkeyRpId(origin),
   });
-}
+};
 
-function wikiAuthorizationServer(origin: string): AuthPlugin[] {
+const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
   return [
     jwt({ disableSettingJwtHeader: true }),
     mcp({
@@ -70,19 +70,19 @@ function wikiAuthorizationServer(origin: string): AuthPlugin[] {
       scopes: [...wikiScopes],
     }),
   ];
-}
+};
 
-function authPlugins({
+const authPlugins = ({
   audience,
   origin,
   run,
-}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] {
+}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] => {
   return [
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
-    passkeyPlugin(origin, run, audience),
-    ...(audience === "internal-dashboard" ? wikiAuthorizationServer(origin) : []),
+    passkeyPlugin({ audience, origin, run }),
+    ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
   ];
-}
+};
 
 export { authPlugins };

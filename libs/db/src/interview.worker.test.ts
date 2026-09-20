@@ -21,8 +21,10 @@ it.effect("of two writers holding the same version only the first one is stored"
   Effect.gen(function* program() {
     yield* addMember("member");
     yield* startInterview("member", { step: 0 });
-    yield* storeInterview("member", 0, { state: { step: 1 } });
-    const late = yield* storeInterview("member", 0, { state: { step: 2 } }).pipe(Effect.flip);
+    yield* storeInterview({ state: { step: 1 }, userId: "member", version: 0 });
+    const late = yield* storeInterview({ state: { step: 2 }, userId: "member", version: 0 }).pipe(
+      Effect.flip,
+    );
     assert.strictEqual(late._tag, "InterviewConflict");
     assert.deepStrictEqual(yield* findInterview("member"), {
       // oxlint-disable-next-line unicorn/no-null
@@ -37,15 +39,25 @@ it.effect("the saved sheet stays until a write names it", () =>
   Effect.gen(function* program() {
     yield* addMember("member");
     yield* startInterview("member", { step: 0 });
-    yield* storeInterview("member", 0, { savedSheet: { nickname: "たろう" }, state: { step: 1 } });
-    yield* storeInterview("member", 1, { state: { step: 2 } });
+    yield* storeInterview({
+      savedSheet: { nickname: "たろう" },
+      state: { step: 1 },
+      userId: "member",
+      version: 0,
+    });
+    yield* storeInterview({ state: { step: 2 }, userId: "member", version: 1 });
     assert.deepStrictEqual(yield* findInterview("member"), {
       savedSheet: { nickname: "たろう" },
       state: { step: 2 },
       version: TWICE_STORED,
     });
     // oxlint-disable-next-line unicorn/no-null
-    yield* storeInterview("member", TWICE_STORED, { savedSheet: null, state: { step: 3 } });
+    yield* storeInterview({
+      savedSheet: null,
+      state: { step: 3 },
+      userId: "member",
+      version: TWICE_STORED,
+    });
     assert.isNull((yield* findInterview("member"))?.savedSheet);
   }).pipe(Effect.provide(TestDatabase)),
 );

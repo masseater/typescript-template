@@ -11,14 +11,14 @@ const local = {
   OPS_EMAIL: "ops@example.test",
 };
 
-function reason(
+const reason = function reason(
   input: unknown,
 ): Effect.Effect<string, Effect.Success<ReturnType<typeof readEnvironment>>> {
   return readEnvironment(input).pipe(
     Effect.flip,
     Effect.map((error) => error.reason),
   );
-}
+};
 
 it.effect("validates local configuration and defaults the release to local", () =>
   Effect.gen(function* program() {
@@ -41,15 +41,16 @@ it.effect("rejects Mailpit for public application origins", () =>
 it.effect("treats only loopback and HTTPS LAN hosts as local development", () =>
   Effect.gen(function* program() {
     assert.strictEqual(
-      (yield* readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local" })).local,
+      (yield* readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local.example.test" }))
+        .local,
       true,
     );
     assert.strictEqual(
-      yield* reason({ ...local, APP_ORIGIN: "http://template-user.local" }),
+      yield* reason({ ...local, APP_ORIGIN: "http://template-user.local.example.test" }),
       "HTTPS is required outside localhost",
     );
     for (const origin of [
-      "https://local",
+      "https://example.localhost",
       "https://user.template.local.example.test",
       "https://app.example.ts.net",
       "https://app.example.test",
@@ -97,9 +98,9 @@ it.effect("rejects weak session secrets and pathful application origins", () =>
   }),
 );
 
-function noop(): undefined {
+const noop = function noop(): undefined {
   return undefined;
-}
+};
 
 const bindings = {
   AI: { run: noop },
@@ -108,14 +109,14 @@ const bindings = {
   EMAIL: { send: noop },
 };
 
-function configReason(
+const configReason = function configReason(
   input: unknown,
 ): Effect.Effect<string, Effect.Success<ReturnType<typeof readConfig>>> {
   return readConfig(input).pipe(
     Effect.flip,
     Effect.map((error) => error.reason),
   );
-}
+};
 
 it.effect("accepts the bindings the worker declares", () =>
   Effect.gen(function* program() {

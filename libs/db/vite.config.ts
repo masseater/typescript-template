@@ -21,4 +21,9 @@ export default defineConfig({
       }),
     },
   },
+  test: {
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    mockReset: true,
+    restoreMocks: true,
+  },
 });

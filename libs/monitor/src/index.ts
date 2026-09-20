@@ -1,5 +1,6 @@
 import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "effect";
 
+import { monitorBinding } from "./binding.ts";
 import { MonitorFailure } from "./failure.ts";
 
 interface Alert {
@@ -25,7 +26,6 @@ type MonitorSchedule = Readonly<{
   MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">>;
 }>;
 
-const monitorBinding = "MONITOR";
 const MAX_ALERT_RECIPIENTS = 10;
 const ISO_DATE_LENGTH = 10;
 const NOT_FOUND_STATUS = 404;

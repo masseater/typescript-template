@@ -9,7 +9,6 @@ import type { BetterAuthInstance } from "./create-auth.ts";
 const tooManyRequests = 429;
 
 function authPromise<Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   run: (instance: BetterAuthInstance) => Promise<Value>,
 ): Effect.Effect<Value, AuthFailure, Auth> {
   return Effect.gen(function* authPromiseProgram() {
@@ -21,9 +20,11 @@ function authPromise<Value>(
   });
 }
 
-function handleAuthRequest(request: Request): Effect.Effect<Response, AuthFailure, Auth> {
+const handleAuthRequest = function handleAuthRequest(
+  request: Request,
+): Effect.Effect<Response, AuthFailure, Auth> {
   return authPromise(async (instance) => instance.handler(request));
-}
+};
 
 const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToken(
   token: string,

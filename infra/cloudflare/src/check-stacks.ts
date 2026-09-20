@@ -2,7 +2,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
-import { applications, grants } from "@repo/config";
+import { APPLICATION, applications, grants } from "@repo/config";
 import { markFailed, reportFailed, runCli } from "@repo/config/cli";
 import { Cause, Console, Effect, Schema } from "effect";
 
@@ -223,9 +223,9 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       cron: "37 * * * *",
       name: "health",
       variables: [
-        plainText("SERVICE_ADMIN_ORIGIN", origins["service-admin"]),
-        plainText("SERVICE_MEMBER_ORIGIN", origins["service-member"]),
-        plainText("INTERNAL_DASHBOARD_ORIGIN", origins["internal-dashboard"]),
+        plainText("SERVICE_ADMIN_ORIGIN", origins[APPLICATION.admin]),
+        plainText("SERVICE_MEMBER_ORIGIN", origins[APPLICATION.user]),
+        plainText("INTERNAL_DASHBOARD_ORIGIN", origins[APPLICATION.wiki]),
       ],
     }),
   }),

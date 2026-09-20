@@ -24,7 +24,9 @@ const optionalDeploymentKeys = [
 ] as const;
 
 const privateDeploymentKeys: readonly string[] = [
-  ...deploymentKeys.filter((key) => !budgetKeys.some((budget) => budget === key)),
+  ...deploymentKeys.filter(
+    (deploymentKey) => !budgetKeys.some((budget) => budget === deploymentKey),
+  ),
   ...optionalDeploymentKeys,
 ];
 

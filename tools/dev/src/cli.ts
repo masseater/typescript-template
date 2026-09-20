@@ -63,9 +63,14 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), (cause) =>
-  causeRecord("local.application_command_failed", cause, {
-    remediation:
-      "Check vp run --filter @repo/dev setup, vp run --filter @repo/db db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-  }),
+runCli(
+  selectCommand(action, args).pipe(Effect.flatMap(writeReport)) as Effect.Effect<
+    unknown,
+    LocalCommandFailure
+  >,
+  (cause) =>
+    causeRecord("local.application_command_failed", cause, {
+      remediation:
+        "Check vp run --filter @repo/dev setup, vp run --filter @repo/db db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+    }),
 );

@@ -7,9 +7,9 @@ import { TestDatabase } from "./testing.ts";
 
 it.effect("omits members the viewer does not follow", () =>
   Effect.gen(function* program() {
-    yield* addUser("viewer");
-    yield* addUser("followed");
-    yield* addUser("stranger");
+    yield* addUser({ userId: "viewer" });
+    yield* addUser({ userId: "followed" });
+    yield* addUser({ userId: "stranger" });
     yield* followMember("viewer", "followed");
     const feed = yield* homeFeed("viewer");
     assert.deepStrictEqual(
@@ -21,8 +21,8 @@ it.effect("omits members the viewer does not follow", () =>
 
 it.effect("omits unverified followees from the feed", () =>
   Effect.gen(function* program() {
-    yield* addUser("viewer");
-    yield* addUser("unverified", "member", false);
+    yield* addUser({ userId: "viewer" });
+    yield* addUser({ emailVerified: false, userId: "unverified" });
     yield* followMember("viewer", "unverified");
     assert.deepStrictEqual(yield* homeFeed("viewer"), []);
   }).pipe(Effect.provide(TestDatabase)),
@@ -30,14 +30,14 @@ it.effect("omits unverified followees from the feed", () =>
 
 it.effect("treats missing onboarding rows as the agreement step", () =>
   Effect.gen(function* program() {
-    yield* addUser("newcomer");
+    yield* addUser({ userId: "newcomer" });
     assert.strictEqual(yield* stepOf("newcomer"), "agreement");
   }).pipe(Effect.provide(TestDatabase)),
 );
 
 it.effect("advances and reads the saved onboarding step", () =>
   Effect.gen(function* program() {
-    yield* addUser("newcomer");
+    yield* addUser({ userId: "newcomer" });
     yield* advanceOnboarding("newcomer", "choose");
     assert.strictEqual(yield* stepOf("newcomer"), "choose");
   }).pipe(Effect.provide(TestDatabase)),

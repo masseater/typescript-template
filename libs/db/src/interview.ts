@@ -8,39 +8,44 @@ import { interview } from "./schema.ts";
 
 const dayLength = 10;
 
-const recordColumns = {
+const savedColumns = {
   savedSheet: interview.savedSheet,
   state: interview.state,
   version: interview.version,
 };
 
-const currentTime = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
 
-const findInterview = Effect.fn("findInterview")(function* findInterview(userId: string) {
-  const [record] = yield* query((database) =>
-    database.select(recordColumns).from(interview).where(eq(interview.userId, userId)).limit(1),
+export const findInterview = Effect.fn("findInterview")(function* findInterview(userId: string) {
+  const [savedInterview] = yield* query((database) =>
+    database.select(savedColumns).from(interview).where(eq(interview.userId, userId)).limit(1),
   );
-  // oxlint-disable-next-line unicorn/no-null
-  return record ?? null;
+
+  return savedInterview ?? null;
 });
 
-const startInterview = Effect.fn("startInterview")(function* startInterview(
+export const startInterview = Effect.fn("startInterview")(function* startInterview(
   userId: string,
-  state: unknown,
+  initialState: unknown,
 ) {
-  const now = yield* currentTime;
-  const day = now.toISOString().slice(0, dayLength);
+  const startedAt = yield* clockDate;
+  const day = startedAt.toISOString().slice(0, dayLength);
+
   yield* query((database) =>
-    database.insert(interview).values({ day, state, updatedAt: now, userId }).onConflictDoNothing(),
+    database
+      .insert(interview)
+      .values({ day, state: initialState, updatedAt: startedAt, userId })
+      .onConflictDoNothing(),
   );
 });
 
-const countInterviewTurn = Effect.fn("countInterviewTurn")(function* countInterviewTurn(
+export const countInterviewTurn = Effect.fn("countInterviewTurn")(function* countInterviewTurn(
   userId: string,
   limit: number,
 ) {
-  const day = (yield* currentTime).toISOString().slice(0, dayLength);
+  const day = (yield* clockDate).toISOString().slice(0, dayLength);
   const turns = sql<number>`CASE WHEN ${interview.day} = ${day} THEN ${interview.turns} + 1 ELSE 1 END`;
+
   const [counted] = yield* query((database) =>
     database
       .update(interview)
@@ -53,24 +58,27 @@ const countInterviewTurn = Effect.fn("countInterviewTurn")(function* countInterv
   }
 });
 
-const storeInterview = Effect.fn("storeInterview")(function* storeInterview(
-  userId: string,
-  version: number,
-  content: { readonly savedSheet?: unknown; readonly state: unknown },
-) {
-  const updatedAt = yield* currentTime;
-  const [stored] = yield* query((database) =>
+export const storeInterview = Effect.fn("storeInterview")(function* storeInterview(stored: {
+  readonly userId: string;
+  readonly version: number;
+  readonly savedSheet?: unknown;
+  readonly state: unknown;
+}) {
+  const { userId, version, savedSheet, state } = stored;
+  const updatedAt = yield* clockDate;
+  const interviewContent = savedSheet === undefined ? { state } : { savedSheet, state };
+
+  const [storedVersion] = yield* query((database) =>
     database
       .update(interview)
-      .set({ ...content, updatedAt, version: version + 1 })
+      .set({ ...interviewContent, updatedAt, version: version + 1 })
       .where(and(eq(interview.userId, userId), eq(interview.version, version)))
       .returning({ version: interview.version }),
   );
-  if (stored === undefined) {
+  if (storedVersion === undefined) {
     return yield* new InterviewConflict();
   }
 });
 
 export { InterviewConflict } from "./interview-conflict.ts";
 export { InterviewLimitReached } from "./interview-limit-reached.ts";
-export { countInterviewTurn, findInterview, startInterview, storeInterview };

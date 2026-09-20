@@ -61,13 +61,10 @@ const ErrorLocations = Schema.String.check(
 
 function errorFingerprint(type: string, locations: string): string {
   const frames = locations.split("\n").slice(0, fingerprintFrames).join("\n");
-  let hash = fnvOffsetBasis;
-  for (const character of `${type}\n${frames}`) {
-    // oxlint-disable-next-line no-bitwise
-    hash ^= character.codePointAt(0) ?? 0;
-    // oxlint-disable-next-line no-bitwise
-    hash = Math.imul(hash, fnvPrime) >>> 0;
-  }
+  const hash = Array.from(`${type}\n${frames}`).reduce(
+    (running, character) => Math.imul(running ^ (character.codePointAt(0) ?? 0), fnvPrime) >>> 0,
+    fnvOffsetBasis,
+  );
   return hash.toString(hexRadix).padStart(fingerprintWidth, "0");
 }
 

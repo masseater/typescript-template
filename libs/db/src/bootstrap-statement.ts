@@ -1,4 +1,5 @@
-import { sql } from "drizzle-orm";
+import { Email, ROLE } from "@repo/config";
+import { sql, type SQL } from "drizzle-orm";
 import { Effect, Schema, Struct } from "effect";
 
 import { DatabaseFailure } from "./database-failure.ts";
@@ -6,31 +7,27 @@ import { query } from "./database.ts";
 import { UserRow } from "./identity-schema.ts";
 import { user } from "./schema.ts";
 
-import type { SQL } from "drizzle-orm";
-
-const EmailAddress = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
-
 const BootstrappedAdmin = Schema.Struct({
   ...Struct.pick(UserRow.fields, ["email", "id"]),
-  role: Schema.Literal("admin"),
+  role: Schema.Literal(ROLE.administrator),
 });
 
-function bootstrapStatement(email: typeof EmailAddress.Type): SQL {
+const bootstrapStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
-    SET role = ${"admin"}, updated_at = ${Date.now()}
+    SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
-      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${"admin"})
+      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${ROLE.administrator})
     RETURNING id, email, role`;
-}
+};
 
-function ensureAdminStatement(email: typeof EmailAddress.Type): SQL {
+const ensureAdminStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
-    SET role = ${"admin"}, updated_at = ${Date.now()}
+    SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
     RETURNING id, email, role`;
-}
+};
 
 class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
   "BootstrapUnavailable",
@@ -38,19 +35,19 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 ) {}
 
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
-  email: typeof EmailAddress.Type,
+  email: typeof Email.Type,
 ) {
-  const [updated] = yield* query(async (database) => database.all(bootstrapStatement(email)));
-  if (updated === undefined) {
+  const [promotedRow] = yield* query(async (database) => database.all(bootstrapStatement(email)));
+  if (promotedRow === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(promotedRow).pipe(
     Effect.mapError((cause) => new DatabaseFailure({ cause })),
   );
 });
 
 const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
-  email: typeof EmailAddress.Type,
+  email: typeof Email.Type,
 ) {
   const [updated] = yield* query(async (database) => database.all(ensureAdminStatement(email)));
   if (updated === undefined) {
@@ -61,4 +58,4 @@ const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   );
 });
 
-export { BootstrappedAdmin, EmailAddress, bootstrapAdmin, bootstrapStatement, ensureAdminRole };
+export { BootstrappedAdmin, Email, bootstrapAdmin, bootstrapStatement, ensureAdminRole };

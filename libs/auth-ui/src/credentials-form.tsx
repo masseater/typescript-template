@@ -1,3 +1,4 @@
+import { AUTHENTICATION_METHOD } from "@repo/config";
 import { type ActionState, type TextInput, Button, Field, FormColumn } from "@repo/ui";
 
 import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
@@ -29,7 +30,9 @@ const signIn = async ({
     onChallenge(CHALLENGE_MODE.totp);
     return;
   }
-  if (new URLSearchParams(globalThis.location.search).get("recovery") === "setup") {
+  if (
+    new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) === "setup"
+  ) {
     globalThis.location.assign("/security?recovery=setup");
     return;
   }
@@ -56,7 +59,7 @@ const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
         />
         <Field
           label="パスワード"
-          name="password"
+          name={AUTHENTICATION_METHOD.password}
           type="password"
           autoComplete="current-password"
           required

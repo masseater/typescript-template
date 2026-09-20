@@ -1,3 +1,4 @@
+import { APPLICATION, ROLE } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db/security";
 import { Effect } from "effect";
 
@@ -37,7 +38,7 @@ const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(
   strong: boolean,
   allowEnrollment: boolean,
 ) {
-  if (role !== "admin") {
+  if (role !== ROLE.administrator) {
     return yield* new AdminRequired();
   }
   if (!allowEnrollment && !strong) {
@@ -52,15 +53,22 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   const { audience } = yield* Auth;
   const current = yield* requireSessionSecurity(headers);
   const strong = isStrongMethod(current.session.authenticationMethod);
-  if (audience !== "service-member") {
+  if (audience !== APPLICATION.user) {
     yield* verifyAdmin(current.user.role, strong, allowEnrollment);
   }
-  return { session: current.session, strong, user: current.user };
+  const { email, id, name, role, twoFactorEnabled } = current.user;
+  return {
+    session: { id: current.session.id },
+    strong,
+    user: { email, id, name, role, twoFactorEnabled },
+  };
 });
 
-// oxlint-disable-next-line typescript/explicit-function-return-type, typescript/explicit-module-boundary-types
-function verifySession(headers: Headers, allowEnrollment = false) {
+const verifySession = function verifySession(
+  headers: Headers,
+  allowEnrollment = false,
+): ReturnType<typeof verifySessionWith> {
   return verifySessionWith(headers, allowEnrollment);
-}
+};
 
 export { verifySession };
