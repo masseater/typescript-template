@@ -29,10 +29,9 @@ const TotpEnrollment = Schema.Struct({
   totpURI: Schema.String,
 });
 
-class Fixture extends Context.Service<
-  Fixture,
-  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
->()("AuthTestFixture") {}
+class Fixture extends Context.Service<Fixture, Readonly<Record<Application, AuthService>>>()(
+  "AuthTestFixture",
+) {}
 
 function decodeOrDie<Contract extends Schema.Top & { readonly DecodingServices: never }>(
   contract: Contract,
@@ -57,9 +56,9 @@ const fixture = Layer.effect(
   Fixture,
   Effect.gen(function* buildFixture() {
     return Fixture.of({
-      admin: yield* authFor("service-admin"),
-      user: yield* authFor("service-member"),
-      wiki: yield* authFor("internal-dashboard"),
+      "internal-dashboard": yield* authFor("internal-dashboard"),
+      "service-admin": yield* authFor("service-admin"),
+      "service-member": yield* authFor("service-member"),
     });
   }),
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
@@ -84,7 +83,7 @@ function receivedLink(email: string, subject: string): URL {
 }
 
 const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
-  const { user } = yield* Fixture;
+  const { "service-member": user } = yield* Fixture;
   const link = receivedLink(email, mailSubjects.verification);
   assert.deepStrictEqual([link.pathname, link.search], ["/verify-email", ""]);
   const token = new URLSearchParams(link.hash.slice(1)).get("token");
@@ -93,7 +92,7 @@ const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string
 });
 
 const register = Effect.fn("register")(function* register(email: string) {
-  const { user } = yield* Fixture;
+  const { "service-member": user } = yield* Fixture;
   const client = new BrowserClient(user);
   const signUp = { email, name: email, password: PASSWORD };
   assert.isTrue((yield* client.request("/sign-up/email", signUp)).ok);

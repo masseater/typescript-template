@@ -31,4 +31,4 @@ jobs:
       - run: vp run --filter @repo/db db:migrate:local
       - run: vp run --filter @repo/service-member build
       - run: vp run --filter @repo/service-member preview &
-      - run: vp run --filter @repo/load load user ${{ inputs.profile }}
+      - run: vp run --filter @repo/load load service-member ${{ inputs.profile }}

@@ -30,7 +30,7 @@ import {
 const tamperedSuffix = "xx";
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
-  const { wiki } = yield* Fixture;
+  const { "internal-dashboard": wiki } = yield* Fixture;
   const response = yield* Effect.promise(async () =>
     wiki.instance.handler(new Request(`${wikiOrigin}${path}`)),
   );
@@ -98,7 +98,7 @@ it.effect(
         const owner = yield* wiki.verify();
         yield* registerVerified("second@example.com");
         yield* runStatement("UPDATE user SET role = 'admin' WHERE email = ?", "second@example.com");
-        yield* runStatement("UPDATE user SET role = 'user' WHERE id = ?", owner.user.id);
+        yield* runStatement("UPDATE user SET role = 'member' WHERE id = ?", owner.user.id);
         assert.strictEqual(yield* failureTag(wiki.verify()), "SessionRequired");
         assert.strictEqual(responseStatus(yield* mcpRequest(tokens.access_token)), HTTP_FORBIDDEN);
       }),
@@ -120,11 +120,14 @@ it.effect(
         });
         assert.strictEqual(continued.status, HTTP_FORBIDDEN);
         assert.deepInclude(continued.body, { message: "ADMIN_MFA_REQUIRED" });
-        const smuggled = yield* new BrowserClient((yield* Fixture).wiki).json("/sign-in/email", {
-          email: "owner@example.com",
-          oauth_query: flow.oauthQuery,
-          password: PASSWORD,
-        });
+        const smuggled = yield* new BrowserClient((yield* Fixture)["internal-dashboard"]).json(
+          "/sign-in/email",
+          {
+            email: "owner@example.com",
+            oauth_query: flow.oauthQuery,
+            password: PASSWORD,
+          },
+        );
         assert.strictEqual(smuggled.status, HTTP_FORBIDDEN);
         assert.deepInclude(smuggled.body, { message: "OAUTH_QUERY_NOT_ACCEPTED" });
       }),
@@ -138,7 +141,7 @@ it.effect(
     withAuth(
       Effect.gen(function* program() {
         yield* registerVerified("member@example.com");
-        const member = new BrowserClient((yield* Fixture).wiki);
+        const member = new BrowserClient((yield* Fixture)["internal-dashboard"]);
         assert.isFalse((yield* signIn(member, "member@example.com")).ok);
         const signUp = { email: "new@example.com", name: "new", password: PASSWORD };
         assert.isFalse((yield* member.request("/sign-up/email", signUp)).ok);
