@@ -10,6 +10,7 @@ const httpStatus = {
   noContent: 204,
   notFound: 404,
   ok: 200,
+  paymentRequired: 402,
   payloadTooLarge: 413,
   serviceUnavailable: 503,
   tooManyRequests: 429,
