@@ -115,8 +115,12 @@ const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSource
 ) {
   const directories = sourceMapDirectories(repositoryRoot, target);
   const destination = path.join(directories.releases, release);
+  const client = yield* copyMaps(directories.client, path.join(destination, "client"));
+  if (client === 0) {
+    return yield* fail("source_maps_missing");
+  }
   return {
-    client: yield* copyMaps(directories.client, path.join(destination, "client")),
+    client,
     server: yield* copyMaps(
       path.join(repositoryRoot, "apps", target, "dist", "server"),
       path.join(destination, "server"),
