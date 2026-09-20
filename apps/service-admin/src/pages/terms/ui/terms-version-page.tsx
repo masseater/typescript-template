@@ -51,7 +51,7 @@ function VersionContent({
         {agreementKindLabels[version.kind]} / {stateLabel(version.publishedAt)}
       </p>
       {version.publishedAt === null ? (
-        <DraftEditor onSaved={onReload} version={version} />
+        <DraftEditor key={version.id} onSaved={onReload} version={version} />
       ) : (
         <PublishedBody version={version} />
       )}

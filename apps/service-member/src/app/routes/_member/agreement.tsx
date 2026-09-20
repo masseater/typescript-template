@@ -9,7 +9,10 @@ import type { ReactElement } from "react";
 
 const home = "/home";
 
+// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/agreement")({
+  validateSearch: (search: Readonly<Record<string, unknown>>): { redirect?: string } =>
+    search["redirect"] === undefined ? {} : { redirect: redirectTarget(search["redirect"]) },
   beforeLoad: ({
     context,
     search,
@@ -22,8 +25,6 @@ const Route = createFileRoute("/_member/agreement")({
     }
   },
   component: AgreementRoute,
-  validateSearch: (search: Readonly<Record<string, unknown>>): { redirect?: string } =>
-    search["redirect"] === undefined ? {} : { redirect: redirectTarget(search["redirect"]) },
 });
 
 const route = getRouteApi("/_member/agreement");
