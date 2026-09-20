@@ -1,4 +1,4 @@
-import { Avatar, ButtonLink, Heading } from "@repo/ui";
+import { Avatar, ButtonLink, Heading, formatWarekiMonth } from "@repo/ui";
 
 import { SocialLinks } from "#shared/social-link";
 import { Biography } from "./biography.tsx";
@@ -7,12 +7,6 @@ import { ProfileShare } from "./profile-share.tsx";
 
 import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
-
-const joinedMonth = new Intl.DateTimeFormat("ja", {
-  month: "long",
-  timeZone: "UTC",
-  year: "numeric",
-});
 
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
   return (
@@ -26,7 +20,7 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
       <Biography own={own} text={member.profile} />
       <SocialLinks urls={member.socialLinks} />
       <p className="text-sm leading-normal text-muted-foreground">
-        {joinedMonth.format(new Date(`${member.joined}-01T00:00:00Z`))}に登録
+        {formatWarekiMonth(member.joined)}に登録
       </p>
       {own && (
         <>
