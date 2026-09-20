@@ -1,6 +1,6 @@
 import { Effect, Option, Tracer } from "effect";
 
-import { recordingSink } from "./testing.ts";
+import { recordingSink } from "./recording-sink.ts";
 
 import type { LogSink } from "./structured-logs.ts";
 

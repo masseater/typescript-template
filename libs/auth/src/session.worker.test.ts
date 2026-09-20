@@ -1,6 +1,6 @@
 import { APPLICATION, AUTHENTICATION_METHOD, ROLE } from "@repo/config";
+import { getSessionSecurity } from "@repo/db";
 import { setUserRole } from "@repo/db/admin";
-import { getSessionSecurity } from "@repo/db/security";
 import { runStatement } from "@repo/db/testing";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
