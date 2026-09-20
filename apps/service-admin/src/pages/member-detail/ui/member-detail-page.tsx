@@ -1,4 +1,4 @@
-import { Heading, Status } from "@repo/ui";
+import { Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
@@ -14,25 +14,33 @@ function MemberDetailPage({ memberId }: Readonly<{ memberId: string }>): ReactEl
           <Heading as="h2" size="section">
             状態
           </Heading>
-          <Status variant="pending">状態の要約はまだありません。</Status>
+          <StatusMessage variant={STATUS_VARIANT.pending}>
+            状態の要約はまだありません。
+          </StatusMessage>
         </article>
         <article className="rounded-lg border border-border p-3">
           <Heading as="h2" size="section">
             契約
           </Heading>
-          <Status variant="pending">契約の要約はまだありません。</Status>
+          <StatusMessage variant={STATUS_VARIANT.pending}>
+            契約の要約はまだありません。
+          </StatusMessage>
         </article>
         <article className="rounded-lg border border-border p-3">
           <Heading as="h2" size="section">
             問い合わせ
           </Heading>
-          <Status variant="pending">問い合わせの履歴はまだありません。</Status>
+          <StatusMessage variant={STATUS_VARIANT.pending}>
+            問い合わせの履歴はまだありません。
+          </StatusMessage>
         </article>
         <article className="rounded-lg border border-border p-3">
           <Heading as="h2" size="section">
             通報と処置
           </Heading>
-          <Status variant="pending">通報と処置の履歴はまだありません。</Status>
+          <StatusMessage variant={STATUS_VARIANT.pending}>
+            通報と処置の履歴はまだありません。
+          </StatusMessage>
         </article>
       </section>
     </main>
