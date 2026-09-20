@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@repo/auth": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/interview": "workspace:*",
     "@repo/observability": "workspace:*",
@@ -28,7 +29,6 @@
     "@cloudflare/vite-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
-    "@repo/config": "workspace:*",
     "@repo/dev-boundary": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
