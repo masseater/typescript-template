@@ -23,6 +23,7 @@ import { Route as MemberUpgradeRouteImport } from './routes/_member/upgrade'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicContactRouteImport } from './routes/_public/contact'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as PublicRecoverRouteImport } from './routes/_public/recover'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
@@ -107,6 +108,11 @@ const PublicContactRoute = PublicContactRouteImport.update({
 const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicRecoverRoute = PublicRecoverRouteImport.update({
+  id: '/recover',
+  path: '/recover',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicSignupRoute = PublicSignupRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
+  '/recover': typeof PublicRecoverRoute
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
+  '/recover': typeof PublicRecoverRoute
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/_member/upgrade': typeof MemberUpgradeRoute
   '/_public/contact': typeof PublicContactRoute
   '/_public/login': typeof PublicLoginRoute
+  '/_public/recover': typeof PublicRecoverRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/contact'
     | '/login'
+    | '/recover'
     | '/signup'
     | '/verify-email'
     | '/api/$'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/contact'
     | '/login'
+    | '/recover'
     | '/signup'
     | '/verify-email'
     | '/api/$'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/_member/upgrade'
     | '/_public/contact'
     | '/_public/login'
+    | '/_public/recover'
     | '/_public/signup'
     | '/_public/verify-email'
     | '/api/$'
@@ -502,6 +514,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/recover': {
+      id: '/_public/recover'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof PublicRecoverRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/signup': {
@@ -681,6 +700,7 @@ const MemberRouteWithChildren =
 interface PublicRouteChildren {
   PublicContactRoute: typeof PublicContactRoute
   PublicLoginRoute: typeof PublicLoginRoute
+  PublicRecoverRoute: typeof PublicRecoverRoute
   PublicSignupRoute: typeof PublicSignupRoute
   PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -689,6 +709,7 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicContactRoute: PublicContactRoute,
   PublicLoginRoute: PublicLoginRoute,
+  PublicRecoverRoute: PublicRecoverRoute,
   PublicSignupRoute: PublicSignupRoute,
   PublicVerifyEmailRoute: PublicVerifyEmailRoute,
   PublicIndexRoute: PublicIndexRoute,

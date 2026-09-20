@@ -1,10 +1,11 @@
-import { grants } from "@repo/config";
+import { APPLICATION, grants } from "@repo/config";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 
 import type { Application } from "@repo/config";
@@ -31,6 +32,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
+    crons: target === APPLICATION.user ? [memberLeavePurgeCron] : undefined,
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env: appEnv(target, {
       APP_ORIGIN: origin,

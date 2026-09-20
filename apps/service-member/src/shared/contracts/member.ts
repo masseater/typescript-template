@@ -9,6 +9,7 @@ const maximumKeywordLength = 100;
 const secondPage = 2;
 const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
+const memberRetentionDays = 30;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
 
@@ -93,9 +94,23 @@ const ContactSubmission = Schema.Struct({
 
 const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 
+const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
+
+const LeaveAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
+const RecoverRequest = Schema.Struct({
+  email: Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u)),
+});
+
+const RecoverAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
 export {
   ContactAccepted,
   ContactSubmission,
+  LeaveAccepted,
+  LeaveRequest,
+  RecoverAccepted,
+  RecoverRequest,
   MemberList,
   MemberListQuery,
   MemberQuery,
@@ -112,4 +127,5 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  memberRetentionDays,
 };

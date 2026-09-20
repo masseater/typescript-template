@@ -1,6 +1,10 @@
 export {
   ContactAccepted,
   ContactSubmission,
+  LeaveAccepted,
+  LeaveRequest,
+  RecoverAccepted,
+  RecoverRequest,
   MemberList,
   MemberListQuery,
   MemberQuery,
@@ -17,5 +21,6 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  memberRetentionDays,
 } from "./member.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";

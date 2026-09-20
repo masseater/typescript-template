@@ -34,7 +34,7 @@ erDiagram
 - PlanSubscription の `plan` はいま `free` か `paid` である。契約が無い MemberAccount は `free` として扱う
 - `state` が `active` の `paid` だけが、探すと最初のメッセージを使える
 - 解約は `cancelAt` を現在期間の末に置き、その時点で `free` に戻る。引き止めの段階は持たない
-- LeaveRequest を受け付けたら MemberAccount の `status` を `left` にし、他の利用者からの参照を止める。`purgeAt` までの 30 日間だけ本人が復旧できる
+- LeaveRequest を受け付けたら、会員データを `withdrawn_member` に移し、`user` から削除する。他の利用者からの参照を止める。`purgeAt` までの 30 日間だけ本人が `/recover` で復旧できる
 - 管理者の停止（`suspended`）と退会（`left`）は別である。停止は契約を消さず、退会は契約を終える
 
 ## 画面
