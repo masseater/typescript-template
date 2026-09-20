@@ -23,7 +23,7 @@ export type FlagDefinition = Readonly<{
 
 export const flagDefinitions: readonly FlagDefinition[] = [
   {
-    defaultVariation: FLAG_VARIATION.disabled,
+    defaultVariation: FLAG_VARIATION.enabled,
     description: "会員向けアプリの掲示板タブを表示する",
     enabled: true,
     key: FLAG_KEY.memberBoard,
