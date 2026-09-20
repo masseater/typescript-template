@@ -10,18 +10,18 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
+import { reportFailed, runCli } from "@repo/cli";
+import { applicationReadyPaths, applications, loopbackAddress } from "@repo/config";
+import { localDatabaseVariable } from "@repo/config/local-database-path";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Cause, Console, Effect, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
-
-import { ApplicationName, applicationReadyPaths, loopbackAddress } from "./applications.ts";
-import { reportFailed, runCli } from "./cli.ts";
-import { localDatabaseVariable } from "./local-database-path.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,
 }) {}
 
+const Application = Schema.Literals(applications);
 const successStatus = 200;
 const requestTimeoutMilliseconds = 120_000;
 const startTimeout = "5 minutes";
@@ -43,7 +43,7 @@ const isolatedDatabase = Effect.acquireRelease(
       process.env[localDatabaseVariable] = directory;
       await runFile(
         path.join(repositoryRoot, "node_modules/.bin/vp"),
-        ["run", "--filter", "@repo/db", "db:migrate:local"],
+        ["run", "--filter", "@repo/db-local", "db:migrate:local"],
         {
           cwd: repositoryRoot,
           // oxlint-disable-next-line node/no-process-env
@@ -129,7 +129,7 @@ function report(reasons: readonly string[]): Effect.Effect<void> {
 }
 
 const program = Effect.gen(function* program() {
-  const app = yield* Schema.decodeUnknownEffect(ApplicationName)(path.basename(process.cwd())).pipe(
+  const app = yield* Schema.decodeUnknownEffect(Application)(path.basename(process.cwd())).pipe(
     Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
   );
   const origin = yield* listeningOrigin;

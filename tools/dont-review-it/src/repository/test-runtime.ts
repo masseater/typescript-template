@@ -19,7 +19,7 @@ const testFile = new RegExp(testPattern, "u");
 const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 
 const browserOrNodeOnly =
-  /\/libs\/(?:ui|auth-ui)\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/(?:remote|testing-node)[^/]*\.ts$/u;
+  /\/libs\/(?:ui|auth-ui)\/|\/libs\/observability\/src\/browser\.ts$|\/libs\/runtime\/src\/client\.ts$|\/libs\/db\/src\/remote[^/]*\.ts$|\/libs\/db-local\/src\/testing-node[^/]*\.ts$/u;
 
 const runsInWorkerRuntime = (inspected: string): boolean => {
   return (

@@ -14,7 +14,6 @@ const DropdownMenuLinkAnchor = ({
   return (
     <MenuPrimitive.LinkItem
       data-slot="dropdown-menu-link-item"
-
       render={<a {...anchor} />}
       onClick={close}
       className={cn(itemVariants(), "no-underline hover:text-foreground")}

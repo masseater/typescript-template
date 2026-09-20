@@ -681,7 +681,7 @@ describe("the package surface", () => {
         "es-toolkit": "catalog:",
       },
       devDependencies: {
-        "@repo/config": "workspace:*",
+        "@repo/vite-config": "workspace:*",
         "@tanstack/intent": "catalog:",
         "@types/node": "catalog:",
         "@vitest/coverage-v8": "catalog:",

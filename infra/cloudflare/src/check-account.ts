@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { markFailed, runCli } from "@repo/config/cli";
+import { markFailed, runCli } from "@repo/cli";
 import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 

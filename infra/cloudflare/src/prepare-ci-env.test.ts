@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { deploymentKeys } from "@repo/config/deployment-keys";
+import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect } from "effect";
 
 import { writeCiSecretsFile } from "./ci-env.ts";

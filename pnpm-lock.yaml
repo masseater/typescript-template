@@ -362,12 +362,18 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:libs/db
+      '@repo/db-local':
+        specifier: workspace:*
+        version: link:libs/db-local
       '@repo/dont-review-it':
         specifier: workspace:*
         version: link:tools/dont-review-it
       '@repo/monitor':
         specifier: workspace:*
         version: link:libs/monitor
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:libs/vite-config
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
@@ -489,6 +495,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@types/mdast':
         specifier: ^4.0.4
         version: 4.0.4
@@ -580,6 +589,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -668,6 +680,9 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -698,9 +713,9 @@ importers:
 
   infra/budget-monitor:
     dependencies:
-      '@repo/config':
+      '@repo/cli':
         specifier: workspace:*
-        version: link:../../libs/config
+        version: link:../../libs/cli
       '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
@@ -738,6 +753,9 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -750,6 +768,12 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
+      '@repo/runtime':
+        specifier: workspace:*
+        version: link:../../libs/runtime
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       alchemy:
         specifier: 'catalog:'
         version: 2.0.0-beta.77(@effect/platform-node@4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1)))(@types/node@26.6.1)(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20260916.1)(@effect/sql-d1@4.0.0-rc.115(effect@4.0.0-rc.112))(@effect/sql-sqlite-do@4.0.0-rc.115(effect@4.0.0-rc.112))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(effect@4.0.0-rc.112)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.5))(effect@4.0.0-rc.112)(typescript@7.0.2)(vitest@4.1.11)(ws@8.21.3)
@@ -852,6 +876,9 @@ importers:
 
   infra/local:
     dependencies:
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -859,6 +886,9 @@ importers:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
     devDependencies:
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -905,6 +935,9 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -964,32 +997,33 @@ importers:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
-  libs/config:
+  libs/cli:
     dependencies:
-      '@cloudflare/vite-plugin':
-        specifier: 1.54.10
-        version: 1.54.10(@types/node@26.6.1)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1))
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@tailwindcss/vite':
-        specifier: 'catalog:'
-        version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
-      '@tanstack/react-start':
-        specifier: 'catalog:'
-        version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.5)(supports-color@10.2.2)
-      '@vitejs/plugin-react':
-        specifier: 'catalog:'
-        version: 6.1.1(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(oxc-transform-react@0.145.0)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
+    devDependencies:
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
       vite-plus:
         specifier: 'catalog:'
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-      wrangler:
+
+  libs/config:
+    dependencies:
+      effect:
         specifier: 'catalog:'
-        version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
+        version: 4.0.0-rc.112
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
@@ -1000,12 +1034,12 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
-      oxc-transform-react:
-        specifier: 'catalog:'
-        version: 0.145.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   libs/db:
     dependencies:
@@ -1021,12 +1055,6 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
-      miniflare:
-        specifier: 'catalog:'
-        version: 5.20260917.0-alpha(@types/node@26.6.1)
-      wrangler:
-        specifier: 'catalog:'
-        version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
@@ -1037,6 +1065,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1050,11 +1081,45 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
-  libs/monitor:
+  libs/db-local:
     dependencies:
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@repo/config':
         specifier: workspace:*
         version: link:../config
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../db
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112
+      miniflare:
+        specifier: 'catalog:'
+        version: 5.20260917.0-alpha(@types/node@26.6.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 'catalog:'
+        version: 5.20260916.1
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  libs/monitor:
+    dependencies:
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1090,6 +1155,9 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
@@ -1130,6 +1198,9 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
@@ -1148,12 +1219,12 @@ importers:
       '@base-ui/react':
         specifier: 'catalog:'
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../config
       '@repo/observability':
         specifier: workspace:*
         version: link:../observability
+      '@repo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@smarthr/wareki':
         specifier: 'catalog:'
         version: 1.3.1
@@ -1197,6 +1268,12 @@ importers:
         specifier: 'catalog:'
         version: 1.0.5
     devDependencies:
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@5.5.0))(supports-color@5.5.0)(typescript@7.0.2)
@@ -1249,6 +1326,37 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/browser-preview@4.1.11)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
 
+  libs/vite-config:
+    dependencies:
+      '@cloudflare/vite-plugin':
+        specifier: 1.54.10
+        version: 1.54.10(@types/node@26.6.1)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.134.0(@types/node@26.6.1))
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
+      '@tanstack/react-start':
+        specifier: 'catalog:'
+        version: 1.168.54(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.5)(supports-color@10.2.2)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 6.1.1(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(oxc-transform-react@0.145.0)
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.1
+      oxc-transform-react:
+        specifier: 'catalog:'
+        version: 0.145.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   tools/ai-native:
     dependencies:
       '@opentelemetry/api':
@@ -1288,9 +1396,9 @@ importers:
       '@opentelemetry/sdk-metrics':
         specifier: 'catalog:'
         version: 2.10.0(@opentelemetry/api@1.9.1)
-      '@repo/config':
+      '@repo/vite-config':
         specifier: workspace:*
-        version: link:../../libs/config
+        version: link:../../libs/vite-config
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.3.6
@@ -1355,9 +1463,9 @@ importers:
         specifier: 'catalog:'
         version: 1.52.0
     devDependencies:
-      '@repo/config':
+      '@repo/vite-config':
         specifier: workspace:*
-        version: link:../../libs/config
+        version: link:../../libs/vite-config
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.3.6
@@ -1382,6 +1490,9 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1428,6 +1539,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
@@ -1458,6 +1572,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1470,6 +1587,9 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       agent-browser:
         specifier: 0.37.1
         version: 0.37.1
@@ -1488,6 +1608,9 @@ importers:
       portless:
         specifier: 0.15.6
         version: 0.15.6
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
       wrangler:
         specifier: 'catalog:'
         version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
@@ -1516,12 +1639,24 @@ importers:
       '@repo/ai-native-telemetry':
         specifier: workspace:*
         version: link:../ai-native-telemetry
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/infra-cloudflare':
         specifier: workspace:*
         version: link:../../infra/cloudflare
+      '@repo/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
       '@repo/ui':
         specifier: workspace:*
         version: link:../../libs/ui
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
@@ -1583,9 +1718,6 @@ importers:
       '@oxlint/plugins':
         specifier: 'catalog:'
         version: 1.82.0
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.3.6
@@ -1613,6 +1745,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1640,6 +1775,9 @@ importers:
 
   tools/load:
     dependencies:
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -1650,6 +1788,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@types/k6':
         specifier: 2.2.1
         version: 2.2.1
@@ -12580,7 +12721,7 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260917.1
 
-  '@cloudflare/vite-plugin@1.54.10(@types/node@26.6.1)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1))':
+  '@cloudflare/vite-plugin@1.54.10(@types/node@26.6.1)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.134.0(@types/node@26.6.1))':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260915.1)
       miniflare: 5.20260915.0-alpha(@types/node@26.6.1)

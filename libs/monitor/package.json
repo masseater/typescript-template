@@ -9,7 +9,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@repo/config": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

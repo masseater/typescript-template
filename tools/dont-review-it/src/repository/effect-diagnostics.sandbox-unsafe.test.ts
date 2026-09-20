@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { effectDiagnostics } from "@repo/config/vite";
+import { effectDiagnostics } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
