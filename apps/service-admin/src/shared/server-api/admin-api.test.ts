@@ -1,4 +1,5 @@
 import { assert, it } from "@effect/vitest";
+import { Auth } from "@repo/auth";
 import { APPLICATION } from "@repo/config";
 import { Telemetry, httpStatus } from "@repo/observability";
 import { AppOrigin, apiRoutes } from "@repo/runtime/http";
@@ -8,12 +9,23 @@ import { Effect, Layer } from "effect";
 
 import { adminRoutes } from "./admin-api.ts";
 
+import type { BetterAuthInstance } from "@repo/auth";
+
 const origin = "http://localhost:3002";
+const authStub = Auth.of({
+  audience: APPLICATION.admin,
+  instance: {
+    options: {
+      advanced: { cookiePrefix: "auth" },
+      secret: "worker-test-secret-at-least-32-characters",
+    },
+  } as BetterAuthInstance,
+});
 const runtime = workerRuntime(() =>
-  Layer.succeed(AppOrigin, origin).pipe(
-    Layer.provideMerge(
-      Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.admin }),
-    ),
+  Layer.mergeAll(
+    Layer.succeed(AppOrigin, origin),
+    Layer.succeed(Auth, authStub),
+    Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.admin }),
   ),
 );
 const api = apiRoutes(runtime, { service: APPLICATION.admin });
