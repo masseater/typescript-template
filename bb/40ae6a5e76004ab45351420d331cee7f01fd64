@@ -1,1 +1,7 @@
-Fix commit body typo: depDependencies → devDependencies.
+Revision history for #705:
+
+rev 3 (rebase) 2026-09-20 00:52 UTC — Fix commit body typo: depDependencies → devDependencies.
+rev 2 (content) 2026-09-20 00:51 UTC — Move test-only OTLP exporter packages in @repo/ai-native to depDependencies so knip --strict stops failing on unused production dependencies after the telemetry split.
+rev 1 (initial) 2026-09-20 00:51 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":705,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"512c8245df7e637a0845bd973acf1fa9147bf815","timestamp_iso":"2026-09-20T00:51:54Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"512c8245df7e637a0845bd973acf1fa9147bf815","new_sha":"c5a9091a4af99b8be47398701c9b2658875bf838","timestamp_iso":"2026-09-20T00:51:54Z","reason":"Move test-only OTLP exporter packages in @repo/ai-native to depDependencies so knip --strict stops failing on unused production dependencies after the telemetry split.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/512c8245df7e637a0845bd973acf1fa9147bf815...c5a9091a4af99b8be47398701c9b2658875bf838"},{"number":3,"change_type":"rebase","old_sha":"c5a9091a4af99b8be47398701c9b2658875bf838","new_sha":"bb40ae6a5e76004ab45351420d331cee7f01fd64","timestamp_iso":"2026-09-20T00:52:46Z","reason":"Fix commit body typo: depDependencies → devDependencies.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/c5a9091a4af99b8be47398701c9b2658875bf838...bb40ae6a5e76004ab45351420d331cee7f01fd64"}]} -->
