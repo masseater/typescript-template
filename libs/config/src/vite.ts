@@ -146,17 +146,19 @@ type Tasks = NonNullable<RunConfig["tasks"]>;
 const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
 type Lifecycle = (typeof lifecycles)[number];
 
+const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
+  precommit: [],
+  prepush: ["precommit"],
+  prepr: ["prepush"],
+  premerge: [],
+  prerelease: ["prepr", "premerge"],
+};
+
 function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
   return Object.fromEntries(
-    lifecycles.map((name, index) => [
+    lifecycles.map((name) => [
       name,
-      {
-        command: [],
-        dependsOn: [
-          ...(name === "premerge" ? [] : lifecycles.slice(Math.max(index - 1, 0), index)),
-          ...stages[name],
-        ],
-      },
+      { command: [], dependsOn: [...lifecycleInherits[name], ...stages[name]] },
     ]),
   );
 }
@@ -221,8 +223,8 @@ const appRun = {
     ...lifecycle({
       precommit: [],
       prepush: ["check:effect"],
-      prepr: ["check"],
-      premerge: ["build", "check:dev"],
+      prepr: ["check", "build"],
+      premerge: ["check:dev"],
       prerelease: [],
     }),
   },
@@ -236,6 +238,7 @@ export {
   effectRun,
   intentValidation,
   lifecycle,
+  lifecycleInherits,
   lifecycles,
   previewDevVars,
   reactCompiler,

@@ -15,8 +15,6 @@ const importedTools = [
   "./tools/stop-ai-slop",
 ];
 
-const changedSince = '"${TEST_CHANGED_SINCE:-origin/main}"';
-
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
 const textModule = (code: string, moduleId: string): string | undefined =>
@@ -64,13 +62,6 @@ export default defineConfig({
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
       test: { cache: false, command: "vp test run --project '!@repo/*'" },
-      "test:changed": {
-        cache: false,
-        command: [
-          `git merge-base ${changedSince} HEAD > /dev/null`,
-          `vp test run --project '!@repo/*' --changed ${changedSince} --passWithNoTests`,
-        ],
-      },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect"],
@@ -80,9 +71,9 @@ export default defineConfig({
           "check:imports",
           "check:react",
           "check:canonical-literal-types",
-          "test:changed",
+          "test",
         ],
-        premerge: ["test"],
+        premerge: [],
         prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],

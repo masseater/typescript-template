@@ -1,4 +1,4 @@
-import { generatedDirectories, lifecycles } from "@repo/config/vite";
+import { generatedDirectories, lifecycleInherits, lifecycles } from "@repo/config/vite";
 import { describe, expect, it } from "vite-plus/test";
 
 import { onDemandGateEntries } from "./on-demand-checks.ts";
@@ -101,13 +101,13 @@ function lifecycleOutsideGates(): string[] {
 }
 
 function brokenChain(directory: string): string[] {
-  return lifecycles.flatMap((name, index) => {
-    const previous = name === "premerge" ? [] : lifecycles.slice(Math.max(index - 1, 0), index);
+  const stages = new Set<string>(lifecycles);
+  return lifecycles.flatMap((name) => {
+    const inherited = dependencies(directory, name).filter((dependency) => stages.has(dependency));
     const chained =
       taskNames(directory).includes(name) &&
       commands(directory, name).length === 0 &&
-      previous.every((stage) => dependencies(directory, name).includes(stage)) &&
-      (name !== "premerge" || !dependencies(directory, name).includes("prepr"));
+      inherited.toSorted().join(",") === [...lifecycleInherits[name]].toSorted().join(",");
     return chained ? [] : [`${directory}: ${name}`];
   });
 }
@@ -141,7 +141,7 @@ function slowBeforePush(directory: string): string[] {
 
 function ungatedProjects(): string[] {
   return testProjectDirectories.filter(
-    (directory) => !reachable(directory, ["premerge"]).includes("test"),
+    (directory) => !reachable(directory, ["prepr"]).includes("test"),
   );
 }
 
@@ -200,7 +200,7 @@ describe("generated paths", () => {
 });
 
 describe("lifecycle contents", () => {
-  it("every workspace chains precommit through prerelease", () => {
+  it("every workspace inherits the stages its gate is declared to inherit", () => {
     expect.hasAssertions();
     expect(configuredDirectories.flatMap((directory) => brokenChain(directory))).toStrictEqual([]);
   });
@@ -220,7 +220,6 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test",
-      ".#test:changed",
       "infra/cloudflare#verify:account",
       "libs/db#db:migrate:local",
       "tools/commander#check:start",
@@ -248,7 +247,7 @@ describe("lifecycle contents", () => {
 });
 
 describe("test ownership", () => {
-  it("every workspace vitest project runs from its own merge gate", () => {
+  it("every workspace vitest project runs from its own pull request gate", () => {
     expect.hasAssertions();
     expect(testProjectDirectories.length).toBeGreaterThan(0);
     expect(ungatedProjects()).toStrictEqual([]);

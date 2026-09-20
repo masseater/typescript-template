@@ -33,8 +33,8 @@ export default defineConfig({
       ...lifecycle({
         precommit: [],
         prepush: ["check:effect"],
-        prepr: [],
-        premerge: ["verify:stacks"],
+        prepr: ["verify:stacks"],
+        premerge: [],
         prerelease: ["verify:account"],
       }),
     },

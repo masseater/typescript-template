@@ -12,8 +12,8 @@ export default defineConfig({
       ...lifecycle({
         precommit: [],
         prepush: ["check:effect"],
-        prepr: ["check"],
-        premerge: ["test"],
+        prepr: ["check", "test"],
+        premerge: [],
         prerelease: [],
       }),
     },

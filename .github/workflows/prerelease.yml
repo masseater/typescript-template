@@ -14,8 +14,6 @@ jobs:
   prerelease:
     runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
     timeout-minutes: 90
-    env:
-      TEST_CHANGED_SINCE: HEAD
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
