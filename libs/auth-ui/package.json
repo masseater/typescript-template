@@ -11,6 +11,8 @@
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@tanstack/react-form": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",
