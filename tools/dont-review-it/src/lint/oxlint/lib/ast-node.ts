@@ -1,5 +1,5 @@
 import type { ESTree } from "@oxlint/plugins";
-import type { UnknownFields } from "@repo/lint-rule-authoring";
+import type { UnknownFields } from "@repo/dont-review-it/lint-rule-authoring";
 
 export const NODE_TYPE_FIELD = "type";
 
