@@ -8,7 +8,7 @@ export type Correlation = {
 
 export const traceIdBytes = 16;
 export const spanIdBytes = 8;
-export const hexRadix = 16;
+const hexRadix = 16;
 const hexByteWidth = 2;
 export const routeMessage = "Telemetry routes require fixed paths and bounded labels";
 const routePathPattern = /^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u;

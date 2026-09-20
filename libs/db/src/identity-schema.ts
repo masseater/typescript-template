@@ -38,7 +38,7 @@ const user = sqliteTable(
 
   (table) => [
     uniqueIndex("user_email_unique").on(table.email),
-    check("user_role", sql`${table.role} IN ('user', 'admin')`),
+    check("user_role", sql`${table.role} IN ('member', 'admin')`),
   ],
 );
 
