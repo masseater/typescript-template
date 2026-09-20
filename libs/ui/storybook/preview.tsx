@@ -10,15 +10,6 @@ import { useState, type ReactElement } from "react";
 
 const router = createRouter({ routeTree: createRootRoute() });
 
-<<<<<<< HEAD
-const withProviders = (Story: () => ReactElement): ReactElement => {
-  return (
-    <RegistryProvider>
-      <RouterContextProvider router={router}>
-        <Story />
-      </RouterContextProvider>
-    </RegistryProvider>
-=======
 const Providers = ({ children }: Readonly<{ children: ReactElement }>): ReactElement => {
   const [queryClient] = useState(
     () =>
@@ -27,10 +18,11 @@ const Providers = ({ children }: Readonly<{ children: ReactElement }>): ReactEle
       }),
   );
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterContextProvider router={router}>{children}</RouterContextProvider>
-    </QueryClientProvider>
->>>>>>> 8242aaaf (fix: restore Field error stories and QueryClient for auth-ui Storybook)
+    <RegistryProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterContextProvider router={router}>{children}</RouterContextProvider>
+      </QueryClientProvider>
+    </RegistryProvider>
   );
 };
 
