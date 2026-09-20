@@ -69,6 +69,7 @@ const singleConsumerAllowlist: readonly string[] = [
   "subpath:@repo/auth/mcp",
   "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/interview",
+  "subpath:@repo/db/member-social",
   "subpath:@repo/db/remote",
   "subpath:@repo/db/security",
   "subpath:@repo/dont-review-it/plugin",
