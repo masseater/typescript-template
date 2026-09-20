@@ -74,3 +74,47 @@ it.effect("refuses when a required deployment key is missing", () =>
     assert.deepStrictEqual([...failure.keys], ["CLOUDFLARE_API_TOKEN"]);
   }).pipe(Effect.scoped),
 );
+
+it.effect("refuses retired per-app origin secrets when TEMPLATE_APP_DOMAIN is absent", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const required = Object.fromEntries(
+      deploymentKeys
+        .filter((key) => key !== "TEMPLATE_APP_DOMAIN")
+        .map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const failure = yield* writeCiSecretsFile({
+      ...required,
+      RUNNER_TEMP: path.join(directory, "runner"),
+      TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: "https://template-verify-dashboard.example.com",
+      TEMPLATE_SERVICE_ADMIN_ORIGIN: "https://template-verify-admin.example.com",
+      TEMPLATE_SERVICE_MEMBER_ORIGIN: "https://template-verify-member.example.com",
+    }).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "ci_env_retired_origins");
+    assert.deepStrictEqual(
+      [...failure.keys],
+      [
+        "TEMPLATE_APP_DOMAIN",
+        "TEMPLATE_SERVICE_MEMBER_ORIGIN",
+        "TEMPLATE_SERVICE_ADMIN_ORIGIN",
+        "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
+      ],
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses retired per-app origin secrets even when TEMPLATE_APP_DOMAIN is set", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const failure = yield* writeCiSecretsFile({
+      ...required,
+      RUNNER_TEMP: path.join(directory, "runner"),
+      TEMPLATE_SERVICE_MEMBER_ORIGIN: "https://template-verify-member.example.com",
+    }).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "ci_env_retired_origins");
+    assert.deepStrictEqual([...failure.keys], ["TEMPLATE_SERVICE_MEMBER_ORIGIN"]);
+  }).pipe(Effect.scoped),
+);
