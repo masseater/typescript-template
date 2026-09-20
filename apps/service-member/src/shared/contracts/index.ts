@@ -1,7 +1,6 @@
 export {
   BoardPostCreate,
   BoardPostCreated,
-  BoardPostView,
   BoardThreadCreate,
   BoardThreadCreated,
   BoardThreadList,

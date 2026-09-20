@@ -36,4 +36,3 @@ function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyFor
 }
 
 export { useReplyForm };
-export type { ReplyForm };

@@ -38,4 +38,3 @@ function useNewThreadForm(onCreated: (threadId: string) => Promise<void>): NewTh
 }
 
 export { useNewThreadForm };
-export type { NewThreadForm };

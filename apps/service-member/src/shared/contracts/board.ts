@@ -62,7 +62,6 @@ const BoardPostCreated = Schema.Struct({ id: Schema.String });
 export {
   BoardPostCreate,
   BoardPostCreated,
-  BoardPostView,
   BoardThreadCreate,
   BoardThreadCreated,
   BoardThreadList,
