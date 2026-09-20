@@ -1,8 +1,8 @@
 import { TextLink } from "@repo/ui";
 import { useState } from "react";
 
-import { useContactForm } from "#pages/contact/model/contact-form.ts";
-import { ContactFormFields } from "#pages/contact/ui/contact-form-fields.tsx";
+import { useContactForm } from "#pages/public/contact/model/contact-form.ts";
+import { ContactFormFields } from "#pages/public/contact/ui/contact-form-fields.tsx";
 import { CardPage } from "#shared/ui/index.ts";
 
 import type { ReactElement } from "react";

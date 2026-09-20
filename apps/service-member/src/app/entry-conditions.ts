@@ -2,8 +2,8 @@ import { loginPath } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 
 import { loadSession } from "#entities/session/index.ts";
+import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
-import { loadOnboardingStep } from "#pages/welcome/index.ts";
 
 import type { Session } from "#entities/session/index.ts";
 import type { OnboardingStep } from "#shared/contracts/index.ts";

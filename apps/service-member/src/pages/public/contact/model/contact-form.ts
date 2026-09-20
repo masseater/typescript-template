@@ -1,7 +1,7 @@
 import { useAction } from "@repo/ui";
 import { useState } from "react";
 
-import { submitContact } from "#pages/contact/api/submit-contact.ts";
+import { submitContact } from "#pages/public/contact/api/submit-contact.ts";
 
 import type { SubmitEventHandler } from "react";
 
