@@ -9,12 +9,13 @@ import { user } from "./schema.ts";
 
 /** @canonical-values db.bootstrap-kind */
 const bootstrapKinds = ["admin", "staff"] as const;
+const BOOTSTRAP_KIND = { admin: bootstrapKinds[0], staff: bootstrapKinds[1] } as const;
 const BootstrapKind = Schema.Literals(bootstrapKinds);
 type BootstrapKind = typeof BootstrapKind.Type;
 
 const bootstrapRoles = {
-  admin: { permission: ADMIN_PERMISSION.owner, role: ROLE.administrator },
-  staff: { permission: STAFF_PERMISSION.editor, role: ROLE.staff },
+  [BOOTSTRAP_KIND.admin]: { permission: ADMIN_PERMISSION.owner, role: ROLE.administrator },
+  [BOOTSTRAP_KIND.staff]: { permission: STAFF_PERMISSION.editor, role: ROLE.staff },
 } as const satisfies Readonly<Record<BootstrapKind, { permission: string; role: Role }>>;
 
 const BootstrappedAdmin = Schema.Struct({
@@ -23,7 +24,10 @@ const BootstrappedAdmin = Schema.Struct({
   role: Schema.Literals([ROLE.administrator, ROLE.staff]),
 });
 
-const bootstrapStatement = (email: typeof Email.Type, kind: BootstrapKind = "admin"): SQL => {
+const bootstrapStatement = (
+  email: typeof Email.Type,
+  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
+): SQL => {
   const { permission, role } = bootstrapRoles[kind];
   return sql`UPDATE ${user}
     SET role = ${role}, permission = ${permission}, updated_at = ${Date.now()}
@@ -50,7 +54,7 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof Email.Type,
-  kind: BootstrapKind = "admin",
+  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const [promotedRow] = yield* query(async (database) =>
     database.all(bootstrapStatement(email, kind)),
@@ -65,7 +69,7 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 
 const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   email: typeof Email.Type,
-  kind: BootstrapKind = "admin",
+  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const [updated] = yield* query(async (database) =>
     database.all(ensureRoleStatement(email, kind)),
@@ -79,6 +83,7 @@ const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
 });
 
 export {
+  BOOTSTRAP_KIND,
   BootstrapKind,
   BootstrappedAdmin,
   Email,

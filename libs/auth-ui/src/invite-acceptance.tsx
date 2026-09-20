@@ -1,7 +1,4 @@
-import { httpStatus } from "@repo/observability/http-status";
 import {
-  ErrorBody,
-  InvitePreview,
   maximumNameLength,
   maximumPasswordLength,
   minimumPasswordLength,
@@ -17,64 +14,9 @@ import {
   useAction,
   useTextInput,
 } from "@repo/ui";
-import { Effect, Fiber, Result, Schema } from "effect";
-import { useEffect, useState, type ReactElement, type SyntheticEvent } from "react";
+import { useState, type ReactElement, type SyntheticEvent } from "react";
 
-import { decodeJson, errorMessage } from "./protocol.ts";
-
-const inviteEndpoint = "/api/invite";
-
-type Invitation =
-  | Readonly<{ email: string; status: "open" }>
-  | Readonly<{ message: string; status: "closed" }>
-  | Readonly<{ status: "loading" }>;
-
-const closedMessage = "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
-
-const readFailure = async (served: Response): Promise<unknown> => {
-  try {
-    return await served.json();
-  } catch (unreadableFailure) {
-    return { error: errorMessage(unreadableFailure) };
-  }
-};
-
-const failureOf = async (served: Response): Promise<string> => {
-  const decoded = Schema.decodeUnknownResult(ErrorBody)(await readFailure(served));
-  return Result.isSuccess(decoded) ? decoded.success.error : closedMessage;
-};
-
-const previewInvite = async (endpoint: string): Promise<Invitation> => {
-  const served = await fetch(endpoint, { cache: "no-store", credentials: "same-origin" });
-  if (served.status === httpStatus.notFound) {
-    return { message: closedMessage, status: "closed" };
-  }
-  if (!served.ok) {
-    return { message: await failureOf(served), status: "closed" };
-  }
-  const servedInvite: unknown = await served.json();
-  return { email: decodeJson(InvitePreview, servedInvite).email, status: "open" };
-};
-
-const loadInvitation = (token: string): Effect.Effect<Invitation> =>
-  Effect.promise(async (): Promise<Invitation> => {
-    try {
-      return await previewInvite(`${inviteEndpoint}?${new URLSearchParams({ token })}`);
-    } catch (previewFailure) {
-      return { message: errorMessage(previewFailure), status: "closed" };
-    }
-  });
-
-const useInvitation = (token: string): Invitation => {
-  const [invitation, setInvitation] = useState<Invitation>({ status: "loading" });
-  useEffect(() => {
-    const loading = Effect.runFork(Effect.map(loadInvitation(token), setInvitation));
-    return (): void => {
-      Effect.runFork(Fiber.interrupt(loading));
-    };
-  }, [token]);
-  return invitation;
-};
+import { inviteFailureOf, type Invitation } from "./invite-preview.ts";
 
 const acceptInvite = async (
   endpoint: string,
@@ -87,22 +29,28 @@ const acceptInvite = async (
     method: "POST",
   });
   if (!served.ok) {
-    throw new Error(await failureOf(served));
+    throw new Error(await inviteFailureOf(served, "招待を受け付けられませんでした。"));
   }
 };
 
 const InviteForm = ({
   email,
+  endpoint,
   onAccepted,
   token,
-}: Readonly<{ email: string; onAccepted: () => void; token: string }>): ReactElement => {
+}: Readonly<{
+  email: string;
+  endpoint: string;
+  onAccepted: () => void;
+  token: string;
+}>): ReactElement => {
   const action = useAction();
   const displayName = useTextInput();
   const password = useTextInput();
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     action.run(async () => {
-      await acceptInvite(inviteEndpoint, {
+      await acceptInvite(endpoint, {
         name: displayName.value,
         password: password.value,
         token,
@@ -126,7 +74,7 @@ const InviteForm = ({
         />
         <Field
           label="パスワード"
-          name="password"
+          name="account-password"
           type="password"
           autoComplete="new-password"
           required
@@ -144,8 +92,11 @@ const InviteForm = ({
   );
 };
 
-const InviteAcceptance = ({ token }: Readonly<{ token: string }>): ReactElement => {
-  const invitation = useInvitation(token);
+const InviteAcceptance = ({
+  endpoint,
+  invitation,
+  token,
+}: Readonly<{ endpoint: string; invitation: Invitation; token: string }>): ReactElement => {
   const [accepted, setAccepted] = useState(false);
   if (accepted) {
     return (
@@ -157,16 +108,20 @@ const InviteAcceptance = ({ token }: Readonly<{ token: string }>): ReactElement 
       </FormColumn>
     );
   }
-  if (invitation.status === "loading") {
-    return <StatusMessage variant={STATUS_VARIANT.pending}>招待を確認しています。</StatusMessage>;
-  }
   if (invitation.status === "closed") {
     return <StatusMessage variant={STATUS_VARIANT.failure}>{invitation.message}</StatusMessage>;
   }
   const markAccepted = (): void => {
     setAccepted(true);
   };
-  return <InviteForm email={invitation.email} token={token} onAccepted={markAccepted} />;
+  return (
+    <InviteForm
+      email={invitation.email}
+      endpoint={endpoint}
+      token={token}
+      onAccepted={markAccepted}
+    />
+  );
 };
 
 export { InviteAcceptance };

@@ -68,15 +68,22 @@ function AdminRow({
             {adminStateChangeLabels[admin.accountState]}
           </Button>
         )}
-        {action.confirming === undefined ? null : (
-          <ConfirmDialog
-            open
-            onOpenChange={action.handleOpenChange}
-            {...confirmation(admin, action.confirming)}
-            variant={action.confirming.kind === "state" ? "danger" : "primary"}
-            onConfirm={action.handleConfirm}
-          />
-        )}
+        {action.confirming === undefined
+          ? null
+          : (() => {
+              const confirmed = confirmation(admin, action.confirming);
+              return (
+                <ConfirmDialog
+                  open
+                  confirmLabel={confirmed.confirmLabel}
+                  description={confirmed.description}
+                  title={confirmed.title}
+                  onOpenChange={action.handleOpenChange}
+                  variant={action.confirming.kind === "state" ? "danger" : "primary"}
+                  onConfirm={action.handleConfirm}
+                />
+              );
+            })()}
       </TableCell>
     </TableRow>
   );

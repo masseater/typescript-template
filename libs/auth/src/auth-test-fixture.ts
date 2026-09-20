@@ -10,12 +10,14 @@ import {
 import {
   EmptyTestDatabase,
   TestDatabase,
+  BOOTSTRAP_KIND,
   bootstrapAdmin,
   getSchemaShape,
   runStatement,
   type BootstrapKind,
 } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
+import { makeSignature } from "better-auth/crypto";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { URI } from "otpauth";
@@ -25,6 +27,7 @@ import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
 import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
+import { SessionRequired } from "./session-required.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
 import type { Database } from "@repo/db";
@@ -169,7 +172,7 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
-  kind: typeof BootstrapKind.Type = "admin",
+  kind: typeof BootstrapKind.Type = BOOTSTRAP_KIND.admin,
 ) {
   yield* registerVerified(email);
   yield* bootstrapAdmin(email, kind);
@@ -178,7 +181,7 @@ const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* boo
 const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* bootstrapVerifiedStaff(
   email: string,
 ) {
-  yield* bootstrapVerifiedAdmin(email, "staff");
+  yield* bootstrapVerifiedAdmin(email, BOOTSTRAP_KIND.staff);
 });
 
 const signIn = (client: BrowserClient, email: string): Effect.Effect<number> => {
@@ -325,6 +328,19 @@ const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   );
 });
 
+const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSessionCookie(
+  token: string,
+) {
+  const { instance } = yield* Auth;
+  const cookiePrefix = instance.options.advanced?.cookiePrefix;
+  const secret = instance.options.secret;
+  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
+    return yield* new SessionRequired();
+  }
+  const signature = yield* Effect.promise(async () => makeSignature(token, secret));
+  return `${cookiePrefix}.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
+});
+
 export {
   AuthApps,
   assignRoleByEmail,
@@ -347,6 +363,7 @@ export {
   signIn,
   signInAgainAfterTotp,
   signInAs,
+  signedSessionCookie,
   spendSignInWindow,
   verifyEmail,
   withAuth,

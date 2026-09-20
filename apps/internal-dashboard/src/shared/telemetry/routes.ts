@@ -17,7 +17,7 @@ export const routes = {
   "/login": "login",
   "/mcp": "mcp",
   "/security": "security",
-  "/staff": "staff",
+  "/staff": "staff-page",
   "/wiki": "wiki",
   "/wiki/*": "wiki",
 } as const;

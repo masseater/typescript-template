@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+
 import { ROLE, type Role } from "./identity.ts";
 
 /** @canonical-values config.application */

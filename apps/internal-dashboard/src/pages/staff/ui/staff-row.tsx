@@ -57,15 +57,22 @@ function StaffRow({
             削除
           </Button>
         )}
-        {action.confirming === undefined ? null : (
-          <ConfirmDialog
-            open
-            onOpenChange={action.handleOpenChange}
-            {...confirmation(member, action.confirming)}
-            variant={action.confirming.kind === "remove" ? "danger" : "primary"}
-            onConfirm={action.handleConfirm}
-          />
-        )}
+        {action.confirming === undefined
+          ? null
+          : (() => {
+              const confirmed = confirmation(member, action.confirming);
+              return (
+                <ConfirmDialog
+                  open
+                  confirmLabel={confirmed.confirmLabel}
+                  description={confirmed.description}
+                  title={confirmed.title}
+                  onOpenChange={action.handleOpenChange}
+                  variant={action.confirming.kind === "remove" ? "danger" : "primary"}
+                  onConfirm={action.handleConfirm}
+                />
+              );
+            })()}
       </TableCell>
     </TableRow>
   );

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { causeRecord, runCli } from "@repo/cli";
+import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { Console, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
@@ -19,7 +20,9 @@ type Command = Effect.Effect<unknown, LocalCommandFailure>;
 
 const firstUserArgumentIndex = 2;
 
-const operator = Effect.fn("operator")(function* operator(_args: readonly string[]) {
+const operator = Effect.fn("provisionOperators")(function* provisionOperators(
+  _args: readonly string[],
+) {
   if (!(yield* operatorExists())) {
     yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
   }
@@ -30,7 +33,7 @@ const operator = Effect.fn("operator")(function* operator(_args: readonly string
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["ci-runner", ciRunner],
   ["connect", connection],
-  ["operator", operator as (args: readonly string[]) => Command],
+  [ADMIN_PERMISSION.operator, operator as (args: readonly string[]) => Command],
   ["setup", setup],
   ["status", status],
   ["storybook", (_args) => storybook()],

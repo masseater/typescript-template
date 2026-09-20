@@ -2,6 +2,8 @@ export { AccountMenu } from "./account-menu";
 export { EmailVerification } from "./email-verification";
 export { ForbiddenNotice } from "./forbidden-notice";
 export { InviteAcceptance } from "./invite-acceptance";
+export { previewInvitation } from "./invite-preview";
+export type { Invitation } from "./invite-preview";
 export { LoginForm } from "./login-form";
 export { LoginPage } from "./login-page";
 export { SecurityPage } from "./security-page";

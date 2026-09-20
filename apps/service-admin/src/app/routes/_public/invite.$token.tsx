@@ -1,14 +1,25 @@
+import { previewInvitation } from "@repo/auth-ui";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { InvitePage } from "#pages/invite/index.ts";
 
 import type { ReactElement } from "react";
 
-const Route = createFileRoute("/_public/invite/$token")({ component: InviteRoute });
+const Route = createFileRoute("/_public/invite/$token")({
+  loader: async ({ params }) => previewInvitation("/api/invite", params.token),
+  pendingComponent: InvitePending,
+  component: InviteRoute,
+});
+
+function InvitePending(): ReactElement {
+  return <StatusMessage variant={STATUS_VARIANT.pending}>招待を確認しています。</StatusMessage>;
+}
 
 function InviteRoute(): ReactElement {
   const { token } = Route.useParams();
-  return <InvitePage token={token} />;
+  const invitation = Route.useLoaderData();
+  return <InvitePage token={token} invitation={invitation} />;
 }
 
 export { Route };
