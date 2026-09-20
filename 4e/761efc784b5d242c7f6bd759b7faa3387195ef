@@ -1,0 +1,1 @@
+check:dev が共有 migrate に依存しなくなったので uncachedGateTasks から libs/db#db:migrate:local を外す
