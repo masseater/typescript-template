@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/lint-rule-authoring";
+import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
 import { noMultiBindingDeclaration } from "./no-multi-binding-declaration--declare-one-binding-per-statement.ts";

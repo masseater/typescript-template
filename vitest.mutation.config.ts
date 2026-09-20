@@ -1,4 +1,4 @@
-import { devServerTests, workerTests } from "@repo/quality/test-runtime";
+import { devServerTests, workerTests } from "@repo/dont-review-it/test-runtime";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -16,7 +16,7 @@ export default defineConfig({
           include: [
             "libs/config/**/*.test.ts",
             "libs/runtime/**/*.test.ts",
-            "tools/quality/**/*.test.ts",
+            "tools/dont-review-it/src/repository/**/*.test.ts",
           ],
           name: "mutation",
         },
