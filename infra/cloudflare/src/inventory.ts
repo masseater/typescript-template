@@ -2,7 +2,7 @@ import { Stage, inMemoryState } from "alchemy";
 import { providers } from "alchemy/Cloudflare";
 import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
-import { Effect, References, Result, Schema } from "effect";
+import { Effect, Predicate, References, Result, Schema } from "effect";
 
 import { repositoryRoot } from "./artifacts.ts";
 import { stackName } from "./stacks.ts";
@@ -249,8 +249,7 @@ function inventoryOf(shape: typeof CompiledShape.Type): StackInventory {
 type StackProgram = Parameters<typeof toEffect>[0];
 
 function stackProgram(module: unknown): StackProgram | undefined {
-  const program: unknown =
-    typeof module === "object" && module !== null ? Reflect.get(module, "default") : undefined;
+  const program: unknown = Predicate.isObject(module) ? Reflect.get(module, "default") : undefined;
   return Effect.isEffect(program) ? (program as StackProgram) : undefined;
 }
 

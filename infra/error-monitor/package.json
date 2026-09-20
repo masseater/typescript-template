@@ -2,8 +2,13 @@
   "name": "@repo/error-monitor",
   "private": true,
   "type": "module",
+  "exports": {
+    "./config": "./src/config.ts"
+  },
   "dependencies": {
+    "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
+    "@repo/observability": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

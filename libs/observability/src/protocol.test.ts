@@ -1,9 +1,17 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { isRoutes, parentContext, routeLabel } from "./protocol.ts";
+import { isRoutes, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
 
 const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const spanId = "bbbbbbbbbbbbbbbb";
+
+describe("traceparentOf", () => {
+  const it = test.extend("header", () => traceparentOf({ spanId, traceId }));
+
+  it("writes a sampled W3C traceparent", ({ header }) => {
+    expect(header).toBe(`00-${traceId}-${spanId}-01`);
+  });
+});
 
 describe("parentContext", () => {
   describe("a well-formed traceparent", () => {
@@ -16,6 +24,7 @@ describe("parentContext", () => {
 
   describe.for([
     ["a trace id of zeros", `00-${"0".repeat(traceId.length)}-${spanId}-01`],
+    ["a span id of zeros", `00-${traceId}-${"0".repeat(spanId.length)}-01`],
     ["a trailing token", `00-${traceId}-${spanId}-01-token`],
     ["no header at all", null],
   ] as const)("a traceparent carrying %s", ([, traceparent]) => {

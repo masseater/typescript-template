@@ -1,4 +1,4 @@
-import { grants } from "@repo/config";
+import { APPLICATION, grants } from "@repo/config";
 import { photoBucketBinding } from "@repo/config/storage";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
@@ -6,13 +6,15 @@ import { Effect } from "effect";
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
+import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 import { photoBucketRef } from "./storage.ts";
+import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { R2 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
+import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 const appEnv = Effect.fn("appEnv")(function* appEnv(
@@ -36,14 +38,17 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
+  const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const env = yield* appEnv(target, {
+  const shared = yield* appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,
     DB: database,
     EMAIL: email,
     EMAIL_FROM: config.mailFrom,
+    FLAGSHIP_ACCOUNT_ID: config.accountId,
+    FLAGS: flags,
     OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
     ...(config.otlp === undefined
       ? {}
@@ -53,6 +58,14 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
         }),
   });
+  const env: DeclaredEnv | WikiEnv =
+    target === APPLICATION.wiki
+      ? {
+          ...shared,
+          FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
+          FLAGSHIP_APP_ID: flags.appId,
+        }
+      : shared;
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,

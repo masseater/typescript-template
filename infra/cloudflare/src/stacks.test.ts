@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -18,6 +18,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
   "./database.ts",
   "./email.ts",
   "./error-monitor.ts",
+  "./flagship.ts",
   "./health-monitor.ts",
   "./internal-dashboard.ts",
   "./observability.ts",
@@ -29,7 +30,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
 ]);
 
 function defaultExport(module: unknown): unknown {
-  return typeof module === "object" && module !== null ? Reflect.get(module, "default") : undefined;
+  return Predicate.isObject(module) ? Reflect.get(module, "default") : undefined;
 }
 
 function violationsWhenLast(last: StackName): readonly StackName[] {
@@ -54,6 +55,11 @@ describe("alchemy stacks", () => {
       "service-member",
     ]);
     expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
+    expect(violationsWhenLast("flagship")).toStrictEqual([
+      "internal-dashboard",
+      "service-admin",
+      "service-member",
+    ]);
     expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
       "internal-dashboard",
       "service-admin",

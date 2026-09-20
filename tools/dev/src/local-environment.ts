@@ -11,7 +11,13 @@ import { fileURLToPath } from "node:url";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
-import { applicationPorts, applications, loopbackHosts, mailpitPort } from "@repo/config";
+import {
+  applicationPorts,
+  applications,
+  loopbackHosts,
+  mailpitPort,
+  minimumAuthSecretLength,
+} from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
@@ -24,7 +30,6 @@ type App = Application;
 type RouteName = App | "mailpit";
 
 const ROOT_HASH_LENGTH = 12;
-const AUTH_SECRET_MINIMUM_LENGTH = 32;
 
 // oxlint-disable-next-line typescript/strict-void-return
 const execFileAsync = promisify(execFile);
@@ -38,7 +43,7 @@ const socket = `template-${rootHash}`;
 const AppName = Schema.Literals(applications);
 const OriginMode = Schema.Literals(["lan", "loopback"]);
 const CredentialsFile = Schema.Struct({
-  authSecret: Schema.String.check(Schema.isMinLength(AUTH_SECRET_MINIMUM_LENGTH)),
+  authSecret: Schema.String.check(Schema.isMinLength(minimumAuthSecretLength)),
   origins: Schema.optionalKey(OriginMode),
 });
 const routes = { ...applicationPorts, mailpit: mailpitPort };

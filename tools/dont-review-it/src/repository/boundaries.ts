@@ -5,7 +5,7 @@ import { specifierVisitor } from "./module-specifiers.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const shippedDbAdapters = ["migrate-d1", LINT_BUNDLE.testing] as const;
+const shippedDbAdapters = [LINT_BUNDLE.testing] as const;
 const rawD1Modules = [
   ...shippedDbAdapters.map((adapter) => `libs/db/src/${adapter}.ts`),
   "libs/db-local/src/testing-node.ts",

@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { connect, createServer } from "node:net";
 
-import { runCli } from "@repo/cli";
+import { causeRecord, runCli } from "@repo/cli";
 import { loopbackAddress } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
@@ -52,5 +52,5 @@ runCli(
     yield* Console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
     return yield* Effect.never;
   }).pipe(Effect.scoped),
-  { event: "local.gateway_failed" },
+  (cause) => causeRecord("local.gateway_failed", cause),
 );

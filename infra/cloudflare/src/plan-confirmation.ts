@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 
 import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
-import { Effect, Redacted } from "effect";
+import { Effect, Predicate, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
 
@@ -58,13 +58,14 @@ const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "sta
 
 function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
   const node: unknown = Reflect.get(value, ExprSymbol);
-  if (typeof node !== "object" || node === null) {
+  if (!Predicate.isObject(node)) {
     return { kind: "expression" };
   }
   const nested = new Set([...seen, value, node]);
   const source: unknown = Reflect.get(node, "src");
-  const logicalId: unknown =
-    typeof source === "object" && source !== null ? Reflect.get(source, "LogicalId") : undefined;
+  const logicalId: unknown = Predicate.isObject(source)
+    ? Reflect.get(source, "LogicalId")
+    : undefined;
   return {
     ...Object.fromEntries(
       EXPRESSION_FIELDS.flatMap((field) => {

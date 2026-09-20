@@ -7,6 +7,7 @@
     "./local-database-path": "./src/local-database-path.ts",
     "./repository-root": "./src/repository-root.ts",
     "./storage": "./src/storage.ts",
+    "./paging": "./src/paging.ts",
     "./worker": "./src/worker.ts",
     "./identity": "./src/identity.ts"
   },

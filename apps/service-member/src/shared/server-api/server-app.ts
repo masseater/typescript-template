@@ -14,7 +14,9 @@ import {
   memberPageSize,
 } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
+import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { memberFailures as failures } from "./member-failures.ts";
 import { photoApi } from "./photo-api.ts";
@@ -26,6 +28,7 @@ const api = apiRoutes(runtime, reporting);
 const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(contactApi(api))
+  .use(flagsApi(api))
   .use(interviewApi(api))
   .use(photoApi(api))
   .use(socialApi(api))
@@ -86,6 +89,7 @@ const userApi = createApi(apiRoot)
         }),
       failures,
     ),
-  );
+  )
+  .use(boardApi(api));
 
 export { userApi };

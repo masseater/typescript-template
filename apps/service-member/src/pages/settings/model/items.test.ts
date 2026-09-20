@@ -8,6 +8,7 @@ describe("settings items", () => {
     expect(settingsItems.map((listedSetting) => listedSetting.to)).toStrictEqual([
       "/settings/profile",
       "/settings/visibility",
+      "/settings/email",
       "/settings/notifications",
       "/settings/security",
       "/settings/interview",

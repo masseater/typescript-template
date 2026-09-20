@@ -1,7 +1,17 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
-import { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment } from "./index.ts";
+import {
+  HttpsOrigin,
+  adminPageSize,
+  distinctOrigins,
+  isLocalDevelopmentOrigin,
+  maximumAdminPageSize,
+  readAi,
+  readConfig,
+  readEnvironment,
+  usageAllowanceRemains,
+} from "./index.ts";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",
@@ -152,6 +162,41 @@ for (const { broken, expected, label } of brokenBindings) {
     }),
   );
 }
+
+it.effect("accepts an https origin and rejects any other scheme", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* Schema.decodeUnknownEffect(HttpsOrigin)("https://app.example.test"),
+      "https://app.example.test",
+    );
+    const rejected = yield* Schema.decodeUnknownEffect(HttpsOrigin)("http://localhost").pipe(
+      Effect.flip,
+    );
+    assert.include(JSON.stringify(rejected), "HTTPS is required");
+  }),
+);
+
+it.effect("treats repeated origins as one", () =>
+  Effect.sync(() => {
+    assert.isTrue(distinctOrigins(["https://a.example.test", "https://b.example.test"]));
+    assert.isFalse(distinctOrigins(["https://a.example.test", "https://a.example.test"]));
+  }),
+);
+
+it.effect("keeps a usage allowance only when the yen budget exceeds fixed cost and reserve", () =>
+  Effect.sync(() => {
+    const amounts = { budgetJpy: 5000, fixedCostUsd: 40, jpyPerUsd: 100, reserveUsd: 9 };
+    assert.isTrue(usageAllowanceRemains(amounts));
+    assert.isFalse(usageAllowanceRemains({ ...amounts, reserveUsd: 10 }));
+  }),
+);
+
+it.effect("pages administrators fifty at a time and never more than one hundred", () =>
+  Effect.sync(() => {
+    assert.strictEqual(adminPageSize, 50);
+    assert.strictEqual(maximumAdminPageSize, 100);
+  }),
+);
 
 it.effect("requires a way to deliver mail", () =>
   Effect.gen(function* program() {

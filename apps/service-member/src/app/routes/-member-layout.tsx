@@ -7,9 +7,9 @@ import type { ReactElement } from "react";
 const route = getRouteApi("/_member");
 
 function MemberLayout(): ReactElement {
-  const { session } = route.useRouteContext();
+  const { memberBoard, session } = route.useRouteContext();
   return (
-    <MemberFrame user={session.user}>
+    <MemberFrame memberBoard={memberBoard} user={session.user}>
       <Outlet />
     </MemberFrame>
   );

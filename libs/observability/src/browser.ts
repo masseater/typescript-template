@@ -12,6 +12,7 @@ import {
   routeMessage,
   spanIdBytes,
   traceIdBytes,
+  traceparentOf,
   type Correlation,
 } from "./protocol.ts";
 import { stoppableVitals, type VitalMetric } from "./vital-reporting.ts";
@@ -41,10 +42,7 @@ const outgoingSpan = (
     traceId: randomHex(traceIdBytes),
   };
   const traced = new Request(outgoing, {
-    headers: new Headers([
-      ...outgoing.headers.entries(),
-      ["traceparent", `00-${span.traceId}-${span.spanId}-01`],
-    ]),
+    headers: new Headers([...outgoing.headers.entries(), ["traceparent", traceparentOf(span)]]),
   });
   return { span, traced };
 };

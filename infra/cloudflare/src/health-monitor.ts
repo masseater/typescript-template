@@ -1,4 +1,5 @@
 import { APPLICATION } from "@repo/config";
+import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
 import { Stack } from "alchemy";
 import { Effect } from "effect";
 
@@ -11,16 +12,16 @@ import type { SharedConfig } from "./config.ts";
 const stack = Stack(
   stackName("health-monitor"),
   stackOptions,
-  monitorProgram("health", {
+  monitorProgram(healthMonitorWorker.name, {
     artifact: monitorArtifact("health-monitor"),
-    className: "HealthMonitor",
-    cron: "37 * * * *",
-    name: "health",
+    className: healthMonitorWorker.className,
+    cron: healthMonitorWorker.cron,
+    name: healthMonitorWorker.name,
     variables: (config: SharedConfig) =>
       Effect.succeed({
-        SERVICE_ADMIN_ORIGIN: config.origins[APPLICATION.admin],
-        SERVICE_MEMBER_ORIGIN: config.origins[APPLICATION.user],
-        INTERNAL_DASHBOARD_ORIGIN: config.origins[APPLICATION.wiki],
+        [healthOriginKey[APPLICATION.admin]]: config.origins[APPLICATION.admin],
+        [healthOriginKey[APPLICATION.user]]: config.origins[APPLICATION.user],
+        [healthOriginKey[APPLICATION.wiki]]: config.origins[APPLICATION.wiki],
       }),
   }),
 );

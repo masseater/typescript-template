@@ -2,10 +2,14 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
+import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
-import { APPLICATION, applications, grants } from "@repo/config";
+import { APPLICATION, appEnvKey, applications, grants } from "@repo/config";
 import { photoBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
+import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
+import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
@@ -77,19 +81,30 @@ function tokenValue(name: string, resource: string): string {
 }
 
 function applicationResource(app: Application, release: string): ResourceInventory {
+  const flagshipBindings = [
+    plainText(appEnvKey.flagshipAccountId, accountId),
+    `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
+    ...(app === APPLICATION.wiki
+      ? [
+          tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
+          `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
+        ]
+      : []),
+  ];
   return {
     adopt: false,
     bindings: [
-      plainText("APP_ORIGIN", origins[app]),
-      plainText("APP_RELEASE", release),
-      "AUTH_SECRET:secret_text:text=$TEMPLATE_AUTH_SECRET",
+      plainText(appEnvKey.appOrigin, origins[app]),
+      plainText(appEnvKey.appRelease, release),
+      `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
-      plainText("EMAIL_FROM", mailFrom),
-      plainText("OPS_EMAIL", budget.recipients[0] ?? mailFrom),
-      "OTLP_AUTHORIZATION:secret_text:text=$TEMPLATE_OTLP_AUTHORIZATION",
-      plainText("OTLP_ENABLED", String(otlp.enabled)),
-      plainText("OTLP_ENDPOINT", otlp.endpoint),
+      plainText(appEnvKey.emailFrom, mailFrom),
+      ...flagshipBindings,
+      plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
+      `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
+      plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
+      plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
       ...(grants(app, "storage")
         ? [
@@ -184,16 +199,16 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
-      className: "BudgetMonitor",
-      cron: "17 */6 * * *",
-      name: "budget",
+      className: budgetMonitorWorker.className,
+      cron: budgetMonitorWorker.cron,
+      name: budgetMonitorWorker.name,
       variables: [
-        tokenValue("BILLING_READ_TOKEN", "BillingRead"),
-        plainText("BUDGET_JPY", budget.budgetJpy),
-        plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
-        plainText("FIXED_COST_USD", budget.fixedCostUsd),
-        plainText("JPY_PER_USD", budget.jpyPerUsd),
-        plainText("RESERVE_USD", budget.reserveUsd),
+        tokenValue(budgetMonitorEnv.billingReadToken, "BillingRead"),
+        plainText(budgetMonitorEnv.budgetJpy, budget.budgetJpy),
+        plainText(budgetMonitorEnv.accountId, accountId),
+        plainText(budgetMonitorEnv.fixedCostUsd, budget.fixedCostUsd),
+        plainText(budgetMonitorEnv.jpyPerUsd, budget.jpyPerUsd),
+        plainText(budgetMonitorEnv.reserveUsd, budget.reserveUsd),
       ],
     }),
   }),
@@ -218,25 +233,25 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
   "error-monitor": declaredStack("error-monitor", {
     Worker: monitorResource({
       artifact: "infra/error-monitor/dist/index.js",
-      className: "ErrorMonitor",
-      cron: "*/5 * * * *",
-      name: "errors",
+      className: errorMonitorWorker.className,
+      cron: errorMonitorWorker.cron,
+      name: errorMonitorWorker.name,
       variables: [
-        plainText("CLOUDFLARE_ACCOUNT_ID", accountId),
-        tokenValue("OBSERVABILITY_TOKEN", "ObservabilityQuery"),
+        plainText(errorMonitorEnv.accountId, accountId),
+        tokenValue(errorMonitorEnv.observabilityToken, "ObservabilityQuery"),
       ],
     }),
   }),
   "health-monitor": declaredStack("health-monitor", {
     Worker: monitorResource({
       artifact: "infra/health-monitor/dist/index.js",
-      className: "HealthMonitor",
-      cron: "37 * * * *",
-      name: "health",
+      className: healthMonitorWorker.className,
+      cron: healthMonitorWorker.cron,
+      name: healthMonitorWorker.name,
       variables: [
-        plainText("SERVICE_ADMIN_ORIGIN", origins[APPLICATION.admin]),
-        plainText("SERVICE_MEMBER_ORIGIN", origins[APPLICATION.user]),
-        plainText("INTERNAL_DASHBOARD_ORIGIN", origins[APPLICATION.wiki]),
+        plainText(healthOriginKey[APPLICATION.admin], origins[APPLICATION.admin]),
+        plainText(healthOriginKey[APPLICATION.user], origins[APPLICATION.user]),
+        plainText(healthOriginKey[APPLICATION.wiki], origins[APPLICATION.wiki]),
       ],
     }),
   }),
@@ -266,6 +281,7 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
+    FlagshipWrite: accountToken("flagship-write", "Flagship Write"),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
   }),
   zone: declaredStack("zone", {
@@ -275,7 +291,13 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
 };
 
 const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: StackName) {
-  return isApplication(stack) ? yield* applicationStack(stack) : staticExpected[stack];
+  if (isApplication(stack)) {
+    return yield* applicationStack(stack);
+  }
+  if (stack === "flagship") {
+    return yield* compileStack(stack);
+  }
+  return staticExpected[stack];
 });
 
 applyVerificationEnvironment();

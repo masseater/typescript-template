@@ -1,4 +1,20 @@
 export {
+  BoardPostCreate,
+  BoardPostCreated,
+  BoardThreadCreate,
+  BoardThreadCreated,
+  BoardThreadList,
+  BoardThreadListQuery,
+  BoardThreadQuery,
+  BoardThreadSummary,
+  BoardThreadView,
+  boardPostPageSize,
+  boardThreadPageSize,
+  maximumBoardBodyLength,
+  maximumBoardPage,
+  maximumBoardTitleLength,
+} from "./board.ts";
+export {
   ContactAccepted,
   ContactSubmission,
   MemberList,
@@ -22,4 +38,5 @@ export {
   maximumSocialLinks,
   memberPageSize,
 } from "./member.ts";
+export { MemberFlags } from "./flags.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
