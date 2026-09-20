@@ -33,4 +33,4 @@ jobs:
           cache: false
       - env:
           SHARED_TASK_CACHE: ${{ vars.CI_TASK_CACHE_DIR }}
-        run: vp run --filter @repo/quality clean:shared-task-cache
+        run: vp run --filter @repo/dont-review-it clean:shared-task-cache

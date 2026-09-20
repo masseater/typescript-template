@@ -1,6 +1,6 @@
 import { relative } from "node:path";
 
-import { matchesGlobSegment } from "@repo/lint-rule-authoring";
+import { matchesGlobSegment } from "@repo/dont-review-it/lint-rule-authoring";
 import { memoize } from "es-toolkit";
 
 import { segmentsOf } from "../path-segments.ts";
