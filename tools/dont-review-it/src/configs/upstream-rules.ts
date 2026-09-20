@@ -1,4 +1,4 @@
-import { LINT_SEVERITY } from "@repo/lint-rule-authoring";
+import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
 
 import type { OxlintConfig } from "oxlint";
 
