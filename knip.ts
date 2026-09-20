@@ -47,7 +47,7 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/runtime": {
-    ignoreDependencies: ["cloudflare"],
+    ignoreDependencies: ["@effect/sql-d1", "@effect/sql-sqlite-do", "cloudflare"],
     entry: ["src/*-fixture.ts"],
     project: ["src/**/*.ts!"],
   },

@@ -1,9 +1,9 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION, readConfig } from "@repo/config";
+import { APPLICATION } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime";
+import { appLayer, readWorkerConfig } from "@repo/runtime";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -41,7 +41,7 @@ function contactApp() {
   const runtime = workerRuntime(() =>
     Layer.merge(
       Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.unwrap(readConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
+      Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
     ),
   );
   return createApi(apiRoot).use(contactApi(apiRoutes(runtime, reporting)));

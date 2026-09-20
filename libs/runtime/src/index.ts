@@ -1,11 +1,11 @@
 import { Auth } from "@repo/auth";
-import { readConfig } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
 import { Effect, Layer } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
+import { readWorkerConfig } from "./bindings.ts";
 import { DatabaseHealth } from "./database-health.ts";
 
 import type { AuthFailure } from "@repo/auth";
@@ -58,9 +58,12 @@ function appLayer(
   routes: Readonly<Record<string, string>>,
 ): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
   return Layer.unwrap(
-    readConfig(env).pipe(Effect.map((config) => configuredAppLayer(config, audience, routes))),
+    readWorkerConfig(env).pipe(
+      Effect.map((config) => configuredAppLayer(config, audience, routes)),
+    ),
   );
 }
 
-export { appLayer, configuredAppLayer };
+export { appLayer, configuredAppLayer, readWorkerConfig };
 export type { AppServices };
+export type { WorkerModel } from "./bindings.ts";
