@@ -18,8 +18,9 @@ function AdminHeader({
   onToggleNavigation: () => void;
 }>): ReactElement {
   const { pathname } = useLocation();
-  const title =
-    pathname in adminPageTitles
+  const title = pathname.startsWith("/members/")
+    ? "利用者の詳細"
+    : pathname in adminPageTitles
       ? adminPageTitles[pathname as keyof typeof adminPageTitles]
       : "管理画面";
   return (
