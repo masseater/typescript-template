@@ -1,0 +1,6 @@
+Revision history for #854:
+
+rev 2 (content) 2026-09-20 10:12 UTC — also fix origin probe DNS on self-hosted macOS runner where getaddrinfo ENOTFOUND while dns.resolve works
+rev 1 (initial) 2026-09-20 10:12 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":854,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"7879f578cfe275016b09b773733b20cd46f852ed","timestamp_iso":"2026-09-20T10:12:23Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"7879f578cfe275016b09b773733b20cd46f852ed","new_sha":"db4c1fa5fa92493bad7706971dc23b4851af2505","timestamp_iso":"2026-09-20T10:12:23Z","reason":"also fix origin probe DNS on self-hosted macOS runner where getaddrinfo ENOTFOUND while dns.resolve works","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/7879f578cfe275016b09b773733b20cd46f852ed...db4c1fa5fa92493bad7706971dc23b4851af2505"}]} -->
