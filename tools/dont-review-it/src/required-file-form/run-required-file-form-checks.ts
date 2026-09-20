@@ -2,7 +2,7 @@ import { agentInstructionLinksIn } from "./agent-instruction-links.ts";
 import { foreignToolConfigsIn } from "./foreign-tool-configs.ts";
 import { packageRootsIn } from "./package-roots.ts";
 
-import type { ScannedProblems } from "@repo/repository-checks";
+import type { ScannedProblems } from "@repo/dont-review-it/repository-checks";
 import type { RequiredFileFormConfig } from "./config.ts";
 
 export const runRequiredFileFormChecks = ({

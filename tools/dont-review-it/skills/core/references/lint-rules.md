@@ -8,6 +8,14 @@ Every rule below is registered at error severity unless the table says the prese
 
 Each bundle is adopted on its own, and a rule sits in exactly one of them. Name the ones this repository takes on where it calls the preset.
 
+### authoring
+
+| Rule | What it rejects | Notices |
+| --- | --- | --- |
+| [forbid-symbol-prefixed-name--rename-to-alphanumeric-start](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/forbid-symbol-prefixed-name--rename-to-alphanumeric-start.md) | Require every directory and file name on the path of a linted file to start with a letter or a digit, so nothing sits where a glob walk never reaches it | ⚙️ |
+| [no-broad-lint-disable--use-next-line-with-reason](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-broad-lint-disable--use-next-line-with-reason.md) | Require every lint suppression to apply to the next line alone, so code written later never inherits an exemption nobody chose for it |  |
+| [no-explained-lint-message--state-prohibition-then-fix](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-explained-lint-message--state-prohibition-then-fix.md) | Require every lint message to carry a prohibition and an imperative repair direction and nothing else, so the first thing a reader meets is the action that clears the report |  |
+
 ### governance
 
 | Rule | What it rejects | Notices |

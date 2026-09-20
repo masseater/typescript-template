@@ -1,6 +1,6 @@
 import { counted } from "./pluralized.ts";
 
-import type { CheckOutcome } from "@repo/repository-checks";
+import type { CheckOutcome } from "@repo/dont-review-it/repository-checks";
 
 const lineOf = (ranCheck: CheckOutcome): string =>
   ranCheck.skippedReason === null
