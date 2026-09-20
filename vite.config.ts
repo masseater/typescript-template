@@ -40,7 +40,10 @@ export default defineConfig({
         ],
         output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
       },
-      "check:code": { command: "vp check", input: [...taskInput] },
+      "check:code": {
+        command: "vp fmt --check && vp lint --threads=1",
+        input: [...taskInput],
+      },
       ...effectDiagnostics,
       "check:imports":
         "depcruise --config tools/quality/dependency-cruiser.ts --output-type err-long apps libs infra tools",
