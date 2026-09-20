@@ -17,8 +17,6 @@ const maximumPasswordLength = 128;
 
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
-const MemberEmail = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
-
 const MemberName = Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength));
 
 const MemberPassword = Schema.String.check(
