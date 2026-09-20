@@ -220,7 +220,7 @@ describe("the severity of a browser client span", () => {
           {
             event: "http.client.request",
             "http.response.status_code": status,
-            service: "user-browser",
+            service: "service-member-browser",
           },
         ]);
         const others = (["stderr", "stdout", "stdwarn"] as const).filter((name) => name !== stream);
@@ -245,7 +245,7 @@ describe("structured log lines", () => {
           event: "http.client.request",
           "http.response.status_code": created,
           release: "abc123",
-          service: "user-browser",
+          service: "service-member-browser",
           trace_id: traceId,
         },
       ]);
@@ -255,7 +255,7 @@ describe("structured log lines", () => {
           "error.locations": "/assets/index-abc.js:1:234",
           "error.type": "TypeError",
           event: "browser.error",
-          service: "user-browser",
+          service: "service-member-browser",
         },
         { "error.type": "RangeError", event: "application.error" },
         { event: "http.server.request", status: httpStatus.internalServerError },
