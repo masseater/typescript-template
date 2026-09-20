@@ -43,12 +43,18 @@ function searchClient(onMode: (mode: SearchMode | undefined) => void) {
   };
 }
 
-function WikiSearchDialog(props: SharedProps): ReactElement {
+function WikiSearchDialog({ onOpenChange, open }: SharedProps): ReactElement {
   const [mode, setMode] = useState<SearchMode | undefined>();
   const client = useMemo(() => searchClient(setMode), []);
   const { search, setSearch, query } = useDocsSearch({ client });
   return (
-    <SearchDialog isLoading={query.isLoading} onSearchChange={setSearch} search={search} {...props}>
+    <SearchDialog
+      isLoading={query.isLoading}
+      onOpenChange={onOpenChange}
+      onSearchChange={setSearch}
+      open={open}
+      search={search}
+    >
       <SearchDialogOverlay />
       <SearchDialogContent>
         <SearchDialogHeader>
