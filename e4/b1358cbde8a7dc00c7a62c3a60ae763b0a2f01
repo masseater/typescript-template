@@ -1,0 +1,1 @@
+WIP: stop calling dependency-cruiser and steiger through pnpm run, because the repository task check rejects package-manager scripts. Invoke the binaries from the vite tasks and keep the knip ignores knip cannot see otherwise.
