@@ -2,8 +2,8 @@ import path from "node:path";
 
 import { applicationsExcept } from "./private-path.ts";
 
-import type { Application } from "@repo/config";
 import type { UserConfig } from "vite-plus";
+import type { Application } from "../applications.ts";
 
 const serverOptions = ({
   application,
