@@ -15,7 +15,7 @@ function CompanyPhoto({
   return (
     <img
       alt="会社の写真"
-      className="max-h-80 w-full rounded-lg border border-border object-cover"
+      className="aspect-video w-full rounded-lg border border-border object-cover"
       decoding="async"
       src={src}
     />

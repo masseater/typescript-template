@@ -1,19 +1,19 @@
 import { verifySession } from "@repo/auth";
 import { maximumPhotoMebibytes } from "@repo/config";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { MemberPhotoQuery, PhotoQuery, PhotoView } from "#shared/contracts/index.ts";
 import { readPhoto, readPhotoUpload, removePhoto, uploadPhoto } from "#shared/photo/index.ts";
+import { memberFailures } from "./member-failures.ts";
 
 import type { PhotoStore } from "#shared/photo/index.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...memberFailures,
   PhotoMissing: { message: "画像ファイルを選んでください。", status: httpStatus.badRequest },
   PhotoNotFound: { message: "写真が見つかりません。", status: httpStatus.notFound },
   PhotoStorageFailed: "unexpected",
@@ -25,7 +25,6 @@ const failures = {
     message: "JPEG、PNG、WebP の画像だけを登録できます。",
     status: httpStatus.unsupportedMediaType,
   },
-  UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 } as const;
 
 const photoHeaders = { "cache-control": "private, no-store", "x-content-type-options": "nosniff" };

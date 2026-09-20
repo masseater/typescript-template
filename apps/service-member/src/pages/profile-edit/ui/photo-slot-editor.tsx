@@ -35,7 +35,7 @@ function Preview({
   ) : (
     <img
       alt={`現在の${slotLabels[slot]}`}
-      className="max-h-48 w-full rounded-lg border border-border object-cover"
+      className="aspect-video w-full rounded-lg border border-border object-cover"
       decoding="async"
       src={src}
     />

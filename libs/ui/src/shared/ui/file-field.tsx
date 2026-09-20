@@ -19,7 +19,7 @@ const FileField = ({
   name: string;
   onFileChange: (file: File | undefined) => void;
 }>): ReactElement => {
-  const handleChange = (
+  const selectFile = (
     change: Readonly<{
       currentTarget: Readonly<{ files: Readonly<Pick<FileList, "item">> | null }>;
     }>,
@@ -34,7 +34,7 @@ const FileField = ({
         name={name}
         accept={accept}
         disabled={disabled}
-        onChange={handleChange}
+        onChange={selectFile}
         className={`inline-block cursor-pointer leading-none file:mr-2 file:rounded-sm file:border-0 file:bg-secondary file:px-2 file:py-1 file:font-bold file:text-secondary-foreground ${controlClassName}`}
       />
       {hint !== undefined && (

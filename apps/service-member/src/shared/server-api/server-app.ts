@@ -1,7 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { UserNotFound } from "@repo/db";
-import { httpStatus } from "@repo/observability";
-import { accountApi, unavailable } from "@repo/runtime/account";
+import { accountApi } from "@repo/runtime/account";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -17,17 +16,13 @@ import {
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { contactApi } from "./contact-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { memberFailures as failures } from "./member-failures.ts";
 import { photoApi } from "./photo-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { socialApi } from "./social-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
 
 const api = apiRoutes(runtime, reporting);
-const failures = {
-  ...unavailable,
-  UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
-};
-
 const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(contactApi(api))

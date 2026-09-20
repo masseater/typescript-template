@@ -6,16 +6,12 @@ import { Context, Effect, Layer } from "effect";
 import { PhotoStorageFailed } from "./photo-storage-failed.ts";
 
 import type { R2Bucket } from "@cloudflare/workers-types";
-import type { ConfigurationInvalid, PhotoContentType } from "@repo/config";
-
-interface StoredPhoto {
-  readonly bytes: Uint8Array<ArrayBuffer>;
-  readonly contentType: PhotoContentType;
-}
+import type { ConfigurationInvalid } from "@repo/config";
+import type { SanitizedImage } from "./image.ts";
 
 interface PhotoStoreShape {
-  readonly get: (key: string) => Effect.Effect<StoredPhoto | undefined, PhotoStorageFailed>;
-  readonly put: (key: string, photo: StoredPhoto) => Effect.Effect<void, PhotoStorageFailed>;
+  readonly get: (key: string) => Effect.Effect<SanitizedImage | undefined, PhotoStorageFailed>;
+  readonly put: (key: string, photo: SanitizedImage) => Effect.Effect<void, PhotoStorageFailed>;
   readonly remove: (keys: readonly string[]) => Effect.Effect<void, PhotoStorageFailed>;
 }
 
