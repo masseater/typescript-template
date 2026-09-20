@@ -16,15 +16,15 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
     await navigate({ params: { id: initial.id }, to: "/users/$id" });
     notify("success", "プロフィールを保存しました。");
   }
-  const form = useProfileForm(initial, showSaved);
+  const formState = useProfileForm(initial, showSaved);
   return (
     <Page title="プロフィールの編集">
       <FormColumn>
         <Field label="メールアドレス" name="email" type="email" readOnly value={initial.email} />
       </FormColumn>
-      <ProfileEditor form={form} homeId={initial.id} />
-      {form.error !== undefined && (
-        <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
+      <ProfileEditor formState={formState} homeId={initial.id} />
+      {formState.error !== "" && (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{formState.error}</StatusMessage>
       )}
     </Page>
   );

@@ -4,39 +4,21 @@ import { controlClassName, errorClassName, fieldClassName, labelClassName } from
 
 import type { ComponentProps, ReactElement } from "react";
 
-const validationMessages: readonly (readonly [keyof ValidityState, string])[] = [
-  ["valueMissing", "入力してください。"],
-  ["typeMismatch", "正しい形式で入力してください。"],
-  ["patternMismatch", "指定された形式で入力してください。"],
-  ["tooShort", "文字数が足りません。"],
-  ["tooLong", "文字数が多すぎます。"],
-];
-
-const validationErrorElements = validationMessages.map(([match, validationMessage]) => (
-  <FieldPrimitive.Error key={match} match={match} className={errorClassName}>
-    {validationMessage}
-  </FieldPrimitive.Error>
-));
-
 const Field = ({
   autoComplete,
+  error,
   inputMode,
   label,
   maxLength,
-  minLength,
   multiline,
   name,
+  onBlur,
   onValueChange,
-  pattern,
   readOnly,
-  required,
   type,
   value,
 }: Readonly<
-  Pick<
-    ComponentProps<"input">,
-    "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
-  > & {
+  Pick<ComponentProps<"input">, "inputMode" | "maxLength" | "name" | "readOnly" | "value"> & {
     autoComplete?:
       | "current-password"
       | "name"
@@ -44,16 +26,22 @@ const Field = ({
       | "off"
       | "one-time-code"
       | "username";
+    error?: string | undefined;
     label: string;
+    onBlur?: () => void;
     onValueChange?: (value: string) => void;
   }
 > &
   Readonly<
-    | { multiline: true; pattern?: never; type?: never }
-    | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
+    | { multiline: true; type?: never }
+    | { multiline?: false; type?: "email" | "password" | "search" | "text" }
   >): ReactElement => {
   return (
-    <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
+    <FieldPrimitive.Root
+      data-slot="field"
+      invalid={error !== undefined}
+      className={fieldClassName}
+    >
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
         render={multiline === true ? <textarea aria-label={label} /> : undefined}
@@ -63,14 +51,16 @@ const Field = ({
         autoComplete={autoComplete}
         inputMode={inputMode}
         maxLength={maxLength}
-        minLength={minLength}
-        pattern={pattern}
         readOnly={readOnly}
-        required={required}
+        onBlur={onBlur}
         onValueChange={onValueChange}
         className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
       />
-      {validationErrorElements}
+      {error === undefined ? undefined : (
+        <FieldPrimitive.Error match className={errorClassName}>
+          {error}
+        </FieldPrimitive.Error>
+      )}
     </FieldPrimitive.Root>
   );
 };
