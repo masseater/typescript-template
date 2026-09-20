@@ -4,12 +4,20 @@ import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect } from "effect";
 
-import { advanceOnboarding, followMember, homeFeed, stepOf } from "./member-social.ts";
+import { advanceOnboarding, homeFeed, stepOf } from "./member-social.ts";
 
 import type { Database, DatabaseFailure } from "@repo/db";
 
-const { user } = schema;
+const { follow, user } = schema;
 const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+
+const followMember = (followerId: string, followeeId: string) =>
+  query((database) =>
+    database
+      .insert(follow)
+      .values({ createdAt: recordedAt, followeeId, followerId })
+      .onConflictDoNothing(),
+  );
 
 const addUser = (added: {
   readonly userId: string;

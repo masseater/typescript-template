@@ -14,7 +14,7 @@ import {
   verification,
 } from "./schema.ts";
 
-export class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
+class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoked", {}) {}
 
 export const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
   function* hasVerificationAudience(identifier: string, audience: Application) {

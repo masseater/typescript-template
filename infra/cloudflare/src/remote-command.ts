@@ -1,5 +1,4 @@
 import {
-  RemoteFailure,
   bootstrapDatabase,
   fail,
   loadRemoteMigrations,
@@ -72,4 +71,4 @@ const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   },
 );
 
-export { RemoteFailure, runRemoteDatabaseCommand };
+export { runRemoteDatabaseCommand };

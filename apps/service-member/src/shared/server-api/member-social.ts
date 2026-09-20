@@ -34,21 +34,6 @@ const advanceOnboarding = Effect.fn("advanceOnboarding")(function* advanceOnboar
   );
 });
 
-const followMember = Effect.fn("followMember")(function* followMember(
-  followerId: string,
-  followeeId: string,
-) {
-  if (followerId === followeeId) {
-    return;
-  }
-  yield* query((database) =>
-    database
-      .insert(follow)
-      .values({ createdAt: new Date(), followeeId, followerId })
-      .onConflictDoNothing(),
-  );
-});
-
 interface FeedItem {
   readonly actorId: string;
   readonly actorName: string;
@@ -87,5 +72,4 @@ const homeFeed = Effect.fn("homeFeed")(function* homeFeed(viewerId: string) {
   }));
 });
 
-export { advanceOnboarding, followMember, homeFeed, stepOf };
-export type { FeedItem, OnboardingStep };
+export { advanceOnboarding, homeFeed, stepOf };
