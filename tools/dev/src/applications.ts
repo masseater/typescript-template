@@ -12,8 +12,8 @@ import {
   running,
   socket,
 } from "./local-environment.ts";
-import { privateFileMode } from "./private-files.ts";
 import { urlPath, withFileSystem, withPath } from "./platform.ts";
+import { privateFileMode } from "./private-files.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
@@ -109,7 +109,9 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
     }),
   );
   yield* withFileSystem((fs) => fs.chmod(log, privateFileMode));
-  const vp = yield* withPath((path) => Effect.succeed(JSON.stringify(path.join(root, "node_modules/.bin/vp"))));
+  const vp = yield* withPath((path) =>
+    Effect.succeed(JSON.stringify(path.join(root, "node_modules/.bin/vp"))),
+  );
   const command = `exec ${vp} run --filter @repo/${app} preview >> ${JSON.stringify(log)} 2>&1`;
   return yield* run(
     "tmux",
@@ -136,7 +138,13 @@ const stop = Effect.fn("stop")(function* stop(app: App) {
   return yield* status();
 });
 
-function logs(app: App): Effect.Effect<{ app: App; log: string }, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+function logs(
+  app: App,
+): Effect.Effect<
+  { app: App; log: string },
+  LocalCommandFailure,
+  FileSystem.FileSystem | Path.Path
+> {
   return urlPath(logFileUrl(app)).pipe(
     Effect.flatMap((path) => withFileSystem((fs) => fs.readFileString(path))),
     Effect.map((log) => ({ app, log })),

@@ -6,8 +6,8 @@ import { Crypto, Effect, FileSystem, Path } from "effect";
 
 import { failure } from "./failure.ts";
 import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
-import { privateDirectoryMode } from "./private-files.ts";
 import { urlPath, withFileSystem } from "./platform.ts";
+import { privateDirectoryMode } from "./private-files.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 
@@ -81,7 +81,11 @@ const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
   }
 });
 
-function certificateAuthorityBase64(): Effect.Effect<string, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+function certificateAuthorityBase64(): Effect.Effect<
+  string,
+  LocalCommandFailure,
+  FileSystem.FileSystem | Path.Path
+> {
   return urlPath(certificateAuthority).pipe(
     Effect.flatMap((path) => withFileSystem((fs) => fs.readFile(path))),
     Effect.map((certificate) => Buffer.from(certificate).toString("base64")),

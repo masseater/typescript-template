@@ -65,9 +65,7 @@ function plistDocument(
   return Effect.gen(function* plistDocumentProgram() {
     const path = yield* Path.Path;
     const arguments_ = yield* programArguments(service.root);
-    const program = arguments_
-      .map((argument) => `      <string>${argument}</string>`)
-      .join("\n");
+    const program = arguments_.map((argument) => `      <string>${argument}</string>`).join("\n");
     const logDirectory = path.join(home, "Library", "Logs", service.label);
     return `${plistOpening}
     <key>Label</key>
@@ -90,13 +88,15 @@ ${plistClosing}`;
   });
 }
 
-function serviceOf(root: string): Effect.Effect<RunnerService, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+function serviceOf(
+  root: string,
+): Effect.Effect<RunnerService, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
   return Effect.gen(function* serviceOfProgram() {
     const path = yield* Path.Path;
     const fs = yield* FileSystem.FileSystem;
-    const content = yield* fs.readFileString(path.join(root, ".service")).pipe(
-      Effect.mapError(() => failure("file_io_failed")),
-    );
+    const content = yield* fs
+      .readFileString(path.join(root, ".service"))
+      .pipe(Effect.mapError(() => failure("file_io_failed")));
     const plistFile = content.trim();
     const label = path.basename(plistFile, plistSuffix);
     return plistFile.endsWith(plistSuffix) && label !== ""
@@ -152,7 +152,9 @@ function renderService(
   );
 }
 
-function ciRunner(args: readonly string[]): Effect.Effect<CiRunnerReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+function ciRunner(
+  args: readonly string[],
+): Effect.Effect<CiRunnerReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
   const write = args.includes(writeFlag);
   const roots = args.filter((argument) => argument !== writeFlag);
   return roots.length === 0

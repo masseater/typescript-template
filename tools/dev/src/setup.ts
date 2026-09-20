@@ -9,9 +9,9 @@ import {
   readCredentials,
   refreshBrowserConfig,
 } from "./local-environment.ts";
+import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
 import { privateDirectoryMode, replacePrivateFile, writePrivateFile } from "./private-files.ts";
 import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentials.ts";
-import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App, Credentials } from "./local-environment.ts";
@@ -27,7 +27,11 @@ interface SetupReport {
 const authSecretBytes = 48;
 const jsonIndentation = 2;
 
-function credentialsExist(): Effect.Effect<boolean, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+function credentialsExist(): Effect.Effect<
+  boolean,
+  LocalCommandFailure,
+  FileSystem.FileSystem | Path.Path
+> {
   return urlPath(credentialsFile).pipe(
     Effect.flatMap((path) =>
       FileSystem.FileSystem.pipe(

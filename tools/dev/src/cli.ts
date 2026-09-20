@@ -2,10 +2,6 @@
 import { causeRecord, runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 
-import { layer } from "./platform.ts";
-
-import type { DevServices } from "./platform.ts";
-
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { authenticate } from "./authenticate.ts";
 import { browser, browserCommand } from "./browser.ts";
@@ -13,11 +9,13 @@ import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
 import { application, root, run } from "./local-environment.ts";
 import { ensureOperator, operatorExists } from "./operator-account.ts";
+import { layer } from "./platform.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
+import type { DevServices } from "./platform.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
@@ -67,9 +65,11 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport), Effect.provide(layer)), (cause) =>
-  causeRecord("local.application_command_failed", cause, {
-    remediation:
-      "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-  }),
+runCli(
+  selectCommand(action, args).pipe(Effect.flatMap(writeReport), Effect.provide(layer)),
+  (cause) =>
+    causeRecord("local.application_command_failed", cause, {
+      remediation:
+        "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+    }),
 );

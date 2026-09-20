@@ -25,7 +25,9 @@ function runnerDirectory(): Effect.Effect<
 describe("the ci runner service document", () => {
   it("reports the change without touching the file", async () => {
     expect.hasAssertions();
-    const { plistFile, root } = await Effect.runPromise(runnerDirectory().pipe(Effect.provide(layer)));
+    const { plistFile, root } = await Effect.runPromise(
+      runnerDirectory().pipe(Effect.provide(layer)),
+    );
     const report = await Effect.runPromise(ciRunner([root]).pipe(Effect.provide(layer)));
     expect(report.written).toBe(false);
     expect(report.services).toStrictEqual([
@@ -118,9 +120,7 @@ describe("the ci runner service document", () => {
 describe("a ci runner directory the command cannot read", () => {
   it("refuses to guess which runner to render", async () => {
     expect.hasAssertions();
-    const failed = await Effect.runPromise(
-      Effect.flip(ciRunner([])).pipe(Effect.provide(layer)),
-    );
+    const failed = await Effect.runPromise(Effect.flip(ciRunner([])).pipe(Effect.provide(layer)));
     expect(failed.reason).toBe("ci_runner_root_required");
   });
 
@@ -132,7 +132,9 @@ describe("a ci runner directory the command cannot read", () => {
         Effect.provide(layer),
       ),
     );
-    const failed = await Effect.runPromise(Effect.flip(ciRunner([root])).pipe(Effect.provide(layer)));
+    const failed = await Effect.runPromise(
+      Effect.flip(ciRunner([root])).pipe(Effect.provide(layer)),
+    );
     expect(failed.reason).toBe("file_io_failed");
   });
 });

@@ -1,4 +1,4 @@
-import { Effect, FileSystem, Path, PlatformError, Result } from "effect";
+import { Effect, FileSystem, Path, PlatformError, Predicate, Result } from "effect";
 
 import { failure } from "./failure.ts";
 import { isAlreadyExists, urlPath, withFileSystem } from "./platform.ts";
@@ -11,7 +11,7 @@ const groupAndOtherPermissions = 0o077;
 const textEncoder = new TextEncoder();
 
 function isErrorCode(error: unknown, code: string): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+  return Predicate.isObject(error) && "code" in error && error.code === code;
 }
 
 function withFileSystemError<A>(
@@ -57,9 +57,9 @@ const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePriv
   }
   yield* Effect.scoped(
     withFileSystem((fs) =>
-      fs.open(path, { flag: "w", mode: privateFileMode }).pipe(
-        Effect.flatMap((file) => file.writeAll(textEncoder.encode(content))),
-      ),
+      fs
+        .open(path, { flag: "w", mode: privateFileMode })
+        .pipe(Effect.flatMap((file) => file.writeAll(textEncoder.encode(content)))),
     ),
   );
   yield* withFileSystem((fs) => fs.chmod(path, privateFileMode));
@@ -73,9 +73,9 @@ const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFil
   const written = yield* Effect.result(
     Effect.scoped(
       withFileSystemError((fs) =>
-        fs.open(path, { flag: "wx", mode: privateFileMode }).pipe(
-          Effect.flatMap((file) => file.writeAll(textEncoder.encode(content))),
-        ),
+        fs
+          .open(path, { flag: "wx", mode: privateFileMode })
+          .pipe(Effect.flatMap((file) => file.writeAll(textEncoder.encode(content)))),
       ),
     ),
   );

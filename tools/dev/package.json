@@ -12,6 +12,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
@@ -21,7 +22,6 @@
     "@repo/vite-config": "workspace:*",
     "agent-browser": "0.37.1",
     "better-auth": "catalog:",
-    "@effect/platform-node": "catalog:",
     "effect": "catalog:",
     "otpauth": "9.5.2",
     "playwright": "catalog:",

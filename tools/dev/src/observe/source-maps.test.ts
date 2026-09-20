@@ -35,9 +35,9 @@ const writeReleaseMaps = Effect.fn("writeReleaseMaps")(function* writeReleaseMap
 const temporaryRoot = Effect.acquireRelease(
   FileSystem.FileSystem.pipe(
     Effect.flatMap((fs) =>
-      fs.makeTempDirectory({ prefix: "template-symbolicate-" }).pipe(
-        Effect.flatMap((root) => fs.realPath(root)),
-      ),
+      fs
+        .makeTempDirectory({ prefix: "template-symbolicate-" })
+        .pipe(Effect.flatMap((root) => fs.realPath(root))),
     ),
   ),
   (root) =>
