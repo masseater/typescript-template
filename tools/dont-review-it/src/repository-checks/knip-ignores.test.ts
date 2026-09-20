@@ -36,7 +36,13 @@ const TEXT_EXTENSIONS = new Set([
   ".yml",
 ]);
 
-const SKIPPED_DIRECTORIES = new Set([".git", ".local", "coverage", "dist", "node_modules"]);
+const SKIPPED_DIRECTORIES = new Set([
+  ".git",
+  ".local",
+  "coverage",
+  "dist",
+  "node_modules",
+] as const);
 
 type WorkspaceKnip = {
   readonly ignoreBinaries?: readonly string[];
