@@ -12,6 +12,8 @@ export const routes = {
   "/api/members": "members-api",
   "/api/profile": "profile-api",
   "/api/session": "session",
+  "/api/onboarding": "onboarding",
+  "/api/home/feed": "home-feed",
   "/api/telemetry": "telemetry",
   "/api/verify-email": "verify-email-api",
   "/contact": "contact",
