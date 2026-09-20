@@ -33,24 +33,10 @@ const completeWelcomeOnboarding = async (
   const { page } = stage;
   await page.waitForURL((url) => url.pathname.includes("/welcome"), { timeout: appearanceTimeout });
   await seeHeading(page, "規約への同意");
-  await Promise.all([
-    page.waitForURL(
-      (url) => {
-        const path = url.pathname.replace(/\/$/u, "");
-        return path.endsWith("/welcome") && !path.includes("agreement");
-      },
-      { timeout: appearanceTimeout },
-    ),
-    press(page, "同意して続ける"),
-  ]);
+  await press(page, "同意して続ける");
   await seeHeading(page, "プロフィールの作り方");
   await readyButton(page, "自分で入力する");
-  await Promise.all([
-    page.waitForURL((url) => url.pathname.includes("/welcome/profile"), {
-      timeout: appearanceTimeout,
-    }),
-    press(page, "自分で入力する"),
-  ]);
+  await press(page, "自分で入力する");
   await seeHeading(page, "基本項目の入力");
   await fill(page, { fieldLabel: "ユーザー名", typed: visit.account.name });
   await Promise.all([
