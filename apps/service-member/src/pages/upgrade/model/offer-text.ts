@@ -1,4 +1,6 @@
-import type { Offer } from "#pages/upgrade/api/checkout.ts";
+import type { OfferView } from "#shared/contracts/index.ts";
+
+type Offer = typeof OfferView.Type;
 
 const zeroDecimalCurrencies: ReadonlySet<string> = new Set([
   "bif",

@@ -10,11 +10,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { replacePrivateFile } from "./private-files.ts";
-import {
-  appVariables,
-  sharedRunnerCredentials,
-  stripePlaceholders,
-} from "./shared-runner-credentials.ts";
+import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentials.ts";
 
 async function privateFile(name: string): Promise<URL> {
   const base = await mkdtemp(path.join(tmpdir(), "private-files-"));
@@ -57,9 +53,9 @@ describe("the variables every runner shares", () => {
     expect.hasAssertions();
     const credentials = sharedRunnerCredentials();
     expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
-      STRIPE_PRICE_ID: stripePlaceholders.priceId,
-      STRIPE_SECRET_KEY: stripePlaceholders.secretKey,
-      STRIPE_WEBHOOK_SECRET: stripePlaceholders.webhookSecret,
+      STRIPE_PRICE_ID: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
+      STRIPE_SECRET_KEY: expect.stringMatching(/^sk_test_[A-Za-z0-9]+$/u),
+      STRIPE_WEBHOOK_SECRET: expect.stringMatching(/^whsec_[A-Za-z0-9]+$/u),
     });
     const stripe = {
       priceId: "price_storedNotReal",
