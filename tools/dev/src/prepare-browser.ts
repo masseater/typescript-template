@@ -10,7 +10,7 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
-import { runCli } from "@repo/cli";
+import { causeRecord, runCli } from "@repo/cli";
 import { Console, Effect, Schema } from "effect";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
@@ -86,5 +86,5 @@ runCli(
       }),
     );
   }),
-  { event: "local.browser_cli_prepare_failed" },
+  (cause) => causeRecord("local.browser_cli_prepare_failed", cause),
 );
