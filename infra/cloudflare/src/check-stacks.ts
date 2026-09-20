@@ -4,6 +4,7 @@ import { isDeepStrictEqual } from "node:util";
 
 import { markFailed, reportFailed, runCli } from "@repo/cli";
 import { APPLICATION, applications, grants } from "@repo/config";
+import { photoBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { Cause, Console, Effect, Schema } from "effect";
 
@@ -23,6 +24,7 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
+import { photoBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -89,6 +91,11 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText("OTLP_ENABLED", String(otlp.enabled)),
       plainText("OTLP_ENDPOINT", otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
+      ...(grants(app, "storage")
+        ? [
+            `${photoBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Photos.bucketName:jurisdiction=<unresolved apply>`,
+          ]
+        : []),
     ].toSorted(),
     declared: {
       ...sharedWorker,
@@ -232,6 +239,15 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
         plainText("INTERNAL_DASHBOARD_ORIGIN", origins[APPLICATION.wiki]),
       ],
     }),
+  }),
+  storage: declaredStack("storage", {
+    Photos: {
+      adopt: false,
+      bindings: [],
+      declared: { name: photoBucketName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.R2.Bucket",
+    },
   }),
   observability: declaredStack("observability", {
     Traces: {

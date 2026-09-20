@@ -15,12 +15,13 @@ const stackReferences = {
   "error-monitor": ["tokens"],
   "health-monitor": [],
   observability: [],
+  storage: [],
   tokens: [],
-  "service-member": application,
+  "service-member": [...application, "storage"],
   "internal-dashboard": application,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
-  Readonly<Record<Application, typeof application>> &
+  Readonly<Record<Application, readonly [...typeof application, ...string[]]>> &
   Readonly<Record<MonitorStack, readonly string[]>>;
 
 type StackName = keyof typeof stackReferences;
@@ -41,6 +42,7 @@ const stackNames = [
   "zone",
   "email",
   "database",
+  "storage",
   "observability",
   "tokens",
   ...monitorStacks,

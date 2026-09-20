@@ -27,6 +27,16 @@ export type { AuthenticationMethod, Role, StrongAuthenticationMethod } from "./i
 export { CloudflareId } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export {
+  PHOTO_CONTENT_TYPE,
+  PHOTO_SLOT,
+  PROFILE_VISIBILITY,
+  maximumPhotoBytes,
+  photoContentTypes,
+  photoSlots,
+  profileVisibilities,
+} from "./member-profile.ts";
+export type { PhotoContentType, PhotoSlot, ProfileVisibility } from "./member-profile.ts";
+export {
   Email,
   isLocalDevelopmentOrigin,
   readAi,

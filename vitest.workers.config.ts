@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import { localPhotoBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
@@ -34,6 +35,7 @@ export default defineProject({
         durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
         outboundService: (outbound: { readonly url: string }) =>
           Response.json({ blocked: outbound.url }, { status: 403 }),
+        r2Buckets: { [localPhotoBucket.binding]: localPhotoBucket.bucket_name },
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
       },
     }),

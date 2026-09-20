@@ -140,5 +140,14 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
 
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
-export { Email, isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };
+export {
+  Email,
+  bindingWith,
+  decode,
+  isLocalDevelopmentOrigin,
+  readAi,
+  readConfig,
+  readEnvironment,
+  readWikiConfig,
+};
 export type { AppConfig, AssetFetcher, WikiConfig };
