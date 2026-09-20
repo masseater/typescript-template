@@ -810,6 +810,9 @@ importers:
       alchemy:
         specifier: 'catalog:'
         version: 2.0.0-beta.77(@effect/platform-node@4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1)))(@types/node@26.6.1)(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20260916.1)(@effect/sql-d1@4.0.0-rc.115(effect@4.0.0-rc.112))(@effect/sql-sqlite-do@4.0.0-rc.115(effect@4.0.0-rc.112))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(effect@4.0.0-rc.112)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.5))(effect@4.0.0-rc.112)(typescript@7.0.2)(vitest@4.1.11)(ws@8.21.3)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.4(@cloudflare/workers-types@5.20260916.1)(@effect/sql-d1@4.0.0-rc.115(effect@4.0.0-rc.112))(@effect/sql-sqlite-do@4.0.0-rc.115(effect@4.0.0-rc.112))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(effect@4.0.0-rc.112)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.5)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -820,6 +823,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/db-local':
+        specifier: workspace:*
+        version: link:../../libs/db-local
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1116,9 +1122,6 @@ importers:
       drizzle-kit:
         specifier: 'catalog:'
         version: 1.0.0-rc.4
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

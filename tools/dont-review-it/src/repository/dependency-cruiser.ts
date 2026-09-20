@@ -79,7 +79,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         dependencyTypes: ["local"],
-        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/db/src/migrate-d1\.ts$|^libs/db/src/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/remote-command\.ts$`,
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$`,
       },
     },
     {
@@ -111,8 +111,8 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "生の DB ドライバーは libs/db と、feature クエリを所有する apps だけで使えます。共有 libs の業務処理は計測付きの @repo/db の入口を使ってください。",
-      from: { pathNot: "^(?:libs/db/|apps/)" },
+        "生の DB ドライバーは libs/db、infra/cloudflare、feature クエリを所有する apps だけで使えます。共有 libs の業務処理は計測付きの @repo/db の入口を使ってください。",
+      from: { pathNot: "^(?:libs/db/|apps/|infra/cloudflare/)" },
       name: "no-raw-database-driver",
       severity: "error",
       to: { path: rawDatabaseDriver },

@@ -3,10 +3,11 @@ import {
   fail,
   loadRemoteMigrations,
   migrateDatabase,
-  parseRemoteInput,
-  remoteDatabase,
 } from "@repo/db/migrations";
 import { Effect } from "effect";
+
+import { remoteDatabase } from "./remote-http.ts";
+import { parseRemoteInput } from "./remote-input.ts";
 
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 

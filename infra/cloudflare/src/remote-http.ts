@@ -1,9 +1,9 @@
+import { RemoteFailure } from "@repo/db/migrations";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { migrate } from "drizzle-orm/sqlite-proxy/migrator";
 import { Effect, Schema } from "effect";
 
-import { RemoteFailure } from "./remote-input.ts";
-
+import type { DatabaseExecutor } from "@repo/db/migrations";
 import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteExecuteMethod } from "drizzle-orm/sqlite-core";
 import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
@@ -11,12 +11,6 @@ import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 interface RemoteQuery {
   readonly params: readonly (string | number | null)[];
   readonly sql: string;
-}
-
-interface DatabaseExecutor {
-  readonly batch: (
-    queries: readonly RemoteQuery[],
-  ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
 }
 
 const D1_API_TIMEOUT_MS = 30_000;
@@ -81,7 +75,7 @@ const remoteExecutor = ({
 }): DatabaseExecutor => {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
   return {
-    batch: (queries) =>
+    batch: (queries: readonly RemoteQuery[]) =>
       Effect.gen(function* batch() {
         const responseJson = yield* readJson(endpoint, apiToken, { batch: queries });
         const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(responseJson).pipe(
@@ -158,4 +152,3 @@ const remoteDatabase = ({
 };
 
 export { remoteDatabase, remoteExecutor };
-export type { DatabaseExecutor };

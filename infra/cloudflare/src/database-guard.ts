@@ -5,6 +5,7 @@ import { Effect } from "effect";
 import { isUnreadable, readVerdict, unreadableState } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
 import { databaseName, findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
+import { remoteExecutor } from "./remote-http.ts";
 import { recordedDatabaseIds } from "./state-ownership.ts";
 
 import type { StateService } from "alchemy/State";
@@ -58,11 +59,13 @@ const assertDatabaseMigrated = Effect.fn("assertDatabaseMigrated")(function* ass
   target: DeploymentTarget,
 ) {
   const databaseId = yield* lookupDatabaseId(access, databaseName(target.prefix));
-  const status = yield* readMigrationStatus({
-    accountId: access.accountId,
-    apiToken: access.apiToken,
-    databaseId,
-  }).pipe(
+  const status = yield* readMigrationStatus(
+    remoteExecutor({
+      accountId: access.accountId,
+      apiToken: access.apiToken,
+      databaseId,
+    }),
+  ).pipe(
     Effect.mapError(
       (failure) =>
         new CloudflareFailure({

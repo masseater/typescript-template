@@ -11,9 +11,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { query } from "./database.ts";
-import { RemoteFailure } from "./remote-input.ts";
 import {
   APPLICATION_TABLES,
+  RemoteFailure,
   bootstrapDatabase,
   loadRemoteMigrations,
   migrateD1,

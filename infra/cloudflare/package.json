@@ -29,11 +29,13 @@
     "@repo/runtime": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "alchemy": "catalog:",
+    "drizzle-orm": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@repo/db-local": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

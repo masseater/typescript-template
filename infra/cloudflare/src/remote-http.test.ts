@@ -4,15 +4,19 @@ import {
   executeD1HttpBatch,
   executeD1RawBatch,
 } from "@repo/db-local";
+import {
+  RemoteFailure,
+  loadRemoteMigrations,
+  migrateDatabase,
+  readMigrationStatus,
+} from "@repo/db/migrations";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
-import { runRemoteDatabaseCommand } from "../../../infra/cloudflare/src/remote-command.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
-import { RemoteFailure } from "./remote-input.ts";
-import { loadRemoteMigrations, migrateDatabase, readMigrationStatus } from "./remote-operations.ts";
 
 const d1Target = {
   accountId: "a".repeat(32),
@@ -87,7 +91,7 @@ describe("the migration status of a database reached over the D1 API", () => {
           onCleanup(() => {
             d1Api.close();
           });
-          return yield* readMigrationStatus(d1Target);
+          return yield* readMigrationStatus(remoteExecutor(d1Target));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     )
@@ -109,7 +113,7 @@ describe("the migration status of a database reached over the D1 API", () => {
           });
           const { apply, database } = remoteDatabase(d1Target);
           yield* migrateDatabase(database, apply);
-          return yield* readMigrationStatus(d1Target);
+          return yield* readMigrationStatus(remoteExecutor(d1Target));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     );
@@ -161,7 +165,7 @@ describe("a database whose tables were made without a recorded history", () => {
           yield* remoteExecutor(d1Target).batch([
             { params: [], sql: "CREATE TABLE made_by_hand (id TEXT)" },
           ]);
-          return yield* readMigrationStatus(d1Target);
+          return yield* readMigrationStatus(remoteExecutor(d1Target));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     )

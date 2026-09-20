@@ -1,28 +1,6 @@
-import { CloudflareId, minimumCloudflareApiTokenLength } from "@repo/config";
+import { CloudflareId, Email, minimumCloudflareApiTokenLength } from "@repo/config";
+import { RemoteFailure, fail } from "@repo/db/migrations";
 import { Effect, Schema } from "effect";
-
-import { Email } from "./bootstrap-statement.ts";
-
-const RemoteFailureCode = Schema.Literals([
-  "REMOTE_COMMAND_INVALID",
-  "REMOTE_INPUT_INVALID",
-  "REMOTE_TARGET_MISMATCH",
-  "REMOTE_QUERY_FAILED",
-  "REMOTE_RESPONSE_INVALID",
-  "REMOTE_MIGRATIONS_INVALID",
-  "REMOTE_MIGRATION_HISTORY_MISMATCH",
-  "REMOTE_MIGRATION_HISTORY_MISSING",
-  "REMOTE_MIGRATIONS_REQUIRED",
-  "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
-]);
-
-class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
-  code: RemoteFailureCode,
-}) {}
-
-const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> => {
-  return Effect.fail(new RemoteFailure({ code }));
-};
 
 const DatabaseId = Schema.String.check(
   Schema.isUUID(),
@@ -41,12 +19,6 @@ const RemoteTarget = Schema.Struct({
   apiToken: Schema.optionalKey(ApiToken),
   databaseId: DatabaseId,
   email: Schema.optionalKey(Email),
-});
-
-const MigrationStatusTarget = Schema.Struct({
-  accountId: CloudflareId,
-  apiToken: ApiToken,
-  databaseId: DatabaseId,
 });
 
 const parseCommand = (
@@ -87,5 +59,3 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRem
   }
   return { execute, operation, target: remoteTarget };
 });
-
-export { MigrationStatusTarget, RemoteFailure, fail };

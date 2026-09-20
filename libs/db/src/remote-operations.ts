@@ -7,15 +7,43 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
-import { RemoteFailure, fail, parseRemoteInput } from "./remote-input.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";
 import type { Email } from "./bootstrap-statement.ts";
-import type { DatabaseExecutor } from "./remote-http.ts";
-import type { MigrationStatusTarget } from "./remote-input.ts";
+
+const RemoteFailureCode = Schema.Literals([
+  "REMOTE_COMMAND_INVALID",
+  "REMOTE_INPUT_INVALID",
+  "REMOTE_TARGET_MISMATCH",
+  "REMOTE_QUERY_FAILED",
+  "REMOTE_RESPONSE_INVALID",
+  "REMOTE_MIGRATIONS_INVALID",
+  "REMOTE_MIGRATION_HISTORY_MISMATCH",
+  "REMOTE_MIGRATION_HISTORY_MISSING",
+  "REMOTE_MIGRATIONS_REQUIRED",
+  "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+]);
+
+class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
+  code: RemoteFailureCode,
+}) {}
+
+const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> => {
+  return Effect.fail(new RemoteFailure({ code }));
+};
+
+interface RemoteQuery {
+  readonly params: readonly (string | number | null)[];
+  readonly sql: string;
+}
+
+interface DatabaseExecutor {
+  readonly batch: (
+    queries: readonly RemoteQuery[],
+  ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
+}
 
 const migrationsFolder = fileURLToPath(new URL("../migrations/", import.meta.url));
 
@@ -200,9 +228,9 @@ const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
 });
 
 const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(
-  d1Database: typeof MigrationStatusTarget.Type,
+  executor: DatabaseExecutor,
 ) {
-  return yield* migrationStatus(remoteExecutor(d1Database), yield* loadRemoteMigrations());
+  return yield* migrationStatus(executor, yield* loadRemoteMigrations());
 });
 
 const bootstrapDatabase = <Result>(
@@ -235,13 +263,13 @@ const bootstrapDatabase = <Result>(
 export {
   APPLICATION_TABLES,
   MIGRATIONS_TABLE_PRESENT,
+  RemoteFailure,
   bootstrapDatabase,
   fail,
   loadRemoteMigrations,
   migrateD1,
   migrateDatabase,
   migrationsFolder,
-  parseRemoteInput,
   readMigrationStatus,
-  remoteDatabase,
 };
+export type { DatabaseExecutor };

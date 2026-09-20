@@ -1,7 +1,8 @@
+import { RemoteFailure } from "@repo/db/migrations";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { RemoteFailure, parseRemoteInput } from "./remote-input.ts";
+import { parseRemoteInput } from "./remote-input.ts";
 
 const d1Target = {
   accountId: "a".repeat(32),
