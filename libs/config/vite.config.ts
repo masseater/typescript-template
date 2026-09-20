@@ -6,7 +6,11 @@ export default defineConfig({
       "check:effect": {
         command:
           "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        input: [{ auto: true }],
+        input: [
+          { auto: true },
+          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
+        ],
       },
       precommit: { command: [], dependsOn: [] },
       prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
