@@ -9,7 +9,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "apps/service-member": { ".": "./src/index.ts" },
   "apps/internal-dashboard": { ".": "./src/index.ts" },
   "libs/auth": { ".": "./src/index.ts" },
-  "libs/config": { ".": "./src/index.ts", "./deployment": "./src/deployment.ts" },
+  "libs/config": { ".": "./src/index.ts" },
   "libs/db": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
@@ -19,9 +19,14 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     "./testing": "./src/testing.ts",
   },
   "libs/observability": { ".": "./src/index.ts", "./testing": "./src/testing.ts" },
-  "libs/runtime": { ".": "./src/index.ts", "./contracts": "./src/contracts.ts" },
+  "libs/runtime": {
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts.ts",
+    "./security": "./src/security.ts",
+  },
   "libs/auth-ui": { ".": "./src/index.ts" },
   "libs/ui": { ".": "./src/index.ts" },
+  "infra/cloudflare": { "./deployment": "./src/deployment.ts" },
   "tools/dev": { ".": "./src/index.ts" },
 };
 const installedPackages = ["drizzle-orm", "miniflare", "msw"];
@@ -36,8 +41,12 @@ type Workspace = readonly [string, Readonly<Record<string, string>>];
 
 const developmentDependencies: Readonly<Record<string, readonly string[]>> = { "libs/ui": ["msw"] };
 
+const packageNames: Readonly<Record<string, string>> = {
+  "infra/cloudflare": "@repo/infra-cloudflare",
+};
+
 const createWorkspace = async (root: string, [directory, exported]: Workspace): Promise<void> => {
-  const name = `@repo/${directory.split("/")[1] ?? ""}`;
+  const name = packageNames[directory] ?? `@repo/${directory.split("/")[1] ?? ""}`;
   const devDependencies = Object.fromEntries(
     (developmentDependencies[directory] ?? []).map((dependency) => [dependency, "*"]),
   );

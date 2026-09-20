@@ -743,7 +743,7 @@ describe("the package surface", () => {
         "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
         "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
         "@opentelemetry/sdk-metrics": "catalog:",
-        "@repo/config": "workspace:*",
+        "@repo/vite-config": "workspace:*",
         "@tanstack/intent": "catalog:",
         "@types/node": "catalog:",
         "@vitest/coverage-v8": "catalog:",

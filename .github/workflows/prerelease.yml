@@ -44,7 +44,7 @@ jobs:
           cache: true
       - run: vp run --filter @repo/local up
       - run: vp run --filter @repo/dev setup loopback
-      - run: vp run --filter @repo/db db:migrate:local
+      - run: vp run --filter @repo/db-local db:migrate:local
       - run: vp run --filter @repo/service-member build
       - run: vp run --filter @repo/service-member preview &
       - run: vp run --filter @repo/load load service-member smoke

@@ -1,13 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import {
-  APPLICATION,
-  AUTHENTICATION_METHOD,
-  ROLE,
-  applications,
-  authenticationMethods,
-  roles,
-  type Application,
-} from "@repo/config";
+import { APPLICATION, applications, type Application } from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, authenticationMethods, roles } from "@repo/config/identity";
 import { schema, type DrizzleDatabase } from "@repo/db";
 import { claimMailSlot, findUser } from "@repo/db/security";
 import { logAt, logCause } from "@repo/observability";

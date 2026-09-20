@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
-import { sourceMapDirectories } from "@repo/config/source-maps";
+import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect } from "effect";
 
 import { symbolicate } from "./source-maps.ts";

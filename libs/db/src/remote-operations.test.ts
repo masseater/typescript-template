@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
+import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -15,7 +16,6 @@ import {
 } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
-import { EmptyTestDatabase, TestBinding, d1Executor, runStatement } from "./testing-node.ts";
 
 describe("migrateDatabase", () => {
   describe("a first migration of an empty database", () => {

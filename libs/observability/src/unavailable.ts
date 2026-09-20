@@ -2,110 +2,103 @@ import { Cause, Console, Effect, Result } from "effect";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
-import { isRecord, serviceLabel, type LogSink } from "./structured-logs.ts";
+import { isRecord, serviceLabel } from "./structured-logs.ts";
 
-import type { ServiceName } from "@repo/config";
+import type { ServiceName } from "./service-name.ts";
+import type { LogSink } from "./structured-logs.ts";
 
-type Reporting = {
+interface Reporting {
   readonly service: ServiceName;
   readonly log?: LogSink;
-};
+}
 
 const summaryLength = 512;
 const scanFactor = 4;
 const scanLength = summaryLength * scanFactor;
-
-const scanned = (logLine: string): string => redactSecrets(logLine.slice(0, scanLength));
-
+const chainDepth = 8;
+const chainSeparator = " < ";
 const truncationMark = "…";
-
-const summarized = (scannedLine: string, cut: boolean): string =>
-  cut || scannedLine.length > summaryLength
-    ? `${scannedLine.slice(0, summaryLength)}${truncationMark}`
-    : scannedLine;
-
-const bounded = (logLine: string): string =>
-  summarized(scanned(logLine), logLine.length > scanLength);
-
-const loggableField = (fieldName: string, fieldValue: unknown): unknown => {
-  const field = redactedField(fieldName, fieldValue);
-  return typeof field === "string" ? field.slice(0, scanLength) : field;
-};
-
 const unserializable = "[unserializable]";
 
-const errorFields = (failed: unknown): string => {
-  const encoded = Result.try(() => JSON.stringify(failed, loggableField));
-  return Result.isSuccess(encoded) ? summarized(encoded.success, false) : unserializable;
-};
+function scanned(value: string): string {
+  return redactSecrets(value.slice(0, scanLength));
+}
 
-const causeText = (failed: unknown): string | undefined => {
-  if (failed instanceof Error) {
-    return failed.message === "" ? undefined : `${failed.name}: ${failed.message}`;
+function summarized(value: string, cut: boolean): string {
+  return cut || value.length > summaryLength
+    ? `${value.slice(0, summaryLength)}${truncationMark}`
+    : value;
+}
+
+function bounded(value: string): string {
+  return summarized(scanned(value), value.length > scanLength);
+}
+
+function loggableField(key: string, value: unknown): unknown {
+  const field = redactedField(key, value);
+  return typeof field === "string" ? field.slice(0, scanLength) : field;
+}
+
+function errorFields(error: unknown): string {
+  const encoded = Result.try(() => JSON.stringify(error, loggableField));
+  return Result.isSuccess(encoded) ? summarized(encoded.success, false) : unserializable;
+}
+
+function causeText(value: unknown): string | undefined {
+  if (value instanceof Error) {
+    return value.message === "" ? undefined : `${value.name}: ${value.message}`;
   }
-  if (!isRecord(failed)) {
+  if (!isRecord(value)) {
     return undefined;
   }
-  const { message } = failed;
+  const { message } = value;
   return typeof message === "string" && message !== "" ? message : undefined;
-};
+}
 
-const nestedCause = (failed: unknown): unknown => {
-  if (failed instanceof Error) {
-    return failed.cause;
+function nestedCause(value: unknown): unknown {
+  if (value instanceof Error) {
+    return value.cause;
   }
-  return typeof failed === "object" && failed !== null && "cause" in failed
-    ? failed.cause
-    : undefined;
-};
+  return isRecord(value) ? value["cause"] : undefined;
+}
 
-const chainDepth = 8;
-const chainDepths = [...Array.from({ length: chainDepth }).keys()];
-const chainSeparator = " < ";
+function causeChain(error: unknown): string {
+  const links: string[] = [];
+  let current = error;
+  for (let depth = 0; depth < chainDepth && current !== undefined && current !== null; depth += 1) {
+    const text = causeText(current);
+    if (text !== undefined) {
+      links.push(scanned(text));
+    }
+    current = nestedCause(current);
+  }
+  return links.toReversed().join(chainSeparator);
+}
 
-const causeChain = (failed: unknown): string => {
-  const chained = chainDepths.reduce<{
-    readonly link: unknown;
-    readonly texts: readonly string[];
-  }>(
-    (chain) => {
-      if (chain.link === undefined || chain.link === null) {
-        return chain;
-      }
-      const described = causeText(chain.link);
-      return {
-        link: nestedCause(chain.link),
-        texts: described === undefined ? chain.texts : [...chain.texts, scanned(described)],
-      };
-    },
-    { link: failed, texts: [] },
-  );
-  return chained.texts.toReversed().join(chainSeparator);
-};
-
-const unavailableLog = (
+function unavailableLog(
   cause: Readonly<Cause.Cause<unknown>>,
   service: ServiceName,
-): Record<string, string> => {
-  const failed = Cause.squash(cause);
+): Record<string, string> {
+  const error = Cause.squash(cause);
   return {
-    ...failureAttributesOf(failed),
+    ...failureAttributesOf(error),
     "error.cause": bounded(Cause.pretty(cause)),
-    "error.chain": bounded(causeChain(failed)),
-    "error.fields": errorFields(failed),
+    "error.chain": bounded(causeChain(error)),
+    "error.fields": errorFields(error),
     event: "application.runtime_unavailable",
     service: serviceLabel(service),
   };
-};
+}
 
-const reportUnavailable = (
+function reportUnavailable(
   cause: Readonly<Cause.Cause<unknown>>,
   reporting: Reporting,
-): Effect.Effect<void> =>
-  Effect.gen(function* reportUnavailableProgram() {
+): Effect.Effect<void> {
+  return Effect.gen(function* reportUnavailableProgram() {
     const sink = reporting.log ?? (yield* Console.Console);
     sink.error(JSON.stringify(unavailableLog(cause, reporting.service)));
   });
+}
 
 export { reportUnavailable };
 export type { Reporting };

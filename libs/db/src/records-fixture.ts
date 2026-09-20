@@ -1,4 +1,5 @@
-import { AUTHENTICATION_METHOD, ROLE, type Application, type Role } from "@repo/config";
+import { type Application } from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, type Role } from "@repo/config/identity";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 

@@ -1,19 +1,17 @@
 #!/usr/bin/env node
-import { reportFailed, runCli } from "@repo/config/cli";
+import { reportFailed, runCli } from "@repo/cli";
+import { migrateD1 } from "@repo/db/migrate-d1";
 import { Console, Effect } from "effect";
 
-import { localPlatform } from "./local-platform.ts";
-import { migrateD1 } from "./migrate-d1.ts";
+import { localDatabasePlatform } from "./local-platform.ts";
 
-const failed = (failureCode: string): Readonly<Record<string, unknown>> => ({
-  action: "local_migration",
-  error: failureCode,
-  success: false,
-});
+function failed(error: string): Readonly<Record<string, unknown>> {
+  return { action: "local_migration", error, success: false };
+}
 
 runCli(
   Effect.gen(function* program() {
-    const { env } = yield* localPlatform;
+    const { env } = yield* localDatabasePlatform;
     const applied = yield* migrateD1(env.DB);
     yield* Console.log(JSON.stringify({ action: "local_migration", applied, success: true }));
   }).pipe(
