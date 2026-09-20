@@ -230,8 +230,7 @@ describe("normalizedBodyOf", () => {
       normalizedBodyOf({
         body: parseSync("body.ts", "const amount = 1n;").program.body,
         routes: NO_ROUTES,
-      }),
-    );
+      }));
 
     it("keeps the literal in the spelling", ({ bodyOfBigint }) => {
       expect(bodyOfBigint).toContain("1n");
