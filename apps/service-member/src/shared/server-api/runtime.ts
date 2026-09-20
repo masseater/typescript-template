@@ -4,6 +4,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
+import { Stripe } from "#shared/billing/index.ts";
 import { Interviewer } from "#shared/interview/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { opsMailLayer } from "./ops-mail.ts";
@@ -17,6 +18,7 @@ const runtime = workerRuntime(() =>
     appLayer(env, service, routes),
     Layer.unwrap(readConfig(env).pipe(Effect.map(opsMailLayer))),
     Interviewer.fromEnvironment(env),
+    Stripe.fromEnvironment(env),
   ),
 );
 
