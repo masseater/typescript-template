@@ -15,8 +15,15 @@ type SharedEnv = Readonly<{
   OTLP_ENDPOINT?: string;
 }>;
 
+type BillingEnv = Readonly<{
+  STRIPE_PRICE_ID: Redacted.Redacted;
+  STRIPE_SECRET_KEY: Redacted.Redacted;
+  STRIPE_WEBHOOK_SECRET: Redacted.Redacted;
+}>;
+
 interface CapabilityEnv {
   readonly ai: Readonly<{ AI: AIBinding }>;
+  readonly billing: BillingEnv;
 }
 
 type GrantedEnv<App extends Application> = [CapabilityOf<App>] extends [never]
@@ -28,4 +35,4 @@ type DeclaredEnv = SharedEnv & Partial<CapabilityEnv[Capability]>;
 
 type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
 
-export type { AppBindings, AppEnv, CapabilityEnv, DeclaredEnv, SharedEnv };
+export type { AppBindings, AppEnv, BillingEnv, CapabilityEnv, DeclaredEnv, SharedEnv };

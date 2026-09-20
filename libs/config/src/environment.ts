@@ -80,6 +80,24 @@ const AiBindings = Schema.Struct({
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
 });
 
+/** @canonical-values config.stripe-key-mode */
+const stripeKeyModes = ["live", "test"] as const;
+type StripeKeyMode = (typeof stripeKeyModes)[number];
+const StripeSecretKey = Schema.String.check(
+  Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u),
+);
+const StripeWebhookSecret = Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u));
+const StripePriceId = Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u));
+const StripeScalars = Schema.Struct({
+  APP_ORIGIN: Origin,
+  STRIPE_PRICE_ID: StripePriceId,
+  STRIPE_SECRET_KEY: StripeSecretKey,
+  STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
+});
+
+const stripeKeyMode = (secretKey: string): StripeKeyMode =>
+  secretKey.split("_")[1] === "live" ? "live" : "test";
+
 const isLocalLanHostname = (hostname: string): boolean =>
   /^[a-z0-9-]+\.local$/u.test(hostname) || /^[a-z0-9-]+\.local\.example\.test$/u.test(hostname);
 
@@ -158,6 +176,22 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
 
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
+const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfig(input: unknown) {
+  const scalars = yield* decode(StripeScalars, input);
+  const mode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
+  if (mode === "live" && isLocalDevelopmentOrigin(scalars.APP_ORIGIN)) {
+    return yield* invalid("Stripe live keys are restricted to deployed origins");
+  }
+  return {
+    mode,
+    priceId: scalars.STRIPE_PRICE_ID,
+    secretKey: scalars.STRIPE_SECRET_KEY,
+    webhookSecret: scalars.STRIPE_WEBHOOK_SECRET,
+  };
+});
+
+type StripeConfig = Effect.Success<ReturnType<typeof readStripeConfig>>;
+
 export {
   AuthSecret,
   Email,
@@ -169,6 +203,8 @@ export {
   readAi,
   readConfig,
   readEnvironment,
+  readStripeConfig,
   readWikiConfig,
+  stripeKeyModes,
 };
-export type { AppConfig, AssetFetcher, WikiConfig };
+export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode, WikiConfig };
