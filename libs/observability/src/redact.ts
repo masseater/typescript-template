@@ -15,120 +15,152 @@ const secretWords = [
 ];
 const secretName = String.raw`[\w.-]*(?:${secretWords.join("|")})[\w.-]*`;
 const separator = String.raw`[ \t]*[:=][ \t]*`;
-const secretLabel = new RegExp(String.raw`("?)(?:${secretName})\1(?:${separator})`, "giu");
+const secretLabel = new RegExp(String.raw`("?)(?:${secretName})\1(?:${separator})`, "iu");
 const secretKey = new RegExp(`^${secretName}$`, "iu");
 const listLabel = new RegExp(`(?:${listWords.join("|")})(?:${separator})$`, "iu");
 const quotePattern = /^["']/u;
-const quotes = new Set(['"', "'"]);
-const openers = new Set(["[", "{"]);
-const enclosers = new Set(["]", "}"]);
 const valueEnders = new Set([",", ")", "}", "]", "\n"]);
 const listEnders = new Set(['"', "'", "\\", "\n"]);
-const escapedWidth = 2;
 const placeholder = "[redacted]";
 const positionKeys: ReadonlySet<string> = new Set(["error.locations"]);
 const digitsOnly = /^\d+(?::\d+)*$/u;
 
-interface Masked {
-  readonly end: number;
-  readonly value: string;
-}
+const quotedRuns: Readonly<Record<string, RegExp>> = {
+  '"': /^"(?:\\[\s\S]|[^\\\n"])*(?:"|$|(?=\n))/u,
+  "'": /^'(?:\\[\s\S]|[^\\\n'])*(?:'|$|(?=\n))/u,
+};
 
-function quotedEnd(text: string, start: number): number {
-  const quote = text[start];
-  let index = start + 1;
-  while (index < text.length) {
-    const character = text[index];
-    if (character === "\n") {
-      return index;
-    }
-    if (character === quote) {
-      return index + 1;
-    }
-    index += character === "\\" ? escapedWidth : 1;
-  }
-  return text.length;
-}
+const quotedEnd = (source: string, start: number): number => {
+  const quoted = quotedRuns[source[start] ?? ""]?.exec(source.slice(start)) ?? null;
+  return quoted === null ? source.length : start + quoted[0].length;
+};
 
-function bracketDepth(character: string): number {
+const openers = new Set(["[", "{"]);
+const enclosers = new Set(["]", "}"]);
+
+const bracketDepth = (character: string): number => {
   if (openers.has(character)) {
     return 1;
   }
   return enclosers.has(character) ? -1 : 0;
-}
+};
 
-function bracketedEnd(text: string, start: number): number {
-  let depth = 0;
-  let index = start;
-  while (index < text.length && text[index] !== "\n" && (depth > 0 || index === start)) {
-    const character = text[index] ?? "";
-    depth += bracketDepth(character);
-    index = quotes.has(character) ? quotedEnd(text, index) : index + 1;
+const quotes = new Set(['"', "'"]);
+
+class TextScan {
+  cursor: number;
+  depth = 0;
+  stopped = false;
+  redacted = "";
+  finished = false;
+  readonly source: string;
+
+  constructor(source: string, start: number) {
+    this.source = source;
+    this.cursor = start;
   }
-  return index;
-}
 
-function bareEnd(text: string, start: number, enders: ReadonlySet<string>): number {
-  let index = start;
-  while (index < text.length && !enders.has(text[index] ?? "")) {
-    index += 1;
+  bracketedEnd(): number {
+    this.depth = 0;
+    this.stopped = false;
+    while (!this.stopped && this.cursor < this.source.length) {
+      const index = this.cursor;
+      const character = this.source[index] ?? "";
+      if (character === "\n") {
+        this.stopped = true;
+        break;
+      }
+      this.depth += bracketDepth(character);
+      this.cursor = quotes.has(character) ? quotedEnd(this.source, index) : index + 1;
+      if (this.depth <= 0) {
+        this.stopped = true;
+      }
+    }
+    return this.cursor;
   }
-  return index;
+
+  bareEnd(enders: ReadonlySet<string>): number {
+    while (this.cursor < this.source.length && !enders.has(this.source[this.cursor] ?? "")) {
+      this.cursor += 1;
+    }
+    return this.cursor < this.source.length ? this.cursor : this.source.length;
+  }
+
+  redact(keepNumbers = false): string {
+    this.cursor = 0;
+    this.redacted = "";
+    this.finished = false;
+    while (!this.finished) {
+      const found = secretLabel.exec(this.source.slice(this.cursor));
+      if (found === null) {
+        this.finished = true;
+        break;
+      }
+      const labelStart = this.cursor + found.index;
+      const masked = maskedValue({
+        keepNumbers,
+        secretLabelText: found[0],
+        source: this.source,
+        start: labelStart + found[0].length,
+      });
+      this.redacted = `${this.redacted}${this.source.slice(this.cursor, labelStart)}${found[0]}${masked.value}`;
+      this.cursor = masked.end;
+    }
+    return this.redacted + this.source.slice(this.cursor);
+  }
 }
 
-function valueEnd(text: string, start: number, enders: ReadonlySet<string>): number {
-  const first = text[start] ?? "";
+type ScannedValue = {
+  readonly source: string;
+  readonly start: number;
+  readonly enders: ReadonlySet<string>;
+};
+
+const valueEnd = (scanned: ScannedValue): number => {
+  const first = scanned.source[scanned.start] ?? "";
   if (quotes.has(first)) {
-    return quotedEnd(text, start);
+    return quotedEnd(scanned.source, scanned.start);
   }
-  return openers.has(first) ? bracketedEnd(text, start) : bareEnd(text, start, enders);
-}
+  const scan = new TextScan(scanned.source, scanned.start);
+  return openers.has(first) ? scan.bracketedEnd() : scan.bareEnd(scanned.enders);
+};
 
-function maskedValue(
-  text: string,
-  found: Readonly<{ keepNumbers: boolean; label: string; start: number }>,
-): Masked {
-  const { keepNumbers, label, start } = found;
-  const nameQuote = quotePattern.exec(label)?.[0] ?? "";
-  const listed = nameQuote === "" && listLabel.test(label);
-  const end = valueEnd(text, start, listed ? listEnders : valueEnders);
-  const value = text.slice(start, end);
-  if (keepNumbers && digitsOnly.test(value)) {
+const maskedValue = (masked: {
+  readonly keepNumbers: boolean;
+  readonly source: string;
+  readonly start: number;
+  readonly secretLabelText: string;
+}): { readonly end: number; readonly value: string } => {
+  const nameQuote = quotePattern.exec(masked.secretLabelText)?.[0] ?? "";
+  const listed = nameQuote === "" && listLabel.test(masked.secretLabelText);
+  const end = valueEnd({
+    enders: listed ? listEnders : valueEnders,
+    source: masked.source,
+    start: masked.start,
+  });
+  const value = masked.source.slice(masked.start, end);
+  if (masked.keepNumbers && digitsOnly.test(value)) {
     return { end, value };
   }
   const quote = quotePattern.exec(value)?.[0] ?? nameQuote;
   return { end, value: `${quote}${placeholder}${quote}` };
-}
+};
 
-function redactSecrets(text: string, keepNumbers = false): string {
-  let redacted = "";
-  let cursor = 0;
-  secretLabel.lastIndex = 0;
-  for (let match = secretLabel.exec(text); match !== null; match = secretLabel.exec(text)) {
-    const masked = maskedValue(text, {
-      keepNumbers,
-      label: match[0],
-      start: match.index + match[0].length,
-    });
-    redacted += `${text.slice(cursor, match.index)}${match[0]}${masked.value}`;
-    cursor = masked.end;
-    secretLabel.lastIndex = cursor;
-  }
-  return redacted + text.slice(cursor);
-}
+const redactSecrets = (source: string, keepNumbers = false): string =>
+  new TextScan(source, 0).redact(keepNumbers);
 
-function isSecretKey(key: string): boolean {
-  return secretKey.test(key);
-}
+const isSecretKey = (fieldName: string): boolean => secretKey.test(fieldName);
 
-function redactedField(key: string, value: unknown): unknown {
-  if (isSecretKey(key)) {
+const redactedField = (fieldName: string, fieldValue: unknown): unknown => {
+  if (isSecretKey(fieldName)) {
     return placeholder;
   }
-  if (value instanceof Error) {
-    return { message: value.message, name: value.name };
+  if (fieldValue instanceof Error) {
+    return { message: fieldValue.message, name: fieldValue.name };
   }
-  return typeof value === "string" ? redactSecrets(value, positionKeys.has(key)) : value;
-}
+  return typeof fieldValue === "string"
+    ? redactSecrets(fieldValue, positionKeys.has(fieldName))
+    : fieldValue;
+};
 
 export { redactSecrets, redactedField };
