@@ -93,7 +93,7 @@ describe("deployment value leaks", () => {
       [
         "CLOUDFLARE_ACCOUNT_ID=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         `TEMPLATE_PREFIX="${unusablePrefix}"`,
-        "TEMPLATE_SERVICE_MEMBER_ORIGIN=https://app.deployment.example",
+        "TEMPLATE_APP_DOMAIN=deployment.example",
         "BUDGET_JPY=5000",
         "TEMPLATE_JPY_PER_USD=150",
         "UNRELATED=some-other-value",
@@ -102,8 +102,8 @@ describe("deployment value leaks", () => {
     );
     expect(values).toStrictEqual([
       { key: "CLOUDFLARE_ACCOUNT_ID", value: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+      { key: "TEMPLATE_APP_DOMAIN", value: "deployment.example" },
       { key: "TEMPLATE_PREFIX", value: unusablePrefix },
-      { key: "TEMPLATE_SERVICE_MEMBER_ORIGIN", value: "https://app.deployment.example" },
     ]);
     expect(
       violations({ content: `const p = "${unusablePrefix}-db";`, filename: source }, values),

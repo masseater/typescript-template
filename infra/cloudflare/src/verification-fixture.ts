@@ -13,9 +13,9 @@ const verificationSettings = {
   mailFrom: "mail@template-verify.example.com",
   observabilitySampling: 0.5,
   origins: {
-    "internal-dashboard": "https://wiki.example.com",
-    "service-admin": "https://admin.example.com",
-    "service-member": "https://user.example.com",
+    "internal-dashboard": "https://template-verify-dashboard.example.com",
+    "service-admin": "https://template-verify-admin.example.com",
+    "service-member": "https://template-verify-member.example.com",
   },
   otlp: { enabled: true, endpoint: "https://otlp.example.com" },
   otlpAuthorization: "Bearer stack-verification-not-a-real-token",
@@ -29,7 +29,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   CLOUDFLARE_ACCOUNT_ID: verificationSettings.accountId,
   CLOUDFLARE_API_TOKEN: "stack-verification-not-a-real-token",
   CLOUDFLARE_ZONE_ID: verificationSettings.zoneId,
-  TEMPLATE_SERVICE_ADMIN_ORIGIN: verificationSettings.origins["service-admin"],
+  TEMPLATE_APP_DOMAIN: "example.com",
   TEMPLATE_AUTH_SECRET: verificationAuthSecret,
   TEMPLATE_FIXED_COST_USD: String(verificationSettings.budget.fixedCostUsd),
   TEMPLATE_JPY_PER_USD: String(verificationSettings.budget.jpyPerUsd),
@@ -40,8 +40,6 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   TEMPLATE_OTLP_ENDPOINT: verificationSettings.otlp.endpoint,
   TEMPLATE_PREFIX: verificationSettings.prefix,
   TEMPLATE_RESERVE_USD: String(verificationSettings.budget.reserveUsd),
-  TEMPLATE_SERVICE_MEMBER_ORIGIN: verificationSettings.origins["service-member"],
-  TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: verificationSettings.origins["internal-dashboard"],
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };
