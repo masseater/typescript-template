@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from "@repo/db";
+import { UserNotFound } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { accountApi, unavailable } from "@repo/runtime/account";
 import { contactApi } from "@repo/runtime/contact";
@@ -15,6 +15,7 @@ import {
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
+import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { interviewApi } from "./interview-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 
