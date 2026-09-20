@@ -1,8 +1,12 @@
-import { decodeJson } from "@repo/runtime/client";
-import { SessionView } from "@repo/runtime/contracts";
 import { describe, expect, test } from "vite-plus/test";
 
-import { errorMessage, passkeyUVOptions, requireSuccess } from "./protocol.ts";
+import {
+  SessionView,
+  decodeJson,
+  errorMessage,
+  passkeyUVOptions,
+  requireSuccess,
+} from "./protocol.ts";
 
 const authenticateOptionsPathname = "/api/auth/passkey/generate-authenticate-options";
 const registerOptionsPathname = "/api/auth/passkey/generate-register-options";
