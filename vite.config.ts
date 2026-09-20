@@ -26,7 +26,7 @@ export default defineConfig({
   run: {
     tasks: {
       "check:client": {
-        command: "node tools/dont-review-it/src/repository/client-bundle.ts",
+        command: "quality-check-client",
         input: [
           ...taskInput,
           "!**/dist/**",
@@ -41,7 +41,7 @@ export default defineConfig({
       "check:imports":
         "depcruise --config tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
-        command: "node tools/dont-review-it/src/repository/react-doctor.ts",
+        command: "quality-check-react",
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
