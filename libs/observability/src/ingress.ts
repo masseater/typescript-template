@@ -3,6 +3,7 @@ import { Effect, Result } from "effect";
 import { errorFingerprint } from "./errors.ts";
 import { parseBrowserEvents } from "./events.ts";
 import { httpStatus } from "./http-status.ts";
+import { RequestEntropy } from "./request-span.ts";
 import { readJson, rejectionStatus } from "./request.ts";
 import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
@@ -113,19 +114,28 @@ function recordBrowserEvent(serviceName: ServiceName, event: BrowserEvent): Effe
     trace_id: event.traceId,
     ...kindFields(event),
   };
-  return logAt(eventSeverity(event), event.name, attributes);
+  return logAt(eventSeverity(event), { attributes, eventName: event.name });
 }
 
 const readEvents = Effect.fn("readEvents")(function* readEvents(request: IngressRequest) {
   const telemetry = yield* Telemetry;
+  const entropy = yield* RequestEntropy;
   const input = yield* Effect.result(
-    readJson(request, new URL(request.url).origin, maximumBodyBytes),
+    readJson({
+      expectedOrigin: new URL(request.url).origin,
+      incoming: request,
+      limit: maximumBodyBytes,
+    }),
   );
   if (Result.isFailure(input)) {
     return emptyResponse(rejectionStatus[input.failure.reason]);
   }
   const events = yield* Effect.result(
-    parseBrowserEvents(input.success, telemetry.labels, Date.now()),
+    parseBrowserEvents({
+      body: input.success,
+      receivedAt: entropy.epochMilliseconds(),
+      routeLabels: telemetry.labels,
+    }),
   );
   if (Result.isFailure(events)) {
     return emptyResponse(httpStatus.badRequest);
