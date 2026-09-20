@@ -3,7 +3,7 @@ import { count, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { query } from "./database.ts";
+import { Database, query } from "./database.ts";
 import { withdrawnMember } from "./member-leave-schema.ts";
 import {
   acceptRecovery,
@@ -24,10 +24,13 @@ import {
 import { findUser, getSessionSecurity } from "./security.ts";
 import { TestDatabase } from "./testing.ts";
 
+import type { Layer } from "effect";
+import type { DatabaseFailure } from "./database-failure.ts";
+
 const { user } = schema;
 
 const runTest = <Value>(
-  program: Effect.Effect<Value, unknown, Effect.Effect.Context<Value>>,
+  program: Effect.Effect<Value, unknown, Layer.Success<typeof TestDatabase>>,
 ): Promise<Value> => Effect.runPromise(program.pipe(Effect.provide(TestDatabase)));
 
 const addMember = (added: {
@@ -35,7 +38,7 @@ const addMember = (added: {
   readonly email: string;
   readonly name?: string;
   readonly profile?: string;
-}): Effect.Effect<void, unknown, unknown> =>
+}): Effect.Effect<void, DatabaseFailure, Database> =>
   query(async (database): Promise<void> => {
     await database.insert(user).values({
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
