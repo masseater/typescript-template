@@ -8,7 +8,6 @@ export {
   UserDeletion,
   UserList,
   UserListQuery,
-  absentSearchKey,
   laterPage,
   maximumKeywordLength,
 } from "./users.ts";

@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { SearchKeyword, absentSearchKey, laterPage, maximumKeywordLength } from "./member.ts";
+import { SearchKeyword, laterPage, maximumKeywordLength } from "./member.ts";
 
 const lastPage = 1000;
 const numericKeyword = 2026;
@@ -11,12 +11,6 @@ const nullKeyword: unknown = JSON.parse("null");
 
 const keyword = Schema.decodeUnknownOption(SearchKeyword);
 const page = Schema.decodeUnknownOption(laterPage(lastPage));
-
-const Search = Schema.Struct({
-  keyword: Schema.optionalKey(SearchKeyword).pipe(Schema.catchDecoding(absentSearchKey)),
-  page: Schema.optionalKey(laterPage(lastPage)).pipe(Schema.catchDecoding(absentSearchKey)),
-});
-const search = Schema.decodeUnknownOption(Search);
 
 describe("text a url search holds", () => {
   it.for([numericKeyword, true])("reads the JSON scalar %o back as text", (raw) => {
@@ -62,18 +56,4 @@ describe("page number a url search holds", () => {
       expect(page(raw)).toStrictEqual(Option.none());
     },
   );
-});
-
-describe("a search key that does not decode", () => {
-  it("leaves the key out instead of failing the whole search", () => {
-    expect.hasAssertions();
-    expect(search({ extra: "x", keyword: " bob ", page: 0 })).toStrictEqual(
-      Option.some({ keyword: "bob" }),
-    );
-  });
-
-  it("fails only when the search is not a record at all", () => {
-    expect.hasAssertions();
-    expect(search("not a record")).toStrictEqual(Option.none());
-  });
 });

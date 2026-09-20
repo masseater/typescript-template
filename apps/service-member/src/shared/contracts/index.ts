@@ -8,7 +8,6 @@ export {
   ProfileUpdate,
   ProfileView,
   SearchKeyword,
-  absentSearchKey,
   laterPage,
   maximumContactMessageLength,
   maximumContactNameLength,

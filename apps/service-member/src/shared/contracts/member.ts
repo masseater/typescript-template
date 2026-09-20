@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, SchemaGetter } from "effect";
+import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
@@ -74,10 +74,6 @@ function laterPage(maximum: number): Schema.Codec<number, number | string> {
   );
 }
 
-function absentSearchKey(): Effect.Effect<Option.Option<never>> {
-  return Effect.succeed(Option.none());
-}
-
 const MemberListQuery = Schema.Struct({
   keyword: Schema.optionalKey(UserKeyword),
   page: pageNumber(1, 1, maximumMemberPage),
@@ -107,7 +103,6 @@ export {
   ProfileUpdate,
   ProfileView,
   SearchKeyword,
-  absentSearchKey,
   laterPage,
   maximumContactMessageLength,
   maximumContactNameLength,
