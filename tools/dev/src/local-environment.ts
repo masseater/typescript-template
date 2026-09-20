@@ -66,7 +66,6 @@ function logFileUrl(name: string): URL {
 function run(
   file: string,
   args: readonly string[],
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options: Parameters<typeof execFileAsync>[2],
 ): Effect.Effect<unknown, LocalCommandFailure> {
   return Effect.tryPromise({

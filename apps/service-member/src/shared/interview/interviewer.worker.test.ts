@@ -16,7 +16,6 @@ const unavailable = 503;
 const NICKNAME_LIMIT = 30;
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(

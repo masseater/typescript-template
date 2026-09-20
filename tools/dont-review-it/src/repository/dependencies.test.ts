@@ -2,11 +2,14 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   applicationDependencyViolations,
+  commandReferences,
+  publishableSurfaceViolations,
   retiredDependencyViolations,
   rootOnlyDependencyViolations,
   rootOnlyPackages,
   workspaceManifests,
 } from "./dependencies.ts";
+import { repositoryRoot } from "./repository-root.ts";
 
 describe("application package boundaries", () => {
   it.for(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])(
@@ -91,5 +94,60 @@ describe("root-only packages", () => {
   it("repository workspaces leave them to the root", () => {
     expect.hasAssertions();
     expect(rootOnlyDependencyViolations(workspaceManifests)).toStrictEqual([]);
+  });
+});
+
+describe("publishable surfaces", () => {
+  it("rejects a command package that does not publish every bin", () => {
+    expect.hasAssertions();
+    const violations = publishableSurfaceViolations(
+      [
+        {
+          area: "tools",
+          file: "tools/example/package.json",
+          manifest: {
+            bin: { example: "./src/cli.ts", "example-extra": "./src/extra.ts" },
+            exports: { "./package.json": "./package.json" },
+            name: "@repo/example",
+            publishConfig: { access: "public", bin: { example: "./dist/cli.mjs" } },
+          },
+        },
+      ],
+      [],
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("example-extra");
+  });
+
+  it("rejects an unpublished command that nothing starts", () => {
+    expect.hasAssertions();
+    const violations = publishableSurfaceViolations(
+      [
+        {
+          area: "tools",
+          file: "tools/example/package.json",
+          manifest: {
+            bin: { example: "./src/cli.ts", "example-extra": "./src/extra.ts" },
+            exports: { ".": "./src/index.ts" },
+            name: "@repo/example",
+            publishConfig: {
+              access: "public",
+              bin: { example: "./dist/cli.mjs" },
+              exports: { ".": "./dist/index.mjs" },
+            },
+          },
+        },
+      ],
+      [{ file: "vite.config.ts", text: "command: example" }],
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("example-extra");
+  });
+
+  it("repository publishable tools keep a command surface or a published pair", () => {
+    expect.hasAssertions();
+    expect(
+      publishableSurfaceViolations(workspaceManifests, commandReferences(repositoryRoot)),
+    ).toStrictEqual([]);
   });
 });

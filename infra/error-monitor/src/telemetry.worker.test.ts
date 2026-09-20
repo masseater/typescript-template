@@ -66,7 +66,6 @@ const queryResult = {
 };
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -84,7 +83,6 @@ function withServer(
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.Scope> {
   return withServer(
     http.post(endpoint, async ({ request }) => {

@@ -84,7 +84,6 @@ function toolSummary(name: string, input: unknown, scripts: string): string {
 class Conversation {
   private readonly parts: Parts;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public constructor(parts: Parts) {
     this.parts = parts;
   }

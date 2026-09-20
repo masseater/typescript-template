@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+
 import { field } from "@repo/dont-review-it/record-fields";
 
 import { repositoryRelative } from "./repository-path.ts";
@@ -121,6 +124,114 @@ const localExecutableDeployViolations = (deployed: readonly string[]): string[] 
     : [];
 };
 
+const skippedReferenceDirectory = new Set([
+  ".git",
+  ".local",
+  ".wrangler",
+  "coverage",
+  "dist",
+  "node_modules",
+]);
+
+const recordKeys = (value: unknown): readonly string[] =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? Object.keys(value) : [];
+
+const codeExportKeys = (manifest: unknown): readonly string[] =>
+  recordKeys(field(manifest, "exports")).filter(
+    (key) => key !== "./package.json" && !key.startsWith("./tsconfig"),
+  );
+
+const isPublishable = (manifest: unknown): boolean => {
+  if (field(manifest, "private") === true) {
+    return false;
+  }
+  return field(field(manifest, "publishConfig"), "access") === "public";
+};
+
+interface SurfaceReference {
+  readonly file: string;
+  readonly text: string;
+}
+
+const relativePosix = (root: string, absolute: string): string =>
+  path.relative(root, absolute).split(path.sep).join("/");
+
+const includeReference = (absolute: string, name: string): boolean => {
+  if (name === "vite.config.ts" || name === "package.json") {
+    return true;
+  }
+  return name.endsWith(".md") && absolute.split(path.sep).includes("skills");
+};
+
+const commandReferences = (root: string, directory = root): readonly SurfaceReference[] =>
+  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (skippedReferenceDirectory.has(entry.name)) {
+      return [];
+    }
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      return [...commandReferences(root, absolute)];
+    }
+    if (!includeReference(absolute, entry.name)) {
+      return [];
+    }
+    return [{ file: relativePosix(root, absolute), text: readFileSync(absolute, "utf8") }];
+  });
+
+const namesCommand = (
+  name: string,
+  references: readonly SurfaceReference[],
+  packageFile: string,
+): boolean => {
+  const escaped = name.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
+  const pattern = new RegExp(String.raw`(?<![\w-])${escaped}(?![\w-])`, "u");
+  return references.some(
+    (reference) => reference.file !== packageFile && pattern.test(reference.text),
+  );
+};
+
+const publishableSurfaceViolations = (
+  workspaces: readonly WorkspaceManifest[],
+  references: readonly SurfaceReference[],
+): string[] => {
+  return workspaces.flatMap(({ file, manifest }) => {
+    if (!isPublishable(manifest)) {
+      return [];
+    }
+    const name = field(manifest, "name");
+    const label = typeof name === "string" ? name : file;
+    const bins = recordKeys(field(manifest, "bin"));
+    const publishedBins = recordKeys(field(field(manifest, "publishConfig"), "bin"));
+    const codeExports = codeExportKeys(manifest);
+    if (bins.length === 0) {
+      return [];
+    }
+    if (codeExports.length === 0) {
+      const missing = bins.filter((bin) => !publishedBins.includes(bin));
+      return missing.length === 0
+        ? []
+        : [
+            `${file}: ${label} はコマンドだけの公開パッケージです。bin はすべて publishConfig.bin に置いてください。欠けている名前: ${missing.join(", ")}`,
+          ];
+    }
+    const publishedExports = recordKeys(field(field(manifest, "publishConfig"), "exports"));
+    const publishesCode = codeExports.some((key) => publishedExports.includes(key));
+    const unpublished = bins.filter((bin) => !publishedBins.includes(bin));
+    const uncalled = unpublished.filter((bin) => !namesCommand(bin, references, file));
+    if (publishedBins.length > 0 && publishesCode && uncalled.length === 0) {
+      return [];
+    }
+    const detail = [
+      publishedBins.length === 0 ? "publishConfig.bin がありません" : "",
+      publishesCode ? "" : "publishConfig.exports にコードのサブパスがありません",
+      uncalled.length === 0 ? "" : `未参照のコマンド: ${uncalled.join(", ")}`,
+    ].filter((part) => part !== "");
+    return [
+      `${file}: ${label} は取り込み面とコマンド面を両方宣言しています。公開する面は publishConfig に置き、公開しないコマンドはリポジトリの起動から参照してください。${detail.join("。")}`,
+    ];
+  });
+};
+
 const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
@@ -135,11 +246,13 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
 
 export {
   applicationDependencyViolations,
+  commandReferences,
   declaredDependencies,
   field,
   localExecutableDeployViolations,
   localExecutableName,
   localExecutablePlacementViolations,
+  publishableSurfaceViolations,
   retiredDependencyViolations,
   rootOnlyDependencyViolations,
   rootOnlyPackages,

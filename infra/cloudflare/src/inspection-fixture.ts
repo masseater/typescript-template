@@ -218,7 +218,6 @@ interface AccountState {
   readonly zoneName?: string;
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
   return [
     ...(options.token ?? tokenHandlers),

@@ -23,7 +23,6 @@ const rejected = {
 };
 const failures = {
   ...rejected,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   BdFailure: (failure: BdFailure) =>
     failure.reason === "rejected"
       ? { message: "見つかりませんでした。", status: httpStatus.notFound }

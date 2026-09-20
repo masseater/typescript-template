@@ -95,7 +95,6 @@ const publishedOn = Effect.fn("publishedOn")(function* publishedOn(container: st
   return mapped;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function fetchText(url: string, init?: RequestInit): Effect.Effect<Response, ReceiverCheckFailure> {
   return Effect.tryPromise({
     catch: (error) => new ReceiverCheckFailure({ reason: `${url}: ${describe(error)}` }),
@@ -234,7 +233,6 @@ const program = Effect.gen(function* program() {
 
 type FailureReport = Readonly<{ event: string; ok: false; reason: string }>;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function failureReport(cause: Cause.Cause<ReceiverCheckFailure>): FailureReport {
   const squashed = Cause.squash(cause);
   const reason =

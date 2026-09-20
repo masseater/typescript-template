@@ -16,7 +16,6 @@ const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billable-usage`;
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(

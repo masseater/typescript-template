@@ -18,7 +18,6 @@
     "lint-rule-authoring": "./src/lint-rule-authoring/cli.ts",
     "quality-check-client": "./src/repository/client-bundle.ts",
     "quality-check-react": "./src/repository/react-doctor.ts",
-    "quality-check-staged": "./src/repository/check-staged.ts",
     "stop-ai-slop": "./src/stop-ai-slop/cli.ts"
   },
   "files": [
@@ -73,7 +72,6 @@
     "@repo/ui": "workspace:*",
     "@shadcn/lint": "catalog:",
     "citty": "0.2.2",
-    "dependency-cruiser": "catalog:",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
     "jsonc-parser": "3.3.1",
@@ -97,6 +95,7 @@
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "dependency-cruiser": "catalog:",
     "msw": "catalog:",
     "shell-quote": "catalog:",
     "vite": "catalog:",

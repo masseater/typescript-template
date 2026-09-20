@@ -65,8 +65,8 @@ const workspaces = {
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
-    entry: ["src/repository/dependency-cruiser.ts", "doctor.config.ts"],
-    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "effect!"],
+    entry: ["doctor.config.ts"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!"],
     project: ["src/repository/**/*.{ts,mjs}", "src/**/*.{ts,mjs}!", "*.ts"],
   },
   "tools/e2e": {

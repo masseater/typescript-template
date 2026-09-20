@@ -12,7 +12,6 @@ import type { Redacted } from "effect";
 import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
   return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
 }
