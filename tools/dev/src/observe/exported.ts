@@ -147,4 +147,3 @@ const exportedTelemetry = Effect.fn("exportedTelemetry")(function* exportedTelem
 });
 
 export { exportedTelemetry };
-export type { ReceiverOrigins };
