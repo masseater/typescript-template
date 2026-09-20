@@ -127,7 +127,7 @@ describe("react-doctor integration", () => {
   it("every suppressed file still exists", () => {
     expect.hasAssertions();
     expect(
-      suppressedFiles().filter((file) => !(file in sources) && !(file in manifests)),
+      suppressedFiles().filter((file) => !(file in sources)),
     ).toStrictEqual([]);
   });
 
