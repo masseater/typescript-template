@@ -1,6 +1,8 @@
 export {
   AuthApps,
   PASSWORD,
+  assignRoleByEmail,
+  assignRoleById,
   audienceInputs,
   audienceOnEmptyDatabase,
   authTest,

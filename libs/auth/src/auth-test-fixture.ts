@@ -1,5 +1,11 @@
-import { APPLICATION, type Application } from "@repo/config";
-import { EmptyTestDatabase, TestDatabase, bootstrapAdmin, getSchemaShape } from "@repo/db/testing";
+import { APPLICATION, type Application, type Role } from "@repo/config";
+import {
+  EmptyTestDatabase,
+  TestDatabase,
+  bootstrapAdmin,
+  getSchemaShape,
+  runStatement,
+} from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
@@ -272,8 +278,25 @@ const audienceInputs = Effect.fn("audienceInputs")(function* audienceInputs(audi
   return [passkey?.fields["audience"]?.input, verification?.fields["audience"]?.input];
 });
 
+const assignRoleByEmail = Effect.fn("assignRoleByEmail")(function* assignRoleByEmail(
+  email: string,
+  role: Role,
+) {
+  yield* runStatement("UPDATE user SET role = ? WHERE email = ?", role, email);
+});
+
+const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
+  userId: string,
+  role: Role,
+) {
+  yield* runStatement("UPDATE user SET role = ? WHERE id = ?", role, userId);
+});
+
+
 export {
   AuthApps,
+  assignRoleByEmail,
+  assignRoleById,
   PASSWORD,
   audienceInputs,
   audienceOnEmptyDatabase,

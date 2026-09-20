@@ -1,6 +1,8 @@
 import {
   AuthApps,
   PASSWORD,
+  assignRoleByEmail,
+  assignRoleById,
   authTest,
   bootstrapVerifiedAdmin,
   clientOf,
@@ -10,7 +12,6 @@ import {
   signInAs,
 } from "@repo/auth/testing";
 import { APPLICATION, ROLE } from "@repo/config";
-import { runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
@@ -103,12 +104,8 @@ describe("wiki MCP authorization", () => {
         const { tokens, wiki } = yield* authorizedTokens();
         const owner = yield* wiki.verify();
         yield* registerVerified("second@example.com");
-        yield* runStatement(
-          "UPDATE user SET role = ? WHERE email = ?",
-          ROLE.administrator,
-          "second@example.com",
-        );
-        yield* runStatement("UPDATE user SET role = ? WHERE id = ?", ROLE.member, owner.user.id);
+        yield* assignRoleByEmail("second@example.com", ROLE.administrator);
+        yield* assignRoleById(owner.user.id, ROLE.member);
         return {
           mcpStatus: responseStatus(yield* mcpRequest(tokens.access_token)),
           sessionTag: yield* Effect.flip(wiki.verify()).pipe(Effect.map((error) => error._tag)),
