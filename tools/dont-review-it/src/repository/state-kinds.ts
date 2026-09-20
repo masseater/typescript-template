@@ -68,9 +68,6 @@ export {
   queryOptionsPlacementMessage,
   retiredPackagesFromStateKinds,
   serverCacheApiMessage,
-  serverStateKind,
   serverStateRetiredPackages,
   stateKinds,
 };
-
-export type { StateKind, StateKindId };
