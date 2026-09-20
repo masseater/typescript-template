@@ -1,8 +1,8 @@
 import { describe, expect } from "vite-plus/test";
 
+import { journeyTest } from "./journey-browser.ts";
+import { journeyRoles } from "./journey-roles.ts";
 import {
-  journeyRoles,
-  journeyTest,
   runDocumentJourney,
   runMemberJourney,
   runOperatorJourney,

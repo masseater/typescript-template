@@ -7,4 +7,4 @@ const browserHeaders = (address: string): Readonly<Record<string, string>> => ({
   "user-agent": agentUserAgent,
 });
 
-export { agentTool, agentUserAgent, browserHeaders };
+export { agentUserAgent, browserHeaders };

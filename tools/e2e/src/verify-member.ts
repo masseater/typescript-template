@@ -157,4 +157,3 @@ const runVerifyMember = async (settings: {
 };
 
 export { mailDelivery, runVerifyMember };
-export type { MailDelivery, VerifyMemberResult };

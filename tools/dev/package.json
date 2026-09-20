@@ -7,8 +7,7 @@
     "repo-dev-check-exported": "./src/observe/receiver-check.ts",
     "repo-dev-observe": "./src/observe/cli.ts",
     "repo-dev-prepare-browser": "./src/prepare-browser.ts",
-    "repo-dev-symbolicate": "./src/observe/symbolicate.ts",
-    "repo-dev-verify": "./src/verify/cli.ts"
+    "repo-dev-symbolicate": "./src/observe/symbolicate.ts"
   },
   "type": "module",
   "dependencies": {
@@ -16,7 +15,6 @@
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/e2e": "workspace:*",
     "@repo/local": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",
@@ -24,7 +22,6 @@
     "better-auth": "catalog:",
     "effect": "catalog:",
     "otpauth": "9.5.2",
-    "playwright": "catalog:",
     "portless": "0.15.6",
     "vite-plus": "catalog:",
     "wrangler": "catalog:"

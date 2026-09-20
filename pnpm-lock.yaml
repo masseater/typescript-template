@@ -1672,9 +1672,6 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@repo/e2e':
-        specifier: workspace:*
-        version: link:../e2e
       '@repo/local':
         specifier: workspace:*
         version: link:../../infra/local
@@ -1696,9 +1693,6 @@ importers:
       otpauth:
         specifier: 9.5.2
         version: 9.5.2
-      playwright:
-        specifier: 'catalog:'
-        version: 1.63.0
       portless:
         specifier: 0.15.6
         version: 0.15.6
@@ -1832,19 +1826,23 @@ importers:
         version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   tools/e2e:
-    devDependencies:
+    dependencies:
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112
+    devDependencies:
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
-      effect:
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112
       otpauth:
         specifier: 'catalog:'
         version: 9.5.2

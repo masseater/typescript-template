@@ -12,4 +12,4 @@ const browserHeaders = (): Readonly<Record<string, string>> => {
   return agentBrowserHeaders(syntheticClientAddress());
 };
 
-export { browserHeaders, syntheticClientAddress };
+export { browserHeaders };

@@ -9,8 +9,6 @@ import {
   signOut,
   signUp,
 } from "./flows.ts";
-import { journeyTest } from "./journey-browser.ts";
-import { journeyRoles } from "./journey-roles.ts";
 import {
   appearanceTimeout,
   fill,
@@ -279,11 +277,4 @@ const runVerifyMemberJourney = async (
   };
 };
 
-export {
-  journeyRoles,
-  journeyTest,
-  runDocumentJourney,
-  runMemberJourney,
-  runOperatorJourney,
-  runVerifyMemberJourney,
-};
+export { runDocumentJourney, runMemberJourney, runOperatorJourney, runVerifyMemberJourney };
