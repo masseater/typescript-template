@@ -18,10 +18,6 @@ import type { FileHandle } from "node:fs/promises";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 
-function declaredKeys(contents: string): ReadonlySet<string> {
-  return new Set(Object.keys(parseEnv(contents)));
-}
-
 class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("SecretsFileFailure", {
   code: Schema.Literals([
     "secrets_file_missing",
@@ -61,6 +57,10 @@ const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle:
     try: async () => handle.readFile("utf-8"),
   });
 });
+
+function declaredKeys(contents: string): ReadonlySet<string> {
+  return new Set(Object.keys(parseEnv(contents)));
+}
 
 const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecretsFile(
   filename: string,
