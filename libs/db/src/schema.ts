@@ -1,6 +1,7 @@
 import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
@@ -140,8 +141,10 @@ const schema = {
   oauthRefreshToken,
   oauthResource,
   passkey,
+  planSubscription,
   rateLimit,
   session,
+  stripeEvent,
   twoFactor,
   user,
   verification,
@@ -160,4 +163,5 @@ export {
 } from "./oauth-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
