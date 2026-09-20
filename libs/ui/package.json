@@ -10,8 +10,8 @@
     "./auth": "./src/auth.tsx",
     "./lint-settings": "./lint-settings.ts",
     "./shell": "./src/shell.ts",
-    "./signup": "./src/signup.tsx",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./auth-client": "./src/auth-client.ts"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
