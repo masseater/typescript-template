@@ -1,28 +1,14 @@
+import { PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, paidStatuses } from "@repo/config";
 import { and, eq, lte } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
-import {
-  PLAN,
-  SUBSCRIPTION_STATUS,
-  paidStatuses,
-  planSubscription,
-  stripeEvent,
-} from "./billing-schema.ts";
+import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { query } from "./database.ts";
 import { PaidPlanRequired } from "./paid-plan-required.ts";
 
+import type { Plan, SubscriptionStatus } from "@repo/config";
 import type { BatchItem } from "drizzle-orm/batch";
-import type { Plan, SubscriptionStatus } from "./billing-schema.ts";
 import type { DrizzleDatabase } from "./database.ts";
-
-/** @canonical-values db.webhook-outcome */
-const webhookOutcomes = ["applied", "duplicate", "ignored"] as const;
-type WebhookOutcome = (typeof webhookOutcomes)[number];
-const WEBHOOK_OUTCOME = {
-  applied: webhookOutcomes[0],
-  duplicate: webhookOutcomes[1],
-  ignored: webhookOutcomes[2],
-} as const satisfies Record<string, WebhookOutcome>;
 
 interface StripeEventRecord {
   readonly createdAt: Date;
@@ -204,9 +190,6 @@ const markPaymentFailed = Effect.fn("markPaymentFailed")(function* markPaymentFa
 });
 
 export {
-  PLAN,
-  SUBSCRIPTION_STATUS,
-  WEBHOOK_OUTCOME,
   PaidPlanRequired,
   attachCheckout,
   findSubscription,
@@ -216,8 +199,5 @@ export {
   planOf,
   recordSubscription,
   requirePaid,
-  webhookOutcomes,
 };
-export { plans, subscriptionStatuses } from "./billing-schema.ts";
-export type { Plan, SubscriptionStatus } from "./billing-schema.ts";
-export type { PlanView, StripeEventRecord, SubscriptionRecord, WebhookOutcome };
+export type { PlanView, StripeEventRecord, SubscriptionRecord };
