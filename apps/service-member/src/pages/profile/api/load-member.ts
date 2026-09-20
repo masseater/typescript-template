@@ -1,8 +1,8 @@
 import { absent, apiDataOrNone } from "@repo/runtime/client";
-import { MemberView } from "@repo/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
+import { MemberView } from "#shared/contracts/index.ts";
 
 import type { Member } from "#pages/profile/model/member.ts";
 
