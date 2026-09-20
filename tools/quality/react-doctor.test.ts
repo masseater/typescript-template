@@ -27,6 +27,11 @@ const sources: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: false },
 );
 
+const manifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../{apps,libs}/*/package.json",
+  { eager: false },
+);
+
 const scripts = field(rootManifests["../../package.json"], "scripts");
 const runStep = /^\s*- run: (?<command>.+)$/gmu;
 
@@ -123,7 +128,9 @@ describe("react-doctor integration", () => {
 
   it("every suppressed file still exists", () => {
     expect.hasAssertions();
-    expect(suppressedFiles().filter((file) => !(file in sources))).toStrictEqual([]);
+    expect(
+      suppressedFiles().filter((file) => !(file in sources) && !(file in manifests)),
+    ).toStrictEqual([]);
   });
 
   it("keeps global offs inside knip, the JSX runtime, and a retired rule", () => {

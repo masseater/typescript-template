@@ -131,14 +131,6 @@ const configuration: IConfiguration = {
       to: { path: testPattern },
     },
     {
-      comment:
-        "利用者登録の画面は apps/service-member だけが持てます。管理者と wiki からは参照しないでください。",
-      from: { path: "^apps/", pathNot: "^apps/service-member/" },
-      name: "no-signup-outside-user",
-      severity: "error",
-      to: { path: String.raw`^libs/auth-ui/src/signup\.tsx$` },
-    },
-    {
       comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
       from: { path: "^apps/internal-dashboard/" },
       name: "no-wiki-to-database",
