@@ -1,30 +1,23 @@
 import { StatusMessage, STATUS_VARIANT } from "@repo/ui";
-import { Effect, Fiber } from "effect";
-import { useEffect, useState, type ReactElement } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, type ReactElement } from "react";
 
-import { verifyEmailToken } from "./verify-email-token.ts";
+import { emailVerificationOptions } from "./verify-email.ts";
 
 const EmailVerification = (): ReactElement => {
-  const [failed, setFailed] = useState(false);
+  const verification = useQuery(emailVerificationOptions);
+  const verified = verification.data;
   useEffect(() => {
-    const verifying = Effect.runFork(
-      Effect.map(
-        Effect.promise(async () => verifyEmailToken()),
-        (verified) => {
-          if (verified) {
-            globalThis.location.replace("/login");
-            return;
-          }
-          globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
-          setFailed(true);
-        },
-      ),
-    );
-    return (): void => {
-      Effect.runFork(Fiber.interrupt(verifying));
-    };
-  }, []);
-  return failed ? (
+    if (verified === undefined) {
+      return;
+    }
+    if (verified) {
+      globalThis.location.replace("/login");
+      return;
+    }
+    globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
+  }, [verified]);
+  return verified === false ? (
     <StatusMessage variant={STATUS_VARIANT.failure}>
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
     </StatusMessage>
