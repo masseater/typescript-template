@@ -1499,9 +1499,15 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1682,25 +1688,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
-
-  tools/observe:
-    dependencies:
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
-      '@repo/local':
-        specifier: workspace:*
-        version: link:../../infra/local
-      effect:
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112
-    devDependencies:
-      '@effect/vitest':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
 
   tools/quality:
     dependencies:
