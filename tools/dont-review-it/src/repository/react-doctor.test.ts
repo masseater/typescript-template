@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { stringEntriesOf } from "../dependency-catalog/record-fields.ts";
 import { field } from "./dependencies.ts";
-import { commands, reachable } from "./tasks.ts";
+import { commands, configuredDirectories, reachable } from "./tasks.ts";
 import { linkWrapperFiles } from "./ui-lint-settings.ts";
 
 import type { ReactDoctorConfig } from "react-doctor/api";
@@ -102,12 +102,22 @@ const offRules = (): string[] =>
     .toSorted();
 
 describe("react-doctor integration", () => {
-  it("only the root check:react task runs react-doctor", () => {
+  it("runs react-doctor only from application lifecycle tasks", () => {
     expect.hasAssertions();
     expect({
       scripts: scriptCommands().filter((command) => command.includes("react-doctor")),
       workflows: workflowRuns().filter((command) => command.includes("react-doctor")),
     }).toStrictEqual({ scripts: [], workflows: [] });
+    expect(
+      configuredDirectories
+        .filter((directory) => reachable(directory, ["prepush"]).includes("check:react"))
+        .toSorted(),
+    ).toStrictEqual([
+      "apps/internal-dashboard",
+      "apps/service-admin",
+      "apps/service-member",
+    ]);
+    expect(reachable(".", ["prepush"])).not.toContain("check:react");
   });
 
   it("keeps AI-operable UI rules enabled at error", () => {
