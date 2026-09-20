@@ -28,16 +28,18 @@ describe("アプリ全体の導線", () => {
       ),
     );
 
-  it("利用者は登録から確認メール・ログイン・プロフィール更新・二要素まで辿れる", ({
+  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素まで辿れる", ({
     memberJourney,
   }) => {
     expect(memberJourney).toStrictEqual({
       backupCodeCount: backupCodesIssuedOnEnrollment,
       landsOnTheMemberHome: true,
+      listsTheThreadOpenedEarlier: true,
       opensEveryListedSettingsItem: true,
       reachesLeaveInOneClick: true,
       reachesPlanInOneClick: true,
       showsTheBiographyWrittenEarlier: true,
+      showsTheReplyOnTheThread: true,
     });
   });
 

@@ -42,7 +42,7 @@ export const findUser = Effect.fn("findUser")(function* findUser(userId: string)
     database.select().from(user).where(eq(user.id, userId)).limit(1),
   );
 
-  return foundUser ?? null;
+  return foundUser;
 });
 
 export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasskeyUser(
@@ -58,7 +58,7 @@ export const findPasskeyUser = Effect.fn("findPasskeyUser")(function* findPasske
       .limit(1),
   );
 
-  return passkeyOwner?.user ?? null;
+  return passkeyOwner?.user;
 });
 
 export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnrolledFactor(
@@ -104,7 +104,7 @@ export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getS
       .limit(1),
   );
 
-  return liveSession ?? null;
+  return liveSession;
 });
 
 export const lookupSessionByToken = Effect.fn("lookupSessionByToken")(
@@ -118,7 +118,7 @@ export const lookupSessionByToken = Effect.fn("lookupSessionByToken")(
         .limit(1),
     );
 
-    return matchedSession ?? null;
+    return matchedSession;
   },
 );
 
@@ -170,7 +170,7 @@ export const findWikiReader = Effect.fn("findWikiReader")(function* findWikiRead
       .limit(1),
   );
 
-  return wikiReader ?? null;
+  return wikiReader;
 });
 
 export const claimMailSlot = Effect.fn("claimMailSlot")(function* claimMailSlot({

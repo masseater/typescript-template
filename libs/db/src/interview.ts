@@ -21,7 +21,7 @@ export const findInterview = Effect.fn("findInterview")(function* findInterview(
     database.select(savedColumns).from(interview).where(eq(interview.userId, userId)).limit(1),
   );
 
-  return savedInterview ?? null;
+  return savedInterview;
 });
 
 export const startInterview = Effect.fn("startInterview")(function* startInterview(

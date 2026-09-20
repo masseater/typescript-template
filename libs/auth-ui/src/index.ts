@@ -1,4 +1,6 @@
 export { AccountMenu } from "./account-menu";
+export { EmailChangeForm } from "./email-change-form";
+export { EmailChangeVerification } from "./email-change-verification";
 export { EmailVerification } from "./email-verification";
 export { ForbiddenNotice } from "./forbidden-notice";
 export { InviteAcceptance } from "./invite-acceptance";

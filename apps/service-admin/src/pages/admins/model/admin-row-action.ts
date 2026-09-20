@@ -34,7 +34,7 @@ async function perform(admin: ListedAdmin, operation: RowOperation): Promise<str
       await admins.patch({ id: admin.id, permission: operation.permission }),
     );
     const label =
-      changed.permission === null ? "未設定" : adminPermissionLabels[changed.permission];
+      changed.permission === undefined ? "未設定" : adminPermissionLabels[changed.permission];
     return `${admin.email} の権限を「${label}」にしました。`;
   }
   const changed = apiData(

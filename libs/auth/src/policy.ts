@@ -29,6 +29,22 @@ const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => strongMethods.has(method);
 
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const STEP_UP_MINUTES = 10;
+const STEP_UP_MILLISECONDS = STEP_UP_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+
+const isRecentlyStrong = (
+  sessionRecord: {
+    readonly authenticatedAt: Date | null;
+    readonly authenticationMethod: string;
+  },
+  now: Date = new Date(),
+): boolean =>
+  isStrongMethod(sessionRecord.authenticationMethod) &&
+  sessionRecord.authenticatedAt !== null &&
+  now.getTime() - sessionRecord.authenticatedAt.getTime() < STEP_UP_MILLISECONDS;
+
 const sessionIsLive = (
   sessionRecord: {
     readonly session: {
@@ -91,6 +107,7 @@ export {
   deny,
   enrollmentPaths,
   isPrivilegedRole,
+  isRecentlyStrong,
   isStrongMethod,
   sessionIsLive,
 };

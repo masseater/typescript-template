@@ -65,7 +65,7 @@ describe("an administrator invite", () => {
             path: link.pathname.replace(token, "{token}"),
           },
           memberSignIn,
-          preview: preview === null ? null : preview.email,
+          preview: preview === undefined ? undefined : preview.email,
           reused: reused._tag,
           session: { permission: session.user.permission, role: session.user.role },
         };

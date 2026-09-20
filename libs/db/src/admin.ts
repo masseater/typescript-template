@@ -160,8 +160,8 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   return removed;
 });
 
-const adminPermissionOf = (permission: string | null): AdminPermission | null =>
-  adminPermissions.find((level) => level === permission) ?? null;
+const adminPermissionOf = (permission: string | null): AdminPermission | undefined =>
+  adminPermissions.find((level) => level === permission);
 
 export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {
   yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);

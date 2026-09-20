@@ -24,7 +24,7 @@ const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* req
     return yield* new SessionRequired();
   }
   const current = yield* lookupSessionByToken(token);
-  if (current === null || current.session.expiresAt <= new Date()) {
+  if (current === undefined || current.session.expiresAt <= new Date()) {
     return yield* new SessionRequired();
   }
   if (!sessionIsLive(current, audience)) {

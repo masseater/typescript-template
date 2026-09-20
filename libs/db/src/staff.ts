@@ -36,8 +36,8 @@ const staffActor = (
   action: AuditEntry["action"],
 ): Omit<AuditEntry, "targetId"> => ({ action, actorId: actor.user.id, actorKind: ROLE.staff });
 
-const staffPermissionOf = (permission: string | null): StaffPermission | null =>
-  staffPermissions.find((level) => level === permission) ?? null;
+const staffPermissionOf = (permission: string | null): StaffPermission | undefined =>
+  staffPermissions.find((level) => level === permission);
 
 export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: string) {
   yield* requireStaff(sessionId, STAFF_PERMISSION.editor);

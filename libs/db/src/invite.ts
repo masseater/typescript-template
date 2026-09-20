@@ -50,7 +50,7 @@ const findRegistered = Effect.fn("findRegistered")(function* findRegistered(emai
   const [registered] = yield* query((database) =>
     database.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1),
   );
-  return registered ?? null;
+  return registered;
 });
 
 const previewInvite = Effect.fn("previewInvite")(function* previewInvite(
@@ -65,7 +65,7 @@ const previewInvite = Effect.fn("previewInvite")(function* previewInvite(
       .where(and(eq(invite.tokenHash, tokenHash), openInvite(audience, new Date())))
       .limit(1),
   );
-  return open ?? null;
+  return open;
 });
 
 const issueInvite = Effect.fn("issueInvite")(function* issueInvite(draft: {
@@ -77,7 +77,7 @@ const issueInvite = Effect.fn("issueInvite")(function* issueInvite(draft: {
 }) {
   const email = draft.email.trim().toLowerCase();
   const expiresAt = new Date(Date.now() + (draft.lifetimeMilliseconds ?? INVITE_LIFETIME_MS));
-  if ((yield* findRegistered(email)) !== null) {
+  if ((yield* findRegistered(email)) !== undefined) {
     return yield* new InviteRejected({ reason: "registered" });
   }
   const now = new Date();
@@ -119,10 +119,10 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
   readonly rawToken: string;
 }) {
   const open = yield* previewInvite(accepted.rawToken, accepted.audience);
-  if (open === null) {
+  if (open === undefined) {
     return yield* new InviteRejected({ reason: "missing" });
   }
-  if ((yield* findRegistered(open.email)) !== null) {
+  if ((yield* findRegistered(open.email)) !== undefined) {
     return yield* new InviteRejected({ reason: "registered" });
   }
   const userId = crypto.randomUUID();

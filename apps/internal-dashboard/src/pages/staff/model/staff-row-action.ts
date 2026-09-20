@@ -30,7 +30,7 @@ async function perform(member: ListedStaff, operation: RowOperation): Promise<st
       await staff.patch({ id: member.id, permission: operation.permission }),
     );
     const label =
-      changed.permission === null ? "未設定" : staffPermissionLabels[changed.permission];
+      changed.permission === undefined ? "未設定" : staffPermissionLabels[changed.permission];
     return `${member.email} の権限を「${label}」にしました。`;
   }
   apiData(StaffRemoved, await staff.delete({ id: member.id }));

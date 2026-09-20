@@ -57,12 +57,14 @@ describe("an admin invite", () => {
             audit: audit.map((event) => [event.action, event.actorKind]),
             created: { email: created.email, permission: created.permission, role: created.role },
             preview:
-              preview === null ? null : { email: preview.email, permission: preview.permission },
+              preview === undefined
+                ? undefined
+                : { email: preview.email, permission: preview.permission },
             previewAfter,
             reused: reused._tag,
             user:
-              createdUser === null
-                ? null
+              createdUser === undefined
+                ? undefined
                 : {
                     accountState: createdUser.accountState,
                     emailVerified: createdUser.emailVerified,
@@ -85,7 +87,7 @@ describe("an admin invite", () => {
           role: ROLE.administrator,
         },
         preview: { email: "new.admin@example.com", permission: ADMIN_PERMISSION.operator },
-        previewAfter: null,
+        previewAfter: undefined,
         reused: "InviteRejected",
         user: {
           accountState: "active",
@@ -187,7 +189,7 @@ describe("an admin invite", () => {
       ));
 
     it("is no longer open", ({ preview }) => {
-      expect(preview).toBe(null);
+      expect(preview).toBeUndefined();
     });
   });
 });

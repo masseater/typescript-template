@@ -1,6 +1,7 @@
 import { AUTHENTICATION_METHOD, ROLE, accountPermissions, applications, roles } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
@@ -109,6 +110,7 @@ const rateLimit = sqliteTable(
 
 /** @canonical-values db.audit-action */
 export const auditActions = [
+  "flag_toggled",
   "role_changed",
   "user_deleted",
   "member_suspended",
@@ -124,18 +126,19 @@ export const auditActions = [
 ] as const;
 export type AuditAction = (typeof auditActions)[number];
 export const AUDIT_ACTION = {
-  roleChanged: auditActions[0],
-  userDeleted: auditActions[1],
-  memberSuspended: auditActions[2],
-  memberUnsuspended: auditActions[3],
-  adminInvited: auditActions[4],
-  adminPermissionChanged: auditActions[5],
-  adminDisabled: auditActions[6],
-  adminEnabled: auditActions[7],
-  staffInvited: auditActions[8],
-  staffPermissionChanged: auditActions[9],
-  staffRemoved: auditActions[10],
-  inviteAccepted: auditActions[11],
+  flagToggled: auditActions[0],
+  roleChanged: auditActions[1],
+  userDeleted: auditActions[2],
+  memberSuspended: auditActions[3],
+  memberUnsuspended: auditActions[4],
+  adminInvited: auditActions[5],
+  adminPermissionChanged: auditActions[6],
+  adminDisabled: auditActions[7],
+  adminEnabled: auditActions[8],
+  staffInvited: auditActions[9],
+  staffPermissionChanged: auditActions[10],
+  staffRemoved: auditActions[11],
+  inviteAccepted: auditActions[12],
 } as const satisfies Record<string, AuditAction>;
 
 const auditEvent = sqliteTable(
@@ -175,6 +178,8 @@ const invite = sqliteTable(
 const schema = {
   account,
   auditEvent,
+  boardPost,
+  boardThread,
   follow,
   interview,
   invite,
@@ -206,6 +211,7 @@ export {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

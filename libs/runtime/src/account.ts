@@ -76,7 +76,7 @@ const privileged = {
 const openInvite = Effect.fn("openInvite")(function* openInvite(request: Request) {
   const { token } = yield* readSearchParams(InvitePreviewQuery, request);
   const preview = yield* previewInvitation(token);
-  if (preview === null) {
+  if (preview === undefined) {
     return yield* new InviteRejected({ reason: "missing" });
   }
   return { email: preview.email, permission: preview.permission };

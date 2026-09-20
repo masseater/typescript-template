@@ -51,6 +51,7 @@ jobs:
           TEMPLATE_APP_DOMAIN: ${{ secrets.TEMPLATE_APP_DOMAIN }}
           TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
           TEMPLATE_FIXED_COST_USD: ${{ secrets.TEMPLATE_FIXED_COST_USD }}
+          TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
           TEMPLATE_JPY_PER_USD: ${{ secrets.TEMPLATE_JPY_PER_USD }}
           TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
           TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
@@ -58,6 +59,8 @@ jobs:
           TEMPLATE_OTLP_ENDPOINT: ${{ secrets.TEMPLATE_OTLP_ENDPOINT }}
           TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
           TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
+          TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
+          TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
@@ -95,6 +98,7 @@ jobs:
           TEMPLATE_APP_DOMAIN: ${{ secrets.TEMPLATE_APP_DOMAIN }}
           TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
           TEMPLATE_FIXED_COST_USD: ${{ secrets.TEMPLATE_FIXED_COST_USD }}
+          TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
           TEMPLATE_JPY_PER_USD: ${{ secrets.TEMPLATE_JPY_PER_USD }}
           TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
           TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
@@ -102,6 +106,8 @@ jobs:
           TEMPLATE_OTLP_ENDPOINT: ${{ secrets.TEMPLATE_OTLP_ENDPOINT }}
           TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
           TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
+          TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
+          TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
