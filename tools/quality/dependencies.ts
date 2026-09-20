@@ -130,6 +130,7 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
 
 export {
   applicationDependencyViolations,
+  declaredDependencies,
   field,
   localExecutableDeployViolations,
   localExecutableName,
