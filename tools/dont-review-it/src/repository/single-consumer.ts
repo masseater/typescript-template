@@ -67,10 +67,15 @@ interface Read {
 
 const singleConsumerAllowlist: readonly string[] = [
   "package:@repo/dont-review-it",
+  "package:@repo/db-local",
+  "package:@repo/dev-boundary",
   "subpath:@repo/auth/testing",
+  "subpath:@repo/db-local/testing-node",
   "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/member-social",
+  "subpath:@repo/db/migrate-d1",
   "subpath:@repo/db/remote",
+  "subpath:@repo/db/remote-input",
   "subpath:@repo/db/security",
   "subpath:@repo/dont-review-it/lint",
   "subpath:@repo/dont-review-it/lint-rule-authoring",

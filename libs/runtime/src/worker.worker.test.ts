@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { cspNonceHeader } from "@repo/config/security";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
+import { cspNonceHeader } from "@repo/runtime/security";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { Effect, Schema } from "effect";
 

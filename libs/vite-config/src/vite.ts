@@ -1,22 +1,20 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
+import { repositoryRoot } from "@repo/config/repository-root";
+import { workerCompatibility } from "@repo/config/worker";
+import { devBoundary } from "@repo/dev-boundary";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite-plus";
 
-import { applicationPorts, loopbackAddress } from "./applications.ts";
-import { devBoundary } from "./dev-boundary/dev-boundary.ts";
-import { localDatabase, localDatabaseDirectory } from "./local-database-path.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
-import { repositoryRoot } from "./repository-root.ts";
-import { workerCompatibility } from "./worker.ts";
 
 import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-import type { Application } from "./applications.ts";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
@@ -50,6 +48,7 @@ const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
+  "libs/runtime/src/security.ts",
 ] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
   ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
@@ -238,6 +237,17 @@ const appRun = {
   },
 } satisfies RunConfig;
 
+const toolTest: NonNullable<UserConfig["test"]> = {
+  mockReset: true,
+  restoreMocks: true,
+  coverage: {
+    exclude: ["specs/**"],
+    thresholds: { 100: true, perFile: true },
+  },
+  unstubEnvs: true,
+  unstubGlobals: true,
+};
+
 const noExtraPlugins: readonly PluginOption[] = [];
 
 function appConfig(
@@ -284,6 +294,7 @@ export {
   appRun,
   appServer,
   clientReachableModules,
+  defineConfig,
   effectDiagnostics,
   effectRun,
   intentValidation,
@@ -299,8 +310,9 @@ export {
   startOptions,
   taskInput,
   testRun,
+  toolTest,
   withoutEnvFileLoader,
 };
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
-export { devBoundary } from "./dev-boundary/dev-boundary.ts";
+export { devBoundary };

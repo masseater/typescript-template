@@ -1,4 +1,4 @@
-import { roles, type Role } from "@repo/config";
+import { roles, type Role } from "@repo/config/identity";
 import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 

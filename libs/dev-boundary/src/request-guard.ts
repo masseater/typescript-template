@@ -3,8 +3,8 @@ import path from "node:path";
 
 import { privatePath } from "./private-path.ts";
 
+import type { Application } from "@repo/config";
 import type { Connect } from "vite-plus";
-import type { Application } from "../applications.ts";
 
 type BoundaryRoots = Readonly<{
   application: Application;

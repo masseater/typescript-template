@@ -3,7 +3,7 @@
 import { parseArgs } from "node:util";
 
 import { APPLICATION, applicationOrigins } from "@repo/config";
-import { causeRecord, runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/cli";
 import { receiverOrigin } from "@repo/local";
 import { Console, Effect, Schema } from "effect";
 

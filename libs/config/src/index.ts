@@ -1,13 +1,10 @@
 export {
   APPLICATION,
-  AUTHENTICATION_METHOD,
   ApplicationName,
-  ROLE,
   applicationOrigins,
   applicationPorts,
   applicationReadyPaths,
   applications,
-  authenticationMethods,
   grants,
   loopbackAddress,
   loopbackHostSet,
@@ -15,20 +12,22 @@ export {
   loopbackOrigin,
   mailpitOrigin,
   mailpitPort,
-  roles,
   storybookOrigin,
   storybookPort,
+} from "./applications.ts";
+export type { Application, Capability, CapabilityOf, ServiceName } from "./applications.ts";
+export {
+  AUTHENTICATION_METHOD,
+  ROLE,
+  authenticationMethods,
+  roles,
   strongAuthenticationMethods,
-} from "./applications.ts";
+} from "./identity.ts";
 export type {
-  Application,
   AuthenticationMethod,
-  Capability,
-  CapabilityOf,
   Role,
-  ServiceName,
   StrongAuthenticationMethod,
-} from "./applications.ts";
+} from "./identity.ts";
 export { CloudflareId } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export {

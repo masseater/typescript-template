@@ -6,7 +6,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure } from "./remote-input.ts";
 import { loadRemoteMigrations, migrateDatabase, readMigrationStatus } from "./remote-operations.ts";
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
+import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
 
 const d1Target = {
   accountId: "a".repeat(32),

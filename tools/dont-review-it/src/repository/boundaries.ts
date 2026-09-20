@@ -5,9 +5,15 @@ import { specifierVisitor } from "./module-specifiers.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const rawD1Adapters = ["migrate-d1", LINT_BUNDLE.testing, "testing-node"] as const;
-const rawD1Modules = rawD1Adapters.map((adapter) => `libs/db/src/${adapter}.ts`);
-const rawD1Pattern = new RegExp(String.raw`/libs/db/src/(?:${rawD1Adapters.join("|")})\.ts$`, "u");
+const shippedDbAdapters = ["migrate-d1", LINT_BUNDLE.testing] as const;
+const rawD1Modules = [
+  ...shippedDbAdapters.map((adapter) => `libs/db/src/${adapter}.ts`),
+  "libs/db-local/src/testing-node.ts",
+];
+const rawD1Pattern = new RegExp(
+  String.raw`/libs/db/src/(?:${shippedDbAdapters.join("|")})\.ts$|/libs/db-local/src/testing-node\.ts$`,
+  "u",
+);
 
 const rawD1Checks = (
   inspection: LintContext,

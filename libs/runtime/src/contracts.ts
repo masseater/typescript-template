@@ -1,4 +1,5 @@
-import { applications, roles } from "@repo/config";
+import { applications } from "@repo/config";
+import { roles } from "@repo/config/identity";
 import { Schema } from "effect";
 
 const maximumTokenLength = 4096;

@@ -12,7 +12,7 @@ import {
   describeDatabase,
   primaryKeyNullability,
   runStatement,
-} from "./testing-node.ts";
+} from "@repo/db-local";
 
 const snapshots: Readonly<Record<string, Parameters<typeof generateMigration>[0]>> =
   import.meta.glob("../migrations/*/snapshot.json", { eager: true, import: "default" });

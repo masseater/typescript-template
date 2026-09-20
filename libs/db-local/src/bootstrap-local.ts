@@ -1,21 +1,19 @@
 #!/usr/bin/env node
-import { reportFailed, runCli } from "@repo/config/cli";
+import { reportFailed, runCli } from "@repo/cli";
+import { Database } from "@repo/db";
+import { Email, bootstrapAdmin } from "@repo/db/bootstrap";
 import { Console, Effect, Schema } from "effect";
 
-import { Email, bootstrapAdmin } from "./bootstrap-statement.ts";
-import { Database } from "./database.ts";
-import { localPlatform } from "./local-platform.ts";
+import { localDatabasePlatform } from "./local-platform.ts";
 
-const failed = (failureCode: string): Readonly<Record<string, unknown>> => ({
-  action: "admin_bootstrap",
-  error: failureCode,
-  success: false,
-});
+function failed(error: string): Readonly<Record<string, unknown>> {
+  return { action: "admin_bootstrap", error, success: false };
+}
 
 runCli(
   Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(Email)(process.argv[2]);
-    const { env } = yield* localPlatform;
+    const { env } = yield* localDatabasePlatform;
     const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
     yield* Console.log(
       JSON.stringify({

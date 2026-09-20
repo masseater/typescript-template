@@ -4,6 +4,7 @@ import { APPLICATION, type Application } from "@repo/config";
 
 import { applicationsExcept } from "./private-path.ts";
 
+import type { Application } from "@repo/config";
 import type { UserConfig } from "vite-plus";
 
 const serverOptions = ({

@@ -3,7 +3,7 @@
 import { parseArgs } from "node:util";
 
 import { APPLICATION, applicationOrigins, applications } from "@repo/config";
-import { causeRecord, runCli } from "@repo/config/cli";
+import { causeRecord, runCli } from "@repo/cli";
 import { Console, Effect, Schema } from "effect";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";

@@ -1,7 +1,6 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile, stat } from "node:fs/promises";
 
-import { privateDirectoryMode, privateFileMode } from "@repo/config/private-files";
 import { Effect } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
@@ -12,6 +11,8 @@ import type { LocalCommandFailure } from "./failure.ts";
 
 type FileLocation = Readonly<URL>;
 
+const privateFileMode = 0o600;
+const privateDirectoryMode = 0o700;
 const groupAndOtherPermissions = 0o077;
 
 function isErrorCode(error: unknown, code: string): boolean {
