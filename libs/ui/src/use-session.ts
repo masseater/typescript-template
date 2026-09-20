@@ -1,20 +1,23 @@
 import { httpStatus } from "@repo/observability/http-status";
-import { decodeJson } from "@repo/runtime/client";
-import { SessionView as SessionContract } from "@repo/runtime/contracts";
 import { Effect, Fiber } from "effect";
 import { useEffect, useState } from "react";
 
-import { errorMessage, type SessionView } from "./protocol.ts";
+import {
+  SessionView,
+  decodeJson,
+  errorMessage,
+  type SessionView as SessionData,
+} from "./protocol.ts";
 
 type SessionSnapshot = {
   readonly error: string | undefined;
   readonly loading: boolean;
-  readonly session: SessionView | undefined;
+  readonly session: SessionData | undefined;
 };
 
 const sessionEndpoint = "/api/session";
 
-const fetchSession = async (endpoint: string): Promise<SessionView | undefined> => {
+const fetchSession = async (endpoint: string): Promise<SessionData | undefined> => {
   const served = await fetch(endpoint, { cache: "no-store", credentials: "same-origin" });
   if (served.status === httpStatus.unauthorized) {
     return undefined;
@@ -23,7 +26,7 @@ const fetchSession = async (endpoint: string): Promise<SessionView | undefined> 
     throw new Error(`セッションの取得に失敗しました（HTTP ${served.status}）。`);
   }
   const servedSession: unknown = await served.json();
-  return decodeJson(SessionContract, servedSession);
+  return decodeJson(SessionView, servedSession);
 };
 
 const loadSession = async (): Promise<SessionSnapshot> => {
