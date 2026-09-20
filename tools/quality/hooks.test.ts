@@ -197,6 +197,17 @@ describe("generated paths", () => {
       ...generatedDirectories,
     ]);
   });
+
+  it("throws away the shared local D1 before a self-hosted gate migrates it", () => {
+    expect.hasAssertions();
+    expect(workflows["../../.github/workflows/check.yml"] ?? "").toMatch(/rm -rf \.local\/d1/u);
+    expect(workflows["../../.github/workflows/prerelease.yml"] ?? "").toMatch(
+      /rm -rf \.local\/d1/u,
+    );
+    expect(workflows["../../.github/workflows/cache-clean.yml"] ?? "").toMatch(
+      /rm -rf \.local\/d1/u,
+    );
+  });
 });
 
 describe("lifecycle contents", () => {
