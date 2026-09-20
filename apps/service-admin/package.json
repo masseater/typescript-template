@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
+    "@inlang/paraglide-js": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
