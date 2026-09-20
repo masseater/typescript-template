@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
 import { Interviewer } from "#shared/interview/index.ts";
+import { PhotoStore } from "#shared/photo/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
@@ -17,6 +18,7 @@ const runtime = workerRuntime(() =>
     appLayer(env, service, routes),
     Layer.unwrap(readConfig(env).pipe(Effect.map(opsMailLayer))),
     Interviewer.fromEnvironment(env),
+    PhotoStore.fromEnvironment(env),
   ),
 );
 

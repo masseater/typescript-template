@@ -38,20 +38,20 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
   const env = yield* appEnv(target, {
-      APP_ORIGIN: origin,
-      APP_RELEASE: artifacts.release,
-      AUTH_SECRET: secret,
-      DB: database,
-      EMAIL: email,
-      EMAIL_FROM: config.mailFrom,
-      OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-      ...(config.otlp === undefined
-        ? {}
-        : {
-            OTLP_ENABLED: String(config.otlp.enabled),
-            OTLP_ENDPOINT: config.otlp.endpoint,
-            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-          }),
+    APP_ORIGIN: origin,
+    APP_RELEASE: artifacts.release,
+    AUTH_SECRET: secret,
+    DB: database,
+    EMAIL: email,
+    EMAIL_FROM: config.mailFrom,
+    OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
+    ...(config.otlp === undefined
+      ? {}
+      : {
+          OTLP_ENABLED: String(config.otlp.enabled),
+          OTLP_ENDPOINT: config.otlp.endpoint,
+          ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+        }),
   });
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },

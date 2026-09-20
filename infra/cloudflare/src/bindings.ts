@@ -21,9 +21,9 @@ interface CapabilityEnv {
   readonly storage: Readonly<Record<typeof photoBucketBinding, R2.Bucket>>;
 }
 
-type Intersection<Members> = (
-  Members extends unknown ? (member: Members) => void : never
-) extends (member: infer Member) => void
+type Intersection<Members> = (Members extends unknown ? (member: Members) => void : never) extends (
+  member: infer Member,
+) => void
   ? Member
   : never;
 

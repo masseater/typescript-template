@@ -17,8 +17,10 @@ import {
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { contactApi } from "./contact-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { photoApi } from "./photo-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { socialApi } from "./social-api.ts";
+import { visibilityApi } from "./visibility-api.ts";
 
 const api = apiRoutes(runtime, reporting);
 const failures = {
@@ -30,7 +32,9 @@ const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(contactApi(api))
   .use(interviewApi(api))
+  .use(photoApi(api))
   .use(socialApi(api))
+  .use(visibilityApi(api))
   .get(
     "/profile",
     api.route(
