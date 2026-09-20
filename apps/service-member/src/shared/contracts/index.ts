@@ -42,4 +42,5 @@ export {
   maximumSocialLinks,
   memberPageSize,
 } from "./member.ts";
+export { MemberFlags } from "./flags.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";

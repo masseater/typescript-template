@@ -37,6 +37,9 @@ const workspaces = {
     ],
     project: ["src/**/*.ts!"],
   },
+  "libs/feature-flags": {
+    project: ["src/**/*.ts!"],
+  },
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
@@ -94,6 +97,7 @@ const workspaces = {
 
 const cloudflareStacks = [
   "src/database.ts!",
+  "src/flagship.ts!",
   "src/email.ts!",
   "src/observability.ts!",
   "src/tokens.ts!",
