@@ -42,6 +42,7 @@ export default defineProject({
     include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
+    setupFiles: ["@repo/dont-review-it/vitest/parsed-fields"],
     testTimeout: 30_000,
   },
 });

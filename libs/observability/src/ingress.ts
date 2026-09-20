@@ -71,10 +71,7 @@ const kindFields = (
   }
   if (browserEvent.kind === "exception") {
     return {
-      "error.fingerprint": errorFingerprint({
-        errorType: browserEvent.errorType,
-        locations: browserEvent.locations,
-      }),
+      "error.fingerprint": errorFingerprint(browserEvent.errorType, browserEvent.locations),
       "error.locations": browserEvent.locations,
       "error.type": browserEvent.errorType,
     };

@@ -1,11 +1,16 @@
 import { count, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, type Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { query } from "./database.ts";
+import { addUser } from "./records-fixture.ts";
 import { user } from "./schema.ts";
-import { addUser, runTest } from "./testing.ts";
+import { TestDatabase } from "./testing.ts";
+
+const runTest = <Value>(
+  program: Effect.Effect<Value, unknown, Layer.Success<typeof TestDatabase>>,
+): Promise<Value> => Effect.runPromise(program.pipe(Effect.provide(TestDatabase)));
 
 describe("bootstrapAdmin", () => {
   describe("two verified users bootstrapped at the same time", () => {

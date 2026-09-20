@@ -1,11 +1,26 @@
-import { Console, Logger, References, type Layer, type LogLevel } from "effect";
+import { Cause, Console, Logger, References, type Layer, type LogLevel } from "effect";
 
-import { redactedField } from "./redact.ts";
+import { redactSecrets, redactedField } from "./redact.ts";
 
 import type { ServiceName } from "@repo/config";
 
 const messageParts = (logged: unknown): readonly unknown[] =>
   Array.isArray(logged) ? logged : [logged];
+
+const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> =>
+  typeof candidate === "object" && candidate !== null && !Array.isArray(candidate);
+
+const causeField = (cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> =>
+  cause.reasons.length === 0 ? {} : { "error.cause": redactSecrets(Cause.pretty(cause)) };
+
+const withCause = (logged: unknown, cause: Readonly<Cause.Cause<unknown>>): unknown => {
+  const reported = causeField(cause);
+  if (Object.keys(reported).length === 0) {
+    return logged;
+  }
+  const [eventName, attributes] = messageParts(logged);
+  return [eventName, { ...(isRecord(attributes) ? attributes : {}), ...reported }];
+};
 
 export const redactedLogger = (
   logger: Logger.Logger<unknown, void>,
@@ -13,12 +28,14 @@ export const redactedLogger = (
   Logger.make((logOptions) => {
     logger.log({
       ...logOptions,
-      message: JSON.parse(JSON.stringify(messageParts(logOptions.message), redactedField)),
+      cause: Cause.empty,
+      message: JSON.parse(
+        JSON.stringify(withCause(logOptions.message, logOptions.cause), redactedField),
+      ),
     });
   });
 
-export const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> =>
-  typeof candidate === "object" && candidate !== null && !Array.isArray(candidate);
+export { isRecord };
 
 export const serviceLabel = (serviceName: ServiceName): string => `${serviceName}-server`;
 
@@ -46,7 +63,7 @@ export type StructuredLogOptions = {
 };
 
 export const structuredLogs = (logOptions: StructuredLogOptions): Layer.Layer<never> => {
-  const logger = Logger.make(({ fiber, logLevel, message: logged }) => {
+  const logger = Logger.make(({ cause, fiber, logLevel, message: logged }) => {
     const sink = logOptions.log ?? fiber.getRef(Console.Console);
     const [eventName, attributes] = messageParts(logged);
     const line = JSON.stringify(
@@ -56,6 +73,7 @@ export const structuredLogs = (logOptions: StructuredLogOptions): Layer.Layer<ne
         service: serviceLabel(logOptions.serviceName),
         ...fiber.getRef(References.CurrentLogAnnotations),
         ...(isRecord(attributes) ? attributes : {}),
+        ...causeField(cause),
       },
       redactedField,
     );

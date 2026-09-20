@@ -11,7 +11,7 @@ import {
 } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
-import { logAt, logCause, statusSeverity } from "./severity.ts";
+import { logAt, statusSeverity } from "./severity.ts";
 import { isRecord } from "./structured-logs.ts";
 import { Telemetry } from "./telemetry.ts";
 
@@ -89,10 +89,9 @@ export const failureAttributesOf = (
 };
 
 export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> =>
-  logCause({
-    eventName: "application.error",
-    cause,
+  logAt("Error", {
     attributes: failureAttributesOf(Cause.squash(cause)),
+    eventName: "application.error",
   });
 
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
