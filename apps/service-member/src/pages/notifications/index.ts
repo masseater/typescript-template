@@ -1,1 +1,1 @@
-export { NotificationsPage } from "./ui/notifications-page.tsx";
+export { NotificationsPage, loadNotificationsPage } from "./ui/notifications-page.tsx";

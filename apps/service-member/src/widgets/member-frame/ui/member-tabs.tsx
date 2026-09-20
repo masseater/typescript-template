@@ -2,9 +2,10 @@ import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
 import type { ReactElement } from "react";
+import type { NavBadges } from "../model/navigation.ts";
 
-function MemberTabs(): ReactElement {
-  const items = memberNavItems(memberHasPaidPlan);
+function MemberTabs({ navBadges }: Readonly<{ navBadges: NavBadges }>): ReactElement {
+  const items = memberNavItems(memberHasPaidPlan, navBadges);
   return (
     <nav
       aria-label="メイン"

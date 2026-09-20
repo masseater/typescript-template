@@ -2,7 +2,7 @@ import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
 
-const { user } = schema;
+const { follow, user } = schema;
 
 type Member = Readonly<{
   id: string;
@@ -54,7 +54,18 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   if (!member) {
     return yield* new UserNotFound();
   }
-  return shown(member);
+  let following: boolean | undefined;
+  if (viewerId !== memberId) {
+    const [row] = yield* query((database) =>
+      database
+        .select({ followeeId: follow.followeeId })
+        .from(follow)
+        .where(and(eq(follow.followerId, viewerId), eq(follow.followeeId, memberId)))
+        .limit(1),
+    );
+    following = row !== undefined;
+  }
+  return { ...shown(member), following };
 });
 
 const listMembers = Effect.fn("listMembers")(function* listMembers(page: {

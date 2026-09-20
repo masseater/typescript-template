@@ -17,7 +17,16 @@ type MemberNavItem = Readonly<{
 
 const memberHasPaidPlan = false;
 
-function memberNavItems(paid: boolean): readonly MemberNavItem[] {
+type NavBadges = Readonly<{
+  notifications: number;
+}>;
+
+const emptyNavBadges: NavBadges = { notifications: 0 };
+
+function memberNavItems(
+  paid: boolean,
+  badges: NavBadges = emptyNavBadges,
+): readonly MemberNavItem[] {
   return [
     { icon: HomeIcon, id: "home", label: "ホーム", to: "/home" },
     {
@@ -29,7 +38,13 @@ function memberNavItems(paid: boolean): readonly MemberNavItem[] {
     },
     { icon: SquareStackIcon, id: "board", label: "掲示板", to: "/board" },
     { badge: 0, icon: MessageCircleIcon, id: "messages", label: "メッセージ", to: "/messages" },
-    { badge: 0, icon: BellIcon, id: "notifications", label: "通知", to: "/notifications" },
+    {
+      badge: badges.notifications,
+      icon: BellIcon,
+      id: "notifications",
+      label: "通知",
+      to: "/notifications",
+    },
   ];
 }
 
@@ -67,4 +82,4 @@ function titleForPath(pathname: string): string {
 }
 
 export { memberHasPaidPlan, memberNavItems, titleForPath };
-export type { MemberNavItem };
+export type { MemberNavItem, NavBadges };

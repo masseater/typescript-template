@@ -39,6 +39,7 @@ const ProfileUpdate = Schema.Struct({
 const MemberQuery = Schema.Struct({ id: Identifier });
 
 const MemberView = Schema.Struct({
+  following: Schema.optionalKey(Schema.Boolean),
   id: Schema.String,
   joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),
   name: Schema.String,
