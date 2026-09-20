@@ -21,7 +21,9 @@ function base64(hex: string): string {
 const tempoTrace = {
   batches: [
     {
-      resource: { attributes: [{ key: "service.name", value: { stringValue: "user-server" } }] },
+      resource: {
+        attributes: [{ key: "service.name", value: { stringValue: "service-member-server" } }],
+      },
       scopeSpans: [
         {
           spans: [
@@ -39,7 +41,7 @@ const lokiStreams = {
       {
         stream: {
           request_id: requestId,
-          service_name: "user-server",
+          service_name: "service-member-server",
           span_id: spanId,
           trace_id: traceId,
         },
@@ -81,10 +83,16 @@ it.effect("exported telemetry pairs the receiver's span and log for one trace", 
         }),
     );
     assert.deepStrictEqual(telemetry.spans, [
-      { name: "http.server.request", service: "user-server", spanId, traceId },
+      { name: "http.server.request", service: "service-member-server", spanId, traceId },
     ]);
     assert.deepStrictEqual(telemetry.logs, [
-      { message: "http.server.request", requestId, service: "user-server", spanId, traceId },
+      {
+        message: "http.server.request",
+        requestId,
+        service: "service-member-server",
+        spanId,
+        traceId,
+      },
     ]);
     assert.lengthOf(queried, 1);
     const start =
