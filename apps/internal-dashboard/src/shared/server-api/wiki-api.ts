@@ -8,14 +8,10 @@ import type { WikiServices } from "#shared/wiki/index.ts";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 function wikiRoutes(routes: ApiRoutes<WikiServices>) {
-<<<<<<< HEAD
   return createApi(apiRoot)
-    .use(apiDocs("internal-dashboard"))
+    .use(apiDocs(APPLICATION.wiki))
     .use(sessionApi(routes))
     .use(flagsApi(routes));
-=======
-  return createApi(apiRoot).use(apiDocs(APPLICATION.wiki)).use(sessionApi(routes));
->>>>>>> 40e24dad (fix: bind Scalar apiDocs audiences to APPLICATION vocabulary)
 }
 
 export { wikiRoutes };
