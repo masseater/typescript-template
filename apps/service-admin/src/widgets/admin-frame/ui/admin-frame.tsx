@@ -1,6 +1,6 @@
+import { AccountMenu } from "@repo/auth-ui";
 import { useState } from "react";
 
-import { AccountMenu } from "./account-menu.tsx";
 import { AdminHeader } from "./admin-header.tsx";
 import { AdminNavigation } from "./admin-navigation.tsx";
 

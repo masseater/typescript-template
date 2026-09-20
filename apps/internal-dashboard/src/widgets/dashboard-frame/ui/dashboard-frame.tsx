@@ -1,6 +1,6 @@
+import { AccountMenu } from "@repo/auth-ui";
 import { useState } from "react";
 
-import { AccountMenu } from "./account-menu.tsx";
 import { DashboardHeader } from "./dashboard-header.tsx";
 import { DashboardNavigation } from "./dashboard-navigation.tsx";
 

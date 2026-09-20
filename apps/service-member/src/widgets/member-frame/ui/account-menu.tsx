@@ -1,12 +1,5 @@
-import { useSignOut } from "@repo/auth-ui";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLinkItem,
-  DropdownMenuTrigger,
-  Icon,
-} from "@repo/ui";
+import { AccountMenu as SessionMenu } from "@repo/auth-ui";
+import { DropdownMenuLinkItem, Icon } from "@repo/ui";
 import { ChevronDownIcon, UserRoundIcon } from "lucide-react";
 
 import type { ReactElement } from "react";
@@ -20,33 +13,30 @@ function AccountMenu({
   name: string;
   userId: string;
 }>): ReactElement {
-  const { action, signOut } = useSignOut("/");
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={`${name} のアカウントメニュー`}
-        className={compact ? "w-full justify-center px-1" : undefined}
-      >
-        {compact ? (
+    <SessionMenu
+      destination="/"
+      items={
+        <>
+          <DropdownMenuLinkItem params={{ id: userId }} to="/users/$id">
+            プロフィール
+          </DropdownMenuLinkItem>
+          <DropdownMenuLinkItem to="/settings">設定</DropdownMenuLinkItem>
+          <DropdownMenuLinkItem to="/support">お問い合わせ</DropdownMenuLinkItem>
+        </>
+      }
+      label={name}
+      trigger={
+        compact ? (
           <Icon icon={UserRoundIcon} />
         ) : (
           <>
             <span className="max-w-48 truncate">{name}</span>
             <Icon icon={ChevronDownIcon} size="small" />
           </>
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuLinkItem to="/users/$id" params={{ id: userId }}>
-          プロフィール
-        </DropdownMenuLinkItem>
-        <DropdownMenuLinkItem to="/settings">設定</DropdownMenuLinkItem>
-        <DropdownMenuLinkItem to="/support">お問い合わせ</DropdownMenuLinkItem>
-        <DropdownMenuItem disabled={action.blocked} onClick={signOut}>
-          ログアウト
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        )
+      }
+    />
   );
 }
 
