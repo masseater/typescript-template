@@ -1,15 +1,10 @@
+import { sandboxUnsafeTestPattern } from "./stryker-sandbox.ts";
+
 const configuration = {
   coverageAnalysis: "perTest",
-  dryRunTimeoutMinutes: 20,
+  dryRunTimeoutMinutes: 25,
   htmlReporter: { fileName: ".local/stryker-report.html" },
-  ignorePatterns: [
-    "**/tsconfig*.json",
-    ".local-agents",
-    ".local/**",
-    "tools/dont-review-it/src/repository/agents-md.test.ts",
-    "tools/dont-review-it/src/repository/dependency-cruiser.test.ts",
-    "tools/dont-review-it/src/repository/effect-diagnostics.test.ts",
-  ],
+  ignorePatterns: ["**/tsconfig*.json", ".local-agents", ".local/**", sandboxUnsafeTestPattern],
   ignoreStatic: true,
   mutate: [
     "libs/config/src/index.ts",

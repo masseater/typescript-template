@@ -40,10 +40,13 @@ const scriptExtensions = new Set([
 
 const callPrefixes = ["import.meta.resolve(", "require.resolve(", "import(", "require("] as const;
 
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob("../../package.json", {
-  eager: true,
-  import: "default",
-});
+const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../package.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 interface Finding {
   readonly id: string;
@@ -63,25 +66,26 @@ interface Read {
 }
 
 const singleConsumerAllowlist: readonly string[] = [
+  "package:@repo/dont-review-it",
   "package:@repo/interview",
-  "package:@repo/quality",
-  "package:@repo/stop-ai-slop",
   "subpath:@repo/auth-ui/signup",
   "subpath:@repo/auth/mcp",
   "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/interview",
   "subpath:@repo/db/remote",
   "subpath:@repo/db/security",
+  "subpath:@repo/dont-review-it/lint",
+  "subpath:@repo/dont-review-it/lint-rule-authoring",
+  "subpath:@repo/dont-review-it/lint-rule-authoring/plugin",
   "subpath:@repo/dont-review-it/plugin",
   "subpath:@repo/dont-review-it/record-fields",
+  "subpath:@repo/dont-review-it/repository-checks",
+  "subpath:@repo/dont-review-it/repository-plugin",
+  "subpath:@repo/dont-review-it/test-runtime",
   "subpath:@repo/dont-review-it/vitest",
   "subpath:@repo/dont-review-it/vitest/parsed-fields",
   "subpath:@repo/interview/contracts",
-  "subpath:@repo/lint-rule-authoring/plugin",
   "subpath:@repo/monitor/fixture",
-  "subpath:@repo/quality/lint",
-  "subpath:@repo/quality/plugin",
-  "subpath:@repo/quality/test-runtime",
   "subpath:@repo/runtime/contracts",
   "subpath:@repo/runtime/testing",
   "subpath:@repo/runtime/wiki",
