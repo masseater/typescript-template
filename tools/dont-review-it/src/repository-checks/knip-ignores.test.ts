@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -113,7 +113,7 @@ const resolvedSpecifier = (fromFile: string, specifier: string): string | null =
     specifier.startsWith(".") || specifier.startsWith("@repo/") || specifier.startsWith("#");
   if (!local) return null;
   try {
-    const resolved = createRequire(fromFile).resolve(specifier);
+    const resolved = realpathSync(createRequire(fromFile).resolve(specifier));
     return insideRepository(resolved) ? resolved : null;
   } catch {
     return null;
