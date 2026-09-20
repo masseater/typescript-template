@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@repo/auth": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
@@ -26,7 +27,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@repo/config": "workspace:*",
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

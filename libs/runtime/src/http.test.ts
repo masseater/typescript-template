@@ -3,7 +3,6 @@ import { cspNonceHeader, strictTransportSecurity } from "@repo/config/security";
 import { Telemetry, httpStatus } from "@repo/observability";
 import { Effect, Layer, Schema } from "effect";
 
-import { ProfileUpdate } from "./contracts.ts";
 import {
   AppOrigin,
   apiRoutes,
@@ -15,6 +14,19 @@ import {
 import { startRoute, workerRuntime } from "./worker.ts";
 
 import type { AnyElysia } from "elysia";
+
+const EchoBody = Schema.Struct({
+  name: Schema.Trim.check(Schema.isLengthBetween(1, 100)),
+  profile: Schema.String.check(Schema.isMaxLength(2000)),
+  socialLinks: Schema.Array(
+    Schema.String.check(
+      Schema.isMaxLength(2048),
+      Schema.makeFilter(
+        (value: string) => URL.parse(value)?.protocol === "https:" || "https URL required",
+      ),
+    ),
+  ).check(Schema.isMaxLength(10)),
+});
 
 const origin = "http://localhost:3001";
 const secureOrigin = "https://user.example.test";
@@ -115,7 +127,7 @@ describe("json request bodies", () => {
         profile: "自己紹介です。",
         socialLinks: ["https://github.com/example"],
       });
-      const decoded = yield* readJsonBody(ProfileUpdate, mutation(jsonHeaders, body));
+      const decoded = yield* readJsonBody(EchoBody, mutation(jsonHeaders, body));
       assert.deepStrictEqual(decoded, {
         name: "利用者",
         profile: "自己紹介です。",
@@ -127,9 +139,7 @@ describe("json request bodies", () => {
   for (const { headers, body, reason } of rejections) {
     it.effect(`rejects mutation because of ${reason}`, () =>
       Effect.gen(function* program() {
-        const failure = yield* readJsonBody(ProfileUpdate, mutation(headers, body)).pipe(
-          Effect.flip,
-        );
+        const failure = yield* readJsonBody(EchoBody, mutation(headers, body)).pipe(Effect.flip);
         assert.deepStrictEqual(
           { reason: "reason" in failure ? failure.reason : undefined, tag: failure._tag },
           { reason, tag: "RequestRejected" },
@@ -141,16 +151,14 @@ describe("json request bodies", () => {
   it.effect("rejects unknown fields such as a self-assigned role", () =>
     Effect.gen(function* program() {
       const body = JSON.stringify({ name: "reader", profile: "", role: "admin", socialLinks: [] });
-      const failure = yield* readJsonBody(ProfileUpdate, mutation(jsonHeaders, body)).pipe(
-        Effect.flip,
-      );
+      const failure = yield* readJsonBody(EchoBody, mutation(jsonHeaders, body)).pipe(Effect.flip);
       assert.strictEqual(failure._tag, "InputInvalid");
     }).pipe(Effect.provide(context)),
   );
 });
 
 describe("api routes behind a start server route", () => {
-  const echo = api.route(ProfileUpdate, (request) => readJsonBody(ProfileUpdate, request), {});
+  const echo = api.route(EchoBody, (request) => readJsonBody(EchoBody, request), {});
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {

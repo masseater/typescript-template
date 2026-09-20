@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import { ApplicationName, applicationOrigins, mailpitOrigin } from "@repo/config";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/config/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { memberPageSize } from "@repo/runtime/contracts";
 import { Console, Effect, Schema } from "effect";
 
 import { type BinaryUnavailable, exists, installBinary } from "./binary.ts";
@@ -100,7 +99,7 @@ const scenarioEnvironment = (
   return {
     ...profiles[profile],
     LOAD_MAILPIT_ORIGIN: mailpitOrigin,
-    LOAD_MEMBER_PAGE_SIZE: String(memberPageSize),
+    LOAD_MEMBER_PAGE_SIZE: "24",
     LOAD_TARGET_ORIGIN: origin,
   };
 };

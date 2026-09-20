@@ -1,4 +1,4 @@
-import { Icon } from "@repo/ui";
+import { ButtonLink, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { MenuIcon, PanelLeftIcon, SearchIcon } from "lucide-react";
 
@@ -55,6 +55,17 @@ function DashboardHeader({
           className="min-w-0 flex-1 bg-transparent text-base leading-tight text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
         />
       </label>
+      <a
+        href="https://analytics.google.com/"
+        target="_blank"
+        rel="noreferrer"
+        className="rounded-sm text-link underline outline-none hover:text-link-hover focus-visible:focus-indicator-outer"
+      >
+        Google Analytics
+      </a>
+      <ButtonLink to="/wiki" variant="secondary">
+        Wiki
+      </ButtonLink>
     </header>
   );
 }

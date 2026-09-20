@@ -510,6 +510,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -547,9 +550,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -583,6 +586,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
@@ -626,9 +632,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1605,9 +1608,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@repo/runtime':
-        specifier: workspace:*
-        version: link:../../libs/runtime
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
