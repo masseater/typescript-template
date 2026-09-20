@@ -20,7 +20,7 @@ describe("check:dev local D1", () => {
     const task = appRun.tasks["check:dev"];
     expect(task).toEqual(
       expect.objectContaining({
-        command: "node ../../tools/dev/src/dev-start.ts",
+        command: "../../tools/dev/src/dev-start.ts",
         dependsOn: ["@repo/dev#setup"],
       }),
     );
