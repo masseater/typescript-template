@@ -1,0 +1,1 @@
+Move test-only OTLP exporter packages in @repo/ai-native to depDependencies so knip --strict stops failing on unused production dependencies after the telemetry split.
