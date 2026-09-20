@@ -3,6 +3,7 @@ name: repository-checks
 description: >
   Run `dont-review-it check` as the single failing gate for everything lint cannot express: canonical value catalogs, duplicated declaration bodies, GitHub Actions workflow definitions and pinned action refs, catalog dependency declarations, required file shapes (AGENTS.md/CLAUDE.md, TypeScript-only tool config), telemetry wiring, preset reach, publishable package entry points, and the TanStack Intent skills shipped with published packages. Load when wiring the check into CI or a guard script, when a report names a workflow file, a manifest, or a `package.json`, when `warning:` lines appear that do not fail the run, or when a published package has to ship agent skills.
 
+
 metadata:
   type: core
   library: "@repo/dont-review-it"
