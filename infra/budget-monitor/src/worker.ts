@@ -1,11 +1,11 @@
-import { Monitor, monitorHandler } from "@repo/monitor";
+import { monitorWorker } from "@repo/monitor";
 import { Effect } from "effect";
 
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
 
-import type { MonitorBindings, Notify } from "@repo/monitor";
+import type { MonitorBindings } from "@repo/monitor";
 
 interface Bindings extends MonitorBindings {
   CLOUDFLARE_ACCOUNT_ID: string;
@@ -16,15 +16,8 @@ interface Bindings extends MonitorBindings {
   RESERVE_USD: string;
 }
 
-export class BudgetMonitor extends Monitor<Bindings> {
-  protected readonly event = "budget";
-  protected readonly failure = {
-    subject: "Cloudflare budget monitoring failed",
-    text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
-  };
-
-  protected check(notify: Notify): Effect.Effect<object, unknown> {
-    const { env, ctx } = this;
+const budget = monitorWorker<Bindings>({
+  check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
       const snapshot = yield* fetchUsage(
@@ -51,8 +44,17 @@ export class BudgetMonitor extends Monitor<Bindings> {
       }
       return decision;
     }).pipe(Effect.withSpan("BudgetMonitor.check"));
-  }
-}
+  },
+  className: "BudgetMonitor",
+  event: "budget",
+  failure: {
+    subject: "Cloudflare budget monitoring failed",
+    text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
+  },
+});
 
+const BudgetMonitor = budget.Worker;
+
+export { BudgetMonitor };
 // oxlint-disable-next-line import/no-default-export
-export default monitorHandler("budget");
+export default budget.handler;
