@@ -9,6 +9,7 @@ type SharedEnv = Readonly<{
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;
+  GOOGLE_ANALYTICS_MEASUREMENT_ID?: string;
   OPS_EMAIL: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
   OTLP_ENABLED?: string;

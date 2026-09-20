@@ -2,6 +2,7 @@ import { Effect, Predicate, Schema } from "effect";
 
 import { loopbackHosts } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
+import { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
 
 import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
 
@@ -58,6 +59,7 @@ const bindingWith = <Binding>(
   );
 
 const Scalars = Schema.Struct({
+<<<<<<< HEAD
   [appEnvKey.appOrigin]: Origin,
   [appEnvKey.appRelease]: withRelease,
   [appEnvKey.authSecret]: AuthSecret,
@@ -67,6 +69,18 @@ const Scalars = Schema.Struct({
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
   [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
+=======
+  APP_ORIGIN: Origin,
+  APP_RELEASE: withRelease,
+  AUTH_SECRET: AuthSecret,
+  EMAIL_FROM: Email,
+  GOOGLE_ANALYTICS_MEASUREMENT_ID: Schema.optionalKey(GoogleAnalyticsMeasurementId),
+  MAILPIT_URL: Schema.optionalKey(Origin),
+  OPS_EMAIL: Email,
+  OTLP_AUTHORIZATION: Schema.optionalKey(NonEmpty),
+  OTLP_ENABLED: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  OTLP_ENDPOINT: Schema.optionalKey(AbsoluteUrl),
+>>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
 });
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);

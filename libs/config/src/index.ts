@@ -32,7 +32,20 @@ export {
 } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export {
+<<<<<<< HEAD
   AuthSecret,
+=======
+  GoogleAnalyticsMeasurementId,
+  activeGoogleAnalyticsMeasurementId,
+} from "./google-analytics-measurement-id.ts";
+export type { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
+export {
+  googleAnalyticsConnectSrc,
+  googleAnalyticsImgSrc,
+  googleAnalyticsScriptSrc,
+} from "./google-analytics-policy.ts";
+export {
+>>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
   Email,
   HttpsOrigin,
   appEnvKey,

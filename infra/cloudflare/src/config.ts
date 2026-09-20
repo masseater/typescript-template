@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import {
   CloudflareId,
   Email,
@@ -7,6 +8,10 @@ import {
   minimumAuthSecretLength,
   usageAllowanceRemains,
 } from "@repo/config";
+=======
+import { APPLICATION, CloudflareId, Email, GoogleAnalyticsMeasurementId, ROLE } from "@repo/config";
+import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
+>>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
 import { workerCompatibility } from "@repo/config/worker";
 import { maximumAlertRecipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";
@@ -97,6 +102,7 @@ const SharedSettings = Schema.Struct({
     recipients: Recipients,
     reserveUsd: Nonnegative,
   }),
+  googleAnalyticsMeasurementId: Schema.optional(GoogleAnalyticsMeasurementId),
   mailFrom: Email,
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({

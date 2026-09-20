@@ -115,6 +115,11 @@ describe("readEnvironment", () => {
       { APP_ORIGIN: "not-a-url" },
       'Expected an absolute URL\n  at ["APP_ORIGIN"]',
     ],
+    [
+      "a malformed analytics measurement id",
+      { GOOGLE_ANALYTICS_MEASUREMENT_ID: "UA-123456-1" },
+      'Expected a string matching the RegExp ^G-[A-Z0-9]{1,48}$\n  at ["GOOGLE_ANALYTICS_MEASUREMENT_ID"]',
+    ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
     const it = test.extend("refusal", async () =>
       Effect.runPromise(Effect.flip(readEnvironment({ ...localBindings, ...overridden }))));
@@ -142,6 +147,50 @@ describe("an OTLP switch beside an endpoint", () => {
       MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
       OTLP_ENABLED: "true",
       OTLP_ENDPOINT: localBindings.MAILPIT_URL,
+      local: true,
+    });
+  });
+});
+
+describe("an analytics measurement id beside a public origin", () => {
+  const it = test.extend("analyticsEnvironment", async () => {
+    const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
+    return Effect.runPromise(
+      readEnvironment({
+        ...remoteBindings,
+        APP_ORIGIN: "https://app.example.test",
+        GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
+      }),
+    );
+  });
+
+  it("is read as it was written", ({ analyticsEnvironment }) => {
+    expect(analyticsEnvironment).toStrictEqual({
+      APP_ORIGIN: "https://app.example.test",
+      APP_RELEASE: "local",
+      AUTH_SECRET: localBindings.AUTH_SECRET,
+      EMAIL_FROM: localBindings.EMAIL_FROM,
+      GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
+      OPS_EMAIL: localBindings.OPS_EMAIL,
+      local: false,
+    });
+  });
+});
+
+describe("an analytics measurement id on localhost", () => {
+  const it = test.extend("localAnalyticsEnvironment", async () =>
+    Effect.runPromise(
+      readEnvironment({
+        ...localBindings,
+        GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-LOCALMEASURE",
+      }),
+    ));
+
+  it("still marks the environment local and keeps the id available to the reader", ({
+    localAnalyticsEnvironment,
+  }) => {
+    expect(localAnalyticsEnvironment).toMatchObject({
+      GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-LOCALMEASURE",
       local: true,
     });
   });

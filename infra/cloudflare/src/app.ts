@@ -1,4 +1,4 @@
-import { grants } from "@repo/config";
+import { grants, APPLICATION } from "@repo/config";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
@@ -40,6 +40,9 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
       OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
+      ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+        ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
+        : {}),
       ...(config.otlp === undefined
         ? {}
         : {
