@@ -36,6 +36,7 @@ const completeWelcomeOnboarding = async (
   await Promise.all([
     page.waitForURL((url) => url.pathname.includes("/welcome/choose"), {
       timeout: appearanceTimeout,
+      waitUntil: "domcontentloaded",
     }),
     press(page, "同意して続ける"),
   ]);
