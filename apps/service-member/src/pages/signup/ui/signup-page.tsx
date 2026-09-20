@@ -1,13 +1,14 @@
-import { SignUpForm } from "@repo/auth-ui/signup";
-import { TextLink } from "@repo/ui";
+import { ActionStatus, FormColumn, TextLink, useAction } from "@repo/ui";
 import { useState } from "react";
 
 import { CardPage } from "#shared/ui/index.ts";
+import { SignUpFields } from "./signup-fields.tsx";
 
 import type { ReactElement } from "react";
 
 function SignUpPage(): ReactElement {
   const [sent, setSent] = useState(false);
+  const action = useAction();
   function showSent(): void {
     setSent(true);
   }
@@ -23,7 +24,10 @@ function SignUpPage(): ReactElement {
   }
   return (
     <CardPage title="新規登録">
-      <SignUpForm onSent={showSent} />
+      <FormColumn>
+        <SignUpFields action={action} onSent={showSent} />
+        <ActionStatus action={action} pendingMessage="登録を処理しています。" />
+      </FormColumn>
       <p className="text-base leading-normal">
         アカウントをお持ちの方は<TextLink to="/login">ログイン</TextLink>
       </p>

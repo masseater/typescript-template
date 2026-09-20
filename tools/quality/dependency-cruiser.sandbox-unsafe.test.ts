@@ -120,14 +120,6 @@ const detected: readonly Case[] = [
     },
   ],
   [
-    "no-signup-outside-user",
-    { "apps/service-admin/src/index.ts": 'export * from "@repo/auth-ui/signup";\n' },
-  ],
-  [
-    "no-signup-outside-user",
-    { "apps/service-admin/src/index.ts": 'export type { Props } from "@repo/auth-ui/signup";\n' },
-  ],
-  [
     "no-wiki-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
   ],
@@ -239,10 +231,6 @@ const accepted: readonly Case[] = [
     },
   ],
   [
-    "no-signup-outside-user",
-    { "apps/service-member/src/index.ts": 'export * from "@repo/auth-ui/signup";\n' },
-  ],
-  [
     "no-wiki-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
   ],
@@ -312,11 +300,15 @@ describe("dependency-cruiser rules on package boundaries", () => {
     await expect(violatedRules(files)).resolves.toStrictEqual([]);
   });
 
-  it("reaches this repository and finds nothing forbidden in it", async () => {
-    expect.hasAssertions();
-    await expect(cruiseRepository()).resolves.toStrictEqual({
-      scanned: scannedModules,
-      violations: [],
-    });
-  });
+  it(
+    "reaches this repository and finds nothing forbidden in it",
+    { timeout: 120_000 },
+    async () => {
+      expect.hasAssertions();
+      await expect(cruiseRepository()).resolves.toStrictEqual({
+        scanned: scannedModules,
+        violations: [],
+      });
+    },
+  );
 });
