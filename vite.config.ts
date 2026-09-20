@@ -60,7 +60,11 @@ export default defineConfig({
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
       test: { cache: false, command: "vp test run --project '!@repo/*'" },
-      "test:changed": { cache: false, command: "node tools/quality/changed-tests.ts" },
+      "test:changed": {
+        cache: false,
+        command:
+          "vp test run --project '!@repo/*' --changed \"${TEST_CHANGED_SINCE:-origin/main}\" --passWithNoTests",
+      },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect"],
