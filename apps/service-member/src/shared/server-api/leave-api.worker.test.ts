@@ -1,8 +1,5 @@
 import { assert, it } from "@effect/vitest";
 import { APPLICATION, readConfig } from "@repo/config";
-import { ROLE } from "@repo/config";
-import { query, schema, withdrawMember } from "@repo/db";
-import { runStatement, TestDatabase } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime";
@@ -14,25 +11,12 @@ import { Effect, Layer } from "effect";
 import { leaveApi } from "./leave-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
-const routes = { "/api/leave": "leave-api", "/api/recover": "recover-api" };
+const routes = {
+  "/api/recovery/accept": "recovery-accept-api",
+  "/api/recovery/decline": "recovery-decline-api",
+  "/api/recovery-offer": "recovery-offer-api",
+};
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
-const { user } = schema;
-const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
-
-const addUser = (userId: string) =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date(),
-      email: `${userId}@example.com`,
-      emailVerified: true,
-      id: userId,
-      name: userId,
-      profile: "",
-      role: ROLE.member,
-      socialLinks: [],
-      updatedAt: new Date(),
-    });
-  });
 
 function leaveApp() {
   const environment = appEnvironment({});
@@ -45,23 +29,19 @@ function leaveApp() {
   return createApi(apiRoot).use(leaveApi(apiRoutes(runtime, reporting)));
 }
 
-async function postRecover(app: ReturnType<typeof leaveApp>, email: string): Promise<Response> {
+async function postRecoveryAccept(app: ReturnType<typeof leaveApp>): Promise<Response> {
   return app.fetch(
-    new Request(`${fixtureOrigin}${apiRoot}/recover`, {
-      body: JSON.stringify({ email }),
+    new Request(`${fixtureOrigin}${apiRoot}/recovery/accept`, {
       headers: { "content-type": "application/json", origin: fixtureOrigin },
       method: "POST",
     }),
   );
 }
 
-it.effect("restores a withdrawn member through the recover API", () =>
+it.effect("rejects unauthenticated recovery acceptance", () =>
   Effect.gen(function* program() {
-    yield* migrated;
-    yield* addUser("returning");
-    yield* withdrawMember("returning", { immediate: false });
     const app = leaveApp();
-    const response = yield* Effect.promise(async () => postRecover(app, "returning@example.com"));
-    assert.strictEqual(response.status, httpStatus.ok);
-  }).pipe(Effect.provide(TestDatabase)),
+    const response = yield* Effect.promise(async () => postRecoveryAccept(app));
+    assert.strictEqual(response.status, httpStatus.unauthorized);
+  }),
 );

@@ -40,8 +40,10 @@ export {
   MemberLeaveUnavailable,
   RecoveryExpired,
   RecoveryUnavailable,
+  acceptRecovery,
+  declineRecovery,
+  findRecoveryOffer,
   purgeExpiredWithdrawnMembers,
-  recoverWithdrawnMember,
   retentionDays,
   withdrawMember,
 } from "./member-leave.ts";

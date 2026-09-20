@@ -98,19 +98,26 @@ const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
 
 const LeaveAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 
-const RecoverRequest = Schema.Struct({
-  email: Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u)),
+const RecoveryOfferAvailable = Schema.Struct({
+  available: Schema.Literal(true),
+  previousName: Schema.String,
 });
 
-const RecoverAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const RecoveryOfferUnavailable = Schema.Struct({
+  available: Schema.Literal(false),
+});
+
+const RecoveryOfferView = Schema.Union([RecoveryOfferAvailable, RecoveryOfferUnavailable]);
+
+const RecoveryAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 
 export {
   ContactAccepted,
   ContactSubmission,
   LeaveAccepted,
   LeaveRequest,
-  RecoverAccepted,
-  RecoverRequest,
+  RecoveryAccepted,
+  RecoveryOfferView,
   MemberList,
   MemberListQuery,
   MemberQuery,

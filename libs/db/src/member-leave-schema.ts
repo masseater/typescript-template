@@ -23,6 +23,7 @@ const leaveRequest = sqliteTable(
       .primaryKey()
       .references(() => withdrawnMember.memberId, { onDelete: "cascade" }),
     purgeAt: integer("purge_at", { mode: "timestamp_ms" }).notNull(),
+    recoveryDeclinedAt: integer("recovery_declined_at", { mode: "timestamp_ms" }),
     requestedAt: integer("requested_at", { mode: "timestamp_ms" }).notNull(),
     restoredAt: integer("restored_at", { mode: "timestamp_ms" }),
   },

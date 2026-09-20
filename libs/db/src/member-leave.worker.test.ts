@@ -6,8 +6,10 @@ import { describe, expect, test } from "vite-plus/test";
 import { query } from "./database.ts";
 import { withdrawnMember } from "./member-leave-schema.ts";
 import {
+  acceptRecovery,
+  declineRecovery,
+  findRecoveryOffer,
   purgeExpiredWithdrawnMembers,
-  recoverWithdrawnMember,
   withdrawMember,
 } from "./member-leave.ts";
 import { addOAuthGrant, addSession, addUser } from "./records-fixture.ts";
@@ -27,6 +29,26 @@ const { user } = schema;
 const runTest = <Value>(
   program: Effect.Effect<Value, unknown, Effect.Effect.Context<Value>>,
 ): Promise<Value> => Effect.runPromise(program.pipe(Effect.provide(TestDatabase)));
+
+const addMember = (added: {
+  readonly userId: string;
+  readonly email: string;
+  readonly name?: string;
+  readonly profile?: string;
+}): Effect.Effect<void, unknown, unknown> =>
+  query(async (database): Promise<void> => {
+    await database.insert(user).values({
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      email: added.email,
+      emailVerified: true,
+      id: added.userId,
+      name: added.name ?? added.userId,
+      profile: added.profile ?? "",
+      role: ROLE.member,
+      socialLinks: [],
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+  });
 
 const countWithdrawnMember = (memberId: string) =>
   query(async (database) => {
@@ -69,7 +91,7 @@ const countLiveSessions = (memberId: string) =>
     return sessions.length;
   });
 
-const getMember = (viewerId: string, memberId: string) =>
+const getMember = (memberId: string) =>
   Effect.gen(function* loadMember() {
     const [member] = yield* query((database) =>
       database
@@ -95,7 +117,7 @@ describe("withdrawMember", () => {
             grants: yield* countOAuthGrants("leaver"),
             liveSession: yield* getSessionSecurity(sessionId, APPLICATION.user),
             member: yield* findUser("leaver"),
-            visibleToOther: yield* getMember("viewer", "leaver"),
+            visibleToOther: yield* getMember("viewer"),
             withdrawn: yield* countWithdrawnMember("leaver"),
           };
         }),
@@ -133,26 +155,141 @@ describe("withdrawMember", () => {
   });
 });
 
-describe("recoverWithdrawnMember", () => {
+describe("findRecoveryOffer", () => {
+  describe("a new member with the same verified email as a withdrawn snapshot", () => {
+    const it = test.extend("offer", async () =>
+      runTest(
+        Effect.gen(function* loadOffer() {
+          yield* addMember({
+            email: "returning@example.com",
+            name: "Former Name",
+            profile: "former profile",
+            userId: "former",
+          });
+          yield* withdrawMember("former", { immediate: false });
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          return yield* findRecoveryOffer("newcomer");
+        }),
+      ));
+
+    it("shows the recovery offer", ({ offer }) => {
+      expect(offer).toStrictEqual({ available: true, previousName: "Former Name" });
+    });
+  });
+
+  describe("a member with a different email", () => {
+    const it = test.extend("offer", async () =>
+      runTest(
+        Effect.gen(function* loadOffer() {
+          yield* addMember({ email: "former@example.com", userId: "former" });
+          yield* withdrawMember("former", { immediate: false });
+          yield* addMember({ email: "other@example.com", userId: "other" });
+          return yield* findRecoveryOffer("other");
+        }),
+      ));
+
+    it("shows no offer", ({ offer }) => {
+      expect(offer).toStrictEqual({ available: false });
+    });
+  });
+
+  describe("an expired withdrawn snapshot", () => {
+    const it = test.extend("offer", async () =>
+      runTest(
+        Effect.gen(function* loadOffer() {
+          yield* addMember({ email: "returning@example.com", userId: "former" });
+          yield* withdrawMember("former", { immediate: false });
+          yield* query((database) =>
+            database
+              .update(leaveRequestTable)
+              .set({ purgeAt: new Date("2020-01-01T00:00:00.000Z") })
+              .where(eq(leaveRequestTable.memberId, "former")),
+          );
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          return yield* findRecoveryOffer("newcomer");
+        }),
+      ));
+
+    it("shows no offer", ({ offer }) => {
+      expect(offer).toStrictEqual({ available: false });
+    });
+  });
+
+  describe("a purged withdrawn snapshot", () => {
+    const it = test.extend("offer", async () =>
+      runTest(
+        Effect.gen(function* loadOffer() {
+          yield* addMember({ email: "returning@example.com", userId: "former" });
+          yield* withdrawMember("former", { immediate: false });
+          yield* query((database) =>
+            database
+              .update(leaveRequestTable)
+              .set({ purgeAt: new Date("2020-01-01T00:00:00.000Z") })
+              .where(eq(leaveRequestTable.memberId, "former")),
+          );
+          yield* purgeExpiredWithdrawnMembers(new Date("2026-01-02T00:00:00.000Z"));
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          return yield* findRecoveryOffer("newcomer");
+        }),
+      ));
+
+    it("shows no offer", ({ offer }) => {
+      expect(offer).toStrictEqual({ available: false });
+    });
+  });
+});
+
+describe("acceptRecovery", () => {
   describe("within the retention window", () => {
     const it = test.extend("restoredMember", async () =>
       runTest(
         Effect.gen(function* restoreMember() {
-          yield* addUser({ userId: "returning" });
-          yield* withdrawMember("returning", { immediate: false });
-          const restored = yield* recoverWithdrawnMember("returning@example.com");
+          yield* addMember({
+            email: "returning@example.com",
+            name: "Former Name",
+            profile: "former profile",
+            userId: "former",
+          });
+          yield* withdrawMember("former", { immediate: false });
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          yield* acceptRecovery("newcomer");
           return {
-            member: yield* findUser("returning"),
-            restored,
-            withdrawn: yield* countWithdrawnMember("returning"),
+            member: yield* findUser("newcomer"),
+            offer: yield* findRecoveryOffer("newcomer"),
+            withdrawn: yield* countWithdrawnMember("former"),
           };
         }),
       ));
 
-    it("restores the active member record", ({ restoredMember }) => {
-      expect(restoredMember.member?.id).toBe("returning");
+    it("restores the profile onto the new member id", ({ restoredMember }) => {
+      expect(restoredMember.member?.id).toBe("newcomer");
+      expect(restoredMember.member?.name).toBe("Former Name");
+      expect(restoredMember.member?.profile).toBe("former profile");
       expect(restoredMember.withdrawn).toBe(0);
-      expect(restoredMember.restored.memberId).toBe("returning");
+      expect(restoredMember.offer).toStrictEqual({ available: false });
+    });
+  });
+});
+
+describe("declineRecovery", () => {
+  describe("within the retention window", () => {
+    const it = test.extend("declinedMember", async () =>
+      runTest(
+        Effect.gen(function* declineMember() {
+          yield* addMember({ email: "returning@example.com", userId: "former" });
+          yield* withdrawMember("former", { immediate: false });
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          yield* declineRecovery("newcomer");
+          return {
+            offer: yield* findRecoveryOffer("newcomer"),
+            withdrawn: yield* countWithdrawnMember("former"),
+          };
+        }),
+      ));
+
+    it("stops offering recovery while keeping the snapshot until purge", ({ declinedMember }) => {
+      expect(declinedMember.offer).toStrictEqual({ available: false });
+      expect(declinedMember.withdrawn).toBe(1);
     });
   });
 });
