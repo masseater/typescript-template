@@ -16,7 +16,7 @@ function AgreementPage(): ReactElement {
     setError(undefined);
     try {
       await saveOnboardingStep("choose");
-      await navigate({ to: "/welcome/choose" });
+      globalThis.location.assign("/welcome/choose");
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "同意を保存できませんでした。");
       setBusy(false);
