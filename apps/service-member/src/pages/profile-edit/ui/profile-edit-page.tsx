@@ -4,7 +4,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import { ProfileEditor } from "./profile-editor.tsx";
 
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import type { Profile } from "#entities/profile/index.ts";
 import type { ReactElement } from "react";
 
 function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElement {
