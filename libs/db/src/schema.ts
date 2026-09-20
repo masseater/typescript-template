@@ -5,6 +5,14 @@ import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
 import {
+  conversation,
+  conversationParticipant,
+  directMessage,
+  groupInvite,
+  groupMembership,
+  memberGroup,
+} from "./messaging-schema.ts";
+import {
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -128,8 +136,14 @@ const auditEvent = sqliteTable(
 const schema = {
   account,
   auditEvent,
+  conversation,
+  conversationParticipant,
+  directMessage,
   follow,
+  groupInvite,
+  groupMembership,
   interview,
+  memberGroup,
   memberOnboarding,
   jwks,
   oauthAccessToken,
@@ -161,3 +175,18 @@ export {
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export {
+  CONVERSATION_KIND,
+  GROUP_JOIN_POLICY,
+  GROUP_MEMBERSHIP_ROLE,
+  conversation,
+  conversationKinds,
+  conversationParticipant,
+  directMessage,
+  groupInvite,
+  groupJoinPolicies,
+  groupMembership,
+  groupMembershipRoles,
+  memberGroup,
+} from "./messaging-schema.ts";
+export type { ConversationKind, GroupJoinPolicy, GroupMembershipRole } from "./messaging-schema.ts";
