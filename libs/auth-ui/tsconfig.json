@@ -6,5 +6,5 @@
     "noPropertyAccessFromIndexSignature": true,
     "plugins": [{ "name": "@effect/language-service" }]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }

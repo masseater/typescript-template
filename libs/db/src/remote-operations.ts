@@ -10,18 +10,8 @@ import { remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure, fail } from "./remote-input.ts";
 
 import type { EmailAddress } from "./bootstrap-statement.ts";
+import type { DatabaseExecutor } from "./remote-http.ts";
 import type { MigrationStatusTarget } from "./remote-input.ts";
-
-interface RemoteQuery {
-  readonly params: readonly (string | number | null)[];
-  readonly sql: string;
-}
-
-interface DatabaseExecutor {
-  readonly batch: (
-    queries: readonly RemoteQuery[],
-  ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
-}
 
 const Statement = Schema.Trim.check(Schema.isMinLength(1));
 const MigrationFile = Schema.Struct({
@@ -177,4 +167,3 @@ export {
   migrateDatabase,
   readMigrationStatus,
 };
-export type { DatabaseExecutor, RemoteQuery };

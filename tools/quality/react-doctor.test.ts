@@ -78,7 +78,6 @@ const knipOwnedRules = [
 
 const globalOffRules = [
   ...knipOwnedRules,
-  "react-doctor/no-all-caps-body-text",
   "react-doctor/react-compiler-no-manual-memoization",
   "react-doctor/react-in-jsx-scope",
 ] as const;
@@ -127,7 +126,7 @@ describe("react-doctor integration", () => {
     expect(suppressedFiles().filter((file) => !(file in sources))).toStrictEqual([]);
   });
 
-  it("keeps global offs inside knip, the JSX runtime, a retired rule, and the all-caps false positive", () => {
+  it("keeps global offs inside knip, the JSX runtime, and a retired rule", () => {
     expect.hasAssertions();
     expect(offRules()).toStrictEqual([...globalOffRules].toSorted());
     expect(field(rootRules(), "react-doctor/circular-dependency")).toStrictEqual("error");

@@ -115,7 +115,7 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           {
             location: "anywhere",
-            terms: ["todo", "fixme", "xxx", "eslint-disable", "react-doctor"],
+            terms: ["todo", "fixme", "xxx", "eslint-disable", "oxlint-disable", "react-doctor"],
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
@@ -218,6 +218,7 @@ const lintOptions = {
     },
   ],
   rules: {
+    "import/no-default-export": LINT_SEVERITY.OFF,
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
       {
@@ -289,4 +290,46 @@ const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
   ...lintOptions.overrides.map((override) => override.rules ?? {}),
 );
 
-export { configuredLintRules, generatedFiles, lintOptions };
+const builtInPlugins = new Set([
+  "eslint",
+  "import",
+  "jest",
+  "jsdoc",
+  "jsx-a11y",
+  "nextjs",
+  "node",
+  "oxc",
+  "promise",
+  "react",
+  "react-perf",
+  "typescript",
+  "unicorn",
+  "vitest",
+  "vue",
+]);
+
+const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
+  return overrides.flatMap((override, index) => {
+    const plugins = override.plugins;
+    if (plugins === undefined) {
+      return [];
+    }
+    const enabled = new Set(plugins);
+    return Object.keys(override.rules ?? {}).flatMap((rule) => {
+      const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
+      if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {
+        return [];
+      }
+      return [`overrides[${String(index)}] ${rule} needs plugins to include ${plugin}`];
+    });
+  });
+};
+
+export {
+  awaitingPresetPackages,
+  configuredLintRules,
+  generatedFiles,
+  lintOptions,
+  overridePluginMismatches,
+  templateWorkspaces,
+};
