@@ -72,4 +72,4 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
 }
 
 export { useProfileForm };
-export type { ProfileFormValues, SocialLinkField };
+export type { SocialLinkField };

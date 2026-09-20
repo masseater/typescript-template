@@ -131,6 +131,5 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
-  minimumPasswordLength,
   pageNumber,
 };

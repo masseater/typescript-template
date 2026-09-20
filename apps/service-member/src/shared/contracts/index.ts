@@ -33,7 +33,6 @@ export {
   maximumNameLength,
   maximumPasswordLength,
   maximumProfileLength,
-  minimumPasswordLength,
   maximumSocialLinks,
   memberPageSize,
 } from "./member.ts";

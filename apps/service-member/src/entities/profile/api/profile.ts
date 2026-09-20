@@ -37,5 +37,5 @@ const saveProfileOptions = mutationOptions({
   mutationKey: ["profile", "save"],
 });
 
-export { profileKey, profileOptions, saveProfile, saveProfileOptions };
+export { profileOptions, saveProfile };
 export type { Profile, ProfileDraft };
