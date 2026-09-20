@@ -17,8 +17,8 @@ export default defineConfig({
       precommit: { command: [], dependsOn: [] },
       prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
       prepr: { command: [], dependsOn: ["prepush"] },
-      premerge: { command: [], dependsOn: ["prepr"] },
-      prerelease: { command: [], dependsOn: ["premerge"] },
+      premerge: { command: [], dependsOn: [] },
+      prerelease: { command: [], dependsOn: ["prepr", "premerge"] },
     },
   },
   test: {
