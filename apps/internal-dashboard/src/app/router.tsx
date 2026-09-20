@@ -1,26 +1,15 @@
-import { nonceOptions } from "@repo/ui/shell";
-import { createRouter } from "@tanstack/react-router";
+import { createAppRouter } from "@repo/ui/shell";
 
 import { routeTree } from "./routeTree.gen";
 
-import type { Router } from "@tanstack/react-router";
-
-type WikiRouter = Router<typeof routeTree>;
-
-function getRouter(): WikiRouter {
-  return createRouter({
-    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
-    defaultPreloadStaleTime: 0,
-    routeTree,
-    scrollRestoration: true,
-    ...nonceOptions(),
-  });
-}
-
 declare module "@tanstack/react-router" {
   interface Register {
-    router: WikiRouter;
+    router: ReturnType<typeof getRouter>;
   }
+}
+
+function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
+  return createAppRouter(routeTree);
 }
 
 export { getRouter };

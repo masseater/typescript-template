@@ -1,5 +1,4 @@
-import { nonceOptions } from "@repo/ui/shell";
-import { createRouter } from "@tanstack/react-router";
+import { createAppRouter } from "@repo/ui/shell";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -9,14 +8,8 @@ declare module "@tanstack/react-router" {
   }
 }
 
-function getRouter(): ReturnType<typeof createRouter<typeof routeTree>> {
-  return createRouter({
-    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
-    defaultPreloadStaleTime: 0,
-    routeTree,
-    scrollRestoration: true,
-    ...nonceOptions(),
-  });
+function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
+  return createAppRouter(routeTree);
 }
 
 export { getRouter };

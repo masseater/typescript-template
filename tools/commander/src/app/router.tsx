@@ -1,6 +1,5 @@
-import { nonceOptions } from "@repo/ui/shell";
+import { createAppRouter } from "@repo/ui/shell";
 import { QueryClient } from "@tanstack/react-query";
-import { createRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
 import { routeTree } from "./routeTree.gen";
@@ -11,18 +10,11 @@ declare module "@tanstack/react-router" {
   }
 }
 
-function getRouter(): ReturnType<typeof createRouter<typeof routeTree>> {
+function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
   const queryClient = new QueryClient({
     defaultOptions: { mutations: { networkMode: "always" }, queries: { networkMode: "always" } },
   });
-  const router = createRouter({
-    context: { queryClient },
-    defaultNotFoundComponent: () => <p>ページが見つかりません。</p>,
-    defaultPreloadStaleTime: 0,
-    routeTree,
-    scrollRestoration: true,
-    ...nonceOptions(),
-  });
+  const router = createAppRouter(routeTree, { queryClient });
   setupRouterSsrQueryIntegration({ queryClient, router });
   return router;
 }

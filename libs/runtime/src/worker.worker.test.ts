@@ -7,7 +7,7 @@ import { Effect, Schema } from "effect";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import { appLayer } from "./index.ts";
-import { serveApp, startRoute, workerRuntime } from "./worker.ts";
+import { appServerEntry, serveApp, workerRuntime } from "./worker.ts";
 
 import type { Reporting } from "@repo/observability";
 import type { Layer } from "effect";
@@ -104,9 +104,9 @@ describe("a worker whose layer cannot be built", () => {
 });
 
 async function servedDocument(url: string): Promise<Response> {
-  const worker = serveApp(
+  const worker = appServerEntry(
     workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
-    startRoute({
+    {
       fetch: (rendered: Request): Response =>
         new Response("<!DOCTYPE html>", {
           headers: {
@@ -114,7 +114,7 @@ async function servedDocument(url: string): Promise<Response> {
             "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
           },
         }),
-    }),
+    },
     { service: "service-member" },
   );
   const context = createExecutionContext();
