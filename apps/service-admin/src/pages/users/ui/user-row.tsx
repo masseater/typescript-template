@@ -1,4 +1,4 @@
-import { TableCell, TableRow } from "@repo/ui";
+import { NavigationLink, TableCell, TableRow } from "@repo/ui";
 
 import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
 import { UserRowActions } from "./user-row-actions.tsx";
@@ -12,7 +12,11 @@ function UserRow({
 }: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
   return (
     <TableRow>
-      <TableCell>{user.name}</TableCell>
+      <TableCell>
+        <NavigationLink to="/members/$id" params={{ id: user.id }} variant="item">
+          {user.name}
+        </NavigationLink>
+      </TableCell>
       <TableCell>{user.email}</TableCell>
       <TableCell>{roleLabels[user.role]}</TableCell>
       <TableCell>
