@@ -5,12 +5,12 @@ import {
   bootstrapVerifiedAdmin,
   clientOf,
   registerVerified,
-  runStatement,
   runWith,
   signIn,
   signInAs,
 } from "@repo/auth/testing";
 import { APPLICATION, ROLE } from "@repo/config";
+import { runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
