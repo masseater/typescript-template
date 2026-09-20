@@ -26,6 +26,11 @@ type JourneyStage = {
   readonly page: Page;
 };
 
+const advancePastAgreement = async (page: Page): Promise<void> => {
+  await press(page, "同意して続ける");
+  await seeHeading(page, "プロフィールの作り方");
+};
+
 const completeWelcomeOnboarding = async (
   stage: JourneyStage,
   visit: { readonly account: Account; readonly origin: string },
@@ -33,13 +38,7 @@ const completeWelcomeOnboarding = async (
   const { page } = stage;
   await page.waitForURL((url) => url.pathname.includes("/welcome"), { timeout: appearanceTimeout });
   await seeHeading(page, "規約への同意");
-  await Promise.all([
-    page.waitForURL((url) => url.pathname.includes("/welcome/choose"), {
-      timeout: appearanceTimeout,
-    }),
-    press(page, "同意して続ける"),
-  ]);
-  await seeHeading(page, "プロフィールの作り方");
+  await advancePastAgreement(page);
   await readyButton(page, "自分で入力する");
   await press(page, "自分で入力する");
   await seeHeading(page, "基本項目の入力");
