@@ -17,7 +17,7 @@ description: 社内向けの文書と、MCP で文書を配る入口
 
 | 節 | 中身 |
 | --- | --- |
-| [はじめに](/getting-started/what-is-this) | テンプレートの概要と、使い始めるときに書き換えるところ |
+| [はじめに](/getting-started/what-is-this) | テンプレートの概要、設計思想、アプリの役割、使い始める手順 |
 | [データモデル](/data-model/overview) | ER 図を土台にした概念と関係。本格開発のときに差し替える |
 | [用語集](/glossary) | ドメイン用語。`[[用語]]` からホバーで解説を見て移れる |
 | [LLM ガイドライン](/guidelines/principles) | 実装とレビューの判断基準 |
