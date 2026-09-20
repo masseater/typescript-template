@@ -29,13 +29,13 @@ const replace = Effect.fn("interview.replace")(function* replace(
   content: { readonly savedSheet?: unknown; readonly state: InterviewState },
 ) {
   const state = yield* Effect.orDie(encodeState(content.state));
-  yield* storeInterview(userId, version, { ...content, state });
+  yield* storeInterview({ ...content, state, userId, version });
   return viewOf(content.state);
 });
 
 const discard = Effect.fn("interview.discard")(function* discard(userId: string, version: number) {
   const state = begin();
-  yield* logAt("Warn", "interview.state_discarded", { version });
+  yield* logAt("Warn", { attributes: { version }, eventName: "interview.state_discarded" });
   yield* replace(userId, version, { state });
   return { state, version: version + 1 };
 });
@@ -68,9 +68,12 @@ const understood = Effect.fn("interview.understand")(function* understood(
     Effect.map((understanding): Reading => ({ source: "model", understanding })),
     Effect.catchTag("UnderstandingFailed", (failure) =>
       Effect.as(
-        logAt("Warn", "interview.model_failed", {
-          ...(failure.cause === undefined ? {} : { cause: String(failure.cause) }),
-          reason: failure.reason,
+        logAt("Warn", {
+          attributes: {
+            ...(failure.cause === undefined ? {} : { cause: String(failure.cause) }),
+            reason: failure.reason,
+          },
+          eventName: "interview.model_failed",
         }),
         { source: failure.reason } satisfies Reading,
       ),
@@ -94,12 +97,15 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
   const { source, understanding }: Reading = yield* understood(state, utterance, userId);
   const next = advance(state, utterance, understanding);
   const view = yield* replace(userId, version, { state: next });
-  yield* logAt("Info", "interview.turn", {
-    answered: fieldKeys.filter((key) => next.sheet[key] !== undefined).length,
-    phase: next.phase,
-    question: next.messages.at(-1)?.text === understanding?.message ? "model" : "scripted",
-    source,
-    utterance: utterance.kind,
+  yield* logAt("Info", {
+    attributes: {
+      answered: fieldKeys.filter((key) => next.sheet[key] !== undefined).length,
+      phase: next.phase,
+      question: next.messages.at(-1)?.text === understanding?.message ? "model" : "scripted",
+      source,
+      utterance: utterance.kind,
+    },
+    eventName: "interview.turn",
   });
   return view;
 });

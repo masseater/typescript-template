@@ -1,89 +1,79 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { setTimeout as wait } from "node:timers/promises";
 
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { BrowserEventQueue } from "./browser-queue.ts";
-import { randomHex } from "./protocol.ts";
+import { recordedDeliveries } from "./testing.ts";
 
-import type { BrowserEvent } from "./events.ts";
-
-const maximumDeliveryAttempts = 3;
 const retryBackoffMilliseconds = 1000;
-const spanIdBytes = 8;
-const traceIdBytes = 16;
 const secondAttempt = 2;
 const settleMilliseconds = 50;
+const queueTimeout = 60_000;
 
-function vitalEvent(): BrowserEvent {
-  return {
-    duration: 0,
-    kind: "vital",
-    method: "GET",
-    name: "INP",
-    requestId: crypto.randomUUID(),
-    route: "home",
-    spanId: randomHex(spanIdBytes),
-    start: Date.now(),
-    status: 0,
-    traceId: randomHex(traceIdBytes),
-    value: 1,
-  };
-}
+const vitalEvent = {
+  duration: 0,
+  kind: "vital",
+  method: "GET",
+  name: "INP",
+  requestId: "11111111-1111-4111-8111-111111111111",
+  route: "home",
+  spanId: "bbbbbbbbbbbbbbbb",
+  start: 1_800_000_000_000,
+  status: 0,
+  traceId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  value: 1,
+} as const;
 
-function refusedDeliveries(): {
-  readonly batches: (readonly BrowserEvent[])[];
-  readonly queue: BrowserEventQueue;
-} {
-  const batches: (readonly BrowserEvent[])[] = [];
-  const queue = new BrowserEventQueue(async (events) => {
-    batches.push(events);
-    throw new Error("delivery refused");
+describe("a batch whose delivery is refused", () => {
+  const it = test.extend("deliveredBatches", async () =>
+    recordedDeliveries({
+      refuse: true,
+      exercise: async ({ flush, queue }) => {
+        queue.enqueue(vitalEvent);
+        await flush();
+        await flush();
+      },
+    }));
+
+  it("is not resent within the backoff", { timeout: queueTimeout }, ({ deliveredBatches }) => {
+    expect(deliveredBatches).toStrictEqual([[vitalEvent]]);
   });
-  return { batches, queue };
-}
+});
 
-async function attemptFlush(queue: Readonly<BrowserEventQueue>): Promise<boolean> {
-  try {
-    await queue.flush();
-    return true;
-  } catch {
-    return false;
-  }
-}
+describe("a batch flushed again once the backoff has passed", () => {
+  const it = test.extend("deliveredBatches", async () =>
+    recordedDeliveries({
+      refuse: true,
+      exercise: async ({ flush, queue }) => {
+        queue.enqueue(vitalEvent);
+        await flush();
+        await flush();
+        await wait(retryBackoffMilliseconds + settleMilliseconds);
+        await flush();
+      },
+    }));
 
-async function exhaustAttempts(queue: Readonly<BrowserEventQueue>): Promise<void> {
-  await attemptFlush(queue);
-  await wait(retryBackoffMilliseconds + settleMilliseconds);
-  await attemptFlush(queue);
-  await wait(retryBackoffMilliseconds * secondAttempt + settleMilliseconds);
-  await attemptFlush(queue);
-}
-
-describe("browser event queue", () => {
-  it("配送に失敗したバッチは間隔を空けるまで再送しない", async () => {
-    expect.hasAssertions();
-    const { batches, queue } = refusedDeliveries();
-    queue.enqueue(vitalEvent());
-    await attemptFlush(queue);
-    await attemptFlush(queue);
-    expect(batches).toHaveLength(1);
-    await wait(retryBackoffMilliseconds + settleMilliseconds);
-    await attemptFlush(queue);
-    expect(batches).toHaveLength(secondAttempt);
+  it("is sent once more", { timeout: queueTimeout }, ({ deliveredBatches }) => {
+    expect(deliveredBatches).toStrictEqual([[vitalEvent], [vitalEvent]]);
   });
+});
 
-  it("再送は上限で打ち切られ、同じイベントを送り続けない", async () => {
-    expect.hasAssertions();
-    const { batches, queue } = refusedDeliveries();
-    const event = vitalEvent();
-    queue.enqueue(event);
-    await exhaustAttempts(queue);
-    queue.flushBeforeUnload();
-    await wait(settleMilliseconds);
-    expect(batches).toHaveLength(maximumDeliveryAttempts);
-    expect([...new Set(batches.flat().map((delivered) => delivered.spanId))]).toStrictEqual([
-      event.spanId,
-    ]);
+describe("a batch refused as many times as the queue allows", () => {
+  const it = test.extend("deliveredBatches", async () =>
+    recordedDeliveries({
+      refuse: true,
+      exercise: async ({ flush, queue }) => {
+        queue.enqueue(vitalEvent);
+        await flush();
+        await wait(retryBackoffMilliseconds + settleMilliseconds);
+        await flush();
+        await wait(retryBackoffMilliseconds * secondAttempt + settleMilliseconds);
+        await flush();
+        queue.flushBeforeUnload();
+        await wait(settleMilliseconds);
+      },
+    }));
+
+  it("stops at the limit", { timeout: queueTimeout }, ({ deliveredBatches }) => {
+    expect(deliveredBatches).toStrictEqual([[vitalEvent], [vitalEvent], [vitalEvent]]);
   });
 });

@@ -2,7 +2,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
-import { applicationOrigins } from "@repo/config";
+import { APPLICATION, applicationOrigins } from "@repo/config";
 import { causeRecord, runCli } from "@repo/config/cli";
 import { receiverOrigin } from "@repo/local";
 import { Console, Effect, Schema } from "effect";
@@ -37,7 +37,7 @@ type Query = typeof QueryInput.Type;
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    app: { default: `${applicationOrigins["service-member"]}/`, type: "string" },
+    app: { default: `${applicationOrigins[APPLICATION.user]}/`, type: "string" },
     help: { default: false, type: "boolean" },
     level: { type: "string" },
     limit: { default: "100", type: "string" },

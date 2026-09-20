@@ -2,6 +2,7 @@ const httpStatus = {
   accepted: 202,
   badRequest: 400,
   conflict: 409,
+  created: 201,
   forbidden: 403,
   found: 302,
   internalServerError: 500,

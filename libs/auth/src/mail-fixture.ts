@@ -1,12 +1,22 @@
 import { setupNetwork } from "@msw/cloudflare";
 import { mailpitOrigin } from "@repo/config";
-import { Effect, Layer, Schema } from "effect";
+import { httpStatus } from "@repo/observability";
+import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { mailSubjects } from "./email.ts";
 
-const HTTP_BAD_REQUEST = 400;
-const mailConfig = { EMAIL_FROM: "no-reply@example.test", MAILPIT_URL: mailpitOrigin };
+type Delivery = {
+  readonly link: string;
+  readonly recipient: string;
+  readonly subject: string;
+};
+
+const mailConfig = {
+  EMAIL_FROM: "no-reply@example.test",
+  MAILPIT_SEND_URL: `${mailpitOrigin}/api/v1/send`,
+};
+const knownSubjects = new Set<string>(Object.values(mailSubjects));
 const MailpitMessage = Schema.Struct({
   From: Schema.Struct({ Email: Schema.String }),
   Subject: Schema.String,
@@ -14,40 +24,94 @@ const MailpitMessage = Schema.Struct({
   To: Schema.Array(Schema.Struct({ Email: Schema.String })),
 });
 const decodeMail = Schema.decodeUnknownPromise(MailpitMessage);
-const knownSubjects = new Set<string>(Object.values(mailSubjects));
-const mailbox = new Map<string, Readonly<{ subject: string; url: string }>>();
 
-async function receiveMail({ request }: { readonly request: Request }): Promise<Response> {
-  const message = await decodeMail(await request.json());
-  const url = message.Text.split("\n").find((line) => line.startsWith("http://"));
-  if (
-    message.From.Email !== mailConfig.EMAIL_FROM ||
-    !knownSubjects.has(message.Subject) ||
-    (message.Subject !== mailSubjects.contact && url === undefined)
-  ) {
-    return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: HTTP_BAD_REQUEST });
-  }
-  for (const recipient of message.To) {
-    mailbox.set(recipient.Email, { subject: message.Subject, url: url ?? "" });
-  }
-  return HttpResponse.json({ ID: crypto.randomUUID() });
-}
+class Mailbox extends Context.Service<Mailbox, Ref.Ref<readonly Delivery[]>>()(
+  "@repo/auth/Mailbox",
+) {}
 
-const mailServer = Layer.effectDiscard(
-  Effect.acquireRelease(
-    Effect.sync(() => {
-      mailbox.clear();
-      const network = setupNetwork();
-      network.configure({ onUnhandledFrame: "error" });
-      network.use(http.post(`${mailConfig.MAILPIT_URL}/api/v1/send`, receiveMail));
-      network.enable();
-      return network;
-    }),
-    (network) =>
-      Effect.sync(() => {
-        network.disable();
-      }),
-  ),
+const receiveMail = (deliveries: Mailbox["Service"]) => {
+  return async ({ request }: { readonly request: Request }): Promise<Response> => {
+    const mailpitMessage = await decodeMail(await request.json());
+    const link = mailpitMessage.Text.split("\n").find((line) => line.startsWith("http://"));
+    if (
+      mailpitMessage.From.Email !== mailConfig.EMAIL_FROM ||
+      !knownSubjects.has(mailpitMessage.Subject) ||
+      link === undefined
+    ) {
+      return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: httpStatus.badRequest });
+    }
+    const delivered = mailpitMessage.To.map(({ Email }) => ({
+      link,
+      recipient: Email,
+      subject: mailpitMessage.Subject,
+    }));
+    await Effect.runPromise(Ref.update(deliveries, (earlier) => [...earlier, ...delivered]));
+    return HttpResponse.json({ ID: crypto.randomUUID() });
+  };
+};
+
+const startNetwork = (deliveries: Mailbox["Service"]): ReturnType<typeof setupNetwork> => {
+  const network = setupNetwork();
+  network.configure({ onUnhandledFrame: "error" });
+  network.use(http.post(mailConfig.MAILPIT_SEND_URL, receiveMail(deliveries)));
+  network.enable();
+  return network;
+};
+
+const stopNetwork = (network: Readonly<ReturnType<typeof setupNetwork>>): Effect.Effect<void> => {
+  return Effect.sync(() => {
+    network.disable();
+  });
+};
+
+const mailServer = Layer.effect(
+  Mailbox,
+  Effect.gen(function* startMailServer() {
+    const deliveries = yield* Ref.make<readonly Delivery[]>([]);
+    yield* Effect.acquireRelease(
+      Effect.sync(() => startNetwork(deliveries)),
+      stopNetwork,
+    );
+    return deliveries;
+  }),
 );
 
-export { mailConfig, mailServer, mailbox };
+const mailRecipients = Effect.gen(function* readRecipients() {
+  const deliveries = yield* Ref.get(yield* Mailbox);
+  return deliveries.map(({ recipient }) => recipient);
+});
+
+const clearMailbox = Effect.gen(function* clearDeliveries() {
+  yield* Ref.set(yield* Mailbox, []);
+});
+
+const receivedLink = Effect.fn("receivedLink")(function* receivedLink(
+  email: string,
+  subject: string,
+) {
+  const deliveries = yield* Ref.get(yield* Mailbox);
+  const matched = deliveries.findLast(
+    (delivery) => delivery.recipient === email && delivery.subject === subject,
+  );
+  return new URL(matched?.link ?? "");
+});
+
+const verificationLink = Effect.fn("verificationLink")(function* verificationLink(email: string) {
+  return yield* receivedLink(email, mailSubjects.verification);
+});
+
+const hasMail = Effect.fn("hasMail")(function* hasMail(email: string) {
+  const deliveries = yield* Ref.get(yield* Mailbox);
+  return deliveries.some((delivery) => delivery.recipient === email);
+});
+
+export {
+  Mailbox,
+  clearMailbox,
+  hasMail,
+  mailConfig,
+  mailRecipients,
+  mailServer,
+  receivedLink,
+  verificationLink,
+};

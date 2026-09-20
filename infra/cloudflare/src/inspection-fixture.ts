@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import {
   APPLICATION_TABLES,
   MIGRATIONS_TABLE_PRESENT,
@@ -37,9 +38,9 @@ const tokenId = "a".repeat(32);
 const databaseId = "22222222-2222-4222-8222-222222222222";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
 const workers = [
-  "service-member",
-  "service-admin",
-  "internal-dashboard",
+  APPLICATION.user,
+  APPLICATION.admin,
+  APPLICATION.wiki,
   "budget",
   "errors",
   "health",
@@ -62,9 +63,9 @@ function row(resourceType: string, attr: Readonly<Record<string, string>>): Crea
 }
 
 const deployedUnits = [
-  ["service-member", "service-member"],
-  ["service-admin", "service-admin"],
-  ["internal-dashboard", "internal-dashboard"],
+  [APPLICATION.user, APPLICATION.user],
+  [APPLICATION.admin, APPLICATION.admin],
+  [APPLICATION.wiki, APPLICATION.wiki],
   ["budget-monitor", "budget"],
   ["error-monitor", "errors"],
   ["health-monitor", "health"],

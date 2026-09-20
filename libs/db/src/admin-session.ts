@@ -1,5 +1,5 @@
-import { strongAuthenticationMethods } from "@repo/config";
-import { and, eq, exists, gt, inArray } from "drizzle-orm";
+import { APPLICATION, ROLE, strongAuthenticationMethods } from "@repo/config";
+import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 
@@ -7,13 +7,12 @@ import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 
-import type { SQL } from "drizzle-orm";
 import type { DrizzleDatabase } from "./database.ts";
 
 const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId: string) {
-  const actor = yield* getSessionSecurity(sessionId, "service-admin");
+  const actor = yield* getSessionSecurity(sessionId, APPLICATION.admin);
   if (
-    actor?.user.role !== "admin" ||
+    actor?.user.role !== ROLE.administrator ||
     !actor.user.emailVerified ||
     !strongAuthenticationMethods.some((method) => method === actor.session.authenticationMethod)
   ) {
@@ -22,16 +21,16 @@ const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId:
   return actor;
 });
 
-function liveAdmin(database: DrizzleDatabase, sessionId: string): SQL {
+const liveAdmin = (database: DrizzleDatabase, sessionId: string): SQL => {
   const actor = alias(user, "actor");
-  const now = new Date();
+  const checkedAt = new Date();
   const liveSession = and(
     eq(session.id, sessionId),
-    eq(session.audience, "service-admin"),
-    eq(actor.role, "admin"),
+    eq(session.audience, APPLICATION.admin),
+    eq(actor.role, ROLE.administrator),
     eq(actor.emailVerified, true),
     eq(session.securityVersion, actor.securityVersion),
-    gt(session.expiresAt, now),
+    gt(session.expiresAt, checkedAt),
     inArray(session.authenticationMethod, strongAuthenticationMethods),
   );
   const sessions = database
@@ -40,6 +39,6 @@ function liveAdmin(database: DrizzleDatabase, sessionId: string): SQL {
     .innerJoin(actor, eq(session.userId, actor.id))
     .where(liveSession);
   return exists(sessions);
-}
+};
 
 export { liveAdmin, requireAdmin };

@@ -1,4 +1,5 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
+import { APPLICATION } from "@repo/config";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
 import { Effect } from "effect";
 import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
@@ -13,7 +14,7 @@ import type { Context } from "effect";
 const mcpVersion = "1.0.0";
 
 function createServer(context: Context.Context<WikiServices>): McpServer {
-  const server = new McpServer({ name: "internal-dashboard", version: mcpVersion });
+  const server = new McpServer({ name: APPLICATION.wiki, version: mcpVersion });
   registerSearchTool(server, searchServer(context));
   registerSourceTools(server, source, wikiLlms);
   return server;

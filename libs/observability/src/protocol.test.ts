@@ -1,51 +1,75 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { isRoutes, parentContext, routeLabel } from "./protocol.ts";
 
-const context = {
-  requestId: "11111111-1111-4111-8111-111111111111",
-  spanId: "bbbbbbbbbbbbbbbb",
-  traceId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-};
+const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const spanId = "bbbbbbbbbbbbbbbb";
 
-describe("traceparent", () => {
-  it("rejects zero IDs, extra fields and token-bearing strings", () => {
-    expect.hasAssertions();
-    expect(parentContext(`00-${context.traceId}-${context.spanId}-01`)).toStrictEqual({
-      parentSpanId: context.spanId,
-      traceId: context.traceId,
+describe("parentContext", () => {
+  describe("a well-formed traceparent", () => {
+    const it = test.extend("parent", () => parentContext(`00-${traceId}-${spanId}-01`));
+
+    it("hands back the trace and the parent span", ({ parent }) => {
+      expect(parent).toStrictEqual({ parentSpanId: spanId, traceId });
     });
-    expect(
-      parentContext(`00-${"0".repeat(context.traceId.length)}-${context.spanId}-01`),
-    ).toBeUndefined();
-    expect(parentContext(`00-${context.traceId}-${context.spanId}-01-token`)).toBeUndefined();
-    // oxlint-disable-next-line unicorn/no-null
-    expect(parentContext(null)).toBeUndefined();
+  });
+
+  describe.for([
+    ["a trace id of zeros", `00-${"0".repeat(traceId.length)}-${spanId}-01`],
+    ["a trailing token", `00-${traceId}-${spanId}-01-token`],
+    ["no header at all", null],
+  ] as const)("a traceparent carrying %s", ([, traceparent]) => {
+    const it = test.extend("parent", () => parentContext(traceparent));
+
+    it("is not a parent", ({ parent }) => {
+      expect(parent).toBe(undefined);
+    });
   });
 });
 
-describe("route labels", () => {
-  it("unknown URL paths cannot become telemetry labels", () => {
-    expect.hasAssertions();
-    const routes = { "/": "home", "/api/health": "health" };
-    expect(isRoutes(routes)).toBe(true);
-    expect(routeLabel("/token/secret-user@example.com", routes)).toBe("unmatched");
-    expect(routeLabel("/", routes)).toBe("home");
-    expect(isRoutes({ "/": "private@example.com" })).toBe(false);
+describe("routeLabel", () => {
+  describe.for([
+    ["/", "home"],
+    ["/token/secret-user@example.com", "unmatched"],
+  ] as const)("the path %s against fixed routes", ([pathname, expectedLabel]) => {
+    const it = test.extend("matchedRoute", () =>
+      routeLabel(pathname, { "/": "home", "/api/health": "health" }));
+
+    it("names the route it matches or none", ({ matchedRoute }) => {
+      expect(matchedRoute).toBe(expectedLabel);
+    });
   });
 
-  it("accepts terminal wildcards, prioritizes exact paths and never emits captured paths", () => {
-    expect.hasAssertions();
-    const routes = { "/api/*": "api", "/api/auth/*": "auth", "/api/auth/sign-in": "signin" };
-    expect(isRoutes(routes)).toBe(true);
-    expect(
-      ["/api/auth/sign-in", "/api/auth/token/private@example.com", "/api/authentic"].map((path) =>
-        routeLabel(path, routes),
-      ),
-    ).toStrictEqual(["signin", "auth", "api"]);
-    expect([isRoutes({ "/api/*/token": "bad" }), isRoutes({ "/api/**": "bad" })]).toStrictEqual([
-      false,
-      false,
-    ]);
+  describe.for([
+    ["/api/auth/sign-in", "signin"],
+    ["/api/auth/token/private@example.com", "auth"],
+    ["/api/authentic", "api"],
+  ] as const)("the path %s against nested wildcards", ([pathname, expectedLabel]) => {
+    const it = test.extend("matchedRoute", () =>
+      routeLabel(pathname, {
+        "/api/*": "api",
+        "/api/auth/*": "auth",
+        "/api/auth/sign-in": "signin",
+      }));
+
+    it("prefers the exact path and then the longest wildcard", ({ matchedRoute }) => {
+      expect(matchedRoute).toBe(expectedLabel);
+    });
+  });
+});
+
+describe("isRoutes", () => {
+  describe.for([
+    ["fixed paths with bounded labels", { "/": "home", "/api/health": "health" }, true],
+    ["terminal wildcards", { "/api/*": "api", "/api/auth/*": "auth" }, true],
+    ["a label that is an address", { "/": "private@example.com" }, false],
+    ["a wildcard in the middle", { "/api/*/token": "bad" }, false],
+    ["a double wildcard", { "/api/**": "bad" }, false],
+  ] as const)("routes with %s", ([, routes, expectedValidity]) => {
+    const it = test.extend("valid", () => isRoutes(routes));
+
+    it("are accepted only when every path is fixed and every label bounded", ({ valid }) => {
+      expect(valid).toBe(expectedValidity);
+    });
   });
 });

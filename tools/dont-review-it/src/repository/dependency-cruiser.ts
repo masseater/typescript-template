@@ -66,7 +66,7 @@ const configuration: IConfiguration = {
     {
       comment:
         "tools/ は開発時の道具です。配布物に入るコードから参照せず、必要な処理を libs/ のパッケージへ移してください。",
-      from: { path: "^(?:apps|libs|infra)/" },
+      from: { path: "^(?:apps|libs|infra)/", pathNot: testModule },
       name: "no-runtime-to-tools",
       severity: "error",
       to: { path: "^tools/" },

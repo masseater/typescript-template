@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { applicationOrigins } from "@repo/config";
+import { APPLICATION, applicationOrigins } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
 
@@ -38,7 +38,7 @@ function sessionName(app: App): string {
 }
 
 function postLoginPath(app: App): string {
-  return app === "service-admin" ? "/members" : "/home";
+  return app === APPLICATION.admin ? "/members" : "/home";
 }
 
 function configuredOrigin(app: App, credentials: Credentials): string {

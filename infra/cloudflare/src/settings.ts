@@ -1,11 +1,12 @@
+import { APPLICATION } from "@repo/config";
 import { Config, Effect, Option, Redacted } from "effect";
 
 import {
   AuthSecret,
+  CloudflareId,
   Domain,
   Email,
   HttpsUrl,
-  Id,
   Nonnegative,
   Positive,
   Prefix,
@@ -45,7 +46,7 @@ const otlpDestination = Config.all({
 });
 
 const settings = Config.all({
-  accountId: Config.schema(Id, "CLOUDFLARE_ACCOUNT_ID"),
+  accountId: Config.schema(CloudflareId, "CLOUDFLARE_ACCOUNT_ID"),
   appDomain: Config.schema(Domain, "TEMPLATE_APP_DOMAIN"),
   budget,
   mailFrom: Config.schema(Email, "TEMPLATE_MAIL_FROM"),
@@ -54,7 +55,7 @@ const settings = Config.all({
   ),
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
-  zoneId: Config.schema(Id, "CLOUDFLARE_ZONE_ID"),
+  zoneId: Config.schema(CloudflareId, "CLOUDFLARE_ZONE_ID"),
 }).pipe(
   Effect.flatMap(({ appDomain, ...config }) =>
     checkOtlpSettings(config.otlp).pipe(

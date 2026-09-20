@@ -1,4 +1,4 @@
-import { applications } from "@repo/config";
+import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { session, user } from "./identity-schema.ts";
@@ -24,7 +24,7 @@ const account = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     idToken: text("id_token"),
-    password: text("password"),
+    password: text(AUTHENTICATION_METHOD.password),
     providerId: text("provider_id").notNull(),
     refreshToken: text("refresh_token"),
     refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
@@ -34,6 +34,7 @@ const account = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
+
   (table) => [index("account_user_id_idx").on(table.userId)],
 );
 
@@ -48,6 +49,7 @@ const verification = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     value: text("value").notNull(),
   },
+
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
@@ -64,6 +66,7 @@ const twoFactor = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     verified: integer("verified", { mode: "boolean" }).notNull().default(false),
   },
+
   (table) => [uniqueIndex("two_factor_user_id_idx").on(table.userId)],
 );
 
@@ -85,6 +88,7 @@ const passkey = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
+
   (table) => [
     index("passkey_user_id_idx").on(table.userId),
     uniqueIndex("passkey_credential_id_unique").on(table.credentialID),
@@ -99,18 +103,25 @@ const rateLimit = sqliteTable(
     key: text("key").notNull(),
     lastRequest: integer("last_request").notNull(),
   },
+
   (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
 );
+
+/** @canonical-values db.audit-action */
+export const auditActions = ["role_changed", "user_deleted"] as const;
+export type AuditAction = (typeof auditActions)[number];
+export const AUDIT_ACTION = { roleChanged: auditActions[0], userDeleted: auditActions[1] } as const;
 
 const auditEvent = sqliteTable(
   "audit_event",
   {
-    action: text("action", { enum: ["role_changed", "user_deleted"] }).notNull(),
+    action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),
   },
+
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
 );
 
