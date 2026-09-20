@@ -246,6 +246,18 @@ describe("lifecycle entry points", () => {
     expect(lifecycleOutsideGates()).toStrictEqual([]);
   });
 
+  it("fails the pull request format gate before the recursive prepr work starts", () => {
+    expect.hasAssertions();
+    expect(workflowRuns("../../../../.github/workflows/check.yml")).toStrictEqual([
+      "vp check",
+      "vp run -r prepr",
+      "vp run -r premerge",
+      "vp run --filter @repo/e2e test:e2e",
+      "vp check",
+      "vp run -r prepr",
+    ]);
+  });
+
   it("every workspace declares its tasks where the lifecycle finds them", () => {
     expect.hasAssertions();
     expect(pnpmWorkspaces["../../../../pnpm-workspace.yaml"]).toMatch(

@@ -80,7 +80,7 @@ export default defineConfig({
           "check:react",
           "check:canonical-literal-types",
         ],
-        prepr: ["test"],
+        prepr: ["check:imports", "test"],
         premerge: ["test:dev-server"],
         prerelease: ["mutation"],
       }),
