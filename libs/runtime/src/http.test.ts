@@ -45,13 +45,10 @@ function mutation(headers: Readonly<Record<string, string>>, body: string): Requ
 
 function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
-  const byMethod: Readonly<Record<string, (typeof handlers)["GET"]>> = handlers;
   return startRoute({
     fetch: async (request: Request): Promise<Response> => {
-      const handle = byMethod[request.method];
-      return handle === undefined
-        ? new Response(undefined, { status: httpStatus.methodNotAllowed })
-        : handle({ request });
+      const handle = request.method === "HEAD" ? handlers.HEAD : handlers.ANY;
+      return handle({ request });
     },
   });
 }

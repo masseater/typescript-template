@@ -1,6 +1,7 @@
 import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
@@ -108,9 +109,13 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["role_changed", "user_deleted"] as const;
+export const auditActions = ["flag_toggled", "role_changed", "user_deleted"] as const;
 export type AuditAction = (typeof auditActions)[number];
-export const AUDIT_ACTION = { roleChanged: auditActions[0], userDeleted: auditActions[1] } as const;
+export const AUDIT_ACTION = {
+  flagToggled: auditActions[0],
+  roleChanged: auditActions[1],
+  userDeleted: auditActions[2],
+} as const;
 
 const auditEvent = sqliteTable(
   "audit_event",
@@ -128,6 +133,8 @@ const auditEvent = sqliteTable(
 const schema = {
   account,
   auditEvent,
+  boardPost,
+  boardThread,
   follow,
   interview,
   memberOnboarding,

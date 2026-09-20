@@ -1,15 +1,17 @@
-import { grants, APPLICATION } from "@repo/config";
+import { APPLICATION, grants } from "@repo/config";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
+import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
+import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
@@ -26,31 +28,43 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
+  const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
+  const shared = appEnv(target, {
+    APP_ORIGIN: origin,
+    APP_RELEASE: artifacts.release,
+    AUTH_SECRET: secret,
+    DB: database,
+    EMAIL: email,
+    EMAIL_FROM: config.mailFrom,
+    FLAGSHIP_ACCOUNT_ID: config.accountId,
+    FLAGS: flags,
+    OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
+    ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+      ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
+      : {}),
+    ...(config.otlp === undefined
+      ? {}
+      : {
+          OTLP_ENABLED: String(config.otlp.enabled),
+          OTLP_ENDPOINT: config.otlp.endpoint,
+          ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+        }),
+  });
+  const env: DeclaredEnv | WikiEnv =
+    target === APPLICATION.wiki
+      ? {
+          ...shared,
+          FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
+          FLAGSHIP_APP_ID: flags.appId,
+        }
+      : shared;
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
-    env: appEnv(target, {
-      APP_ORIGIN: origin,
-      APP_RELEASE: artifacts.release,
-      AUTH_SECRET: secret,
-      DB: database,
-      EMAIL: email,
-      EMAIL_FROM: config.mailFrom,
-      OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-      ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
-        ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
-        : {}),
-      ...(config.otlp === undefined
-        ? {}
-        : {
-            OTLP_ENABLED: String(config.otlp.enabled),
-            OTLP_ENDPOINT: config.otlp.endpoint,
-            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-          }),
-    }),
+    env,
     main: artifacts.mainModule,
     name: `${config.prefix}-${target}`,
     observability: workerObservability(config),
