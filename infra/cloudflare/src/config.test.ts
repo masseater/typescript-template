@@ -38,6 +38,13 @@ const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
   AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
   APP_ORIGIN: settings.origins["service-member"],
+  JOBS: binding({ send: async (): Promise<undefined> => undefined }),
+  PROCESS: binding({
+    create: async (): Promise<{ id: string }> => ({ id: "job" }),
+    get: async (): Promise<{ status: () => Promise<{ status: string }> }> => ({
+      status: async () => ({ status: "complete" }),
+    }),
+  }),
 };
 
 const confirmation = "0".repeat(16);

@@ -1,5 +1,14 @@
 import type { Application, Capability, CapabilityOf } from "@repo/config";
-import type { AIBinding, Assets, D1, Email, Flagship, InferEnv } from "alchemy/Cloudflare";
+import type {
+  AIBinding,
+  Assets,
+  D1,
+  Email,
+  Flagship,
+  InferEnv,
+  Queues,
+  WorkflowLike,
+} from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{
@@ -25,14 +34,24 @@ type WikiEnv = SharedEnv &
 
 interface CapabilityEnv {
   readonly ai: Readonly<{ AI: AIBinding }>;
+  readonly jobs: Readonly<{
+    JOBS: Queues.Queue;
+    PROCESS: WorkflowLike<{ jobId: string }>;
+  }>;
 }
+
+type UnionToIntersection<Union> = (
+  Union extends unknown ? (value: Union) => void : never
+) extends (value: infer Intersection) => void
+  ? Intersection
+  : never;
 
 type GrantedEnv<App extends Application> = [CapabilityOf<App>] extends [never]
   ? unknown
-  : CapabilityEnv[CapabilityOf<App>];
+  : UnionToIntersection<CapabilityEnv[CapabilityOf<App>]>;
 
 type AppEnv<App extends Application> = SharedEnv & GrantedEnv<App>;
-type DeclaredEnv = SharedEnv & Partial<CapabilityEnv[Capability]>;
+type DeclaredEnv = SharedEnv & Partial<UnionToIntersection<CapabilityEnv[Capability]>>;
 
 type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
 

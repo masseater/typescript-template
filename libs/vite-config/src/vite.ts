@@ -2,7 +2,17 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import {
+  applicationPorts,
+  grants,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  loopbackAddress,
+  type Application,
+} from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { workerCompatibility } from "@repo/config/worker";
@@ -273,6 +283,21 @@ function appConfig(
           d1_databases: [localDatabase],
           main: "./src/app/server.ts",
           name: `template-${app}`,
+          ...(grants(app, "jobs")
+            ? {
+                queues: {
+                  consumers: [{ queue: jobsQueueName }],
+                  producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                },
+                workflows: [
+                  {
+                    binding: jobsWorkflowBinding,
+                    class_name: jobsWorkflowClass,
+                    name: jobsWorkflowName,
+                  },
+                ],
+              }
+            : {}),
         },
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },

@@ -8,6 +8,8 @@ export const routes = {
   "/api/interview/restart": "interview-restart-api",
   "/api/interview/sheet": "interview-sheet-api",
   "/api/interview/turns": "interview-turns-api",
+  "/api/jobs": "jobs-api",
+  "/api/jobs/*": "jobs-api",
   "/api/member": "member-api",
   "/api/members": "members-api",
   "/api/profile": "profile-api",

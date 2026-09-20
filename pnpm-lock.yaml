@@ -1226,6 +1226,9 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../observability
+      '@repo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../vite-config

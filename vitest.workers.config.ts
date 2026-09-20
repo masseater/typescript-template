@@ -1,6 +1,13 @@
 import path from "node:path";
 
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import {
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+} from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
@@ -23,7 +30,10 @@ const migrations = loaded.map((migration) => ({
 export default defineProject({
   plugins: [
     cloudflareTest({
-      additionalExports: { [mailRecorder]: "WorkerEntrypoint" },
+      additionalExports: {
+        [mailRecorder]: "WorkerEntrypoint",
+        [jobsWorkflowClass]: "WorkflowEntrypoint",
+      },
       main: path.join(root, "libs/monitor/src/monitor-fixture.ts"),
       miniflare: {
         bindings: {
@@ -37,7 +47,17 @@ export default defineProject({
         durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
         outboundService: (outbound: { readonly url: string }) =>
           Response.json({ blocked: outbound.url }, { status: 403 }),
+        queueConsumers: {
+          [jobsQueueName]: { maxBatchSize: 10, maxRetries: 3 },
+        },
+        queueProducers: { [jobsQueueBinding]: jobsQueueName },
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
+        workflows: {
+          [jobsWorkflowBinding]: {
+            className: jobsWorkflowClass,
+            name: jobsWorkflowName,
+          },
+        },
       },
     }),
   ],

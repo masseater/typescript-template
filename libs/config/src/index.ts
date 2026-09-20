@@ -44,6 +44,16 @@ export {
   readEnvironment,
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
+export {
+  JobPayload,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  readJobs,
+} from "./jobs.ts";
+export type { JobResult } from "./jobs.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type { AppConfig, AssetFetcher } from "./environment.ts";
 export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";
