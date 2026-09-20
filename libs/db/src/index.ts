@@ -36,3 +36,12 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  MemberLeaveUnavailable,
+  RecoveryExpired,
+  RecoveryUnavailable,
+  purgeExpiredWithdrawnMembers,
+  recoverWithdrawnMember,
+  retentionDays,
+  withdrawMember,
+} from "./member-leave.ts";
