@@ -17,7 +17,7 @@ const viteSource = readFileSync(new URL("./vite.ts", import.meta.url), "utf8");
 describe("check:dev local D1", () => {
   it("does not share the workspace migrate before starting each app", () => {
     expect.hasAssertions();
-    const task = appRun.tasks["check:dev"];
+    const task = appRun("service-member").tasks["check:dev"];
     expect(task).toEqual(
       expect.objectContaining({
         command: "../../tools/dev/src/dev-start.ts",
