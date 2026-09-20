@@ -152,7 +152,10 @@ function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Task
       name,
       {
         command: [],
-        dependsOn: [...lifecycles.slice(Math.max(index - 1, 0), index), ...stages[name]],
+        dependsOn: [
+          ...(name === "premerge" ? [] : lifecycles.slice(Math.max(index - 1, 0), index)),
+          ...stages[name],
+        ],
       },
     ]),
   );

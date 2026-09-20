@@ -28,9 +28,9 @@ const SignUpResponse = Schema.Struct({
 });
 
 const signUpShape = Effect.fn("signUpShape")(function* signUpShape(email: string) {
-  const { user } = yield* Fixture;
+  const member = (yield* Fixture)["service-member"];
   const signUp = { email, name: email, password: PASSWORD };
-  const response = yield* new BrowserClient(user).json("/sign-up/email", signUp);
+  const response = yield* new BrowserClient(member).json("/sign-up/email", signUp);
   const body = yield* decodeOrDie(SignUpResponse, response.body);
   return { fields: Object.keys(body.user).toSorted(), status: response.status, token: body.token };
 });
@@ -77,7 +77,7 @@ it.effect(
         mailbox.delete("taken@example.com");
         const client = yield* register("taken@example.com");
         const notice = receivedLink("taken@example.com", mailSubjects.existingAccount);
-        assert.strictEqual(notice.href, new URL("/login", origins.user).href);
+        assert.strictEqual(notice.href, new URL("/login", origins["service-member"]).href);
         mailbox.delete("taken@example.com");
         yield* register("taken@example.com");
         assert.isFalse(mailbox.has("taken@example.com"));
@@ -117,7 +117,7 @@ it.effect(
         const current = yield* client.verify();
         assert.deepStrictEqual(
           [current.user.role, current.session.audience, current.strong],
-          ["service-member", "service-member", false],
+          ["member", "service-member", false],
         );
       }),
     ),
@@ -129,7 +129,9 @@ it.effect(
   () =>
     withAuth(
       Effect.gen(function* program() {
-        const { user, admin } = yield* Fixture;
+        const services = yield* Fixture;
+        const user = services["service-member"];
+        const admin = services["service-admin"];
         const signUp = { email: "admin@example.com", name: "admin", password: PASSWORD };
         assert.isFalse((yield* new BrowserClient(admin).request("/sign-up/email", signUp)).ok);
         const userClient = new BrowserClient(user);
@@ -152,10 +154,10 @@ it.effect(
         yield* register("pending@example.com");
         mailbox.delete("pending@example.com");
         const services = yield* Fixture;
-        const wiki = new BrowserClient(services.wiki);
+        const wiki = new BrowserClient(services["internal-dashboard"]);
         assert.strictEqual((yield* signIn(wiki, "pending@example.com")).status, HTTP_FORBIDDEN);
         assert.isFalse(mailbox.has("pending@example.com"));
-        const user = new BrowserClient(services.user);
+        const user = new BrowserClient(services["service-member"]);
         assert.strictEqual((yield* signIn(user, "pending@example.com")).status, HTTP_FORBIDDEN);
         assert.isTrue(mailbox.has("pending@example.com"));
       }),
