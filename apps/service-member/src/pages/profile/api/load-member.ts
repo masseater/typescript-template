@@ -1,3 +1,4 @@
+import { ROLE } from "@repo/config";
 import { absent, apiDataOrNone } from "@repo/runtime/client";
 import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
@@ -7,7 +8,7 @@ import { MemberView } from "#shared/contracts/index.ts";
 
 import type { Member } from "#pages/profile/model/member.ts";
 
-const memberKey = (id: string): readonly [string, string] => ["member", id];
+const memberKey = (id: string): readonly [string, string] => [ROLE.member, id];
 
 async function loadMember(id: string): Promise<Member> {
   const { api } = await userClient();
