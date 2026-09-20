@@ -1,3 +1,4 @@
+import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -6,7 +7,6 @@ import { describe, expect, test } from "vite-plus/test";
 import { remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure } from "./remote-input.ts";
 import { loadRemoteMigrations, migrateDatabase, readMigrationStatus } from "./remote-operations.ts";
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
 
 const d1Target = {
   accountId: "a".repeat(32),

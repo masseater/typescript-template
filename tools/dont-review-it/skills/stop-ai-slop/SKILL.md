@@ -2,6 +2,8 @@
 name: stop-ai-slop
 description: >
   Stop absence checks that only fossilize a removal, with @repo/dont-review-it: `stop-ai-slop check` compares the change on its way into the integration branch — the staged merge result during a merge, the history since `origin/main` otherwise — and reports every assertion added by the same change that deleted its subject. `--base` and `--head` name the ends explicitly and `--repository-root` picks the repository. Load when a report names a removal verification, when adding a check to `src/check-registry.ts`, when deciding which two revisions the comparison should use, or when the command reports nothing because no comparison could be resolved.
+
+
 metadata:
   type: core
   library: "@repo/dont-review-it"

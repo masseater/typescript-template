@@ -260,13 +260,15 @@ export const forbidDeclaredCommandInvocation = createDontReviewItRule({
     }
 
     const forms = spawnFormsIn({ options: inspection.options, standing: DEFAULT_SPAWN_FORMS });
-    const readingOf = memoize((): Reading => ({
-      routes: spawnRoutesIn({
-        body: inspection.sourceCode.ast.body,
-        filename: inspection.filename,
+    const readingOf = memoize(
+      (): Reading => ({
+        routes: spawnRoutesIn({
+          body: inspection.sourceCode.ast.body,
+          filename: inspection.filename,
+        }),
+        constants: constantSpecifiersIn(inspection.sourceCode.ast.body),
       }),
-      constants: constantSpecifiersIn(inspection.sourceCode.ast.body),
-    }));
+    );
 
     const reportInvocation = (node: SpawnCall): void => {
       const reading = readingOf();

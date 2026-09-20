@@ -84,8 +84,8 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   const { result } = yield* Schema.decodeUnknownEffect(QueryResponse)(body).pipe(
     Effect.mapError(responseInvalid),
   );
-  return result.rows.map((row): Row =>
-    Object.fromEntries(result.columns.map((column, index) => [column, row[index]])),
+  return result.rows.map(
+    (row): Row => Object.fromEntries(result.columns.map((column, index) => [column, row[index]])),
   );
 });
 

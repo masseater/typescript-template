@@ -34,10 +34,12 @@ const generations = Effect.fn("generations")(function* generations(parent: strin
       .filter((entry: GenerationEntry) => entry.isDirectory())
       .map((entry: GenerationEntry) =>
         io(async () => stat(path.join(parent, entry.name))).pipe(
-          Effect.map((information): Generation => ({
-            modified: information.mtimeMs,
-            name: entry.name,
-          })),
+          Effect.map(
+            (information): Generation => ({
+              modified: information.mtimeMs,
+              name: entry.name,
+            }),
+          ),
         ),
       ),
     { concurrency: "unbounded" },

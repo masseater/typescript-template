@@ -23,11 +23,7 @@ export {
   roles,
   strongAuthenticationMethods,
 } from "./identity.ts";
-export type {
-  AuthenticationMethod,
-  Role,
-  StrongAuthenticationMethod,
-} from "./identity.ts";
+export type { AuthenticationMethod, Role, StrongAuthenticationMethod } from "./identity.ts";
 export { CloudflareId } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export {

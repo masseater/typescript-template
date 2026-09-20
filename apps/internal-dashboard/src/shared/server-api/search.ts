@@ -130,12 +130,14 @@ function pageResults(
         ),
     )
     .toSorted((left, right) => right.score - left.score)
-    .map((match): SortedResult => ({
-      content: match.document.title.slice(title.length).trim(),
-      id: match.document.id,
-      type: "heading",
-      url: match.document.url,
-    }));
+    .map(
+      (match): SortedResult => ({
+        content: match.document.title.slice(title.length).trim(),
+        id: match.document.id,
+        type: "heading",
+        url: match.document.url,
+      }),
+    );
   const headings = [...lexical.slice(0, LEXICAL_HEADING_LIMIT), ...related];
   return [
     { content: title, id: url, type: "page", url },

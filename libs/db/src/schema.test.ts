@@ -1,10 +1,3 @@
-import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
-import { Effect } from "effect";
-import { describe, expect, test } from "vite-plus/test";
-
-import { migrateD1 } from "./migrate-d1.ts";
-import { loadRemoteMigrations } from "./remote-operations.ts";
-import { schema } from "./schema.ts";
 import {
   EmptyTestDatabase,
   TestBinding,
@@ -13,6 +6,13 @@ import {
   primaryKeyNullability,
   runStatement,
 } from "@repo/db-local";
+import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
+import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
+
+import { migrateD1 } from "./migrate-d1.ts";
+import { loadRemoteMigrations } from "./remote-operations.ts";
+import { schema } from "./schema.ts";
 
 const snapshots: Readonly<Record<string, Parameters<typeof generateMigration>[0]>> =
   import.meta.glob("../migrations/*/snapshot.json", { eager: true, import: "default" });

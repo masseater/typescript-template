@@ -1,4 +1,5 @@
 import { AUTHENTICATION_METHOD } from "@repo/config/identity";
+
 import { privateDeploymentKeys } from "./deployment-keys.ts";
 
 const listWords = ["cookie", "params"];

@@ -44,8 +44,8 @@ export const buildRepositoryBodyIndex = ({
   return buildBodyIndex(scanned.map(indexedFileAt).filter((file) => file !== null));
 };
 
-const bodyIndexUnder = memoize((repositoryRoot: string): BodyIndex =>
-  buildRepositoryBodyIndex({ repositoryRoot }),
+const bodyIndexUnder = memoize(
+  (repositoryRoot: string): BodyIndex => buildRepositoryBodyIndex({ repositoryRoot }),
 );
 
 export const loadRepositoryBodyIndex = ({
