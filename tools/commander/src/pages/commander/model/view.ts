@@ -32,7 +32,6 @@ async function* decoded(incoming: AsyncIterable<unknown>): AsyncGenerator<Publis
   }
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 async function events({ signal }: { signal: AbortSignal }): Promise<AsyncIterable<Published>> {
   const reply = await commanderClient().events.get({ fetch: { signal } });
   return reply.error === null

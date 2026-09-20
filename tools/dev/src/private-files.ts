@@ -1,11 +1,9 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile, stat } from "node:fs/promises";
 
 import { Effect, Predicate } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { FileHandle } from "node:fs/promises";
 import type { LocalCommandFailure } from "./failure.ts";
 
@@ -27,7 +25,7 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
   location: FileLocation,
 ) {
   const entry = yield* fileIo(async () => stat(location));
-  // oxlint-disable-next-line no-bitwise
+  // oxlint-disable-next-line no-bitwise -- group and other permission bits are masked out of the file mode to refuse a credentials file others can read
   if ((entry.mode & groupAndOtherPermissions) !== 0) {
     return yield* failure("credentials_permissions_invalid");
   }

@@ -619,9 +619,6 @@ importers:
       steiger:
         specifier: 'catalog:'
         version: 0.6.0(typescript@7.0.2)
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.3.3
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -713,9 +710,6 @@ importers:
       steiger:
         specifier: 'catalog:'
         version: 0.6.0(typescript@7.0.2)
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.3.3
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

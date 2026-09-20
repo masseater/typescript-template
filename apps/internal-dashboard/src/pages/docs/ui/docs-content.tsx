@@ -19,7 +19,6 @@ const mdxComponents = { ...defaultMdxComponents, Mermaid, TermLink, a: WikiDocLi
 
 type DocsEntry = NonNullable<ReturnType<typeof docs.getPage>>;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function DocsContent({ page }: Readonly<{ page: DocsEntry }>): ReactElement {
   const Body = page.body;
   return (

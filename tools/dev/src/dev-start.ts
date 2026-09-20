@@ -1,13 +1,8 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, rm } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
 import { reportFailed, runCli } from "@repo/cli";
@@ -44,14 +39,12 @@ const isolatedDatabase = Effect.acquireRelease(
       new DevStartFailure({ reason: `failed to prepare database: ${describe(error)}` }),
     try: async () => {
       const directory = await mkdtemp(path.join(tmpdir(), databasePrefix));
-      // oxlint-disable-next-line node/no-process-env
       process.env[localDatabaseVariable] = directory;
       await runFile(
         path.join(repositoryRoot, "node_modules/.bin/vp"),
         ["run", "--filter", "@repo/db-local", "db:migrate:local"],
         {
           cwd: repositoryRoot,
-          // oxlint-disable-next-line node/no-process-env
           env: process.env,
         },
       );
@@ -60,7 +53,6 @@ const isolatedDatabase = Effect.acquireRelease(
   }),
   (directory) =>
     Effect.promise(async () => {
-      // oxlint-disable-next-line node/no-process-env
       delete process.env[localDatabaseVariable];
       await rm(directory, { force: true, recursive: true });
     }),

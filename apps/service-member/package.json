@@ -39,7 +39,6 @@
     "@types/react-dom": "catalog:",
     "msw": "catalog:",
     "steiger": "catalog:",
-    "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

@@ -42,12 +42,10 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/monitor": {
-    ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
   "libs/runtime": {
-    ignoreDependencies: ["cloudflare"],
     entry: ["src/*-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
@@ -82,7 +80,7 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!"],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
@@ -114,7 +112,7 @@ const cloudflareStacks = [
 
 const application = {
   entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["cloudflare", "steiger"],
+  ignoreDependencies: ["steiger"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
@@ -165,6 +163,16 @@ const config = ({
   return {
     ignoreDependencies: ["vite", "vitest"],
     ignoreIssues: {
+      "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
+      "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
+      "libs/db/src/testing.ts": ["unlisted"],
+      "libs/monitor/src/mail-recorder.ts": ["unlisted"],
+      "libs/runtime/src/app-fixture.ts": ["unlisted"],
+      "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
     },
     treatConfigHintsAsErrors: true,
@@ -182,11 +190,11 @@ const config = ({
       },
       "apps/service-admin": {
         ...app,
-        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: ["src/**/*.{ts,tsx}!"],
       },
       "apps/service-member": {
         ...app,
-        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
@@ -208,7 +216,6 @@ const config = ({
       },
       "libs/db": {
         entry: ["src/records-fixture.ts"],
-        ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "libs/db-local": {

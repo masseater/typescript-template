@@ -1,11 +1,9 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { connect, createServer } from "node:net";
 
 import { causeRecord, runCli } from "@repo/cli";
 import { loopbackAddress } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { Server } from "node:net";
 import type { Scope } from "effect";
 

@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { exitWith, markFailed } from "@repo/cli";
@@ -53,7 +51,6 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  // oxlint-disable-next-line node/no-process-env
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
     cwd: root,
@@ -73,7 +70,6 @@ function runBrowser(args: readonly string[], socketDirectory: string): Effect.Ef
   return Effect.callback<ChildExit>((resume) => {
     const child = spawn("agent-browser", [...args], {
       cwd: root,
-      // oxlint-disable-next-line node/no-process-env
       env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
       stdio: "inherit",
     });

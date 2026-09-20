@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { homedir, tmpdir, userInfo } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect } from "effect";

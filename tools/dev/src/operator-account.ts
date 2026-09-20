@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { randomBytes } from "node:crypto";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createServer } from "node:http";
 
 import { Auth } from "@repo/auth";

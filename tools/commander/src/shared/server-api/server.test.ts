@@ -66,7 +66,6 @@ const decodeChat = Schema.decodeUnknownOption(Schema.fromJsonString(ChatEvent));
 function installRecorder(home: string): Effect.Effect<void, unknown, NodeServices.NodeServices> {
   return Effect.gen(function* installed() {
     const files = yield* FileSystem.FileSystem;
-    // oxlint-disable-next-line node/no-process-env
     Object.assign(process.env, {
       ANTHROPIC_API_KEY: "would-be-billed",
       ANTHROPIC_AUTH_TOKEN: "would-be-billed",

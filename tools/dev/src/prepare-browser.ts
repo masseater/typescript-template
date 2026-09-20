@@ -1,13 +1,8 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, readdir } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
 import { causeRecord, runCli } from "@repo/cli";
@@ -28,7 +23,7 @@ class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
 const EXECUTABLE_MODE = 0o755;
 const PLAYWRIGHT_BROWSER = "chromium";
 
-// oxlint-disable-next-line typescript/strict-void-return
+// oxlint-disable-next-line typescript/strict-void-return -- promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
 
