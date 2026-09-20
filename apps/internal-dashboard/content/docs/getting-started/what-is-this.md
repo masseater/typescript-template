@@ -1,38 +1,56 @@
 ---
 title: このテンプレートは何か
-description: テンプレートの概要と、含まれているもの、使い始めるときに書き換えるところ
+description: テンプレートの全体像、設計思想、構成、および使い始める手順
 ---
 
 ## 概要
 
-会員制のサービスを Cloudflare の上で作るための TypeScript のテンプレート。特定の業界を想定しない、利用者同士が知り合ってやり取りする汎用の会員サービスを持っている。
+Cloudflare のインフラ上で本番運用できる会員制サービスを構築するための、TypeScript によるフルスタックテンプレートです。
 
-入っている機能は見本で、使う側はこれを土台にして、自分のサービスに要る機能を足していく。見本も、そのまま本番で使える品質を目指して作っている。
+AI エージェントと人間が協調して高速に開発・運用サイクルを回すことを前提に設計されており、インフラの宣言、型安全な境界、機械的な品質ゲート、および実測可能な観測性が単一のモノレポに統合されています。
 
-## 含まれているもの
+入っている会員機能（認証、プロフィール、AI インタビュー、掲示板、メッセージ等）は見本実装であり、そのまま本番水準の品質を満たす土台として機能します。
 
-- 利用者アプリ・管理者アプリ・wiki・司令塔アプリ（`tools/commander`）。それぞれの役割は [アプリの役割](/getting-started/applications) にある
-- 主要な技術スタック。Vite+、Cloudflare Workers、Alchemy、TypeScript、TanStack Start、Elysia、Effect、Better Auth、Drizzle ORM
-- 各画面の仕様。ページ構成の節（[利用者アプリのレイアウト](/pages/member-layout) ほか）にあり、使い始めた後も、画面の仕様を書き足していく場所としてそのまま使う
-- データの概念と関係。[データモデル](/data-model/overview) に ER 図があり、本格開発のときに節ごと差し替える
-- ドメイン用語。[用語集](/glossary) にあり、文書中の `[[用語]]` からホバーで解説を見て移れる
-- 実装とレビューの基準。[ガイドライン](/guidelines/principles) にある
-- 規約の違反を、型・lint・テストで機械的に見つける検査
-- Cloudflare の資源を宣言する Alchemy のコード
+## 設計思想
 
-## AI が自分で操作して確かめられること
+- **AI ネイティブな自律開発**: AI エージェントが自律的にコードを読み、ブラウザを操作して動作確認を行い、トレースや実ログを検証できる構造を持ちます。
+- **機械的な制約と品質検証**: 口約束のコーディング規約を排し、型システム・lint・自動テスト・タスクランナーにより、不変条件の破綻を即座に検出します。
+- **IaC による外部状態の宣言**: 管理画面の手作業を排除し、Cloudflare の全リソースを Alchemy コードとして宣言・同期します。
+- **単一の語彙と責務分離**: ドメインの概念と ER 図、画面仕様、ガイドラインを文書で定義し、実装と意図の乖離を防ぎます。
 
-目指しているのは、AI エージェントが人と同じ手順でログインして画面を操作し、作業と検証を行える状態である。対象は本番を含むすべての環境で、AI は検証専用ではない普通のアカウントを使う。AI の操作は集計から外さず、User-Agent で区別できるようにする。
+## リポジトリの構成
 
-## 書き換えるところ
+モノレポは責務と届く相手に応じて次の 4 領域に整理されています。
 
-- サービス名。利用者アプリでは `apps/service-member/src/shared/config/service.ts` が持っている
-- LP の文言と、見本として入っている AI インタビューの題材
-- 画面の仕様。画面を変えたら、ページ構成の節の文書も合わせて書き換える
-- データの境界。概念を足したり捨てたりしたら、データモデルの節の ER 図と不変条件も合わせて書き換える
-- デプロイ先のドメインやメールの送信元など、環境ごとの値。デプロイするときに環境変数で渡し、受け付けるキーは `libs/config/src/deployment-keys.ts` が持っている
-- 検索エンジンの index の設定。デプロイしたアプリはすべての応答に `x-robots-tag: noindex, nofollow` を付けて返すので、そのままでは検索結果に載らない。一般に公開するときは、先にこの設定（`libs/runtime/src/worker.ts` の `serveWorker`）を見直して載せるページを決め、本番の応答で確かめてから公開する
+- `apps/`: デプロイされて利用者の要求を受ける実行対象
+  - `service-member`: 会員向け Web アプリケーション
+  - `service-admin`: 運用担当者向け管理アプリケーション
+  - `internal-dashboard`: 社内向けドキュメントおよび MCP 配布
+- `infra/`: 外部サービス（Cloudflare 等）に状態を残す宣言（Alchemy）
+- `libs/`: 複数ワークスペースで共有される型・接続・ロジック（`config`, `db`, `auth`, `runtime`, `observability`, `ui` 等）
+- `tools/`: 開発支援・検査・手元ツール（`commander`, `quality` 等）
 
-## まだ無い機能
+各アプリの具体的な役割とアクセス境界は [アプリの役割](/getting-started/applications) を参照してください。
 
-決まっていて、まだ実装していない機能の仕様は、GitHub の Project「会員サービスの機能」にある issue が持つ。
+## 主な技術スタック
+
+| 領域 | 採用技術 |
+| --- | --- |
+| ランタイム / 実行基盤 | Cloudflare Workers, D1, Durable Objects, Workflows |
+| IaC | Alchemy v2 |
+| 言語 / ビルド / モノレポ | TypeScript, Vite+ (Vite, Oxlint, Vitest), pnpm workspaces |
+| アプリケーションフレームワーク | TanStack Start (React 19, Tailwind CSS 4), Elysia |
+| ロジック / スキーマ / 認証 | Effect v4 (Schema, Layer), Better Auth, Drizzle ORM |
+| 観測性 | OpenTelemetry (OTLP), Workers Observability |
+
+## 使い始める手順
+
+1. **サービス定義の変更**:
+   - サービス名称を `apps/service-member/src/shared/config/service.ts` で変更します。
+   - LP や見本コンテンツを自身のドメインに合わせて差し替えます。
+2. **データモデルの定義**:
+   - `content/docs/data-model/` の ER 図と [用語集](/glossary) を更新し、自身のサービスに必要な境界を定義します。
+   - `libs/db` のスキーマを更新し、マイグレーションを作成します。
+3. **デプロイ設定**:
+   - `libs/config/src/deployment-keys.ts` で環境変数キーを確認し、Cloudflare のデプロイ先環境を設定します。
+   - 一般公開時は `libs/runtime/src/worker.ts` の `x-robots-tag` 設定を見直します。
