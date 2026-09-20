@@ -9,7 +9,7 @@ overrides:
   effect@*: "catalog:"
   drizzle-orm@*: "catalog:"
   drizzle-kit@*: "catalog:"
-  "@effect/platform-node-shared@*": 4.0.0-rc.112
+  "@effect/platform-node-shared@*": 4.0.0-rc.115
   eslint-plugin-react-hooks>zod-validation-error: ^4.0.2
 allowBuilds:
   esbuild: true
