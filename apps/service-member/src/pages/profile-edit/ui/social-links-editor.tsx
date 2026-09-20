@@ -1,11 +1,10 @@
 import { Button, Field } from "@repo/ui";
 
-import { newSocialLinkRow } from "#pages/profile-edit/model/profile-form.ts";
 import { maximumSocialLinks } from "#shared/contracts/index.ts";
 import { fieldError } from "#shared/forms/index.ts";
 import { SocialLinkIcon, classifySocialUrl } from "#shared/social-link";
 
-import type { SocialLinkRow } from "#pages/profile-edit/model/profile-form.ts";
+import type { SocialLinkField } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
 
 function SocialLinksEditor({
@@ -14,8 +13,8 @@ function SocialLinksEditor({
   values,
 }: Readonly<{
   errors: readonly unknown[];
-  onChange: (values: readonly SocialLinkRow[]) => void;
-  values: readonly SocialLinkRow[];
+  onChange: (values: readonly SocialLinkField[]) => void;
+  values: readonly SocialLinkField[];
 }>): ReactElement {
   const canAdd = values.length < maximumSocialLinks;
   const linkError = fieldError(errors);
@@ -24,7 +23,7 @@ function SocialLinksEditor({
   }
   function removeAt(id: string): void {
     const next = values.filter((current) => current.id !== id);
-    onChange(next.length === 0 ? [newSocialLinkRow()] : next);
+    onChange(next.length === 0 ? [{ id: crypto.randomUUID(), url: "" }] : next);
   }
   return (
     <div className="flex flex-col gap-3">
@@ -73,7 +72,7 @@ function SocialLinksEditor({
           type="button"
           variant="secondary"
           onClick={() => {
-            onChange([...values, newSocialLinkRow()]);
+            onChange([...values, { id: crypto.randomUUID(), url: "" }]);
           }}
         >
           URL を追加
