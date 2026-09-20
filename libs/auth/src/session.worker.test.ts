@@ -1,5 +1,6 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION, AUTHENTICATION_METHOD, ROLE } from "@repo/config";
 import { setUserRole } from "@repo/db/admin";
+import { getSessionSecurity } from "@repo/db/security";
 import { runStatement } from "@repo/db/testing";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
@@ -154,21 +155,31 @@ describe("verifySession", () => {
               endpoint: "/two-factor/verify-backup-code",
               jsonFields: { code: backupCodes[0] },
             });
-            return yield* client.verify(true);
+            const verified = yield* client.verify(true);
+            const security = yield* getSessionSecurity(verified.session.id, audience);
+            return {
+              audience: security?.session.audience,
+              authenticationMethod: security?.session.authenticationMethod,
+              verified,
+            };
           }),
         ),
       );
 
-      it("is a weak session", ({ recovery }) => {
+      it("is a weak session that stays on the recovery code", ({ recovery }) => {
         expect(recovery).toStrictEqual({
-          session: { id: "session-4" },
-          strong: false,
-          user: {
-            email: "admin@example.com",
-            id: "user-1",
-            name: "admin@example.com",
-            role: ROLE.administrator,
-            twoFactorEnabled: true,
+          audience,
+          authenticationMethod: AUTHENTICATION_METHOD.recovery,
+          verified: {
+            session: { id: "session-4" },
+            strong: false,
+            user: {
+              email: "admin@example.com",
+              id: "user-1",
+              name: "admin@example.com",
+              role: ROLE.administrator,
+              twoFactorEnabled: true,
+            },
           },
         });
       });
@@ -229,21 +240,31 @@ describe("verifySession", () => {
             audience: APPLICATION.admin,
             authenticationMethod: "passkey_uv",
           });
-          return yield* client.verify();
+          const verified = yield* client.verify();
+          const security = yield* getSessionSecurity(verified.session.id, APPLICATION.user);
+          return {
+            audience: security?.session.audience,
+            authenticationMethod: security?.session.authenticationMethod,
+            verified,
+          };
         }),
       ),
     );
 
-    it("keeps the member role and the weak user session", ({ selfAssigned }) => {
+    it("keeps the member role, the user audience and the password method", ({ selfAssigned }) => {
       expect(selfAssigned).toStrictEqual({
-        session: { id: "session-1" },
-        strong: false,
-        user: {
-          email: "reader@example.com",
-          id: "user-1",
-          name: "reader@example.com",
-          role: ROLE.member,
-          twoFactorEnabled: false,
+        audience: APPLICATION.user,
+        authenticationMethod: AUTHENTICATION_METHOD.password,
+        verified: {
+          session: { id: "session-1" },
+          strong: false,
+          user: {
+            email: "reader@example.com",
+            id: "user-1",
+            name: "reader@example.com",
+            role: ROLE.member,
+            twoFactorEnabled: false,
+          },
         },
       });
     });
