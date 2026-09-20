@@ -1,5 +1,4 @@
-import { firstToken } from "@repo/dont-review-it/lint-rule-authoring";
-
+import { firstToken } from "../../../../lint-rule-authoring/index.ts";
 import { DIRECTIVE_GROUNDS_SEPARATOR } from "../directive-comments.ts";
 
 const LINE_SCOPED_SPELLINGS: ReadonlySet<string> = new Set([

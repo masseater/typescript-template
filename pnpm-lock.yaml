@@ -1396,6 +1396,9 @@ importers:
       '@opentelemetry/sdk-metrics':
         specifier: 'catalog:'
         version: 2.10.0(@opentelemetry/api@1.9.1)
+      '@repo/dont-review-it':
+        specifier: workspace:*
+        version: link:../dont-review-it
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config
@@ -1651,9 +1654,6 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
-      '@repo/ui':
-        specifier: workspace:*
-        version: link:../../libs/ui
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config

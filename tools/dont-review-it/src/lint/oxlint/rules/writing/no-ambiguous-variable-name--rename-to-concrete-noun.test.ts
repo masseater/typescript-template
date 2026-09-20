@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noAmbiguousVariableName } from "./no-ambiguous-variable-name--rename-to-concrete-noun.ts";
 
 describe("dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun", () => {

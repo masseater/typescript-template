@@ -1,8 +1,8 @@
 import { join } from "node:path";
 
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { buildValueDeclarationIndex } from "../../lib/value-declarations/declaration-index.ts";
 import { createNoDuplicateValueDeclaration } from "./no-duplicate-value-declaration--reuse-authoritative-value.ts";

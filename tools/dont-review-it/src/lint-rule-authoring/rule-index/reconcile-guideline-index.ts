@@ -5,8 +5,7 @@ import {
   normativeDocumentPlacesIn,
   normativeDocumentsIn,
   readUnlessMissing,
-} from "@repo/dont-review-it/repository-checks";
-
+} from "../../repository-checks/index.ts";
 import { generatedFileProblems, staleGeneratedFile } from "../reconcile-generated-file.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
 import { lintRuleWorkspacesIn } from "./lint-rule-workspaces.ts";

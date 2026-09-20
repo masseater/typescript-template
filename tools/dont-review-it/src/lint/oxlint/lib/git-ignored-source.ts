@@ -1,9 +1,9 @@
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { attempt } from "es-toolkit";
 
+import { measureStage } from "../../../lint-rule-authoring/index.ts";
 import { gitOutput } from "./git-output.ts";
 import { pathIsInside } from "./path-is-inside.ts";
 

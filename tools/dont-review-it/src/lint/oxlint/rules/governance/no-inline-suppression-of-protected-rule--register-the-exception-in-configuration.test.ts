@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noInlineSuppressionOfProtectedRule } from "./no-inline-suppression-of-protected-rule--register-the-exception-in-configuration.ts";
 
 const PROTECTED_RULE = "forbid-target-file--delete-or-relocate";

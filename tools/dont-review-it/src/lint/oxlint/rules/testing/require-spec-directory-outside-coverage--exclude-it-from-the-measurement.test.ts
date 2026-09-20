@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { requireSpecDirectoryOutsideCoverage } from "./require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts";
 
 const THRESHOLDS = "thresholds: { 100: true, perFile: true }";

@@ -1,9 +1,9 @@
 import { dirname, resolve } from "node:path";
 
-import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { groupBy } from "es-toolkit";
 import * as ts from "typescript-6";
 
+import { measureStage } from "../lint-rule-authoring/index.ts";
 import {
   canonicalValueKey,
   type CanonicalValuesCatalog,
@@ -27,7 +27,7 @@ import {
   sharesVocabulary,
 } from "./vocabulary-members.ts";
 
-import type { RepositoryProblem, ScannedProblems } from "@repo/dont-review-it/repository-checks";
+import type { RepositoryProblem, ScannedProblems } from "../repository-checks/index.ts";
 
 const QUOTATION_MARKS = ['"', "'", "`"] as const;
 

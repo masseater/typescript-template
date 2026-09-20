@@ -4,7 +4,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./fixture": "./src/monitor-fixture.ts",
     "./vite": "./src/vite.ts"
   },
   "scripts": {},

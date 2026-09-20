@@ -15,11 +15,8 @@
   "bin": {
     "dont-review-it": "./src/cli.ts",
     "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
-    "lint-rule-authoring": "./src/lint-rule-authoring/cli.ts",
     "quality-check-client": "./src/repository/client-bundle.ts",
-    "quality-check-react": "./src/repository/react-doctor.ts",
-    "quality-check-staged": "./src/repository/check-staged.ts",
-    "stop-ai-slop": "./src/stop-ai-slop/cli.ts"
+    "quality-check-react": "./src/repository/react-doctor.ts"
   },
   "files": [
     "dist",
@@ -29,19 +26,9 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts",
-    "./plugin": "./src/plugin.ts",
-    "./record-fields": "./src/dependency-catalog/record-fields.ts",
-    "./lint": "./src/repository/lint.ts",
-    "./repository-plugin": "./src/repository/plugin.ts",
-    "./test-runtime": "./src/repository/test-runtime.ts",
-    "./vitest": "./src/vitest/standard-io-test.ts",
+    ".": "./src/workspace-entry.ts",
     "./tsconfig/*": "./tsconfig/*",
-    "./package.json": "./package.json",
-    "./vitest/parsed-fields": "./src/vitest/parsed-fields.ts",
-    "./repository-checks": "./src/repository-checks/index.ts",
-    "./lint-rule-authoring": "./src/lint-rule-authoring/index.ts",
-    "./lint-rule-authoring/plugin": "./src/lint-rule-authoring/plugin.ts"
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "bin": {
@@ -52,14 +39,6 @@
       ".": {
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
-      },
-      "./plugin": {
-        "types": "./dist/plugin.d.mts",
-        "default": "./dist/plugin.mjs"
-      },
-      "./vitest": {
-        "types": "./dist/vitest/standard-io-test.d.mts",
-        "default": "./dist/vitest/standard-io-test.mjs"
       },
       "./tsconfig/*": "./tsconfig/*",
       "./package.json": "./package.json"
@@ -73,7 +52,6 @@
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "@repo/observability": "workspace:*",
-    "@repo/ui": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@shadcn/lint": "catalog:",
     "citty": "0.2.2",

@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noDiscardedFailure } from "./no-discarded-failure--receive-and-surface-it.ts";
 
 describe("dont-review-it/no-discarded-failure--receive-and-surface-it", () => {

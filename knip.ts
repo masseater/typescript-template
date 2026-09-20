@@ -28,12 +28,19 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
-    entry: ["src/auth-test-fixture.ts", "src/browser-client.ts", "src/mail-fixture.ts"],
+    entry: [
+      "src/auth-test-fixture.ts",
+      "src/browser-client.ts",
+      "src/mail-fixture.ts",
+      "src/testing.ts",
+      "src/unexpected-status.ts",
+      "src/wiki-oauth-fixture.ts",
+    ],
     project: ["src/**/*.ts!"],
   },
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
-    entry: ["src/mail-recorder.ts"],
+    entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
   "libs/runtime": {
@@ -65,9 +72,20 @@ const workspaces = {
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
-    entry: ["src/repository/dependency-cruiser.ts", "doctor.config.ts"],
+    entry: [
+      "src/repository/dependency-cruiser.ts",
+      "doctor.config.ts",
+      "src/index.ts!",
+      "src/repository/lint.ts!",
+      "src/repository/plugin.ts!",
+    ],
     ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
-    project: ["src/repository/**/*.{ts,mjs}", "src/**/*.{ts,mjs}!", "*.ts"],
+    project: [
+      "src/repository/**/*.{ts,mjs}",
+      "src/**/*.{ts,mjs}!",
+      "*.ts",
+      "!src/vitest/parsed-fields.ts!",
+    ],
   },
   "tools/e2e": {
     entry: ["src/**/*.test.ts"],

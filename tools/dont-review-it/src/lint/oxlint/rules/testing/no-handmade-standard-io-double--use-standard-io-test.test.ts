@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noHandmadeStandardIoDouble } from "./no-handmade-standard-io-double--use-standard-io-test.ts";
 
 describe("dont-review-it/no-handmade-standard-io-double--use-standard-io-test", () => {
@@ -8,7 +8,7 @@ describe("dont-review-it/no-handmade-standard-io-double--use-standard-io-test", 
     valid: [
       {
         name: "a spec that derives its test from the shared fixture is the intended shape",
-        code: `import { standardIoTest } from "@repo/dont-review-it/vitest";
+        code: `import { standardIoTest } from "@repo/dont-review-it";
 standardIoTest("captures", ({ stdout }) => {
   expect(stdout.text).toBe("");
 });`,
@@ -17,7 +17,7 @@ standardIoTest("captures", ({ stdout }) => {
       {
         name: "a spec that imports the fixture may exercise the process streams directly",
         documented: true,
-        code: `import { standardIoTest } from "@repo/dont-review-it/vitest";
+        code: `import { standardIoTest } from "@repo/dont-review-it";
 standardIoTest("captures", ({ stdout }) => {
   process.stdout.write("result");
   expect(stdout.text).toBe("result");
@@ -111,7 +111,7 @@ const home = process.env.HOME;`,
       },
       {
         name: "declaring the fixture again while importing the shared one is still a redeclaration",
-        code: `import { standardIoTest } from "@repo/dont-review-it/vitest";
+        code: `import { standardIoTest } from "@repo/dont-review-it";
 const ioTest = standardIoTest.extend({ stdout: async ({}, use) => { await use([]); } });`,
         filename: "/repo/src/cli.test.ts",
         errors: [{ messageId: "ownFixture" }],

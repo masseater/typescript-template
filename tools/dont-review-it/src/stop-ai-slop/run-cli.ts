@@ -7,8 +7,7 @@ import {
   EXIT_PROBLEMS_FOUND,
   EXIT_SUCCESS,
   type CliResult,
-} from "@repo/dont-review-it/repository-checks";
-
+} from "../repository-checks/index.ts";
 import { type ComparisonRange } from "./comparison-range.ts";
 import { githubRequestFor } from "./github-request.ts";
 import { formatProblem } from "./problem.ts";

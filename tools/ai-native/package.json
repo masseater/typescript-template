@@ -48,6 +48,7 @@
     "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
     "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
     "@opentelemetry/sdk-metrics": "catalog:",
+    "@repo/dont-review-it": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",

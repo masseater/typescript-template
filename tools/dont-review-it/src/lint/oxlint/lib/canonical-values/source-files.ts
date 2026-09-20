@@ -10,9 +10,9 @@ import {
 } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
+import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import { pathIsInside } from "../path-is-inside.ts";

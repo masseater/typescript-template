@@ -9,8 +9,8 @@ import { multiCommandRuns } from "./checks/single-command-run.ts";
 import { lineAtOffset, type WorkflowDocument } from "./workflow-document.ts";
 import { readWorkflowDocuments } from "./workflow-files.ts";
 
-import type { ScannedProblems } from "@repo/dont-review-it/repository-checks";
 import type { RepositoryProblem } from "../problem.ts";
+import type { ScannedProblems } from "../repository-checks/index.ts";
 import type { WorkflowChecksConfig } from "./config.ts";
 
 const unreadableDefinition = (document: WorkflowDocument): readonly RepositoryProblem[] =>

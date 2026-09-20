@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
+import { readUnlessMissing } from "../../repository-checks/index.ts";
 
 import type { LintRuleWorkspace } from "./lint-rule-workspaces.ts";
 

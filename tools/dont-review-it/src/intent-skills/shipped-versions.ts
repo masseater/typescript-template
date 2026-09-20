@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
-
+import { readUnlessMissing } from "../repository-checks/index.ts";
 import { declaresVersion } from "./changelog.ts";
 import { lineOfProperty, propertyValueOf, type PublishedManifest } from "./manifest.ts";
 import { listSkillFiles, skillsDirectoryOf } from "./skill-files.ts";

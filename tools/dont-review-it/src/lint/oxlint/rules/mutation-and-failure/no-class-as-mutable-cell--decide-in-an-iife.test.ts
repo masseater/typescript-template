@@ -1,8 +1,8 @@
 import { join } from "node:path";
 
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { createNoClassAsMutableCell } from "./no-class-as-mutable-cell--decide-in-an-iife.ts";
 

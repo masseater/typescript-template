@@ -31,4 +31,4 @@ const HealthView = Schema.Struct({
   service: Schema.Literals(applications),
 });
 
-export { EmailVerificationRequest, EmailVerified, ErrorBody, HealthView, Role, SessionView };
+export { EmailVerificationRequest, EmailVerified, ErrorBody, HealthView, SessionView };

@@ -5,6 +5,10 @@ import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  linkComponents,
+  uiA11yComponents,
+} from "../../tools/dont-review-it/src/repository/ui-lint-settings.ts";
+import {
   appStylesheetViolations,
   coverageViolations,
   designSystemComponents,
@@ -20,7 +24,6 @@ import {
   untouchedTokens,
 } from "./design-system.ts";
 import { hoverViolations } from "./hover-colors.ts";
-import { linkComponents, uiA11yComponents } from "./lint-settings.ts";
 import { field } from "./record-field.ts";
 
 const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(

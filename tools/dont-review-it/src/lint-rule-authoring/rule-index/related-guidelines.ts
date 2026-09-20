@@ -6,8 +6,7 @@ import {
   normativeDocumentPlacesIn,
   normativeDocumentsIn,
   type NormativeDocumentPlaces,
-} from "@repo/dont-review-it/repository-checks";
-
+} from "../../repository-checks/index.ts";
 import { lintRuleWorkspacesIn, type LintRuleWorkspace } from "./lint-rule-workspaces.ts";
 import { workspaceRulesOf } from "./workspace-rules.ts";
 

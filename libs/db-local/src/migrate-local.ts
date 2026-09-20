@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { reportFailed, runCli } from "@repo/cli";
-import { migrateD1 } from "@repo/db/migrate-d1";
 import { Console, Effect } from "effect";
 
+import { migrateD1 } from "../../db/src/migrate-d1.ts";
 import { localDatabasePlatform } from "./local-platform.ts";
 
 function failed(error: string): Readonly<Record<string, unknown>> {

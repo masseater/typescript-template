@@ -1,8 +1,8 @@
 import { join } from "node:path";
 
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { buildStyleClassIndex } from "../../lib/style-classes/class-index.ts";
 import { createNoUnusedStyleClass } from "./no-unused-style-class--delete-or-reference-it.ts";

@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noLintSuppressionInSpec } from "./no-lint-suppression-in-spec--fix-the-violation.ts";
 
 const ASSERTION = 'it("adds", () => {\n  expect(runSut()).toBe(3);\n});';

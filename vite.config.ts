@@ -1,6 +1,10 @@
-import { dontReviewItPreset } from "@repo/dont-review-it";
-import { generatedFiles, lintOptions } from "@repo/dont-review-it/lint";
-import { devServerTests, workerTests } from "@repo/dont-review-it/test-runtime";
+import {
+  devServerTests,
+  dontReviewItPreset,
+  generatedFiles,
+  lintOptions,
+  workerTests,
+} from "@repo/dont-review-it";
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";

@@ -25,7 +25,7 @@ describe("workspace lint ownership", () => {
 
   it("imports ui and cloudflare lint knowledge instead of owning it", () => {
     expect.hasAssertions();
-    expect(lintSource).toMatch(/@repo\/ui\/lint-settings/u);
+    expect(lintSource).toMatch(/\.\/ui-lint-settings\.ts/u);
     expect(lintSource).toMatch(/uiQualityInspectionFiles/u);
     expect(lintSource).toMatch(/@repo\/infra-cloudflare\/lint-overrides/u);
   });

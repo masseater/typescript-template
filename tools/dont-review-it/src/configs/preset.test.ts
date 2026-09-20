@@ -1,6 +1,6 @@
-import { oxlint as lintRuleAuthoringOxlint } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe, expect, test } from "vite-plus/test";
 
+import { oxlint as lintRuleAuthoringOxlint } from "../lint-rule-authoring/index.ts";
 import { oxfmt } from "./oxfmt.ts";
 import { oxlintFor } from "./oxlint.ts";
 import { dontReviewItPreset } from "./preset.ts";

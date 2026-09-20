@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../lint-rule-authoring/index.ts";
 import { noBarrelImport } from "./no-barrel-import--import-from-the-owning-module.ts";
 
 describe("dont-review-it/no-barrel-import--import-from-the-owning-module", () => {

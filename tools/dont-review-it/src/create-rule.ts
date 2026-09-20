@@ -1,4 +1,4 @@
-import { createWorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import { createWorkspaceLintRule } from "./lint-rule-authoring/index.ts";
 
 export const createDontReviewItRule = createWorkspaceLintRule({
   workspaceDir: "tools/dont-review-it",

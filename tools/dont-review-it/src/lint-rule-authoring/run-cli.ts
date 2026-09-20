@@ -2,15 +2,15 @@ import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
+import { attempt } from "es-toolkit";
+
 import {
   EXIT_MISUSE,
   EXIT_PROBLEMS_FOUND,
   EXIT_SUCCESS,
   readUnlessMissing,
   type CliResult,
-} from "@repo/dont-review-it/repository-checks";
-import { attempt } from "es-toolkit";
-
+} from "../repository-checks/index.ts";
 import { formatLintRuleProblem } from "./lint-rule-problem.ts";
 import { lintRuleDocProblems } from "./rule-docs/reconcile-rule-doc.ts";
 import { guidelineIndexProblems } from "./rule-index/reconcile-guideline-index.ts";

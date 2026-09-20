@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { loadCatalogEntries } from "../../lib/dependency-catalog/catalog-entries.ts";
 import { loadWorkspaceDependencies } from "../../lib/dependency-catalog/workspace-manifests.ts";
 import { createNoVersionRange } from "./no-version-range--pin-the-exact-version.ts";

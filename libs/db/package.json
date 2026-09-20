@@ -6,14 +6,9 @@
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
     "./bootstrap": "./src/bootstrap-statement.ts",
-    "./security": "./src/security.ts",
     "./testing": "./src/testing.ts",
-    "./remote": "./src/remote-command.ts",
     "./migrations": "./src/remote-operations.ts",
-    "./local": "./src/local.ts",
-    "./member-social": "./src/member-social.ts",
-    "./migrate-d1": "./src/migrate-d1.ts",
-    "./remote-input": "./src/remote-input.ts"
+    "./local": "./src/local.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate"

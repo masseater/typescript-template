@@ -254,6 +254,7 @@ describe("repository single consumers", () => {
   it("matches the allowlist and nothing outside it", () => {
     expect.hasAssertions();
     const ids = repositorySingleConsumerFindings().map((finding) => finding.id);
-    expect(ids).toStrictEqual([...singleConsumerAllowlist]);
+    expect(singleConsumerAllowlist).toStrictEqual([]);
+    expect(ids).toStrictEqual([]);
   });
 });

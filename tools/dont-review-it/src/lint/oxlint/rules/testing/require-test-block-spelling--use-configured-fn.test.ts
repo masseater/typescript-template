@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { requireTestBlockSpelling } from "./require-test-block-spelling--use-configured-fn.ts";
 
 describe("dont-review-it/require-test-block-spelling--use-configured-fn", () => {

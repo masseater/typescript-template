@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noUnregisteredRulePlugin } from "./no-unregistered-rule-plugin--enable-the-plugin.ts";
 
 const ENABLES_VITEST = [{ plugins: ["vitest"] }];

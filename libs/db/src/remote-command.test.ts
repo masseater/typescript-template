@@ -4,8 +4,8 @@ import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
+import { runRemoteDatabaseCommand } from "../../../infra/cloudflare/src/remote-command.ts";
 import { query } from "./database.ts";
-import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { loadRemoteMigrations } from "./remote-operations.ts";
 import { user } from "./schema.ts";
 

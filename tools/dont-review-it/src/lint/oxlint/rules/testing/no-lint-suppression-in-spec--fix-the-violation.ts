@@ -1,6 +1,5 @@
-import { firstToken } from "@repo/dont-review-it/lint-rule-authoring";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { firstToken } from "../../../../lint-rule-authoring/index.ts";
 import { suppressionDirectiveOf } from "../../lib/lint-suppression/suppression-directives.ts";
 
 import type { Comment, ESTree } from "@oxlint/plugins";

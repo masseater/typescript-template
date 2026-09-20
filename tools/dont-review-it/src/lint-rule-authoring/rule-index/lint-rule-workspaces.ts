@@ -1,10 +1,10 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { attempt, isPlainObject } from "es-toolkit";
 import { parse } from "yaml";
 
+import { readUnlessMissing } from "../../repository-checks/index.ts";
 import { textOrNull } from "./read-text.ts";
 
 export type LintRuleWorkspace = {

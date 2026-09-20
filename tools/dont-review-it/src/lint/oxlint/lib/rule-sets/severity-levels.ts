@@ -1,5 +1,4 @@
-import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
-
+import { LINT_SEVERITY } from "../../../../lint-rule-authoring/index.ts";
 import { spelledSeverityOf } from "../spelled-lint-severity.ts";
 
 import type { ESTree } from "@oxlint/plugins";

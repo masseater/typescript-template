@@ -1,8 +1,8 @@
 import { dirname, join, resolve } from "node:path";
 
-import { matchesGlobSegment } from "@repo/dont-review-it/lint-rule-authoring";
 import { zip } from "es-toolkit";
 
+import { matchesGlobSegment } from "../../../../lint-rule-authoring/index.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,

@@ -1,6 +1,5 @@
-import { firstToken } from "@repo/dont-review-it/lint-rule-authoring";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { firstToken } from "../../../../lint-rule-authoring/index.ts";
 import { MOCK_FACTORY_EXEMPTION_DIRECTIVE } from "../../lib/directive-comments.ts";
 import { isJsdoc } from "../../lib/jsdoc-comment.ts";
 
