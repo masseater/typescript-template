@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { PLAN } from "@repo/config";
-import { PaidPlanRequired, findSubscription, planOf } from "@repo/db/billing";
+import { PaidPlanRequired, findSubscription, planOf } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";

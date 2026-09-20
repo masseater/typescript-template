@@ -1,8 +1,3 @@
-import { APPLICATION, ROLE } from "@repo/config";
-import { httpStatus } from "@repo/observability";
-import { Effect } from "effect";
-import { describe, expect } from "vite-plus/test";
-
 import {
   AuthApps,
   PASSWORD,
@@ -15,7 +10,12 @@ import {
   runWith,
   signIn,
   signInAs,
-} from "../../../../../libs/auth/src/testing.ts";
+} from "@repo/auth/testing";
+import { APPLICATION, ROLE } from "@repo/config";
+import { httpStatus } from "@repo/observability";
+import { Effect } from "effect";
+import { describe, expect } from "vite-plus/test";
+
 import {
   exchangeCode,
   grantAuthorization,

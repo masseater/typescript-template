@@ -32,7 +32,6 @@ const workspaces = {
       "src/auth-test-fixture.ts",
       "src/browser-client.ts",
       "src/mail-fixture.ts",
-      "src/testing.ts",
       "src/unexpected-status.ts",
       "src/wiki-oauth-fixture.ts",
     ],

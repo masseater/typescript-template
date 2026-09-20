@@ -190,7 +190,6 @@ const markPaymentFailed = Effect.fn("markPaymentFailed")(function* markPaymentFa
 });
 
 export {
-  PaidPlanRequired,
   attachCheckout,
   findSubscription,
   isPaidMember,
@@ -200,4 +199,4 @@ export {
   recordSubscription,
   requirePaid,
 };
-export type { PlanView, StripeEventRecord, SubscriptionRecord };
+export type { StripeEventRecord, SubscriptionRecord };
