@@ -16,7 +16,9 @@ import {
 } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { agreementApi, consentGate } from "./agreement-api.ts";
+import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
+import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 
@@ -34,6 +36,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail>) {
   return createApi(apiRoot)
     .use(accountApi(api))
     .use(contactApi(api))
+    .use(flagsApi(api))
     .use(agreementApi(api))
     .use(onboardingStepApi(api))
     .onBeforeHandle(consentGate(api))
@@ -95,7 +98,8 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail>) {
           }),
         failures,
       ),
-    );
+    )
+    .use(boardApi(api));
 }
 
 export { memberApi };

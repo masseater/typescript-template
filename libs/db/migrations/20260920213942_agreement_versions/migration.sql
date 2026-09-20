@@ -23,7 +23,8 @@ CREATE TABLE `agreement_version` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `agreement_version_version_unique` ON `agreement_version` (`version`);--> statement-breakpoint
-CREATE INDEX `agreement_version_kind_published_at_idx` ON `agreement_version` (`kind`,`published_at`);--> statement-breakpoint
+CREATE INDEX `agreement_version_kind_published_at_idx` ON `agreement_version` (`kind`,`published_at`);
+--> statement-breakpoint
 INSERT INTO `agreement_version` (`id`, `kind`, `version`, `body`, `summary`, `created_at`, `published_at`)
 VALUES
 	('agreement-terms-1', 'terms', 'terms-1', '# 利用規約
