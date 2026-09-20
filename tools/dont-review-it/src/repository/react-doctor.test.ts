@@ -67,7 +67,7 @@ const aiOperableDoctorRules = [
 ] as const;
 
 const compilerOptions: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../tsconfig.base.json",
+  "../../../../tsconfig.base.json",
   { eager: true, import: "default" },
 );
 
@@ -86,7 +86,7 @@ const globalOffRules = [
   "react-doctor/react-in-jsx-scope",
 ] as const;
 
-const rootRules = (): unknown => field(rootDoctorConfigs["./doctor.config.ts"], "rules");
+const rootRules = (): unknown => field(rootDoctorConfigs["../../doctor.config.ts"], "rules");
 
 const offRules = (): string[] =>
   stringEntriesOf(rootRules())
@@ -135,7 +135,7 @@ describe("react-doctor integration", () => {
     expect(offRules()).toStrictEqual([...globalOffRules].toSorted());
     expect(field(rootRules(), "react-doctor/circular-dependency")).toStrictEqual("error");
     expect(field(rootRules(), "react-doctor/jsx-props-no-spreading")).toStrictEqual("error");
-    expect(field(rootDoctorConfigs["./doctor.config.ts"], "ignore")).toStrictEqual({
+    expect(field(rootDoctorConfigs["../../doctor.config.ts"], "ignore")).toStrictEqual({
       files: ["dist/**"],
     });
   });
@@ -149,7 +149,7 @@ describe("react-doctor integration", () => {
 
   it("leaves React in scope off only while the automatic JSX runtime is on", () => {
     expect.hasAssertions();
-    const base = compilerOptions["../../tsconfig.base.json"];
+    const base = compilerOptions["../../../../tsconfig.base.json"];
     expect(field(field(base, "compilerOptions"), "jsx")).toStrictEqual("react-jsx");
     expect(field(rootRules(), "react-doctor/react-in-jsx-scope")).toStrictEqual("off");
   });
@@ -163,7 +163,7 @@ describe("react-doctor integration", () => {
         .flatMap((override) => override.files.map((target) => `${workspace}/${target}`));
     });
     expect(spreadingFiles.toSorted()).toStrictEqual(
-      linkWrapperFiles.map((file) => `../../${file}`).toSorted(),
+      linkWrapperFiles.map((file) => `../../../../${file}`).toSorted(),
     );
   });
 });

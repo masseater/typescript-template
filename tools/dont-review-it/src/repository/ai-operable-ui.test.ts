@@ -18,7 +18,7 @@ import {
 import { repositoryRoot } from "./repository-root.ts";
 
 const shippedModules: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../{apps,libs}/**/*.{ts,tsx}",
+  "../../../../{apps,libs}/**/*.{ts,tsx}",
 );
 
 const fixture = (name: string, source: string): void => {
