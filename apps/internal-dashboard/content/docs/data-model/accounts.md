@@ -55,6 +55,14 @@ erDiagram
     boolean strong
     datetime expiresAt
   }
+  MemberApiKey {
+    string id PK
+    string accountId FK
+    string name
+    string prefix
+    boolean enabled
+    datetime createdAt
+  }
   Invite {
     string id PK
     string token UK
@@ -67,6 +75,7 @@ erDiagram
   MemberAccount ||--o{ Passkey : owns
   MemberAccount ||--o{ TotpFactor : owns
   MemberAccount ||--o{ Session : opens
+  MemberAccount ||--o{ MemberApiKey : owns
   AdminAccount ||--o{ Credential : owns
   AdminAccount ||--o{ Passkey : owns
   AdminAccount ||--o{ TotpFactor : owns
@@ -87,6 +96,7 @@ erDiagram
 - Session の `audience` は、そのアカウントが入れるアプリのうち、実際に開いたアプリと一致する
 - 管理者アプリと wiki の管理操作に入れる Session は、パスキー、またはパスワードに認証アプリを重ねた認証だけを強い認証とする。バックアップコードだけの Session は強くない
 - Invite の `targetKind` は `admin` か `staff` で、受け取り側のアプリが決まる。利用者の新規登録は Invite を使わない
+- MemberApiKey は利用者アプリだけが持つ。平文は発行直後の一度だけ見せ、保存するのはハッシュだけである。無効にしたキーは直ちに使えなくなる
 
 ## 画面
 
