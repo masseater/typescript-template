@@ -7,6 +7,7 @@ const refusals: ReadonlySet<number> = new Set([
   httpStatus.unauthorized,
   httpStatus.forbidden,
   httpStatus.notFound,
+  httpStatus.preconditionRequired,
 ]);
 const firstStatus = 100;
 
