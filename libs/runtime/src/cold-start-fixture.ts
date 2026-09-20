@@ -6,7 +6,7 @@ import { serveWorker } from "./worker.ts";
 
 class Slow extends Context.Service<Slow, { readonly value: string }>()("Slow") {}
 
-const buildTime = "300 millis";
+const buildTime = "1500 millis";
 const slowBuild = Effect.sleep(buildTime).pipe(Effect.as({ value: "built" }));
 const telemetry = Layer.orDie(
   Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
