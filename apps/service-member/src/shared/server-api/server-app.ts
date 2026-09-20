@@ -3,6 +3,9 @@ import { UserNotFound, getMember, getProfile, listMembers, updateProfile } from 
 import { httpStatus } from "@repo/observability";
 import { accountApi, unavailable } from "@repo/runtime/account";
 import { contactApi } from "@repo/runtime/contact";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { Effect } from "effect";
+
 import {
   MemberList,
   MemberListQuery,
@@ -11,10 +14,7 @@ import {
   ProfileUpdate,
   ProfileView,
   memberPageSize,
-} from "@repo/runtime/contracts";
-import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
-import { Effect } from "effect";
-
+} from "#shared/contracts/index.ts";
 import { interviewApi } from "./interview-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 

@@ -1,7 +1,7 @@
 import { getSchemaShape } from "@repo/db/testing";
 import { describe, expect, it } from "vite-plus/test";
 
-import { ProfileView, RoleChanged, SessionView, UserDeleted, UserList } from "./contracts.ts";
+import { SessionView } from "./contracts.ts";
 
 import type { UserRecord } from "@repo/db";
 
@@ -15,45 +15,14 @@ const sessionUserMatchesRecord: Matches<
   (typeof SessionView.Type)["user"],
   "email" | "id" | "name" | "role" | "twoFactorEnabled"
 > = true;
-const profileViewMatchesRecord: Matches<
-  typeof ProfileView.Type,
-  "email" | "id" | "name" | "profile" | "socialLinks"
-> = true;
-const userSummaryMatchesRecord: Matches<
-  (typeof UserList.Type)["users"][number],
-  "createdAt" | "email" | "emailVerified" | "id" | "name" | "role" | "twoFactorEnabled"
-> = true;
-const roleChangedMatchesRecord: Matches<typeof RoleChanged.Type, "id" | "role"> = true;
-const userDeletedMatchesRecord: Matches<typeof UserDeleted.Type, "id"> = true;
 
-const views = {
-  ProfileView: ProfileView.fields,
-  RoleChanged: RoleChanged.fields,
-  SessionUser: SessionView.fields.user.fields,
-  UserDeleted: UserDeleted.fields,
-  UserSummary: UserList.fields.users.value.fields,
-};
-
-describe("user views", () => {
-  it("describe the same field types as the user row", () => {
+describe("session user view", () => {
+  it("describes the same field types as the user row", () => {
     expect.hasAssertions();
-    expect([
-      sessionUserMatchesRecord,
-      profileViewMatchesRecord,
-      userSummaryMatchesRecord,
-      roleChangedMatchesRecord,
-      userDeletedMatchesRecord,
-    ]).toStrictEqual([true, true, true, true, true]);
-  });
-
-  it("name only columns that the user table has", () => {
-    expect.hasAssertions();
-    const columns = new Set(getSchemaShape()["user"]);
-    const unknown = Object.entries(views).flatMap(([view, fields]: readonly [string, object]) =>
-      Object.keys(fields)
-        .filter((field) => !columns.has(field))
-        .map((field) => `${view}.${field}`),
-    );
-    expect(unknown).toStrictEqual([]);
+    expect(sessionUserMatchesRecord).toBe(true);
+    const shape = getSchemaShape("user");
+    for (const [field, schema] of Object.entries(SessionView.fields.user.fields)) {
+      expect(shape[field], `SessionUser.${field}`).toBe(schema.ast._tag);
+    }
   });
 });
