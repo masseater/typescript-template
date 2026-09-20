@@ -7,7 +7,7 @@ import { ProfileUpdate } from "#shared/contracts/index.ts";
 
 import type { Profile, ProfileDraft } from "#entities/profile/index.ts";
 
-type SocialLinkField = {
+type SocialLinkRow = {
   readonly id: string;
   readonly url: string;
 };
@@ -15,14 +15,18 @@ type SocialLinkField = {
 type ProfileFormValues = {
   readonly name: string;
   readonly profile: string;
-  readonly socialLinks: readonly SocialLinkField[];
+  readonly socialLinks: readonly SocialLinkRow[];
 };
 
-function socialLinksForEditor(links: readonly string[]): readonly SocialLinkField[] {
+function newSocialLinkRow(url = ""): SocialLinkRow {
+  return { id: crypto.randomUUID(), url };
+}
+
+function socialLinksForEditor(links: readonly string[]): readonly SocialLinkRow[] {
   if (links.length === 0) {
-    return [{ id: crypto.randomUUID(), url: "" }];
+    return [newSocialLinkRow()];
   }
-  return links.map((url) => ({ id: crypto.randomUUID(), url }));
+  return links.map((url) => newSocialLinkRow(url));
 }
 
 function profileDraft(values: ProfileFormValues): ProfileDraft {
@@ -71,5 +75,5 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
   };
 }
 
-export { useProfileForm };
-export type { ProfileFormValues, SocialLinkField };
+export { newSocialLinkRow, useProfileForm };
+export type { ProfileFormValues, SocialLinkRow };
