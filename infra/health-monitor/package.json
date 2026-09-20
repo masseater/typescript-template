@@ -1,10 +1,10 @@
 {
   "name": "@repo/health-monitor",
   "private": true,
+  "type": "module",
   "exports": {
     "./config": "./src/config.ts"
   },
-  "type": "module",
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
