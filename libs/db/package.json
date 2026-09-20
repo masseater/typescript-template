@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
+    "./board": "./src/board.ts",
     "./bootstrap": "./src/bootstrap-statement.ts",
     "./testing": "./src/testing.ts",
     "./migrations": "./src/remote-operations.ts",

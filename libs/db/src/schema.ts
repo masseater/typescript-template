@@ -1,6 +1,7 @@
 import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
@@ -128,6 +129,8 @@ const auditEvent = sqliteTable(
 const schema = {
   account,
   auditEvent,
+  boardPost,
+  boardThread,
   follow,
   interview,
   memberOnboarding,
@@ -158,6 +161,7 @@ export {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
