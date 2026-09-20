@@ -26,6 +26,21 @@ type JourneyStage = {
   readonly page: Page;
 };
 
+const completeWelcomeOnboarding = async (
+  stage: JourneyStage,
+  visit: { readonly account: Account; readonly origin: string },
+): Promise<void> => {
+  await stage.page.waitForURL(`${visit.origin}/welcome/**`, { timeout: appearanceTimeout });
+  await seeHeading(stage.page, "規約への同意");
+  await press(stage.page, "同意して続ける");
+  await seeHeading(stage.page, "プロフィールの作り方");
+  await press(stage.page, "自分で入力する");
+  await seeHeading(stage.page, "基本項目の入力");
+  await fill(stage.page, { fieldLabel: "ユーザー名", typed: visit.account.name });
+  await press(stage.page, "保存してホームへ");
+  await stage.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout });
+};
+
 const signUpAndConfirm = async (
   stage: JourneyStage,
   role: "member" | "operator",
@@ -36,7 +51,7 @@ const signUpAndConfirm = async (
   await seeHeading(stage.page, "確認メールを送りました");
   await confirmEmail({ account, mail: stage.environment.mail, origin, page: stage.page });
   await signIn({ account, origin, page: stage.page });
-  await stage.page.waitForURL(`${origin}${homePattern}`, { timeout: appearanceTimeout });
+  await completeWelcomeOnboarding(stage, { account, origin });
   return { account, origin };
 };
 
