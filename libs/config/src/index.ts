@@ -150,11 +150,7 @@ export {
   storybookPort,
 } from "./applications.ts";
 export type { Application, Capability, CapabilityOf } from "./applications.ts";
-export {
-  authenticationMethods,
-  roles,
-  strongAuthenticationMethods,
-} from "./identity.ts";
+export { authenticationMethods, roles, strongAuthenticationMethods } from "./identity.ts";
 export type { Role, StrongAuthenticationMethod } from "./identity.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export { isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };

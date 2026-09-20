@@ -27,10 +27,10 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
-    "wrangler": "catalog:",
-    "@repo/vite-config": "workspace:*"
+    "wrangler": "catalog:"
   }
 }

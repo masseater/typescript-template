@@ -52,12 +52,12 @@
     "es-toolkit": "catalog:"
   },
   "devDependencies": {
+    "@repo/vite-config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "@repo/vite-config": "workspace:*"
+    "vite-plus": "catalog:"
   }
 }

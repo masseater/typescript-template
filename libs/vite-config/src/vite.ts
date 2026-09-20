@@ -2,11 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import {
-  applicationPorts,
-  loopbackAddress,
-  type Application,
-} from "@repo/config";
+import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { workerCompatibility } from "@repo/config/worker";

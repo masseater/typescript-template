@@ -6,8 +6,8 @@ import { request } from "node:https";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { URL } from "node:url";
 
-import { applications } from "@repo/config";
 import { runCli } from "@repo/cli";
+import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { deploymentAccess } from "./deployment-access.ts";

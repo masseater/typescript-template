@@ -19,7 +19,11 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     "./testing": "./src/testing.ts",
   },
   "libs/observability": { ".": "./src/index.ts", "./testing": "./src/testing.ts" },
-  "libs/runtime": { ".": "./src/index.ts", "./contracts": "./src/contracts.ts", "./security": "./src/security.ts" },
+  "libs/runtime": {
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts.ts",
+    "./security": "./src/security.ts",
+  },
   "libs/auth-ui": { ".": "./src/index.ts" },
   "libs/ui": { ".": "./src/index.ts" },
   "infra/cloudflare": { "./deployment": "./src/deployment.ts" },

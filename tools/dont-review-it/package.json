@@ -94,15 +94,14 @@
     "@opentelemetry/sdk-metrics": "catalog:",
     "@oxlint/plugins": "catalog:",
     "@repo/ai-native-telemetry": "workspace:*",
-    "@repo/config": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "msw": "catalog:",
     "shell-quote": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "@repo/vite-config": "workspace:*"
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "vite-plus": "^0.3.2"
