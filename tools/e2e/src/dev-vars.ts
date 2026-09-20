@@ -2,11 +2,9 @@ import { randomBytes } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { appEnvKey } from "@repo/config";
+import { appEnvKey, type Application } from "@repo/config";
 
 import { applicationRoot } from "./repository.ts";
-
-import type { Application } from "@repo/config";
 
 const secretBytes = 48;
 
