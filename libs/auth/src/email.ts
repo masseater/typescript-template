@@ -124,5 +124,7 @@ const sendContactEmail = (
     to: outbound.to,
   }).pipe(withSpan("email.contact"));
 
-export { mailSubjects, sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
+/** @internal */
+export { mailSubjects };
+export { sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
 export type { MailSettings };

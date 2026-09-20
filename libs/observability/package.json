@@ -10,13 +10,13 @@
   },
   "scripts": {},
   "dependencies": {
-    "@msw/cloudflare": "catalog:",
     "@repo/config": "workspace:*",
     "effect": "catalog:",
-    "msw": "catalog:",
     "web-vitals": "6.2.2"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:"
+    "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
+    "msw": "catalog:"
   }
 }
