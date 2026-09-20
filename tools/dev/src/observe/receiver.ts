@@ -6,11 +6,17 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { text } from "node:stream/consumers";
 
 import { APPLICATION, loopbackAddress, loopbackOrigin } from "@repo/config";
-import { flushTelemetry, httpStatus, observeRequest, Telemetry } from "@repo/observability";
+import {
+  flushTelemetry,
+  httpStatus,
+  observeRequest,
+  Telemetry,
+  TraceId,
+} from "@repo/observability";
 import { Cause, Effect, Schema } from "effect";
 
 const spanName = "http.server.request";
-const traceIdPattern = /^[0-9a-f]{32}$/u;
+const isTraceId = Schema.is(TraceId);
 
 class ReceiverCheckFailure extends Schema.TaggedError<ReceiverCheckFailure>()(
   "ReceiverCheckFailure",
@@ -235,7 +241,7 @@ const spanSignals = Effect.fn("spanSignals")(function* spanSignals(bodies: reado
 const matched = Effect.fn("matched")(function* matched(inbox: Inbox, lines: readonly string[]) {
   const logs = yield* logSignals(inbox.logs);
   const spans = yield* spanSignals(inbox.traces);
-  const span = spans.find((found) => found.body === spanName && traceIdPattern.test(found.traceId));
+  const span = spans.find((found) => found.body === spanName && isTraceId(found.traceId));
   const log = logs.find((found) => found.body === spanName && found.traceId === span?.traceId);
   if (span === undefined || log === undefined) {
     const exportFailure = lines.find((line) => line.includes('"event":"otlp.export_failed"'));
