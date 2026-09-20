@@ -1,13 +1,8 @@
 {
   "extends": "@repo/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": [
-      "esnext",
-      "dom"
-    ],
-    "types": [
-      "node"
-    ],
+    "lib": ["esnext", "dom"],
+    "types": ["node"],
     "plugins": [
       {
         "name": "@effect/language-service"
@@ -17,8 +12,5 @@
     "noFallthroughCasesInSwitch": true,
     "erasableSyntaxOnly": true
   },
-  "include": [
-    "src/**/*.ts",
-    "vite.config.ts"
-  ]
+  "include": ["src/**/*.ts", "vite.config.ts"]
 }

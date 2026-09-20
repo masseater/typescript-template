@@ -293,7 +293,6 @@ const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   yield* runStatement("UPDATE user SET role = ? WHERE id = ?", role, userId);
 });
 
-
 export {
   AuthApps,
   assignRoleByEmail,
