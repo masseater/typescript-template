@@ -21,7 +21,7 @@ const repositoryRootOf = (from: string): string => {
   }
 };
 
-const repositoryRoot = repositoryRootOf(import.meta.url);
+const repositoryRoot = realpathSync(repositoryRootOf(import.meta.url));
 
 const TEXT_EXTENSIONS = new Set([
   ".cjs",
@@ -189,7 +189,7 @@ const workspacePackageFile = (specifier: string): string | null => {
   const target = exportTarget(own(manifest, "exports"), subpath);
   if (target === null || !target.startsWith(".")) return null;
   const file = join(directory, target);
-  return statSync(file, { throwIfNoEntry: false })?.isFile() === true ? realpathSync(file) : null;
+  return statSync(file, { throwIfNoEntry: false })?.isFile() === true ? file : null;
 };
 
 const SPECIFIER = /(?:from\s+|import\s*\(\s*|require\(\s*|import\s+)["']([^"']+)["']/gu;
@@ -202,7 +202,13 @@ const specifiersIn = (text: string): readonly string[] =>
   [...text.matchAll(SPECIFIER)].map((match) => match[1] ?? "");
 
 const insideRepository = (file: string): boolean => {
-  const fromRoot = relative(repositoryRoot, file);
+  let resolved = file;
+  try {
+    resolved = realpathSync(file);
+  } catch {
+    resolved = file;
+  }
+  const fromRoot = relative(repositoryRoot, resolved);
   return fromRoot !== "" && !fromRoot.startsWith("..") && !fromRoot.includes("node_modules");
 };
 
@@ -251,8 +257,20 @@ const dependencyNamesIn = (directory: string): readonly string[] => {
 
 const workspaceDependencyEntries = (directory: string): readonly string[] =>
   dependencyNamesIn(directory).flatMap((name) => {
-    const file = workspacePackageFile(name);
-    return file === null ? [] : [file];
+    const pkgDir = packageDirectories.get(name);
+    if (pkgDir === undefined) {
+      const file = workspacePackageFile(name);
+      return file === null ? [] : [file];
+    }
+    const entry = workspacePackageFile(name);
+    const src = join(pkgDir, "src");
+    return [
+      ...(entry === null ? [] : [entry]),
+      ...filesUnder(pkgDir, false),
+      ...(statSync(src, { throwIfNoEntry: false })?.isDirectory() === true
+        ? filesUnder(src, true)
+        : []),
+    ];
   });
 
 const filesByDirectory = new Map<string, readonly string[]>();
