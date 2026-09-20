@@ -1,21 +1,19 @@
-import { assert, it } from "@effect/vitest";
+import { APPLICATION, ROLE } from "@repo/config";
 import {
-  BrowserClient,
-  Fixture,
-  HTTP_FORBIDDEN,
-  HTTP_OK,
+  AuthApps,
   PASSWORD,
-  TEST_TIMEOUT,
+  authTest,
   bootstrapVerifiedAdmin,
-  failureTag,
+  clientOf,
   registerVerified,
   runStatement,
+  runWith,
   signIn,
   signInAs,
-  withAuth,
 } from "@repo/auth/testing";
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/observability";
 import { Effect } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import {
   exchangeCode,
@@ -30,7 +28,7 @@ import {
 const tamperedSuffix = "xx";
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
-  const wiki = (yield* Fixture)["internal-dashboard"];
+  const wiki = (yield* AuthApps)[APPLICATION.wiki];
   const response = yield* Effect.promise(async () =>
     wiki.instance.handler(new Request(`${wikiOrigin}${path}`)),
   );
@@ -45,107 +43,125 @@ const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedToken
   return { tokens: yield* exchangeCode(flow, code), wiki };
 });
 
-it.effect(
-  "wiki publishes OAuth discovery for its MCP resource",
-  () =>
-    withAuth(
+describe("wiki MCP authorization", () => {
+  const it = authTest();
+
+  it("wiki publishes OAuth discovery for its MCP resource", async ({ auth }) => {
+    const result = await runWith(auth, () =>
       Effect.gen(function* program() {
         const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
-        assert.strictEqual(resource.status, HTTP_OK);
-        assert.deepInclude(resource.body, {
-          authorization_servers: [`${wikiOrigin}/api/auth`],
-          resource: `${wikiOrigin}/mcp`,
-        });
         const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
-        assert.deepInclude(server.body, {
-          code_challenge_methods_supported: ["S256"],
-          issuer: `${wikiOrigin}/api/auth`,
-          registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
-        });
         const challenge = yield* mcpRequest();
-        assert.strictEqual(responseStatus(challenge), httpStatus.unauthorized);
         const header =
           challenge instanceof Response ? challenge.headers.get("www-authenticate") : "";
-        const metadata = `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`;
-        assert.include(header ?? "", metadata);
+        return {
+          challengeStatus: responseStatus(challenge),
+          header: header ?? "",
+          resource,
+          server,
+        };
       }),
-    ),
-  TEST_TIMEOUT,
-);
+    );
+    expect(result.resource.status).toBe(httpStatus.ok);
+    expect(result.resource.body).toMatchObject({
+      authorization_servers: [`${wikiOrigin}/api/auth`],
+      resource: `${wikiOrigin}/mcp`,
+    });
+    expect(result.server.body).toMatchObject({
+      code_challenge_methods_supported: ["S256"],
+      issuer: `${wikiOrigin}/api/auth`,
+      registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
+    });
+    expect(result.challengeStatus).toBe(httpStatus.unauthorized);
+    expect(result.header).toContain(
+      `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`,
+    );
+  });
 
-it.effect(
-  "strong wiki administrator authorizes an MCP client that can then read the wiki",
-  () =>
-    withAuth(
+  it("strong wiki administrator authorizes an MCP client that can then read the wiki", async ({
+    auth,
+  }) => {
+    const result = await runWith(auth, () =>
       Effect.gen(function* program() {
         const { tokens } = yield* authorizedTokens();
         const granted = yield* mcpRequest(tokens.access_token);
-        assert.match(granted instanceof Response ? "" : granted.userId, /^.+$/u);
         const token = tokens.access_token;
         const tampered = `${token.slice(0, token.length - tamperedSuffix.length)}${tamperedSuffix}`;
-        assert.strictEqual(responseStatus(yield* mcpRequest(tampered)), httpStatus.unauthorized);
+        return {
+          grantedUserId: granted instanceof Response ? "" : granted.userId,
+          tamperedStatus: responseStatus(yield* mcpRequest(tampered)),
+        };
       }),
-    ),
-  TEST_TIMEOUT,
-);
+    );
+    expect(result.grantedUserId).toMatch(/^.+$/u);
+    expect(result.tamperedStatus).toBe(httpStatus.unauthorized);
+  });
 
-it.effect(
-  "demoted administrator loses MCP access even with an unexpired token",
-  () =>
-    withAuth(
+  it("demoted administrator loses MCP access even with an unexpired token", async ({ auth }) => {
+    const result = await runWith(auth, () =>
       Effect.gen(function* program() {
         const { tokens, wiki } = yield* authorizedTokens();
         const owner = yield* wiki.verify();
         yield* registerVerified("second@example.com");
-        yield* runStatement("UPDATE user SET role = 'admin' WHERE email = ?", "second@example.com");
-        yield* runStatement("UPDATE user SET role = 'member' WHERE id = ?", owner.user.id);
-        assert.strictEqual(yield* failureTag(wiki.verify()), "SessionRequired");
-        assert.strictEqual(responseStatus(yield* mcpRequest(tokens.access_token)), HTTP_FORBIDDEN);
+        yield* runStatement(
+          "UPDATE user SET role = ? WHERE email = ?",
+          ROLE.administrator,
+          "second@example.com",
+        );
+        yield* runStatement("UPDATE user SET role = ? WHERE id = ?", ROLE.member, owner.user.id);
+        return {
+          mcpStatus: responseStatus(yield* mcpRequest(tokens.access_token)),
+          sessionTag: yield* Effect.flip(wiki.verify()).pipe(Effect.map((error) => error._tag)),
+        };
       }),
-    ),
-  TEST_TIMEOUT,
-);
+    );
+    expect(result.sessionTag).toBe("SessionRequired");
+    expect(result.mcpStatus).toBe(httpStatus.forbidden);
+  });
 
-it.effect(
-  "weak or non-administrator wiki sessions cannot grant MCP access",
-  () =>
-    withAuth(
+  it("weak or non-administrator wiki sessions cannot grant MCP access", async ({ auth }) => {
+    const result = await runWith(auth, () =>
       Effect.gen(function* program() {
         const flow = yield* startAuthorization();
         yield* bootstrapVerifiedAdmin("owner@example.com");
-        const weak = yield* signInAs("internal-dashboard", "owner@example.com");
+        const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
         const continued = yield* weak.json("/oauth2/continue", {
           oauth_query: flow.oauthQuery,
           postLogin: true,
         });
-        assert.strictEqual(continued.status, HTTP_FORBIDDEN);
-        assert.deepInclude(continued.body, { message: "ADMIN_MFA_REQUIRED" });
-        const smuggled = yield* new BrowserClient((yield* Fixture)["internal-dashboard"]).json(
-          "/sign-in/email",
-          {
-            email: "owner@example.com",
-            oauth_query: flow.oauthQuery,
-            password: PASSWORD,
-          },
-        );
-        assert.strictEqual(smuggled.status, HTTP_FORBIDDEN);
-        assert.deepInclude(smuggled.body, { message: "OAUTH_QUERY_NOT_ACCEPTED" });
+        const smuggled = yield* (yield* clientOf(APPLICATION.wiki)).json("/sign-in/email", {
+          email: "owner@example.com",
+          oauth_query: flow.oauthQuery,
+          password: PASSWORD,
+        });
+        return { continued, smuggled };
       }),
-    ),
-  TEST_TIMEOUT,
-);
+    );
+    expect(result.continued).toStrictEqual({
+      body: { message: "ADMIN_MFA_REQUIRED" },
+      status: httpStatus.forbidden,
+    });
+    expect(result.smuggled).toStrictEqual({
+      body: { message: "OAUTH_QUERY_NOT_ACCEPTED" },
+      status: httpStatus.forbidden,
+    });
+  });
 
-it.effect(
-  "non-administrator wiki members cannot sign in or sign up",
-  () =>
-    withAuth(
+  it("non-administrator wiki members cannot sign in or sign up", async ({ auth }) => {
+    const result = await runWith(auth, () =>
       Effect.gen(function* program() {
         yield* registerVerified("member@example.com");
-        const member = new BrowserClient((yield* Fixture)["internal-dashboard"]);
-        assert.isFalse((yield* signIn(member, "member@example.com")).ok);
-        const signUp = { email: "new@example.com", name: "new", password: PASSWORD };
-        assert.isFalse((yield* member.request("/sign-up/email", signUp)).ok);
+        const member = yield* clientOf(APPLICATION.wiki);
+        const signInStatus = yield* signIn(member, "member@example.com");
+        const signUpStatus = yield* member.status("/sign-up/email", {
+          email: "new@example.com",
+          name: "new",
+          password: PASSWORD,
+        });
+        return { signInStatus, signUpStatus };
       }),
-    ),
-  TEST_TIMEOUT,
-);
+    );
+    expect(result.signInStatus).not.toBe(httpStatus.ok);
+    expect(result.signUpStatus).not.toBe(httpStatus.ok);
+  });
+});

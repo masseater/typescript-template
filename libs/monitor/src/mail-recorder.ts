@@ -1,14 +1,25 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 
-export type SentMail = {
+interface SentMail {
   readonly from: string;
   readonly subject: string;
   readonly text: string;
   readonly to: readonly string[];
-};
+}
 
-export class MailRecorder extends WorkerEntrypoint<{ readonly SENT_MAIL: KVNamespace }> {
-  public async send(sentMail: SentMail): Promise<void> {
-    await this.env.SENT_MAIL.put(`${Date.now()}-${crypto.randomUUID()}`, JSON.stringify(sentMail));
+const sent: SentMail[] = [];
+
+class MailRecorder extends WorkerEntrypoint {
+  // oxlint-disable-next-line eslint/class-methods-use-this
+  public send(message: SentMail): void {
+    sent.push(message);
+  }
+
+  // oxlint-disable-next-line eslint/class-methods-use-this
+  public taken(): SentMail[] {
+    return sent.splice(0);
   }
 }
+
+export { MailRecorder };
+export type { SentMail };

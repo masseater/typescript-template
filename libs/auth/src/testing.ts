@@ -1,20 +1,29 @@
 export {
-  Fixture,
-  HTTP_CREATED,
-  HTTP_FORBIDDEN,
-  HTTP_FOUND,
-  HTTP_NOT_FOUND,
-  HTTP_OK,
+  AuthApps,
   PASSWORD,
-  TEST_TIMEOUT,
+  audienceInputs,
+  audienceOnEmptyDatabase,
+  authTest,
   bootstrapVerifiedAdmin,
-  decodeOrDie,
+  clientOf,
   enableTotp,
-  failureTag,
+  missingSchemaFields,
+  pendingSecondFactor,
+  register,
   registerVerified,
-  runStatement,
+  requireStatus,
+  runWith,
+  sessionBeforeEnrollment,
   signIn,
+  signInAgainAfterTotp,
   signInAs,
+  spendSignInWindow,
+  verifyEmail,
   withAuth,
 } from "./auth-test-fixture.ts";
 export { BrowserClient, origins } from "./browser-client.ts";
+export { mailSubjects } from "./email.ts";
+export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
+export { UnexpectedStatus } from "./unexpected-status.ts";
+export { startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth-fixture.ts";
+export { runStatement } from "@repo/db/testing";

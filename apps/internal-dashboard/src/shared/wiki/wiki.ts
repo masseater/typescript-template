@@ -1,4 +1,4 @@
-import { readWikiConfig } from "@repo/config";
+import { APPLICATION, readWikiConfig } from "@repo/config";
 import { configuredAppLayer } from "@repo/runtime";
 import { Effect, Layer } from "effect";
 
@@ -9,7 +9,7 @@ import type { ConfigurationInvalid } from "@repo/config";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "@repo/runtime";
 
-const wikiService = "internal-dashboard";
+const wikiService = APPLICATION.wiki;
 
 type WikiServices = AppServices | Embedder;
 

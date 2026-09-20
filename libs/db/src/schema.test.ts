@@ -47,7 +47,7 @@ describe("the applied migrations", () => {
       ({ appliedDatabase, modelledDatabase }) => {
         expect(modelledDatabase).toStrictEqual({
           ...appliedDatabase,
-          primaryKeyNotNull: [0],
+          primaryKeyNotNull: [0, 1],
           triggers: [],
         });
       },
