@@ -15,6 +15,7 @@ import {
   memberPageSize,
 } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { reporting, runtime } from "./runtime.ts";
@@ -87,6 +88,7 @@ const userApi = createApi(apiRoot)
         }),
       failures,
     ),
-  );
+  )
+  .use(boardApi(api));
 
 export { userApi };
