@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import { APPLICATION, applicationPorts, loopbackAddress, type Application } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { workerCompatibility } from "@repo/config/worker";
@@ -46,6 +46,7 @@ function previewDevVars(appRoot: string): Plugin {
 
 const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
+  "libs/db/src/dashboard-literals.ts",
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
   "libs/runtime/src/security.ts",
@@ -272,6 +273,7 @@ function appConfig(
           compatibility_flags: [...workerCompatibility.flags],
           d1_databases: [localDatabase],
           main: "./src/app/server.ts",
+          ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
           name: `template-${app}`,
         },
         inspectorPort: false,

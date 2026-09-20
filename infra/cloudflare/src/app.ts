@@ -60,6 +60,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
+    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,
