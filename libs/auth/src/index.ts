@@ -10,7 +10,7 @@ export { SessionRequired } from "./session-required.ts";
 export { handleAuthRequest, verifyEmailToken } from "./auth-request.ts";
 export { sendContactEmail } from "./email.ts";
 export { acceptInvitation, mailInvite, previewInvitation } from "./invite.ts";
-export { InviteRejected } from "@repo/db/invite";
+export { InviteRejected } from "@repo/db";
 export type { MailSettings } from "./email.ts";
 export { verifySession } from "./session.ts";
 export type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";

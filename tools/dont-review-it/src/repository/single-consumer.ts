@@ -65,7 +65,30 @@ interface Read {
   readonly value: string;
 }
 
+<<<<<<< HEAD
 const singleConsumerAllowlist: readonly string[] = [];
+=======
+const singleConsumerAllowlist: readonly string[] = [
+  "package:@repo/dont-review-it",
+  "subpath:@repo/db/bootstrap",
+  "subpath:@repo/db/member-social",
+  "subpath:@repo/db/remote",
+  "subpath:@repo/db/security",
+  "subpath:@repo/dont-review-it/lint",
+  "subpath:@repo/dont-review-it/lint-rule-authoring",
+  "subpath:@repo/dont-review-it/lint-rule-authoring/plugin",
+  "subpath:@repo/dont-review-it/plugin",
+  "subpath:@repo/dont-review-it/record-fields",
+  "subpath:@repo/dont-review-it/repository-checks",
+  "subpath:@repo/dont-review-it/repository-plugin",
+  "subpath:@repo/dont-review-it/test-runtime",
+  "subpath:@repo/dont-review-it/vitest",
+  "subpath:@repo/dont-review-it/vitest/parsed-fields",
+  "subpath:@repo/monitor/fixture",
+  "subpath:@repo/ui/lint-settings",
+  "subpath:@repo/ui/storybook/preview",
+];
+>>>>>>> 104fd04f (Export invite acceptance from the database package root)
 
 const isIdent = (char: string): boolean => /[A-Za-z0-9_$]/u.test(char);
 

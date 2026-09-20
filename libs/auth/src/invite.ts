@@ -1,4 +1,4 @@
-import { acceptInvite, previewInvite } from "@repo/db/invite";
+import { acceptInvite, previewInvite } from "@repo/db";
 import { hashPassword } from "better-auth/crypto";
 import { Effect } from "effect";
 
