@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { PlanPage } from "#pages/settings/index.ts";
+import { loadPlan, readCheckoutReturn } from "#pages/settings/index.ts";
+import { PlanRoute } from "./-plan-route.tsx";
 
 const Route = createFileRoute("/_member/settings/plan")({
-  component: PlanPage,
+  component: PlanRoute,
+  gcTime: 0,
+  loader: loadPlan,
+  validateSearch: readCheckoutReturn,
 });
 
 export { Route };

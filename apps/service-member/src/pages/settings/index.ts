@@ -4,3 +4,6 @@ export { LeavePage } from "./ui/leave-page.tsx";
 export { NotificationsPage } from "./ui/notifications-page.tsx";
 export { PlanPage } from "./ui/plan-page.tsx";
 export { SettingsPage } from "./ui/settings-page.tsx";
+export { loadPlan } from "./api/plan.ts";
+export { CHECKOUT_RETURN, readCheckoutReturn } from "./model/checkout-return.ts";
+export type { CheckoutReturnSearch } from "./model/checkout-return.ts";
