@@ -277,6 +277,21 @@ const lintOptions = {
         ],
       },
     },
+    {
+      files: [
+        "infra/budget-monitor/**",
+        "infra/cloudflare/**",
+        "infra/local/**",
+        "libs/config/**",
+        "tools/commander/**",
+        "tools/dev/**",
+        "tools/dont-review-it/src/repository/client-bundle.ts",
+      ],
+      rules: {
+        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
+        "node/no-process-env": LINT_SEVERITY.OFF,
+      },
+    },
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,

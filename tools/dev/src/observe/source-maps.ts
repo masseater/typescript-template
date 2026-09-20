@@ -1,14 +1,10 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { SourceMap } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, Schema } from "effect";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 import type { Application } from "@repo/config";
 
@@ -89,23 +85,21 @@ function directoryEntries(directory: string): Effect.Effect<Dirent[], SourceMapF
   );
 }
 
-function entryMap(
-  directory: string,
-  entry: DirectoryEntry,
-  filename: string,
-): Effect.Effect<string | undefined, SourceMapFailure> {
-  const candidate = path.join(directory, entry.name);
-  if (entry.isFile() && entry.name === `${filename}.map`) {
-    return Effect.succeed(candidate);
-  }
-  // oxlint-disable-next-line typescript/no-use-before-define
-  return entry.isDirectory() ? findMap(candidate, filename) : Effect.undefined;
-}
-
 function findMap(
   directory: string,
   filename: string,
 ): Effect.Effect<string | undefined, SourceMapFailure> {
+  const entryMap = (
+    entryDirectory: string,
+    entry: DirectoryEntry,
+    mapFilename: string,
+  ): Effect.Effect<string | undefined, SourceMapFailure> => {
+    const candidate = path.join(entryDirectory, entry.name);
+    if (entry.isFile() && entry.name === `${mapFilename}.map`) {
+      return Effect.succeed(candidate);
+    }
+    return entry.isDirectory() ? findMap(candidate, mapFilename) : Effect.undefined;
+  };
   return directoryEntries(directory).pipe(
     Effect.flatMap((entries) =>
       Effect.forEach(entries, (entry: DirectoryEntry) => entryMap(directory, entry, filename)),

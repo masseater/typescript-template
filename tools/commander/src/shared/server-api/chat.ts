@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import {
@@ -84,7 +83,6 @@ function toolSummary(name: string, input: unknown, scripts: string): string {
 class Conversation {
   private readonly parts: Parts;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public constructor(parts: Parts) {
     this.parts = parts;
   }

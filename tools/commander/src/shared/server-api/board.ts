@@ -37,7 +37,6 @@ const unwatchedInterval = "30 seconds";
 class Board {
   private readonly parts: Parts;
 
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public constructor(parts: Parts) {
     this.parts = parts;
   }

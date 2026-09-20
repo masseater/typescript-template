@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { randomBytes } from "node:crypto";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { applications } from "@repo/config";

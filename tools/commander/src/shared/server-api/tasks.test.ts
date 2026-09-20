@@ -70,19 +70,15 @@ function repositoryWithLinkedWorktree(
 function hookEnvironment(gitDirectory: string): Effect.Effect<void, never, Scope.Scope> {
   return Effect.acquireRelease(
     Effect.sync(() => {
-      // oxlint-disable-next-line node/no-process-env
       const previous = process.env["GIT_DIR"];
-      // oxlint-disable-next-line node/no-process-env
       process.env["GIT_DIR"] = gitDirectory;
       return previous;
     }),
     (previous) =>
       Effect.sync(() => {
         if (previous === undefined) {
-          // oxlint-disable-next-line node/no-process-env
           delete process.env["GIT_DIR"];
         } else {
-          // oxlint-disable-next-line node/no-process-env
           process.env["GIT_DIR"] = previous;
         }
       }),

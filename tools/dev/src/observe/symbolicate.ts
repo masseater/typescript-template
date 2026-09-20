@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
 import { causeRecord, runCli } from "@repo/cli";

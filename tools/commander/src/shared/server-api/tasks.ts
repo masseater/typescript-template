@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect, Schema } from "effect";

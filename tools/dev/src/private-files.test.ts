@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, readFile, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { applicationOrigins } from "@repo/config";

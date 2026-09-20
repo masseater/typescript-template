@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { loopbackAddress, loopbackOrigin } from "@repo/config";
@@ -48,7 +47,6 @@ function isBuiltServer(value: unknown): value is BuiltServer {
 function configure(settings: Readonly<Record<string, string | undefined>>): void {
   for (const [name, value] of Object.entries(settings)) {
     if (value !== undefined) {
-      // oxlint-disable-next-line node/no-process-env
       process.env[name] = value;
     }
   }

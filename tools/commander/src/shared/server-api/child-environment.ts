@@ -20,7 +20,6 @@ function childEnvironment(
   overrides: Readonly<Record<string, string>>,
   withheld: ReadonlySet<string> = new Set(),
 ): Record<string, string> {
-  // oxlint-disable-next-line node/no-process-env
   const inherited = Object.entries(process.env).flatMap(([name, value]) =>
     value === undefined || repositoryLocation.has(name) || withheld.has(name)
       ? []

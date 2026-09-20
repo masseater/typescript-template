@@ -37,12 +37,12 @@ function action(kind: PlannedAction["action"], logicalId: string): PlannedAction
 }
 
 function nativePlan(shape: Readonly<Record<string, unknown>>): Plan {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the assertion builds the partial alchemy plan and expression the confirmation code is tested against
   return shape as unknown as Plan;
 }
 
 function expression(logicalId: string): unknown {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the assertion builds the partial alchemy plan and expression the confirmation code is tested against
   return new ResourceExpr({ LogicalId: logicalId, Type: "Cloudflare.Test" } as never);
 }
 

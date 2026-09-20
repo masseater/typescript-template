@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
@@ -49,7 +46,7 @@ function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
     }),
   ).pipe(
     Effect.match({
-      // oxlint-disable-next-line unicorn/no-null
+      // oxlint-disable-next-line unicorn/no-null -- a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field
       onFailure: () => null,
       onSuccess: (response) => response.status,
     }),

@@ -22,10 +22,7 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/users/")({
-  validateSearch: requireUsersSearch,
-  loaderDeps: ({ search }: Readonly<{ search: UsersSearch }>) => search,
   beforeLoad: ({
     location,
     search,
@@ -37,10 +34,12 @@ const Route = createFileRoute("/_member/users/")({
       throw redirect({ replace: true, search, to: "/users" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
   component: UsersRoute,
   errorComponent: UsersFailed,
+  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
+  loaderDeps: ({ search }: Readonly<{ search: UsersSearch }>) => search,
   pendingComponent: UsersPending,
+  validateSearch: requireUsersSearch,
 });
 
 export { Route };

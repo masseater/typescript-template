@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createHash, createPublicKey } from "node:crypto";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { loopbackAddress } from "@repo/config";
@@ -22,7 +19,6 @@ const portlessHome = new URL("portless/", local);
 const certificateAuthority = new URL("ca.pem", portlessHome);
 const portless = fileURLToPath(new URL("../node_modules/.bin/portless", import.meta.url));
 const portlessEnvironment = {
-  // oxlint-disable-next-line node/no-process-env
   ...process.env,
   PORTLESS_STATE_DIR: fileURLToPath(portlessHome),
   PORTLESS_SYNC_HOSTS: "0",
