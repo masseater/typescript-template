@@ -3,11 +3,19 @@ import { readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 
 import { applicationPorts, loopbackAddress } from "./applications.ts";
+import { devBoundary } from "./dev-boundary/dev-boundary.ts";
+import { localDatabase, localDatabasePersistence } from "./local-database-path.ts";
+import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+import { repositoryRoot } from "./repository-root.ts";
+import { workerCompatibility } from "./worker.ts";
 
-import type { Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
+import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
 import type { Application } from "./applications.ts";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
@@ -232,7 +240,49 @@ const appRun = {
   },
 } satisfies RunConfig;
 
+const noExtraPlugins: readonly PluginOption[] = [];
+
+function appConfig(
+  app: Application,
+  plugins: readonly PluginOption[] = noExtraPlugins,
+): (env: Readonly<ConfigEnv>) => UserConfig {
+  const appRoot = path.join(repositoryRoot, "apps", app);
+  return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
+    build: { sourcemap: "hidden" },
+    plugins: [
+      failOnBrokenSourceMaps(),
+      previewDevVars(appRoot),
+      privateSourceMaps(app),
+      devBoundary(app),
+      cloudflare({
+        config: {
+          assets: {
+            binding: "ASSETS",
+            run_worker_first: command !== "serve" || isPreview === true,
+          },
+          compatibility_date: workerCompatibility.date,
+          compatibility_flags: [...workerCompatibility.flags],
+          d1_databases: [localDatabase],
+          main: "./src/app/server.ts",
+          name: `template-${app}`,
+        },
+        inspectorPort: false,
+        persistState: { path: localDatabasePersistence },
+        viteEnvironment: { name: "ssr" },
+      }),
+      ...plugins,
+      tailwindcss(),
+      ...withoutEnvFileLoader(tanstackStart(startOptions)),
+      reactCompiler(),
+    ],
+    preview: appServer(app),
+    run: appRun,
+    server: appServer(app),
+  });
+}
+
 export {
+  appConfig,
   appRun,
   appServer,
   clientReachableModules,
@@ -252,5 +302,5 @@ export {
   testRun,
   withoutEnvFileLoader,
 };
-export { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { applications, type Application } from "@repo/config";
+import { applications, type Application } from "../applications.ts";
 
 const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);

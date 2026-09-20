@@ -15,14 +15,19 @@
     "./source-maps": "./src/source-maps.ts",
     "./deployment-keys": "./src/deployment-keys.ts",
     "./vite": "./src/vite.ts",
+    "./dev-boundary": "./src/dev-boundary/dev-boundary.ts",
     "./worker": "./src/worker.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@cloudflare/vite-plugin": "1.54.10",
     "@effect/platform-node": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "effect": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "wrangler": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
