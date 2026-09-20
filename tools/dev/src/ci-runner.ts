@@ -95,7 +95,7 @@ function serviceOf(root: string): Effect.Effect<RunnerService, LocalCommandFailu
 }
 
 function isMissing(cause: unknown): boolean {
-  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT";
+  return Predicate.isObject(cause) && "code" in cause && cause.code === "ENOENT";
 }
 
 function installedDocument(plistFile: string): Effect.Effect<string, LocalCommandFailure> {
