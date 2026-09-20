@@ -2,8 +2,7 @@ import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopbackAddress, type Application } from "@repo/config";
-
+import { loopbackAddress, type Application } from "../applications.ts";
 import { privatePath } from "./private-path.ts";
 import { createRequestGuard, resolvePath, type RequestGuard } from "./request-guard.ts";
 import { serverOptions } from "./server-options.ts";
@@ -12,7 +11,7 @@ import type { ConfigEnv, Plugin, ResolvedConfig } from "vite-plus";
 
 const devBoundary = (
   application: Application,
-  repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url)),
+  repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url)),
 ): Plugin => {
   const canonicalRepositoryRoot = realpath(repositoryRoot);
   return {
