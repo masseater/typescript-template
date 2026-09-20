@@ -63,10 +63,12 @@ interface Read {
 }
 
 const singleConsumerAllowlist: readonly string[] = [
+  "package:@repo/dev-boundary",
   "package:@repo/interview",
   "package:@repo/quality",
   "package:@repo/stop-ai-slop",
   "subpath:@repo/auth/mcp",
+  "subpath:@repo/config/dev-boundary",
   "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/interview",
   "subpath:@repo/db/remote",
@@ -78,11 +80,11 @@ const singleConsumerAllowlist: readonly string[] = [
   "subpath:@repo/interview/contracts",
   "subpath:@repo/lint-rule-authoring/plugin",
   "subpath:@repo/monitor/fixture",
-  "subpath:@repo/observability/testing",
   "subpath:@repo/quality/lint",
   "subpath:@repo/quality/plugin",
   "subpath:@repo/quality/test-runtime",
-  "subpath:@repo/runtime/contact",
+  "subpath:@repo/runtime/contracts",
+  "subpath:@repo/runtime/testing",
   "subpath:@repo/runtime/wiki",
   "subpath:@repo/ui/lint-settings",
   "subpath:@repo/ui/signup",

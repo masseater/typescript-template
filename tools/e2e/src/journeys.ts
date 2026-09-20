@@ -83,7 +83,10 @@ const openListedSetting = async (
 ): Promise<void> => {
   await stage.page.goto(`${visit.origin}/settings`);
   await seeHeading(stage.page, "設定");
-  await stage.page.getByRole("link", { exact: true, name: visit.listedSetting.name }).click();
+  await stage.page
+    .getByRole("list")
+    .getByRole("link", { exact: true, name: visit.listedSetting.name })
+    .click();
   await seeHeading(stage.page, visit.listedSetting.heading);
 };
 
