@@ -216,7 +216,7 @@ const appRun = {
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
     "check:dev": {
-      command: "dev-start",
+      command: "node ../../tools/dev/src/dev-start.ts",
       dependsOn: ["@repo/dev#setup"],
       input: [
         ...taskInput,
