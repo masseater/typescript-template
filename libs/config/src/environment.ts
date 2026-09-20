@@ -80,7 +80,6 @@ const AiBindings = Schema.Struct({
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
 });
 
-/** @canonical-values config.stripe-key-mode */
 const stripeKeyModes = ["live", "test"] as const;
 type StripeKeyMode = (typeof stripeKeyModes)[number];
 const StripeSecretKey = Schema.String.check(

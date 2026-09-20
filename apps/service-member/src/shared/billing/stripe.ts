@@ -179,4 +179,3 @@ class Stripe extends Context.Service<Stripe, StripeShape>()("#shared/billing/Str
 }
 
 export { Stripe, StripeEvent };
-export type { CheckoutInput, Offer, PortalInput };

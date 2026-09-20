@@ -1,4 +1,3 @@
-/** @canonical-values ui.checkout-return */
 const checkoutReturns = ["cancel", "success"] as const;
 type CheckoutReturn = (typeof checkoutReturns)[number];
 const CHECKOUT_RETURN = {
@@ -20,4 +19,3 @@ function readCheckoutReturn(raw: unknown): CheckoutReturnSearch {
 }
 
 export { CHECKOUT_RETURN, readCheckoutReturn };
-export type { CheckoutReturn, CheckoutReturnSearch };

@@ -55,4 +55,4 @@ function appVariables(
   };
 }
 
-export { appVariables, sharedRunnerCredentials, stripePlaceholders };
+export { appVariables, sharedRunnerCredentials };

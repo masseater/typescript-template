@@ -1,7 +1,9 @@
 import { PLAN, SUBSCRIPTION_STATUS } from "@repo/config";
 import { formatWarekiDate } from "@repo/ui";
 
-import type { Plan } from "#pages/settings/api/plan.ts";
+import type { PlanView } from "#shared/contracts/index.ts";
+
+type Plan = typeof PlanView.Type;
 
 interface PlanSummary {
   readonly attention: string | undefined;
@@ -40,4 +42,3 @@ function summarizePlan(plan: Plan): PlanSummary {
 }
 
 export { summarizePlan };
-export type { PlanSummary };

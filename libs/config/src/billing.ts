@@ -1,4 +1,3 @@
-/** @canonical-values config.plan */
 const plans = ["free", "paid"] as const;
 type Plan = (typeof plans)[number];
 const PLAN = { free: plans[0], paid: plans[1] } as const satisfies Record<string, Plan>;
@@ -40,7 +39,6 @@ const WEBHOOK_OUTCOME = {
   ignored: webhookOutcomes[2],
 } as const satisfies Record<string, WebhookOutcome>;
 
-/** @canonical-values config.price-interval */
 const priceIntervals = ["day", "week", "month", "year"] as const;
 type PriceInterval = (typeof priceIntervals)[number];
 
