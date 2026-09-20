@@ -4,6 +4,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -131,6 +132,8 @@ const schema = {
   follow,
   interview,
   memberOnboarding,
+  notification,
+  notificationPreference,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -161,3 +164,6 @@ export {
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export { notification, notificationPreference } from "./notification-schema.ts";
+export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
+export type { NotificationKind } from "@repo/config";
