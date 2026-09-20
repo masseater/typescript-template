@@ -33,7 +33,7 @@ function memberNavItems(paid: boolean): readonly MemberNavItem[] {
   ];
 }
 
-const memberPageTitles: Readonly<Record<MemberNavPath | "/support" | "/users", string>> = {
+const memberPageTitles: Readonly<Record<MemberNavPath | "/support", string>> = {
   "/board": "掲示板",
   "/home": "ホーム",
   "/messages": "メッセージ",
@@ -41,7 +41,6 @@ const memberPageTitles: Readonly<Record<MemberNavPath | "/support" | "/users", s
   "/search": "探す",
   "/support": "お問い合わせ",
   "/upgrade": "有料プラン",
-  "/users": "探す",
 };
 
 function titleForPath(pathname: string): string {

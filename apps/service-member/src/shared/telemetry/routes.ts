@@ -33,8 +33,9 @@ export const routes = {
   "/settings/profile": "profile-edit",
   "/settings/security": "security",
   "/signup": "signup",
+  "/search": "search",
   "/upgrade": "upgrade",
-  "/users": "users",
+  "/users": "users-redirect",
   "/users/*": "profile",
   "/verify-email": "verify-email",
 } as const;

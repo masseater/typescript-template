@@ -74,7 +74,7 @@ const browseMainScreens = async (stage: JourneyStage, _account: Account): Promis
   await openMainNav(stage, { heading: "メッセージ", linkName: "メッセージ" });
   await openMainNav(stage, { heading: "通知", linkName: "通知" });
   await openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
-  await stage.page.goto(`${origin}/users`);
+  await stage.page.goto(`${origin}/search`);
   await stage.page.waitForURL(`${origin}/upgrade`, { timeout: appearanceTimeout });
   await seeHeading(stage.page, "有料プラン");
 };
