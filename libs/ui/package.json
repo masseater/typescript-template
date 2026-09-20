@@ -17,6 +17,7 @@
     "@base-ui/react": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@repo/runtime": "workspace:*",
     "@smarthr/wareki": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
