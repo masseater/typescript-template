@@ -16,11 +16,6 @@ const welcomePath = {
   profile: "/welcome/profile",
 } as const satisfies Readonly<Record<Exclude<OnboardingStep, "done">, string>>;
 
-function normalizedPath(pathname: string): string {
-  const trimmed = pathname.replace(/\/+$/u, "");
-  return trimmed === "" ? "/" : trimmed;
-}
-
 async function enterPublicFrame(pathname: string): Promise<void> {
   if (!entrances.has(pathname)) {
     return;
@@ -48,7 +43,6 @@ async function enterMemberFrame(href: string, pathname: string): Promise<{ sessi
 
 async function enterWelcomeFrame(
   href: string,
-  pathname: string,
 ): Promise<{ session: Session; step: OnboardingStep }> {
   const session = await loadSession();
   if (session === undefined) {
@@ -57,10 +51,6 @@ async function enterWelcomeFrame(
   const step = await loadOnboardingStep();
   if (step === "done") {
     throw redirect({ to: "/home" });
-  }
-  const expected = welcomePath[step];
-  if (normalizedPath(pathname) !== normalizedPath(expected)) {
-    throw redirect({ to: expected });
   }
   return { session, step };
 }
