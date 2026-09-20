@@ -32,15 +32,29 @@ it.effect("writes an owner-only env file from required deployment keys", () =>
     const required = Object.fromEntries(
       deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
     );
-    const filename = yield* writeCiSecretsFile({
+    const preparation = yield* writeCiSecretsFile({
       ...required,
       GITHUB_ENV: githubEnv,
       RUNNER_TEMP: runnerTemp,
     });
-    const contents = yield* Effect.promise(async () => readFile(filename, "utf-8"));
+    assert.strictEqual(preparation.status, "ready");
+    if (preparation.status !== "ready") {
+      return;
+    }
+    const contents = yield* Effect.promise(async () => readFile(preparation.filename, "utf-8"));
     assert.include(contents, "TEMPLATE_PREFIX=");
     const pointer = yield* Effect.promise(async () => readFile(githubEnv, "utf-8"));
-    assert.include(pointer, `TEMPLATE_CLOUDFLARE_ENV_FILE=${filename}`);
+    assert.include(pointer, `TEMPLATE_CLOUDFLARE_ENV_FILE=${preparation.filename}`);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reports unconfigured when every deployment key is absent", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const preparation = yield* writeCiSecretsFile({
+      RUNNER_TEMP: path.join(directory, "runner"),
+    });
+    assert.strictEqual(preparation.status, "unconfigured");
   }).pipe(Effect.scoped),
 );
 

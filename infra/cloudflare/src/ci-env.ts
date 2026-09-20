@@ -15,6 +15,10 @@ class PrepareCiEnvFailure extends Schema.TaggedError<PrepareCiEnvFailure>()("Pre
   keys: Schema.Array(Schema.String),
 }) {}
 
+type CiEnvPreparation =
+  | { readonly filename: string; readonly status: "ready" }
+  | { readonly status: "unconfigured" };
+
 function envValue(
   key: string,
   environment: Readonly<Record<string, string | undefined>>,
@@ -34,7 +38,11 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
     const value = envValue(key, environment);
     return { key, value } as const;
   });
+  const present = required.flatMap(({ key, value }) => (value === undefined ? [] : [key]));
   const missing = required.flatMap(({ key, value }) => (value === undefined ? [key] : []));
+  if (present.length === 0) {
+    return { status: "unconfigured" } as const satisfies CiEnvPreparation;
+  }
   if (missing.length > 0) {
     return yield* Effect.fail(
       new PrepareCiEnvFailure({ code: "ci_env_incomplete", keys: missing }),
@@ -65,7 +73,8 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
       try: async () => appendFile(githubEnv, `TEMPLATE_CLOUDFLARE_ENV_FILE=${filename}\n`),
     });
   }
-  return filename;
+  return { filename, status: "ready" } as const satisfies CiEnvPreparation;
 });
 
 export { PrepareCiEnvFailure, writeCiSecretsFile };
+export type { CiEnvPreparation };
