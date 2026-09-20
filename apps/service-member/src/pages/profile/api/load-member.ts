@@ -31,4 +31,4 @@ function memberOptions(id: string) {
   });
 }
 
-export { memberKey, memberOptions };
+export { memberOptions };
