@@ -1,1 +1,1 @@
-premerge は prepr を引かないが prerelease は prepr+premerge を残し、ungated 判定を崩さない。
+SKIP_LINT_NATIVE / concurrency-limit を外し、構造としては premerge が prepr を引かないことで MQ 上の oxlint と vitest 併走を止める。origins キー修正は維持。
