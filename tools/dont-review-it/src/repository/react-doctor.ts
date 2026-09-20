@@ -134,10 +134,7 @@ const scanProjects = (application: Application) =>
 const inspect = (application: Application) =>
   Effect.fn("inspect")(function* inspect() {
     const [{ report, scanned }, listed] = yield* Effect.all(
-      [
-        scanProjects(application),
-        scan(["rules", "list", "--json", "-c", "tools/dont-review-it"]),
-      ],
+      [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
       { concurrency: "unbounded" },
     );
     const { failed, stderr } = scanned;
