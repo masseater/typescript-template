@@ -6,13 +6,16 @@ import {
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 
+import { glossaryTerms } from "#shared/content/glossary-terms.ts";
+import { GlossaryTermsProvider } from "./glossary-terms-provider.tsx";
 import { Mermaid } from "./mermaid.tsx";
+import { TermLink } from "./term-link.tsx";
 import { WikiDocLink } from "./wiki-doc-link.tsx";
 
 import type { docs } from "#shared/content/index.ts";
 import type { ReactElement } from "react";
 
-const mdxComponents = { ...defaultMdxComponents, Mermaid, a: WikiDocLink };
+const mdxComponents = { ...defaultMdxComponents, Mermaid, TermLink, a: WikiDocLink };
 
 type DocsEntry = NonNullable<ReturnType<typeof docs.getPage>>;
 
@@ -24,7 +27,9 @@ function DocsContent({ page }: Readonly<{ page: DocsEntry }>): ReactElement {
       <DocsTitle>{page.title}</DocsTitle>
       <DocsDescription>{page.description}</DocsDescription>
       <DocsBody>
-        <Body components={mdxComponents} />
+        <GlossaryTermsProvider terms={glossaryTerms()}>
+          <Body components={mdxComponents} />
+        </GlossaryTermsProvider>
       </DocsBody>
     </DocsPageLayout>
   );

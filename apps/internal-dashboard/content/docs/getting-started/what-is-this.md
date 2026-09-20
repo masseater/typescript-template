@@ -14,6 +14,7 @@ description: テンプレートの概要と、含まれているもの、使い�
 - 利用者アプリ・管理者アプリ・wiki・司令塔アプリ（`tools/commander`）。それぞれの役割は [アプリの役割](/getting-started/applications) にある
 - 各画面の仕様。ページ構成の節（[利用者アプリのレイアウト](/pages/member-layout) ほか）にあり、使い始めた後も、画面の仕様を書き足していく場所としてそのまま使う
 - データの概念と関係。[データモデル](/data-model/overview) に ER 図があり、本格開発のときに節ごと差し替える
+- ドメイン用語。[用語集](/glossary) にあり、文書中の `[[用語]]` からホバーで解説を見て移れる
 - 実装とレビューの基準。[ガイドライン](/guidelines/principles) にある
 - 規約の違反を、型・lint・テストで機械的に見つける検査
 - Cloudflare の資源を宣言する Alchemy のコード

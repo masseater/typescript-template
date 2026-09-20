@@ -446,6 +446,9 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 1.46.0(react@19.3.0)
+      mdast-util-mdx-jsx:
+        specifier: ^3.2.0
+        version: 3.2.0(supports-color@10.2.2)
       mermaid:
         specifier: 12.0.0
         version: 12.0.0
@@ -458,6 +461,9 @@ importers:
       source-map:
         specifier: 0.8.0
         version: 0.8.0
+      unist-util-visit-parents:
+        specifier: ^6.0.2
+        version: 6.0.2
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -468,6 +474,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       '@types/mdx':
         specifier: 2.0.14
         version: 2.0.14

@@ -3,14 +3,14 @@ title: データモデルの全体
 description: 会員サービスのドメインを ER 図で示し、本格開発のときに差し替える前提の関係図
 ---
 
-この節が持つのは、画面の仕様が前提にしている概念と関係である。表定義や ORM の写しではない。本格的な開発に取りかかるときは、この節ごと差し替え、自分のサービスの境界と語彙に置き換える。
+この節が持つのは、画面の仕様が前提にしている概念と関係である。表定義や ORM の写しではない。本格的な開発に取りかかるときは、この節ごと差し替え、自分のサービスの境界と語彙に置き換える。語彙の短い定義は [用語集](/glossary) が持ち、本文では `[[会員アカウント]]` のように参照する。
 
 ページ構成の節が画面の振る舞いを持ち、この節が画面の背後にあるデータの境界を持つ。同じ概念を両方に詳しく書かない。画面側は操作と表示を、こちらは実体と関係と不変条件を持つ。
 
 ## 差し替え方
 
 1. 自分のサービスの境界で、残す概念と捨てる概念を決める
-2. この節の文書を、残す概念の語彙と ER 図に書き換える
+2. この節の文書と [用語集](/glossary) を、残す概念の語彙と ER 図に書き換える
 3. ページ構成の節のうち、捨てた概念に触れている画面の仕様を合わせて直す
 4. 実装のスキーマは `libs/db` が持つ。文書の概念名と表名を機械で対応付けない
 
@@ -18,7 +18,7 @@ description: 会員サービスのドメインを ER 図で示し、本格開発
 
 ## アカウントの境界
 
-利用者・運用担当・社内の人は、それぞれ別のアカウント領域を持つ。同じ人が複数の立場を持つなら、アカウントも複数持つ。誰が何に触れるかは [アプリの役割](/getting-started/applications) が持つ。
+利用者・運用担当・社内の人は、それぞれ別のアカウント領域を持つ。[[会員アカウント]]・[[管理者アカウント]]・[[社内アカウント]] を分け、同じ人が複数の立場を持つならアカウントも複数持つ。誰が何に触れるかは [アプリの役割](/getting-started/applications) が持つ。
 
 ```mermaid
 erDiagram
@@ -35,7 +35,7 @@ erDiagram
 
 ## ドメインの関係
 
-会員サービスの中核は、プロフィールを軸にしたつながりと、掲示板・メッセージ・契約・信頼・安全である。
+会員サービスの中核は、[[会員プロフィール]] を軸にしたつながりと、掲示板・メッセージ・契約・信頼・安全である。
 
 ```mermaid
 erDiagram
@@ -80,13 +80,13 @@ erDiagram
 
 | 概念 | 主な画面 |
 | --- | --- |
-| MemberAccount / 認証 | [新規登録](/pages/member-signup)、[ログイン](/pages/member-login) |
-| MemberProfile / Follow / Block | [プロフィール](/pages/member-profile)、[探す](/pages/member-users)、[ホーム](/pages/member-home) |
-| InterviewSheet | [AI インタビュー](/pages/member-interview) |
-| Conversation / Message / Group | [メッセージ](/pages/member-messages)、[グループ](/pages/member-groups) |
-| BoardThread / BoardPost | [掲示板](/pages/member-board) |
-| Notification | [通知](/pages/member-notifications) |
-| PlanSubscription | [有料の案内](/pages/member-upgrade)、[プランと解約](/pages/member-settings) |
-| AgreementVersion | [規約への同意](/pages/member-agreement) |
-| Inquiry | [お問い合わせ](/pages/member-contact)、[会員のお問い合わせ](/pages/member-support)、[管理者の問い合わせ](/pages/admin-inquiries) |
-| Report / ModerationAction | [通報](/pages/admin-reports)、[利用者の詳細](/pages/admin-member-detail) |
+| [[会員アカウント]] / 認証 | [新規登録](/pages/member-signup)、[ログイン](/pages/member-login) |
+| [[会員プロフィール]] / [[フォロー]] / [[ブロック]] | [プロフィール](/pages/member-profile)、[探す](/pages/member-users)、[ホーム](/pages/member-home) |
+| [[インタビューシート]] | [AI インタビュー](/pages/member-interview) |
+| [[会話]] / [[メッセージ]] / [[グループ]] | [メッセージ](/pages/member-messages)、[グループ](/pages/member-groups) |
+| [[スレッド]] / [[投稿]] | [掲示板](/pages/member-board) |
+| [[通知]] | [通知](/pages/member-notifications) |
+| [[契約]] | [有料の案内](/pages/member-upgrade)、[プランと解約](/pages/member-settings) |
+| [[規約の版]] | [規約への同意](/pages/member-agreement) |
+| [[問い合わせ]] | [お問い合わせ](/pages/member-contact)、[会員のお問い合わせ](/pages/member-support)、[管理者の問い合わせ](/pages/admin-inquiries) |
+| [[通報]] / [[処置]] | [通報](/pages/admin-reports)、[利用者の詳細](/pages/admin-member-detail) |
