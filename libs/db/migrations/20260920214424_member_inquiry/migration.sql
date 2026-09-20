@@ -1,6 +1,6 @@
 CREATE TABLE `inquiry` (
 	`created_at` integer NOT NULL,
-	`id` text PRIMARY KEY,
+	`id` text PRIMARY KEY NOT NULL,
 	`member_id` text NOT NULL,
 	`status` text DEFAULT 'open' NOT NULL,
 	`subject` text NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE `inquiry_message` (
 	`author_kind` text NOT NULL,
 	`body` text NOT NULL,
 	`created_at` integer NOT NULL,
-	`id` text PRIMARY KEY,
+	`id` text PRIMARY KEY NOT NULL,
 	`inquiry_id` text NOT NULL,
 	CONSTRAINT `fk_inquiry_message_inquiry_id_inquiry_id_fk` FOREIGN KEY (`inquiry_id`) REFERENCES `inquiry`(`id`) ON DELETE CASCADE,
 	CONSTRAINT "inquiry_message_author_kind" CHECK("author_kind" IN ('member', 'admin'))

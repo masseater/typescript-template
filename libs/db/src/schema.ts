@@ -110,7 +110,12 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["flag_toggled", "inquiry_replied", "role_changed", "user_deleted"] as const;
+export const auditActions = [
+  "flag_toggled",
+  "inquiry_replied",
+  "role_changed",
+  "user_deleted",
+] as const;
 export type AuditAction = (typeof auditActions)[number];
 export const AUDIT_ACTION = {
   flagToggled: auditActions[0],
