@@ -34,6 +34,8 @@ export { TextLink } from "./shared/ui/text-link";
 export { ToastProvider } from "./shared/ui/toast-provider";
 export { useToast } from "./shared/ui/use-toast";
 export { useAction } from "./action";
+export { useTextInput } from "./use-text-input";
+export type { TextInput } from "./use-text-input";
 export { useSession } from "./use-session";
 export { useSignOut } from "./use-sign-out";
 export { errorMessage } from "./protocol";
