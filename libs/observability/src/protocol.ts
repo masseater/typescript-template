@@ -12,7 +12,7 @@ const hexRadix = 16;
 const hexByteWidth = 2;
 export const routeMessage = "Telemetry routes require fixed paths and bounded labels";
 const routePathPattern = /^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u;
-export const unmatchedRoute = "unmatched";
+const unmatchedRoute = "unmatched";
 
 export const httpMethods = [
   "_OTHER",
