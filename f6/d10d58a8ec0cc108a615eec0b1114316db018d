@@ -1,1 +1,1 @@
-Move wrangler onto @repo/config with @cloudflare/vite-plugin so knip no longer flags unused app-level wrangler after the vite factory extract.
+Also enable knip css compiler: moving @tailwindcss/vite off apps disabled auto CSS compilation while project still includes *.css, and treatConfigHintsAsErrors was failing CI.
