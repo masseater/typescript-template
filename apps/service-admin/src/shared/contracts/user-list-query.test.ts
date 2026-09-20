@@ -1,8 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
+import { readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import { UserListQuery } from "./contracts.ts";
-import { readSearchParams } from "./http.ts";
+import { UserListQuery } from "./users.ts";
 
 function usersRequest(query: string): Request {
   return new Request(`http://localhost:3002/api/users?${query}`);

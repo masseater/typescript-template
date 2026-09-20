@@ -36,5 +36,5 @@ export { useToast } from "./shared/ui/use-toast";
 export { useAction } from "./action";
 export { useSession } from "./use-session";
 export { useSignOut } from "./use-sign-out";
-export { errorMessage } from "./protocol";
+export { errorMessage, SessionView } from "./protocol";
 export { loginPath, redirectTarget } from "./login-redirect";
