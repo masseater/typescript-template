@@ -6,12 +6,12 @@ import { applicationPorts, loopbackAddress, type Application } from "@repo/confi
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { workerCompatibility } from "@repo/config/worker";
-import { devBoundary } from "@repo/dev-boundary";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
 
+import { devBoundary } from "./dev-boundary.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
 import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
