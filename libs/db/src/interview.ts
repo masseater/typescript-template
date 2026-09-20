@@ -64,8 +64,9 @@ export const storeInterview = Effect.fn("storeInterview")(function* storeIntervi
   readonly savedSheet?: unknown;
   readonly state: unknown;
 }) {
-  const { userId, version, ...interviewContent } = stored;
+  const { userId, version, savedSheet, state } = stored;
   const updatedAt = yield* clockDate;
+  const interviewContent = savedSheet === undefined ? { state } : { savedSheet, state };
 
   const [storedVersion] = yield* query((database) =>
     database

@@ -56,7 +56,12 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   if (audience !== APPLICATION.user) {
     yield* verifyAdmin(current.user.role, strong, allowEnrollment);
   }
-  return { session: current.session, strong, user: current.user };
+  const { email, id, name, role, twoFactorEnabled } = current.user;
+  return {
+    session: { id: current.session.id },
+    strong,
+    user: { email, id, name, role, twoFactorEnabled },
+  };
 });
 
 const verifySession = function verifySession(

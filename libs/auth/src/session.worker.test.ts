@@ -181,7 +181,7 @@ describe("verifySession", () => {
         Effect.gen(function* replay() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
           const client = yield* signInAs(APPLICATION.user, "admin@example.com");
-          const { admin } = yield* AuthApps;
+          const admin = (yield* AuthApps)[APPLICATION.admin];
           return yield* Effect.flip(client.transferTo(admin).verify(true));
         }),
       ),

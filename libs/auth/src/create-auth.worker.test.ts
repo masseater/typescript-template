@@ -255,7 +255,7 @@ describe("createAuth", () => {
     }) => {
       expect(verifiedNotice).toStrictEqual({
         keptSession: 200,
-        noticeHref: new URL("/login", origins.user).href,
+        noticeHref: new URL("/login", origins[APPLICATION.user]).href,
         throttled: true,
       });
     });

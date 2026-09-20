@@ -169,7 +169,7 @@ describe("request hooks", () => {
             audience: APPLICATION.user,
             email: "admin@example.com",
           });
-          const { admin } = yield* AuthApps;
+          const admin = (yield* AuthApps)[APPLICATION.admin];
           return yield* pending.client
             .transferTo(admin)
             .json("/two-factor/verify-totp", { code: pending.authenticator.generate() });
