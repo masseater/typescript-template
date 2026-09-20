@@ -215,6 +215,7 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test",
+      ".#test:changed",
       "infra/cloudflare#verify:account",
       "libs/db#db:migrate:local",
       "tools/commander#check:start",

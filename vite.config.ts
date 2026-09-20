@@ -60,6 +60,7 @@ export default defineConfig({
       },
       mutation: { cache: false, command: "stryker run tools/quality/stryker.ts" },
       test: { cache: false, command: "vp test run --project '!@repo/*'" },
+      "test:changed": { cache: false, command: "node tools/quality/changed-tests.ts" },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect"],
@@ -69,6 +70,7 @@ export default defineConfig({
           "check:imports",
           "check:react",
           "check:canonical-literal-types",
+          "test:changed",
         ],
         premerge: ["test"],
         prerelease: ["mutation"],
