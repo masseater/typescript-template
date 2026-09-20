@@ -2,6 +2,7 @@ import { countInterviewTurn, findInterview, startInterview, storeInterview } fro
 import { logAt } from "@repo/observability";
 import { Effect, Option, Schema } from "effect";
 
+import { assembleProfileLayout, writeSavedSheet } from "#shared/profile-layout/index.ts";
 import { viewOf } from "./contracts.ts";
 import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";
 import { Interviewer } from "./interviewer.ts";
@@ -115,7 +116,9 @@ const saveInterview = Effect.fn("interview.save")(function* saveInterview(userId
   if (state.phase !== "summary") {
     return yield* new TurnRejected();
   }
-  return yield* replace(userId, version, { savedSheet: state.sheet, state: save(state) });
+  const layout = yield* assembleProfileLayout(state.sheet);
+  const savedSheet = yield* Effect.orDie(writeSavedSheet(state.sheet, layout));
+  return yield* replace(userId, version, { savedSheet, state: save(state) });
 });
 
 const restartInterview = Effect.fn("interview.restart")(function* restartInterview(userId: string) {

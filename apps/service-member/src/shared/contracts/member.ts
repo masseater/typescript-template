@@ -1,5 +1,8 @@
 import { Effect, Schema, SchemaGetter } from "effect";
 
+import { Sheet } from "#shared/interview/sheet.ts";
+import { ProfileLayout } from "#shared/profile-layout/schema.ts";
+
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
 const maximumProfileLength = 2000;
@@ -43,6 +46,8 @@ const MemberView = Schema.Struct({
   joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),
   name: Schema.String,
   profile: Schema.String,
+  profileLayout: ProfileLayout,
+  sheet: Sheet,
   socialLinks: SocialLinks,
 });
 

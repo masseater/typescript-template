@@ -1,6 +1,15 @@
-import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
+import { UserNotFound, containsKeyword, findInterview, query, schema } from "@repo/db";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
+
+import {
+  baselineProfileLayout,
+  interviewProfileLayout,
+  readSavedSheet,
+} from "#shared/profile-layout/index.ts";
+
+import type { SheetData } from "#shared/interview/sheet.ts";
+import type { ProfileLayoutData } from "#shared/profile-layout/schema.ts";
 
 const { user } = schema;
 
@@ -9,6 +18,8 @@ type Member = Readonly<{
   joined: string;
   name: string;
   profile: string;
+  profileLayout: ProfileLayoutData;
+  sheet: SheetData;
   socialLinks: readonly string[];
 }>;
 
@@ -29,17 +40,38 @@ const profileColumns = {
   socialLinks: user.socialLinks,
 };
 
-function shown({
-  createdAt,
-  ...member
-}: Readonly<{
-  createdAt: Readonly<Date>;
-  id: string;
-  name: string;
-  profile: string;
-  socialLinks: readonly string[];
-}>): Member {
-  return { ...member, joined: createdAt.toISOString().slice(0, monthLength) };
+function profilePresentation(
+  memberId: string,
+): Effect.Effect<Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>> {
+  return Effect.gen(function* program() {
+    const interview = yield* findInterview(memberId);
+    if (interview?.savedSheet === null || interview?.savedSheet === undefined) {
+      return { profileLayout: baselineProfileLayout, sheet: {} };
+    }
+    const saved = readSavedSheet(interview.savedSheet);
+    return {
+      profileLayout: saved.layout ?? interviewProfileLayout,
+      sheet: saved.sheet,
+    };
+  });
+}
+
+function shown(
+  member: Readonly<{
+    createdAt: Readonly<Date>;
+    id: string;
+    name: string;
+    profile: string;
+    socialLinks: readonly string[];
+  }>,
+  presentation: Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>,
+): Member {
+  const { createdAt, ...rest } = member;
+  return {
+    ...rest,
+    ...presentation,
+    joined: createdAt.toISOString().slice(0, monthLength),
+  };
 }
 
 const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, memberId: string) {
@@ -54,7 +86,8 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   if (!member) {
     return yield* new UserNotFound();
   }
-  return shown(member);
+  const presentation = yield* profilePresentation(memberId);
+  return shown(member, presentation);
 });
 
 const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
@@ -76,7 +109,10 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
   const [total] = yield* query((database) =>
     database.select({ count: count() }).from(user).where(listed),
   );
-  return { members: members.map((member) => shown(member)), total: total?.count ?? 0 };
+  const presented = yield* Effect.forEach(members, (member) =>
+    Effect.map(profilePresentation(member.id), (presentation) => shown(member, presentation)),
+  );
+  return { members: presented, total: total?.count ?? 0 };
 });
 
 const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {
