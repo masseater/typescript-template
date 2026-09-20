@@ -19,6 +19,7 @@ it.effect("deploy workflow sends main to staging and promote to production", () 
     assert.include(source, "deploy:ordered");
     assert.include(source, "probe:origins");
     assert.include(source, "prepare:ci-env");
+    assert.include(source, "steps.prepare.outputs.configured == 'true'");
     assert.include(source, "ref: main");
   }),
 );
