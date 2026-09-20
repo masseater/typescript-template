@@ -315,4 +315,4 @@ export {
 };
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
-export { devBoundary } from "./dev-boundary/dev-boundary.ts";
+export { devBoundary };
