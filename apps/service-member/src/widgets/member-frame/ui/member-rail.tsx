@@ -10,10 +10,11 @@ import type { ReactElement } from "react";
 import type { NavBadges } from "../model/navigation.ts";
 
 function MemberRail({
+  memberBoard,
   navBadges,
   user,
-}: Readonly<{ navBadges: NavBadges; user: Session["user"] }>): ReactElement {
-  const items = memberNavItems(memberHasPaidPlan, navBadges);
+}: Readonly<{ memberBoard: boolean; navBadges: NavBadges; user: Session["user"] }>): ReactElement {
+  const items = memberNavItems(memberHasPaidPlan, memberBoard, navBadges);
   return (
     <aside className="hidden w-16 shrink-0 flex-col border-r border-border bg-card md:flex">
       <div className="border-b border-border px-2 py-3 text-center">

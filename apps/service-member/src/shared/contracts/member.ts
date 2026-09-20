@@ -97,6 +97,7 @@ const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 export {
   ContactAccepted,
   ContactSubmission,
+  Identifier,
   MemberList,
   MemberListQuery,
   MemberQuery,
@@ -113,4 +114,5 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  pageNumber,
 };

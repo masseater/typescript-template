@@ -78,6 +78,49 @@ const browseMainScreens = async (stage: JourneyStage, _account: Account): Promis
   await seeHeading(stage.page, "ユーザーを探す");
 };
 
+const openNewThreadForm = async (page: Page, origin: string): Promise<void> => {
+  await page.goto(`${origin}/board`);
+  await seeHeading(page, "掲示板");
+  await page.getByRole("link", { exact: true, name: "新しいスレッド" }).click();
+  await page.waitForURL(`${origin}/board?new=true`, { timeout: appearanceTimeout });
+  await readyButton(page, "投稿する");
+};
+
+const openThread = async (page: Page, origin: string): Promise<string> => {
+  const title = `journey ${crypto.randomUUID()}`;
+  await openNewThreadForm(page, origin);
+  await fill(page, { fieldLabel: "題", typed: title });
+  await fill(page, { fieldLabel: "本文", typed: "最初の投稿です。" });
+  await press(page, "投稿する");
+  await page.waitForURL(`${origin}/board/*`, { timeout: appearanceTimeout });
+  await seeHeading(page, title);
+  return title;
+};
+
+const replyOnThread = async (page: Page): Promise<boolean> => {
+  const replyBody = `reply ${crypto.randomUUID()}`;
+  await readyButton(page, "投稿する");
+  await fill(page, { fieldLabel: "返信", typed: replyBody });
+  await press(page, "投稿する");
+  await seeText(page, replyBody);
+  return page.getByText(replyBody, { exact: false }).first().isVisible();
+};
+
+const postOnBoard = async (
+  stage: JourneyStage,
+  origin: string,
+): Promise<{ readonly listsTheThreadAfterwards: boolean; readonly showsTheReply: boolean }> => {
+  const { page } = stage;
+  const title = await openThread(page, origin);
+  const showsTheReply = await replyOnThread(page);
+  await page.goto(`${origin}/board`);
+  await seeText(page, title);
+  return {
+    listsTheThreadAfterwards: await page.getByText(title, { exact: false }).first().isVisible(),
+    showsTheReply,
+  };
+};
+
 const writeBiography = async (
   stage: JourneyStage,
   origin: string,
@@ -152,35 +195,47 @@ const signInAgainWithTotp = async (
   await stage.page.waitForURL(`${enrolled.origin}${homePattern}`, { timeout: appearanceTimeout });
 };
 
+const revisitProfile = async (
+  page: Page,
+  written: { readonly biography: string; readonly profileUrl: string },
+): Promise<boolean> => {
+  await page.goto(written.profileUrl);
+  await seeText(page, written.biography);
+  return page.getByText(written.biography, { exact: false }).first().isVisible();
+};
+
 const runMemberJourney = async (
   stage: JourneyStage,
 ): Promise<{
   readonly backupCodeCount: number;
   readonly landsOnTheMemberHome: boolean;
+  readonly listsTheThreadOpenedEarlier: boolean;
   readonly opensEveryListedSettingsItem: boolean;
   readonly reachesLeaveInOneClick: boolean;
   readonly reachesPlanInOneClick: boolean;
   readonly showsTheBiographyWrittenEarlier: boolean;
+  readonly showsTheReplyOnTheThread: boolean;
 }> => {
   const { account, origin } = await signUpAndConfirm(stage, "member");
   await browseMainScreens(stage, account);
+  const board = await postOnBoard(stage, origin);
   const settings = await browseSettings(stage, origin);
   const { biography, profilePath } = await writeBiography(stage, origin);
   const enrollment = await enrollTotp({ account, origin, page: stage.page });
   await signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
   const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
-  await stage.page.goto(`${origin}${profilePath}`);
-  await seeText(stage.page, biography);
   return {
     backupCodeCount: enrollment.backupCodes.length,
     landsOnTheMemberHome,
+    listsTheThreadOpenedEarlier: board.listsTheThreadAfterwards,
     opensEveryListedSettingsItem: settings.opensEveryListedItem,
     reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
     reachesPlanInOneClick: settings.reachesPlanInOneClick,
-    showsTheBiographyWrittenEarlier: await stage.page
-      .getByText(biography, { exact: false })
-      .first()
-      .isVisible(),
+    showsTheBiographyWrittenEarlier: await revisitProfile(stage.page, {
+      biography,
+      profileUrl: `${origin}${profilePath}`,
+    }),
+    showsTheReplyOnTheThread: board.showsTheReply,
   };
 };
 

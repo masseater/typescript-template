@@ -25,6 +25,7 @@ const emptyNavBadges: NavBadges = { notifications: 0 };
 
 function memberNavItems(
   paid: boolean,
+  memberBoard: boolean,
   badges: NavBadges = emptyNavBadges,
 ): readonly MemberNavItem[] {
   return [
@@ -36,7 +37,16 @@ function memberNavItems(
       paid: true,
       to: paid ? "/search" : "/upgrade",
     },
-    { icon: SquareStackIcon, id: "board", label: "掲示板", to: "/board" },
+    ...(memberBoard
+      ? [
+          {
+            icon: SquareStackIcon,
+            id: "board",
+            label: "掲示板",
+            to: "/board",
+          } satisfies MemberNavItem,
+        ]
+      : []),
     { badge: 0, icon: MessageCircleIcon, id: "messages", label: "メッセージ", to: "/messages" },
     {
       badge: badges.notifications,

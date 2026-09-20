@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "8eae6dc6-4d42-4a88-ad09-131bb3f90196",
+  "id": "19c6bf9b-7db4-46d0-b977-8288d59b6908",
   "prevIds": ["714645b4-cc4d-4c04-8441-2705bb063200"],
   "ddl": [
     {
@@ -10,6 +10,14 @@
     },
     {
       "name": "audit_event",
+      "entityType": "tables"
+    },
+    {
+      "name": "board_post",
+      "entityType": "tables"
+    },
+    {
+      "name": "board_thread",
       "entityType": "tables"
     },
     {
@@ -26,14 +34,6 @@
     },
     {
       "name": "member_onboarding",
-      "entityType": "tables"
-    },
-    {
-      "name": "notification",
-      "entityType": "tables"
-    },
-    {
-      "name": "notification_preference",
       "entityType": "tables"
     },
     {
@@ -269,6 +269,116 @@
       "table": "audit_event"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "author_id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "body",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "thread_id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "author_id",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "last_posted_at",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "name": "post_count",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -467,126 +577,6 @@
       "name": "user_id",
       "entityType": "columns",
       "table": "member_onboarding"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "actor_id",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "actor_name",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "id",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "kind",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "member_id",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "integer",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "read_at",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "subject_id",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "title",
-      "entityType": "columns",
-      "table": "notification"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "false",
-      "generated": null,
-      "name": "board_mail",
-      "entityType": "columns",
-      "table": "notification_preference"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "member_id",
-      "entityType": "columns",
-      "table": "notification_preference"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "false",
-      "generated": null,
-      "name": "message_mail",
-      "entityType": "columns",
-      "table": "notification_preference"
     },
     {
       "type": "text",
@@ -2140,6 +2130,39 @@
       "table": "account"
     },
     {
+      "columns": ["author_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_board_post_author_id_user_id_fk",
+      "entityType": "fks",
+      "table": "board_post"
+    },
+    {
+      "columns": ["thread_id"],
+      "tableTo": "board_thread",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_board_post_thread_id_board_thread_id_fk",
+      "entityType": "fks",
+      "table": "board_post"
+    },
+    {
+      "columns": ["author_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_board_thread_author_id_user_id_fk",
+      "entityType": "fks",
+      "table": "board_thread"
+    },
+    {
       "columns": ["followee_id"],
       "tableTo": "user",
       "columnsTo": ["id"],
@@ -2182,39 +2205,6 @@
       "name": "fk_member_onboarding_user_id_user_id_fk",
       "entityType": "fks",
       "table": "member_onboarding"
-    },
-    {
-      "columns": ["actor_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "nameExplicit": false,
-      "name": "fk_notification_actor_id_user_id_fk",
-      "entityType": "fks",
-      "table": "notification"
-    },
-    {
-      "columns": ["member_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_notification_member_id_user_id_fk",
-      "entityType": "fks",
-      "table": "notification"
-    },
-    {
-      "columns": ["member_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_notification_preference_member_id_user_id_fk",
-      "entityType": "fks",
-      "table": "notification_preference"
     },
     {
       "columns": ["client_id"],
@@ -2403,6 +2393,20 @@
       "entityType": "pks"
     },
     {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "board_post_pk",
+      "table": "board_post",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "board_thread_pk",
+      "table": "board_thread",
+      "entityType": "pks"
+    },
+    {
       "columns": ["user_id"],
       "nameExplicit": false,
       "name": "interview_pk",
@@ -2421,20 +2425,6 @@
       "nameExplicit": false,
       "name": "member_onboarding_pk",
       "table": "member_onboarding",
-      "entityType": "pks"
-    },
-    {
-      "columns": ["id"],
-      "nameExplicit": false,
-      "name": "notification_pk",
-      "table": "notification",
-      "entityType": "pks"
-    },
-    {
-      "columns": ["member_id"],
-      "nameExplicit": false,
-      "name": "notification_preference_pk",
-      "table": "notification_preference",
       "entityType": "pks"
     },
     {
@@ -2559,21 +2549,7 @@
     {
       "columns": [
         {
-          "value": "followee_id",
-          "isExpression": false
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "origin": "manual",
-      "name": "follow_followee_id_idx",
-      "entityType": "indexes",
-      "table": "follow"
-    },
-    {
-      "columns": [
-        {
-          "value": "member_id",
+          "value": "thread_id",
           "isExpression": false
         },
         {
@@ -2588,9 +2564,41 @@
       "isUnique": false,
       "where": null,
       "origin": "manual",
-      "name": "notification_member_id_idx",
+      "name": "board_post_thread_id_idx",
       "entityType": "indexes",
-      "table": "notification"
+      "table": "board_post"
+    },
+    {
+      "columns": [
+        {
+          "value": "last_posted_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "board_thread_last_posted_at_idx",
+      "entityType": "indexes",
+      "table": "board_thread"
+    },
+    {
+      "columns": [
+        {
+          "value": "followee_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "follow_followee_id_idx",
+      "entityType": "indexes",
+      "table": "follow"
     },
     {
       "columns": [

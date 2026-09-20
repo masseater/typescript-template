@@ -1,0 +1,25 @@
+{
+  "name": "@repo/feature-flags",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./definitions": "./src/definitions.ts"
+  },
+  "scripts": {},
+  "dependencies": {
+    "@cloudflare/flagship": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "@openfeature/server-sdk": "catalog:",
+    "@repo/auth": "workspace:*",
+    "@repo/db": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@repo/vite-config": "workspace:*",
+    "msw": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

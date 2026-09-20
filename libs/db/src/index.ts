@@ -12,8 +12,14 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
-export { onboardingSteps, schema } from "./schema.ts";
-export { NOTIFICATION_KIND, notificationKinds } from "./schema.ts";
+export {
+  AUDIT_ACTION,
+  NOTIFICATION_KIND,
+  auditEvent,
+  notificationKinds,
+  onboardingSteps,
+  schema,
+} from "./schema.ts";
 export type { NotificationKind } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
