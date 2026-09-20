@@ -40,7 +40,8 @@ jobs:
           MISE_CEILING_PATHS: ${{ runner.workspace }}
         with:
           cache: ${{ vars.CI_RUNNER == '' }}
-      - run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+      - id: prepare
+        run: vp run --filter @repo/infra-cloudflare prepare:ci-env
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
@@ -59,8 +60,10 @@ jobs:
           TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
-      - run: vp run --filter @repo/infra-cloudflare deploy:ordered
-      - run: vp run --filter @repo/infra-cloudflare probe:origins
+      - if: steps.prepare.outputs.configured == 'true'
+        run: vp run --filter @repo/infra-cloudflare deploy:ordered
+      - if: steps.prepare.outputs.configured == 'true'
+        run: vp run --filter @repo/infra-cloudflare probe:origins
 
   production:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
@@ -83,7 +86,8 @@ jobs:
           MISE_CEILING_PATHS: ${{ runner.workspace }}
         with:
           cache: ${{ vars.CI_RUNNER == '' }}
-      - run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+      - id: prepare
+        run: vp run --filter @repo/infra-cloudflare prepare:ci-env
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
@@ -102,5 +106,7 @@ jobs:
           TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
-      - run: vp run --filter @repo/infra-cloudflare deploy:ordered
-      - run: vp run --filter @repo/infra-cloudflare probe:origins
+      - if: steps.prepare.outputs.configured == 'true'
+        run: vp run --filter @repo/infra-cloudflare deploy:ordered
+      - if: steps.prepare.outputs.configured == 'true'
+        run: vp run --filter @repo/infra-cloudflare probe:origins
