@@ -17,7 +17,7 @@ type MemberNavItem = Readonly<{
 
 const memberHasPaidPlan = false;
 
-function memberNavItems(paid: boolean): readonly MemberNavItem[] {
+function memberNavItems(paid: boolean, memberBoard: boolean): readonly MemberNavItem[] {
   return [
     { icon: HomeIcon, id: "home", label: "ホーム", to: "/home" },
     {
@@ -27,7 +27,16 @@ function memberNavItems(paid: boolean): readonly MemberNavItem[] {
       paid: true,
       to: paid ? "/search" : "/upgrade",
     },
-    { icon: SquareStackIcon, id: "board", label: "掲示板", to: "/board" },
+    ...(memberBoard
+      ? [
+          {
+            icon: SquareStackIcon,
+            id: "board",
+            label: "掲示板",
+            to: "/board",
+          } satisfies MemberNavItem,
+        ]
+      : []),
     { badge: 0, icon: MessageCircleIcon, id: "messages", label: "メッセージ", to: "/messages" },
     { badge: 0, icon: BellIcon, id: "notifications", label: "通知", to: "/notifications" },
   ];

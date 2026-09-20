@@ -1,5 +1,5 @@
 import { roles } from "@repo/config";
-import { Result, Schema } from "effect";
+import { Predicate, Result, Schema } from "effect";
 
 const SessionView = Schema.Struct({
   strong: Schema.Boolean,
@@ -30,22 +30,24 @@ const errorMessage = (failure: unknown): string => {
 };
 
 const failureReasons: Readonly<Record<string, string>> = {
+  "Email is the same": "いまのメールアドレスと同じです。",
   EMAIL_NOT_VERIFIED: "メールアドレスが未確認です。確認メールのリンクを開いてください。",
   INVALID_BACKUP_CODE: "バックアップコードが違います。",
   INVALID_CODE: "確認コードが違います。",
   INVALID_EMAIL_OR_PASSWORD: "メールアドレスかパスワードが違います。",
+  STRONG_AUTH_REQUIRED: "認証アプリかパスキーで確認してから、もう一度お試しください。",
 };
 
 const authFailureMessage = (
   authFailure: Readonly<{ code?: string | undefined; message?: string | undefined }>,
 ): string => {
   const { code, message } = authFailure;
-  if (code === undefined) {
-    return message ?? "認証サーバーが失敗理由のコードを返しませんでした。";
-  }
-  const known = failureReasons[code];
+  const known = failureReasons[code ?? message ?? ""];
   if (known !== undefined) {
     return known;
+  }
+  if (code === undefined) {
+    return message ?? "認証サーバーが失敗理由のコードを返しませんでした。";
   }
   return message ?? `認証サーバーが未知の失敗コードを返しました: ${code}`;
 };
@@ -78,17 +80,11 @@ const isPasskeyOptionsPath = (pathname: string): boolean => {
   return pathname.endsWith(authenticateOptionsPath) || pathname.endsWith(registerOptionsPath);
 };
 
-const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
-
-const isUnknownRecord = (candidate: unknown): candidate is Record<string, unknown> => {
-  return isRecord(candidate);
-};
-
 const registrationWithUserVerification = (
   passkeyOptions: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> => {
   const selection = passkeyOptions["authenticatorSelection"];
-  if (selection !== undefined && !isUnknownRecord(selection)) {
+  if (selection !== undefined && !Predicate.isObject(selection)) {
     throw new Error("パスキー登録設定の応答形式が不正です。");
   }
   return {
@@ -101,7 +97,7 @@ const passkeyUVOptions = (
   passkeyOptions: unknown,
   pathname: string,
 ): Readonly<Record<string, unknown>> => {
-  if (!isUnknownRecord(passkeyOptions)) {
+  if (!Predicate.isObject(passkeyOptions)) {
     throw new Error("パスキー設定の応答形式が不正です。");
   }
   return pathname.endsWith(authenticateOptionsPath)

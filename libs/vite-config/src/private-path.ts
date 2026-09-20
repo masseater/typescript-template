@@ -5,6 +5,10 @@ import { APPLICATION, applications, type Application } from "@repo/config";
 const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);
 
+const secretFileName = /^(?:\.env.*|\.dev\.vars.*|.*\.(?:pem|key))$/u;
+
+const isSecretFileName = (name: string): boolean => secretFileName.test(name);
+
 const privateAdminPath = (slashedPath: string, application: Application): boolean =>
   application !== APPLICATION.admin &&
   (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
@@ -26,12 +30,13 @@ const privatePath = ({
     /^(?:infra|tools)(?:\/|$)/u.test(repositoryRelativePath) ||
     new RegExp(`(?:^|/)apps/(?:${foreignApplications})(?:/|$)`, "u").test(slashedPath) ||
     new RegExp(`@repo/(?:${foreignApplications})(?:/|$)`, "u").test(slashedPath) ||
-    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$|(?:^|\/)(?:\.env(?:\.[^/]*)?|\.dev\.vars(?:\.[^/]*)?|[^/]*\.(?:pem|key))$/u.test(
+    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$/u.test(
       slashedPath,
     ) ||
+    isSecretFileName(slashedPath.split("/").at(-1) ?? slashedPath) ||
     /@repo\/db\/(?:remote|testing)(?:\/|$)/u.test(slashedPath) ||
     privateAdminPath(slashedPath, application)
   );
 };
 
-export { applicationsExcept, privatePath };
+export { applicationsExcept, isSecretFileName, privatePath };

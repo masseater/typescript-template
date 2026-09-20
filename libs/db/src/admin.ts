@@ -1,4 +1,5 @@
 import { roles, type Role } from "@repo/config/identity";
+import { maximumAdminPageSize } from "@repo/config/paging";
 import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
@@ -12,12 +13,10 @@ import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
-const MAX_PAGE_SIZE = 100;
-
 export const UserPage = Schema.Struct({
   emailVerified: Schema.optionalKey(Schema.Boolean),
   keyword: Schema.optionalKey(Schema.String),
-  limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
+  limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   role: Schema.optionalKey(Schema.Literals(roles)),
 });

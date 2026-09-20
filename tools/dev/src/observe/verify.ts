@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 
 import { causeRecord, runCli } from "@repo/cli";
 import { APPLICATION, applicationOrigins, applications } from "@repo/config";
+import { httpStatus } from "@repo/observability";
 import { Console, Effect, Schema } from "effect";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
@@ -32,7 +33,6 @@ class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("Ver
 const appTimeoutMilliseconds = 15_000;
 const correlationWindowMilliseconds = 45_000;
 const pollIntervalMilliseconds = 1000;
-const firstServerErrorStatus = 500;
 
 const VerifyInput = Schema.Struct({
   app: Schema.String,
@@ -114,7 +114,7 @@ const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<UR
     try: async () => response.body?.cancel(),
   });
   const requestId = response.headers.get("x-request-id") ?? "";
-  if (requestId === "" || response.status >= firstServerErrorStatus) {
+  if (requestId === "" || response.status >= httpStatus.internalServerError) {
     return yield* fail("correlation_headers_missing");
   }
   return { requestId, status: response.status };

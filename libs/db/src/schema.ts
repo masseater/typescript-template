@@ -2,6 +2,7 @@ import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
@@ -109,12 +110,18 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["role_changed", "user_deleted", "agreement_published"] as const;
+export const auditActions = [
+  "flag_toggled",
+  "role_changed",
+  "user_deleted",
+  "agreement_published",
+] as const;
 export type AuditAction = (typeof auditActions)[number];
 export const AUDIT_ACTION = {
-  roleChanged: auditActions[0],
-  userDeleted: auditActions[1],
-  agreementPublished: auditActions[2],
+  flagToggled: auditActions[0],
+  roleChanged: auditActions[1],
+  userDeleted: auditActions[2],
+  agreementPublished: auditActions[3],
 } as const;
 
 const auditEvent = sqliteTable(
@@ -135,6 +142,8 @@ const schema = {
   agreementAcceptance,
   agreementVersion,
   auditEvent,
+  boardPost,
+  boardThread,
   follow,
   interview,
   memberOnboarding,
@@ -166,6 +175,7 @@ export {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

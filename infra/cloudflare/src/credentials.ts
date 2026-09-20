@@ -4,6 +4,8 @@ import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { parseEnv } from "node:util";
 
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, Schema } from "effect";
@@ -15,7 +17,10 @@ import { projectName } from "./project.ts";
 import type { FileHandle } from "node:fs/promises";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
-const KEY_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=/u;
+
+function declaredKeys(contents: string): ReadonlySet<string> {
+  return new Set(Object.keys(parseEnv(contents)));
+}
 
 class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("SecretsFileFailure", {
   code: Schema.Literals([
@@ -56,15 +61,6 @@ const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle:
     try: async () => handle.readFile("utf-8"),
   });
 });
-
-function declaredKeys(contents: string): ReadonlySet<string> {
-  return new Set(
-    contents.split("\n").flatMap((line) => {
-      const key = KEY_PATTERN.exec(line)?.groups?.["key"];
-      return key === undefined ? [] : [key];
-    }),
-  );
-}
 
 const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecretsFile(
   filename: string,

@@ -3,6 +3,7 @@ import { redirect } from "@tanstack/react-router";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { loadSession } from "#entities/session/index.ts";
+import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadOnboardingStep } from "#pages/welcome/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
@@ -33,7 +34,7 @@ async function enterPublicFrame(pathname: string): Promise<void> {
 async function enterMemberFrame(
   href: string,
   pathname: string,
-): Promise<{ agreements: Agreements; session: Session }> {
+): Promise<{ agreements: Agreements; memberBoard: boolean; session: Session }> {
   const session = await loadSession();
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
@@ -49,7 +50,8 @@ async function enterMemberFrame(
   if (blocksMember(agreements.pending) && pathname !== agreementPath) {
     throw redirect({ search: { redirect: href }, to: agreementPath });
   }
-  return { agreements, session };
+  const memberBoard = await loadMemberFlags();
+  return { agreements, memberBoard, session };
 }
 
 async function enterWelcomeFrame(

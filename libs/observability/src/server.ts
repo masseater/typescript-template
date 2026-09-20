@@ -13,7 +13,7 @@ export { logAt, logCause, statusSeverity } from "./severity.ts";
 export type { Severity } from "./severity.ts";
 export { redactSecrets, redactedField } from "./redact.ts";
 export { reportUnavailable } from "./unavailable.ts";
-export { RequestId } from "./protocol.ts";
+export { RequestId, TraceId } from "./protocol.ts";
 export type { Correlation } from "./protocol.ts";
 export type { RequestContext } from "./current-request.ts";
 export type { Reporting } from "./unavailable.ts";

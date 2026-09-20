@@ -104,10 +104,11 @@ function createApi<const Prefix extends string>(prefix: Prefix) {
     );
 }
 
-type StartMethod = "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
-
 function elysiaServer(app: AnyElysia): {
-  readonly handlers: Readonly<Record<StartMethod, ElysiaHandler>>;
+  readonly handlers: Readonly<{
+    ANY: ElysiaHandler;
+    HEAD: ElysiaHandler;
+  }>;
 } {
   async function handle(context: ElysiaContext): Promise<Response> {
     return app.fetch(context.request);
@@ -130,13 +131,8 @@ function elysiaServer(app: AnyElysia): {
   }
   return {
     handlers: {
-      DELETE: handle,
-      GET: handle,
+      ANY: handle,
       HEAD: handleHead,
-      OPTIONS: handle,
-      PATCH: handle,
-      POST: handle,
-      PUT: handle,
     },
   };
 }

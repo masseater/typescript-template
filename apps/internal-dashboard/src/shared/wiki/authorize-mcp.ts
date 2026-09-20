@@ -1,5 +1,6 @@
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { Auth, findWikiReader } from "@repo/auth";
+import { httpStatus } from "@repo/observability/http-status";
 import { APIError } from "better-auth/api";
 import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
 import { APIError as ChallengeError } from "better-call";
@@ -11,8 +12,6 @@ type TokenClaims = Awaited<ReturnType<typeof verifyJwsAccessToken>>;
 
 const requiredScopes = ["wiki:read"];
 const JSON_RPC_SERVER_ERROR = -32_000;
-const FORBIDDEN = 403;
-const UNAUTHORIZED = 401;
 const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
   Schema.Record(Schema.String, Schema.Unknown),
 ]);
@@ -36,7 +35,7 @@ function challengeResponse(error: unknown, resource: string): Response {
     challengeScopes: requiredScopes,
   });
   if (!(challenge instanceof ChallengeError)) {
-    return jsonRpcError(UNAUTHORIZED, "ACCESS_TOKEN_INVALID", {});
+    return jsonRpcError(httpStatus.unauthorized, "ACCESS_TOKEN_INVALID", {});
   }
   const headers = Object.fromEntries(new Headers(challenge.headers));
   return jsonRpcError(challenge.statusCode, challenge.message, headers);
@@ -108,7 +107,9 @@ const readerFor = Effect.fn("readerFor")(function* readerFor(
   }
   const { sub } = claims.success;
   const reader = sub === undefined ? undefined : yield* findWikiReader(sub);
-  return reader ? { userId: reader.id } : jsonRpcError(FORBIDDEN, "WIKI_READER_REQUIRED", {});
+  return reader
+    ? { userId: reader.id }
+    : jsonRpcError(httpStatus.forbidden, "WIKI_READER_REQUIRED", {});
 });
 
 const authorizeMcpRequest = Effect.fn("authorizeMcpRequest")(function* authorizeMcpRequest(

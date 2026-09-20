@@ -1,4 +1,4 @@
-import { CloudflareId } from "@repo/config";
+import { CloudflareId, minimumCloudflareApiTokenLength } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { Email } from "./bootstrap-statement.ts";
@@ -31,10 +31,8 @@ const DatabaseId = Schema.String.check(
 const PLAN_ARGUMENT_COUNT = 2;
 const EXECUTE_ARGUMENT_COUNT = 4;
 
-const MIN_API_TOKEN_LENGTH = 20;
-
 const ApiToken = Schema.String.check(
-  Schema.isMinLength(MIN_API_TOKEN_LENGTH),
+  Schema.isMinLength(minimumCloudflareApiTokenLength),
   Schema.isPattern(/^[A-Za-z0-9_-]+$/u),
 );
 

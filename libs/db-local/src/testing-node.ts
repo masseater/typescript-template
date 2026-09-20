@@ -4,28 +4,56 @@ import { localDatabase } from "@repo/db/local";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
-import { prepareBatch } from "../../db/src/migrate-d1.ts";
-
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import type { RemoteFailure } from "../../db/src/remote-input.ts";
 
-interface D1HttpBatchResponse {
-  readonly result: D1Result[];
-  readonly success: true;
-}
-
 const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
-const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
+const HttpQuery = Schema.Struct({
+  params: Schema.optionalKey(Schema.Array(HttpParam)),
+  sql: Schema.String,
+});
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-async function executeD1HttpBatch(
+const boundStatements = (database: D1Database, requestJson: unknown) => {
+  return Schema.decodeUnknownPromise(HttpBatch)(requestJson).then(({ batch }) =>
+    batch.map((query) => database.prepare(query.sql).bind(...(query.params ?? []))),
+  );
+};
+
+const executeD1HttpBatch = async (
   database: D1Database,
-  body: unknown,
-): Promise<D1HttpBatchResponse> {
-  const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(body);
-  const result = await database.batch(prepareBatch(database, batch));
-  return { result, success: true };
-}
+  requestJson: unknown,
+): Promise<{ readonly result: D1Result[]; readonly success: true }> => {
+  const executedStatements = await database.batch(await boundStatements(database, requestJson));
+  return { result: executedStatements, success: true };
+};
+
+const columnValues = (row: unknown): readonly unknown[] => {
+  if (typeof row !== "object" || row === null) {
+    throw new TypeError("D1 raw emulation expected a column object");
+  }
+  return Object.values(row);
+};
+
+const executeD1RawBatch = async (
+  database: D1Database,
+  requestJson: unknown,
+): Promise<{
+  readonly result: readonly {
+    readonly results: { readonly rows: readonly (readonly unknown[])[] };
+    readonly success: true;
+  }[];
+  readonly success: true;
+}> => {
+  const executedStatements = await database.batch(await boundStatements(database, requestJson));
+  return {
+    result: executedStatements.map((executedStatement) => ({
+      results: { rows: executedStatement.results.map((row) => columnValues(row)) },
+      success: true,
+    })),
+    success: true,
+  };
+};
 
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
@@ -149,5 +177,4 @@ export const describeDatabase = Effect.fn("describeDatabase")(function* describe
   };
 });
 
-export { d1Executor } from "../../db/src/migrate-d1.ts";
-export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, runStatement };
+export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, executeD1RawBatch, runStatement };

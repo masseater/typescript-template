@@ -1,3 +1,4 @@
+import { httpStatus } from "@repo/observability";
 import { Effect, Predicate, Schema, SchemaIssue } from "effect";
 
 import { CloudflareFailure } from "./config.ts";
@@ -5,8 +6,7 @@ import { CloudflareFailure } from "./config.ts";
 import type { StandardSchema } from "effect";
 
 const REQUEST_TIMEOUT_MS = 30_000;
-const NOT_FOUND_STATUS = 404;
-const MISSING_REASON = `status_${NOT_FOUND_STATUS}`;
+const MISSING_REASON = `status_${httpStatus.notFound}`;
 const DECODE_REASON = "decode_failed";
 const UNDECLARED_MEDIA_TYPE = "media_type_undeclared";
 const WHOLE_BODY = "$";
@@ -158,7 +158,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
         signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
       }),
   });
-  if (response.status === NOT_FOUND_STATUS) {
+  if (response.status === httpStatus.notFound) {
     return { body: undefined, found: false };
   }
   if (!response.ok) {

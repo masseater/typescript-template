@@ -38,4 +38,4 @@ export type { ActionState } from "./action";
 export { ActionStatus } from "./action-status";
 export { useTextInput } from "./use-text-input";
 export type { TextInput } from "./use-text-input";
-export { formatWarekiDate, formatWarekiMonth } from "./wareki";
+export { formatWarekiDate, formatWarekiDateTime, formatWarekiMonth } from "./wareki";

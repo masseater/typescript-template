@@ -1,11 +1,10 @@
 import { roles } from "@repo/config";
+import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
 const maximumKeywordLength = 100;
 const secondPage = 2;
-const defaultPageSize = 50;
-const maximumPageSize = 100;
 
 const Role = Schema.Literals(roles);
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
@@ -42,7 +41,7 @@ function laterPage(maximum: number): Schema.Codec<number, number | string> {
 const UserListQuery = Schema.Struct({
   emailVerified: Schema.optionalKey(BooleanText),
   keyword: Schema.optionalKey(UserKeyword),
-  limit: pageNumber(defaultPageSize, 1, maximumPageSize),
+  limit: pageNumber(adminPageSize, 1, maximumAdminPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
   role: Schema.optionalKey(Role),
 });

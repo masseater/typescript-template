@@ -1,4 +1,4 @@
-import { APPLICATION } from "@repo/config";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Config, Effect, Option, Redacted } from "effect";
 
 import {
@@ -27,35 +27,35 @@ function optional<Value>(config: Config.Config<Value>): Config.Config<Value | un
 }
 
 const budget = Config.all({
-  budgetJpy: Config.schema(Positive, "BUDGET_JPY"),
-  fixedCostUsd: Config.schema(Nonnegative, "TEMPLATE_FIXED_COST_USD").pipe(
+  budgetJpy: Config.schema(Positive, deploymentKey.budgetJpy),
+  fixedCostUsd: Config.schema(Nonnegative, deploymentKey.fixedCostUsd).pipe(
     Config.withDefault(DEFAULT_USD),
   ),
-  jpyPerUsd: Config.schema(Positive, "TEMPLATE_JPY_PER_USD").pipe(
+  jpyPerUsd: Config.schema(Positive, deploymentKey.jpyPerUsd).pipe(
     Config.withDefault(DEFAULT_JPY_PER_USD),
   ),
-  recipients: Config.schema(Recipients, "ALERT_EMAIL"),
-  reserveUsd: Config.schema(Nonnegative, "TEMPLATE_RESERVE_USD").pipe(
+  recipients: Config.schema(Recipients, deploymentKey.alertEmail),
+  reserveUsd: Config.schema(Nonnegative, deploymentKey.reserveUsd).pipe(
     Config.withDefault(DEFAULT_USD),
   ),
 });
 
 const otlpDestination = Config.all({
-  enabled: optional(Config.boolean("TEMPLATE_OTLP_ENABLED")),
-  endpoint: optional(Config.schema(HttpsUrl, "TEMPLATE_OTLP_ENDPOINT")),
+  enabled: optional(Config.boolean(deploymentKey.otlpEnabled)),
+  endpoint: optional(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)),
 });
 
 const settings = Config.all({
-  accountId: Config.schema(CloudflareId, "CLOUDFLARE_ACCOUNT_ID"),
-  appDomain: Config.schema(Domain, "TEMPLATE_APP_DOMAIN"),
+  accountId: Config.schema(CloudflareId, deploymentKey.cloudflareAccountId),
+  appDomain: Config.schema(Domain, deploymentKey.appDomain),
   budget,
-  mailFrom: Config.schema(Email, "TEMPLATE_MAIL_FROM"),
-  observabilitySampling: Config.schema(SamplingRate, "TEMPLATE_OBSERVABILITY_SAMPLING").pipe(
+  mailFrom: Config.schema(Email, deploymentKey.mailFrom),
+  observabilitySampling: Config.schema(SamplingRate, deploymentKey.observabilitySampling).pipe(
     Config.withDefault(FULL_SAMPLING),
   ),
   otlp: otlpDestination,
-  prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
-  zoneId: Config.schema(CloudflareId, "CLOUDFLARE_ZONE_ID"),
+  prefix: Config.schema(Prefix, deploymentKey.prefix),
+  zoneId: Config.schema(CloudflareId, deploymentKey.cloudflareZoneId),
 }).pipe(
   Effect.flatMap(({ appDomain, ...config }) =>
     checkOtlpSettings(config.otlp).pipe(
@@ -66,10 +66,10 @@ const settings = Config.all({
   ),
 );
 
-const authSecret = Config.schema(AuthSecret, "TEMPLATE_AUTH_SECRET").pipe(
+const authSecret = Config.schema(AuthSecret, deploymentKey.authSecret).pipe(
   Config.map(Redacted.make),
 );
 
-const otlpAuthorization = optional(Config.redacted("TEMPLATE_OTLP_AUTHORIZATION"));
+const otlpAuthorization = optional(Config.redacted(deploymentKey.otlpAuthorization));
 
 export { authSecret, otlpAuthorization, settings };
