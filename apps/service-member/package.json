@@ -11,14 +11,15 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@cloudflare/tanstack-ai": "0.2.1",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/interview": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@tanstack/ai": "0.54.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "drizzle-orm": "catalog:",
@@ -30,9 +31,11 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "msw": "catalog:",
     "steiger": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",

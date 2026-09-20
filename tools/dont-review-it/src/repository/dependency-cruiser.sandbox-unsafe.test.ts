@@ -127,14 +127,6 @@ const detected: readonly Case[] = [
     },
   ],
   [
-    "no-signup-outside-user",
-    { "apps/service-admin/src/index.ts": 'export * from "@repo/auth-ui/signup";\n' },
-  ],
-  [
-    "no-signup-outside-user",
-    { "apps/service-admin/src/index.ts": 'export type { Props } from "@repo/auth-ui/signup";\n' },
-  ],
-  [
     "no-wiki-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
   ],
@@ -251,10 +243,6 @@ const accepted: readonly Case[] = [
       "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
     },
-  ],
-  [
-    "no-signup-outside-user",
-    { "apps/service-member/src/index.ts": 'export * from "@repo/auth-ui/signup";\n' },
   ],
   [
     "no-wiki-to-database",
