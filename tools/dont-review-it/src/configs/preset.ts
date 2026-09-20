@@ -1,4 +1,4 @@
-import { oxlint as lintRuleAuthoringOxlint } from "@repo/lint-rule-authoring";
+import { oxlint as lintRuleAuthoringOxlint } from "@repo/dont-review-it/lint-rule-authoring";
 
 import { oxfmt } from "./oxfmt.ts";
 import { oxlintFor } from "./oxlint.ts";

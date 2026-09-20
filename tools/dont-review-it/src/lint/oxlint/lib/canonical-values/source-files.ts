@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 
-import { readUnlessMissing } from "@repo/repository-checks";
+import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";

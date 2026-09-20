@@ -14,7 +14,7 @@ import {
 } from "./shipped-versions.ts";
 import { listSkillFiles, skillsDirectoryOf } from "./skill-files.ts";
 
-import type { ScannedProblems } from "@repo/repository-checks";
+import type { ScannedProblems } from "@repo/dont-review-it/repository-checks";
 import type { RepositoryProblem } from "../problem.ts";
 import type { IntentSkillsConfig } from "./config.ts";
 
