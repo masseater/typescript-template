@@ -2,7 +2,7 @@ import { listDurableObjectIds, reset, runInDurableObject } from "cloudflare:test
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vite-plus/test";
 
-import handler, { probeAlert, probeEvent, probeFailure } from "./monitor-fixture.ts";
+import handler, { ProbeMonitor, probeAlert, probeEvent, probeFailure } from "./monitor-fixture.ts";
 
 import type { Outcome, SentMail } from "./monitor-fixture.ts";
 
@@ -102,6 +102,11 @@ describe("a monitor check running inside its durable object", () => {
 });
 
 describe("the worker in front of the monitor durable object", () => {
+  it("exports the class name the durable object binding asks for", () => {
+    expect.hasAssertions();
+    expect(ProbeMonitor.name).toBe("ProbeMonitor");
+  });
+
   it("answers anything other than the scheduled check with 404", () => {
     expect.hasAssertions();
     expect(handler.fetch().status).toBe(notFound);
