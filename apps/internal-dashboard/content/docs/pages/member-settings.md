@@ -9,7 +9,18 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 パス: `/settings`。
 
-プロフィール・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+プロフィール・公開範囲・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+
+## 公開範囲
+
+パス: `/settings/visibility`。既定は「全会員」で、一覧と検索には載せない側である。
+
+1. 見出し「公開範囲」
+2. 「プロフィールを見られる人」（全会員 / 自分だけ）
+3. 「会員一覧と検索に載せる」
+4. 「保存」
+
+「自分だけ」にすると、リンクを知っている会員にもプロフィールと写真を見せない。判定の実体は [会員のつながり](/data-model/member-graph) が持つ。
 
 ## 通知
 
@@ -71,6 +82,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 ```mermaid
 flowchart TD
   settings["/settings"] --> profile["/settings/profile"]
+  settings --> visibility["/settings/visibility"]
   settings --> notifications["/settings/notifications"]
   settings --> security["/settings/security"]
   settings --> interview["/settings/interview"]
