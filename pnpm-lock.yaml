@@ -1181,9 +1181,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@repo/dont-review-it':
+      '@repo/vite-config':
         specifier: workspace:*
-        version: link:../../tools/dont-review-it
+        version: link:../vite-config
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)

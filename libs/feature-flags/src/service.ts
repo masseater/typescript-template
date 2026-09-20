@@ -45,14 +45,12 @@ const booleanFromClient = (
     flagKey: FlagKey;
   }>,
 ): Effect.Effect<boolean> =>
-  Effect.tryPromise({
-    catch: (cause) => cause,
-    try: () =>
-      flagBooleanLookup.client.getBooleanValue(
-        flagBooleanLookup.flagKey,
-        booleanForVariation(flagBooleanLookup.defaultVariation),
-      ),
-  }).pipe(Effect.orDie);
+  Effect.promise(() =>
+    flagBooleanLookup.client.getBooleanValue(
+      flagBooleanLookup.flagKey,
+      booleanForVariation(flagBooleanLookup.defaultVariation),
+    ),
+  );
 
 const flagStateForDefinition = (
   client: ReturnType<typeof OpenFeature.getClient>,
@@ -92,10 +90,7 @@ const memoryFeatureFlags = Effect.fn("memoryFeatureFlags")(function* memoryFeatu
       ]),
     ) as Record<FlagKey, boolean>,
   );
-  yield* Effect.tryPromise({
-    catch: (cause) => cause,
-    try: () => OpenFeature.setProviderAndWait(provider),
-  }).pipe(Effect.orDie);
+  yield* Effect.promise(() => OpenFeature.setProviderAndWait(provider));
   const client = OpenFeature.getClient();
   const writeMemoryBoolean = Effect.fn("memoryWriteBoolean")(function* memoryWriteBoolean(
     flagKey: FlagKey,
@@ -121,10 +116,7 @@ const flagshipFeatureFlags = Effect.fn("flagshipFeatureFlags")(function* flagshi
   binding: FlagshipBinding,
 ) {
   const provider = new FlagshipServerProvider({ binding });
-  yield* Effect.tryPromise({
-    catch: (cause) => cause,
-    try: () => OpenFeature.setProviderAndWait(provider),
-  }).pipe(Effect.orDie);
+  yield* Effect.promise(() => OpenFeature.setProviderAndWait(provider));
   const client = OpenFeature.getClient();
   return featureFlagsFromClient(client, (flagKey, enabled) =>
     Effect.succeed({
