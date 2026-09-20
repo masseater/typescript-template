@@ -1,4 +1,6 @@
+export { createApiKey, loadApiKeys, revokeApiKey } from "./api/api-keys.ts";
 export { AiPage } from "./ui/ai-page.tsx";
+export type { CreatedApiKey, ListedApiKey } from "./api/api-keys.ts";
 export { InterviewSettingsPage } from "./ui/interview-page.tsx";
 export { LeavePage } from "./ui/leave-page.tsx";
 export { NotificationsPage } from "./ui/notifications-page.tsx";
