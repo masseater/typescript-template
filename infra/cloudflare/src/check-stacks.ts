@@ -222,9 +222,9 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       cron: "37 * * * *",
       name: "health",
       variables: [
-        plainText("SERVICE_ADMIN_ORIGIN", origins.admin),
-        plainText("SERVICE_MEMBER_ORIGIN", origins.user),
-        plainText("INTERNAL_DASHBOARD_ORIGIN", origins.wiki),
+        plainText("SERVICE_ADMIN_ORIGIN", origins["service-admin"]),
+        plainText("SERVICE_MEMBER_ORIGIN", origins["service-member"]),
+        plainText("INTERNAL_DASHBOARD_ORIGIN", origins["internal-dashboard"]),
       ],
     }),
   }),

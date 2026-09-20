@@ -31,7 +31,11 @@ const TotpEnrollment = Schema.Struct({
 
 class Fixture extends Context.Service<
   Fixture,
-  { readonly user: AuthService; readonly admin: AuthService; readonly wiki: AuthService }
+  {
+    readonly "internal-dashboard": AuthService;
+    readonly "service-admin": AuthService;
+    readonly "service-member": AuthService;
+  }
 >()("AuthTestFixture") {}
 
 function decodeOrDie<Contract extends Schema.Top & { readonly DecodingServices: never }>(
@@ -57,9 +61,9 @@ const fixture = Layer.effect(
   Fixture,
   Effect.gen(function* buildFixture() {
     return Fixture.of({
-      admin: yield* authFor("service-admin"),
-      user: yield* authFor("service-member"),
-      wiki: yield* authFor("internal-dashboard"),
+      "internal-dashboard": yield* authFor("internal-dashboard"),
+      "service-admin": yield* authFor("service-admin"),
+      "service-member": yield* authFor("service-member"),
     });
   }),
 ).pipe(Layer.provideMerge(TestDatabase), Layer.provideMerge(mailServer));
@@ -84,17 +88,17 @@ function receivedLink(email: string, subject: string): URL {
 }
 
 const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
-  const { user } = yield* Fixture;
+  const member = (yield* Fixture)["service-member"];
   const link = receivedLink(email, mailSubjects.verification);
   assert.deepStrictEqual([link.pathname, link.search], ["/verify-email", ""]);
   const token = new URLSearchParams(link.hash.slice(1)).get("token");
   assert.isNotNull(token);
-  yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
+  yield* Effect.promise(async () => member.instance.api.verifyEmail({ query: { token } }));
 });
 
 const register = Effect.fn("register")(function* register(email: string) {
-  const { user } = yield* Fixture;
-  const client = new BrowserClient(user);
+  const member = (yield* Fixture)["service-member"];
+  const client = new BrowserClient(member);
   const signUp = { email, name: email, password: PASSWORD };
   assert.isTrue((yield* client.request("/sign-up/email", signUp)).ok);
   return client;
