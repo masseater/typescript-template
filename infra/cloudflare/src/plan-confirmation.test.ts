@@ -176,6 +176,28 @@ it.effect("refuses a plan that removes, replaces, adopts or drops a binding", ()
   }),
 );
 
+it.effect("lets a plan adopt Cloudflare zone settings that always exist", () =>
+  Effect.gen(function* program() {
+    const settings = planned([
+      {
+        action: "adopted",
+        bindings: [],
+        fqn: fqn("AlwaysUseHttps"),
+        logicalId: "AlwaysUseHttps",
+        resourceType: "Cloudflare.Zone.Setting",
+      },
+      {
+        action: "adopted",
+        bindings: [],
+        fqn: fqn("SecurityHeader"),
+        logicalId: "SecurityHeader",
+        resourceType: "Cloudflare.Zone.Setting",
+      },
+    ]);
+    assert.isUndefined(yield* acceptPlan(settings, { accountId, confirmation: token(settings) }));
+  }),
+);
+
 it.effect("describes an unresolved same-stack reference instead of coercing it to a string", () =>
   Effect.sync(() => {
     const reference = expression("Bucket");
