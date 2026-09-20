@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 import { reportFailed, runCli } from "@repo/cli";
 import { Database } from "@repo/db";
-<<<<<<< HEAD
 import { BOOTSTRAP_KIND, BootstrapKind, Email, bootstrapAdmin } from "@repo/db/bootstrap";
-import { Console, Effect, Schema } from "effect";
-=======
-import { Email, bootstrapAdmin } from "@repo/db/bootstrap";
 import { Cause, Console, Effect, Schema } from "effect";
->>>>>>> origin/main
 
 import { localDatabasePlatform } from "./local-platform.ts";
 
