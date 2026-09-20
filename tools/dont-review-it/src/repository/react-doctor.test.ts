@@ -126,9 +126,7 @@ describe("react-doctor integration", () => {
 
   it("every suppressed file still exists", () => {
     expect.hasAssertions();
-    expect(
-      suppressedFiles().filter((file) => !(file in sources)),
-    ).toStrictEqual([]);
+    expect(suppressedFiles().filter((file) => !(file in sources))).toStrictEqual([]);
   });
 
   it("keeps global offs inside knip, the JSX runtime, and a retired rule", () => {
