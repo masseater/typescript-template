@@ -9,7 +9,7 @@ import { localDatabaseVariable } from "@repo/config/local-database-path";
 import { repositoryRoot, vitePlus } from "./repository.ts";
 
 const runVitePlus = promisify(execFile);
-const databasePackage = "@repo/db";
+const databasePackage = "@repo/db-local";
 const prefix = "template-e2e-";
 
 type Environment = Readonly<Record<string, string | undefined>>;

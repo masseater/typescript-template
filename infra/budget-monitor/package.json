@@ -6,7 +6,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@repo/config": "workspace:*",
+    "@repo/cli": "workspace:*",
     "@repo/monitor": "workspace:*",
     "effect": "catalog:"
   },

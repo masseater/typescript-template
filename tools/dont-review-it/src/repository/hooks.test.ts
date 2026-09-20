@@ -2,7 +2,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { generatedDirectories, lifecycleInherits, lifecycles } from "@repo/config/vite";
+import { generatedDirectories, lifecycleInherits, lifecycles } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";

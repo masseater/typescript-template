@@ -1,11 +1,10 @@
+import { APPLICATION, type Application } from "@repo/config";
 import {
-  APPLICATION,
   AUTHENTICATION_METHOD,
   ROLE,
   strongAuthenticationMethods,
-  type Application,
   type AuthenticationMethod,
-} from "@repo/config";
+} from "@repo/config/identity";
 import { APIError } from "better-auth/api";
 
 const enrollmentPaths = new Set([

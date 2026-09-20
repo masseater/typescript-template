@@ -2,6 +2,7 @@
 name: core
 description: >
   Wrap heavy commands with @repo/ai-native: `throttle` caps simultaneous executions per host and namespace and can kill a process tree on `--timeout`, `spool` diverts a child's merged output into a `.spool/` log file and prints a fixed-size summary in its place, `unabridged` is a Claude Code PreToolUse hook that denies `head` and `tail` at a command position, and `@repo/ai-native-telemetry` starts one OpenTelemetry provider per process. Load when wiring an entry point with these wrappers, when a wrapped command waits for a slot or looks hung, when you need the full log behind a spool summary line, when a Bash call was denied for slicing its output, or when a workspace has to declare its own measurement through `MST_TELEMETRY` and `OTEL_EXPORTER_OTLP_ENDPOINT`.
+
 metadata:
   type: core
   library: "@repo/ai-native"

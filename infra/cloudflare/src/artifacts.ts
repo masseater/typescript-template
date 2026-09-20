@@ -5,7 +5,7 @@ import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
-import { serverOnlyMarkers } from "@repo/config/vite";
+import { serverOnlyMarkers } from "@repo/vite-config";
 import { Context, Effect } from "effect";
 
 import {

@@ -1,8 +1,9 @@
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 
-import { loopbackAddress, type Application } from "../applications.ts";
-import { repositoryRoot as defaultRepositoryRoot } from "../repository-root.ts";
+import { loopbackAddress, type Application } from "@repo/config";
+import { repositoryRoot as defaultRepositoryRoot } from "@repo/config/repository-root";
+
 import { privatePath } from "./private-path.ts";
 import { createRequestGuard, resolvePath, type RequestGuard } from "./request-guard.ts";
 import { serverOptions } from "./server-options.ts";

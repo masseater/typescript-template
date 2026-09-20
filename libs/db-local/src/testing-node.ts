@@ -1,44 +1,47 @@
+import { workerCompatibility } from "@repo/config/worker";
+import { Database } from "@repo/db";
+import { localDatabase } from "@repo/db/local";
+import { prepareBatch } from "@repo/db/migrate-d1";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
-import { Database } from "./database.ts";
-import { localDatabase } from "./local.ts";
-import { prepareBatch } from "./migrate-d1.ts";
-
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
-import type { RemoteFailure } from "./remote-input.ts";
+import type { RemoteFailure } from "@repo/db/remote-input";
 
-const miniflareCompatibilityDate = "2026-07-30";
+interface D1HttpBatchResponse {
+  readonly result: D1Result[];
+  readonly success: true;
+}
 
 const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
 const HttpQuery = Schema.Struct({ params: Schema.Array(HttpParam), sql: Schema.String });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-const executeD1HttpBatch = async (
+async function executeD1HttpBatch(
   database: D1Database,
-  requestJson: unknown,
-): Promise<{ readonly result: D1Result[]; readonly success: true }> => {
-  const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(requestJson);
-  const executedStatements = await database.batch(prepareBatch(database, batch));
-  return { result: executedStatements, success: true };
-};
+  body: unknown,
+): Promise<D1HttpBatchResponse> {
+  const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(body);
+  const result = await database.batch(prepareBatch(database, batch));
+  return { result, success: true };
+}
 
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
-const runStatement = (
+function runStatement(
   sql: string,
-  ...statementParameters: readonly (string | number)[]
-): Effect.Effect<D1Result, unknown, TestBinding> => {
+  ...params: readonly (string | number)[]
+): Effect.Effect<D1Result, unknown, TestBinding> {
   return Effect.gen(function* statement() {
     const database = yield* TestBinding;
     return yield* Effect.tryPromise(async () =>
       database
         .prepare(sql)
-        .bind(...statementParameters)
+        .bind(...params)
         .run(),
     );
   });
-};
+}
 
 const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
   TestBinding,
@@ -46,7 +49,8 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
     Effect.promise(async () => {
       const runtime = new Miniflare(
         convertV4MiniflareOptions({
-          compatibilityDate: miniflareCompatibilityDate,
+          compatibilityDate: workerCompatibility.date,
+          compatibilityFlags: [...workerCompatibility.flags],
           d1Databases: { [localDatabase.binding]: localDatabase.database_name },
           modules: true,
           script: "export default { fetch() { return new Response('test-database'); } };",
@@ -54,7 +58,6 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
       );
       return { database: await runtime.getD1Database(localDatabase.binding), runtime };
     }),
-
     ({ runtime }) => Effect.promise(async () => runtime.dispose()),
   ).pipe(Effect.map(({ database }) => database)),
 );
@@ -145,5 +148,5 @@ export const describeDatabase = Effect.fn("describeDatabase")(function* describe
   };
 });
 
-export { d1Executor } from "./migrate-d1.ts";
+export { d1Executor } from "@repo/db/migrate-d1";
 export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, runStatement };

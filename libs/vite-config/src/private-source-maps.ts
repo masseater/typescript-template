@@ -3,8 +3,8 @@ import path from "node:path";
 
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
 
+import type { Application } from "@repo/config";
 import type { Plugin } from "vite-plus";
-import type { Application } from "./applications.ts";
 
 const PRIVATE_FILE_MODE = 0o600;
 const PRIVATE_DIRECTORY_MODE = 0o700;
