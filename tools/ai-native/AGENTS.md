@@ -15,17 +15,6 @@ description: Command wrappers that keep parallel heavy commands within the host'
 
 `spool` が包んだコマンドは計測の対象でもある。包んだ 1 件がスパンになり、所要時間が分布として出て、記録した本文が LogRecord として出る。子プロセスへは trace の文脈を環境変数で渡すので、子が自分を計測していれば同じトレースの中に入れ子で並ぶ。
 
-計測を立ち上げる口はこのパッケージが持ち、`@repo/ai-native/telemetry` として公開する。provider を組むのは 1 プロセスで 1 回だけで、最初に求めた入口が `service.name` を決める。有効化は `MST_TELEMETRY`、送信先は `OTEL_EXPORTER_OTLP_ENDPOINT`、停止は `OTEL_SDK_DISABLED` が決める。
-
-- IF: 計測を仕込む; THEN
-  - MUST: 時間を使っている当人に仕込む
-  - PROHIBIT: 計測のためだけにコマンドを包む
-    - 包み忘れた経路は、計測結果の上では速い経路と同じ見た目になる
-- IF: プロセスの終了前に片付けたいものがある; THEN
-  - MUST: `beforeExit` に自分で登録する
-  - PROHIBIT: 送信の停止処理より先に登録されることを前提にする
-    - 停止はマイクロタスクへ回してあり、登録順に関わらず全ての片付けの後で始まる
-
 3 つ目の `unabridged` は包まない。Claude Code の `PreToolUse` hook として標準入力から JSON を読み、Bash に渡されたコマンド行のコマンド位置に `head` / `tail` があれば `deny` を返す。通す判断のときは何も出さない。配線は採用するリポジトリの `.claude/settings.json` で `matcher` を `Bash` にして行う。hook を書くときの規律は [hook の書き方](docs/hooks.md) が持つ。
 
 実行可能な契約は各コマンドのヘルプ本文とテストの 2 つである。振る舞いを変えるときは両方を同時に変える。

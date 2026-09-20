@@ -5,9 +5,12 @@ import {
   ATTR_PROCESS_EXECUTABLE_NAME,
   ATTR_PROCESS_EXIT_CODE,
 } from "@opentelemetry/semantic-conventions/incubating";
+import {
+  environmentCarryingContext,
+  inheritedContext,
+  startTelemetry,
+} from "@repo/ai-native-telemetry";
 import { once } from "es-toolkit";
-
-import { environmentCarryingContext, inheritedContext, startTelemetry } from "./telemetry.ts";
 
 import type { Command } from "../spool/parse-command.ts";
 
