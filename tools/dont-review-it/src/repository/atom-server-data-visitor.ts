@@ -6,11 +6,7 @@ import type { Visitor } from "vite-plus/lint/plugins";
 
 const atomServerDataVisitor = (inspection: LintContext): Visitor => {
   return {
-    ...originVisitor(
-      inspection,
-      isServerCacheApi,
-      (node) => holdsServerData(inspection, node),
-    ),
+    ...originVisitor(inspection, isServerCacheApi, (node) => holdsServerData(inspection, node)),
     ExportNamedDeclaration(node: Node): void {
       if (node.type !== "ExportNamedDeclaration" || !node.source) {
         return;

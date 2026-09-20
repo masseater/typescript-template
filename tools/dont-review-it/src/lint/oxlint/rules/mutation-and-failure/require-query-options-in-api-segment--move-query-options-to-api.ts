@@ -6,11 +6,7 @@ import { staticMemberOf } from "../../lib/static-member.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 
-const QUERY_FACTORY_NAMES = new Set([
-  "infiniteQueryOptions",
-  "mutationOptions",
-  "queryOptions",
-]);
+const QUERY_FACTORY_NAMES = new Set(["infiniteQueryOptions", "mutationOptions", "queryOptions"]);
 
 const isQueryFactoryCallee = (callee: ESTree.Expression): boolean => {
   if (callee.type === "Identifier") {

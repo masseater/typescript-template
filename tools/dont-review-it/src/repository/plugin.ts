@@ -17,10 +17,7 @@ import { cliImplementation, processBoundaryVisitor, processMember } from "./proc
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
-import {
-  atomHeldServerDataMessage,
-  serverCacheApiMessage,
-} from "./state-kinds.ts";
+import { atomHeldServerDataMessage, serverCacheApiMessage } from "./state-kinds.ts";
 import {
   gitEnvironmentVisitor,
   tempDirectoryVisitor,

@@ -71,10 +71,7 @@ const lintOptions = {
   options: { denyWarnings: true, typeAware: true, typeCheck: true },
   overrides: [
     {
-      files: [
-        "libs/auth-ui/src/email-verification.tsx",
-        "libs/auth-ui/src/use-session.ts",
-      ],
+      files: ["libs/auth-ui/src/email-verification.tsx", "libs/auth-ui/src/use-session.ts"],
       rules: {
         "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
       },

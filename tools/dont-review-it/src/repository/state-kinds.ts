@@ -42,7 +42,8 @@ const stateKinds = {
 
 const serverStateKind = stateKinds.server;
 
-const serverStateRetiredPackages: Readonly<Record<string, string>> = serverStateKind.retiredPackages;
+const serverStateRetiredPackages: Readonly<Record<string, string>> =
+  serverStateKind.retiredPackages;
 
 const handRolledServerReadMessage =
   "A module must not combine `useState` with `fetch` for server data. Read server data through TanStack Query option factories and `useQuery`.";

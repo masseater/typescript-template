@@ -1,5 +1,6 @@
-import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 import { origins, variableOf, type Origin } from "./references.ts";
+
+import type { LintContext, Node, NodeOf } from "./lint-context.ts";
 
 const ioModules = /(?:^|\/)(?:api|client)(?:\/|\.[cm]?[jt]sx?$|$)/u;
 const ioGlobals: ReadonlySet<string> = new Set([

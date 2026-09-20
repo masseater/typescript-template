@@ -118,7 +118,10 @@ describe("retired server-state imports", () => {
     ["urql", 'export * from "urql";'],
     ["@apollo/client", 'export * from "@apollo/client";'],
     ["react-relay", 'export * from "react-relay";'],
-    ["@trpc/client", 'import { createTRPCClient } from "@trpc/client"; export { createTRPCClient };'],
+    [
+      "@trpc/client",
+      'import { createTRPCClient } from "@trpc/client"; export { createTRPCClient };',
+    ],
     ["react-query", 'export * from "react-query";'],
   ])("rejects %s imports", ([_label, code]) => {
     expect.hasAssertions();
