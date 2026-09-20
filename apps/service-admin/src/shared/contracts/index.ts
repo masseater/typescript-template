@@ -1,4 +1,17 @@
 export {
+  AgreementDraft,
+  AgreementDraftRevision,
+  AgreementPublication,
+  AgreementPublished,
+  AgreementVersionDetail,
+  AgreementVersionList,
+  AgreementVersionQuery,
+  AgreementVersionSaved,
+  maximumBodyLength,
+  maximumSummaryLength,
+  maximumVersionLength,
+} from "./agreements.ts";
+export {
   BooleanText,
   Role,
   RoleChange,
