@@ -80,7 +80,7 @@ const readEnrollment = async (page: Page): Promise<Enrollment> => {
 
 const activateButton = "確認して認証アプリを有効化";
 
-const homePattern = "/users/*";
+const homePattern = "/home";
 
 const enrollTotp = async (visit: Visit): Promise<Enrollment> => {
   await beginEnrollment(visit);
