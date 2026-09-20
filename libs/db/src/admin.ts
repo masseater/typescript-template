@@ -3,10 +3,11 @@ import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
+import { auditWhen, type AuditedChange } from "./audit.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
-import { AUDIT_ACTION, auditEvent, user, type AuditAction } from "./schema.ts";
+import { AUDIT_ACTION, user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
@@ -81,35 +82,10 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
 
 const auditWhenTargeted = (
   database: DrizzleDatabase,
-  {
-    action,
-    actorId,
-    sessionId,
-    targetId,
-  }: Readonly<{
-    action: AuditAction;
-    actorId: string;
-    sessionId: string;
-    targetId: string;
-  }>,
+  change: Readonly<AuditedChange & { sessionId: string }>,
 ): SQL => {
-  const auditColumns = [
-    [auditEvent.action, action],
-    [auditEvent.actorId, actorId],
-    [auditEvent.createdAt, Date.now()],
-    [auditEvent.id, crypto.randomUUID()],
-    [auditEvent.targetId, targetId],
-  ] as const;
-  const columnNames = sql.join(
-    auditColumns.map(([column]) => sql.identifier(column.name)),
-    sql`, `,
-  );
-  const columnValues = sql.join(
-    auditColumns.map(([, columnValue]) => sql`${columnValue}`),
-    sql`, `,
-  );
-  const targeted = sql`SELECT 1 FROM ${user} WHERE ${user.id} = ${targetId} AND ${liveAdmin(database, sessionId)}`;
-  return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
+  const targeted = sql`SELECT 1 FROM ${user} WHERE ${user.id} = ${change.targetId} AND ${liveAdmin(database, change.sessionId)}`;
+  return auditWhen(change, targeted);
 };
 
 export const setUserRole = Effect.fn("setUserRole")(function* setUserRole(roleChange: {
@@ -170,5 +146,14 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
 });
 
 export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+export {
+  AgreementVersionTaken,
+  AgreementVersionUnavailable,
+  createAgreementDraft,
+  listAgreementVersions,
+  publishAgreementVersion,
+  readAgreementVersion,
+  reviseAgreementDraft,
+} from "./agreement-admin.ts";
 export { LastAdminRequired } from "./last-admin-required.ts";
 export { TargetUnavailable } from "./target-unavailable.ts";
