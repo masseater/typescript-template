@@ -19,6 +19,7 @@ import { contactApi } from "./contact-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { socialApi } from "./social-api.ts";
+import { supportApi } from "./support-api.ts";
 
 const api = apiRoutes(runtime, reporting);
 const failures = {
@@ -31,6 +32,7 @@ const userApi = createApi(apiRoot)
   .use(contactApi(api))
   .use(interviewApi(api))
   .use(socialApi(api))
+  .use(supportApi(api))
   .get(
     "/profile",
     api.route(

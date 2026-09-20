@@ -12,7 +12,14 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
-export { onboardingSteps, schema } from "./schema.ts";
+export {
+  INQUIRY_AUTHOR_KIND,
+  INQUIRY_STATUS,
+  inquiryAuthorKinds,
+  inquiryStatuses,
+  onboardingSteps,
+  schema,
+} from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
@@ -36,3 +43,27 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  InquiryForbidden,
+  InquiryNotFound,
+  InquiryPage,
+  closeInquiry,
+  countPendingInquiries,
+  createMemberInquiry,
+  getAdminInquiry,
+  getInquiryMemberSummary,
+  getMemberInquiry,
+  listAdminInquiries,
+  listMemberInquiries,
+  replyAsAdmin,
+  replyAsMember,
+  requireInquiryResponder,
+} from "./inquiry.ts";
+export type {
+  AdminInquirySummary,
+  AdminInquiryThread,
+  InquiryMessage,
+  InquirySummary,
+  InquiryThread,
+  MemberSummary,
+} from "./inquiry.ts";

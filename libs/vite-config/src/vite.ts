@@ -46,6 +46,7 @@ function previewDevVars(appRoot: string): Plugin {
 
 const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
+  "libs/db/src/inquiry-status.ts",
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
   "libs/runtime/src/security.ts",

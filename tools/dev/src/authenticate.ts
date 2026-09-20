@@ -5,6 +5,7 @@ import { APPLICATION, applicationOrigins } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
 
+import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
 import {
@@ -75,40 +76,52 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
 ) {
   const socketDirectory = yield* refreshBrowserConfig();
   const origin = configuredOrigin(app, credentials);
-  yield* agent(app, credentials, socketDirectory, ["open", `${origin}/login`]);
+  yield* agent(app, credentials, socketDirectory, [BROWSER_AGENT_COMMAND.open, `${origin}/login`]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
+    BROWSER_AGENT_COMMAND.find,
+    BROWSER_AGENT_COMMAND.label,
     "メールアドレス",
-    "fill",
+    BROWSER_AGENT_COMMAND.fill,
     operator.email,
   ]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
+    BROWSER_AGENT_COMMAND.find,
+    BROWSER_AGENT_COMMAND.label,
     "パスワード",
-    "fill",
+    BROWSER_AGENT_COMMAND.fill,
     operator.password,
   ]);
   yield* agent(app, credentials, socketDirectory, [
-    "eval",
+    BROWSER_AGENT_COMMAND.eval,
     "document.querySelector('form')?.requestSubmit(); true",
   ]);
-  yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
+    BROWSER_AGENT_COMMAND.wait,
+    loginSettleMilliseconds,
+  ]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.find,
+    BROWSER_AGENT_COMMAND.label,
     "認証アプリの確認コード",
-    "fill",
+    BROWSER_AGENT_COMMAND.fill,
     URI.parse(operator.totpURI).generate(),
   ]);
   yield* agent(app, credentials, socketDirectory, [
-    "eval",
+    BROWSER_AGENT_COMMAND.eval,
     "document.querySelector('form')?.requestSubmit(); true",
   ]);
-  yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
-  yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPath(app)}`]);
-  yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.wait,
+    loginSettleMilliseconds,
+  ]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.open,
+    `${origin}${postLoginPath(app)}`,
+  ]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.wait,
+    loginSettleMilliseconds,
+  ]);
   return origin;
 });
 

@@ -19,9 +19,9 @@ type AdminNavGroup = Readonly<{
 const adminNavGroups: readonly AdminNavGroup[] = [
   {
     items: [
-      { badge: 3, icon: UsersIcon, label: "利用者", to: "/members" },
-      { badge: 5, icon: MessageSquareIcon, label: "問い合わせ", to: "/inquiries" },
-      { badge: 2, icon: FlagIcon, label: "通報", to: "/reports" },
+      { icon: UsersIcon, label: "利用者", to: "/members" },
+      { icon: MessageSquareIcon, label: "問い合わせ", to: "/inquiries" },
+      { icon: FlagIcon, label: "通報", to: "/reports" },
     ],
     label: "運用",
   },

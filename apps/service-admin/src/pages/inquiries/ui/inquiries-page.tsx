@@ -1,16 +1,110 @@
-import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { useEffect, useState } from "react";
 
-import { OpsPage } from "#widgets/ops-page/index.ts";
+import { loadInquiries, loadPendingCount } from "#pages/inquiries/api/inquiries.ts";
+import { INQUIRY_STATUS, inquiryStatusLabel } from "#pages/inquiries/model/status-label.ts";
 
+import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
+import type { InquiryStatus } from "#pages/inquiries/model/status-label.ts";
 import type { ReactElement } from "react";
 
+const updatedAtLabel = new Intl.DateTimeFormat("ja", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "UTC",
+});
+
 function InquiriesPage(): ReactElement {
+  const [inquiries, setInquiries] = useState<readonly AdminInquirySummary[] | undefined>();
+  const [pendingCount, setPendingCount] = useState<number | undefined>();
+  const [status, setStatus] = useState<InquiryStatus | undefined>();
+  const [error, setError] = useState<string | undefined>();
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([loadInquiries({ limit: 50, offset: 0, status }), loadPendingCount()])
+      .then(([list, pending]) => {
+        if (active) {
+          setInquiries(list.inquiries);
+          setPendingCount(pending);
+        }
+      })
+      .catch((failure: unknown) => {
+        if (active) {
+          setError(failure instanceof Error ? failure.message : "問い合わせを読めませんでした。");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [status]);
+
   return (
-    <OpsPage title="問い合わせ">
-      <StatusMessage variant={STATUS_VARIANT.pending}>
-        問い合わせの一覧はまだありません。
-      </StatusMessage>
-    </OpsPage>
+    <main className="flex flex-col gap-4 p-4">
+      <Heading as="h1" id="inquiries-heading" size="page">
+        問い合わせ
+      </Heading>
+      {pendingCount !== undefined && (
+        <p className="text-sm leading-normal text-muted-foreground">対応待ち: {pendingCount} 件</p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {([INQUIRY_STATUS.open, INQUIRY_STATUS.answered, INQUIRY_STATUS.closed] as const).map(
+          (value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={status === value}
+              onClick={() => {
+                setStatus(status === value ? undefined : value);
+              }}
+              className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+            >
+              {inquiryStatusLabel(value)}
+            </button>
+          ),
+        )}
+      </div>
+      {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
+      {inquiries === undefined && error === undefined && (
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
+      )}
+      {inquiries !== undefined && inquiries.length === 0 && (
+        <StatusMessage variant={STATUS_VARIANT.pending}>
+          条件に一致する問い合わせはありません。
+        </StatusMessage>
+      )}
+      {inquiries !== undefined && inquiries.length > 0 && (
+        <table
+          aria-labelledby="inquiries-heading"
+          className="w-full border-collapse text-left text-sm"
+        >
+          <thead>
+            <tr className="border-b border-border">
+              <th className="p-2">件名</th>
+              <th className="p-2">経路</th>
+              <th className="p-2">状態</th>
+              <th className="p-2">相手</th>
+              <th className="p-2">最終更新</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inquiries.map((inquiry) => (
+              <tr key={inquiry.id} className="border-b border-border">
+                <td className="p-2">
+                  <NavigationLink to="/inquiries/$id" params={{ id: inquiry.id }} variant="item">
+                    {inquiry.subject}
+                  </NavigationLink>
+                </td>
+                <td className="p-2">会員</td>
+                <td className="p-2">{inquiryStatusLabel(inquiry.status)}</td>
+                <td className="p-2">{inquiry.memberName}</td>
+                <td className="p-2">{updatedAtLabel.format(inquiry.updatedAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </main>
   );
 }
 

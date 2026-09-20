@@ -2,6 +2,7 @@ import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { session, user } from "./identity-schema.ts";
+import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
 import {
@@ -108,9 +109,13 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["role_changed", "user_deleted"] as const;
+export const auditActions = ["role_changed", "user_deleted", "inquiry_replied"] as const;
 export type AuditAction = (typeof auditActions)[number];
-export const AUDIT_ACTION = { roleChanged: auditActions[0], userDeleted: auditActions[1] } as const;
+export const AUDIT_ACTION = {
+  inquiryReplied: auditActions[2],
+  roleChanged: auditActions[0],
+  userDeleted: auditActions[1],
+} as const;
 
 const auditEvent = sqliteTable(
   "audit_event",
@@ -129,6 +134,8 @@ const schema = {
   account,
   auditEvent,
   follow,
+  inquiry,
+  inquiryMessage,
   interview,
   memberOnboarding,
   jwks,
@@ -160,4 +167,13 @@ export {
 } from "./oauth-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export {
+  INQUIRY_AUTHOR_KIND,
+  INQUIRY_STATUS,
+  inquiry,
+  inquiryAuthorKinds,
+  inquiryMessage,
+  inquiryStatuses,
+} from "./inquiry-schema.ts";
+export type { InquiryAuthorKind, InquiryStatus } from "./inquiry-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

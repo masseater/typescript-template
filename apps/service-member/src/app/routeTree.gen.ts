@@ -34,6 +34,7 @@ import { Route as MemberSettingsNotificationsRouteImport } from './routes/_membe
 import { Route as MemberSettingsPlanRouteImport } from './routes/_member/settings.plan'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
 import { Route as MemberSettingsSecurityRouteImport } from './routes/_member/settings.security'
+import { Route as MemberSupportIdRouteImport } from './routes/_member/support.$id'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 import { Route as WelcomeWelcomeIndexRouteImport } from './routes/_welcome/welcome.index'
@@ -165,6 +166,11 @@ const MemberSettingsSecurityRoute = MemberSettingsSecurityRouteImport.update({
   path: '/settings/security',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSupportIdRoute = MemberSupportIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => MemberSupportRoute,
+} as any)
 const MemberUsersIndexRoute = MemberUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -209,7 +215,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof MemberNotificationsRoute
   '/search': typeof MemberSearchRoute
   '/security': typeof MemberSecurityRoute
-  '/support': typeof MemberSupportRoute
+  '/support': typeof MemberSupportRouteWithChildren
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/support/$id': typeof MemberSupportIdRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
@@ -240,7 +247,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof MemberNotificationsRoute
   '/search': typeof MemberSearchRoute
   '/security': typeof MemberSecurityRoute
-  '/support': typeof MemberSupportRoute
+  '/support': typeof MemberSupportRouteWithChildren
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/support/$id': typeof MemberSupportIdRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
@@ -274,7 +282,7 @@ export interface FileRoutesById {
   '/_member/notifications': typeof MemberNotificationsRoute
   '/_member/search': typeof MemberSearchRoute
   '/_member/security': typeof MemberSecurityRoute
-  '/_member/support': typeof MemberSupportRoute
+  '/_member/support': typeof MemberSupportRouteWithChildren
   '/_member/upgrade': typeof MemberUpgradeRoute
   '/_public/contact': typeof PublicContactRoute
   '/_public/login': typeof PublicLoginRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/_member/settings/plan': typeof MemberSettingsPlanRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
   '/_member/settings/security': typeof MemberSettingsSecurityRoute
+  '/_member/support/$id': typeof MemberSupportIdRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
   '/_welcome/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/_welcome/welcome/choose': typeof WelcomeWelcomeChooseRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/settings/plan'
     | '/settings/profile'
     | '/settings/security'
+    | '/support/$id'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/settings/plan'
     | '/settings/profile'
     | '/settings/security'
+    | '/support/$id'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
@@ -387,6 +398,7 @@ export interface FileRouteTypes {
     | '/_member/settings/plan'
     | '/_member/settings/profile'
     | '/_member/settings/security'
+    | '/_member/support/$id'
     | '/_member/users/$id'
     | '/_welcome/welcome/agreement'
     | '/_welcome/welcome/choose'
@@ -581,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberSettingsSecurityRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_member/support/$id': {
+      id: '/_member/support/$id'
+      path: '/$id'
+      fullPath: '/support/$id'
+      preLoaderRoute: typeof MemberSupportIdRouteImport
+      parentRoute: typeof MemberSupportRoute
+    }
     '/_member/users/': {
       id: '/_member/users/'
       path: '/users'
@@ -633,6 +652,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface MemberSupportRouteChildren {
+  MemberSupportIdRoute: typeof MemberSupportIdRoute
+}
+
+const MemberSupportRouteChildren: MemberSupportRouteChildren = {
+  MemberSupportIdRoute: MemberSupportIdRoute,
+}
+
+const MemberSupportRouteWithChildren = MemberSupportRoute._addFileChildren(
+  MemberSupportRouteChildren,
+)
+
 interface MemberRouteChildren {
   MemberBoardRoute: typeof MemberBoardRoute
   MemberHomeRoute: typeof MemberHomeRoute
@@ -640,7 +671,7 @@ interface MemberRouteChildren {
   MemberNotificationsRoute: typeof MemberNotificationsRoute
   MemberSearchRoute: typeof MemberSearchRoute
   MemberSecurityRoute: typeof MemberSecurityRoute
-  MemberSupportRoute: typeof MemberSupportRoute
+  MemberSupportRoute: typeof MemberSupportRouteWithChildren
   MemberUpgradeRoute: typeof MemberUpgradeRoute
   MemberSettingsAiRoute: typeof MemberSettingsAiRoute
   MemberSettingsInterviewRoute: typeof MemberSettingsInterviewRoute
@@ -661,7 +692,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberNotificationsRoute: MemberNotificationsRoute,
   MemberSearchRoute: MemberSearchRoute,
   MemberSecurityRoute: MemberSecurityRoute,
-  MemberSupportRoute: MemberSupportRoute,
+  MemberSupportRoute: MemberSupportRouteWithChildren,
   MemberUpgradeRoute: MemberUpgradeRoute,
   MemberSettingsAiRoute: MemberSettingsAiRoute,
   MemberSettingsInterviewRoute: MemberSettingsInterviewRoute,

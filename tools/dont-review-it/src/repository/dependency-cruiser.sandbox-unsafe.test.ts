@@ -249,6 +249,10 @@ const accepted: readonly Case[] = [
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
   ],
   [
+    "no-wiki-to-database",
+    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/inquiry-staff";\n' },
+  ],
+  [
     "no-browser-to-server",
     {
       "libs/runtime/src/index.ts": 'export * from "@repo/db";\n',

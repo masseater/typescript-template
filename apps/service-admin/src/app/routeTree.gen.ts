@@ -21,6 +21,7 @@ import { Route as AdminTermsRouteImport } from './routes/_admin/terms'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as AdminInquiriesIdRouteImport } from './routes/_admin/inquiries.$id'
 import { Route as AdminMembersIdRouteImport } from './routes/_admin/members.$id'
 
 const AdminRoute = AdminRouteImport.update({
@@ -81,6 +82,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminInquiriesIdRoute = AdminInquiriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminInquiriesRoute,
+} as any)
 const AdminMembersIdRoute = AdminMembersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -90,7 +96,7 @@ const AdminMembersIdRoute = AdminMembersIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AdminIndexRoute
   '/admins': typeof AdminAdminsRoute
-  '/inquiries': typeof AdminInquiriesRoute
+  '/inquiries': typeof AdminInquiriesRouteWithChildren
   '/members': typeof AdminMembersRouteWithChildren
   '/reports': typeof AdminReportsRoute
   '/security': typeof AdminSecurityRoute
@@ -98,12 +104,13 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/inquiries/$id': typeof AdminInquiriesIdRoute
   '/members/$id': typeof AdminMembersIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AdminIndexRoute
   '/admins': typeof AdminAdminsRoute
-  '/inquiries': typeof AdminInquiriesRoute
+  '/inquiries': typeof AdminInquiriesRouteWithChildren
   '/members': typeof AdminMembersRouteWithChildren
   '/reports': typeof AdminReportsRoute
   '/security': typeof AdminSecurityRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/inquiries/$id': typeof AdminInquiriesIdRoute
   '/members/$id': typeof AdminMembersIdRoute
 }
 export interface FileRoutesById {
@@ -118,7 +126,7 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_admin/admins': typeof AdminAdminsRoute
-  '/_admin/inquiries': typeof AdminInquiriesRoute
+  '/_admin/inquiries': typeof AdminInquiriesRouteWithChildren
   '/_admin/members': typeof AdminMembersRouteWithChildren
   '/_admin/reports': typeof AdminReportsRoute
   '/_admin/security': typeof AdminSecurityRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/_admin/': typeof AdminIndexRoute
+  '/_admin/inquiries/$id': typeof AdminInquiriesIdRoute
   '/_admin/members/$id': typeof AdminMembersIdRoute
 }
 export interface FileRouteTypes {
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/api/$'
+    | '/inquiries/$id'
     | '/members/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/api/$'
+    | '/inquiries/$id'
     | '/members/$id'
   id:
     | '__root__'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/_public/verify-email'
     | '/api/$'
     | '/_admin/'
+    | '/_admin/inquiries/$id'
     | '/_admin/members/$id'
   fileRoutesById: FileRoutesById
 }
@@ -265,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/inquiries/$id': {
+      id: '/_admin/inquiries/$id'
+      path: '/$id'
+      fullPath: '/inquiries/$id'
+      preLoaderRoute: typeof AdminInquiriesIdRouteImport
+      parentRoute: typeof AdminInquiriesRoute
+    }
     '/_admin/members/$id': {
       id: '/_admin/members/$id'
       path: '/$id'
@@ -274,6 +293,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminInquiriesRouteChildren {
+  AdminInquiriesIdRoute: typeof AdminInquiriesIdRoute
+}
+
+const AdminInquiriesRouteChildren: AdminInquiriesRouteChildren = {
+  AdminInquiriesIdRoute: AdminInquiriesIdRoute,
+}
+
+const AdminInquiriesRouteWithChildren = AdminInquiriesRoute._addFileChildren(
+  AdminInquiriesRouteChildren,
+)
 
 interface AdminMembersRouteChildren {
   AdminMembersIdRoute: typeof AdminMembersIdRoute
@@ -289,7 +320,7 @@ const AdminMembersRouteWithChildren = AdminMembersRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
-  AdminInquiriesRoute: typeof AdminInquiriesRoute
+  AdminInquiriesRoute: typeof AdminInquiriesRouteWithChildren
   AdminMembersRoute: typeof AdminMembersRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
@@ -299,7 +330,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
-  AdminInquiriesRoute: AdminInquiriesRoute,
+  AdminInquiriesRoute: AdminInquiriesRouteWithChildren,
   AdminMembersRoute: AdminMembersRouteWithChildren,
   AdminReportsRoute: AdminReportsRoute,
   AdminSecurityRoute: AdminSecurityRoute,

@@ -8,6 +8,9 @@ const maximumUtterance = 500;
 const roles = ["interviewer", ROLE.member] as const;
 const settledPhases = ["summary", "saved"] as const;
 
+/** @canonical-values interview.field-status */
+export const fieldStatuses = ["unanswered", "answered", "skipped"] as const;
+
 const Progress = Schema.Struct({ sheet: Sheet, skipped: Schema.Array(FieldKey) });
 const Message = Schema.Struct({
   card: Schema.optionalKey(Progress),

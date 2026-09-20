@@ -19,3 +19,11 @@ export {
   memberPageSize,
 } from "./member.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
+export {
+  InquiryCreate,
+  InquiryList,
+  InquiryQuery,
+  InquiryReply,
+  InquiryThread,
+} from "./support.ts";
+export { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";

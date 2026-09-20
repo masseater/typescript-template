@@ -138,7 +138,10 @@ const configuration: IConfiguration = {
       from: { path: "^apps/internal-dashboard/" },
       name: "no-wiki-to-database",
       severity: "error",
-      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/local\.ts$` },
+      to: {
+        path: "^libs/db/",
+        pathNot: String.raw`^libs/db/src/(?:local|inquiry-staff)\.ts$`,
+      },
     },
     {
       comment:
