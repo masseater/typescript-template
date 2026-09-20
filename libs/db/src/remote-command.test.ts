@@ -7,7 +7,7 @@ import { query } from "./database.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { loadRemoteMigrations } from "./remote-operations.ts";
 import { user } from "./schema.ts";
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
+import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
 
 const d1Target = {
   accountId: "a".repeat(32),
