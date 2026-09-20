@@ -50,7 +50,7 @@ const platform = Effect.acquireRelease(
     getPlatformProxy<{ DB: D1Database }>({
       configPath: await writeLocalDatabaseConfig(),
       envFiles: [],
-      persist: { path: localDatabaseStore },
+      persist: { path: localDatabaseStore() },
       remoteBindings: false,
     }),
   ),
