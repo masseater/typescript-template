@@ -6,7 +6,7 @@ import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/test
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime";
-import { apiRoot, apiRoutes } from "@repo/runtime/http";
+import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
@@ -14,7 +14,7 @@ import { Effect, Layer, Schema } from "effect";
 
 import { AdminList } from "#shared/contracts/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
-import { adminRoutes } from "./server-app.ts";
+import { adminRoutes } from "./admin-api.ts";
 
 import type { AdminPermission } from "@repo/config";
 
@@ -58,7 +58,7 @@ function adminApp() {
   const runtime = workerRuntime(() =>
     Layer.orDie(appLayer(appEnvironment(), APPLICATION.admin, routes)),
   );
-  const app = adminRoutes(apiRoutes(runtime, reporting));
+  const app = createApi(apiRoot).use(adminRoutes(apiRoutes(runtime, reporting)));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>
     Effect.promise(async () => runtime.runPromise(signedSessionCookie(tokenOf(actor))));
   const send = (call: Call, cookie?: string): Effect.Effect<Response> =>

@@ -164,5 +164,4 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
   return { email: open.email, permission: open.permission, role, userId };
 });
 
-export { InviteRejected } from "./invite-rejected.ts";
 export { acceptInvite, issueInvite, previewInvite };
