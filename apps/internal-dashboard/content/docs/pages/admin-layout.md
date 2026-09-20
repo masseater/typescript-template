@@ -105,4 +105,4 @@ flowchart TD
   side -- ログアウト --> login
 ```
 
-`redirect` を持ってログインしたときは、利用者の一覧ではなく `redirect` のページへ移る。各ページの中身は [ログイン](/pages/admin-login) と [利用者の一覧](/pages/admin-users) が持つ。
+`redirect` を持ってログインしたときは、利用者の一覧ではなく `redirect` のページへ移る。各ページの中身は [ログイン](/pages/admin-login)、[利用者の一覧](/pages/admin-users)、[利用者の詳細](/pages/admin-member-detail)、[問い合わせ](/pages/admin-inquiries)、[通報](/pages/admin-reports)、[規約](/pages/admin-terms)、[管理者](/pages/admin-admins) が持つ。概念と関係は [データモデル](/data-model/overview) が持つ。
