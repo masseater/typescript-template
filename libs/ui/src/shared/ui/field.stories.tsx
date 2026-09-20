@@ -7,7 +7,7 @@ import { Field } from "./field";
 const meta = preview.meta({ args: { onValueChange: noop, value: "" }, component: Field });
 
 export const TextField = meta.story({
-  args: { label: "ユーザー名", name: "name", required: true },
+  args: { label: "ユーザー名", name: "name" },
 });
 
 export const Email = meta.story({
@@ -15,7 +15,6 @@ export const Email = meta.story({
     autoComplete: "username",
     label: "メールアドレス",
     name: "email",
-    required: true,
     type: "email",
     value: "taro@example.com",
   },
@@ -26,7 +25,6 @@ export const Password = meta.story({
     autoComplete: "current-password",
     label: "パスワード",
     name: "password",
-    required: true,
     type: "password",
   },
 });
@@ -76,7 +74,7 @@ export const TooShort = meta.story({
 });
 
 export const Missing = meta.story({
-  args: { label: "ユーザー名", name: "name", required: true, value: undefined },
+  args: { label: "ユーザー名", name: "name", value: undefined },
   play: async ({ canvas, canvasElement }) => {
     const { page, userEvent } = await import("vite-plus/test/browser/context");
     const rendered = page.elementLocator(canvasElement);
