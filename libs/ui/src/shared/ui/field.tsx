@@ -37,11 +37,7 @@ const Field = ({
     | { multiline?: false; type?: "email" | "password" | "search" | "text" }
   >): ReactElement => {
   return (
-    <FieldPrimitive.Root
-      data-slot="field"
-      invalid={error !== undefined}
-      className={fieldClassName}
-    >
+    <FieldPrimitive.Root data-slot="field" invalid={error !== undefined} className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
       <FieldPrimitive.Control
         render={multiline === true ? <textarea aria-label={label} /> : undefined}
