@@ -8,4 +8,10 @@ const onDemandGateEntries = new Set([
   "tools/observe: check:exported",
 ]);
 
-export { onDemandGateEntries, rootOnDemandChecks };
+const frozenOnDemandGateEntries = [
+  ".: check:repository",
+  "tools/observe: check:exported",
+  "tools/observe: verify",
+] as const;
+
+export { frozenOnDemandGateEntries, onDemandGateEntries, rootOnDemandChecks };
