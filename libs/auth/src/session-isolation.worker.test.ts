@@ -25,7 +25,7 @@ const adminEmail = "admin@example.com";
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function adminCopyOf(from: Readonly<BrowserClient>, to: BrowserClient): BrowserClient {
   for (const [key, value] of from.cookies) {
-    const adminKey = key.replaceAll("template-user", "template-admin");
+    const adminKey = key.replaceAll("template-service-member", "template-service-admin");
     to.cookies.set(adminKey, value);
   }
   return to;
@@ -54,7 +54,7 @@ it.effect(
       Effect.gen(function* program() {
         yield* bootstrapVerifiedAdmin(adminEmail);
         const client = yield* signInAs("service-member", adminEmail);
-        const forged = adminCopyOf(client, new BrowserClient((yield* Fixture).admin));
+        const forged = adminCopyOf(client, new BrowserClient((yield* Fixture)["service-admin"]));
         assert.strictEqual(yield* failureTag(forged.verify(true)), "SessionInvalid");
       }),
     ),
@@ -71,7 +71,10 @@ it.effect(
         const { authenticator } = yield* enableTotp(client);
         yield* client.request("/sign-out", {});
         yield* signIn(client, adminEmail);
-        const transferred = adminCopyOf(client, new BrowserClient((yield* Fixture).admin));
+        const transferred = adminCopyOf(
+          client,
+          new BrowserClient((yield* Fixture)["service-admin"]),
+        );
         const response = yield* transferred.json("/two-factor/verify-totp", {
           code: authenticator.generate(),
         });
