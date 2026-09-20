@@ -6,7 +6,6 @@
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
     "./bootstrap": "./src/bootstrap-statement.ts",
-    "./interview": "./src/interview.ts",
     "./security": "./src/security.ts",
     "./testing": "./src/testing.ts",
     "./remote": "./src/remote-command.ts",
