@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { reportFailed, runCli } from "@repo/cli";
 import { Database } from "@repo/db";
-import { Email, bootstrapAdmin } from "@repo/db/bootstrap";
+import { BootstrapKind, Email, bootstrapAdmin } from "@repo/db/bootstrap";
 import { Console, Effect, Schema } from "effect";
 
 import { localDatabasePlatform } from "./local-platform.ts";
@@ -13,13 +13,17 @@ function failed(error: string): Readonly<Record<string, unknown>> {
 runCli(
   Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(Email)(process.argv[2]);
+    const kind = yield* Schema.decodeUnknownEffect(BootstrapKind)(process.argv[3] ?? "admin");
     const { env } = yield* localDatabasePlatform;
-    const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
+    const promoted = yield* bootstrapAdmin(email, kind).pipe(
+      Effect.provide(Database.layer(env.DB)),
+    );
     yield* Console.log(
       JSON.stringify({
         action: "admin_bootstrap",
-        role: administrator.role,
-        userId: administrator.id,
+        permission: promoted.permission,
+        role: promoted.role,
+        userId: promoted.id,
       }),
     );
   }).pipe(

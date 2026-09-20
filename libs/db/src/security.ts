@@ -1,5 +1,5 @@
 import { type Application } from "@repo/config";
-import { ROLE, type StrongAuthenticationMethod } from "@repo/config/identity";
+import { ACCOUNT_STATE, ROLE, type StrongAuthenticationMethod } from "@repo/config/identity";
 import { and, count, eq, gt, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
@@ -160,7 +160,12 @@ export const findWikiReader = Effect.fn("findWikiReader")(function* findWikiRead
       .select({ id: user.id })
       .from(user)
       .where(
-        and(eq(user.id, userId), eq(user.role, ROLE.administrator), eq(user.emailVerified, true)),
+        and(
+          eq(user.id, userId),
+          eq(user.role, ROLE.staff),
+          eq(user.accountState, ACCOUNT_STATE.active),
+          eq(user.emailVerified, true),
+        ),
       )
       .limit(1),
   );

@@ -1,10 +1,4 @@
-import {
-  AUTHENTICATION_METHOD,
-  ROLE,
-  accountPermissions,
-  applications,
-  roles,
-} from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, accountPermissions, applications, roles } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { session, user } from "./identity-schema.ts";

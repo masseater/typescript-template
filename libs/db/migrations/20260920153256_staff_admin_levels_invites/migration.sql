@@ -118,4 +118,10 @@ BEGIN
   DELETE FROM oauth_access_token WHERE user_id = NEW.id;
   DELETE FROM oauth_refresh_token WHERE user_id = NEW.id;
   DELETE FROM oauth_consent WHERE user_id = NEW.id;
+END;--> statement-breakpoint
+CREATE TRIGGER invite_accept_once
+BEFORE UPDATE OF accepted_at ON invite
+WHEN OLD.accepted_at IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'INVITE_CONSUMED');
 END;

@@ -63,10 +63,11 @@ describe("the applied migrations", () => {
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
-    it("guard sessions, pending sign-ups, the last owner and the last editor", ({
+    it("guard sessions, pending sign-ups, invites, the last owner and the last editor", ({
       appliedTriggers,
     }) => {
       expect(appliedTriggers).toStrictEqual([
+        "invite_accept_once",
         "session_insert_current_version",
         "session_update_current_version",
         "user_delete_pending_auth",
