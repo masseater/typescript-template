@@ -1,1 +1,1 @@
-also fix deployment-access redaction keys: app.toUpperCase() yields TEMPLATE_SERVICE-MEMBER_ORIGIN (hyphen) instead of TEMPLATE_SERVICE_MEMBER_ORIGIN
+also fix deployment-access redaction keys via originKeys (hyphenated apps break toUpperCase); restore hooks.test to match coupled premerge lifecycle
