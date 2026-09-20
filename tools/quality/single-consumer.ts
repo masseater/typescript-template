@@ -66,7 +66,7 @@ const singleConsumerAllowlist: readonly string[] = [
   "package:@repo/interview",
   "package:@repo/quality",
   "package:@repo/stop-ai-slop",
-  "subpath:@repo/auth/mcp",
+  "subpath:@repo/auth/testing",
   "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/interview",
   "subpath:@repo/db/remote",
@@ -82,8 +82,6 @@ const singleConsumerAllowlist: readonly string[] = [
   "subpath:@repo/quality/plugin",
   "subpath:@repo/quality/test-runtime",
   "subpath:@repo/runtime/contracts",
-  "subpath:@repo/runtime/testing",
-  "subpath:@repo/runtime/wiki",
   "subpath:@repo/ui/lint-settings",
   "subpath:@repo/ui/signup",
 ];
