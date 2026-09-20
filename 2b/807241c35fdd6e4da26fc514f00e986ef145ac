@@ -1,1 +1,1 @@
-Remove tip libs/db profile.ts relocated into service-member; knip unused.
+Rebase onto latest main; drop tip-only profile.ts after app rename (knip unused).
