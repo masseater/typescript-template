@@ -33,11 +33,7 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
-    entry: [
-      "src/auth-test-fixture.ts",
-      "src/browser-client.ts",
-      "src/mail-fixture.ts",
-    ],
+    entry: ["src/auth-test-fixture.ts", "src/browser-client.ts", "src/mail-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
   "libs/monitor": {
