@@ -71,6 +71,15 @@ const lintOptions = {
   options: { denyWarnings: true, typeAware: true, typeCheck: true },
   overrides: [
     {
+      files: [
+        "libs/auth-ui/src/email-verification.tsx",
+        "libs/auth-ui/src/use-session.ts",
+      ],
+      rules: {
+        "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: templateWorkspaces,
       plugins: ["react"],
       rules: {
@@ -125,6 +134,7 @@ const lintOptions = {
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
+        "project/atom-server-data": LINT_SEVERITY.ERROR,
         "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
         "project/cross-request-state": LINT_SEVERITY.ERROR,
