@@ -8,7 +8,7 @@ import { browser, browserCommand } from "./browser.ts";
 import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
 import { application, root, run } from "./local-environment.ts";
-import { ensureOperator, operatorExists } from "./operator-account.ts";
+import { ensureOperators, operatorExists } from "./operator-account.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
@@ -23,7 +23,7 @@ const operator = Effect.fn("operator")(function* operator(_args: readonly string
   if (!(yield* operatorExists())) {
     yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
   }
-  yield* ensureOperator();
+  yield* ensureOperators();
   return { event: "local.operator_ready", ok: true as const, secretsPrinted: false as const };
 });
 

@@ -79,9 +79,7 @@ describe("wiki MCP authorization", () => {
     );
   });
 
-  it("strong wiki staff authorizes an MCP client that can then read the wiki", async ({
-    auth,
-  }) => {
+  it("strong wiki staff authorizes an MCP client that can then read the wiki", async ({ auth }) => {
     const result = await runWith(auth, () =>
       Effect.gen(function* program() {
         const { tokens } = yield* authorizedTokens();
