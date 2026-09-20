@@ -2,10 +2,10 @@ import { useAction } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
 import { Schema } from "effect";
 
-import { saveProfile } from "#pages/profile-edit/api/profile.ts";
+import { saveProfile } from "#entities/profile/index.ts";
 import { ProfileUpdate } from "#shared/contracts/index.ts";
 
-import type { Profile, ProfileDraft } from "#pages/profile-edit/api/profile.ts";
+import type { Profile, ProfileDraft } from "#entities/profile/index.ts";
 
 type ProfileFormValues = {
   readonly name: string;
