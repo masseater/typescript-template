@@ -1,3 +1,4 @@
+import "@inlang/paraglide-js/urlpattern-polyfill";
 export { m } from "#paraglide/messages.js";
 export {
   deLocalizeUrl,
