@@ -33,7 +33,10 @@ function memberNavItems(paid: boolean): readonly MemberNavItem[] {
   ];
 }
 
-const memberPageTitles: Readonly<Record<MemberNavPath | "/support" | "/users", string>> = {
+const memberPageTitles: Readonly<
+  Record<MemberNavPath | "/agreement" | "/support" | "/users", string>
+> = {
+  "/agreement": "規約への同意",
   "/board": "掲示板",
   "/home": "ホーム",
   "/messages": "メッセージ",

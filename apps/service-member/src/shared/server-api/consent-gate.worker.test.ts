@@ -13,8 +13,8 @@ import { Effect, Layer, Schema } from "effect";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
 import { Interviewer } from "#shared/interview/index.ts";
+import { memberApi } from "./member-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
-import { memberApi } from "./server-app.ts";
 
 const routes = { "/api/profile": "profile" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;

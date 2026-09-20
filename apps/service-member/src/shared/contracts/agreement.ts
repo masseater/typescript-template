@@ -43,9 +43,7 @@ const PublishedAgreementView = Schema.Struct({
 });
 
 export {
-  AcceptedAgreement,
   AgreementAcceptance,
-  AgreementKind,
   AgreementsView,
   PendingAgreement,
   PublishedAgreementQuery,

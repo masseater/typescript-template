@@ -12,6 +12,7 @@ describe("settings items", () => {
       "/settings/interview",
       "/settings/ai",
       "/settings/plan",
+      "/settings/agreements",
       "/settings/leave",
     ]);
   });
