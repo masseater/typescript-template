@@ -1,79 +1,79 @@
 [
   {
     "path": "apps/internal-dashboard/src/shared/wiki/authorize-mcp.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "JSON-RPC requires id to be null when the error is not tied to a request id",
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
     "path": "apps/internal-dashboard/src/widgets/dashboard-frame/ui/dashboard-navigation-item.tsx",
-    "rule": "jsx-a11y/click-events-have-key-events",
+    "rule": "click-events-have-key-events",
     "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
     "approver": "the owner of the package that renders this navigation link"
   },
   {
     "path": "apps/internal-dashboard/src/widgets/dashboard-frame/ui/dashboard-navigation-item.tsx",
-    "rule": "jsx-a11y/no-static-element-interactions",
+    "rule": "no-static-element-interactions",
     "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
     "approver": "the owner of the package that renders this navigation link"
   },
   {
     "path": "apps/service-admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
-    "rule": "jsx-a11y/click-events-have-key-events",
+    "rule": "click-events-have-key-events",
     "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
     "approver": "the owner of the package that renders this navigation link"
   },
   {
     "path": "apps/service-admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
-    "rule": "jsx-a11y/no-static-element-interactions",
+    "rule": "no-static-element-interactions",
     "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
     "approver": "the owner of the package that renders this navigation link"
   },
   {
     "path": "apps/service-member/src/shared/interview/interviewer.worker.test.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "the model JSON schema uses null for an answer field the model left empty",
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
     "path": "apps/service-member/src/shared/interview/session.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "restart clears the saved sheet by writing SQL null into the nullable savedSheet column",
     "approver": "the owner of the package that crosses this SQL null boundary"
   },
   {
     "path": "infra/budget-monitor/src/budget.worker.test.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "the billing API sends BilledCost as JSON null when a row has no cost, and that payload is what this test rejects",
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
     "path": "infra/cloudflare/src/account-lookup.test.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged",
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
     "path": "infra/cloudflare/src/alchemy-cli.test.ts",
-    "rule": "typescript/no-unsafe-type-assertion",
+    "rule": "no-unsafe-type-assertion",
     "grounds": "the assertion builds an alchemy command outside the allow list so the refusal under test can see it",
     "approver": "the owner of the package whose test asserts this unsafe boundary"
   },
   {
     "path": "infra/cloudflare/src/alchemy-cli.ts",
-    "rule": "project/process-boundary",
+    "rule": "process-boundary",
     "grounds": "the alchemy child process writes its stdout and stderr through this process, which is the boundary those streams cross",
     "approver": "the owner of the package that crosses this platform boundary"
   },
   {
     "path": "infra/cloudflare/src/config.test.ts",
-    "rule": "typescript/no-unnecessary-type-parameters",
+    "rule": "no-unnecessary-type-parameters",
     "grounds": "the type parameter names the Cloudflare binding a partial stub stands in for in this config test",
     "approver": "the owner of the package whose test builds this worker binding"
   },
   {
     "path": "infra/cloudflare/src/config.test.ts",
-    "rule": "typescript/no-unsafe-type-assertion",
+    "rule": "no-unsafe-type-assertion",
     "grounds": "the assertion is the cast that turns the partial stub into the Cloudflare binding this config test supplies",
     "approver": "the owner of the package whose test asserts this unsafe boundary"
   },
@@ -85,55 +85,55 @@
   },
   {
     "path": "infra/cloudflare/src/inspection-fixture.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged",
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
     "path": "infra/cloudflare/src/plan-confirmation.test.ts",
-    "rule": "typescript/no-unsafe-type-assertion",
+    "rule": "no-unsafe-type-assertion",
     "grounds": "the assertion builds the partial alchemy plan and expression the confirmation code is tested against",
     "approver": "the owner of the package whose test asserts this unsafe boundary"
   },
   {
     "path": "libs/db/src/interview.worker.test.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "savedSheet is a nullable SQL column, and null is the stored absence of a sheet",
     "approver": "the owner of the package that crosses this SQL null boundary"
   },
   {
     "path": "libs/db/src/testing.ts",
-    "rule": "typescript/no-namespace",
+    "rule": "no-namespace",
     "grounds": "Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding",
     "approver": "the owner of the package that augments the Cloudflare workers env"
   },
   {
     "path": "libs/monitor/src/mail-recorder.ts",
-    "rule": "eslint/class-methods-use-this",
+    "rule": "class-methods-use-this",
     "grounds": "WorkerEntrypoint publishes send and taken as instance RPC methods, while the recorded mail is the module array those methods share",
     "approver": "the owner of the package that exposes this worker entrypoint"
   },
   {
     "path": "libs/monitor/src/monitor-fixture.ts",
-    "rule": "typescript/no-namespace",
+    "rule": "no-namespace",
     "grounds": "Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding",
     "approver": "the owner of the package that augments the Cloudflare workers env"
   },
   {
     "path": "tools/dev/src/applications.ts",
-    "rule": "unicorn/no-null",
+    "rule": "no-null",
     "grounds": "a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field",
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
     "path": "tools/dev/src/local-environment.ts",
-    "rule": "typescript/strict-void-return",
+    "rule": "strict-void-return",
     "grounds": "promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits",
     "approver": "the owner of the package that wraps this Node callback"
   },
   {
     "path": "tools/dev/src/prepare-browser.ts",
-    "rule": "typescript/strict-void-return",
+    "rule": "strict-void-return",
     "grounds": "promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits",
     "approver": "the owner of the package that wraps this Node callback"
   },
