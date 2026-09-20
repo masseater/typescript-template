@@ -94,6 +94,72 @@ const workspaceDirectories = (workspace: string): readonly string[] => {
   );
 };
 
+const own = (value: object, key: string): unknown =>
+  Object.hasOwn(value, key) ? Reflect.get(value, key) : undefined;
+
+const packageNameAt = (directory: string): string | null => {
+  const manifest = join(directory, "package.json");
+  if (statSync(manifest, { throwIfNoEntry: false })?.isFile() !== true) return null;
+  const parsed: unknown = JSON.parse(readFileSync(manifest, "utf8"));
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const name = own(parsed, "name");
+  return typeof name === "string" ? name : null;
+};
+
+const workspacePackageGlobs = (): readonly string[] => {
+  const lines = readFileSync(join(repositoryRoot, "pnpm-workspace.yaml"), "utf8").split("\n");
+  const packages = lines.indexOf("packages:");
+  if (packages === -1) return [];
+  const globs: string[] = [];
+  for (const line of lines.slice(packages + 1)) {
+    if (!line.startsWith("  - ")) break;
+    globs.push(line.slice("  - ".length).replace(/^["']|["']$/gu, ""));
+  }
+  return globs;
+};
+
+const packageDirectories = new Map<string, string>(
+  workspacePackageGlobs().flatMap((glob) =>
+    workspaceDirectories(glob).flatMap((directory) => {
+      const name = packageNameAt(directory);
+      return name === null ? [] : [[name, directory]];
+    }),
+  ),
+);
+
+const conditionPath = (value: unknown): string | null => {
+  if (typeof value === "string") return value;
+  if (typeof value !== "object" || value === null) return null;
+  for (const key of ["import", "default", "require"] as const) {
+    const nested = conditionPath(own(value, key));
+    if (nested !== null) return nested;
+  }
+  return null;
+};
+
+const exportTarget = (exportsField: unknown, subpath: string): string | null => {
+  if (typeof exportsField === "string") return subpath === "." ? exportsField : null;
+  if (typeof exportsField !== "object" || exportsField === null) return null;
+  return conditionPath(own(exportsField, subpath));
+};
+
+const workspacePackageFile = (specifier: string): string | null => {
+  if (!specifier.startsWith("@repo/")) return null;
+  const parts = specifier.split("/");
+  const scope = parts[0];
+  const name = parts[1];
+  if (scope === undefined || name === undefined) return null;
+  const directory = packageDirectories.get(`${scope}/${name}`);
+  if (directory === undefined) return null;
+  const manifest: unknown = JSON.parse(readFileSync(join(directory, "package.json"), "utf8"));
+  if (typeof manifest !== "object" || manifest === null) return null;
+  const subpath = parts.length === 2 ? "." : `./${parts.slice(2).join("/")}`;
+  const target = exportTarget(own(manifest, "exports"), subpath);
+  if (target === null || !target.startsWith(".")) return null;
+  const file = join(directory, target);
+  return statSync(file, { throwIfNoEntry: false })?.isFile() === true ? realpathSync(file) : null;
+};
+
 const SPECIFIER = /(?:from\s+|import\s*\(\s*|require\(\s*|import\s+)["']([^"']+)["']/gu;
 
 const SPAWN = /(?:spawnSync|spawn|execFileSync|execFile)\(\s*["']([^"']+)["']/gu;
@@ -109,6 +175,8 @@ const insideRepository = (file: string): boolean => {
 };
 
 const resolvedSpecifier = (fromFile: string, specifier: string): string | null => {
+  const workspaceFile = workspacePackageFile(specifier);
+  if (workspaceFile !== null && insideRepository(workspaceFile)) return workspaceFile;
   const local =
     specifier.startsWith(".") || specifier.startsWith("@repo/") || specifier.startsWith("#");
   if (!local) return null;
