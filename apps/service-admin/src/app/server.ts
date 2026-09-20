@@ -1,7 +1,8 @@
 import { appServerEntry } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 
-import { paraglideMiddleware, reporting, runtime } from "#shared/server-api/index.ts";
+import { paraglideMiddleware } from "#paraglide/server.js";
+import { reporting, runtime } from "#shared/server-api/index.ts";
 
 const startHandler = {
   fetch(request: Request): Promise<Response> {
