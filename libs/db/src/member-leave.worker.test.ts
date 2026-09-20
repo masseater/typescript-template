@@ -100,7 +100,7 @@ const getMember = (memberId: string) =>
         .where(eq(user.id, memberId))
         .limit(1),
     );
-    return member ?? null;
+    return member;
   });
 
 describe("withdrawMember", () => {
@@ -124,13 +124,13 @@ describe("withdrawMember", () => {
       ));
 
     it("removes live sessions and OAuth tokens", ({ leftMember }) => {
-      expect(leftMember.liveSession).toBe(null);
+      expect(leftMember.liveSession).toBeUndefined();
       expect(leftMember.grants).toStrictEqual({ access: 0, consent: 0, refresh: 0 });
     });
 
     it("moves the member out of the active directory", ({ leftMember }) => {
-      expect(leftMember.member).toBe(null);
-      expect(leftMember.visibleToOther).toBe(null);
+      expect(leftMember.member).toBeUndefined();
+      expect(leftMember.visibleToOther).toBeUndefined();
       expect(leftMember.withdrawn).toBe(1);
     });
   });
@@ -149,7 +149,7 @@ describe("withdrawMember", () => {
       ));
 
     it("does not keep a withdrawn snapshot", ({ deletedMember }) => {
-      expect(deletedMember.member).toBe(null);
+      expect(deletedMember.member).toBeUndefined();
       expect(deletedMember.withdrawn).toBe(0);
     });
   });
