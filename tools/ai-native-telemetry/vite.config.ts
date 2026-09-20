@@ -27,6 +27,7 @@ export default defineConfig({
     },
     mockReset: true,
     restoreMocks: true,
+    pool: "threads",
     testTimeout: 60_000,
     coverage: {
       exclude: ["specs/**"],
@@ -36,7 +37,7 @@ export default defineConfig({
     unstubGlobals: true,
   },
   pack: {
-    entry: ["src/cli.ts"],
+    entry: ["src/telemetry/telemetry.ts", "src/telemetry/vitest-sdk.ts"],
     dts: { generator: "tsgo" },
   },
 });

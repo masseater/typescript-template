@@ -9,6 +9,7 @@ import { rootOnDemandChecks } from "./tools/quality/on-demand-checks.ts";
 
 const importedTools = [
   "./tools/ai-native",
+  "./tools/ai-native-telemetry",
   "./tools/dont-review-it",
   "./tools/lint-rule-authoring",
   "./tools/repository-checks",
