@@ -2,7 +2,7 @@
 
 - viteplus を使用している。pnpm はパッケージマネージャーとしては使用していませんが、モノレポ管理ツールとして使用している。パッケージをインストール時は `vp install` をすること。
 - 汎用的に使用できるテンプレートとして構築すること。特定の企業や事情に基づく記述をコミットログレベルで混入させないこと。
-- main は高頻度で更新される。作業中のブランチ・開いている PR・MQ 待ちは、着手時・push 前・CI 失敗 / DIRTY / CONFLICTING のたびに最新の main を取り込むこと（`mergify stack sync` または trunk への rebase）。コンフリクトを残したまま `ready-to-merge` やキューに載せないこと。
+- 最新 main の取込は例外なく必須。作業中のブランチ・開いている PR・MQ 待ち・監視中の CONFLICTING/DIRTY PR は、着手時・push 前・CI 失敗 / DIRTY / CONFLICTING / behind trunk を検知したたびに `git fetch origin main` のうえ最新 main を取り込むこと（`mergify stack sync` または trunk への rebase）。behind のまま push しない。コンフリクトを残したまま `ready-to-merge` やキューに載せない。並行して触っている PR が複数ある場合も、それぞれ同じルールで同期すること。
 - merge 前の CI で全件テストされるので、ローカルで全件テストする必要はない。むしろ開発が低速になる要因なので全件テストの実行は原則禁止。
 - `apps/internal-dashboard/content/docs` に各種ドキュメントがある。適宜参照する。
 - アプリケーションコードで表現できない領域について触れる（外部サービスの設定をいじる、デプロイリソースを追加するなど）場合は、まず IaC のみでできないかを徹底的に調査する。
