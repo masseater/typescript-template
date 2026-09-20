@@ -134,7 +134,7 @@ function subscriptionValues(
 ): typeof planSubscription.$inferInsert {
   return {
     cancelAtPeriodEnd: record.cancelAtPeriodEnd,
-    currentPeriodEnd: record.currentPeriodEnd ?? null,
+    currentPeriodEnd: record.currentPeriodEnd === undefined ? null : record.currentPeriodEnd,
     memberId: record.memberId,
     status: record.status,
     stripeCustomerId: record.stripeCustomerId,
