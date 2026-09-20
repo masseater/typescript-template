@@ -229,7 +229,6 @@ const validBoundaries = [
   ["infra/cloudflare/src/probe.ts", "export const load = (target: string) => import(target);"],
   ["libs/db/src/remote.ts", 'export * from "./remote-operations";'],
   ["apps/service-member/src/app/probe.ts", 'export * from "@repo/db";'],
-  ["apps/service-member/src/app/probe.ts", 'export * from "@repo/auth-ui/signup";'],
   ["apps/internal-dashboard/vite.config.ts", 'export { localDatabase } from "@repo/db/local";'],
   ["apps/internal-dashboard/src/app/probe.ts", 'export * from "@repo/auth";'],
   ["apps/service-member/src/app/probe.ts", 'export const load = () => import("./feature");'],
