@@ -41,7 +41,9 @@ async function enterMemberFrame(href: string, pathname: string): Promise<{ sessi
   return { session };
 }
 
-async function enterWelcomeFrame(href: string): Promise<{ session: Session; step: OnboardingStep }> {
+async function enterWelcomeFrame(
+  href: string,
+): Promise<{ session: Session; step: OnboardingStep }> {
   const session = await loadSession();
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
