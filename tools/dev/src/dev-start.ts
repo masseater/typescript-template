@@ -146,10 +146,7 @@ function probe(origin: string, pathname: string): Effect.Effect<number, DevStart
   });
 }
 
-function failed(
-  app: string,
-  ...reasons: readonly string[]
-): Readonly<Record<string, unknown>> {
+function failed(app: string, ...reasons: readonly string[]): Readonly<Record<string, unknown>> {
   return { app, event: "quality.dev_start", ok: false, reasons };
 }
 
@@ -185,7 +182,9 @@ const program = Effect.gen(function* program() {
 runCli(
   program.pipe(
     Effect.provide(layer),
-    Effect.catchTag("DevStartFailure", (failure) => reportFailed(failed(workspaceName(), failure.reason))),
+    Effect.catchTag("DevStartFailure", (failure) =>
+      reportFailed(failed(workspaceName(), failure.reason)),
+    ),
   ),
   (cause) => failed(workspaceName(), Cause.pretty(cause)),
 );

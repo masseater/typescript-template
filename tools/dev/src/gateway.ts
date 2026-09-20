@@ -17,9 +17,7 @@ const ProxyPort = Schema.Number.check(
   Schema.isGreaterThan(HIGHEST_PRIVILEGED_PORT),
 );
 
-function openUpstream(
-  target: number,
-): Effect.Effect<Socket.Socket, SocketError, Scope.Scope> {
+function openUpstream(target: number): Effect.Effect<Socket.Socket, SocketError, Scope.Scope> {
   return NodeSocket.makeNet({ host: loopbackAddress, port: target }) as Effect.Effect<
     Socket.Socket,
     SocketError,
@@ -28,7 +26,7 @@ function openUpstream(
 }
 
 function proxyConnection(target: number, client: Socket.Socket): Effect.Effect<void, never, never> {
-  return (Effect.scoped(
+  return Effect.scoped(
     openUpstream(target).pipe(
       Effect.catch(() => Effect.succeed(undefined)),
       Effect.flatMap((upstream) =>
@@ -50,10 +48,10 @@ function proxyConnection(target: number, client: Socket.Socket): Effect.Effect<v
       ),
       Effect.asVoid,
     ),
-  ) as Effect.Effect<void, never, never>);
+  ) as Effect.Effect<void, never, never>;
 }
 
-const program = (Effect.gen(function* gateway() {
+const program = Effect.gen(function* gateway() {
   const target = yield* Schema.decodeUnknownEffect(ProxyPort)(Number(process.argv[2])).pipe(
     Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
   );
@@ -71,6 +69,6 @@ const program = (Effect.gen(function* gateway() {
       Layer.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
     ),
   ),
-) as Effect.Effect<void, GatewayFailure, never>);
+) as Effect.Effect<void, GatewayFailure, never>;
 
 runCli(program, (cause) => causeRecord("local.gateway_failed", cause));
