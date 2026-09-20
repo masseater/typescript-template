@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 
 import { context, trace } from "@opentelemetry/api";
-import { inheritedContext, startTelemetry } from "@repo/ai-native/telemetry";
+import { inheritedContext, startTelemetry } from "@repo/ai-native-telemetry";
 
 const INSTRUMENTATION_NAME = "@repo/repository-checks";
 
