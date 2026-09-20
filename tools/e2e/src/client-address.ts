@@ -1,3 +1,5 @@
+import { browserHeaders as agentBrowserHeaders } from "./agent-user-agent.ts";
+
 const documentationPrefix = "203.0.113";
 const hostCount = 254;
 
@@ -7,7 +9,7 @@ const syntheticClientAddress = (): string => {
 };
 
 const browserHeaders = (): Readonly<Record<string, string>> => {
-  return { "cf-connecting-ip": syntheticClientAddress() };
+  return agentBrowserHeaders(syntheticClientAddress());
 };
 
-export { browserHeaders };
+export { browserHeaders, syntheticClientAddress };

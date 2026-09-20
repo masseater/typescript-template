@@ -1,4 +1,12 @@
-import { appearanceTimeout, field, fill, press, readyButton } from "./screens.ts";
+import {
+  appearanceTimeout,
+  field,
+  fill,
+  press,
+  readyButton,
+  seeHeading,
+  seeText,
+} from "./screens.ts";
 import { currentTotpCode } from "./totp.ts";
 
 import type { Page } from "playwright";
@@ -98,7 +106,7 @@ const enrollTotp = async (visit: Visit): Promise<Enrollment> => {
 const signOutButton = "ログアウト";
 
 const signOut = async (page: Page, origin: string): Promise<void> => {
-  await page.goto(`${origin}/settings/security`);
+  await page.goto(`${origin}/settings/security`, { waitUntil: "domcontentloaded" });
   await press(page, signOutButton);
   await page.waitForURL((url) => !url.pathname.startsWith("/settings/security"), {
     timeout: appearanceTimeout,
@@ -107,4 +115,63 @@ const signOut = async (page: Page, origin: string): Promise<void> => {
   await readyButton(page, signInButton);
 };
 
-export { answerTotpChallenge, confirmEmail, enrollTotp, homePattern, signIn, signOut, signUp };
+const passkeyLoginButton = "パスキーでログイン";
+
+const signInWithPasskey = async (visit: Visit): Promise<void> => {
+  await visit.page.goto(`${visit.origin}/login`);
+  await readyButton(visit.page, passkeyLoginButton);
+  await press(visit.page, passkeyLoginButton);
+  await visit.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout });
+};
+
+const registerPasskey = async (visit: Visit, name: string): Promise<void> => {
+  await visit.page.goto(`${visit.origin}/settings/security`);
+  await readyButton(visit.page, "パスキーを登録");
+  await fill(visit.page, { fieldLabel: "パスキーの名前", typed: name });
+  const options = visit.page.waitForResponse(
+    (response) => response.url().includes("/passkey/generate-register-options"),
+    { timeout: appearanceTimeout },
+  );
+  const registration = visit.page.waitForResponse(
+    (response) => response.url().includes("/passkey/verify-registration"),
+    { timeout: appearanceTimeout },
+  );
+  await press(visit.page, "パスキーを登録");
+  const optionsResponse = await options;
+  if (!optionsResponse.ok()) {
+    throw new Error(
+      `PASSKEY_OPTIONS_FAILED ${optionsResponse.status()} ${await optionsResponse.text()}`,
+    );
+  }
+  const response = await registration;
+  if (!response.ok()) {
+    throw new Error(`PASSKEY_REGISTRATION_FAILED ${response.status()} ${await response.text()}`);
+  }
+  await seeText(visit.page, name);
+};
+
+const updateProfile = async (
+  visit: Visit,
+): Promise<{ readonly biography: string; readonly profilePath: string }> => {
+  const biography = `verify ${crypto.randomUUID()}`;
+  await visit.page.goto(`${visit.origin}/settings/profile`);
+  await seeHeading(visit.page, "プロフィールの編集");
+  await readyButton(visit.page, "保存");
+  await fill(visit.page, { fieldLabel: "自己紹介", typed: biography });
+  await press(visit.page, "保存");
+  await visit.page.waitForURL(`${visit.origin}/users/*`, { timeout: appearanceTimeout });
+  return { biography, profilePath: new URL(visit.page.url()).pathname };
+};
+
+export {
+  answerTotpChallenge,
+  confirmEmail,
+  enrollTotp,
+  homePattern,
+  registerPasskey,
+  signIn,
+  signInWithPasskey,
+  signOut,
+  signUp,
+  updateProfile,
+};

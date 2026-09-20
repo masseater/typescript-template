@@ -1672,6 +1672,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
+      '@repo/e2e':
+        specifier: workspace:*
+        version: link:../e2e
       '@repo/local':
         specifier: workspace:*
         version: link:../../infra/local

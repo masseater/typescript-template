@@ -2,6 +2,12 @@
   "name": "@repo/e2e",
   "private": true,
   "type": "module",
+  "exports": {
+    "./agent-user-agent": "./src/agent-user-agent.ts",
+    "./client-address": "./src/client-address.ts",
+    "./passkey": "./src/passkey.ts",
+    "./verify-member": "./src/verify-member.ts"
+  },
   "scripts": {},
   "devDependencies": {
     "@repo/config": "workspace:*",

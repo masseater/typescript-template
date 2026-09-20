@@ -8,7 +8,7 @@
     "repo-dev-observe": "./src/observe/cli.ts",
     "repo-dev-prepare-browser": "./src/prepare-browser.ts",
     "repo-dev-symbolicate": "./src/observe/symbolicate.ts",
-    "repo-dev-verify": "./src/observe/verify.ts"
+    "repo-dev-verify": "./src/verify/cli.ts"
   },
   "type": "module",
   "dependencies": {
@@ -16,6 +16,7 @@
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/e2e": "workspace:*",
     "@repo/local": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",

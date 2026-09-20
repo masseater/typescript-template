@@ -1,13 +1,18 @@
 import { type Account, newAccount } from "./accounts.ts";
+import { agentUserAgent } from "./agent-user-agent.ts";
 import {
   answerTotpChallenge,
   confirmEmail,
   enrollTotp,
   homePattern,
+  registerPasskey,
   signIn,
+  signInWithPasskey,
   signOut,
   signUp,
+  updateProfile,
 } from "./flows.ts";
+import { attachObservabilityCapture, readSession } from "./observability-capture.ts";
 import {
   appearanceTimeout,
   fill,
@@ -290,4 +295,46 @@ const runDocumentJourney = async (
   };
 };
 
-export { runDocumentJourney, runMemberJourney, runOperatorJourney };
+const runVerifyMemberJourney = async (
+  stage: JourneyStage,
+): Promise<{
+  readonly enrolledTotp: boolean;
+  readonly passkeyRegistered: boolean;
+  readonly requestIds: readonly string[];
+  readonly sessionToken: string | undefined;
+  readonly traceIds: readonly string[];
+  readonly userAgent: string;
+  readonly userId: string | undefined;
+}> => {
+  const { environment, page } = stage;
+  const origin = environment.originOf("member");
+  const capture = attachObservabilityCapture(page);
+  const account = newAccount("verify-member");
+  await signUp({ account, origin, page });
+  await seeHeading(page, "確認メールを送りました");
+  await confirmEmail({ account, mail: environment.mail, origin, page });
+  await signIn({ account, origin, page });
+  await completeWelcomeOnboarding(stage, { account, origin });
+  await updateProfile({ account, origin, page });
+  const enrollment = await enrollTotp({ account, origin, page });
+  await registerPasskey({ account, origin, page }, "verify passkey");
+  await signOut(page, origin);
+  await signIn({ account, origin, page });
+  await answerTotpChallenge(page, enrollment.uri);
+  await page.waitForURL(`${origin}${homePattern}`, { timeout: appearanceTimeout });
+  await signOut(page, origin);
+  await signInWithPasskey({ account, origin, page });
+  const session = await readSession(page, origin);
+  capture.stop();
+  return {
+    enrolledTotp: true,
+    passkeyRegistered: true,
+    requestIds: capture.requestIds,
+    sessionToken: session.sessionToken,
+    traceIds: capture.traceIds,
+    userAgent: agentUserAgent,
+    userId: session.userId,
+  };
+};
+
+export { runDocumentJourney, runMemberJourney, runOperatorJourney, runVerifyMemberJourney };
