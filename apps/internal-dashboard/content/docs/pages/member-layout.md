@@ -167,4 +167,4 @@ flowchart TD
   menu -- ログアウト --> lp["/ LP"]
 ```
 
-`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/member-lp)、[新規登録](/pages/member-signup)、[ログイン](/pages/member-login)、[プロフィール](/pages/member-profile)、[探す](/pages/member-users)、[AI インタビュー](/pages/member-interview) が持つ。
+`redirect` を持ってログインしたときは、ホームではなく `redirect` のページへ移る。各ページの中身は [LP](/pages/member-lp)、[新規登録](/pages/member-signup)、[ログイン](/pages/member-login)、[登録の段階](/pages/member-welcome)、[規約への同意](/pages/member-agreement)、[ホーム](/pages/member-home)、[プロフィール](/pages/member-profile)、[探す](/pages/member-users)、[掲示板](/pages/member-board)、[メッセージ](/pages/member-messages)、[グループ](/pages/member-groups)、[通知](/pages/member-notifications)、[有料の案内](/pages/member-upgrade)、[AI インタビュー](/pages/member-interview)、[設定](/pages/member-settings)、[お問い合わせ（公開）](/pages/member-contact)、[お問い合わせ（会員）](/pages/member-support) が持つ。概念と関係は [データモデル](/data-model/overview) が持つ。
