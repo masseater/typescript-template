@@ -13,10 +13,7 @@ const memberFlags = Effect.fn("memberFlags")(function* memberFlags() {
 });
 
 function flagsApi<Requirements>(api: ApiRoutes<AppServices | Requirements>) {
-  return createApi("").get(
-    "/flags",
-    ...api.route({ response: MemberFlags }, memberFlags, {}),
-  );
+  return createApi("").get("/flags", ...api.route({ response: MemberFlags }, memberFlags, {}));
 }
 
 export { flagsApi };
