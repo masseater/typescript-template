@@ -36,15 +36,24 @@ const singleIntervalNames: Readonly<Record<Offer["interval"], string>> = {
   year: "年額",
 };
 
+const currencyFormats = new Map<string, Intl.NumberFormat>();
+
+function currencyFormat(currency: string): Intl.NumberFormat {
+  const known = currencyFormats.get(currency);
+  if (known !== undefined) {
+    return known;
+  }
+  const created = new Intl.NumberFormat("ja-JP", { currency, style: "currency" });
+  currencyFormats.set(currency, created);
+  return created;
+}
+
 function formatAmount(offer: Offer): string {
   const currency = offer.currency.toLowerCase();
   const amount = zeroDecimalCurrencies.has(currency)
     ? offer.unitAmount
     : offer.unitAmount / minorUnitsPerMajor;
-  return new Intl.NumberFormat("ja-JP", {
-    currency: currency.toUpperCase(),
-    style: "currency",
-  }).format(amount);
+  return currencyFormat(currency.toUpperCase()).format(amount);
 }
 
 function describeOffer(offer: Offer): string {

@@ -35,7 +35,7 @@ function StayFree(): ReactElement {
 function UpgradePage({
   canceled,
   offer,
-}: Readonly<{ canceled: boolean; offer: Offer | undefined }>): ReactElement {
+}: Readonly<{ canceled: boolean; offer: Offer }>): ReactElement {
   const action = useAction();
   function subscribe(): void {
     action.run(startCheckout);
@@ -50,7 +50,7 @@ function UpgradePage({
           <li key={benefit}>{benefit}</li>
         ))}
       </ul>
-      <p>{offer === undefined ? "料金は手続きの画面で確かめられます。" : describeOffer(offer)}</p>
+      <p>{describeOffer(offer)}</p>
       {canceled && <StatusMessage>手続きを途中でやめました。まだ契約していません。</StatusMessage>}
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="primary" disabled={action.blocked} onClick={subscribe}>
