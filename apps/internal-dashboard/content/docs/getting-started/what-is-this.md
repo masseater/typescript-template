@@ -30,15 +30,15 @@ Web サービスの立ち上げと継続的な開発において、次の課題�
 
 ## 主要な技術スタック
 
-| 領域                 | 採用技術                                                   | 役割                                              |
-| -------------------- | ---------------------------------------------------------- | ------------------------------------------------- |
-| インフラ / 実行基盤  | Cloudflare Workers, D1, Durable Objects, Workflows, Queues | サーバーレスで高速に動作する本番実行環境          |
-| IaC                  | Alchemy v2                                                 | Cloudflare のリソース定義と構成管理               |
-| モノレポ / ツール    | Vite+, TypeScript, pnpm workspaces                         | 高速なビルド、型検査、lint、テスト実行            |
-| アプリケーション     | TanStack Start, Elysia, React 19, Tailwind CSS 4           | フルスタック Web アプリケーション基盤             |
-| ロジック / 認証 / DB | Effect v4, Better Auth, Drizzle ORM                        | 型安全なエラー処理、多要素・パスキー認証、DB 操作 |
-| フロントエンド UI    | Base UI, shadcn/ui, Feature-Sliced Design (steiger)        | a11y を担保した統一 UI と保守性の高い層分離       |
-| 観測性               | OpenTelemetry, Workers Observability                       | 実測ログ・分散トレースの収集と監視                |
+| 領域 | 採用技術 | 役割 |
+| --- | --- | --- |
+| インフラ / 実行基盤 | Cloudflare Workers, D1, Durable Objects, Workflows, Queues | サーバーレスで高速に動作する本番実行環境 |
+| IaC | Alchemy v2 | Cloudflare のリソース定義と構成管理 |
+| モノレポ / ツール | Vite+, TypeScript, pnpm workspaces | 高速なビルド、型検査、lint、テスト実行 |
+| アプリケーション | TanStack Start, Elysia, React 19, Tailwind CSS 4 | フルスタック Web アプリケーション基盤 |
+| ロジック / 認証 / DB | Effect v4, Better Auth, Drizzle ORM | 型安全なエラー処理、多要素・パスキー認証、DB 操作 |
+| フロントエンド UI | Base UI, shadcn/ui, Feature-Sliced Design (steiger) | a11y を担保した統一 UI と保守性の高い層分離 |
+| 観測性 | OpenTelemetry, Workers Observability | 実測ログ・分散トレースの収集と監視 |
 
 ## 次に読むもの
 
