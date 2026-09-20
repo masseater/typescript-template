@@ -24,11 +24,13 @@ import { Route as PublicContactRouteImport } from './routes/_public/contact'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
+import { Route as PublicVerifyEmailChangeRouteImport } from './routes/_public/verify-email-change'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as MemberBoardIndexRouteImport } from './routes/_member/board.index'
 import { Route as MemberBoardIdRouteImport } from './routes/_member/board.$id'
 import { Route as MemberSettingsIndexRouteImport } from './routes/_member/settings.index'
 import { Route as MemberSettingsAiRouteImport } from './routes/_member/settings.ai'
+import { Route as MemberSettingsEmailRouteImport } from './routes/_member/settings.email'
 import { Route as MemberSettingsInterviewRouteImport } from './routes/_member/settings.interview'
 import { Route as MemberSettingsLeaveRouteImport } from './routes/_member/settings.leave'
 import { Route as MemberSettingsNotificationsRouteImport } from './routes/_member/settings.notifications'
@@ -115,6 +117,11 @@ const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicVerifyEmailChangeRoute = PublicVerifyEmailChangeRouteImport.update({
+  id: '/verify-email-change',
+  path: '/verify-email-change',
+  getParentRoute: () => PublicRoute,
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
@@ -138,6 +145,11 @@ const MemberSettingsIndexRoute = MemberSettingsIndexRouteImport.update({
 const MemberSettingsAiRoute = MemberSettingsAiRouteImport.update({
   id: '/settings/ai',
   path: '/settings/ai',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsEmailRoute = MemberSettingsEmailRouteImport.update({
+  id: '/settings/email',
+  path: '/settings/email',
   getParentRoute: () => MemberRoute,
 } as any)
 const MemberSettingsInterviewRoute = MemberSettingsInterviewRouteImport.update({
@@ -220,9 +232,11 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
+  '/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/board/$id': typeof MemberBoardIdRoute
   '/settings/ai': typeof MemberSettingsAiRoute
+  '/settings/email': typeof MemberSettingsEmailRoute
   '/settings/interview': typeof MemberSettingsInterviewRoute
   '/settings/leave': typeof MemberSettingsLeaveRoute
   '/settings/notifications': typeof MemberSettingsNotificationsRoute
@@ -252,9 +266,11 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/signup': typeof PublicSignupRoute
   '/verify-email': typeof PublicVerifyEmailRoute
+  '/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/board/$id': typeof MemberBoardIdRoute
   '/settings/ai': typeof MemberSettingsAiRoute
+  '/settings/email': typeof MemberSettingsEmailRoute
   '/settings/interview': typeof MemberSettingsInterviewRoute
   '/settings/leave': typeof MemberSettingsLeaveRoute
   '/settings/notifications': typeof MemberSettingsNotificationsRoute
@@ -287,10 +303,12 @@ export interface FileRoutesById {
   '/_public/login': typeof PublicLoginRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
+  '/_public/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/_public/': typeof PublicIndexRoute
   '/_member/board/$id': typeof MemberBoardIdRoute
   '/_member/settings/ai': typeof MemberSettingsAiRoute
+  '/_member/settings/email': typeof MemberSettingsEmailRoute
   '/_member/settings/interview': typeof MemberSettingsInterviewRoute
   '/_member/settings/leave': typeof MemberSettingsLeaveRoute
   '/_member/settings/notifications': typeof MemberSettingsNotificationsRoute
@@ -322,9 +340,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/verify-email'
+    | '/verify-email-change'
     | '/api/$'
     | '/board/$id'
     | '/settings/ai'
+    | '/settings/email'
     | '/settings/interview'
     | '/settings/leave'
     | '/settings/notifications'
@@ -354,9 +374,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/verify-email'
+    | '/verify-email-change'
     | '/api/$'
     | '/board/$id'
     | '/settings/ai'
+    | '/settings/email'
     | '/settings/interview'
     | '/settings/leave'
     | '/settings/notifications'
@@ -388,10 +410,12 @@ export interface FileRouteTypes {
     | '/_public/login'
     | '/_public/signup'
     | '/_public/verify-email'
+    | '/_public/verify-email-change'
     | '/api/$'
     | '/_public/'
     | '/_member/board/$id'
     | '/_member/settings/ai'
+    | '/_member/settings/email'
     | '/_member/settings/interview'
     | '/_member/settings/leave'
     | '/_member/settings/notifications'
@@ -523,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicVerifyEmailRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/verify-email-change': {
+      id: '/_public/verify-email-change'
+      path: '/verify-email-change'
+      fullPath: '/verify-email-change'
+      preLoaderRoute: typeof PublicVerifyEmailChangeRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/api/$': {
       id: '/api/$'
       path: '/api/$'
@@ -556,6 +587,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/ai'
       fullPath: '/settings/ai'
       preLoaderRoute: typeof MemberSettingsAiRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/email': {
+      id: '/_member/settings/email'
+      path: '/settings/email'
+      fullPath: '/settings/email'
+      preLoaderRoute: typeof MemberSettingsEmailRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_member/settings/interview': {
@@ -662,6 +700,7 @@ interface MemberRouteChildren {
   MemberUpgradeRoute: typeof MemberUpgradeRoute
   MemberBoardIdRoute: typeof MemberBoardIdRoute
   MemberSettingsAiRoute: typeof MemberSettingsAiRoute
+  MemberSettingsEmailRoute: typeof MemberSettingsEmailRoute
   MemberSettingsInterviewRoute: typeof MemberSettingsInterviewRoute
   MemberSettingsLeaveRoute: typeof MemberSettingsLeaveRoute
   MemberSettingsNotificationsRoute: typeof MemberSettingsNotificationsRoute
@@ -684,6 +723,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberUpgradeRoute: MemberUpgradeRoute,
   MemberBoardIdRoute: MemberBoardIdRoute,
   MemberSettingsAiRoute: MemberSettingsAiRoute,
+  MemberSettingsEmailRoute: MemberSettingsEmailRoute,
   MemberSettingsInterviewRoute: MemberSettingsInterviewRoute,
   MemberSettingsLeaveRoute: MemberSettingsLeaveRoute,
   MemberSettingsNotificationsRoute: MemberSettingsNotificationsRoute,
@@ -704,6 +744,7 @@ interface PublicRouteChildren {
   PublicLoginRoute: typeof PublicLoginRoute
   PublicSignupRoute: typeof PublicSignupRoute
   PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
+  PublicVerifyEmailChangeRoute: typeof PublicVerifyEmailChangeRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
@@ -712,6 +753,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicLoginRoute: PublicLoginRoute,
   PublicSignupRoute: PublicSignupRoute,
   PublicVerifyEmailRoute: PublicVerifyEmailRoute,
+  PublicVerifyEmailChangeRoute: PublicVerifyEmailChangeRoute,
   PublicIndexRoute: PublicIndexRoute,
 }
 
