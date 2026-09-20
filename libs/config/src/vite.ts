@@ -10,7 +10,7 @@ import react from "@vitejs/plugin-react";
 
 import { applicationPorts, loopbackAddress } from "./applications.ts";
 import { devBoundary } from "./dev-boundary/dev-boundary.ts";
-import { localDatabase, localDatabasePersistence } from "./local-database-path.ts";
+import { localDatabase, localDatabaseDirectory } from "./local-database-path.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { workerCompatibility } from "./worker.ts";
@@ -218,7 +218,7 @@ const appRun = {
     },
     "check:dev": {
       command: "dev-start",
-      dependsOn: ["@repo/dev#setup", "@repo/db#db:migrate:local"],
+      dependsOn: ["@repo/dev#setup"],
       input: [
         ...taskInput,
         ...withoutGenerated(".wrangler", "dist"),
@@ -265,7 +265,7 @@ function appConfig(
           name: `template-${app}`,
         },
         inspectorPort: false,
-        persistState: { path: localDatabasePersistence },
+        persistState: { path: localDatabaseDirectory() },
         viteEnvironment: { name: "ssr" },
       }),
       ...plugins,

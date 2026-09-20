@@ -284,7 +284,6 @@ describe("lifecycle contents", () => {
       ".#test",
       ".#test:dev-server",
       "infra/cloudflare#verify:account",
-      "libs/db#db:migrate:local",
       "tools/commander#check:start",
       "tools/dev#setup",
       "tools/e2e#test:e2e",
