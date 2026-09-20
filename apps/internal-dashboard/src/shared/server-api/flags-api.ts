@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { readWikiConfig } from "@repo/config";
+import { readWikiConfig } from "#shared/wiki/wiki-config.ts";
 import {
   FeatureFlags,
   FlagEditorRequired,
