@@ -170,6 +170,9 @@ catalogs:
     '@better-auth/passkey':
       specifier: 1.7.5
       version: 1.7.5
+    '@cloudflare/flagship':
+      specifier: 0.5.0
+      version: 0.5.0
     '@cloudflare/vitest-plugin':
       specifier: 1.1.12
       version: 1.1.12
@@ -185,6 +188,9 @@ catalogs:
     '@msw/cloudflare':
       specifier: 0.0.1
       version: 0.0.1
+    '@openfeature/server-sdk':
+      specifier: 1.23.0
+      version: 1.23.0
     '@opentelemetry/api':
       specifier: 1.9.1
       version: 1.9.1
@@ -434,6 +440,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@repo/feature-flags':
+        specifier: workspace:*
+        version: link:../../libs/feature-flags
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
@@ -640,6 +649,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
+      '@repo/feature-flags':
+        specifier: workspace:*
+        version: link:../../libs/feature-flags
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
@@ -777,6 +789,9 @@ importers:
       '@repo/error-monitor':
         specifier: workspace:*
         version: link:../error-monitor
+      '@repo/feature-flags':
+        specifier: workspace:*
+        version: link:../../libs/feature-flags
       '@repo/health-monitor':
         specifier: workspace:*
         version: link:../health-monitor
@@ -1141,6 +1156,43 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+
+  libs/feature-flags:
+    dependencies:
+      '@cloudflare/flagship':
+        specifier: 'catalog:'
+        version: 0.5.0(@openfeature/server-sdk@1.23.0(@openfeature/core@1.12.0))
+      '@cloudflare/workers-types':
+        specifier: 'catalog:'
+        version: 5.20260916.1
+      '@openfeature/server-sdk':
+        specifier: 'catalog:'
+        version: 1.23.0(@openfeature/core@1.12.0)
+      '@repo/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../db
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112
+    devDependencies:
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/dont-review-it':
+        specifier: workspace:*
+        version: link:../../tools/dont-review-it
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.2(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
 
   libs/monitor:
     dependencies:
@@ -2542,6 +2594,17 @@ packages:
 
   '@clack/prompts@0.9.1':
     resolution: {integrity: sha512-JIpyaboYZeWYlyP0H+OoPPxd6nqueG/CmN6ixBiNFsIDHREevjIf0n0Ohh5gr5C8pEDknzgvz+pIJ8dMhzWIeg==}
+
+  '@cloudflare/flagship@0.5.0':
+    resolution: {integrity: sha512-z3gHf73SOuI2gy6fQ6QLaMDE7zMKMjCcfOjQYhZFUPCbDndUJMr/OON6TQrsETfNOrppTHEjE9f7d9FRjI/b/w==}
+    peerDependencies:
+      '@openfeature/server-sdk': ^1.20.2
+      '@openfeature/web-sdk': ^1.7.3
+    peerDependenciesMeta:
+      '@openfeature/server-sdk':
+        optional: true
+      '@openfeature/web-sdk':
+        optional: true
 
   '@cloudflare/kv-asset-handler@0.5.0':
     resolution: {integrity: sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg==}
@@ -4035,6 +4098,15 @@ packages:
 
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
+
+  '@openfeature/core@1.12.0':
+    resolution: {integrity: sha512-7PCPzyd1OC19begz30+CRknFB0ChtyaZUhk7YWrk+Bov1fpVw0HYkTXtoxxsvPfDZB9P9WsT7uixN+Z8f9+bcA==}
+
+  '@openfeature/server-sdk@1.23.0':
+    resolution: {integrity: sha512-JWeLvltJIV0AFgOfbw7hK9b9Rw/5wWq+RMhCIU9sJtAqarxr8hSPglG+JAGGhYdElAz3Qwe9W3ApWyPNkQEyqg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@openfeature/core': ^1.12.0
 
   '@openrouter/sdk@0.13.20':
     resolution: {integrity: sha512-fx4o19FHgadEldfrSOgSbXAi32hCE3O708q1nxcoxYrW6fP6/WggX3o5PmnlnObzmxrqLMkZpqg188K+Twguhg==}
@@ -12718,6 +12790,12 @@ snapshots:
       picocolors: 1.1.1
       sisteransi: 1.0.5
 
+  '@cloudflare/flagship@0.5.0(@openfeature/server-sdk@1.23.0(@openfeature/core@1.12.0))':
+    dependencies:
+      lru-cache: 11.5.2
+    optionalDependencies:
+      '@openfeature/server-sdk': 1.23.0(@openfeature/core@1.12.0)
+
   '@cloudflare/kv-asset-handler@0.5.0': {}
 
   '@cloudflare/tanstack-ai@0.2.1(@aws-sdk/credential-provider-node@3.972.83)(@modelcontextprotocol/sdk@1.30.0(supports-color@10.2.2)(zod@4.6.5))(@smithy/signature-v4@5.7.3)(@tanstack/ai@0.54.0(@opentelemetry/api@1.9.1)(zod@4.6.5))(google-auth-library@10.9.1(supports-color@10.2.2))(supports-color@10.2.2)(ws@8.21.3)(zod@4.6.5)':
@@ -14029,6 +14107,12 @@ snapshots:
       outvariant: 1.4.3
 
   '@open-draft/until@2.1.0': {}
+
+  '@openfeature/core@1.12.0': {}
+
+  '@openfeature/server-sdk@1.23.0(@openfeature/core@1.12.0)':
+    dependencies:
+      '@openfeature/core': 1.12.0
 
   '@openrouter/sdk@0.13.20':
     dependencies:

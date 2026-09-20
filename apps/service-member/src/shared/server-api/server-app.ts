@@ -17,6 +17,7 @@ import {
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
+import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { socialApi } from "./social-api.ts";
@@ -30,6 +31,7 @@ const failures = {
 const userApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(contactApi(api))
+  .use(flagsApi(api))
   .use(interviewApi(api))
   .use(socialApi(api))
   .get(

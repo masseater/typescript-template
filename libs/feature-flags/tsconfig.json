@@ -1,0 +1,16 @@
+{
+  "extends": "@repo/dont-review-it/tsconfig/app.json",
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "types": ["node", "@cloudflare/workers-types"],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ],
+    "noPropertyAccessFromIndexSignature": true,
+    "noFallthroughCasesInSwitch": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src/**/*.ts"]
+}
