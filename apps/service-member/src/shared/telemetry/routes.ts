@@ -14,6 +14,7 @@ export const routes = {
   "/api/session": "session",
   "/api/onboarding": "onboarding",
   "/api/home/feed": "home-feed",
+  "/api/realtime": "realtime",
   "/api/telemetry": "telemetry",
   "/api/verify-email": "verify-email-api",
   "/contact": "contact",

@@ -1,5 +1,5 @@
-import { APPLICATION, grants } from "@repo/config";
-import { Email, Worker, Workers } from "alchemy/Cloudflare";
+import { APPLICATION, grants, userInboxBinding, userInboxClassName } from "@repo/config";
+import { DurableObject, Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
@@ -16,7 +16,13 @@ import type { SharedConfig } from "./config.ts";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withAi = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  return grants(target, "realtime")
+    ? {
+        ...withAi,
+        [userInboxBinding]: DurableObject(userInboxBinding, { className: userInboxClassName }),
+      }
+    : withAi;
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(

@@ -1,4 +1,5 @@
 import { appServerEntry } from "@repo/runtime/worker";
+import { UserInbox } from "@repo/user-inbox";
 import handler from "@tanstack/react-start/server-entry";
 
 import { paraglideMiddleware } from "#paraglide/server.js";
@@ -9,5 +10,7 @@ const startHandler = {
     return paraglideMiddleware(request, () => handler.fetch(request));
   },
 };
+
+export { UserInbox };
 
 export default appServerEntry(runtime, startHandler, reporting);

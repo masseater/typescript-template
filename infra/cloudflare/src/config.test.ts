@@ -7,7 +7,7 @@ import { parseDeploymentCommand, traceDestination, workerObservability } from ".
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import type { Ai, D1Database, DurableObjectNamespace, SendEmail, Service } from "@cloudflare/workers-types";
 import type { AppBindings } from "./bindings.ts";
 
 const release = "0".repeat(16);
@@ -38,6 +38,10 @@ const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
   AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
   APP_ORIGIN: settings.origins["service-member"],
+  USER_INBOX: binding<DurableObjectNamespace>({
+    get: (): undefined => undefined,
+    idFromName: (): undefined => undefined,
+  }),
 };
 
 const confirmation = "0".repeat(16);

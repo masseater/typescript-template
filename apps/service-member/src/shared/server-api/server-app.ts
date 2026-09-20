@@ -19,6 +19,7 @@ import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { realtimeApi } from "./realtime-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { socialApi } from "./social-api.ts";
 
@@ -33,6 +34,7 @@ const userApi = createApi(apiRoot)
   .use(contactApi(api))
   .use(flagsApi(api))
   .use(interviewApi(api))
+  .use(realtimeApi(api))
   .use(socialApi(api))
   .get(
     "/profile",

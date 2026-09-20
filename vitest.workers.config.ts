@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import { userInboxBinding, userInboxClassName } from "@repo/config/realtime";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
@@ -24,7 +25,7 @@ export default defineProject({
   plugins: [
     cloudflareTest({
       additionalExports: { [mailRecorder]: "WorkerEntrypoint" },
-      main: path.join(root, "libs/monitor/src/monitor-fixture.ts"),
+      main: path.join(root, "vitest.workers.main.ts"),
       miniflare: {
         bindings: {
           ALERT_FROM: "monitor@example.test",
@@ -34,7 +35,10 @@ export default defineProject({
         compatibilityDate: workerCompatibility.date,
         compatibilityFlags: [...workerCompatibility.flags],
         d1Databases: { [localDatabase.binding]: localDatabase.database_id },
-        durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
+        durableObjects: {
+          [monitorBinding]: { className: probeMonitor, useSQLite: true },
+          [userInboxBinding]: { className: userInboxClassName, useSQLite: true },
+        },
         outboundService: (outbound: { readonly url: string }) =>
           Response.json({ blocked: outbound.url }, { status: 403 }),
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },

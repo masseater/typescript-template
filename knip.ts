@@ -46,6 +46,10 @@ const workspaces = {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
+  "libs/user-inbox": {
+    ignoreDependencies: ["cloudflare"],
+    project: ["src/**/*.ts!"],
+  },
   "libs/runtime": {
     ignoreDependencies: ["cloudflare"],
     entry: ["src/*-fixture.ts"],
