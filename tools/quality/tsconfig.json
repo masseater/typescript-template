@@ -1,7 +1,0 @@
-{
-  "extends": "@repo/dont-review-it/tsconfig/library.json",
-  "compilerOptions": {
-    "types": ["vite-plus/client", "node"]
-  },
-  "include": ["*.ts", "vite.config.ts", "doctor.config.ts"]
-}
