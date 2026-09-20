@@ -1,5 +1,4 @@
-import preview from "@repo/ui/storybook/preview";
-
+import preview from "../storybook/preview";
 import { PasskeyItem } from "./passkey-item";
 
 import type { ReactElement } from "react";

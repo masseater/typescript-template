@@ -1,7 +1,7 @@
 import { agentScanTrace } from "./agent-report.ts";
 import { humanScanTrace } from "./human-report.ts";
 
-import type { CheckOutcome } from "@repo/dont-review-it/repository-checks";
+import type { CheckOutcome } from "../repository-checks/index.ts";
 
 export const scanTraceFor = ({
   outcomes,

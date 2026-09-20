@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noReplacedDoubleBehaviour } from "./no-replaced-double-behaviour--let-the-replaced-module-answer.ts";
 
 const IMPORTED_DOUBLE = 'import { send } from "./mailer.ts";\n';

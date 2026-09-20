@@ -2,9 +2,8 @@ import { lstatSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
 import { normalize } from "node:path/posix";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
-
 import { isFile } from "../lint/oxlint/lib/canonical-values/source-files.ts";
+import { readUnlessMissing } from "../repository-checks/index.ts";
 
 import type { RepositoryProblem } from "../problem.ts";
 import type { RequiredFileFormConfig } from "./config.ts";

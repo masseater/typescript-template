@@ -1,5 +1,4 @@
-import preview from "@repo/ui/storybook/preview";
-
+import preview from "../storybook/preview";
 import { TotpField } from "./totp-field";
 
 const meta = preview.meta({

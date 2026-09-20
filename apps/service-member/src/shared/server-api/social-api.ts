@@ -1,10 +1,10 @@
 import { verifySession } from "@repo/auth";
-import { advanceOnboarding, homeFeed, stepOf } from "@repo/db/member-social";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { HomeFeed, OnboardingAdvance, OnboardingView } from "#shared/contracts/index.ts";
+import { advanceOnboarding, homeFeed, stepOf } from "./member-social.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";

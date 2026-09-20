@@ -14,7 +14,7 @@ import { basename, dirname, join } from "node:path";
 import { PassThrough } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 import { describe, expect, vi } from "vite-plus/test";
 
 import { runSpool } from "./run-spool.ts";

@@ -3,9 +3,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { gitExecutablePath } from "@repo/dont-review-it/repository-checks";
 import { describe, expect, test, vi } from "vite-plus/test";
 
+import { gitExecutablePath } from "../repository-checks/index.ts";
 import { runStopAiSlop } from "./run-cli.ts";
 
 const GIT_ENVIRONMENT = {

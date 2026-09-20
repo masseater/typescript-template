@@ -1,11 +1,16 @@
 import { Auth } from "@repo/auth";
-import { AuthApps, startAuthorization, wikiAdministrator, wikiOrigin } from "@repo/auth/testing";
 import { APPLICATION } from "@repo/config";
 import { Effect, Schema } from "effect";
 
+import {
+  AuthApps,
+  startAuthorization,
+  wikiAdministrator,
+  wikiOrigin,
+} from "../../../../../libs/auth/src/testing.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type { BrowserClient } from "@repo/auth/testing";
+import type { BrowserClient } from "../../../../../libs/auth/src/testing.ts";
 
 type AuthorizationFlow = {
   readonly clientId: string;

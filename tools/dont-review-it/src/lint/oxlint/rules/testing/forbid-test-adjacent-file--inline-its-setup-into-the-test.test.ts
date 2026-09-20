@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe, expect, it } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { forbidTestAdjacentFile } from "./forbid-test-adjacent-file--inline-its-setup-into-the-test.ts";
 
 const optionsSchema = forbidTestAdjacentFile.meta.schema;

@@ -1,8 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { gitExecutablePath } from "@repo/dont-review-it/repository-checks";
 import { omitBy } from "es-toolkit";
+
+import { gitExecutablePath } from "../repository-checks/index.ts";
 
 type GitCommandExecutor = (
   repositoryRoot: string,

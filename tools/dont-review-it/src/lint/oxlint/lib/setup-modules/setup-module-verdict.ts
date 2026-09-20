@@ -1,8 +1,8 @@
 import { relative } from "node:path";
 
-import { matchesGlobSegment } from "@repo/dont-review-it/lint-rule-authoring";
 import { memoize } from "es-toolkit";
 
+import { matchesGlobSegment } from "../../../../lint-rule-authoring/index.ts";
 import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { assetsStemOf } from "../spec-syntax/assets-files.ts";

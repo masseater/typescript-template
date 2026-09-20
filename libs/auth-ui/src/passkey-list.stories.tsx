@@ -1,5 +1,4 @@
-import preview from "@repo/ui/storybook/preview";
-
+import preview from "../storybook/preview";
 import { PasskeyList } from "./passkey-list";
 
 const meta = preview.meta({

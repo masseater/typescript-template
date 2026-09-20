@@ -1,6 +1,6 @@
-import preview from "@repo/ui/storybook/preview";
 import { expect, userEvent } from "storybook/test";
 
+import preview from "../storybook/preview";
 import { TotpEnrollment } from "./totp-enrollment";
 
 const meta = preview.meta({

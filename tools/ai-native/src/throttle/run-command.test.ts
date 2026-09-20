@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 import { describe, expect, vi } from "vite-plus/test";
 
 import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";

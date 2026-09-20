@@ -1,4 +1,4 @@
-import { devServerTests, workerTests } from "@repo/dont-review-it/test-runtime";
+import { devServerTests, workerTests } from "@repo/dont-review-it";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 

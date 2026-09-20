@@ -1,4 +1,4 @@
-import type { RepositoryProblem } from "@repo/dont-review-it/repository-checks";
+import type { RepositoryProblem } from "../repository-checks/index.ts";
 
 export type DependencyCatalogProblem = RepositoryProblem;
 

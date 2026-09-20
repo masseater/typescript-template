@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { parseSync } from "oxc-parser";
+
+import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 import type { SpecStatement } from "./subject-expressions.ts";

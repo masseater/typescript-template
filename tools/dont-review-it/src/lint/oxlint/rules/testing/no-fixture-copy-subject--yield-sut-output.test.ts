@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noFixtureCopySubject } from "./no-fixture-copy-subject--yield-sut-output.ts";
 
 const SPEC_FILENAME = "report.test.ts";

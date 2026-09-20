@@ -1,9 +1,9 @@
-import { stringEntriesOf } from "@repo/dont-review-it/record-fields";
-import { linkWrapperFiles } from "@repo/ui/lint-settings";
 import { describe, expect, it } from "vite-plus/test";
 
+import { stringEntriesOf } from "../dependency-catalog/record-fields.ts";
 import { field } from "./dependencies.ts";
 import { commands, reachable } from "./tasks.ts";
+import { linkWrapperFiles } from "./ui-lint-settings.ts";
 
 import type { ReactDoctorConfig } from "react-doctor/api";
 

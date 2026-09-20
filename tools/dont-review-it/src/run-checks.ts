@@ -1,11 +1,5 @@
 import { join, resolve } from "node:path";
 
-import {
-  formatLintRuleProblem,
-  lintRuleDocProblems,
-  lintRuleIndexProblems,
-} from "@repo/dont-review-it/lint-rule-authoring";
-
 import { runCanonicalLiteralTypeChecks } from "./canonical-literal-types/run-canonical-literal-type-checks.ts";
 import { adoptedBundlesIn } from "./configs/bundles/adopted-bundles.ts";
 import { LINT_BUNDLE, LINT_BUNDLE_NAMES, type LintBundle } from "./configs/bundles/bundle-names.ts";
@@ -16,6 +10,11 @@ import { defaultEntryCompositionConfig } from "./entry-composition/config.ts";
 import { entryCompositionProblems } from "./entry-composition/entry-composition-problems.ts";
 import { defaultIntentSkillsConfig } from "./intent-skills/config.ts";
 import { shippedSkillsProblems } from "./intent-skills/shipped-skills.ts";
+import {
+  formatLintRuleProblem,
+  lintRuleDocProblems,
+  lintRuleIndexProblems,
+} from "./lint-rule-authoring/index.ts";
 import {
   listRepositoryFiles,
   readTextFile,
@@ -41,7 +40,7 @@ import { runTelemetryWiringChecks } from "./telemetry-wiring/run-telemetry-wirin
 import { defaultWorkflowChecksConfig } from "./workflows/config.ts";
 import { workflowOutcomesOf } from "./workflows/workflow-outcomes.ts";
 
-import type { CheckOutcome } from "@repo/dont-review-it/repository-checks";
+import type { CheckOutcome } from "./repository-checks/index.ts";
 
 export type CheckReport = {
   readonly outcomes: readonly CheckOutcome[];

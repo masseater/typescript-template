@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { createNoNonBoundaryDouble } from "./no-non-boundary-double--replace-at-the-external-boundary.ts";
 
 const outsideRule = createNoNonBoundaryDouble({

@@ -1,6 +1,7 @@
-import { type UnknownFields } from "@repo/dont-review-it/lint-rule-authoring";
 import { isPlainObject } from "es-toolkit";
 import { type CallExpression } from "oxc-parser";
+
+import { type UnknownFields } from "../../lint-rule-authoring/index.ts";
 
 const objectPatternBindingsIn = (properties: readonly UnknownFields[]): readonly string[] =>
   properties.flatMap((fields) => {

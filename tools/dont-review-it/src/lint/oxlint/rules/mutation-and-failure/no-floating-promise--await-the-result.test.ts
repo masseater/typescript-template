@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noFloatingPromise } from "./no-floating-promise--await-the-result.ts";
 
 const ASSERTED_WIDENING = ["as", "any"].join(" ");

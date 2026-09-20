@@ -6,7 +6,7 @@ import {
   noTwinDeclaration,
 } from "../../plugin.ts";
 
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../lint-rule-authoring/index.ts";
 
 export const singleOwnershipBundle: readonly WorkspaceLintRule[] = [
   noDuplicateValueDeclaration,

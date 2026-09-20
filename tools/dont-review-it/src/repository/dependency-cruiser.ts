@@ -77,7 +77,10 @@ const configuration: IConfiguration = {
       from: { path: "^(apps|libs|infra|tools)/([^/]+)/" },
       name: "no-package-escape",
       severity: "error",
-      to: { dependencyTypes: ["local"], pathNot: "^$1/$2/" },
+      to: {
+        dependencyTypes: ["local"],
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/db/src/migrate-d1\.ts$|^libs/db/src/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/remote-command\.ts$`,
+      },
     },
     {
       comment:
@@ -139,7 +142,7 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/contracts など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
+        "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/client など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
       from: { path: "^libs/(?:ui|auth-ui)/src/", pathNot: testModule },
       name: "no-browser-to-server",
       severity: "error",

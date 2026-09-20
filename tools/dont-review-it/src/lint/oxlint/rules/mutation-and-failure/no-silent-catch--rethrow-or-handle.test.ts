@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noSilentCatch } from "./no-silent-catch--rethrow-or-handle.ts";
 
 describe("dont-review-it/no-silent-catch--rethrow-or-handle", () => {

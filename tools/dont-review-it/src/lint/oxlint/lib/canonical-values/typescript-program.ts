@@ -1,9 +1,9 @@
 import { dirname, resolve } from "node:path";
 
-import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { uniqBy } from "es-toolkit";
 import * as ts from "typescript-6";
 
+import { measureStage } from "../../../../lint-rule-authoring/index.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 
 type ProgramInput = {

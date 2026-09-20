@@ -1,7 +1,7 @@
 import { actionUpdateProblems } from "./action-updates.ts";
 import { runWorkflowChecks } from "./run-workflow-checks.ts";
 
-import type { ScannedProblems } from "@repo/dont-review-it/repository-checks";
+import type { ScannedProblems } from "../repository-checks/index.ts";
 import type { WorkflowChecksConfig } from "./config.ts";
 
 export type WorkflowOutcomes = {

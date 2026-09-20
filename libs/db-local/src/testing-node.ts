@@ -1,12 +1,13 @@
 import { workerCompatibility } from "@repo/config/worker";
 import { Database } from "@repo/db";
 import { localDatabase } from "@repo/db/local";
-import { prepareBatch } from "@repo/db/migrate-d1";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
+import { prepareBatch } from "../../db/src/migrate-d1.ts";
+
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
-import type { RemoteFailure } from "@repo/db/remote-input";
+import type { RemoteFailure } from "../../db/src/remote-input.ts";
 
 interface D1HttpBatchResponse {
   readonly result: D1Result[];
@@ -148,5 +149,5 @@ export const describeDatabase = Effect.fn("describeDatabase")(function* describe
   };
 });
 
-export { d1Executor } from "@repo/db/migrate-d1";
+export { d1Executor } from "../../db/src/migrate-d1.ts";
 export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, runStatement };

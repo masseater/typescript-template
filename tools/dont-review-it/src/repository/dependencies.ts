@@ -1,5 +1,4 @@
-import { field } from "@repo/dont-review-it/record-fields";
-
+import { isRecord } from "../dependency-catalog/record-fields.ts";
 import { repositoryRelative } from "./repository-path.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
 
@@ -10,6 +9,9 @@ interface WorkspaceManifest {
   readonly file: string;
   readonly manifest: unknown;
 }
+
+const field = (declared: unknown, propertyName: string): unknown =>
+  isRecord(declared) ? Object.getOwnPropertyDescriptor(declared, propertyName)?.value : undefined;
 
 const dependencyFields = [
   "dependencies",

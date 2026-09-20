@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { FORBIDDEN_AMBIGUOUS_NAMES } from "../../lib/forbidden-ambiguous-names.ts";
 import { noExpectForbiddenSubjectName } from "./no-expect-forbidden-subject-name--rename-to-concrete-subject.ts";
 

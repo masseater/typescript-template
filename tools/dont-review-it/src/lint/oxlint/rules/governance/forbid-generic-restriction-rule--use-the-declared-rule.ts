@@ -1,6 +1,5 @@
-import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { LINT_SEVERITY } from "../../../../lint-rule-authoring/index.ts";
 import { listedUnder } from "../../lib/declared-replacements/option-lists.ts";
 import { bareRuleNameOf } from "../../lib/lint-suppression/suppression-directives.ts";
 import { propertyKeyOf } from "../../lib/object-literal.ts";

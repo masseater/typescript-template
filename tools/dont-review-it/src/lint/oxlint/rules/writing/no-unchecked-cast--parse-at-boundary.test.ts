@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noUncheckedCast } from "./no-unchecked-cast--parse-at-boundary.ts";
 
 const ANY_ANNOTATION = [":", "any"].join(" ");

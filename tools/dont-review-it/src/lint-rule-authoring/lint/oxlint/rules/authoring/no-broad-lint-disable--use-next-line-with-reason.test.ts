@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../index.ts";
 import { noBroadLintDisable } from "./no-broad-lint-disable--use-next-line-with-reason.ts";
 
 describe("lint-rule-authoring/no-broad-lint-disable--use-next-line-with-reason", () => {

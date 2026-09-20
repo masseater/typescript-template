@@ -6,7 +6,7 @@ import { Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
 import { remoteExecutor } from "./remote-http.ts";
-import { RemoteFailure, fail } from "./remote-input.ts";
+import { RemoteFailure, fail, parseRemoteInput } from "./remote-input.ts";
 
 import type { Email, EmailAddress } from "./bootstrap-statement.ts";
 import type { DatabaseExecutor } from "./remote-http.ts";
@@ -163,8 +163,12 @@ export {
   APPLICATION_TABLES,
   MIGRATIONS_TABLE_PRESENT,
   MigrationFiles,
+  RemoteFailure,
   bootstrapDatabase,
+  fail,
   loadRemoteMigrations,
   migrateDatabase,
+  parseRemoteInput,
   readMigrationStatus,
+  remoteExecutor,
 };

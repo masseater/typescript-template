@@ -1,8 +1,8 @@
 import { resolve, sep } from "node:path";
 
-import { matchesGlobSegment } from "@repo/dont-review-it/lint-rule-authoring";
 import { range } from "es-toolkit";
 
+import { matchesGlobSegment } from "../../../lint-rule-authoring/index.ts";
 import { segmentsOf } from "./path-segments.ts";
 
 const matchesSegments = (

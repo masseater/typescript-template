@@ -4,7 +4,7 @@ import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
-import { workerTests } from "@repo/dont-review-it/test-runtime";
+import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
@@ -42,7 +42,7 @@ export default defineProject({
     include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
-    setupFiles: ["@repo/dont-review-it/vitest/parsed-fields"],
+    setupFiles: [path.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
     testTimeout: 30_000,
   },
 });

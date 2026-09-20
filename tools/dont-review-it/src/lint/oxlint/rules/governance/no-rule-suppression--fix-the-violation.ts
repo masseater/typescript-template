@@ -1,9 +1,9 @@
 import { dirname, resolve } from "node:path";
 
-import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
 import { uniq } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { LINT_SEVERITY } from "../../../../lint-rule-authoring/index.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { spelledNames } from "../../lib/declared-coverage/coverage-declarations.ts";
 import {
