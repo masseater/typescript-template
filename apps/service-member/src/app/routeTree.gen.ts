@@ -11,7 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MemberRouteImport } from './routes/_member'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as MemberBoardRouteImport } from './routes/_member/board'
+import { Route as MemberHomeRouteImport } from './routes/_member/home'
+import { Route as MemberMessagesRouteImport } from './routes/_member/messages'
+import { Route as MemberNotificationsRouteImport } from './routes/_member/notifications'
+import { Route as MemberSearchRouteImport } from './routes/_member/search'
 import { Route as MemberSecurityRouteImport } from './routes/_member/security'
+import { Route as MemberSupportRouteImport } from './routes/_member/support'
+import { Route as MemberUpgradeRouteImport } from './routes/_member/upgrade'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicContactRouteImport } from './routes/_public/contact'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
@@ -37,9 +44,44 @@ const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberBoardRoute = MemberBoardRouteImport.update({
+  id: '/board',
+  path: '/board',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberHomeRoute = MemberHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberMessagesRoute = MemberMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberNotificationsRoute = MemberNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSearchRoute = MemberSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberSecurityRoute = MemberSecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberSupportRoute = MemberSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberUpgradeRoute = MemberUpgradeRouteImport.update({
+  id: '/upgrade',
+  path: '/upgrade',
   getParentRoute: () => MemberRoute,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
@@ -126,7 +168,14 @@ const MemberUsersIdRoute = MemberUsersIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/board': typeof MemberBoardRoute
+  '/home': typeof MemberHomeRoute
+  '/messages': typeof MemberMessagesRoute
+  '/notifications': typeof MemberNotificationsRoute
+  '/search': typeof MemberSearchRoute
   '/security': typeof MemberSecurityRoute
+  '/support': typeof MemberSupportRoute
+  '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
   '/signup': typeof PublicSignupRoute
@@ -145,7 +194,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
+  '/board': typeof MemberBoardRoute
+  '/home': typeof MemberHomeRoute
+  '/messages': typeof MemberMessagesRoute
+  '/notifications': typeof MemberNotificationsRoute
+  '/search': typeof MemberSearchRoute
   '/security': typeof MemberSecurityRoute
+  '/support': typeof MemberSupportRoute
+  '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
   '/signup': typeof PublicSignupRoute
@@ -166,7 +222,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_member': typeof MemberRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_member/board': typeof MemberBoardRoute
+  '/_member/home': typeof MemberHomeRoute
+  '/_member/messages': typeof MemberMessagesRoute
+  '/_member/notifications': typeof MemberNotificationsRoute
+  '/_member/search': typeof MemberSearchRoute
   '/_member/security': typeof MemberSecurityRoute
+  '/_member/support': typeof MemberSupportRoute
+  '/_member/upgrade': typeof MemberUpgradeRoute
   '/_public/contact': typeof PublicContactRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/signup': typeof PublicSignupRoute
@@ -188,7 +251,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/board'
+    | '/home'
+    | '/messages'
+    | '/notifications'
+    | '/search'
     | '/security'
+    | '/support'
+    | '/upgrade'
     | '/contact'
     | '/login'
     | '/signup'
@@ -207,7 +277,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/board'
+    | '/home'
+    | '/messages'
+    | '/notifications'
+    | '/search'
     | '/security'
+    | '/support'
+    | '/upgrade'
     | '/contact'
     | '/login'
     | '/signup'
@@ -227,7 +304,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_member'
     | '/_public'
+    | '/_member/board'
+    | '/_member/home'
+    | '/_member/messages'
+    | '/_member/notifications'
+    | '/_member/search'
     | '/_member/security'
+    | '/_member/support'
+    | '/_member/upgrade'
     | '/_public/contact'
     | '/_public/login'
     | '/_public/signup'
@@ -268,11 +352,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_member/board': {
+      id: '/_member/board'
+      path: '/board'
+      fullPath: '/board'
+      preLoaderRoute: typeof MemberBoardRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/home': {
+      id: '/_member/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof MemberHomeRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/messages': {
+      id: '/_member/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MemberMessagesRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/notifications': {
+      id: '/_member/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof MemberNotificationsRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/search': {
+      id: '/_member/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof MemberSearchRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/security': {
       id: '/_member/security'
       path: '/security'
       fullPath: '/security'
       preLoaderRoute: typeof MemberSecurityRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/support': {
+      id: '/_member/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof MemberSupportRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/upgrade': {
+      id: '/_member/upgrade'
+      path: '/upgrade'
+      fullPath: '/upgrade'
+      preLoaderRoute: typeof MemberUpgradeRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_public/': {
@@ -391,7 +524,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface MemberRouteChildren {
+  MemberBoardRoute: typeof MemberBoardRoute
+  MemberHomeRoute: typeof MemberHomeRoute
+  MemberMessagesRoute: typeof MemberMessagesRoute
+  MemberNotificationsRoute: typeof MemberNotificationsRoute
+  MemberSearchRoute: typeof MemberSearchRoute
   MemberSecurityRoute: typeof MemberSecurityRoute
+  MemberSupportRoute: typeof MemberSupportRoute
+  MemberUpgradeRoute: typeof MemberUpgradeRoute
   MemberSettingsAiRoute: typeof MemberSettingsAiRoute
   MemberSettingsInterviewRoute: typeof MemberSettingsInterviewRoute
   MemberSettingsLeaveRoute: typeof MemberSettingsLeaveRoute
@@ -405,7 +545,14 @@ interface MemberRouteChildren {
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
+  MemberBoardRoute: MemberBoardRoute,
+  MemberHomeRoute: MemberHomeRoute,
+  MemberMessagesRoute: MemberMessagesRoute,
+  MemberNotificationsRoute: MemberNotificationsRoute,
+  MemberSearchRoute: MemberSearchRoute,
   MemberSecurityRoute: MemberSecurityRoute,
+  MemberSupportRoute: MemberSupportRoute,
+  MemberUpgradeRoute: MemberUpgradeRoute,
   MemberSettingsAiRoute: MemberSettingsAiRoute,
   MemberSettingsInterviewRoute: MemberSettingsInterviewRoute,
   MemberSettingsLeaveRoute: MemberSettingsLeaveRoute,

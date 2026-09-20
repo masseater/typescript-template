@@ -38,7 +38,7 @@ function sessionName(app: App): string {
 }
 
 function postLoginPath(app: App): string {
-  return app === "service-admin" ? "/members" : "/";
+  return app === "service-admin" ? "/members" : "/home";
 }
 
 function configuredOrigin(app: App, credentials: Credentials): string {
