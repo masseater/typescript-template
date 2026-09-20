@@ -69,6 +69,8 @@
   "dependencies": {
     "@opentelemetry/api": "catalog:",
     "@repo/ai-native-telemetry": "workspace:*",
+    "@repo/cli": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "@repo/ui": "workspace:*",
     "@shadcn/lint": "catalog:",

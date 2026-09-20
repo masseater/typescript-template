@@ -1513,6 +1513,12 @@ importers:
       '@repo/ai-native-telemetry':
         specifier: workspace:*
         version: link:../ai-native-telemetry
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/infra-cloudflare':
         specifier: workspace:*
         version: link:../../infra/cloudflare
