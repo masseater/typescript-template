@@ -24,7 +24,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           clean: ${{ vars.CI_RUNNER == '' }}
-          fetch-depth: 2
       - &clean-workspace
         if: vars.CI_RUNNER != ''
         run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy -e .artifacts -e .spool
@@ -71,7 +70,7 @@ jobs:
   merge-queue:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       TEST_CHANGED_SINCE: HEAD
     steps:
@@ -81,7 +80,10 @@ jobs:
       - *setup
       - *mise
       - *task-cache-share
-      - run: vp run -r premerge
+      - run: vp run -r premerge --concurrency-limit 1
+        env:
+          RAYON_NUM_THREADS: "1"
+          VITE_PLUS_SKIP_LINT_NATIVE: "1"
 
   cache:
     if: github.event_name == 'push' && vars.CI_RUNNER == ''

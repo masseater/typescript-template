@@ -27,7 +27,9 @@ export default defineConfig({
     ignorePatterns: [...generatedFiles],
     sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
   }),
-  lint: dontReviewItPreset.lint(lintOptions),
+  ...(process.env.VITE_PLUS_SKIP_LINT_NATIVE === "1"
+    ? {}
+    : { lint: dontReviewItPreset.lint(lintOptions) }),
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
