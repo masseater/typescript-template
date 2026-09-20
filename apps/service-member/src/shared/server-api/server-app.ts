@@ -5,6 +5,7 @@ import { accountApi, unavailable } from "@repo/runtime/account";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
+import { paidFailures, requirePaidSession } from "#shared/billing/index.ts";
 import {
   MemberList,
   MemberListQuery,
@@ -15,6 +16,7 @@ import {
   memberPageSize,
 } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { billingApi } from "./billing-api.ts";
 import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { interviewApi } from "./interview-api.ts";
@@ -24,11 +26,13 @@ import { socialApi } from "./social-api.ts";
 const api = apiRoutes(runtime, reporting);
 const failures = {
   ...unavailable,
+  ...paidFailures,
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
 const userApi = createApi(apiRoot)
   .use(accountApi(api))
+  .use(billingApi(api))
   .use(contactApi(api))
   .use(interviewApi(api))
   .use(socialApi(api))
@@ -67,7 +71,7 @@ const userApi = createApi(apiRoot)
       MemberList,
       (request) =>
         Effect.gen(function* handleRequest() {
-          yield* verifySession(request.headers);
+          yield* requirePaidSession(request.headers);
           const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
           const offset = (page - 1) * memberPageSize;
           const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
