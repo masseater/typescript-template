@@ -66,9 +66,4 @@ const retiredImportGuidance = Object.entries({ ...retiredPackages, ...retiredEnt
   .map(([retired, replacement]) => `${retired} は${replacementMessage(replacement)}`)
   .join("");
 
-export {
-  replacementFor,
-  replacementForImport,
-  replacementMessage,
-  retiredImportGuidance,
-};
+export { replacementFor, replacementForImport, replacementMessage, retiredImportGuidance };
