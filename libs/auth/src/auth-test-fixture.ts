@@ -29,9 +29,14 @@ const TotpEnrollment = Schema.Struct({
   totpURI: Schema.String,
 });
 
-class Fixture extends Context.Service<Fixture, Readonly<Record<Application, AuthService>>>()(
-  "AuthTestFixture",
-) {}
+class Fixture extends Context.Service<
+  Fixture,
+  {
+    readonly "internal-dashboard": AuthService;
+    readonly "service-admin": AuthService;
+    readonly "service-member": AuthService;
+  }
+>()("AuthTestFixture") {}
 
 function decodeOrDie<Contract extends Schema.Top & { readonly DecodingServices: never }>(
   contract: Contract,
@@ -83,17 +88,17 @@ function receivedLink(email: string, subject: string): URL {
 }
 
 const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
-  const { "service-member": user } = yield* Fixture;
+  const member = (yield* Fixture)["service-member"];
   const link = receivedLink(email, mailSubjects.verification);
   assert.deepStrictEqual([link.pathname, link.search], ["/verify-email", ""]);
   const token = new URLSearchParams(link.hash.slice(1)).get("token");
   assert.isNotNull(token);
-  yield* Effect.promise(async () => user.instance.api.verifyEmail({ query: { token } }));
+  yield* Effect.promise(async () => member.instance.api.verifyEmail({ query: { token } }));
 });
 
 const register = Effect.fn("register")(function* register(email: string) {
-  const { "service-member": user } = yield* Fixture;
-  const client = new BrowserClient(user);
+  const member = (yield* Fixture)["service-member"];
+  const client = new BrowserClient(member);
   const signUp = { email, name: email, password: PASSWORD };
   assert.isTrue((yield* client.request("/sign-up/email", signUp)).ok);
   return client;

@@ -129,7 +129,7 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
   flow: AuthorizationFlow,
   code: string,
 ) {
-  const { "internal-dashboard": wiki } = yield* Fixture;
+  const wiki = (yield* Fixture)["internal-dashboard"];
   const body = new URLSearchParams({
     client_id: flow.clientId,
     code,
@@ -152,7 +152,7 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
 });
 
 const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(token?: string) {
-  const { "internal-dashboard": wiki } = yield* Fixture;
+  const wiki = (yield* Fixture)["internal-dashboard"];
   const request = new Request(`${wikiOrigin}/mcp`, {
     headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
     method: "POST",

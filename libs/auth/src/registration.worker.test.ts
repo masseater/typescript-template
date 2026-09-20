@@ -28,9 +28,9 @@ const SignUpResponse = Schema.Struct({
 });
 
 const signUpShape = Effect.fn("signUpShape")(function* signUpShape(email: string) {
-  const { "service-member": user } = yield* Fixture;
+  const member = (yield* Fixture)["service-member"];
   const signUp = { email, name: email, password: PASSWORD };
-  const response = yield* new BrowserClient(user).json("/sign-up/email", signUp);
+  const response = yield* new BrowserClient(member).json("/sign-up/email", signUp);
   const body = yield* decodeOrDie(SignUpResponse, response.body);
   return { fields: Object.keys(body.user).toSorted(), status: response.status, token: body.token };
 });
@@ -129,7 +129,9 @@ it.effect(
   () =>
     withAuth(
       Effect.gen(function* program() {
-        const { "service-member": user, "service-admin": admin } = yield* Fixture;
+        const services = yield* Fixture;
+        const user = services["service-member"];
+        const admin = services["service-admin"];
         const signUp = { email: "admin@example.com", name: "admin", password: PASSWORD };
         assert.isFalse((yield* new BrowserClient(admin).request("/sign-up/email", signUp)).ok);
         const userClient = new BrowserClient(user);

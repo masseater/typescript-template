@@ -1,11 +1,11 @@
 import { State as StateRoute } from "alchemy/Alchemist";
 import { Config, Effect, Redacted } from "effect";
 
+import { originKeys, type SharedConfig } from "./config.ts";
 import { verifiedSecrets } from "./credentials.ts";
 import { withVerifiedSecrets } from "./secrets.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
 
-import type { SharedConfig } from "./config.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
 import type { Confidential } from "./secrets.ts";
 
@@ -37,15 +37,16 @@ function confidentialValues(
   secrets: DeploymentSecrets,
   authorization: Redacted.Redacted | undefined,
 ): readonly Confidential[] {
-  const origins = Object.entries(config.origins).flatMap(
-    ([app, origin]: readonly [string, string]) => {
-      const key = `TEMPLATE_${app.toUpperCase()}_ORIGIN`;
-      return [
-        { key, value: origin },
-        { key, value: new URL(origin).hostname },
-      ];
-    },
-  );
+  const origins = (
+    Object.keys(config.origins) as readonly (keyof SharedConfig["origins"])[]
+  ).flatMap((app) => {
+    const key = originKeys[app];
+    const origin = config.origins[app];
+    return [
+      { key, value: origin },
+      { key, value: new URL(origin).hostname },
+    ];
+  });
   return [
     { key: "CLOUDFLARE_ACCOUNT_ID", value: config.accountId },
     { key: "CLOUDFLARE_ZONE_ID", value: config.zoneId },

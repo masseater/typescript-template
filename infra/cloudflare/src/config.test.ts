@@ -20,7 +20,7 @@ function binding<Binding>(value: object): Binding {
 }
 
 const sharedBindings = {
-  APP_ORIGIN: settings.origins.admin,
+  APP_ORIGIN: settings.origins["service-admin"],
   APP_RELEASE: release,
   ASSETS: binding<Service>({ fetch: async (): Promise<Response> => new Response() }),
   AUTH_SECRET: "runtime-secret-of-at-least-32-characters",
@@ -37,7 +37,7 @@ const adminBindings: AppBindings<"service-admin"> = sharedBindings;
 const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
   AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
-  APP_ORIGIN: settings.origins.user,
+  APP_ORIGIN: settings.origins["service-member"],
 };
 
 const confirmation = "0".repeat(16);
@@ -117,7 +117,7 @@ it.effect("a disabled OTLP destination keeps the Worker declaration and the reso
 it.effect("every application reads exactly the bindings its Worker declares", () =>
   Effect.gen(function* program() {
     const admin = yield* readConfig(adminBindings);
-    assert.strictEqual(admin.APP_ORIGIN, settings.origins.admin);
+    assert.strictEqual(admin.APP_ORIGIN, settings.origins["service-admin"]);
     assert.strictEqual(admin.APP_RELEASE, release);
     assert.isUndefined(yield* readAi(adminBindings));
     assert.isDefined(yield* readAi(userBindings));

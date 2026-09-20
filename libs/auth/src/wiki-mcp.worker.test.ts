@@ -30,7 +30,7 @@ import {
 const tamperedSuffix = "xx";
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
-  const { "internal-dashboard": wiki } = yield* Fixture;
+  const wiki = (yield* Fixture)["internal-dashboard"];
   const response = yield* Effect.promise(async () =>
     wiki.instance.handler(new Request(`${wikiOrigin}${path}`)),
   );

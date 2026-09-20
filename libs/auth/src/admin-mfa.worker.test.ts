@@ -42,7 +42,7 @@ const assertTotpUriAllowed = Effect.fn("assertTotpUriAllowed")(function* assertT
 });
 
 const recoverySession = Effect.fn("recoverySession")(function* recoverySession(
-  audience: "service-member" | "admin",
+  audience: "service-member" | "service-admin",
 ) {
   yield* bootstrapVerifiedAdmin(email);
   const { backupCodes } = yield* enableTotp(yield* signInAs("service-admin", email));

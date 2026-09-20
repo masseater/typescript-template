@@ -52,9 +52,9 @@ const settings = Config.all({
     Config.withDefault(FULL_SAMPLING),
   ),
   origins: Config.all({
-    admin: Config.schema(Origin, originKeys.admin),
-    user: Config.schema(Origin, originKeys.user),
-    wiki: Config.schema(Origin, originKeys.wiki),
+    "internal-dashboard": Config.schema(Origin, originKeys["internal-dashboard"]),
+    "service-admin": Config.schema(Origin, originKeys["service-admin"]),
+    "service-member": Config.schema(Origin, originKeys["service-member"]),
   }),
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, "TEMPLATE_PREFIX"),
