@@ -112,7 +112,7 @@ describe("measureCheck", () => {
           },
         );
         vi.spyOn(metricExporterModule.OTLPMetricExporter.prototype, "shutdown").mockResolvedValue();
-        const started = await import("@repo/ai-native/telemetry");
+        const started = await import("@repo/ai-native-telemetry");
         const running = started.startTelemetry("mst-check");
         onTestFinished(async () => {
           await running.shutdown();
@@ -169,7 +169,7 @@ describe("measureCheck", () => {
           },
         );
         vi.spyOn(metricExporterModule.OTLPMetricExporter.prototype, "shutdown").mockResolvedValue();
-        const started = await import("@repo/ai-native/telemetry");
+        const started = await import("@repo/ai-native-telemetry");
         const running = started.startTelemetry("mst-check");
         onTestFinished(async () => {
           await running.shutdown();
