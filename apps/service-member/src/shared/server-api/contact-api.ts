@@ -1,15 +1,15 @@
 import { sendContactEmail } from "@repo/auth";
 import { consumeRateLimit } from "@repo/db";
 import { httpStatus } from "@repo/observability";
+import { unavailable } from "@repo/runtime/account";
+import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import { unavailable } from "./account.ts";
-import { ContactAccepted, ContactSubmission } from "./contracts.ts";
-import { createApi, readJsonBody } from "./http.ts";
+import { ContactAccepted, ContactSubmission } from "#shared/contracts/index.ts";
 import { OpsMail } from "./ops-mail.ts";
 
-import type { ApiRoutes } from "./http.ts";
-import type { AppServices } from "./index.ts";
+import type { AppServices } from "@repo/runtime";
+import type { ApiRoutes } from "@repo/runtime/http";
 
 const contactRateLimitMax = 5;
 const contactRateLimitWindowMilliseconds = 60 * 60 * 1000;
@@ -40,8 +40,8 @@ const submitContact = Effect.fn("contact.submit")(function* submitContact(reques
   return { ok: true as const };
 });
 
-function contactApi(api: ApiRoutes<AppServices>) {
+function contactApi(api: ApiRoutes<AppServices | OpsMail>) {
   return createApi("").post("/contact", api.route(ContactAccepted, submitContact, failures));
 }
 
-export { contactApi, contactRateLimitMax, contactRateLimitWindowMilliseconds };
+export { contactApi };

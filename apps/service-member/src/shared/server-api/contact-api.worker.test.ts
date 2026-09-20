@@ -1,15 +1,19 @@
 import { assert, it } from "@effect/vitest";
+import { readConfig } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
+import { appLayer } from "@repo/runtime";
+import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
+import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
-import { appEnvironment, fixtureOrigin } from "./app-fixture.ts";
-import { contactApi, contactRateLimitMax } from "./contact.ts";
-import { apiRoot, apiRoutes, createApi } from "./http.ts";
-import { appLayer } from "./index.ts";
-import { workerRuntime } from "./worker-runtime.ts";
+import { contactApi } from "./contact-api.ts";
+import { opsMailLayer } from "./ops-mail.ts";
+
+const contactRateLimitMax = 5;
 
 const routes = { "/api/contact": "contact-api" };
 const reporting = { log: recordingSink().sink, service: "service-member" } as const;
@@ -33,8 +37,12 @@ function drainMailbox(): Effect.Effect<
 }
 
 function contactApp() {
+  const environment = appEnvironment({ OPS_EMAIL: opsEmail });
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer(appEnvironment({ OPS_EMAIL: opsEmail }), "service-member", routes)),
+    Layer.merge(
+      Layer.orDie(appLayer(environment, "service-member", routes)),
+      Layer.unwrap(readConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
+    ),
   );
   return createApi(apiRoot).use(contactApi(apiRoutes(runtime, reporting)));
 }
