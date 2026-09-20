@@ -11,6 +11,7 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { loadRemoteMigrations, migrateD1 } from "./remote-operations.ts";
+import * as schemaModule from "./schema.ts";
 import { schema } from "./schema.ts";
 
 const snapshots: Readonly<Record<string, Parameters<typeof generateMigration>[0]>> =
@@ -105,6 +106,18 @@ describe("the models", () => {
 
     it("need no further migration", ({ pendingStatements }) => {
       expect(pendingStatements).toStrictEqual([]);
+    });
+  });
+
+  describe("compared with what drizzle-kit reads from the module exports", () => {
+    const it = test.extend("driftStatements", async () =>
+      generateMigration(
+        await generateDrizzleJson(schemaModule),
+        await generateDrizzleJson(schema),
+      ));
+
+    it("expose every table, so generate never drops one", ({ driftStatements }) => {
+      expect(driftStatements).toStrictEqual([]);
     });
   });
 });
