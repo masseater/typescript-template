@@ -67,6 +67,7 @@ const workspaces = {
     ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
+  "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/e2e": {
     entry: ["src/**/*.test.ts"],
@@ -147,6 +148,14 @@ const config = ({
       "apps/internal-dashboard": {
         ...app,
         project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
+      },
+      "apps/service-admin": {
+        ...app,
+        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+      },
+      "apps/service-member": {
+        ...app,
+        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
       },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],

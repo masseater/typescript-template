@@ -22,7 +22,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: process.env.MST_TELEMETRY !== undefined,
-        sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native/vitest-sdk")),
+        sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
       },
     },
     testTimeout: 15_000,

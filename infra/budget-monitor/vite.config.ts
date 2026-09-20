@@ -1,31 +1,15 @@
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/config/vite";
+import { monitorWorkerVite } from "@repo/monitor/vite";
 import { defineConfig } from "vite-plus";
+
+const worker = monitorWorkerVite();
 
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
-  pack: {
-    deps: {
-      alwaysBundle: ["effect", "@repo/monitor"],
-      onlyBundle: ["effect", "@repo/monitor"],
-    },
-    entry: { index: "src/worker.ts" },
-    format: "esm",
-    outExtensions: () => ({ js: ".js" }),
-    platform: "browser",
-    target: "es2023",
-  },
+  ...worker,
   run: {
     tasks: {
-      ...effectDiagnostics,
-      build: { command: "vp pack", input: [...taskInput] },
+      ...worker.run.tasks,
       inspect: { cache: false, command: "node src/inspect.ts" },
-      ...lifecycle({
-        precommit: [],
-        prepush: ["check:effect"],
-        prepr: ["build"],
-        premerge: [],
-        prerelease: [],
-      }),
     },
   },
 });

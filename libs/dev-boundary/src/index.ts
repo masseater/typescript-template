@@ -1,1 +1,1 @@
-export { devBoundary } from "./dev-boundary.ts";
+export { devBoundary } from "@repo/config/dev-boundary";

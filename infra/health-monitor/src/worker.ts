@@ -1,11 +1,11 @@
-import { Monitor, monitorHandler } from "@repo/monitor";
+import { monitorWorker } from "@repo/monitor";
 import { Effect } from "effect";
 
 import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
-import type { MonitorBindings, Notify } from "@repo/monitor";
+import type { MonitorBindings } from "@repo/monitor";
 import type { HealthState } from "./decision.ts";
 
 interface Bindings extends MonitorBindings {
@@ -14,15 +14,8 @@ interface Bindings extends MonitorBindings {
   INTERNAL_DASHBOARD_ORIGIN: string;
 }
 
-export class HealthMonitor extends Monitor<Bindings> {
-  protected readonly event = "health_monitor";
-  protected readonly failure = {
-    subject: "Cloudflare Workers health monitoring failed",
-    text: "アプリの死活監視が失敗しました。health_monitor.check_failed のログを確認してください。アプリが稼働しているとは判断しないでください。",
-  };
-
-  protected check(notify: Notify): Effect.Effect<object, unknown> {
-    const { env, ctx } = this;
+const health = monitorWorker<Bindings>({
+  check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseHealthMonitorConfig(env);
       const results = yield* Effect.all(
@@ -50,8 +43,17 @@ export class HealthMonitor extends Monitor<Bindings> {
         services: Object.fromEntries(results.map((result) => [result.service, result.detail])),
       };
     }).pipe(Effect.withSpan("HealthMonitor.check"));
-  }
-}
+  },
+  className: "HealthMonitor",
+  event: "health_monitor",
+  failure: {
+    subject: "Cloudflare Workers health monitoring failed",
+    text: "アプリの死活監視が失敗しました。health_monitor.check_failed のログを確認してください。アプリが稼働しているとは判断しないでください。",
+  },
+});
 
+const HealthMonitor = health.Worker;
+
+export { HealthMonitor };
 // oxlint-disable-next-line import/no-default-export
-export default monitorHandler("health_monitor");
+export default health.handler;

@@ -10,4 +10,12 @@ function localDatabaseDirectory(): string {
   return override === undefined || override === "" ? repositoryDirectory : path.resolve(override);
 }
 
-export { localDatabaseDirectory, localDatabaseVariable };
+const localDatabase = {
+  binding: "DB",
+  database_id: "00000000-0000-0000-0000-000000000001",
+  database_name: "template-shared",
+};
+
+const localDatabasePersistence = localDatabaseDirectory();
+
+export { localDatabase, localDatabaseDirectory, localDatabasePersistence, localDatabaseVariable };

@@ -22,7 +22,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: process.env.MST_TELEMETRY !== undefined,
-        sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native/vitest-sdk")),
+        sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
       },
     },
     mockReset: true,
@@ -37,13 +37,7 @@ export default defineConfig({
     unstubGlobals: true,
   },
   pack: {
-    entry: [
-      "src/throttle/cli.ts",
-      "src/spool/cli.ts",
-      "src/unabridged/cli.ts",
-      "src/telemetry/telemetry.ts",
-      "src/telemetry/vitest-sdk.ts",
-    ],
+    entry: ["src/throttle/cli.ts", "src/spool/cli.ts", "src/unabridged/cli.ts"],
     dts: { generator: "tsgo" },
   },
 });

@@ -3,6 +3,8 @@ import { field } from "@repo/dont-review-it/record-fields";
 import { repositoryRelative } from "./repository-path.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
 
+import type { Application } from "@repo/config";
+
 interface WorkspaceManifest {
   readonly area: string;
   readonly file: string;
@@ -70,6 +72,50 @@ const rootOnlyPackages: Readonly<Record<string, string>> = {
   "react-doctor": "ルートの vp run check:react",
 };
 
+type LocalExecutableName = "commander";
+
+const localExecutableName = "commander" satisfies LocalExecutableName extends Application
+  ? never
+  : LocalExecutableName;
+const localExecutablePackage = `@repo/${localExecutableName}`;
+const localExecutableDirectory = `tools/${localExecutableName}`;
+
+const localExecutablePlacementViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
+  const owned = workspaces.filter(
+    ({ manifest }) => field(manifest, "name") === localExecutablePackage,
+  );
+  const owner = owned.length === 1 ? owned[0] : undefined;
+  const placed =
+    owner !== undefined &&
+    owner.area === "tools" &&
+    owner.file === `${localExecutableDirectory}/package.json`;
+  const place = placed
+    ? []
+    : [
+        `${localExecutablePackage} は ${localExecutableDirectory} に 1 つだけ置いてください。デプロイして外部の要求を受けるなら apps/ へ移してください。`,
+      ];
+  const imported = workspaces.flatMap(({ file, manifest }) => {
+    if (field(manifest, "name") === localExecutablePackage) {
+      return [];
+    }
+    return declaredDependencies(manifest)
+      .filter((dependency) => dependency === localExecutablePackage)
+      .map(
+        (dependency) =>
+          `${file}: ${dependency} は手元だけで起動する実行対象です。依存を外し、共有したい処理は libs/ へ切り出してください。`,
+      );
+  });
+  return [...place, ...imported];
+};
+
+const localExecutableDeployViolations = (deployed: readonly string[]): string[] => {
+  return deployed.includes(localExecutableName)
+    ? [
+        `${localExecutableName} はデプロイされて外部の要求を受ける実行対象です。apps/ へ移してください。`,
+      ]
+    : [];
+};
+
 const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
@@ -84,7 +130,11 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
 
 export {
   applicationDependencyViolations,
+  declaredDependencies,
   field,
+  localExecutableDeployViolations,
+  localExecutableName,
+  localExecutablePlacementViolations,
   retiredDependencyViolations,
   rootOnlyDependencyViolations,
   rootOnlyPackages,
