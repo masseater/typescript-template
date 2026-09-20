@@ -1,7 +1,6 @@
 import { SKIP, visitParents } from "unist-util-visit-parents";
 
-import type { PhrasingContent, Root, Text } from "mdast";
-import type { MdxJsxAttribute, MdxJsxTextElement } from "mdast-util-mdx-jsx";
+import type { Root, Text } from "mdast";
 
 const wikiTermPattern = /\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]/g;
 
@@ -14,11 +13,27 @@ const skippedAncestors = new Set([
   "mdxJsxTextElement",
 ]);
 
-function termAttribute(name: string, value: string): MdxJsxAttribute {
+type TermAttribute = Readonly<{
+  name: string;
+  type: "mdxJsxAttribute";
+  value: string;
+}>;
+
+type TermElement = Readonly<{
+  attributes: readonly TermAttribute[];
+  children: readonly [];
+  data: Readonly<{ _mdxExplicitJsx: true }>;
+  name: "TermLink";
+  type: "mdxJsxTextElement";
+}>;
+
+type PhrasingPart = Text | TermElement;
+
+function termAttribute(name: string, value: string): TermAttribute {
   return { name, type: "mdxJsxAttribute", value };
 }
 
-function termElement(term: string, label: string | undefined): MdxJsxTextElement {
+function termElement(term: string, label: string | undefined): TermElement {
   const attributes = [termAttribute("term", term.trim())];
   const trimmedLabel = label?.trim();
   if (trimmedLabel !== undefined && trimmedLabel.length > 0 && trimmedLabel !== term.trim()) {
@@ -33,8 +48,8 @@ function termElement(term: string, label: string | undefined): MdxJsxTextElement
   };
 }
 
-function splitText(value: string): PhrasingContent[] {
-  const parts: PhrasingContent[] = [];
+function splitText(value: string): PhrasingPart[] {
+  const parts: PhrasingPart[] = [];
   let lastIndex = 0;
   for (const match of value.matchAll(wikiTermPattern)) {
     const index = match.index ?? 0;
@@ -77,7 +92,7 @@ function remarkWikiTerm() {
       if (parts.length === 0) {
         return SKIP;
       }
-      const children = (parent as { children: PhrasingContent[] }).children;
+      const children = (parent as { children: PhrasingPart[] }).children;
       const index = children.indexOf(node);
       if (index < 0) {
         return SKIP;
@@ -88,4 +103,4 @@ function remarkWikiTerm() {
   };
 }
 
-export { remarkWikiTerm, splitText, wikiTermPattern };
+export { remarkWikiTerm };

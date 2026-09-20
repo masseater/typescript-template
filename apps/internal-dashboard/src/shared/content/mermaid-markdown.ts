@@ -44,4 +44,4 @@ const processedMarkdown: LLMsOptions = {
   },
 };
 
-export { processedMarkdown, termLinkMarkdown };
+export { processedMarkdown };

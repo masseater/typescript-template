@@ -5,7 +5,7 @@ import remarkMdx from "remark-mdx";
 import { describe, expect, it } from "vite-plus/test";
 
 import { processedMarkdown } from "./mermaid-markdown.ts";
-import { remarkWikiTerm, splitText } from "./remark-wiki-term.ts";
+import { remarkWikiTerm } from "./remark-wiki-term.ts";
 
 async function process(source: string): Promise<unknown> {
   const file = await remark()
@@ -56,22 +56,5 @@ describe("wiki term links in processed markdown", () => {
     await expect(process("```\n[[会員アカウント]]\n```\n")).resolves.toBe(
       "```\n[[会員アカウント]]\n```\n",
     );
-  });
-});
-
-describe("splitText", () => {
-  it("splits a term and surrounding text", () => {
-    expect.hasAssertions();
-    expect(splitText("前[[会員アカウント]]後")).toStrictEqual([
-      { type: "text", value: "前" },
-      {
-        attributes: [{ name: "term", type: "mdxJsxAttribute", value: "会員アカウント" }],
-        children: [],
-        data: { _mdxExplicitJsx: true },
-        name: "TermLink",
-        type: "mdxJsxTextElement",
-      },
-      { type: "text", value: "後" },
-    ]);
   });
 });

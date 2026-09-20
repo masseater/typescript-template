@@ -20,4 +20,3 @@ function glossaryTerms(): readonly GlossaryTerm[] {
 }
 
 export { glossaryTerms };
-export type { GlossaryTerm } from "./glossary-term.ts";
