@@ -83,7 +83,7 @@ it.effect("names the origins that collide instead of the values", () =>
   Effect.gen(function* program() {
     const config = yield* Schema.decodeUnknownEffect(SharedSettings)({
       ...settings,
-      origins: { ...settings.origins, admin: settings.origins.user },
+      origins: { ...settings.origins, "service-admin": settings.origins["service-member"] },
     });
     const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
     assert.strictEqual(failure.code, "app_origins_must_differ");
@@ -91,7 +91,7 @@ it.effect("names the origins that collide instead of the values", () =>
       [...failure.keys],
       ["TEMPLATE_SERVICE_ADMIN_ORIGIN", "TEMPLATE_SERVICE_MEMBER_ORIGIN"],
     );
-    assert.notInclude(JSON.stringify(failure), settings.origins.user);
+    assert.notInclude(JSON.stringify(failure), settings.origins["service-member"]);
   }),
 );
 

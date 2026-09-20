@@ -80,7 +80,11 @@ function lifecycleByJob(file: string): Readonly<Record<string, string[]>> {
         ? [
             [
               entry,
-              [...(all[index + 1] ?? "").matchAll(/^\s*(?:- )?run: (?<command>vp run -r \w+)$/gmu)]
+              [
+                ...(all[index + 1] ?? "").matchAll(
+                  /^\s*(?:- )?run: (?<command>vp run -r \w+(?: .+)?)$/gmu,
+                ),
+              ]
                 .map((match) => match[1] ?? "")
                 .toSorted(),
             ],
@@ -98,11 +102,17 @@ function lifecycleOutsideGates(): string[] {
 
 function brokenChain(directory: string): string[] {
   return lifecycles.flatMap((name, index) => {
-    const previous = lifecycles.slice(Math.max(index - 1, 0), index);
+    const previous =
+      name === "premerge"
+        ? []
+        : name === "prerelease"
+          ? (["prepr", "premerge"] as const)
+          : lifecycles.slice(Math.max(index - 1, 0), index);
     const chained =
       taskNames(directory).includes(name) &&
       commands(directory, name).length === 0 &&
-      previous.every((stage) => dependencies(directory, name).includes(stage));
+      previous.every((stage) => dependencies(directory, name).includes(stage)) &&
+      (name !== "premerge" || !dependencies(directory, name).includes("prepr"));
     return chained ? [] : [`${directory}: ${name}`];
   });
 }
