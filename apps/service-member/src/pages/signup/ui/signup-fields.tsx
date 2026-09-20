@@ -1,3 +1,4 @@
+import { authClient, requireSuccess } from "@repo/auth-ui";
 import {
   type ActionState,
   Button,
@@ -6,9 +7,6 @@ import {
   useTextInput,
   type TextInput,
 } from "@repo/ui";
-
-import { authClient } from "./client";
-import { requireSuccess } from "./protocol";
 
 import type { ReactElement, SyntheticEvent } from "react";
 

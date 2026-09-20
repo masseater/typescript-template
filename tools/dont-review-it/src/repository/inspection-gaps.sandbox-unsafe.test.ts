@@ -151,7 +151,6 @@ describe("inspection coverage", () => {
       "libs/auth/**",
       "libs/config/**",
       "libs/db/**",
-      "libs/interview/**",
       "libs/monitor/**",
       "libs/observability/**",
       "libs/runtime/**",
