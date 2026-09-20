@@ -126,7 +126,7 @@ const configuration: IConfiguration = {
       from: { path: "^apps/", pathNot: "^apps/service-member/" },
       name: "no-signup-outside-user",
       severity: "error",
-      to: { path: String.raw`^libs/ui/src/signup\.tsx$` },
+      to: { path: String.raw`^libs/auth-ui/src/signup\.tsx$` },
     },
     {
       comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
@@ -138,7 +138,7 @@ const configuration: IConfiguration = {
     {
       comment:
         "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/contracts など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
-      from: { path: "^libs/ui/src/", pathNot: testModule },
+      from: { path: "^libs/(?:ui|auth-ui)/src/", pathNot: testModule },
       name: "no-browser-to-server",
       severity: "error",
       to: { path: serverOnlyModule, pathNot: clientReachableModule, reachable: true },

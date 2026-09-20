@@ -7,20 +7,17 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./auth": "./src/auth.tsx",
     "./lint-settings": "./lint-settings.ts",
     "./shell": "./src/shell.ts",
-    "./signup": "./src/signup.tsx",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./storybook/preview": "./storybook/preview.tsx"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
-    "@better-auth/passkey": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "effect": "catalog:",

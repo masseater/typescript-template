@@ -12,6 +12,7 @@
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
+    "@repo/auth-ui": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",

@@ -1,0 +1,26 @@
+import { type TextInput, Field } from "@repo/ui";
+
+import { CHALLENGE_MODE } from "./challenge-modes.ts";
+
+import type { ReactElement } from "react";
+
+const TOTP_LENGTH = 6;
+
+const TotpField = ({ code }: Readonly<{ code: TextInput }>): ReactElement => {
+  return (
+    <Field
+      label="認証アプリの確認コード"
+      name={CHALLENGE_MODE.totp}
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      pattern="[0-9]{6}"
+      minLength={TOTP_LENGTH}
+      maxLength={TOTP_LENGTH}
+      required
+      value={code.value}
+      onValueChange={code.handleChange}
+    />
+  );
+};
+
+export { TotpField };

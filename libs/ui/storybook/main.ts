@@ -14,7 +14,7 @@ const config: StorybookConfig = {
   features: { componentsManifest: true },
   framework: "@storybook/react-vite",
   staticDirs: ["./public"],
-  stories: ["../src/**/*.stories.tsx"],
+  stories: ["../src/**/*.stories.tsx", "../../auth-ui/src/**/*.stories.tsx"],
   viteFinal: withAppTransforms,
 };
 

@@ -1,5 +1,5 @@
+import { SignUpForm } from "@repo/auth-ui/signup";
 import { TextLink } from "@repo/ui";
-import { SignUpForm } from "@repo/ui/signup";
 import { useState } from "react";
 
 import { CardPage } from "#shared/ui/index.ts";

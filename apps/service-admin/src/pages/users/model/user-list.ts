@@ -1,5 +1,5 @@
+import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { errorMessage } from "@repo/ui";
 import { useEffect, useState } from "react";
 
 import { adminClient } from "#shared/api/index.ts";

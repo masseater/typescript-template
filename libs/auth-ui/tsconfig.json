@@ -1,0 +1,10 @@
+{
+  "extends": "@repo/dont-review-it/tsconfig/app.json",
+  "compilerOptions": {
+    "types": ["vite-plus/client"],
+    "jsx": "react-jsx",
+    "noPropertyAccessFromIndexSignature": true,
+    "plugins": [{ "name": "@effect/language-service" }]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

@@ -1,3 +1,4 @@
+import { useSignOut } from "@repo/auth-ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,7 +7,6 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
   Icon,
-  useSignOut,
   useToast,
 } from "@repo/ui";
 import { ChevronDownIcon } from "lucide-react";

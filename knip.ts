@@ -49,6 +49,10 @@ const workspaces = {
     ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!", "!src/*-fixture.ts!"],
   },
+  "libs/auth-ui": {
+    project: ["src/**/*.{ts,tsx}!", "!src/**/*.stories.tsx!"],
+    storybook: { entry: ["src/**/*.stories.tsx"] },
+  },
   "libs/ui": {
     entry: ["*.test.ts"],
     project: [
@@ -140,6 +144,9 @@ const config = ({
   const app = { ...application, ignore: productionOnly("src/app/routeTree.gen.ts") };
   return {
     ignoreDependencies: ["vite", "vitest", "@repo/stop-ai-slop"],
+    ignoreIssues: {
+      "libs/ui/storybook/preview.tsx": ["unlisted"],
+    },
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
