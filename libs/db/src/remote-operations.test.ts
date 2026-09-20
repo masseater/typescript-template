@@ -262,7 +262,7 @@ describe("bootstrapDatabase", () => {
       ));
 
     it("is revoked", { timeout: 60_000 }, ({ earlierSession }) => {
-      expect(earlierSession).toBe(null);
+      expect(earlierSession).toBeUndefined();
     });
   });
 

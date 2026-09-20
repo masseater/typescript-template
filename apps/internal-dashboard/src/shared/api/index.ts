@@ -1,1 +1,1 @@
-export { dashboardClient } from "./client.ts";
+export { wikiClient } from "./client.ts";

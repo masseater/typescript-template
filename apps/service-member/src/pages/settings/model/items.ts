@@ -2,6 +2,7 @@ type ListedSetting = {
   readonly label: string;
   readonly to:
     | "/settings/ai"
+    | "/settings/email"
     | "/settings/interview"
     | "/settings/leave"
     | "/settings/notifications"
@@ -14,6 +15,7 @@ type ListedSetting = {
 const settingsItems = [
   { label: "お問い合わせ", to: "/support" },
   { label: "プロフィール", to: "/settings/profile" },
+  { label: "メールアドレス", to: "/settings/email" },
   { label: "通知", to: "/settings/notifications" },
   { label: "セキュリティ", to: "/settings/security" },
   { label: "AI インタビュー", to: "/settings/interview" },
