@@ -122,7 +122,7 @@ it.effect(
       assert.deepStrictEqual(generated.triggers, []);
       assert.deepStrictEqual(applied.triggers, appliedTriggers);
       assert.deepStrictEqual(applied.primaryKeyNotNull, [1]);
-      assert.deepStrictEqual(generated.primaryKeyNotNull, [0]);
+      assert.deepStrictEqual(generated.primaryKeyNotNull, [0, 1]);
     }),
   { timeout: TEST_TIMEOUT_MS },
 );
