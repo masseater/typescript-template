@@ -51,7 +51,7 @@ catalog:
   "@opentelemetry/exporter-metrics-otlp-http": 0.221.0
   "@opentelemetry/sdk-metrics": 2.10.0
   "@oxlint/plugins": 1.82.0
-  "@effect/platform-node": 4.0.0-rc.112
+  "@effect/platform-node": 4.0.0-rc.115
   "@effect/vitest": 4.0.0-rc.112
   "@shadcn/lint": 0.1.0
   "@tailwindcss/vite": 4.3.3
