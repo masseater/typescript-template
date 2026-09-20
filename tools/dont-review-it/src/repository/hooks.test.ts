@@ -163,16 +163,15 @@ function filterCoveredTestProjects(): Set<string> {
 function ungatedProjects(): string[] {
   const covered = filterCoveredTestProjects();
   return testProjectDirectories.filter(
-    (directory) => !reachesTest(directory, ["prepr", "premerge"]) && !covered.has(directory),
+    (directory) => !reachesTest(directory, ["premerge"]) && !covered.has(directory),
   );
 }
 
 function strayTestTasks(): string[] {
+  const allowed = new Set([...testProjectDirectories, ...workspacesWithTests()]);
   return configuredDirectories.filter(
     (directory) =>
-      directory !== "." &&
-      !testProjectDirectories.includes(directory) &&
-      taskNames(directory).includes("test"),
+      directory !== "." && !allowed.has(directory) && taskNames(directory).includes("test"),
   );
 }
 
@@ -211,6 +210,20 @@ function toolsPackagesWithTests(): string[] {
   ].toSorted();
 }
 
+function workspacesWithTests(): Set<string> {
+  const repositoryRoot = join(toolsRoot, "..");
+  return new Set(
+    workspaceDirectories.filter((directory) => {
+      if (directory === ".") {
+        return false;
+      }
+      return (
+        collectTestPackages(join(repositoryRoot, directory), directory).length > 0
+      );
+    }),
+  );
+}
+
 function uncoveredToolTestPackages(): string[] {
   const dedicated = new Set(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, "")));
   const rootOwned = new Set(
@@ -220,7 +233,7 @@ function uncoveredToolTestPackages(): string[] {
     (directory) =>
       !dedicated.has(directory) &&
       !rootOwned.has(directory) &&
-      !reachesTest(directory, ["prepr", "premerge"]),
+      !reachesTest(directory, ["premerge"]),
   );
 }
 
@@ -330,16 +343,12 @@ describe("lifecycle contents", () => {
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining([
-        "check:effect",
-        "knip",
-        "check:client",
-        "check:imports",
-        "check:react",
-        "check:canonical-literal-types",
-      ]),
+      expect.arrayContaining(["knip", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
+    expect(reachable(".", ["prepush"])).not.toContain("check:client");
+    expect(reachable(".", ["prepush"])).not.toContain("check:imports");
+    expect(reachable(".", ["prepush"])).not.toContain("check:react");
     expect(
       configuredDirectories.filter((directory) =>
         reachable(directory, ["prepush"]).includes("check"),
@@ -361,7 +370,7 @@ describe("lifecycle contents", () => {
 });
 
 describe("test ownership", () => {
-  it("every workspace vitest project runs from its own pull request gate", () => {
+  it("every workspace vitest project runs from its own merge gate", () => {
     expect.hasAssertions();
     expect(testProjectDirectories.length).toBeGreaterThan(0);
     expect(ungatedProjects()).toStrictEqual([]);
@@ -381,7 +390,7 @@ describe("test ownership", () => {
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 
-  it("keeps every tools package with tests on a vitest project or pull request gate", () => {
+  it("keeps every tools package with tests on a vitest project or merge gate", () => {
     expect.hasAssertions();
     expect(toolsPackagesWithTests().length).toBeGreaterThan(0);
     expect(uncoveredToolTestPackages()).toStrictEqual([]);
