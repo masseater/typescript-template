@@ -98,8 +98,8 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "生の DB ドライバーは libs/db の中だけで使えます。業務処理は計測付きの @repo/db の入口を使ってください。",
-      from: { pathNot: "^libs/db/" },
+        "生の DB ドライバーは libs/db と、feature クエリを所有する apps だけで使えます。共有 libs の業務処理は計測付きの @repo/db の入口を使ってください。",
+      from: { pathNot: "^(?:libs/db/|apps/)" },
       name: "no-raw-database-driver",
       severity: "error",
       to: { path: rawDatabaseDriver },
