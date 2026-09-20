@@ -53,6 +53,7 @@ catalog:
   "@opentelemetry/exporter-metrics-otlp-http": 0.221.0
   "@opentelemetry/sdk-metrics": 2.10.0
   "@oxlint/plugins": 1.82.0
+  "@effect/atom-react": 4.0.0-rc.112
   "@effect/platform-node": 4.0.0-rc.112
   "@effect/vitest": 4.0.0-rc.112
   "@shadcn/lint": 0.1.0
@@ -87,6 +88,7 @@ catalog:
   playwright: 1.63.0
   react: 19.3.0
   react-dom: 19.3.0
+  scheduler: 0.28.0
   shadcn: 4.21.0
   steiger: 0.6.0
   tailwindcss: 4.3.3
@@ -101,6 +103,7 @@ peerDependencyRules:
     - vite
     - vitest
   allowedVersions:
+    "@effect/atom-react>scheduler": ^0.28.0
     vite: "*"
     vitest: "*"
 patchedDependencies:

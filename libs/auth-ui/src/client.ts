@@ -1,6 +1,6 @@
 import { passkeyClient } from "@better-auth/passkey/client";
+import { createAuthClient } from "better-auth/client";
 import { twoFactorClient } from "better-auth/client/plugins";
-import { createAuthClient } from "better-auth/react";
 
 import { passkeyUVResponse } from "./passkey-uv-response.ts";
 
