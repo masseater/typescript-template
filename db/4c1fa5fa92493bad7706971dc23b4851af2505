@@ -1,0 +1,1 @@
+also fix origin probe DNS on self-hosted macOS runner where getaddrinfo ENOTFOUND while dns.resolve works
