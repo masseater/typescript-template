@@ -1,4 +1,4 @@
-import { effectRun } from "@repo/vite-config";
+import { testableLibraryRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-export default defineConfig({ run: effectRun });
+export default defineConfig({ run: testableLibraryRun });
