@@ -1,4 +1,10 @@
-import { applications, distinctOrigins, HttpsOrigin, type Application } from "@repo/config";
+import {
+  APPLICATION,
+  applications,
+  distinctOrigins,
+  HttpsOrigin,
+  type Application,
+} from "@repo/config";
 import { Effect, Schema } from "effect";
 
 class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
@@ -16,15 +22,15 @@ const healthMonitorWorker = {
 } as const;
 
 const healthOriginKey = {
-  "internal-dashboard": "INTERNAL_DASHBOARD_ORIGIN",
-  "service-admin": "SERVICE_ADMIN_ORIGIN",
-  "service-member": "SERVICE_MEMBER_ORIGIN",
+  [APPLICATION.wiki]: "INTERNAL_DASHBOARD_ORIGIN",
+  [APPLICATION.admin]: "SERVICE_ADMIN_ORIGIN",
+  [APPLICATION.user]: "SERVICE_MEMBER_ORIGIN",
 } as const satisfies Record<Application, string>;
 
 const HealthMonitorEnvironment = Schema.Struct({
-  [healthOriginKey["internal-dashboard"]]: HttpsOrigin,
-  [healthOriginKey["service-admin"]]: HttpsOrigin,
-  [healthOriginKey["service-member"]]: HttpsOrigin,
+  [healthOriginKey[APPLICATION.wiki]]: HttpsOrigin,
+  [healthOriginKey[APPLICATION.admin]]: HttpsOrigin,
+  [healthOriginKey[APPLICATION.user]]: HttpsOrigin,
 });
 
 type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;

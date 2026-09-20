@@ -231,9 +231,9 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       cron: healthMonitorWorker.cron,
       name: healthMonitorWorker.name,
       variables: [
-        plainText(healthOriginKey["service-admin"], origins[APPLICATION.admin]),
-        plainText(healthOriginKey["service-member"], origins[APPLICATION.user]),
-        plainText(healthOriginKey["internal-dashboard"], origins[APPLICATION.wiki]),
+        plainText(healthOriginKey[APPLICATION.admin], origins[APPLICATION.admin]),
+        plainText(healthOriginKey[APPLICATION.user], origins[APPLICATION.user]),
+        plainText(healthOriginKey[APPLICATION.wiki], origins[APPLICATION.wiki]),
       ],
     }),
   }),

@@ -19,9 +19,9 @@ const stack = Stack(
     name: healthMonitorWorker.name,
     variables: (config: SharedConfig) =>
       Effect.succeed({
-        [healthOriginKey["service-admin"]]: config.origins[APPLICATION.admin],
-        [healthOriginKey["service-member"]]: config.origins[APPLICATION.user],
-        [healthOriginKey["internal-dashboard"]]: config.origins[APPLICATION.wiki],
+        [healthOriginKey[APPLICATION.admin]]: config.origins[APPLICATION.admin],
+        [healthOriginKey[APPLICATION.user]]: config.origins[APPLICATION.user],
+        [healthOriginKey[APPLICATION.wiki]]: config.origins[APPLICATION.wiki],
       }),
   }),
 );
