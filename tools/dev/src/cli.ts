@@ -2,6 +2,10 @@
 import { causeRecord, runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 
+import { layer } from "./platform.ts";
+
+import type { DevServices } from "./platform.ts";
+
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { authenticate } from "./authenticate.ts";
 import { browser, browserCommand } from "./browser.ts";
@@ -15,7 +19,7 @@ import { storybook } from "./storybook.ts";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 
-type Command = Effect.Effect<unknown, LocalCommandFailure>;
+type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
 const firstUserArgumentIndex = 2;
 
@@ -41,8 +45,8 @@ const appCommands = new Map<string, (app: App, args: readonly string[]) => Comma
   ["browser", browser],
   ["browser-command", browserCommand],
   ["logs", logs],
-  ["start", start],
-  ["stop", stop],
+  ["start", start as (app: App, args: readonly string[]) => Command],
+  ["stop", stop as (app: App, args: readonly string[]) => Command],
 ]);
 
 function writeReport(report: unknown): Effect.Effect<void> {
@@ -63,7 +67,7 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), (cause) =>
+runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport), Effect.provide(layer)), (cause) =>
   causeRecord("local.application_command_failed", cause, {
     remediation:
       "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
