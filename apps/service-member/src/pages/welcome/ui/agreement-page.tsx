@@ -1,4 +1,5 @@
 import { Button, Heading } from "@repo/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
@@ -6,6 +7,7 @@ import { saveOnboardingStep } from "../api/onboarding.ts";
 import type { ReactElement } from "react";
 
 function AgreementPage(): ReactElement {
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -14,7 +16,7 @@ function AgreementPage(): ReactElement {
     setError(undefined);
     try {
       await saveOnboardingStep("choose");
-      globalThis.location.assign("/welcome");
+      await navigate({ to: "/welcome" });
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "同意を保存できませんでした。");
       setBusy(false);
