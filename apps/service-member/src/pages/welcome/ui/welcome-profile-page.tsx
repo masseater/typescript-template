@@ -1,34 +1,18 @@
-import { Button, Field, FormColumn, Heading } from "@repo/ui";
+import { Button, Field, FormColumn, Heading, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 import { saveProfile } from "../api/profile.ts";
-import { useClientReady } from "./client-ready.ts";
 
 import type { ReactElement } from "react";
 
 function WelcomeProfilePage(): ReactElement {
   const navigate = useNavigate();
-  const ready = useClientReady();
+  const action = useAction();
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-
-  const onSave = async (): Promise<void> => {
-    setBusy(true);
-    setError(undefined);
-    try {
-      await saveProfile(name, profile, []);
-      await saveOnboardingStep("done");
-      await navigate({ to: "/home" });
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "保存できませんでした。");
-      setBusy(false);
-    }
-  };
 
   return (
     <main className="flex flex-col gap-4">
@@ -53,10 +37,16 @@ function WelcomeProfilePage(): ReactElement {
           value={profile}
         />
       </FormColumn>
-      {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
+      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
       <Button
-        disabled={busy || !ready || name.trim() === ""}
-        onClick={() => void onSave()}
+        disabled={action.blocked || name.trim() === ""}
+        onClick={() => {
+          action.run(async () => {
+            await saveProfile(name, profile, []);
+            await saveOnboardingStep("done");
+            await navigate({ to: "/home" });
+          });
+        }}
         type="button"
         variant="primary"
       >

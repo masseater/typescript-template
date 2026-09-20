@@ -1,28 +1,19 @@
-import { Button, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
-import { useClientReady } from "./client-ready.ts";
 
 import type { ReactElement } from "react";
 
 function WelcomeInterviewPage(): ReactElement {
   const navigate = useNavigate();
-  const ready = useClientReady();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | undefined>();
+  const action = useAction();
 
-  const finish = async (): Promise<void> => {
-    setBusy(true);
-    setError(undefined);
-    try {
+  const finish = (): void => {
+    action.run(async () => {
       await saveOnboardingStep("done");
       await navigate({ to: "/home" });
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "進めませんでした。");
-      setBusy(false);
-    }
+    });
   };
 
   return (
@@ -31,12 +22,7 @@ function WelcomeInterviewPage(): ReactElement {
         <Heading as="h1" size="page">
           AI インタビュー
         </Heading>
-        <Button
-          disabled={busy || !ready}
-          onClick={() => void finish()}
-          type="button"
-          variant="secondary"
-        >
+        <Button disabled={action.blocked} onClick={finish} type="button" variant="secondary">
           インタビューをスキップ
         </Button>
       </div>
@@ -44,13 +30,8 @@ function WelcomeInterviewPage(): ReactElement {
         登録直後の AI
         インタビュー本体は、設定のインタビューと合わせて後続で接続します。いまはスキップしてホームへ進めます。
       </StatusMessage>
-      {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
-      <Button
-        disabled={busy || !ready}
-        onClick={() => void finish()}
-        type="button"
-        variant="primary"
-      >
+      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
+      <Button disabled={action.blocked} onClick={finish} type="button" variant="primary">
         ホームへ進む
       </Button>
     </main>

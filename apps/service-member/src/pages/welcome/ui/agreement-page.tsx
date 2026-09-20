@@ -1,29 +1,13 @@
-import { Button, Heading } from "@repo/ui";
+import { Button, Heading, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
-import { useClientReady } from "./client-ready.ts";
 
 import type { ReactElement } from "react";
 
 function AgreementPage(): ReactElement {
   const navigate = useNavigate();
-  const ready = useClientReady();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-
-  const onAgree = async (): Promise<void> => {
-    setBusy(true);
-    setError(undefined);
-    try {
-      await saveOnboardingStep("choose");
-      await navigate({ to: "/welcome/choose" });
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "同意を保存できませんでした。");
-      setBusy(false);
-    }
-  };
+  const action = useAction();
 
   return (
     <main className="flex flex-col gap-4">
@@ -37,10 +21,15 @@ function AgreementPage(): ReactElement {
         <li>利用規約</li>
         <li>プライバシーポリシー</li>
       </ul>
-      {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
+      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
       <Button
-        disabled={busy || !ready}
-        onClick={() => void onAgree()}
+        disabled={action.blocked}
+        onClick={() => {
+          action.run(async () => {
+            await saveOnboardingStep("choose");
+            await navigate({ to: "/welcome/choose" });
+          });
+        }}
         type="button"
         variant="primary"
       >
