@@ -53,11 +53,10 @@ class TextScan {
   stopped = false;
   redacted = "";
   finished = false;
+  readonly source: string;
 
-  constructor(
-    readonly source: string,
-    start: number,
-  ) {
+  constructor(source: string, start: number) {
+    this.source = source;
     this.cursor = start;
   }
 
