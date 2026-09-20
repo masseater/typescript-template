@@ -3,6 +3,7 @@ import { accountPermissions, roles } from "@repo/config/identity";
 import { Schema } from "effect";
 
 const maximumTokenLength = 4096;
+const maximumIdentifierLength = 256;
 
 const maximumNameLength = 100;
 const minimumPasswordLength = 12;
@@ -10,6 +11,8 @@ const maximumPasswordLength = 128;
 
 const Role = Schema.Literals(roles);
 const AccountPermission = Schema.Literals(accountPermissions);
+
+const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const ErrorBody = Schema.Struct({ error: Schema.String });
 
@@ -59,6 +62,7 @@ export {
   EmailVerified,
   ErrorBody,
   HealthView,
+  Identifier,
   InviteAcceptance,
   InviteAccepted,
   InvitePreview,

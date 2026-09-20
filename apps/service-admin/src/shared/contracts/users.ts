@@ -1,14 +1,13 @@
 import { accountStates } from "@repo/config";
+import { Identifier } from "@repo/runtime/contracts";
 import { Effect, Schema, SchemaGetter } from "effect";
 
-const maximumIdentifierLength = 256;
 const maximumKeywordLength = 100;
 const secondPage = 2;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
 
 const AccountState = Schema.Literals(accountStates);
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 function pageNumber(
   fallback: number,
@@ -70,7 +69,6 @@ const UserDeleted = Schema.Struct({ id: Schema.String });
 export {
   AccountState,
   BooleanText,
-  Identifier,
   MemberStateChange,
   MemberStateChanged,
   SearchKeyword,

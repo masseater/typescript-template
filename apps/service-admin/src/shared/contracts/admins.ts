@@ -1,7 +1,8 @@
 import { Email, adminPermissions } from "@repo/config";
+import { Identifier } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
-import { AccountState, Identifier } from "./users.ts";
+import { AccountState } from "./users.ts";
 
 const AdminPermission = Schema.Literals(adminPermissions);
 

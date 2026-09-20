@@ -434,6 +434,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../libs/db
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
