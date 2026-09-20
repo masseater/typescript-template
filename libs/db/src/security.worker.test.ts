@@ -44,7 +44,7 @@ describe("findWikiReader", () => {
       ));
 
     it("does not read the wiki", ({ wikiReader }) => {
-      expect(wikiReader).toBe(null);
+      expect(wikiReader).toBeUndefined();
     });
   });
 
@@ -64,7 +64,7 @@ describe("findWikiReader", () => {
       ));
 
     it("stops reading the wiki", ({ wikiReader }) => {
-      expect(wikiReader).toBe(null);
+      expect(wikiReader).toBeUndefined();
     });
   });
 });
@@ -145,7 +145,7 @@ describe("revokeUserSessions", () => {
       ));
 
     it("is no longer live", ({ revokedSession }) => {
-      expect(revokedSession).toBe(null);
+      expect(revokedSession).toBeUndefined();
     });
   });
 });
