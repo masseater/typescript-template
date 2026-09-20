@@ -1,13 +1,8 @@
 import { loginPath, sessionOptions } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 
-<<<<<<< HEAD
-import { loadSession } from "#entities/session/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
-import { loadOnboardingStep } from "#pages/welcome/index.ts";
-=======
 import { onboardingOptions } from "#pages/welcome/index.ts";
->>>>>>> 2dce28e5 (Migrate member app reads and forms to TanStack Query, Form, Virtual, and Pacer)
 
 import type { Session } from "#entities/session/index.ts";
 import type { OnboardingStep } from "#shared/contracts/index.ts";
@@ -36,18 +31,11 @@ async function enterPublicFrame(queries: QueryClient, pathname: string): Promise
 }
 
 async function enterMemberFrame(
-<<<<<<< HEAD
-  href: string,
-  pathname: string,
-): Promise<{ memberBoard: boolean; session: Session }> {
-  const session = await loadSession();
-=======
   queries: QueryClient,
   href: string,
   pathname: string,
-): Promise<{ session: Session }> {
+): Promise<{ memberBoard: boolean; session: Session }> {
   const session = await currentSession(queries);
->>>>>>> 2dce28e5 (Migrate member app reads and forms to TanStack Query, Form, Virtual, and Pacer)
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
   }
