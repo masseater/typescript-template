@@ -4,10 +4,15 @@
   "bin": {
     "repo-budget-inspect": "./src/inspect.ts"
   },
+  "exports": {
+    "./config": "./src/config.ts"
+  },
   "type": "module",
   "dependencies": {
     "@repo/cli": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
+    "@repo/observability": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

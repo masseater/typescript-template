@@ -4,11 +4,13 @@
   "type": "module",
   "exports": {
     ".": "./src/vite.ts",
+    "./private-path": "./src/private-path.ts",
     "./source-maps": "./src/source-maps.ts"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "1.54.10",
     "@repo/config": "workspace:*",
+    "@repo/observability": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",

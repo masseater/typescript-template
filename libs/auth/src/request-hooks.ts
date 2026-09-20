@@ -13,6 +13,7 @@ import {
   revokeUserSessions,
 } from "@repo/db";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { Predicate } from "effect";
 
 import { deny, enrollmentPaths, isStrongMethod, sessionIsLive } from "./policy.ts";
 
@@ -113,7 +114,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
   ctx: Readonly<Pick<HookContext, "body" | "path">>,
 ): void {
   const body: unknown = ctx.body;
-  const fields = typeof body === "object" && body !== null ? body : {};
+  const fields = Predicate.isObject(body) ? body : {};
   if ("trustDevice" in fields && fields.trustDevice === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }

@@ -1,5 +1,5 @@
 import { roles } from "@repo/config";
-import { Result, Schema } from "effect";
+import { Predicate, Result, Schema } from "effect";
 
 const SessionView = Schema.Struct({
   strong: Schema.Boolean,
@@ -78,17 +78,11 @@ const isPasskeyOptionsPath = (pathname: string): boolean => {
   return pathname.endsWith(authenticateOptionsPath) || pathname.endsWith(registerOptionsPath);
 };
 
-const isRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
-
-const isUnknownRecord = (candidate: unknown): candidate is Record<string, unknown> => {
-  return isRecord(candidate);
-};
-
 const registrationWithUserVerification = (
   passkeyOptions: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> => {
   const selection = passkeyOptions["authenticatorSelection"];
-  if (selection !== undefined && !isUnknownRecord(selection)) {
+  if (selection !== undefined && !Predicate.isObject(selection)) {
     throw new Error("パスキー登録設定の応答形式が不正です。");
   }
   return {
@@ -101,7 +95,7 @@ const passkeyUVOptions = (
   passkeyOptions: unknown,
   pathname: string,
 ): Readonly<Record<string, unknown>> => {
-  if (!isUnknownRecord(passkeyOptions)) {
+  if (!Predicate.isObject(passkeyOptions)) {
     throw new Error("パスキー設定の応答形式が不正です。");
   }
   return pathname.endsWith(authenticateOptionsPath)

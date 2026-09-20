@@ -1,3 +1,4 @@
+import { CloudflareId } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { BudgetFailure, fail } from "./config.ts";
@@ -5,6 +6,7 @@ import { BudgetFailure, fail } from "./config.ts";
 const MILLISECONDS_PER_HOUR = 3_600_000;
 const FUTURE_CHARGE_TOLERANCE_HOURS = 24;
 const MAX_DATA_AGE_HOURS = 48;
+const isCloudflareId = Schema.is(CloudflareId);
 const REQUEST_TIMEOUT_MS = 15_000;
 
 const Timestamp = Schema.String.check(
@@ -140,7 +142,7 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   token: string,
   now: Readonly<Date>,
 ) {
-  if (!/^[a-f0-9]{32}$/u.test(accountId)) {
+  if (!isCloudflareId(accountId)) {
     return yield* fail("billing_account_invalid");
   }
   const response = yield* Effect.tryPromise({

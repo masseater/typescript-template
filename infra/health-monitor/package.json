@@ -1,8 +1,12 @@
 {
   "name": "@repo/health-monitor",
   "private": true,
+  "exports": {
+    "./config": "./src/config.ts"
+  },
   "type": "module",
   "dependencies": {
+    "@repo/config": "workspace:*",
     "@repo/monitor": "workspace:*",
     "effect": "catalog:"
   },
@@ -10,7 +14,6 @@
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
-    "@repo/config": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",

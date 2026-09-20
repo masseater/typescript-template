@@ -1,7 +1,7 @@
-import { privateDeploymentKeys } from "@repo/observability/deployment-keys";
+import { parseEnv } from "node:util";
 
-const ASSIGNMENT_PATTERN = /^\s*(?:export\s+)?(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<value>.*)$/u;
-const QUOTED_PATTERN = /^(?<quote>["'])(?<body>.*)\k<quote>$/u;
+import { deploymentKey, privateDeploymentKeys } from "@repo/observability/deployment-keys";
+import { isSecretFileName } from "@repo/vite-config/private-path";
 
 interface DeploymentValue {
   readonly key: string;
@@ -13,28 +13,16 @@ const byKey = (left: DeploymentValue, right: DeploymentValue): number => {
 };
 
 const deploymentValues = (content: string): DeploymentValue[] => {
-  return content
-    .split("\n")
-    .flatMap((line) => {
-      const groups = ASSIGNMENT_PATTERN.exec(line)?.groups;
-      const key = groups?.key;
-      const value = groups?.value?.trim();
-      if (key === undefined || value === undefined || !privateDeploymentKeys.includes(key)) {
-        return [];
-      }
-      const unquoted = QUOTED_PATTERN.exec(value)?.groups?.body ?? value;
-      return unquoted === "" ? [] : [{ key, value: unquoted }];
-    })
+  return Object.entries(parseEnv(content))
+    .flatMap(([key, value]) =>
+      privateDeploymentKeys.includes(key) && value !== "" ? [{ key, value }] : [],
+    )
     .toSorted(byKey);
 };
 
 type PrefixScan = "separated" | "word";
 
-const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/gu;
-
-const quoted = (value: string): string => {
-  return value.replaceAll(REGEXP_METACHARACTERS, String.raw`\$&`);
-};
+const quoted = (value: string): string => RegExp.escape(value);
 
 const wordPattern = (value: string): RegExp => {
   return new RegExp(`(?<![0-9A-Za-z])${quoted(value)}(?![0-9A-Za-z])`, "u");
@@ -48,7 +36,9 @@ const prefixPattern = (value: string, scan: PrefixScan): RegExp => {
   return scan === "word" ? wordPattern(value) : separatedPattern(value);
 };
 
-const PREFIX_KEY = "TEMPLATE_PREFIX" as const;
+const PREFIX_KEY = deploymentKey.prefix;
+
+const exampleEnvironment = ".env.example";
 
 const prefixScan = (
   environmentValues: readonly DeploymentValue[],
@@ -63,11 +53,12 @@ const prefixScan = (
 };
 
 const privateFile = (filename: string): boolean => {
+  const name = filename.split("/").at(-1) ?? filename;
   return (
     /(?:^|\/)(?:\.local(?:-agents)?|\.artifacts)(?:\/|$)/u.test(filename) ||
-    (/(?:^|\/)(?:\.dev\.vars(?:\..*)?|\.env(?:\..*)?)$/u.test(filename) &&
-      !filename.endsWith("/.env.example") &&
-      filename !== ".env.example")
+    (isSecretFileName(name) &&
+      name !== exampleEnvironment &&
+      !filename.endsWith(`/${exampleEnvironment}`))
   );
 };
 

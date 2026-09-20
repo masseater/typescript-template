@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 import { loopbackHosts } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
@@ -20,12 +20,31 @@ const Origin = AbsoluteUrl.check(
       URL.parse(candidate)?.origin === candidate || "An origin without a path is required",
   ),
 );
+const HttpsOrigin = Origin.check(
+  Schema.makeFilter(
+    (candidate: string) => new URL(candidate).protocol === "https:" || "HTTPS is required",
+  ),
+);
 const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u));
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const localRelease = Effect.succeed("local");
 const withRelease = Release.pipe(Schema.withDecodingDefaultKey(localRelease));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
+const appEnvKey = {
+  appOrigin: "APP_ORIGIN",
+  appRelease: "APP_RELEASE",
+  authSecret: "AUTH_SECRET",
+  emailFrom: "EMAIL_FROM",
+  mailpitUrl: "MAILPIT_URL",
+  opsEmail: "OPS_EMAIL",
+  otlpAuthorization: "OTLP_AUTHORIZATION",
+  otlpEnabled: "OTLP_ENABLED",
+  otlpEndpoint: "OTLP_ENDPOINT",
+} as const;
+
+const distinctOrigins = (origins: readonly string[]): boolean =>
+  new Set(origins).size === origins.length;
 
 const bindingWith = <Binding>(
   bindingName: string,
@@ -33,22 +52,21 @@ const bindingWith = <Binding>(
 ): Schema.declare<Binding, Binding> =>
   Schema.declare(
     (candidate: unknown): candidate is Binding =>
-      typeof candidate === "object" &&
-      candidate !== null &&
+      Predicate.isObject(candidate) &&
       methods.every((method) => typeof Reflect.get(candidate, method) === "function"),
     { expected: bindingName },
   );
 
 const Scalars = Schema.Struct({
-  APP_ORIGIN: Origin,
-  APP_RELEASE: withRelease,
-  AUTH_SECRET: AuthSecret,
-  EMAIL_FROM: Email,
-  MAILPIT_URL: Schema.optionalKey(Origin),
-  OPS_EMAIL: Email,
-  OTLP_AUTHORIZATION: Schema.optionalKey(NonEmpty),
-  OTLP_ENABLED: Schema.optionalKey(Schema.Literals(["false", "true"])),
-  OTLP_ENDPOINT: Schema.optionalKey(AbsoluteUrl),
+  [appEnvKey.appOrigin]: Origin,
+  [appEnvKey.appRelease]: withRelease,
+  [appEnvKey.authSecret]: AuthSecret,
+  [appEnvKey.emailFrom]: Email,
+  [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
+  [appEnvKey.opsEmail]: Email,
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);
@@ -140,5 +158,17 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
 
 type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
 
-export { Email, isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };
+export {
+  AuthSecret,
+  Email,
+  HttpsOrigin,
+  appEnvKey,
+  distinctOrigins,
+  isLocalDevelopmentOrigin,
+  minimumAuthSecretLength,
+  readAi,
+  readConfig,
+  readEnvironment,
+  readWikiConfig,
+};
 export type { AppConfig, AssetFetcher, WikiConfig };

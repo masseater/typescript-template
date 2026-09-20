@@ -10,7 +10,7 @@ import {
   type ErrorAttributes,
 } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
-import { httpMethod, parentContext, routeLabel } from "./protocol.ts";
+import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
 import { logAt, statusSeverity } from "./severity.ts";
 import { isRecord } from "./structured-logs.ts";
 import { Telemetry } from "./telemetry.ts";
@@ -47,7 +47,7 @@ const requestContextOf = (observed: {
     requestId: entropy.requestId(),
     spanId: span.spanId,
     traceId: span.traceId,
-    traceparent: `00-${span.traceId}-${span.spanId}-01`,
+    traceparent: traceparentOf(span),
   };
 };
 
