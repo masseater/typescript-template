@@ -58,6 +58,13 @@ const violatedRules = async (files: Fixture): Promise<readonly string[]> => {
 
 const detected: readonly Case[] = [
   [
+    "no-circular",
+    {
+      "libs/auth/src/cycle-a.ts": 'export * from "./cycle-b.ts";\n',
+      "libs/auth/src/cycle-b.ts": 'export * from "./cycle-a.ts";\n',
+    },
+  ],
+  [
     "no-unresolvable",
     { "apps/service-member/src/index.ts": 'export * from "@repo/db/src/schema";\n' },
   ],
@@ -186,6 +193,13 @@ const detected: readonly Case[] = [
 ];
 
 const accepted: readonly Case[] = [
+  [
+    "no-circular",
+    {
+      "apps/service-member/src/routeTree.gen.ts": 'export * from "./routes.ts";\n',
+      "apps/service-member/src/routes.ts": 'export * from "./routeTree.gen.ts";\n',
+    },
+  ],
   ["no-unresolvable", { "apps/service-member/src/index.ts": 'export * from "@repo/db";\n' }],
   [
     "no-app-to-app",

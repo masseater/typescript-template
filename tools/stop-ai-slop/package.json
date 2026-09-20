@@ -39,6 +39,7 @@
   "devDependencies": {
     "@repo/ai-native-telemetry": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/dont-review-it": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

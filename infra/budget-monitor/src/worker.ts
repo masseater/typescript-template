@@ -56,5 +56,4 @@ const budget = monitorWorker<Bindings>({
 const BudgetMonitor = budget.Worker;
 
 export { BudgetMonitor };
-// oxlint-disable-next-line import/no-default-export
 export default budget.handler;
