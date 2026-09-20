@@ -7,4 +7,3 @@ export {
   setLocale,
   type Locale,
 } from "#paraglide/runtime.js";
-export { paraglideMiddleware } from "#paraglide/server.js";
