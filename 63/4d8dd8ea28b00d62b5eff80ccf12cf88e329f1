@@ -1,0 +1,6 @@
+Revision history for #840:
+
+rev 2 (content) 2026-09-20 08:47 UTC — check:dev が共有 migrate に依存しなくなったので uncachedGateTasks から libs/db#db:migrate:local を外す
+rev 1 (initial) 2026-09-20 08:47 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":840,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"7f4ee255a5d74ba296cd4ce4d2b759a7328f1f92","timestamp_iso":"2026-09-20T08:47:08Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"7f4ee255a5d74ba296cd4ce4d2b759a7328f1f92","new_sha":"a20585303967113a45ed2641d4361071fd8938d6","timestamp_iso":"2026-09-20T08:47:08Z","reason":"check:dev が共有 migrate に依存しなくなったので uncachedGateTasks から libs/db#db:migrate:local を外す","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/7f4ee255a5d74ba296cd4ce4d2b759a7328f1f92...a20585303967113a45ed2641d4361071fd8938d6"}]} -->
