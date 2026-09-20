@@ -137,10 +137,10 @@ describe("react-doctor integration", () => {
     });
   });
 
-  it("leaves unused rules off only while knip --strict is on the pull request gate", () => {
+  it("leaves unused rules off only while knip --strict is on the push gate", () => {
     expect.hasAssertions();
     expect(commands(".", "knip")).toStrictEqual(["knip", "knip --strict"]);
-    expect(reachable(".", ["prepr"])).toContain("knip");
+    expect(reachable(".", ["prepush"])).toContain("knip");
     expect(knipOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
   });
 

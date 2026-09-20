@@ -230,8 +230,8 @@ const appRun = {
     },
     ...lifecycle({
       precommit: [],
-      prepush: ["check:effect"],
-      prepr: ["check", "build"],
+      prepush: ["check:effect", "check"],
+      prepr: ["build"],
       premerge: ["check:dev"],
       prerelease: [],
     }),
