@@ -37,6 +37,7 @@ const appEnvKey = {
   appRelease: "APP_RELEASE",
   authSecret: "AUTH_SECRET",
   emailFrom: "EMAIL_FROM",
+  googleAnalyticsMeasurementId: "GOOGLE_ANALYTICS_MEASUREMENT_ID",
   mailpitUrl: "MAILPIT_URL",
   opsEmail: "OPS_EMAIL",
   otlpAuthorization: "OTLP_AUTHORIZATION",
@@ -59,28 +60,16 @@ const bindingWith = <Binding>(
   );
 
 const Scalars = Schema.Struct({
-<<<<<<< HEAD
   [appEnvKey.appOrigin]: Origin,
   [appEnvKey.appRelease]: withRelease,
   [appEnvKey.authSecret]: AuthSecret,
   [appEnvKey.emailFrom]: Email,
+  [appEnvKey.googleAnalyticsMeasurementId]: Schema.optionalKey(GoogleAnalyticsMeasurementId),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
   [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
-=======
-  APP_ORIGIN: Origin,
-  APP_RELEASE: withRelease,
-  AUTH_SECRET: AuthSecret,
-  EMAIL_FROM: Email,
-  GOOGLE_ANALYTICS_MEASUREMENT_ID: Schema.optionalKey(GoogleAnalyticsMeasurementId),
-  MAILPIT_URL: Schema.optionalKey(Origin),
-  OPS_EMAIL: Email,
-  OTLP_AUTHORIZATION: Schema.optionalKey(NonEmpty),
-  OTLP_ENABLED: Schema.optionalKey(Schema.Literals(["false", "true"])),
-  OTLP_ENDPOINT: Schema.optionalKey(AbsoluteUrl),
->>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
 });
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);

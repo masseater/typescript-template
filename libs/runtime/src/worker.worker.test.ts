@@ -136,6 +136,36 @@ describe("a worker serving a rendered document", () => {
     }),
   );
 
+  it.effect("allows google analytics hosts when analytics is configured", () =>
+    Effect.gen(function* program() {
+      const worker = serveApp(
+        workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
+        startRoute(
+          {
+            fetch: (rendered: Request): Response =>
+              new Response("<!DOCTYPE html>", {
+                headers: {
+                  "content-type": "text/html; charset=utf-8",
+                  "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
+                },
+              }),
+          },
+          { googleAnalytics: true },
+        ),
+        { service: "service-member" },
+      );
+      const context = createExecutionContext();
+      const response = yield* Effect.promise(async () => {
+        const served = await worker.fetch(new Request(`${fixtureOrigin}/`), {}, context);
+        await waitOnExecutionContext(context);
+        return served;
+      });
+      const policy = response.headers.get("content-security-policy") ?? "";
+      assert.include(policy, "https://www.googletagmanager.com");
+      assert.include(policy, "https://www.google-analytics.com");
+    }),
+  );
+
   it.effect("demands https for a year once the document arrived over https", () =>
     Effect.gen(function* program() {
       const secure = yield* Effect.promise(async () =>

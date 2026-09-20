@@ -1,17 +1,13 @@
-<<<<<<< HEAD
 import {
   CloudflareId,
   Email,
+  GoogleAnalyticsMeasurementId,
   HttpsOrigin,
   ROLE,
   distinctOrigins,
   minimumAuthSecretLength,
   usageAllowanceRemains,
 } from "@repo/config";
-=======
-import { APPLICATION, CloudflareId, Email, GoogleAnalyticsMeasurementId, ROLE } from "@repo/config";
-import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/config/security";
->>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
 import { workerCompatibility } from "@repo/config/worker";
 import { maximumAlertRecipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";

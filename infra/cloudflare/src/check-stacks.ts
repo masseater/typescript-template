@@ -95,22 +95,14 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
-<<<<<<< HEAD
       plainText(appEnvKey.emailFrom, mailFrom),
       plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
-=======
-      plainText("EMAIL_FROM", mailFrom),
-      plainText("OPS_EMAIL", budget.recipients[0] ?? mailFrom),
-      "OTLP_AUTHORIZATION:secret_text:text=$TEMPLATE_OTLP_AUTHORIZATION",
-      plainText("OTLP_ENABLED", String(otlp.enabled)),
-      plainText("OTLP_ENDPOINT", otlp.endpoint),
       ...(app === APPLICATION.user && googleAnalyticsMeasurementId !== undefined
-        ? [plainText("GOOGLE_ANALYTICS_MEASUREMENT_ID", googleAnalyticsMeasurementId)]
+        ? [plainText(appEnvKey.googleAnalyticsMeasurementId, googleAnalyticsMeasurementId)]
         : []),
->>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
       ...(grants(app, "ai") ? ["AI:ai"] : []),
     ].toSorted(),
     declared: {

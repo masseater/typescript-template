@@ -96,22 +96,27 @@ function serveApp<Requirements>(
   );
 }
 
-function appServerEntry<Requirements>(
-  runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
+function startRoute(
   handler: StartHandler,
-  reporting: Reporting,
-): FetchWorker {
-  return serveApp(runtime, startRoute(handler), reporting);
-}
-
-function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
+  options: Readonly<{ googleAnalytics?: boolean }> = {},
+): (request: Request) => Effect.Effect<Response> {
+  const googleAnalytics = options.googleAnalytics === true;
   return (request) =>
     Effect.promise(async () => {
       const nonce = createNonce();
       const rendered = new Request(request);
       rendered.headers.set(cspNonceHeader, nonce);
-      return secureResponse(request, await handler.fetch(rendered), nonce);
+      return secureResponse(request, await handler.fetch(rendered), nonce, googleAnalytics);
     });
+}
+
+function appServerEntry<Requirements>(
+  runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
+  handler: StartHandler,
+  reporting: Reporting,
+  options: Readonly<{ googleAnalytics?: boolean }> = {},
+): FetchWorker {
+  return serveApp(runtime, startRoute(handler, options), reporting);
 }
 
 export { appServerEntry, serveApp, serveWorker, startRoute };

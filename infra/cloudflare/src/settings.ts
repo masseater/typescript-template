@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import { deploymentKey } from "@repo/observability/deployment-keys";
-=======
 import { GoogleAnalyticsMeasurementId } from "@repo/config";
->>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
 import { Config, Effect, Option, Redacted } from "effect";
 
 import {
@@ -50,21 +47,16 @@ const otlpDestination = Config.all({
 });
 
 const googleAnalyticsMeasurementId = optional(
-  Config.schema(GoogleAnalyticsMeasurementId, "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID"),
+  Config.schema(GoogleAnalyticsMeasurementId, deploymentKey.googleAnalyticsMeasurementId),
 );
 
 const settings = Config.all({
   accountId: Config.schema(CloudflareId, deploymentKey.cloudflareAccountId),
   appDomain: Config.schema(Domain, deploymentKey.appDomain),
   budget,
-<<<<<<< HEAD
+  googleAnalyticsMeasurementId,
   mailFrom: Config.schema(Email, deploymentKey.mailFrom),
   observabilitySampling: Config.schema(SamplingRate, deploymentKey.observabilitySampling).pipe(
-=======
-  googleAnalyticsMeasurementId,
-  mailFrom: Config.schema(Email, "TEMPLATE_MAIL_FROM"),
-  observabilitySampling: Config.schema(SamplingRate, "TEMPLATE_OBSERVABILITY_SAMPLING").pipe(
->>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
     Config.withDefault(FULL_SAMPLING),
   ),
   otlp: otlpDestination,

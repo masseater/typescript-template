@@ -28,7 +28,6 @@ const verificationSettings = {
 };
 
 const verificationEnvironment: Readonly<Record<string, string>> = {
-<<<<<<< HEAD
   [deploymentKey.alertEmail]: verificationSettings.budget.recipients.join(","),
   [deploymentKey.budgetJpy]: String(verificationSettings.budget.budgetJpy),
   [deploymentKey.cloudflareAccountId]: verificationSettings.accountId,
@@ -37,6 +36,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.appDomain]: "example.com",
   [deploymentKey.authSecret]: verificationAuthSecret,
   [deploymentKey.fixedCostUsd]: String(verificationSettings.budget.fixedCostUsd),
+  [deploymentKey.googleAnalyticsMeasurementId]: verificationSettings.googleAnalyticsMeasurementId,
   [deploymentKey.jpyPerUsd]: String(verificationSettings.budget.jpyPerUsd),
   [deploymentKey.mailFrom]: verificationSettings.mailFrom,
   [deploymentKey.observabilitySampling]: String(verificationSettings.observabilitySampling),
@@ -45,25 +45,6 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.otlpEndpoint]: verificationSettings.otlp.endpoint,
   [deploymentKey.prefix]: verificationSettings.prefix,
   [deploymentKey.reserveUsd]: String(verificationSettings.budget.reserveUsd),
-=======
-  ALERT_EMAIL: verificationSettings.budget.recipients.join(","),
-  BUDGET_JPY: String(verificationSettings.budget.budgetJpy),
-  CLOUDFLARE_ACCOUNT_ID: verificationSettings.accountId,
-  CLOUDFLARE_API_TOKEN: "stack-verification-not-a-real-token",
-  CLOUDFLARE_ZONE_ID: verificationSettings.zoneId,
-  TEMPLATE_APP_DOMAIN: "example.com",
-  TEMPLATE_AUTH_SECRET: verificationAuthSecret,
-  TEMPLATE_FIXED_COST_USD: String(verificationSettings.budget.fixedCostUsd),
-  TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID: verificationSettings.googleAnalyticsMeasurementId,
-  TEMPLATE_JPY_PER_USD: String(verificationSettings.budget.jpyPerUsd),
-  TEMPLATE_MAIL_FROM: verificationSettings.mailFrom,
-  TEMPLATE_OBSERVABILITY_SAMPLING: String(verificationSettings.observabilitySampling),
-  TEMPLATE_OTLP_AUTHORIZATION: verificationSettings.otlpAuthorization,
-  TEMPLATE_OTLP_ENABLED: String(verificationSettings.otlp.enabled),
-  TEMPLATE_OTLP_ENDPOINT: verificationSettings.otlp.endpoint,
-  TEMPLATE_PREFIX: verificationSettings.prefix,
-  TEMPLATE_RESERVE_USD: String(verificationSettings.budget.reserveUsd),
->>>>>>> 71ec8b05 (Add optional Google Analytics measurement ID to config and Cloudflare stacks)
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };
