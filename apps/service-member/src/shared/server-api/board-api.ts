@@ -1,10 +1,4 @@
 import { verifySession } from "@repo/auth";
-import {
-  createBoardPost,
-  createBoardThread,
-  findBoardThread,
-  listBoardThreads,
-} from "@repo/db/board";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
@@ -22,6 +16,7 @@ import {
   boardPostPageSize,
   boardThreadPageSize,
 } from "#shared/contracts/index.ts";
+import { createBoardPost, createBoardThread, findBoardThread, listBoardThreads } from "./board.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";

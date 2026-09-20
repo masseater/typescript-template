@@ -1,12 +1,12 @@
 import { ROLE } from "@repo/config";
+import { query, schema } from "@repo/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
 import { BoardMemberRequired } from "./board-member-required.ts";
-import { boardPost, boardThread } from "./board-schema.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
-import { query } from "./database.ts";
-import { user } from "./schema.ts";
+
+const { boardPost, boardThread, user } = schema;
 
 interface BoardAuthor {
   readonly id: string;
@@ -218,12 +218,4 @@ const createBoardPost = Effect.fn("createBoardPost")(function* createBoardPost(
   return postId;
 });
 
-export {
-  BoardMemberRequired,
-  BoardThreadNotFound,
-  createBoardPost,
-  createBoardThread,
-  findBoardThread,
-  listBoardThreads,
-};
-export type { BoardAuthor, BoardPostView, BoardThreadSummary };
+export { createBoardPost, createBoardThread, findBoardThread, listBoardThreads };
