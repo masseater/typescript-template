@@ -68,7 +68,7 @@ jobs:
   merge-queue:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - *checkout
       - *clean-workspace
@@ -76,10 +76,7 @@ jobs:
       - *setup
       - *mise
       - *task-cache-share
-      - run: vp run -r premerge --concurrency-limit 1
-        env:
-          RAYON_NUM_THREADS: "1"
-          VITE_PLUS_SKIP_LINT_NATIVE: "1"
+      - run: vp run -r premerge
 
   cache:
     if: github.event_name == 'push' && vars.CI_RUNNER == ''

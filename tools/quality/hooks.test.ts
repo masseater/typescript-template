@@ -172,7 +172,7 @@ describe("lifecycle entry points", () => {
     expect(lifecycleByJob("../../.github/workflows/check.yml")).toStrictEqual({
       cache: ["vp run -r prepr"],
       check: ["vp run -r prepr"],
-      "merge-queue": ["vp run -r premerge --concurrency-limit 1"],
+      "merge-queue": ["vp run -r premerge"],
     });
     expect(lifecycleByJob("../../.github/workflows/prerelease.yml")).toStrictEqual({
       load: [],
