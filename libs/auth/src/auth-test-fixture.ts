@@ -95,7 +95,8 @@ const runWith = async <Value, Failure>(
 
 const withAuth = <Value, Failure>(
   effect: Effect.Effect<Value, Failure, AuthTestServices>,
-): Effect.Effect<Value, Failure> => Effect.scoped(Effect.provide(effect, authTestLayer));
+): Effect.Effect<Value, Failure | AuthFailure> =>
+  Effect.scoped(Effect.provide(effect, authTestLayer));
 
 const audienceOnEmptyDatabase = (
   audience: Application,
