@@ -1,3 +1,4 @@
+export { AccountMenu } from "./account-menu";
 export { EmailVerification } from "./email-verification";
 export { LoginForm } from "./login-form";
 export { LoginPage } from "./login-page";

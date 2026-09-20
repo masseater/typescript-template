@@ -96,6 +96,14 @@ function serveApp<Requirements>(
   );
 }
 
+function appServerEntry<Requirements>(
+  runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
+  handler: StartHandler,
+  reporting: Reporting,
+): FetchWorker {
+  return serveApp(runtime, startRoute(handler), reporting);
+}
+
 function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
   return (request) =>
     Effect.promise(async () => {
@@ -106,7 +114,7 @@ function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<
     });
 }
 
-export { serveApp, serveWorker, startRoute };
+export { appServerEntry, serveApp, serveWorker, startRoute };
 export { workerRuntime } from "./worker-runtime.ts";
 export type { AppRoute, FetchWorker };
 export type { WorkerRuntime } from "./worker-runtime.ts";

@@ -12,6 +12,7 @@
     "@repo/ui": "workspace:*",
     "better-auth": "catalog:",
     "effect": "catalog:",
+    "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
