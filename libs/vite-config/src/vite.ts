@@ -170,17 +170,39 @@ function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Task
   );
 }
 
+const testTaskInput = [
+  ...taskInput,
+  "!coverage/**",
+  { base: "workspace", pattern: "!**/coverage/**" },
+  { base: "workspace", pattern: "pnpm-lock.yaml" },
+  { base: "workspace", pattern: "pnpm-workspace.yaml" },
+] as const;
+
 const testRun = {
   test: {
     command: "vp test run",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
+    input: [...testTaskInput],
     output: [],
+  },
+} satisfies Tasks;
+
+const testCoverageRun = {
+  test: {
+    command: "vp test run --coverage",
+    input: [...testTaskInput],
+    output: [{ base: "workspace", pattern: "coverage/**" }],
+  },
+} satisfies Tasks;
+
+const checkCode = {
+  "check:code": { command: "vp check", input: [...taskInput] },
+} satisfies Tasks;
+
+const workspaceCheckImports = {
+  "check:imports": {
+    command:
+      "depcruise --config ../../tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long .",
+    input: [...taskInput],
   },
 } satisfies Tasks;
 
@@ -192,12 +214,14 @@ const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
 
-const effectRun = {
+const inspectedLibraryRun = {
   tasks: {
     ...effectDiagnostics,
+    ...checkCode,
+    ...workspaceCheckImports,
     ...lifecycle({
-      precommit: [],
-      prepush: ["check:effect"],
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports"],
       prepr: [],
       premerge: [],
       prerelease: [],
@@ -205,37 +229,88 @@ const effectRun = {
   },
 } satisfies RunConfig;
 
-const appRun = {
+const testableLibraryRun = {
   tasks: {
-    ...effectDiagnostics,
-    ...sliceBoundaries,
-    build: {
-      command: "vp build",
-      dependsOn: ["@repo/dev#setup"],
-      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
-      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-    },
-    "check:dev": {
-      command: "../../tools/dev/src/dev-start.ts",
-      dependsOn: ["@repo/dev#setup"],
-      input: [
-        ...taskInput,
-        ...withoutGenerated(".wrangler", "dist"),
-        "!node_modules/.mf/**",
-        ...withoutLocalState,
-        { base: "workspace", pattern: "libs/db/migrations/**" },
-      ],
-      output: [],
-    },
+    ...inspectedLibraryRun.tasks,
+    ...testRun,
     ...lifecycle({
-      precommit: [],
-      prepush: ["check:effect", "check"],
-      prepr: ["build"],
-      premerge: ["check:dev"],
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports"],
+      prepr: [],
+      premerge: ["test"],
       prerelease: [],
     }),
   },
 } satisfies RunConfig;
+
+const coveredTestableLibraryRun = {
+  tasks: {
+    ...inspectedLibraryRun.tasks,
+    ...testCoverageRun,
+    ...lifecycle({
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports"],
+      prepr: [],
+      premerge: ["test"],
+      prerelease: [],
+    }),
+  },
+} satisfies RunConfig;
+
+const effectRun = inspectedLibraryRun;
+
+function appRun(app: Application): RunConfig {
+  return {
+    tasks: {
+      ...effectDiagnostics,
+      ...sliceBoundaries,
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...testRun,
+      "check:client": {
+        command: `quality-check-client --application ${app}`,
+        input: [
+          ...taskInput,
+          "!**/dist/**",
+          "!**/node_modules/.cache/**",
+          { base: "workspace", pattern: "!.local" },
+          { base: "workspace", pattern: "!.local/**" },
+        ],
+        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+      },
+      "check:react": {
+        command: `quality-check-react --application ${app}`,
+        input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+        output: [{ auto: true }, "!**/node_modules/.cache/**"],
+      },
+      build: {
+        command: "vp build",
+        dependsOn: ["@repo/dev#setup"],
+        input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
+        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+      },
+      "check:dev": {
+        command: "../../tools/dev/src/dev-start.ts",
+        dependsOn: ["@repo/dev#setup"],
+        input: [
+          ...taskInput,
+          ...withoutGenerated(".wrangler", "dist"),
+          "!node_modules/.mf/**",
+          ...withoutLocalState,
+          { base: "workspace", pattern: "libs/db/migrations/**" },
+        ],
+        output: [],
+      },
+      ...lifecycle({
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+        prepr: ["build"],
+        premerge: ["test", "check:dev"],
+        prerelease: [],
+      }),
+    },
+  };
+}
 
 const toolTest: NonNullable<UserConfig["test"]> = {
   mockReset: true,
@@ -284,7 +359,7 @@ function appConfig(
       reactCompiler(),
     ],
     preview: appServer(app),
-    run: appRun,
+    run: appRun(app),
     server: appServer(app),
   });
 }
@@ -293,10 +368,13 @@ export {
   appConfig,
   appRun,
   appServer,
+  checkCode,
   clientReachableModules,
+  coveredTestableLibraryRun,
   defineConfig,
   effectDiagnostics,
   effectRun,
+  inspectedLibraryRun,
   intentValidation,
   lifecycle,
   lifecycleInherits,
@@ -309,8 +387,11 @@ export {
   sliceBoundaries,
   startOptions,
   taskInput,
+  testCoverageRun,
+  testableLibraryRun,
   testRun,
   toolTest,
+  workspaceCheckImports,
   withoutEnvFileLoader,
 };
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";

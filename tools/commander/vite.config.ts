@@ -1,10 +1,12 @@
 import {
+  checkCode,
   effectDiagnostics,
   lifecycle,
   reactCompiler,
   sliceBoundaries,
   startOptions,
   taskInput,
+  testRun,
   withoutEnvFileLoader,
 } from "@repo/vite-config";
 import tailwindcss from "@tailwindcss/vite";
@@ -20,6 +22,8 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...testRun,
       ...sliceBoundaries,
       build: { command: "vp build", input: [...taskInput, "!dist"] },
       "check:start": {
@@ -29,10 +33,10 @@ export default defineConfig({
       },
       start: { cache: false, command: "./src/app/cli.ts", dependsOn: ["build"] },
       ...lifecycle({
-        precommit: [],
+        precommit: ["check:code"],
         prepush: ["check:effect", "check"],
         prepr: ["build"],
-        premerge: ["check:start"],
+        premerge: ["test", "check:start"],
         prerelease: [],
       }),
     },

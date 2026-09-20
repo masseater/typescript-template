@@ -13,9 +13,9 @@ describe("pull request check scope", () => {
     expect(workflow).toContain("vp run -r prepr");
     expect(workflow).not.toContain("--changed");
     expect(workflow).not.toContain("fetch-depth:");
-    expect(vite).toContain('prepr: ["check:imports", "test"]');
-    expect(vite).toContain('"apps/**/*.test.ts"');
-    expect(vite).toContain('"infra/**/*.test.ts"');
-    expect(vite).toContain('"libs/**/*.test.ts"');
+    expect(vite).toContain('premerge: ["test", "test:dev-server", "test:workers"]');
+    expect(vite).not.toContain('"apps/**/*.test.ts"');
+    expect(vite).not.toContain('"infra/**/*.test.ts"');
+    expect(vite).not.toContain('"libs/**/*.test.ts"');
   });
 });
