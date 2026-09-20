@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { secretsFile, secretsFileConfigured } from "@repo/config/deployment";
+import { secretsFile, secretsFileConfigured } from "@repo/infra-cloudflare/deployment";
 import { Effect, Schema } from "effect";
 
 import { deploymentValues, type DeploymentValue } from "./secrets.ts";

@@ -66,11 +66,11 @@ interface Read {
 }
 
 const singleConsumerAllowlist: readonly string[] = [
-  "package:@repo/dont-review-it",
   "subpath:@repo/auth/testing",
-  "subpath:@repo/db/bootstrap",
   "subpath:@repo/db/member-social",
+  "subpath:@repo/db/migrate-d1",
   "subpath:@repo/db/remote",
+  "subpath:@repo/db/remote-input",
   "subpath:@repo/db/security",
   "subpath:@repo/dont-review-it/lint",
   "subpath:@repo/dont-review-it/lint-rule-authoring",
@@ -377,7 +377,7 @@ const counted = (consumers: readonly string[]): string => {
 };
 
 const packageMessage = (file: string, name: string, consumers: readonly string[]): string =>
-  `${file}: ${name} の dependencies 取り込み元は ${counted(consumers)} です。共有パッケージは 2 つ以上のワークスペースが取り込むときだけ残します。`;
+  `${file}: ${name} の取り込み元は ${counted(consumers)} です。共有パッケージは 2 つ以上のワークスペースが取り込むときだけ残します。`;
 
 const subpathMessage = (file: string, specifier: string, consumers: readonly string[]): string =>
   `${file}: ${specifier} の import 元は ${counted(consumers)} です。exports のサブパスは 2 つ以上のワークスペースが取り込むときだけ残します。`;
@@ -423,12 +423,13 @@ const singleConsumerFindings = (
       if (workspace.area === "tools" && dependencies.length === 0 && imported.length === 0) {
         return [];
       }
+      const consumers = [...new Set([...dependencies, ...imported])].sort();
       const packageFinding =
-        dependencies.length < 2
+        consumers.length < 2
           ? [
               {
                 id: `package:${name}`,
-                message: packageMessage(workspace.file, name, dependencies),
+                message: packageMessage(workspace.file, name, consumers),
               },
             ]
           : [];

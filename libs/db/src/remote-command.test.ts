@@ -1,3 +1,4 @@
+import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -7,7 +8,6 @@ import { query } from "./database.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { loadRemoteMigrations } from "./remote-operations.ts";
 import { user } from "./schema.ts";
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "./testing-node.ts";
 
 const d1Target = {
   accountId: "a".repeat(32),

@@ -1,4 +1,5 @@
-import { APPLICATION, ROLE, strongAuthenticationMethods } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ROLE, strongAuthenticationMethods } from "@repo/config/identity";
 import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";

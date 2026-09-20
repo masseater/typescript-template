@@ -1,11 +1,10 @@
+import { localDatabaseStore, writeLocalDatabaseConfig } from "@repo/db/local";
 import { Effect } from "effect";
 import { getPlatformProxy } from "wrangler";
 
-import { localDatabaseStore, writeLocalDatabaseConfig } from "./local.ts";
-
 import type { D1Database } from "@cloudflare/workers-types";
 
-export const localPlatform = Effect.acquireRelease(
+const localDatabasePlatform = Effect.acquireRelease(
   Effect.promise(async () =>
     getPlatformProxy<{ DB: D1Database }>({
       configPath: await writeLocalDatabaseConfig(),
@@ -16,3 +15,5 @@ export const localPlatform = Effect.acquireRelease(
   ),
   (proxy) => Effect.promise(async () => proxy.dispose()),
 );
+
+export { localDatabasePlatform };

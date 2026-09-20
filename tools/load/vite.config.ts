@@ -1,4 +1,4 @@
-import { effectDiagnostics, lifecycle } from "@repo/config/vite";
+import { effectDiagnostics, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -11,7 +11,7 @@ export default defineConfig({
         dependsOn: [
           "@repo/local#up",
           "@repo/dev#setup",
-          "@repo/db#db:migrate:local",
+          "@repo/db-local#db:migrate:local",
           "@repo/service-member#build",
         ],
       },

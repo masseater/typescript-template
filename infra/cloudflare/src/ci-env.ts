@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { deploymentKeys, optionalDeploymentKeys } from "@repo/config/deployment-keys";
+import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, Schema } from "effect";
 
 const OWNER_ONLY_FILE_MODE = 0o600;

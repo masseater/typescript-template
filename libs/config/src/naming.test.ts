@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { applications, roles } from "./applications.ts";
+import { applications } from "./applications.ts";
+import { roles } from "./identity.ts";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import type { Application } from "./applications.ts";
+import type { Application } from "@repo/config";
 
 const sourceMapDirectories = (
   repositoryRoot: string,

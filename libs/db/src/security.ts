@@ -1,4 +1,5 @@
-import { ROLE, type Application, type StrongAuthenticationMethod } from "@repo/config";
+import { type Application } from "@repo/config";
+import { ROLE, type StrongAuthenticationMethod } from "@repo/config/identity";
 import { and, count, eq, gt, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 

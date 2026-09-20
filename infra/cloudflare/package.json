@@ -12,14 +12,18 @@
   },
   "type": "module",
   "exports": {
+    "./deployment": "./src/deployment.ts",
     "./lint-overrides": "./src/lint-overrides.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
+    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@repo/runtime": "workspace:*",
+    "@repo/vite-config": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },

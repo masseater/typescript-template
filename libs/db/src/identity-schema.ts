@@ -1,10 +1,5 @@
-import {
-  AUTHENTICATION_METHOD,
-  ROLE,
-  applications,
-  authenticationMethods,
-  roles,
-} from "@repo/config";
+import { applications } from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, authenticationMethods, roles } from "@repo/config/identity";
 import { getAuthTables } from "better-auth/db";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/effect-schema";

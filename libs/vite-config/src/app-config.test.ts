@@ -1,10 +1,10 @@
+import { applications } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
-import { applications } from "./applications.ts";
 import { appConfig, appRun, appServer } from "./vite.ts";
 
+import type { Application } from "@repo/config";
 import type { ConfigEnv, PluginOption } from "vite-plus";
-import type { Application } from "./applications.ts";
 
 const environments = [
   { command: "serve", isPreview: false, mode: "test" },

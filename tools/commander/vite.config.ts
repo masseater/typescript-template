@@ -6,7 +6,7 @@ import {
   startOptions,
   taskInput,
   withoutEnvFileLoader,
-} from "@repo/config/vite";
+} from "@repo/vite-config";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite-plus";
