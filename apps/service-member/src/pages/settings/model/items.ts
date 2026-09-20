@@ -7,11 +7,13 @@ type ListedSetting = {
     | "/settings/notifications"
     | "/settings/plan"
     | "/settings/profile"
-    | "/settings/security";
+    | "/settings/security"
+    | "/settings/visibility";
 };
 
 const settingsItems = [
   { label: "プロフィール", to: "/settings/profile" },
+  { label: "公開範囲", to: "/settings/visibility" },
   { label: "通知", to: "/settings/notifications" },
   { label: "セキュリティ", to: "/settings/security" },
   { label: "AI インタビュー", to: "/settings/interview" },

@@ -7,6 +7,7 @@ describe("settings items", () => {
     expect.hasAssertions();
     expect(settingsItems.map((listedSetting) => listedSetting.to)).toStrictEqual([
       "/settings/profile",
+      "/settings/visibility",
       "/settings/notifications",
       "/settings/security",
       "/settings/interview",

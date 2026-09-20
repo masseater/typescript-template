@@ -53,7 +53,11 @@ const PhotoView = Schema.Struct({ slot: PhotoSlot, version: PhotoVersion });
 
 const MemberQuery = Schema.Struct({ id: Identifier });
 
-const MemberPhotoQuery = Schema.Struct({ id: Identifier, slot: PhotoSlot });
+const MemberPhotoQuery = Schema.Struct({
+  id: Identifier,
+  slot: PhotoSlot,
+  version: Schema.optionalKey(Schema.String),
+});
 
 const MemberView = Schema.Struct({
   id: Schema.String,
