@@ -8,7 +8,6 @@
     "./worker": "./src/worker.ts",
     "./client": "./src/client.ts",
     "./account": "./src/account.ts",
-    "./contracts": "./src/contracts.ts",
     "./testing": "./src/app-fixture.ts",
     "./security": "./src/security.ts"
   },

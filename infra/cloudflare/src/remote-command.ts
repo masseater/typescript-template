@@ -1,8 +1,13 @@
+import {
+  RemoteFailure,
+  bootstrapDatabase,
+  fail,
+  loadRemoteMigrations,
+  migrateDatabase,
+  parseRemoteInput,
+  remoteExecutor,
+} from "@repo/db/migrations";
 import { Effect } from "effect";
-
-import { remoteExecutor } from "./remote-http.ts";
-import { fail, parseRemoteInput } from "./remote-input.ts";
-import { bootstrapDatabase, loadRemoteMigrations, migrateDatabase } from "./remote-operations.ts";
 
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
@@ -67,5 +72,4 @@ const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   },
 );
 
-export { RemoteFailure } from "./remote-input.ts";
-export { runRemoteDatabaseCommand };
+export { RemoteFailure, runRemoteDatabaseCommand };

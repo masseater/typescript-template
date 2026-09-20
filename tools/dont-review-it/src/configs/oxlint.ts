@@ -1,6 +1,9 @@
-import { LINT_SEVERITY, type WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
 import { defineConfig, type OxlintConfig } from "oxlint";
 
+import { LINT_SEVERITY, type WorkspaceLintRule } from "../lint-rule-authoring/index.ts";
 import { noUnregisteredRulePlugin } from "../lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts";
 import { noStandaloneTsconfig } from "../lint/oxlint/rules/toolchain/no-standalone-tsconfig--extend-shared-preset.ts";
 import { requireReExportOnlyFiles } from "../lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
@@ -40,6 +43,8 @@ const SHARED_TSCONFIG_PRESETS = [
 const RE_EXPORT_ONLY_FILES = ["**/index.ts", "**/index.tsx"];
 
 const PLUGIN_NAME = "dont-review-it";
+
+const pluginSpecifier = fileURLToPath(new URL("../plugin.ts", import.meta.url));
 
 const CONFIGURED_RULES: ReadonlyMap<string, RuleSetting> = new Map<string, RuleSetting>([
   [noStandaloneTsconfig.name, [LINT_SEVERITY.ERROR, [...SHARED_TSCONFIG_PRESETS]]],
@@ -116,7 +121,7 @@ export const oxlintFor = (selection: LintBundleSelection): OxlintConfig => {
   return defineConfig({
     categories: { correctness: LINT_SEVERITY.ERROR },
     plugins: [...UPSTREAM_PLUGINS],
-    jsPlugins: [{ name: PLUGIN_NAME, specifier: "@repo/dont-review-it/plugin" }],
+    jsPlugins: [{ name: PLUGIN_NAME, specifier: pluginSpecifier }],
     options: {
       reportUnusedDisableDirectives: LINT_SEVERITY.ERROR,
       respectEslintDisableDirectives: false,

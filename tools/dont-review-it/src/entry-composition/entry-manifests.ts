@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalize } from "node:path/posix";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { attempt, uniq } from "es-toolkit";
 import { parseTree, type Node, type ParseError } from "jsonc-parser";
 import { parse } from "yaml";
 
 import { directoriesMatching } from "../dependency-catalog/manifest-files.ts";
 import { recordOf } from "../dependency-catalog/record-fields.ts";
+import { readUnlessMissing } from "../repository-checks/index.ts";
 
 import type { EntryCompositionConfig, EntryCompositionLayer } from "./config.ts";
 

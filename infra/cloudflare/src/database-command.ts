@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { runCli } from "@repo/cli";
-import { runRemoteDatabaseCommand } from "@repo/db/remote";
 import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
@@ -8,6 +7,7 @@ import { CloudflareFailure } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { causeRecord, reportCause } from "./secrets.ts";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;

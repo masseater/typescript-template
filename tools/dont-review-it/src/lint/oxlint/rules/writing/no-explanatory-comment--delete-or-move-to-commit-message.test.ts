@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noExplanatoryComment } from "./no-explanatory-comment--delete-or-move-to-commit-message.ts";
 
 describe("dont-review-it/no-explanatory-comment--delete-or-move-to-commit-message", () => {

@@ -13,7 +13,7 @@ import {
   type DisabledRuleDeclaration,
 } from "./disabled-rule-declarations.ts";
 
-import type { RepositoryProblem } from "@repo/dont-review-it/repository-checks";
+import type { RepositoryProblem } from "../repository-checks/index.ts";
 import type { PresetAdoptionConfig } from "./config.ts";
 
 export type PresetAdoptionReport = {

@@ -10,7 +10,7 @@ import {
 import { isSpecFile, specFileSuffixesFrom } from "../../lib/spec-syntax/spec-files.ts";
 
 import type { ESTree, Scope } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
 import type { ExternalIoVocabulary, ReplacedModule } from "../../lib/external-io-boundary.ts";
 
 const EXTERNAL_IO_MODULES_OPTION = "externalIoModules";

@@ -9,7 +9,7 @@ import { noReceiverMutation } from "../../lint/oxlint/rules/mutation-and-failure
 import { noSilentCatch } from "../../lint/oxlint/rules/mutation-and-failure/no-silent-catch--rethrow-or-handle.ts";
 import { noClassAsMutableCell } from "../../plugin.ts";
 
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../lint-rule-authoring/index.ts";
 
 export const mutationAndFailureBundle: readonly WorkspaceLintRule[] = [
   noArrayMutation,

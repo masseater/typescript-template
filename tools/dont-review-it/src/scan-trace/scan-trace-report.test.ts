@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { scanTraceFor } from "./scan-trace-report.ts";
 
-import type { CheckOutcome } from "@repo/dont-review-it/repository-checks";
+import type { CheckOutcome } from "../repository-checks/index.ts";
 
 const OUTCOMES: readonly CheckOutcome[] = [
   {

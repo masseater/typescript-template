@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noUncheckedAuthoredPath } from "./no-unchecked-authored-path--include-it-in-every-declared-check.ts";
 
 const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-unchecked-authored-path-"));

@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe, expect, it } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { requireReExportOnlyFiles } from "./require-re-export-only-files--move-declaration-to-owning-module.ts";
 
 const listedAsSurface = [{ targets: ["index.ts"] }];

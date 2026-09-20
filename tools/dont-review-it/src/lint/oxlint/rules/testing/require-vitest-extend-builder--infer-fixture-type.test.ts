@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { requireVitestExtendBuilder } from "./require-vitest-extend-builder--infer-fixture-type.ts";
 
 describe("dont-review-it/require-vitest-extend-builder--infer-fixture-type", () => {

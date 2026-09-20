@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noTautologicalAssertion } from "./no-tautological-assertion--assert-on-a-computed-value.ts";
 
 describe("dont-review-it/no-tautological-assertion--assert-on-a-computed-value", () => {

@@ -1,8 +1,13 @@
-import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
 import {
   cloudflareNewCapExceptions,
   cloudflareSourceFiles,
 } from "@repo/infra-cloudflare/lint-overrides";
+
+import { dontReviewItPreset } from "../configs/preset.ts";
+import { LINT_SEVERITY } from "../lint-rule-authoring/index.ts";
 import {
   linkComponents,
   linkWrapperFiles,
@@ -10,9 +15,7 @@ import {
   uiA11yComponents,
   uiQualityInspectionFiles,
   uiSharedPartFiles,
-} from "@repo/ui/lint-settings";
-
-import { dontReviewItPreset } from "../configs/preset.ts";
+} from "./ui-lint-settings.ts";
 
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
 
@@ -61,7 +64,7 @@ const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages, ...uiQualityInspectionFiles],
   jsPlugins: [
-    { name: "project", specifier: "@repo/dont-review-it/repository-plugin" },
+    { name: "project", specifier: fileURLToPath(new URL("./plugin.ts", import.meta.url)) },
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
     "@shadcn/lint",
   ],

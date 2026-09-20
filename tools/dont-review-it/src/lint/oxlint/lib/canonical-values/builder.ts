@@ -1,8 +1,8 @@
 import { dirname, resolve } from "node:path";
 
-import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { attempt, memoize, sortBy, uniqBy } from "es-toolkit";
 
+import { measureStage } from "../../../../lint-rule-authoring/index.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { readAnnotatedSources, type AnnotatedSource } from "./annotated-sources.ts";
 import { cacheInputFingerprint, readCachedEntries, writeCachedEntries } from "./catalog-cache.ts";

@@ -1,5 +1,4 @@
-import preview from "@repo/ui/storybook/preview";
-
+import preview from "../storybook/preview";
 import { TotpSettings } from "./totp-settings";
 
 const user = {

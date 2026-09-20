@@ -8,10 +8,8 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./lint-settings": "./lint-settings.ts",
     "./shell": "./src/shell.ts",
-    "./styles.css": "./src/styles.css",
-    "./storybook/preview": "./storybook/preview.tsx"
+    "./styles.css": "./src/styles.css"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",

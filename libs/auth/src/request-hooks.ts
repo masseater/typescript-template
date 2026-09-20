@@ -11,7 +11,7 @@ import {
   lookupSessionByToken,
   markSessionStrong,
   revokeUserSessions,
-} from "@repo/db/security";
+} from "@repo/db";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 
 import { deny, enrollmentPaths, isStrongMethod, sessionIsLive } from "./policy.ts";

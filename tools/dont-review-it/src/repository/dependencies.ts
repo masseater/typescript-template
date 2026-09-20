@@ -1,5 +1,4 @@
-import { field } from "@repo/dont-review-it/record-fields";
-
+import { field } from "../dependency-catalog/record-fields.ts";
 import { repositoryRelative } from "./repository-path.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
 

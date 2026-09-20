@@ -1,7 +1,7 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { range } from "es-toolkit";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noPartialRuleSet } from "./no-partial-rule-set--enable-the-whole-set.ts";
 
 const WHOLE_SET = [

@@ -1,10 +1,10 @@
-import { EXIT_MISUSE, EXIT_PROBLEMS_FOUND } from "@repo/dont-review-it/repository-checks";
 import { isAgent, isColorSupported } from "std-env";
 
 import { defaultEntryCompositionConfig } from "./entry-composition/config.ts";
 import { writeEntryComposition } from "./entry-composition/write-entry-composition.ts";
 import { defaultIntentSkillsConfig } from "./intent-skills/config.ts";
 import { writeSkillVersions } from "./intent-skills/write-skill-versions.ts";
+import { EXIT_MISUSE, EXIT_PROBLEMS_FOUND } from "./repository-checks/index.ts";
 import { runChecks } from "./run-checks.ts";
 import { scanTraceFor } from "./scan-trace/scan-trace-report.ts";
 

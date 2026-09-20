@@ -8,7 +8,7 @@ import { isOutOfScopeSource } from "../../lib/out-of-scope-source.ts";
 import { toPosixPath } from "../../lib/posix-path.ts";
 
 import type { ESTree } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
 import type {
   CellClassFinding,
   CellClassIndexLoader,

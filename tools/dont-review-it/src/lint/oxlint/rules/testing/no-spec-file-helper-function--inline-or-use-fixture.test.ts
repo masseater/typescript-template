@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noSpecFileHelperFunction } from "./no-spec-file-helper-function--inline-or-use-fixture.ts";
 
 const SPEC_FILENAME = "report.test.ts";

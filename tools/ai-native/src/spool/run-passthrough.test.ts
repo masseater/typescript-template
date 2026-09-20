@@ -1,4 +1,4 @@
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 import { describe, expect, test } from "vite-plus/test";
 
 import { isPassthroughSignalled, runPassthrough } from "./run-passthrough.ts";

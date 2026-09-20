@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { noPromiseChain } from "./no-promise-chain--use-async-await.ts";
 
 describe("dont-review-it/no-promise-chain--use-async-await", () => {

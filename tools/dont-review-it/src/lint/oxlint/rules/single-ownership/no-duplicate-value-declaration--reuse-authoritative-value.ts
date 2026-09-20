@@ -14,7 +14,7 @@ import {
 } from "../../lib/value-declarations/declaration-index.ts";
 
 import type { ESTree } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
 
 const EXPORTED_MARK = "exported";
 

@@ -2,7 +2,7 @@ import { parseSync } from "oxc-parser";
 
 import { NODE_TYPE_FIELD } from "../ast-node.ts";
 
-import type { UnknownFields } from "@repo/dont-review-it/lint-rule-authoring";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 export const DEFAULT_SOURCE_NAME = "source.tsx";
 

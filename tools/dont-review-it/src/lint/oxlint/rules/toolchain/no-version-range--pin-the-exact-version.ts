@@ -13,7 +13,7 @@ import {
 } from "../../lib/dependency-catalog/shared-dependency-index.ts";
 
 import type { Context, ESTree } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
 import type { CatalogEntriesLoader } from "../../lib/dependency-catalog/catalog-entries.ts";
 import type { DeclaredDependency } from "../../lib/dependency-catalog/declared-dependencies.ts";
 

@@ -2,11 +2,11 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { normalize } from "node:path/posix";
 
-import { readUnlessMissing } from "@repo/dont-review-it/repository-checks";
 import { uniq } from "es-toolkit";
 
 import { readJsonFile } from "../lint/oxlint/lib/canonical-values/read-json-file.ts";
 import { NEGATION_PREFIX } from "../lint/oxlint/lib/tracked-paths/ignore-listing.ts";
+import { readUnlessMissing } from "../repository-checks/index.ts";
 
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 

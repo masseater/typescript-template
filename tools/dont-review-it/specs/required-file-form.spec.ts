@@ -7,7 +7,7 @@ import { describe, expect, it, onTestFinished } from "vite-plus/test";
 import { defaultRequiredFileFormConfig } from "../src/required-file-form/config.ts";
 import { runRequiredFileFormChecks } from "../src/required-file-form/run-required-file-form-checks.ts";
 
-import type { ScannedProblems } from "@repo/dont-review-it/repository-checks";
+import type { ScannedProblems } from "../src/repository-checks/index.ts";
 
 const scannedFor = async ({
   files,

@@ -18,7 +18,6 @@ const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
 
 const clientReachable: readonly string[] = [
   "@repo/runtime/client",
-  "@repo/runtime/contracts",
   "@repo/auth-ui",
   "@repo/ui",
   "#shared/api/client.ts",

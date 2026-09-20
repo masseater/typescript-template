@@ -1,10 +1,9 @@
 import { ROLE } from "@repo/config";
+import { onboardingSteps, query, schema } from "@repo/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { query } from "./database.ts";
-import { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
-import { user } from "./schema.ts";
+const { follow, memberOnboarding, user } = schema;
 
 type OnboardingStep = (typeof onboardingSteps)[number];
 
@@ -88,5 +87,5 @@ const homeFeed = Effect.fn("homeFeed")(function* homeFeed(viewerId: string) {
   }));
 });
 
-export { advanceOnboarding, followMember, homeFeed, onboardingSteps, stepOf };
+export { advanceOnboarding, followMember, homeFeed, stepOf };
 export type { FeedItem, OnboardingStep };

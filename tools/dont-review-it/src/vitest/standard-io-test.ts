@@ -22,7 +22,35 @@ const capturedWrites = (stream: NodeJS.WriteStream): CapturedStream => {
   }) as CapturedStream;
 };
 
+const standardIoTestOf = () =>
+  test
+    .extend("stdout", { auto: true }, () => capturedWrites(process.stdout))
+    .extend("stderr", { auto: true }, () => capturedWrites(process.stderr));
+
+type StandardIoTest = ReturnType<typeof standardIoTestOf>;
+
+let loaded: StandardIoTest | undefined;
+
+const loadStandardIoTest = (): StandardIoTest => {
+  loaded ??= standardIoTestOf();
+  return loaded;
+};
+
+const forward = (property: PropertyKey): unknown => {
+  const api = loadStandardIoTest();
+  const value: unknown = Reflect.get(api, property);
+  return typeof value === "function" ? value.bind(api) : value;
+};
+
+const unbound = (() => undefined) as unknown as StandardIoTest;
+
 /** @public */
-export const standardIoTest = test
-  .extend("stdout", { auto: true }, () => capturedWrites(process.stdout))
-  .extend("stderr", { auto: true }, () => capturedWrites(process.stderr));
+export const standardIoTest: StandardIoTest = new Proxy(unbound, {
+  apply(_target, thisArgument, argumentsList) {
+    const api = loadStandardIoTest() as (...args: unknown[]) => unknown;
+    return Reflect.apply(api, thisArgument, argumentsList);
+  },
+  get(_target, property) {
+    return forward(property);
+  },
+});

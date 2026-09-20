@@ -1,16 +1,16 @@
 import { resolve } from "node:path";
 
-import {
-  EXIT_MISUSE,
-  EXIT_SUCCESS,
-  measureCheck,
-  type CliResult,
-} from "@repo/dont-review-it/repository-checks";
 import { defineCommand } from "citty";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
 import { runLintRuleAuthoring } from "./lint-rule-authoring/run-cli.ts";
 import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import {
+  EXIT_MISUSE,
+  EXIT_SUCCESS,
+  measureCheck,
+  type CliResult,
+} from "./repository-checks/index.ts";
 import { runStopAiSlop } from "./stop-ai-slop/run-cli.ts";
 
 const writeCliResult = (result: CliResult): number => {

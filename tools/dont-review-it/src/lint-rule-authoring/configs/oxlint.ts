@@ -1,3 +1,6 @@
+// oxlint-disable-next-line import/no-nodejs-modules
+import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "oxlint";
 
 import { LINT_SEVERITY } from "../lint-rule-severity.ts";
@@ -7,9 +10,11 @@ import { noExplainedLintMessage } from "../lint/oxlint/rules/authoring/no-explai
 
 const PLUGIN_NAME = "lint-rule-authoring";
 
+const pluginSpecifier = fileURLToPath(new URL("../plugin.ts", import.meta.url));
+
 /** @public */
 export const oxlint = defineConfig({
-  jsPlugins: [{ name: PLUGIN_NAME, specifier: "@repo/dont-review-it/lint-rule-authoring/plugin" }],
+  jsPlugins: [{ name: PLUGIN_NAME, specifier: pluginSpecifier }],
   rules: {
     [`${PLUGIN_NAME}/${forbidSymbolPrefixedName.name}`]: LINT_SEVERITY.ERROR,
     [`${PLUGIN_NAME}/${noBroadLintDisable.name}`]: LINT_SEVERITY.ERROR,

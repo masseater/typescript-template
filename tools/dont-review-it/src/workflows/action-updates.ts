@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { readUnlessMissing, type ScannedProblems } from "@repo/dont-review-it/repository-checks";
-
+import { readUnlessMissing, type ScannedProblems } from "../repository-checks/index.ts";
 import {
   itemsOf,
   parseWorkflowDocument,

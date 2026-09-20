@@ -12,11 +12,22 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
-export { schema } from "./schema.ts";
+export { onboardingSteps, schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
 export { checkDatabase };
+export {
+  claimMailSlot,
+  findPasskeyUser,
+  findUser,
+  findWikiReader,
+  hasEnrolledFactor,
+  hasVerificationAudience,
+  lookupSessionByToken,
+  markSessionStrong,
+  revokeUserSessions,
+} from "./security.ts";
 export {
   InterviewConflict,
   InterviewLimitReached,

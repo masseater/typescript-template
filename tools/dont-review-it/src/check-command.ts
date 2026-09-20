@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
 
-import { measureCheck } from "@repo/dont-review-it/repository-checks";
 import { defineCommand } from "citty";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
 import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { measureCheck } from "./repository-checks/index.ts";
 
 const REPOSITORY_ROOT_FLAG = "--repository-root";
 

@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import { testLintRule } from "../../../../index.ts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { forbidSymbolPrefixedName } from "./forbid-symbol-prefixed-name--rename-to-alphanumeric-start.ts";

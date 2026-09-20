@@ -1,4 +1,4 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import { testLintRule } from "../../../../index.ts";
 import { describe } from "vite-plus/test";
 
 import { noExplainedLintMessage } from "./no-explained-lint-message--state-prohibition-then-fix.ts";

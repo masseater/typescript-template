@@ -1,5 +1,5 @@
 import { APPLICATION, ROLE } from "@repo/config";
-import { lookupSessionByToken } from "@repo/db/security";
+import { lookupSessionByToken } from "@repo/db";
 import { Effect } from "effect";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";

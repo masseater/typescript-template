@@ -14,7 +14,7 @@ import {
 } from "../../lib/split-type-authority/split-reports.ts";
 
 import type { ESTree } from "@oxlint/plugins";
-import type { WorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
 import type { TypeAuthorityIndexLoader } from "../../lib/split-type-authority/authority-index.ts";
 
 export const createNoSplitTypeAuthority = ({

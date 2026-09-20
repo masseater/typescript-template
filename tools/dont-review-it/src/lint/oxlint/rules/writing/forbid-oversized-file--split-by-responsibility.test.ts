@@ -1,6 +1,6 @@
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
 import { describe, expect, it } from "vite-plus/test";
 
+import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
 import { forbidOversizedFile } from "./forbid-oversized-file--split-by-responsibility.ts";
 
 const numberedLines = Array.from({ length: 1600 }, (_, index) => `const line${index} = ${index};`);

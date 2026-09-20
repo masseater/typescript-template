@@ -1,7 +1,7 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
 import { APPLICATION, type Application } from "@repo/config";
-import { findPasskeyUser } from "@repo/db/security";
+import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 
 import { passkeyRpId } from "./passkey-rp-id.ts";

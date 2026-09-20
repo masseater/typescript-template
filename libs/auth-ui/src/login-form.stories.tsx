@@ -1,7 +1,7 @@
-import preview from "@repo/ui/storybook/preview";
 import { HttpResponse, http } from "msw";
 import { expect, userEvent } from "storybook/test";
 
+import preview from "../storybook/preview";
 import { LoginForm } from "./login-form";
 
 const meta = preview.meta({ args: { onAuthenticated: () => undefined }, component: LoginForm });
