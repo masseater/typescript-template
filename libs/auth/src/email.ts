@@ -5,6 +5,8 @@ import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
 const mailSubjects = {
   contact: "お問い合わせ",
+  emailChangeConfirm: "メールアドレス変更の確認",
+  emailChangeNotice: "メールアドレスが変更されました",
   existingAccount: "このメールアドレスは登録済みです",
   verification: "メールアドレスの確認",
 } as const;
@@ -124,7 +126,41 @@ const sendContactEmail = (
     to: outbound.to,
   }).pipe(withSpan("email.contact"));
 
+const sendEmailChangeConfirmation = (
+  settings: MailSettings,
+  confirmation: { readonly email: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(confirmation.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
+  return deliver(settings, {
+    subject: mailSubjects.emailChangeConfirm,
+    text: `次のリンクを開くまで、メールアドレスは変更されません。\n${confirmation.url}`,
+    to: confirmation.email,
+  }).pipe(withSpan("email.change_confirmation"));
+};
+
+const sendEmailChangeNotice = (
+  settings: MailSettings,
+  notice: { readonly email: string; readonly nextEmail: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(notice.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
+  return deliver(settings, {
+    subject: mailSubjects.emailChangeNotice,
+    text: `メールアドレスが ${notice.nextEmail} に変更されました。心当たりがない場合は、次のリンクからログインできるか確認してください。\n${notice.url}`,
+    to: notice.email,
+  }).pipe(withSpan("email.change_notice"));
+};
+
 /** @internal */
 export { mailSubjects };
-export { sendContactEmail, sendExistingAccountNotice, sendVerificationEmail };
+export {
+  sendContactEmail,
+  sendEmailChangeConfirmation,
+  sendEmailChangeNotice,
+  sendExistingAccountNotice,
+  sendVerificationEmail,
+};
 export type { MailSettings };

@@ -15,7 +15,9 @@
     "./remote": "./src/remote-command.ts",
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts",
-    "./member-social": "./src/member-social.ts"
+    "./member-social": "./src/member-social.ts",
+    "./agreement": "./src/agreement.ts",
+    "./member-lifecycle": "./src/member-lifecycle.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate"

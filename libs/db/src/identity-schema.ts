@@ -16,9 +16,19 @@ if (userModel === undefined || sessionModel === undefined) {
   throw new Error("better-auth defines no user or session model");
 }
 
+/** @canonical-values db.admin-permission */
+const adminPermissions = ["view", "operate", "grant"] as const;
+type AdminPermission = (typeof adminPermissions)[number];
+const ADMIN_PERMISSION = {
+  grant: adminPermissions[2],
+  operate: adminPermissions[1],
+  view: adminPermissions[0],
+} as const satisfies Record<string, AdminPermission>;
+
 const user = sqliteTable(
   userModel.modelName,
   {
+    adminPermission: text("admin_permission", { enum: adminPermissions }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     email: text("email").notNull(),
     emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
@@ -39,6 +49,10 @@ const user = sqliteTable(
   (table) => [
     uniqueIndex("user_email_unique").on(table.email),
     check("user_role", sql`${table.role} IN ('member', 'admin')`),
+    check(
+      "user_admin_permission",
+      sql`${table.adminPermission} IS NULL OR ${table.adminPermission} IN ('view', 'operate', 'grant')`,
+    ),
   ],
 );
 
@@ -73,5 +87,5 @@ const UserRow = createSelectSchema(user);
 
 type UserRecord = typeof UserRow.Type;
 
-export { UserRow, session, user };
-export type { UserRecord };
+export { ADMIN_PERMISSION, UserRow, adminPermissions, session, user };
+export type { AdminPermission, UserRecord };

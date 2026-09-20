@@ -4,6 +4,8 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { emailChange, memberApiKey, memberMessage, withdrawnMember } from "./member-lifecycle-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -127,11 +129,16 @@ const auditEvent = sqliteTable(
 
 const schema = {
   account,
+  agreementAcceptance,
+  agreementVersion,
   auditEvent,
+  emailChange,
   follow,
   interview,
-  memberOnboarding,
   jwks,
+  memberApiKey,
+  memberMessage,
+  memberOnboarding,
   oauthAccessToken,
   oauthClient,
   oauthClientAssertion,
@@ -145,9 +152,13 @@ const schema = {
   twoFactor,
   user,
   verification,
+  withdrawnMember,
 };
 
 export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export { agreementAcceptance, agreementKinds, agreementVersion } from "./agreement-schema.ts";
+export type { AgreementKind } from "./agreement-schema.ts";
+export { emailChange, memberApiKey, memberMessage, withdrawnMember } from "./member-lifecycle-schema.ts";
 export {
   jwks,
   oauthAccessToken,

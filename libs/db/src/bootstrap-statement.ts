@@ -4,7 +4,7 @@ import { Effect, Schema, Struct } from "effect";
 
 import { DatabaseFailure } from "./database-failure.ts";
 import { query } from "./database.ts";
-import { UserRow } from "./identity-schema.ts";
+import { ADMIN_PERMISSION, UserRow } from "./identity-schema.ts";
 import { user } from "./schema.ts";
 
 const BootstrappedAdmin = Schema.Struct({
@@ -14,7 +14,7 @@ const BootstrappedAdmin = Schema.Struct({
 
 const bootstrapStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
-    SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
+    SET role = ${ROLE.administrator}, admin_permission = ${ADMIN_PERMISSION.grant}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
       AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${ROLE.administrator})
@@ -23,7 +23,7 @@ const bootstrapStatement = (email: typeof Email.Type): SQL => {
 
 const ensureAdminStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
-    SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
+    SET role = ${ROLE.administrator}, admin_permission = ${ADMIN_PERMISSION.grant}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
     RETURNING id, email, role`;

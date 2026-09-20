@@ -1,8 +1,9 @@
-import { roles, type Role } from "@repo/config";
+import { ROLE, roles, type Role } from "@repo/config";
 import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
+import { ADMIN_PERMISSION } from "./identity-schema.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
@@ -130,7 +131,11 @@ export const setUserRole = Effect.fn("setUserRole")(function* setUserRole(roleCh
     const audit = database.run(auditWhenTargeted(database, change));
     const promotion = database
       .update(user)
-      .set({ role, updatedAt: new Date() })
+      .set({
+        adminPermission: role === ROLE.administrator ? ADMIN_PERMISSION.grant : null,
+        role,
+        updatedAt: new Date(),
+      })
       .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
       .returning({ id: user.id, role: user.role });
     return database.batch([audit, promotion] as const);

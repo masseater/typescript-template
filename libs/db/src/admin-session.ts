@@ -3,7 +3,9 @@ import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 
+import { ADMIN_PERMISSION } from "./identity-schema.ts";
 import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+import { OperatingAdminRequired } from "./operating-admin-required.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
 
@@ -17,6 +19,19 @@ const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId:
     !strongAuthenticationMethods.some((method) => method === actor.session.authenticationMethod)
   ) {
     return yield* new AdminStrongSessionRequired();
+  }
+  return actor;
+});
+
+const requireOperatingAdmin = Effect.fn("requireOperatingAdmin")(function* requireOperatingAdmin(
+  sessionId: string,
+) {
+  const actor = yield* requireAdmin(sessionId);
+  if (
+    actor.user.adminPermission !== ADMIN_PERMISSION.operate &&
+    actor.user.adminPermission !== ADMIN_PERMISSION.grant
+  ) {
+    return yield* new OperatingAdminRequired();
   }
   return actor;
 });
@@ -41,4 +56,4 @@ const liveAdmin = (database: DrizzleDatabase, sessionId: string): SQL => {
   return exists(sessions);
 };
 
-export { liveAdmin, requireAdmin };
+export { liveAdmin, requireAdmin, requireOperatingAdmin };
