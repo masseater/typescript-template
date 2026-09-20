@@ -42,12 +42,36 @@ function emailVerificationFailure(error: EmailVerificationFailed): Failure {
     : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
 }
 
+const inviteFailures: Readonly<Record<InviteRejected["reason"], Failure>> = {
+  missing: { message: "招待が無効か、有効期限が切れています。", status: httpStatus.notFound },
+  pending: { message: "このメールアドレスには有効な招待があります。", status: httpStatus.conflict },
+  registered: {
+    message: "このメールアドレスは既に登録されています。",
+    status: httpStatus.conflict,
+  },
+};
+
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function inviteFailure(error: InviteRejected): Failure {
-  return error.reason === "registered"
-    ? { message: "このメールアドレスは既に登録されています。", status: httpStatus.conflict }
-    : { message: "招待が無効か、有効期限が切れています。", status: httpStatus.notFound };
+  return inviteFailures[error.reason];
 }
+
+const forbidden: Failure = {
+  message: "この操作は許可されていません。",
+  status: httpStatus.forbidden,
+};
+
+const privileged = {
+  ...unavailable,
+  AdminStrongSessionRequired: forbidden,
+  EmailDeliveryFailed: "unexpected",
+  InviteRejected: inviteFailure,
+  PermissionRequired: forbidden,
+  TargetUnavailable: {
+    message: "対象が存在しないか、操作権限が失効しています。",
+    status: httpStatus.conflict,
+  },
+} as const;
 
 const openInvite = Effect.fn("openInvite")(function* openInvite(request: Request) {
   const { token } = yield* readSearchParams(InvitePreviewQuery, request);
@@ -67,10 +91,7 @@ const acceptOpenInvite = Effect.fn("acceptOpenInvite")(function* acceptOpenInvit
 });
 
 function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
-  const failures = {
-    ...unavailable,
-    InviteRejected: (error: InviteRejected) => inviteFailure(error),
-  };
+  const failures = { ...unavailable, InviteRejected: inviteFailure };
   return createApi("")
     .get("/invite", api.route(InvitePreview, openInvite, failures))
     .post("/invite", api.route(InviteAccepted, acceptOpenInvite, failures));
@@ -106,4 +127,4 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     );
 }
 
-export { accountApi, inviteApi, sessionApi, unavailable };
+export { accountApi, inviteApi, privileged, sessionApi, unavailable };

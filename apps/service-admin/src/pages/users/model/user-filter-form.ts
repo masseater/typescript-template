@@ -9,18 +9,18 @@ import type { UsersSearch } from "./users-search.ts";
 interface UserFilterForm {
   readonly handleClear: () => void;
   readonly handleKeywordChange: (value: string) => void;
-  readonly handleRoleChange: (role: string) => void;
+  readonly handleStatusChange: (status: string) => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
   readonly handleVerifiedChange: (verified: string) => void;
   readonly keyword: string;
-  readonly role: string;
+  readonly status: string;
   readonly verified: string;
 }
 
-function usersSearchFromFilters(keyword: string, role: string, verified: string): UsersSearch {
+function usersSearchFromFilters(keyword: string, status: string, verified: string): UsersSearch {
   return normalizeUsersSearch({
     ...(keyword.trim() === "" ? {} : { keyword }),
-    ...(role === "" ? {} : { role }),
+    ...(status === "" ? {} : { status }),
     ...(verified === "" ? {} : { verified }),
   });
 }
@@ -28,13 +28,13 @@ function usersSearchFromFilters(keyword: string, role: string, verified: string)
 function useUserFilterForm(search: UsersSearch): UserFilterForm {
   const navigate = useNavigate({ from: "/members" });
   const [keyword, setKeyword] = useState(search.keyword ?? "");
-  const [role, setRole] = useState<string>(search.role ?? "");
+  const [status, setStatus] = useState<string>(search.status ?? "");
   const [verified, setVerified] = useState<string>(
     search.verified === undefined ? "" : String(search.verified),
   );
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    void navigate({ search: usersSearchFromFilters(keyword, role, verified) });
+    void navigate({ search: usersSearchFromFilters(keyword, status, verified) });
   }
   function handleClear(): void {
     void navigate({ search: {} });
@@ -42,11 +42,11 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
   return {
     handleClear,
     handleKeywordChange: setKeyword,
-    handleRoleChange: setRole,
+    handleStatusChange: setStatus,
     handleSubmit,
     handleVerifiedChange: setVerified,
     keyword,
-    role,
+    status,
     verified,
   };
 }

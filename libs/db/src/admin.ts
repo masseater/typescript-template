@@ -4,6 +4,7 @@ import {
   ADMIN_PERMISSION,
   ROLE,
   accountStates,
+  adminPermissions,
   type AccountState,
   type AdminPermission,
 } from "@repo/config/identity";
@@ -160,9 +161,12 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   return removed;
 });
 
+const adminPermissionOf = (permission: string | null): AdminPermission | null =>
+  adminPermissions.find((level) => level === permission) ?? null;
+
 export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {
   yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
-  return yield* query((database) =>
+  const admins = yield* query((database) =>
     database
       .select({
         accountState: user.accountState,
@@ -181,6 +185,7 @@ export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId
       )
       .orderBy(desc(user.createdAt), user.id),
   );
+  return admins.map((admin) => ({ ...admin, permission: adminPermissionOf(admin.permission) }));
 });
 
 export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft: {
@@ -225,7 +230,7 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     if (!changed) {
       return yield* new TargetUnavailable();
     }
-    return changed;
+    return { id: changed.id, permission: adminPermissionOf(changed.permission) };
   },
 );
 

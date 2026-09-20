@@ -1,4 +1,4 @@
-import { AccountMenu } from "@repo/auth-ui";
+import { AccountMenu, useSessionUser } from "@repo/auth-ui";
 import { useState } from "react";
 
 import { AdminHeader } from "./admin-header.tsx";
@@ -8,13 +8,10 @@ import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function AdminFrame({
   children,
-  email,
-  name,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-  email: string;
-  name: string;
 }>): ReactElement {
+  const { email, name } = useSessionUser();
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   function toggleNavigation(): void {

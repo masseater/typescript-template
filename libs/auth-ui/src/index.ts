@@ -1,11 +1,16 @@
 export { AccountMenu } from "./account-menu";
 export { EmailVerification } from "./email-verification";
+export { ForbiddenNotice } from "./forbidden-notice";
+export { InviteAcceptance } from "./invite-acceptance";
 export { LoginForm } from "./login-form";
 export { LoginPage } from "./login-page";
 export { SecurityPage } from "./security-page";
 export { SignOutButton } from "./sign-out-button";
 export { VerifyEmailPage } from "./verify-email-page";
 export { useSession } from "./use-session";
+export { SessionUserProvider } from "./session-user-provider";
+export { useSessionUser } from "./session-user";
+export type { SessionUser } from "./session-user";
 export { useSignOut } from "./use-sign-out";
 export { errorMessage, requireSuccess, SessionView } from "./protocol";
 export { loginPath, redirectTarget } from "./login-redirect";

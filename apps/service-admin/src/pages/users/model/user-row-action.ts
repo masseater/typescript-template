@@ -1,20 +1,20 @@
 import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { useToast } from "@repo/ui";
+import { STATUS_VARIANT, useToast } from "@repo/ui";
 import { useState } from "react";
 
 import { adminClient } from "#shared/api/index.ts";
-import { RoleChanged, UserDeleted } from "#shared/contracts/index.ts";
-import { nextRoles } from "./user-labels.ts";
+import { MemberStateChanged, UserDeleted } from "#shared/contracts/index.ts";
+import { accountStateLabels, nextAccountStates } from "./user-labels.ts";
 
 import type { ListedUser } from "./user-list.ts";
 
-type RowOperation = "delete" | "role";
+type RowOperation = "delete" | "state";
 
 interface UserRowAction {
   readonly handleConfirm: () => void;
   readonly handleDelete: () => void;
-  readonly handleRoleChange: () => void;
+  readonly handleStateChange: () => void;
   readonly confirming: RowOperation | undefined;
   readonly handleOpenChange: (open: boolean) => void;
   readonly pending: boolean;
@@ -26,17 +26,17 @@ async function perform(user: ListedUser, operation: RowOperation): Promise<strin
     apiData(UserDeleted, await users.delete({ id: user.id }));
     return `${user.email} を削除しました。`;
   }
-  const role = nextRoles[user.role];
-  apiData(RoleChanged, await users.patch({ id: user.id, role }));
-  return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
+  const accountState = nextAccountStates[user.accountState];
+  const changed = apiData(MemberStateChanged, await users.patch({ accountState, id: user.id }));
+  return `${user.email} を${accountStateLabels[changed.accountState]}にしました。`;
 }
 
 function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowAction {
   const notify = useToast();
   const [confirming, setConfirming] = useState<RowOperation>();
   const [pending, setPending] = useState(false);
-  function handleRoleChange(): void {
-    setConfirming("role");
+  function handleStateChange(): void {
+    setConfirming("state");
   }
   function handleDelete(): void {
     setConfirming("delete");
@@ -54,10 +54,10 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
     setPending(true);
     async function run(operation: RowOperation): Promise<void> {
       try {
-        notify("success", await perform(user, operation));
+        notify(STATUS_VARIANT.success, await perform(user, operation));
         onChanged();
       } catch (error) {
-        notify("error", errorMessage(error));
+        notify(STATUS_VARIANT.failure, errorMessage(error));
       }
       setPending(false);
     }
@@ -68,7 +68,7 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
     handleConfirm,
     handleDelete,
     handleOpenChange,
-    handleRoleChange,
+    handleStateChange,
     pending,
   };
 }

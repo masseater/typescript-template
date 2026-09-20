@@ -1,4 +1,10 @@
-import { APPLICATION, ROLE, STAFF_PERMISSION, type StaffPermission } from "@repo/config";
+import {
+  APPLICATION,
+  ROLE,
+  STAFF_PERMISSION,
+  staffPermissions,
+  type StaffPermission,
+} from "@repo/config";
 import { and, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -30,9 +36,12 @@ const staffActor = (
   action: AuditEntry["action"],
 ): Omit<AuditEntry, "targetId"> => ({ action, actorId: actor.user.id, actorKind: ROLE.staff });
 
+const staffPermissionOf = (permission: string | null): StaffPermission | null =>
+  staffPermissions.find((level) => level === permission) ?? null;
+
 export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: string) {
   yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
-  return yield* query((database) =>
+  const staff = yield* query((database) =>
     database
       .select({
         createdAt: user.createdAt,
@@ -47,6 +56,7 @@ export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: s
       )
       .orderBy(desc(user.createdAt), user.id),
   );
+  return staff.map((member) => ({ ...member, permission: staffPermissionOf(member.permission) }));
 });
 
 export const inviteStaff = Effect.fn("inviteStaff")(function* inviteStaff(draft: {
@@ -91,7 +101,7 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
     if (!changed) {
       return yield* new TargetUnavailable();
     }
-    return changed;
+    return { id: changed.id, permission: staffPermissionOf(changed.permission) };
   },
 );
 

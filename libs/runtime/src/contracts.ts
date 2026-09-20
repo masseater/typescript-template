@@ -65,4 +65,7 @@ export {
   InvitePreviewQuery,
   Role,
   SessionView,
+  maximumNameLength,
+  maximumPasswordLength,
+  minimumPasswordLength,
 };
