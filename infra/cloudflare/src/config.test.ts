@@ -7,7 +7,13 @@ import { parseDeploymentCommand, traceDestination, workerObservability } from ".
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { Ai, D1Database, DurableObjectNamespace, SendEmail, Service } from "@cloudflare/workers-types";
+import type {
+  Ai,
+  D1Database,
+  DurableObjectNamespace,
+  SendEmail,
+  Service,
+} from "@cloudflare/workers-types";
 import type { AppBindings } from "./bindings.ts";
 
 const release = "0".repeat(16);

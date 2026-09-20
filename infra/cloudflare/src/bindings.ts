@@ -36,9 +36,9 @@ interface CapabilityEnv {
   readonly realtime: Readonly<{ USER_INBOX: DurableObjectLike }>;
 }
 
-type UnionToIntersection<Union> = (
-  Union extends unknown ? (value: Union) => void : never
-) extends (value: infer Intersection) => void
+type UnionToIntersection<Union> = (Union extends unknown ? (value: Union) => void : never) extends (
+  value: infer Intersection,
+) => void
   ? Intersection
   : never;
 

@@ -4,7 +4,14 @@ import { isDeepStrictEqual } from "node:util";
 
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
-import { APPLICATION, appEnvKey, applications, grants, userInboxBinding, userInboxClassName } from "@repo/config";
+import {
+  APPLICATION,
+  appEnvKey,
+  applications,
+  grants,
+  userInboxBinding,
+  userInboxClassName,
+} from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
