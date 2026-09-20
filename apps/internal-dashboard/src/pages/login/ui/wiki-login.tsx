@@ -1,4 +1,5 @@
 import { LoginPage } from "@repo/auth-ui";
+import { httpStatus } from "@repo/observability/http-status";
 import { decodeJson } from "@repo/runtime/client";
 import { Schema } from "effect";
 
@@ -6,7 +7,6 @@ import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
-const HTTP_FORBIDDEN = 403;
 const Redirect = Schema.Struct({ url: Schema.String });
 
 async function requestContinuation(oauthQuery: string): Promise<Response> {
@@ -20,7 +20,7 @@ async function requestContinuation(oauthQuery: string): Promise<Response> {
 
 async function continuationTarget(oauthQuery: string): Promise<string> {
   const response = await requestContinuation(oauthQuery);
-  if (response.status === HTTP_FORBIDDEN) {
+  if (response.status === httpStatus.forbidden) {
     return "/security";
   }
   if (!response.ok) {

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -28,7 +28,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
 ]);
 
 function defaultExport(module: unknown): unknown {
-  return typeof module === "object" && module !== null ? Reflect.get(module, "default") : undefined;
+  return Predicate.isObject(module) ? Reflect.get(module, "default") : undefined;
 }
 
 function violationsWhenLast(last: StackName): readonly StackName[] {
