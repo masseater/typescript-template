@@ -1,8 +1,7 @@
-import { noop } from "es-toolkit";
 import { useSyncExternalStore } from "react";
 
 const subscribeNothing = (): (() => void) => {
-  return noop;
+  return () => undefined;
 };
 
 const clientSnapshot = (): boolean => {
