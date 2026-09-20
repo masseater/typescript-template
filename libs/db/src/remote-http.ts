@@ -158,4 +158,4 @@ const remoteDatabase = ({
 };
 
 export { remoteDatabase, remoteExecutor };
-export type { DatabaseExecutor, RemoteQuery };
+export type { DatabaseExecutor };
