@@ -63,15 +63,20 @@ describe("the applied migrations", () => {
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
-    it("guard sessions, pending sign-ups and the last administrator", ({ appliedTriggers }) => {
+    it("guard sessions, pending sign-ups, the last owner and the last editor", ({
+      appliedTriggers,
+    }) => {
       expect(appliedTriggers).toStrictEqual([
         "session_insert_current_version",
         "session_update_current_version",
         "user_delete_pending_auth",
         "user_keep_last_admin_delete",
         "user_keep_last_admin_update",
+        "user_keep_last_editor_delete",
+        "user_keep_last_editor_update",
         "user_role_revoke_oauth_grants",
         "user_role_revoke_sessions",
+        "user_state_revoke_sessions",
       ]);
     });
   });

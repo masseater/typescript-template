@@ -1,4 +1,10 @@
-import { AUTHENTICATION_METHOD, applications } from "@repo/config";
+import {
+  AUTHENTICATION_METHOD,
+  ROLE,
+  accountPermissions,
+  applications,
+  roles,
+} from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { session, user } from "./identity-schema.ts";
@@ -108,15 +114,42 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["role_changed", "user_deleted"] as const;
+export const auditActions = [
+  "role_changed",
+  "user_deleted",
+  "member_suspended",
+  "member_unsuspended",
+  "admin_invited",
+  "admin_permission_changed",
+  "admin_disabled",
+  "admin_enabled",
+  "staff_invited",
+  "staff_permission_changed",
+  "staff_removed",
+  "invite_accepted",
+] as const;
 export type AuditAction = (typeof auditActions)[number];
-export const AUDIT_ACTION = { roleChanged: auditActions[0], userDeleted: auditActions[1] } as const;
+export const AUDIT_ACTION = {
+  roleChanged: auditActions[0],
+  userDeleted: auditActions[1],
+  memberSuspended: auditActions[2],
+  memberUnsuspended: auditActions[3],
+  adminInvited: auditActions[4],
+  adminPermissionChanged: auditActions[5],
+  adminDisabled: auditActions[6],
+  adminEnabled: auditActions[7],
+  staffInvited: auditActions[8],
+  staffPermissionChanged: auditActions[9],
+  staffRemoved: auditActions[10],
+  inviteAccepted: auditActions[11],
+} as const satisfies Record<string, AuditAction>;
 
 const auditEvent = sqliteTable(
   "audit_event",
   {
     action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
+    actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.administrator),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),
@@ -125,11 +158,32 @@ const auditEvent = sqliteTable(
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
 );
 
+const invite = sqliteTable(
+  "invite",
+  {
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    audience: text("audience", { enum: applications }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    email: text("email").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    inviterId: text("inviter_id").notNull(),
+    permission: text("permission", { enum: accountPermissions }).notNull(),
+    tokenHash: text("token_hash").notNull(),
+  },
+
+  (table) => [
+    uniqueIndex("invite_token_hash_unique").on(table.tokenHash),
+    index("invite_email_idx").on(table.audience, table.email),
+  ],
+);
+
 const schema = {
   account,
   auditEvent,
   follow,
   interview,
+  invite,
   memberOnboarding,
   jwks,
   oauthAccessToken,
@@ -147,7 +201,7 @@ const schema = {
   verification,
 };
 
-export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export { account, auditEvent, invite, passkey, rateLimit, schema, twoFactor, verification };
 export {
   jwks,
   oauthAccessToken,
