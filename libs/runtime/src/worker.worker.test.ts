@@ -91,7 +91,7 @@ describe("a worker whose layer cannot be built", () => {
         assert.deepStrictEqual(reported, {
           "error.fields": fields,
           "error.tag": tag,
-          "error.type": "Error",
+          "error.type": tag,
           event: "application.runtime_unavailable",
           service: "service-member-server",
         });
