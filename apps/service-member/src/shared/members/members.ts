@@ -1,4 +1,4 @@
-import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
+import { UserNotFound, containsKeyword, query, schema, visibleMember } from "@repo/db";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -43,7 +43,7 @@ function shown({
 }
 
 const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, memberId: string) {
-  const visible = or(eq(user.emailVerified, true), eq(user.id, viewerId));
+  const visible = or(visibleMember(), eq(user.id, viewerId));
   const [member] = yield* query((database) =>
     database
       .select(memberColumns)
@@ -63,7 +63,7 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
   readonly offset: number;
 }) {
   const named = page.keyword === undefined ? undefined : containsKeyword(user.name, page.keyword);
-  const listed = and(eq(user.emailVerified, true), named);
+  const listed = and(visibleMember(), named);
   const members = yield* query((database) =>
     database
       .select(memberColumns)

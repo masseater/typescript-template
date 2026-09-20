@@ -14,6 +14,7 @@ export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
 export { onboardingSteps, schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
+export { visibleMember } from "./visible-member.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
 export { checkDatabase };
