@@ -1,5 +1,5 @@
-import { deploymentKey } from "@repo/observability/deployment-keys";
 import { GoogleAnalyticsMeasurementId } from "@repo/config";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Config, Effect, Option, Redacted } from "effect";
 
 import {

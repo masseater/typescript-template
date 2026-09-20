@@ -7,7 +7,7 @@ import { Effect, Schema } from "effect";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import { appLayer } from "./index.ts";
-import { appServerEntry, serveApp, workerRuntime } from "./worker.ts";
+import { appServerEntry, serveApp, startRoute, workerRuntime } from "./worker.ts";
 
 import type { Reporting } from "@repo/observability";
 import type { Layer } from "effect";
