@@ -1,4 +1,5 @@
 import { verifySession } from "@repo/auth";
+import { APPLICATION } from "@repo/config";
 import { UserNotFound } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { accountApi, sessionFailures } from "@repo/runtime/account";
@@ -34,7 +35,7 @@ const profileFailures = {
 
 function memberRoutes(api: ApiRoutes<AppServices | FeatureFlags | Interviewer | OpsMail>) {
   return createApi(apiRoot)
-    .use(apiDocs("service-member"))
+    .use(apiDocs(APPLICATION.user))
     .use(accountApi(api))
     .use(contactApi(api))
     .use(flagsApi(api))

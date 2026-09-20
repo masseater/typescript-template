@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { SessionRequired } from "@repo/auth";
+import { APPLICATION } from "@repo/config";
 import { Telemetry, httpStatus } from "@repo/observability";
 import { Effect, JsonSchema, Layer, Schema, SchemaRepresentation } from "effect";
 
@@ -40,12 +41,12 @@ const MemberList = Schema.Struct({
 });
 const context = Layer.succeed(AppOrigin, origin).pipe(
   Layer.provideMerge(
-    Telemetry.layer({ release: "test", routes: {}, serviceName: "service-member" }),
+    Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.user }),
   ),
 );
 const api = apiRoutes(
   workerRuntime(() => context),
-  { service: "service-member" },
+  { service: APPLICATION.user },
 );
 const stored = { email: "reader@example.test", id: "user-1", name: "reader", profile: "自己紹介" };
 const members = { members: [], pageSize: memberPageSize, total: page } as const;
@@ -67,7 +68,7 @@ function throttledFailure(error: Throttled): {
 }
 
 const app = createApi(apiRoot)
-  .use(apiDocs("service-member"))
+  .use(apiDocs(APPLICATION.user))
   .get("/profile", ...api.route({ response: ProfileView }, () => Effect.succeed(stored), {}))
   .get(
     "/members",
@@ -110,7 +111,7 @@ const app = createApi(apiRoot)
 const guardedApp = createApi(apiRoot)
   .use(
     apiDocs(
-      "service-admin",
+      APPLICATION.admin,
       api.guard(
         (request) =>
           request.headers.get("cookie") === "session=1"
@@ -125,11 +126,11 @@ const guardedApp = createApi(apiRoot)
 const unavailableApi = apiRoutes(
   workerRuntime(() => Layer.effect(AppOrigin, Effect.fail("unavailable"))),
   {
-    service: "service-member",
+    service: APPLICATION.user,
   },
 );
 const unavailableApp = createApi(apiRoot)
-  .use(apiDocs("service-member"))
+  .use(apiDocs(APPLICATION.user))
   .get(
     "/profile",
     ...unavailableApi.route({ response: ProfileView }, () => Effect.succeed(stored), {}),

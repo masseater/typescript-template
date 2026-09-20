@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { scalarReferencePath } from "@repo/config";
+import { APPLICATION, scalarReferencePath } from "@repo/config";
 import { Telemetry, httpStatus } from "@repo/observability";
 import { readScalarReference } from "@repo/vite-config";
 import { Effect, Layer, Schema } from "effect";
@@ -31,15 +31,15 @@ interface Visit {
 function referenceApp(origin: string) {
   const context = Layer.succeed(AppOrigin, origin).pipe(
     Layer.provideMerge(
-      Telemetry.layer({ release: "test", routes: {}, serviceName: "service-member" }),
+      Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.user }),
     ),
   );
   const api = apiRoutes(
     workerRuntime(() => context),
-    { service: "service-member" },
+    { service: APPLICATION.user },
   );
   return createApi(apiRoot)
-    .use(apiDocs("service-member"))
+    .use(apiDocs(APPLICATION.user))
     .get("/profile", ...api.route({ response: ProfileView }, () => Effect.succeed(stored), {}));
 }
 

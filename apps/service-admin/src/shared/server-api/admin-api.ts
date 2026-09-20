@@ -1,4 +1,5 @@
 import { verifySession } from "@repo/auth";
+import { APPLICATION } from "@repo/config";
 import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
 import { httpStatus } from "@repo/observability";
 import { accountApi, forbidden, sessionFailures } from "@repo/runtime/account";
@@ -34,7 +35,7 @@ function adminRoutes(api: ApiRoutes<AppServices>) {
   return createApi(apiRoot)
     .use(
       apiDocs(
-        "service-admin",
+        APPLICATION.admin,
         api.guard((request) => verifySession(request.headers), sessionFailures),
       ),
     )
