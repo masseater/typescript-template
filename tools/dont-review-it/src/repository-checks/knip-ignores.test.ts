@@ -284,7 +284,13 @@ const filesForDirectory = (directory: string, nested: boolean): readonly string[
   );
   const roots = owned.filter((file) => [".js", ".mjs", ".ts", ".tsx"].includes(extensionOf(file)));
   const files = [
-    ...new Set([...owned, ...followedFiles([...roots, ...workspaceDependencyEntries(directory)])]),
+    ...new Set([
+      ...owned,
+      ...followedFiles([
+        ...roots,
+        ...(nested ? workspaceDependencyEntries(directory) : []),
+      ]),
+    ]),
   ];
   filesByDirectory.set(key, files);
   return files;
