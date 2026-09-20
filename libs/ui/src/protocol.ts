@@ -1,8 +1,27 @@
-import { Schema } from "effect";
+import { roles } from "@repo/config";
+import { Result, Schema } from "effect";
 
-import type { SessionView as SessionContract } from "@repo/runtime/contracts";
+const SessionView = Schema.Struct({
+  strong: Schema.Boolean,
+  user: Schema.Struct({
+    email: Schema.String,
+    id: Schema.String,
+    name: Schema.String,
+    role: Schema.Literals(roles),
+    twoFactorEnabled: Schema.Boolean,
+  }),
+});
 
-type SessionView = typeof SessionContract.Type;
+const decodeJson = <Contract extends Schema.Top & { readonly DecodingServices: never }>(
+  contract: Contract,
+  input: unknown,
+): Contract["Type"] => {
+  const decoded = Schema.decodeUnknownResult(contract)(input);
+  if (Result.isFailure(decoded)) {
+    throw new Error("サーバーの応答形式が不正です。");
+  }
+  return decoded.success;
+};
 
 const errorMessage = (failure: unknown): string => {
   return failure instanceof Error
@@ -91,10 +110,12 @@ const passkeyUVOptions = (
 };
 
 export {
+  SessionView,
+  decodeJson,
   errorMessage,
   isPasskeyOptionsPath,
   passkeyUVOptions,
   requireSecureContext,
   requireSuccess,
 };
-export type { SessionView };
+export type SessionView = typeof SessionView.Type;
