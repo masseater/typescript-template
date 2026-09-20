@@ -3,7 +3,6 @@ name: lint-rule-authoring
 description: >
   Author a custom oxlint rule with @repo/dont-review-it/lint-rule-authoring: `createWorkspaceLintRule` fills `meta.docs.url` and appends the docs path to every report message, `testLintRule` runs the rule over named valid and invalid snippets, `LINT_SEVERITY` names the severities, `meta.docs.shipped` declares whether a preset carries the rule, and `lint-rule-authoring check --write` reconciles each workspace's `docs/lint/index.md` and `docs/lint/<rule>.md` against the rules under the manifest's `lintRules` directories. Load when writing or changing a rule, wording its report messages, testing it, registering it in a preset, or fixing a reported rule index or rule document.
 
-
 metadata:
   type: core
   library: "@repo/dont-review-it/lint-rule-authoring"

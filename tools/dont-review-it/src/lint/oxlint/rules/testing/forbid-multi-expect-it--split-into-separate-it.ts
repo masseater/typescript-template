@@ -222,13 +222,11 @@ const overflowingIn = (reading: Reading, budget: number): readonly Report[] => {
       0,
     );
     const elsewhere = throughText(reached);
-    return beyondBudget(placed, budget).map(
-      (overflowing): Report => ({
-        node: overflowing.at,
-        messageId: elsewhere === "" ? "multiExpectIt" : "multiExpectItThroughCallees",
-        data: { attributed, direct: direct.length, elsewhere, limit: budget },
-      }),
-    );
+    return beyondBudget(placed, budget).map((overflowing): Report => ({
+      node: overflowing.at,
+      messageId: elsewhere === "" ? "multiExpectIt" : "multiExpectItThroughCallees",
+      data: { attributed, direct: direct.length, elsewhere, limit: budget },
+    }));
   });
 };
 

@@ -49,23 +49,19 @@ export const forbidRestrictedTargetRelay = createDontReviewItRule({
     const fromFile = resolve(inspection.cwd, inspection.filename);
     const aliases = internalAliasesFrom(inspection.options);
 
-    const readingPolicyOf = memoize(
-      (): ReachPolicy => ({
-        workspaceRoot: findWorkspaceRoot(dirname(fromFile)),
-        entries: entriesInForceAt({ entries: listedEntries, file: fromFile, cwd: inspection.cwd }),
-        aliases,
-      }),
-    );
+    const readingPolicyOf = memoize((): ReachPolicy => ({
+      workspaceRoot: findWorkspaceRoot(dirname(fromFile)),
+      entries: entriesInForceAt({ entries: listedEntries, file: fromFile, cwd: inspection.cwd }),
+      aliases,
+    }));
 
-    const forwardingPolicyOf = memoize(
-      (): ReachPolicy => ({
-        ...readingPolicyOf(),
-        entries: listedEntries,
-      }),
-    );
+    const forwardingPolicyOf = memoize((): ReachPolicy => ({
+      ...readingPolicyOf(),
+      entries: listedEntries,
+    }));
 
-    const constantsOf = memoize(
-      (): ReadonlyMap<string, string> => constantSpecifiersIn(inspection.sourceCode.ast.body),
+    const constantsOf = memoize((): ReadonlyMap<string, string> =>
+      constantSpecifiersIn(inspection.sourceCode.ast.body),
     );
 
     const reportForward = (forwarded: {

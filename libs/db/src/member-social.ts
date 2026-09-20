@@ -80,14 +80,12 @@ const homeFeed = Effect.fn("homeFeed")(function* homeFeed(viewerId: string) {
       .orderBy(desc(user.updatedAt))
       .limit(50),
   );
-  return actors.map(
-    (actor): FeedItem => ({
-      actorId: actor.id,
-      actorName: actor.name,
-      kind: "profile",
-      updatedAt: actor.updatedAt.getTime(),
-    }),
-  );
+  return actors.map((actor): FeedItem => ({
+    actorId: actor.id,
+    actorName: actor.name,
+    kind: "profile",
+    updatedAt: actor.updatedAt.getTime(),
+  }));
 });
 
 export { advanceOnboarding, followMember, homeFeed, onboardingSteps, stepOf };
