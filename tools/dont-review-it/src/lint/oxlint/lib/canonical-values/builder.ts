@@ -1,6 +1,6 @@
 import { dirname, resolve } from "node:path";
 
-import { measureStage } from "@repo/lint-rule-authoring";
+import { measureStage } from "@repo/dont-review-it/lint-rule-authoring";
 import { attempt, memoize, sortBy, uniqBy } from "es-toolkit";
 
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
