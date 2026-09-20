@@ -305,7 +305,7 @@ function appRun(app: Application): RunConfig {
       },
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+        prepush: ["check:effect", "check", "check:imports", "check:react", "check:client"],
         prepr: ["build"],
         premerge: ["test", "check:dev"],
         prerelease: [],
