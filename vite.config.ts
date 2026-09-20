@@ -15,6 +15,8 @@ const importedTools = [
   "./tools/stop-ai-slop",
 ];
 
+const changedSince = '"${TEST_CHANGED_SINCE:-origin/main}"';
+
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
 const textModule = (code: string, moduleId: string): string | undefined =>
@@ -62,8 +64,10 @@ export default defineConfig({
       test: { cache: false, command: "vp test run --project '!@repo/*'" },
       "test:changed": {
         cache: false,
-        command:
-          "vp test run --project '!@repo/*' --changed \"${TEST_CHANGED_SINCE:-origin/main}\" --passWithNoTests",
+        command: [
+          `git merge-base ${changedSince} HEAD > /dev/null`,
+          `vp test run --project '!@repo/*' --changed ${changedSince} --passWithNoTests`,
+        ],
       },
       ...lifecycle({
         precommit: ["check:code"],
