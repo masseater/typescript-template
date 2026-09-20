@@ -9,7 +9,7 @@ description: 文書を増やす前の判断、置き場所と所有者の決め�
 
 このリポジトリの文書は変わる理由ごとに分かれている。リポジトリ直下の `AGENTS.md` は道具と依存と運用の取り決めが変わったときに、各 workspace の `AGENTS.md` はその workspace の中の事情で、`apps/internal-dashboard/content/docs/guidelines/` は実装とレビューの判断が変わったときに変わる。この分かれ方が崩れて役割の違う記述が同じ場所に入ると、読み手は本題に入る前に、その段落が自分を拘束するのかを判定することになる。
 
-拘束力のある記述は、書いた回数ではなく読まれた回数だけ費用がかかる。残す基準は「書けること」ではなく「書かないと判断を誤ること」になる。このリポジトリの読み手は、ここに作業する者と、`tools/ai-native`・`tools/dont-review-it`・`tools/lint-rule-authoring`・`tools/stop-ai-slop` を npm から取り込む側の両方です。後者向けの面は `publishConfig.access: public` で保たれており、文書の拘束範囲を「このリポジトリの中だけ」とみなしてはいけません。
+拘束力のある記述は、書いた回数ではなく読まれた回数だけ費用がかかる。残す基準は「書けること」ではなく「書かないと判断を誤ること」になる。このリポジトリの読み手は、ここに作業する者と、`tools/ai-native`・`tools/ai-native-telemetry`・`tools/dont-review-it` を npm から取り込む側の両方です。後者向けの面は `publishConfig.access: public` で保たれており、文書の拘束範囲を「このリポジトリの中だけ」とみなしてはいけません。
 
 ## 増やす前に所有者を探す
 

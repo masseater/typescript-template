@@ -5,7 +5,7 @@ description: 成果物をどこに置き、何で作り、どこから呼ぶか�
 
 この文書が守るのは、成果物の置き場所と道具立てが、そのまま「誰に届くか」と「どの種類の失敗を受け入れたか」の宣言として読める状態です。読めなくなった時点で、次に同じ判断をする人は別の根拠で決めることになり、失敗の再現も修正も当て推量になる。
 
-このリポジトリの外へ届く面は、Cloudflare Workers へデプロイされるアプリ、Alchemy が外部サービスに残す状態、および `tools/ai-native`・`tools/dont-review-it`・`tools/lint-rule-authoring`・`tools/stop-ai-slop` の npm 公開面（`private` を持たず `publishConfig.access: public`）です。節は外に出る面から内側へ並べてあり、外へ届く面と共有の取り決めが先に、置き場所と道具と版と入口が続き、最後に機械が判定できる性質を挙げる。
+このリポジトリの外へ届く面は、Cloudflare Workers へデプロイされるアプリ、Alchemy が外部サービスに残す状態、および `tools/ai-native`・`tools/ai-native-telemetry`・`tools/dont-review-it` の npm 公開面（`private` を持たず `publishConfig.access: public`）です。節は外に出る面から内側へ並べてあり、外へ届く面と共有の取り決めが先に、置き場所と道具と版と入口が続き、最後に機械が判定できる性質を挙げる。
 
 ## 外に出る面と、それが名乗る責務
 
