@@ -312,6 +312,7 @@ describe("lifecycle contents", () => {
       ".#test:dev-server",
       "infra/cloudflare#verify:account",
       "tools/commander#check:start",
+      "tools/dev#check:exported",
       "tools/dev#setup",
       "tools/dont-review-it#check:staged",
     ]);

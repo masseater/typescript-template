@@ -6,8 +6,7 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/receiver.ts",
-    "./image": "./src/receiver-image.ts"
+    ".": "./src/receiver.ts"
   },
   "dependencies": {
     "@repo/cli": "workspace:*",
