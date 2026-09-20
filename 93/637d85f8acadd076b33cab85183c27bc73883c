@@ -1,1 +1,1 @@
-fix knip: drop unused welcome/onboarding public exports
+fix CI: FSD/welcome-shell, PK NOT NULL, allowlist, knip unused exports
