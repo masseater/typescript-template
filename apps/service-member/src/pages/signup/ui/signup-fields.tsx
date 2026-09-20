@@ -9,7 +9,7 @@ import {
   maximumNameLength,
   maximumPasswordLength,
 } from "#shared/contracts/index.ts";
-import { fieldError } from "#shared/forms/field-error.ts";
+import { fieldError } from "#shared/forms/index.ts";
 
 import type { ReactElement, FormEvent } from "react";
 
