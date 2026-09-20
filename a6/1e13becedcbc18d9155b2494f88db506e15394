@@ -1,1 +1,1 @@
-also fix deployment-access redaction keys via originKeys (hyphenated apps break toUpperCase); restore hooks.test to match coupled premerge lifecycle
+oxlint 回避策（SKIP_LINT_NATIVE / concurrency-limit / premerge 連鎖解除 / hooks 特例）を外し、本因の origins キー不一致だけ残す。
