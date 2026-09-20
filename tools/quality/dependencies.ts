@@ -68,8 +68,13 @@ const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): 
   );
 };
 
-const rootOnlyPackages: Readonly<Record<string, string>> = {
-  "react-doctor": "ルートの vp run check:react",
+const rootOnlyPackages: Readonly<
+  Record<string, { readonly owners: readonly string[]; readonly runner: string }>
+> = {
+  "react-doctor": {
+    owners: ["tools/quality/package.json"],
+    runner: "ルートの vp run check:react",
+  },
 };
 
 type LocalExecutableName = "commander";
@@ -120,10 +125,12 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
   return workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
     return Object.entries(rootOnlyPackages)
-      .filter(([dependency]) => declared.includes(dependency))
+      .filter(
+        ([dependency, { owners }]) => declared.includes(dependency) && !owners.includes(file),
+      )
       .map(
-        ([dependency, runner]) =>
-          `${file}: ${dependency} はリポジトリ全体の検査なのでルートだけが宣言します。${runner} から実行してください。`,
+        ([dependency, { owners, runner }]) =>
+          `${file}: ${dependency} はリポジトリ全体の検査なので ${owners.join(" / ")} だけが宣言します。${runner} から実行してください。`,
       );
   });
 };

@@ -148,9 +148,22 @@ function reachesTest(directory: string, stages: string[]): boolean {
   return reachable(directory, stages).some((name) => name === "test" || name.startsWith("test:"));
 }
 
+function filterCoveredTestProjects(): Set<string> {
+  const packages = new Set(
+    workflowRuns("../../.github/workflows/check.yml").flatMap((command) => {
+      const match = /^vp run --filter (@repo\/[\w-]+) (test(?::[\w-]+)?)$/u.exec(command);
+      return match?.[1] === undefined ? [] : [match[1]];
+    }),
+  );
+  return new Set(
+    testProjectDirectories.filter((directory) => packages.has(workspaceNames[directory] ?? "")),
+  );
+}
+
 function ungatedProjects(): string[] {
+  const covered = filterCoveredTestProjects();
   return testProjectDirectories.filter(
-    (directory) => !reachesTest(directory, ["prepr", "premerge"]),
+    (directory) => !reachesTest(directory, ["prepr", "premerge"]) && !covered.has(directory),
   );
 }
 
