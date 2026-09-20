@@ -1,8 +1,8 @@
-import { Cause, Console, Effect, Result } from "effect";
+import { Cause, Console, Effect, Predicate, Result } from "effect";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
-import { isRecord, serviceLabel } from "./structured-logs.ts";
+import { serviceLabel } from "./structured-logs.ts";
 
 import type { ServiceName } from "./service-name.ts";
 import type { LogSink } from "./structured-logs.ts";
@@ -48,7 +48,7 @@ function causeText(value: unknown): string | undefined {
   if (value instanceof Error) {
     return value.message === "" ? undefined : `${value.name}: ${value.message}`;
   }
-  if (!isRecord(value)) {
+  if (!Predicate.isObject(value)) {
     return undefined;
   }
   const { message } = value;
@@ -59,7 +59,7 @@ function nestedCause(value: unknown): unknown {
   if (value instanceof Error) {
     return value.cause;
   }
-  return isRecord(value) ? value["cause"] : undefined;
+  return Predicate.isObject(value) ? value["cause"] : undefined;
 }
 
 function causeChain(error: unknown): string {
