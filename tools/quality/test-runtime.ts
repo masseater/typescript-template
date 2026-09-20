@@ -1,5 +1,6 @@
 const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
+const devServerTests = "**/*.dev-server.test.ts";
 const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
 const nodeRuntimePackages = [
@@ -29,6 +30,7 @@ const runsInWorkerRuntime = (inspected: string): boolean => {
 };
 
 export {
+  devServerTests,
   nodeRuntimePackages,
   runsInWorkerRuntime,
   testPattern,

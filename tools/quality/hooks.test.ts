@@ -220,6 +220,7 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test",
+      ".#test:dev-server",
       "infra/cloudflare#verify:account",
       "libs/db#db:migrate:local",
       "tools/commander#check:start",
@@ -260,7 +261,10 @@ describe("test ownership", () => {
 
   it("leaves the workspace projects out of the root test task", () => {
     expect.hasAssertions();
-    expect(commands(".", "test")).toStrictEqual(["vp test run --project '!@repo/*'"]);
+    expect(commands(".", "test")).toStrictEqual([
+      "vp test run --project '!@repo/*' --project '!dev-server'",
+    ]);
+    expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 });
