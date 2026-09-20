@@ -1,11 +1,6 @@
 import { Option, Schema } from "effect";
 
-import {
-  BooleanText,
-  Role,
-  SearchKeyword,
-  laterPage,
-} from "#shared/contracts/index.ts";
+import { BooleanText, Role, SearchKeyword, laterPage } from "#shared/contracts/index.ts";
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);

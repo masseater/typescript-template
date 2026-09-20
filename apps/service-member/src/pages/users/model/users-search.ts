@@ -1,10 +1,6 @@
 import { Option, Schema } from "effect";
 
-import {
-  SearchKeyword,
-  laterPage,
-  maximumMemberPage,
-} from "#shared/contracts/index.ts";
+import { SearchKeyword, laterPage, maximumMemberPage } from "#shared/contracts/index.ts";
 
 const UsersSearchParams = Schema.Struct({
   keyword: Schema.optionalKey(SearchKeyword),
