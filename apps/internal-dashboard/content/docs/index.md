@@ -9,13 +9,17 @@ description: 社内向けの文書と、MCP で文書を配る入口
 
 1. [このテンプレートは何か](/getting-started/what-is-this)
 2. [アプリの役割](/getting-started/applications)
-3. [LLM ガイドライン](/guidelines/principles)
+3. [データモデルの全体](/data-model/overview)
+4. [用語集](/glossary)
+5. [LLM ガイドライン](/guidelines/principles)
 
 ## 節
 
 | 節 | 中身 |
 | --- | --- |
 | [はじめに](/getting-started/what-is-this) | テンプレートの概要と、使い始めるときに書き換えるところ |
+| [データモデル](/data-model/overview) | ER 図を土台にした概念と関係。本格開発のときに差し替える |
+| [用語集](/glossary) | ドメイン用語。`[[用語]]` からホバーで解説を見て移れる |
 | [LLM ガイドライン](/guidelines/principles) | 実装とレビューの判断基準 |
 | [ページ構成](/pages/internal-dashboard-layout) | 各アプリの画面の仕様 |
 | [計画](/plans/modernization) | 採用する技術と置き換えの計画 |
