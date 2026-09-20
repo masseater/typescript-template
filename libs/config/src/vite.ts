@@ -140,19 +140,16 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
-type RunConfig = NonNullable<UserConfig["run"]>;
-type Tasks = NonNullable<RunConfig["tasks"]>;
-
-const workspaceRootPrecommit = "typescript-template#precommit";
-
 const effectDiagnostics = {
   "check:effect": {
     command:
       "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    dependsOn: [workspaceRootPrecommit],
     input: [...taskInput],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
+
+type RunConfig = NonNullable<UserConfig["run"]>;
+type Tasks = NonNullable<RunConfig["tasks"]>;
 
 const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
 type Lifecycle = (typeof lifecycles)[number];
@@ -167,29 +164,16 @@ const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
 
 function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
   return Object.fromEntries(
-    lifecycles.map((name) => {
-      const inherited = lifecycleInherits[name];
-      const waitsForWorkspaceFormat =
-        inherited.includes("precommit") || inherited.includes("prepush");
-      return [
-        name,
-        {
-          command: [],
-          dependsOn: [
-            ...inherited,
-            ...(waitsForWorkspaceFormat ? [workspaceRootPrecommit] : []),
-            ...stages[name],
-          ],
-        },
-      ];
-    }),
+    lifecycles.map((name) => [
+      name,
+      { command: [], dependsOn: [...lifecycleInherits[name], ...stages[name]] },
+    ]),
   );
 }
 
 const testRun = {
   test: {
     command: "vp test run",
-    dependsOn: ["prepush"],
     input: [
       ...taskInput,
       "!coverage/**",
@@ -202,19 +186,11 @@ const testRun = {
 } satisfies Tasks;
 
 const sliceBoundaries = {
-  check: {
-    command: "steiger src --fail-on-warnings",
-    dependsOn: [workspaceRootPrecommit],
-    input: [...taskInput],
-  },
+  check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
 } satisfies Tasks;
 
 const intentValidation = {
-  check: {
-    command: "intent validate",
-    dependsOn: [workspaceRootPrecommit],
-    input: [...taskInput],
-  },
+  check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
 
 const effectRun = {
@@ -236,7 +212,7 @@ const appRun = {
     ...sliceBoundaries,
     build: {
       command: "vp build",
-      dependsOn: ["@repo/dev#setup", "prepush"],
+      dependsOn: ["@repo/dev#setup"],
       input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },

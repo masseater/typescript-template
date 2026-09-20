@@ -33,7 +33,7 @@ export default defineConfig({
       "probe:origins": { cache: false, command: "./src/verify-origins.ts" },
       "verify:stacks": {
         command: "./src/check-stacks.ts",
-        dependsOn: [...stackBuilds, "prepush"],
+        dependsOn: stackBuilds,
         input: [...taskInput],
       },
       ...lifecycle({

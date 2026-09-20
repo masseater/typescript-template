@@ -38,7 +38,6 @@ const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
 const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
-const formatGate = "typescript-template#precommit";
 
 const hookStages = Object.entries(hooks).map(
   ([file, source]) => [file.replace(/^.*\/pre-/u, "pre"), source] as const,
@@ -135,17 +134,13 @@ function ungated(directory: string): string[] {
 
 function slowBeforePush(directory: string): string[] {
   return reachable(directory, ["prepush"])
-    .filter((name) => {
-      if (name === formatGate) {
-        return false;
-      }
-      return (
+    .filter(
+      (name) =>
         name.includes("#") ||
         commands(directory, name).some((command) =>
           minuteLongCommands.some((slow) => command.startsWith(slow)),
-        )
-      );
-    })
+        ),
+    )
     .map((name) => `${directory}: ${name}`);
 }
 
@@ -344,11 +339,6 @@ describe("lifecycle contents", () => {
       ]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
-    expect(dependencies(".", "knip")).toContain("precommit");
-    expect(dependencies(".", "test")).toContain("prepush");
-    expect(dependencies("apps/service-member", "build")).toContain("prepush");
-    expect(dependencies("apps/service-member", "prepush")).toContain(formatGate);
-    expect(dependencies(".", "check:effect")).toContain(formatGate);
     expect(
       configuredDirectories.filter((directory) =>
         reachable(directory, ["prepush"]).includes("check"),
