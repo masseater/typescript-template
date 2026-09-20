@@ -788,9 +788,6 @@ importers:
       '@msw/cloudflare':
         specifier: 'catalog:'
         version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -991,6 +988,9 @@ importers:
 
   libs/monitor:
     dependencies:
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
