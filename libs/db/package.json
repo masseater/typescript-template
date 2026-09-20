@@ -9,7 +9,6 @@
     "./testing": "./src/testing.ts",
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts",
-    "./dashboard-staff": "./src/dashboard-staff.ts",
     "./dashboard-literals": "./src/dashboard-literals.ts"
   },
   "scripts": {

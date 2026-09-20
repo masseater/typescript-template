@@ -1,4 +1,4 @@
-import { dashboardStaff } from "@repo/db/dashboard-staff";
+import { dashboardStaff } from "@repo/db";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";

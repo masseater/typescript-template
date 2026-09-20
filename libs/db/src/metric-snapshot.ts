@@ -3,18 +3,9 @@ import { and, count, eq, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, clientKindOf, type ClientKind } from "./client-kind.ts";
+import { METRIC_KEY, METRIC_PERIOD, clientKinds, metricPeriods } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
-import {
-  METRIC_KEY,
-  METRIC_PERIOD,
-  clientKinds,
-  metricPeriods,
-  metricSnapshot,
-  session,
-  user,
-  type MetricKey,
-  type MetricPeriod,
-} from "./schema.ts";
+import { metricSnapshot, session, user, type MetricKey, type MetricPeriod } from "./schema.ts";
 
 const dailyBucket = (instant: Date): string => instant.toISOString().slice(0, 10);
 

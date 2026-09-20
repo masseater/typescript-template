@@ -12,7 +12,8 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
-export { AUDIT_ACTION, auditEvent, onboardingSteps, schema } from "./schema.ts";
+export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
+export { auditEvent, onboardingSteps, schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
@@ -36,3 +37,16 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  AuditPage,
+  TrendQuery,
+  dashboardStaff,
+  refreshMetricSnapshots,
+} from "./dashboard-staff.ts";
+export type {
+  AuditEventView,
+  MetricTrendPoint,
+  OverviewCard,
+  OverviewMetrics,
+  ReadOnlyDashboardStaff,
+} from "./dashboard-staff.ts";

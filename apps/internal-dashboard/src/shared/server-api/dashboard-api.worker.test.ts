@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { dashboardStaff, type ReadOnlyDashboardStaff } from "@repo/db/dashboard-staff";
+import { dashboardStaff, type ReadOnlyDashboardStaff } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";

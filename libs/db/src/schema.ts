@@ -176,16 +176,6 @@ const schema = {
 
 export { account, auditEvent, metricSnapshot, passkey, rateLimit, schema, twoFactor, verification };
 export {
-  AUDIT_ACTION,
-  auditActions,
-  CLIENT_KIND,
-  clientKinds,
-  METRIC_KEY,
-  metricKeys,
-  METRIC_PERIOD,
-  metricPeriods,
-} from "./dashboard-literals.ts";
-export {
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -197,4 +187,5 @@ export {
 } from "./oauth-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export { boardPost, boardThread } from "./board-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

@@ -251,7 +251,7 @@ const accepted: readonly Case[] = [
   [
     "no-wiki-to-database",
     {
-      "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/dashboard-staff";\n',
+      "apps/internal-dashboard/src/index.ts": 'export { dashboardStaff } from "@repo/db";\n',
     },
   ],
   [

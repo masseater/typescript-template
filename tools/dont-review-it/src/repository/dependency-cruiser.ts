@@ -140,7 +140,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         path: "^libs/db/",
-        pathNot: String.raw`^libs/db/src/(?:dashboard-literals|dashboard-staff|local)\.ts$`,
+        pathNot: String.raw`^libs/db/src/(?:dashboard-literals|index|local)\.ts$`,
       },
     },
     {

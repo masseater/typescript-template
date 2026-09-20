@@ -3,15 +3,17 @@ import { and, count, desc, eq, gte, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, type ClientKind } from "./client-kind.ts";
+import {
+  METRIC_KEY,
+  METRIC_PERIOD,
+  auditActions,
+  metricKeys,
+  metricPeriods,
+} from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { bucketFor, currentSnapshotValues, refreshMetricSnapshots } from "./metric-snapshot.ts";
 import {
-  auditActions,
   auditEvent,
-  METRIC_KEY,
-  METRIC_PERIOD,
-  metricKeys,
-  metricPeriods,
   metricSnapshot,
   user,
   type AuditAction,
@@ -227,15 +229,6 @@ const dashboardStaff: ReadOnlyDashboardStaff = {
 };
 
 export { AuditPage, TrendQuery, dashboardStaff, refreshMetricSnapshots };
-export {
-  CLIENT_KIND,
-  METRIC_KEY,
-  METRIC_PERIOD,
-  auditActions,
-  clientKinds,
-  metricKeys,
-  metricPeriods,
-} from "./dashboard-literals.ts";
 export type {
   AuditEventView,
   MetricTrendPoint,

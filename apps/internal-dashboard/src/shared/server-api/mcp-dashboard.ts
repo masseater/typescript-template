@@ -1,4 +1,4 @@
-import { dashboardStaff } from "@repo/db/dashboard-staff";
+import { dashboardStaff } from "@repo/db";
 import { Effect, Schema } from "effect";
 
 import { AuditPageQuery, TrendQuery } from "#shared/contracts/index.ts";

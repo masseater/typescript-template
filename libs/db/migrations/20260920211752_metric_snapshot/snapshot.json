@@ -1,8 +1,8 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "d9d783e4-96e0-48a8-9324-015dd19c2dc1",
-  "prevIds": ["714645b4-cc4d-4c04-8441-2705bb063200"],
+  "id": "a13194ed-82a7-42df-8558-9839dace6521",
+  "prevIds": ["19c6bf9b-7db4-46d0-b977-8288d59b6908"],
   "ddl": [
     {
       "name": "account",
@@ -10,6 +10,14 @@
     },
     {
       "name": "audit_event",
+      "entityType": "tables"
+    },
+    {
+      "name": "board_post",
+      "entityType": "tables"
+    },
+    {
+      "name": "board_thread",
       "entityType": "tables"
     },
     {
@@ -263,6 +271,116 @@
       "name": "target_id",
       "entityType": "columns",
       "table": "audit_event"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "author_id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "body",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "thread_id",
+      "entityType": "columns",
+      "table": "board_post"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "author_id",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "last_posted_at",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "name": "post_count",
+      "entityType": "columns",
+      "table": "board_thread"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title",
+      "entityType": "columns",
+      "table": "board_thread"
     },
     {
       "type": "integer",
@@ -2086,6 +2204,39 @@
       "table": "account"
     },
     {
+      "columns": ["author_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_board_post_author_id_user_id_fk",
+      "entityType": "fks",
+      "table": "board_post"
+    },
+    {
+      "columns": ["thread_id"],
+      "tableTo": "board_thread",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_board_post_thread_id_board_thread_id_fk",
+      "entityType": "fks",
+      "table": "board_post"
+    },
+    {
+      "columns": ["author_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_board_thread_author_id_user_id_fk",
+      "entityType": "fks",
+      "table": "board_thread"
+    },
+    {
       "columns": ["followee_id"],
       "tableTo": "user",
       "columnsTo": ["id"],
@@ -2316,6 +2467,20 @@
       "entityType": "pks"
     },
     {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "board_post_pk",
+      "table": "board_post",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "board_thread_pk",
+      "table": "board_thread",
+      "entityType": "pks"
+    },
+    {
       "columns": ["user_id"],
       "nameExplicit": false,
       "name": "interview_pk",
@@ -2461,6 +2626,46 @@
       "name": "audit_event_created_at_idx",
       "entityType": "indexes",
       "table": "audit_event"
+    },
+    {
+      "columns": [
+        {
+          "value": "thread_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "board_post_thread_id_idx",
+      "entityType": "indexes",
+      "table": "board_post"
+    },
+    {
+      "columns": [
+        {
+          "value": "last_posted_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "board_thread_last_posted_at_idx",
+      "entityType": "indexes",
+      "table": "board_thread"
     },
     {
       "columns": [

@@ -1,4 +1,4 @@
-import { refreshMetricSnapshots } from "@repo/db/dashboard-staff";
+import { refreshMetricSnapshots } from "@repo/db";
 import { annotateSpan, flushTelemetry } from "@repo/observability";
 import { Effect } from "effect";
 
