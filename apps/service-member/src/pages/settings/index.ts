@@ -1,5 +1,4 @@
-export { createApiKey, loadApiKeys, revokeApiKey } from "./api/api-keys.ts";
-export type { CreatedApiKey, ListedApiKey } from "./api/api-keys.ts";
+export { loadApiKeys } from "./api/api-keys.ts";
 export { AiPage } from "./ui/ai-page.tsx";
 export { EmailPage } from "./ui/email-page.tsx";
 export { InterviewSettingsPage } from "./ui/interview-page.tsx";
