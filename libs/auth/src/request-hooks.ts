@@ -47,13 +47,13 @@ const runSessionLookup = async function runSessionLookup({ ctx, run }: HookScope
   if (typeof token !== "string" || token === "") {
     return null;
   }
-  return run(lookupSessionByToken(token));
+  return (await run(lookupSessionByToken(token))) ?? null;
 };
 
 const currentSessionOf = async function currentSessionOf(scope: HookScope) {
   const { ctx, run } = scope;
   if (ctx.context.newSession) {
-    return run(lookupSessionByToken(ctx.context.newSession.session.token));
+    return (await run(lookupSessionByToken(ctx.context.newSession.session.token))) ?? null;
   }
   return runSessionLookup(scope);
 };

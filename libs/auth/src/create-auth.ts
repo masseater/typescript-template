@@ -26,7 +26,7 @@ const createDatabaseHooks = (
           candidate: Readonly<Record<string, unknown> & { userId: string }>,
           hookContext: Readonly<{ path: string }> | null,
         ) => {
-          const user = (await run(findUser(candidate.userId))) ?? undefined;
+          const user = await run(findUser(candidate.userId));
           assertEligibleUser(user, audience);
           return {
             data: {
