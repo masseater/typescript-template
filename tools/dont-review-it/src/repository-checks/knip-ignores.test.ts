@@ -7,7 +7,21 @@ import { describe, expect, it } from "vite-plus/test";
 
 import knipConfig from "../../../../knip.ts";
 
-const repositoryRoot = fileURLToPath(new URL("../../../..", import.meta.url));
+const repositoryRootOf = (from: string): string => {
+  let directory = fileURLToPath(new URL(".", from));
+  for (;;) {
+    if (statSync(join(directory, "pnpm-workspace.yaml"), { throwIfNoEntry: false })?.isFile()) {
+      return directory;
+    }
+    const parent = join(directory, "..");
+    if (parent === directory) {
+      throw new Error(`pnpm-workspace.yaml not found from ${from}`);
+    }
+    directory = parent;
+  }
+};
+
+const repositoryRoot = repositoryRootOf(import.meta.url);
 
 const TEXT_EXTENSIONS = new Set([
   ".cjs",
@@ -107,13 +121,25 @@ const packageNameAt = (directory: string): string | null => {
 };
 
 const workspacePackageGlobs = (): readonly string[] => {
-  const lines = readFileSync(join(repositoryRoot, "pnpm-workspace.yaml"), "utf8").split("\n");
-  const packages = lines.indexOf("packages:");
-  if (packages === -1) return [];
+  const lines = readFileSync(join(repositoryRoot, "pnpm-workspace.yaml"), "utf8")
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n")
+    .split("\n");
+  const packages = lines.findIndex((line) => line.trim() === "packages:");
+  if (packages === -1) {
+    throw new Error(`packages: missing in ${join(repositoryRoot, "pnpm-workspace.yaml")}`);
+  }
   const globs: string[] = [];
   for (const line of lines.slice(packages + 1)) {
-    if (!line.startsWith("  - ")) break;
-    globs.push(line.slice("  - ".length).replace(/^["']|["']$/gu, ""));
+    const match = /^\s*-\s+(.+)$/u.exec(line);
+    if (match === null) {
+      if (line.trim() === "" || line.trimStart().startsWith("#")) continue;
+      break;
+    }
+    globs.push((match[1] ?? "").replace(/^["']|["']$/gu, "").trim());
+  }
+  if (globs.length === 0) {
+    throw new Error(`no workspace package globs in ${join(repositoryRoot, "pnpm-workspace.yaml")}`);
   }
   return globs;
 };
@@ -205,6 +231,24 @@ const followedFiles = (roots: readonly string[]): readonly string[] => {
   return [...seen];
 };
 
+const dependencyNamesIn = (directory: string): readonly string[] => {
+  const manifestPath = join(directory, "package.json");
+  if (statSync(manifestPath, { throwIfNoEntry: false })?.isFile() !== true) return [];
+  const parsed: unknown = JSON.parse(readFileSync(manifestPath, "utf8"));
+  if (typeof parsed !== "object" || parsed === null) return [];
+  const sections = [own(parsed, "dependencies"), own(parsed, "devDependencies")];
+  return sections.flatMap((section) => {
+    if (typeof section !== "object" || section === null) return [];
+    return Object.keys(section);
+  });
+};
+
+const workspaceDependencyEntries = (directory: string): readonly string[] =>
+  dependencyNamesIn(directory).flatMap((name) => {
+    const file = workspacePackageFile(name);
+    return file === null ? [] : [file];
+  });
+
 const filesByDirectory = new Map<string, readonly string[]>();
 
 const filesForDirectory = (directory: string, nested: boolean): readonly string[] => {
@@ -215,7 +259,12 @@ const filesForDirectory = (directory: string, nested: boolean): readonly string[
     (file) => relative(repositoryRoot, file) !== "knip.ts",
   );
   const roots = owned.filter((file) => [".js", ".mjs", ".ts", ".tsx"].includes(extensionOf(file)));
-  const files = [...new Set([...owned, ...followedFiles(roots)])];
+  const files = [
+    ...new Set([
+      ...owned,
+      ...followedFiles([...roots, ...workspaceDependencyEntries(directory)]),
+    ]),
+  ];
   filesByDirectory.set(key, files);
   return files;
 };
