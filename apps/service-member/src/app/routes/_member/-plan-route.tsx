@@ -1,6 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { CHECKOUT_RETURN, PlanPage } from "#pages/settings/index.ts";
+import { PlanPage } from "#pages/settings/index.ts";
+import { CHECKOUT_RETURN } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 

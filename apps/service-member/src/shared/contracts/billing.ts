@@ -1,5 +1,5 @@
 import { plans, priceIntervals, subscriptionStatuses, webhookOutcomes } from "@repo/config";
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 
 const PlanView = Schema.Struct({
   cancelAtPeriodEnd: Schema.Boolean,
@@ -19,4 +19,21 @@ const HostedPage = Schema.Struct({ url: Schema.String });
 
 const WebhookReceipt = Schema.Struct({ outcome: Schema.Literals(webhookOutcomes) });
 
-export { HostedPage, OfferView, PlanView, WebhookReceipt };
+const checkoutReturns = ["cancel", "success"] as const;
+type CheckoutReturn = (typeof checkoutReturns)[number];
+const CHECKOUT_RETURN = {
+  cancel: checkoutReturns[0],
+  success: checkoutReturns[1],
+} as const satisfies Record<string, CheckoutReturn>;
+
+const CheckoutReturnSearch = Schema.Struct({
+  checkout: Schema.optionalKey(Schema.Literals(checkoutReturns)),
+});
+
+const decodeCheckoutReturn = Schema.decodeUnknownOption(CheckoutReturnSearch);
+
+function readCheckoutReturn(raw: unknown): typeof CheckoutReturnSearch.Type {
+  return Option.getOrElse(decodeCheckoutReturn(raw), () => ({}));
+}
+
+export { CHECKOUT_RETURN, HostedPage, OfferView, PlanView, WebhookReceipt, readCheckoutReturn };
