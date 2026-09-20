@@ -38,7 +38,6 @@ const workspaces = {
       "!src/auth-test-fixture.ts!",
       "!src/browser-client.ts!",
       "!src/mail-fixture.ts!",
-      "!src/wiki-oauth-fixture.ts!",
     ],
   },
   "libs/monitor": {
@@ -157,7 +156,11 @@ const config = ({
       "apps/*": app,
       "apps/internal-dashboard": {
         ...app,
-        project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
+        project: [
+          "src/**/*.{ts,tsx,mdx}!",
+          "src/**/*.css",
+          "!src/shared/wiki/wiki-oauth-fixture.ts!",
+        ],
       },
       "apps/service-admin": {
         ...app,
