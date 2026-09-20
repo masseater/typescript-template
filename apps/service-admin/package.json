@@ -20,6 +20,7 @@
     "@repo/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "@tanstack/react-table": "9.2.4",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
     "lucide-react": "catalog:",
