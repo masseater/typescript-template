@@ -36,6 +36,9 @@
       "onFail": "error"
     }
   },
+  "engines": {
+    "node": ">=26.9.0"
+  },
   "packageManager": "pnpm@12.4.1",
   "normativeDocuments": {
     "fileName": "AGENTS.md",
