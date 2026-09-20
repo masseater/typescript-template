@@ -1,5 +1,5 @@
 import { apiDataOrNone } from "@repo/runtime/client";
-import { SessionView } from "@repo/runtime/contracts";
+import { SessionView } from "@repo/ui";
 
 import { userClient } from "#shared/api/index.ts";
 

@@ -4,7 +4,6 @@
   "type": "module",
   "dependencies": {
     "@repo/config": "workspace:*",
-    "@repo/runtime": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

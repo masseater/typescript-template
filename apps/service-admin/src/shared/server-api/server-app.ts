@@ -2,6 +2,9 @@ import { verifySession } from "@repo/auth";
 import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
 import { httpStatus } from "@repo/observability";
 import { accountApi, unavailable } from "@repo/runtime/account";
+import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { Effect } from "effect";
+
 import {
   RoleChange,
   RoleChanged,
@@ -9,10 +12,7 @@ import {
   UserDeletion,
   UserList,
   UserListQuery,
-} from "@repo/runtime/contracts";
-import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
-import { Effect } from "effect";
-
+} from "#shared/contracts/index.ts";
 import { reporting, runtime } from "./runtime.ts";
 
 const api = apiRoutes(runtime, reporting);
