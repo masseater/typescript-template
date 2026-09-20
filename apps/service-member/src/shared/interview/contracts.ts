@@ -28,13 +28,14 @@ type FieldViewData = typeof FieldView.Type;
 type InterviewViewData = typeof InterviewView.Type;
 
 function fieldViews(sheet: SheetData, skipped: readonly FieldName[]): readonly FieldViewData[] {
+  const skippedFields = new Set(skipped);
   return fieldKeys.map((key) => {
     const value = displayValue(sheet, key);
     const { label } = fieldDefinitions[key];
     if (value !== undefined) {
       return { key, label, status: "answered", value };
     }
-    return { key, label, status: skipped.includes(key) ? "skipped" : "unanswered" };
+    return { key, label, status: skippedFields.has(key) ? "skipped" : "unanswered" };
   });
 }
 
@@ -53,4 +54,3 @@ function viewOf(state: InterviewState): InterviewViewData {
 
 export { InterviewView, viewOf };
 export { Utterance } from "./state.ts";
-export type { InterviewViewData };
