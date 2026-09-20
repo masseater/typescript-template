@@ -1,4 +1,4 @@
-import { PHOTO_SLOT, photoContentTypes } from "@repo/config";
+import { PHOTO_SLOT, maximumPhotoMebibytes, photoContentTypes } from "@repo/config";
 import { Avatar, Button, FileField, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { usePhotoForm } from "#pages/profile-edit/model/photo-form.ts";
@@ -8,7 +8,7 @@ import type { PhotoSlot } from "@repo/config";
 import type { ReactElement } from "react";
 
 const accept = photoContentTypes.join(",");
-const hint = "JPEG・PNG・WebP、5 MB まで。位置情報などのメタデータは保存時に取り除きます。";
+const hint = `JPEG・PNG・WebP、${maximumPhotoMebibytes} MB まで。位置情報などのメタデータは保存時に取り除きます。`;
 
 const slotLabels = {
   [PHOTO_SLOT.face]: "顔写真",

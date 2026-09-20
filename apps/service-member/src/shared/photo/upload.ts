@@ -1,7 +1,7 @@
-import { maximumPhotoBytes, photoContentTypes } from "@repo/config";
+import { isPhotoContentType, maximumPhotoBytes } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
 import { AppOrigin } from "@repo/runtime/http";
-import { Effect, Schema, Stream } from "effect";
+import { Effect, Stream } from "effect";
 
 import { PhotoMissing } from "./photo-missing.ts";
 import { PhotoTooLarge } from "./photo-too-large.ts";
@@ -12,7 +12,6 @@ type Bytes = Uint8Array<ArrayBuffer>;
 const multipartType = "multipart/form-data";
 const multipartOverheadBytes = 16_384;
 const fileField = "file";
-const isPhotoContentType = Schema.is(Schema.Literals(photoContentTypes));
 
 interface Collected {
   readonly byteLength: number;

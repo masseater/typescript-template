@@ -1,4 +1,5 @@
 import { verifySession } from "@repo/auth";
+import { maximumPhotoMebibytes } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
@@ -17,7 +18,7 @@ const failures = {
   PhotoNotFound: { message: "写真が見つかりません。", status: httpStatus.notFound },
   PhotoStorageFailed: "unexpected",
   PhotoTooLarge: {
-    message: "画像は 5 MB 以下にしてください。",
+    message: `画像は ${maximumPhotoMebibytes} MB 以下にしてください。`,
     status: httpStatus.payloadTooLarge,
   },
   PhotoUnsupported: {

@@ -34,7 +34,7 @@ const addUser = (added: {
       name: added.userId,
       role: ROLE.member,
       updatedAt: recordedAt,
-      visibility: added.visibility ?? PROFILE_VISIBILITY.members,
+      visibility: added.visibility ?? PROFILE_VISIBILITY.allMembers,
     });
   });
 

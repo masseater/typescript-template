@@ -1,14 +1,12 @@
-import { photoContentTypes } from "@repo/config";
+import { isPhotoContentType } from "@repo/config";
 import { readStorage } from "@repo/config/storage";
 import { withSpan } from "@repo/observability";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer } from "effect";
 
 import { PhotoStorageFailed } from "./photo-storage-failed.ts";
 
 import type { R2Bucket } from "@cloudflare/workers-types";
 import type { ConfigurationInvalid, PhotoContentType } from "@repo/config";
-
-const isPhotoContentType = Schema.is(Schema.Literals(photoContentTypes));
 
 interface StoredPhoto {
   readonly bytes: Uint8Array<ArrayBuffer>;

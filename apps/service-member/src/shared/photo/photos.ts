@@ -27,7 +27,7 @@ const uploadPhoto = Effect.fn("uploadPhoto")(function* uploadPhoto(
   const key = photoKey(memberId, slot, crypto.randomUUID());
   yield* store.put(key, sanitized);
   const previous = yield* setPhotoKey(memberId, slot, key).pipe(
-    Effect.tapError(() => Effect.ignore(store.remove([key]))),
+    Effect.tapError(() => store.remove([key]).pipe(Effect.ignore({ log: true }))),
   );
   if (previous !== null) {
     yield* store.remove([previous]);
