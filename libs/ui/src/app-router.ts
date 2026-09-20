@@ -31,4 +31,3 @@ const createAppRouter = <TRouteTree extends AnyRoute>(
 };
 
 export { createAppRouter };
-export type { AppRouterRewrite, CreateAppRouterOptions };
