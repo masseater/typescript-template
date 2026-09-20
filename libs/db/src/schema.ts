@@ -164,6 +164,7 @@ export {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { planSubscription, stripeEvent } from "./billing-schema.ts";
