@@ -12,8 +12,18 @@ const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
+const minimumPasswordLength = 12;
+const maximumPasswordLength = 128;
 
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
+
+const MemberEmail = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
+
+const MemberName = Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength));
+
+const MemberPassword = Schema.String.check(
+  Schema.isLengthBetween(minimumPasswordLength, maximumPasswordLength),
+);
 
 const SocialLink = Schema.String.check(
   Schema.isMaxLength(maximumSocialLinkLength),
@@ -32,9 +42,15 @@ const ProfileView = Schema.Struct({
 });
 
 const ProfileUpdate = Schema.Struct({
-  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
+  name: MemberName,
   profile: Schema.String.check(Schema.isMaxLength(maximumProfileLength)),
   socialLinks: SocialLinks,
+});
+
+const SignUpSubmission = Schema.Struct({
+  email: Email,
+  name: MemberName,
+  password: MemberPassword,
 });
 
 const MemberQuery = Schema.Struct({ id: Identifier });
@@ -105,14 +121,17 @@ export {
   ProfileUpdate,
   ProfileView,
   SearchKeyword,
+  SignUpSubmission,
   laterPage,
   maximumContactMessageLength,
   maximumContactNameLength,
   maximumKeywordLength,
   maximumMemberPage,
   maximumNameLength,
+  maximumPasswordLength,
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  minimumPasswordLength,
   pageNumber,
 };

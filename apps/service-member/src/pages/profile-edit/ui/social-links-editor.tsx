@@ -1,45 +1,49 @@
 import { Button, Field } from "@repo/ui";
 
 import { maximumSocialLinks } from "#shared/contracts/index.ts";
+import { fieldError } from "#shared/forms/field-error.ts";
 import { SocialLinkIcon, classifySocialUrl } from "#shared/social-link";
 
-import type { DraftLink } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
 
 function SocialLinksEditor({
+  errors,
   onChange,
   values,
 }: Readonly<{
-  onChange: (values: readonly DraftLink[]) => void;
-  values: readonly DraftLink[];
+  errors: readonly unknown[];
+  onChange: (values: readonly string[]) => void;
+  values: readonly string[];
 }>): ReactElement {
   const canAdd = values.length < maximumSocialLinks;
-  function updateAt(id: string, url: string): void {
-    onChange(values.map((current) => (current.id === id ? { ...current, url } : current)));
+  const linkError = fieldError(errors);
+  function updateAt(index: number, url: string): void {
+    onChange(values.map((current, currentIndex) => (currentIndex === index ? url : current)));
   }
-  function removeAt(id: string): void {
-    onChange(values.filter((current) => current.id !== id));
+  function removeAt(index: number): void {
+    const next = values.filter((_, currentIndex) => currentIndex !== index);
+    onChange(next.length === 0 ? [""] : next);
   }
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm leading-normal font-bold">SNS の URL</p>
-      {values.map((draft, index) => {
-        const classified = draft.url === "" ? null : classifySocialUrl(draft.url);
+      {values.map((url, index) => {
+        const classified = url === "" ? null : classifySocialUrl(url);
         const invalid = classified !== null && !classified.ok;
         return (
-          <div key={draft.id} className="flex items-start gap-2">
+          <div key={`${index}-${url}`} className="flex items-start gap-2">
             <div className="mt-8 text-muted-foreground">
-              {draft.url !== "" && <SocialLinkIcon url={draft.url} />}
+              {url !== "" && <SocialLinkIcon url={url} />}
             </div>
             <div className="min-w-0 flex-1">
               <Field
                 label={`URL ${index + 1}`}
-                name={`socialLink-${draft.id}`}
+                name={`socialLink-${index}`}
                 type="text"
                 inputMode="url"
-                value={draft.url}
+                value={url}
                 onValueChange={(next) => {
-                  updateAt(draft.id, next);
+                  updateAt(index, next);
                 }}
               />
               {invalid && (
@@ -54,7 +58,7 @@ function SocialLinksEditor({
               size="small"
               aria-label={`URL ${index + 1} を削除`}
               onClick={() => {
-                removeAt(draft.id);
+                removeAt(index);
               }}
             >
               削除
@@ -67,11 +71,14 @@ function SocialLinksEditor({
           type="button"
           variant="secondary"
           onClick={() => {
-            onChange([...values, { id: crypto.randomUUID(), url: "" }]);
+            onChange([...values, ""]);
           }}
         >
           URL を追加
         </Button>
+      )}
+      {linkError !== undefined && (
+        <p className="text-sm leading-normal text-destructive">{linkError}</p>
       )}
     </div>
   );
