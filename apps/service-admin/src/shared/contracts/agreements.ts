@@ -8,9 +8,10 @@ const maximumBodyLength = 100_000;
 
 const AgreementKind = Schema.Literals(agreementKinds);
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
+const versionLabelPattern = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 const VersionLabel = Schema.Trim.check(
   Schema.isLengthBetween(1, maximumVersionLength),
-  Schema.isPattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/u),
+  Schema.isPattern(versionLabelPattern),
 );
 const Summary = Schema.String.check(Schema.isLengthBetween(0, maximumSummaryLength));
 const Body = Schema.String.check(Schema.isLengthBetween(1, maximumBodyLength));
@@ -72,4 +73,5 @@ export {
   maximumBodyLength,
   maximumSummaryLength,
   maximumVersionLength,
+  versionLabelPattern,
 };

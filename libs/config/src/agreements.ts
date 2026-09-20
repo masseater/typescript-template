@@ -15,11 +15,3 @@ export const agreementPolicies = {
   privacy: { blocksUntilReaccepted: false, requiredAtSignup: true },
   terms: { blocksUntilReaccepted: true, requiredAtSignup: true },
 } as const satisfies Readonly<Record<AgreementKind, AgreementPolicy>>;
-
-export const blockingAgreementKinds: readonly AgreementKind[] = agreementKinds.filter(
-  (kind) => agreementPolicies[kind].blocksUntilReaccepted,
-);
-
-export const signupAgreementKinds: readonly AgreementKind[] = agreementKinds.filter(
-  (kind) => agreementPolicies[kind].requiredAtSignup,
-);

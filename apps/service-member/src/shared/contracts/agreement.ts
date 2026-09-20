@@ -6,7 +6,6 @@ const maximumIdentifierLength = 256;
 const AgreementKind = Schema.Literals(agreementKinds);
 
 const PendingAgreement = Schema.Struct({
-  body: Schema.String,
   id: Schema.String,
   kind: AgreementKind,
   publishedAt: Schema.Number,

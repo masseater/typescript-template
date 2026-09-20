@@ -8,7 +8,6 @@ import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts"
 import { query } from "./database.ts";
 
 interface PublishedAgreement {
-  readonly body: string;
   readonly id: string;
   readonly kind: AgreementKind;
   readonly publishedAt: Date;
@@ -24,7 +23,6 @@ interface AcceptedAgreement {
 }
 
 const publishedColumns = {
-  body: agreementVersion.body,
   id: agreementVersion.id,
   kind: agreementVersion.kind,
   publishedAt: agreementVersion.publishedAt,
@@ -54,8 +52,18 @@ const latestPublishedAgreements = Effect.fn("latestPublishedAgreements")(
 const publishedAgreement = Effect.fn("publishedAgreement")(function* publishedAgreement(
   kind: AgreementKind,
 ) {
-  const latest = yield* latestPublishedAgreements();
-  return latest.find((agreement) => agreement.kind === kind) ?? null;
+  const [latest] = yield* query((database) =>
+    database
+      .select({ ...publishedColumns, body: agreementVersion.body })
+      .from(agreementVersion)
+      .where(and(eq(agreementVersion.kind, kind), isNotNull(agreementVersion.publishedAt)))
+      .orderBy(desc(agreementVersion.publishedAt), desc(agreementVersion.id))
+      .limit(1),
+  );
+  if (latest === undefined || latest.publishedAt === null) {
+    return null;
+  }
+  return { ...latest, publishedAt: latest.publishedAt };
 });
 
 const pendingAgreements = Effect.fn("pendingAgreements")(function* pendingAgreements(
