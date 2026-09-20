@@ -37,7 +37,7 @@
     "parse-git-diff": "0.0.20"
   },
   "devDependencies": {
-    "@repo/ai-native": "workspace:*",
+    "@repo/ai-native-telemetry": "workspace:*",
     "@repo/config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",

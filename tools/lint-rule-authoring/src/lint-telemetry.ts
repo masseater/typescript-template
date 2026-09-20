@@ -1,5 +1,5 @@
 import { context, metrics, trace, type Context } from "@opentelemetry/api";
-import { inheritedContext, startTelemetry } from "@repo/ai-native/telemetry";
+import { inheritedContext, startTelemetry } from "@repo/ai-native-telemetry";
 import { once } from "es-toolkit";
 
 const INSTRUMENTATION_NAME = "@repo/lint-rule-authoring";

@@ -1,7 +1,7 @@
 ---
 name: core
 description: >
-  Wrap heavy commands with @repo/ai-native: `throttle` caps simultaneous executions per host and namespace and can kill a process tree on `--timeout`, `spool` diverts a child's merged output into a `.spool/` log file and prints a fixed-size summary in its place, `unabridged` is a Claude Code PreToolUse hook that denies `head` and `tail` at a command position, and `@repo/ai-native/telemetry` starts one OpenTelemetry provider per process. Load when wiring an entry point with these wrappers, when a wrapped command waits for a slot or looks hung, when you need the full log behind a spool summary line, when a Bash call was denied for slicing its output, or when a workspace has to declare its own measurement through `MST_TELEMETRY` and `OTEL_EXPORTER_OTLP_ENDPOINT`.
+  Wrap heavy commands with @repo/ai-native: `throttle` caps simultaneous executions per host and namespace and can kill a process tree on `--timeout`, `spool` diverts a child's merged output into a `.spool/` log file and prints a fixed-size summary in its place, `unabridged` is a Claude Code PreToolUse hook that denies `head` and `tail` at a command position, and `@repo/ai-native-telemetry` starts one OpenTelemetry provider per process. Load when wiring an entry point with these wrappers, when a wrapped command waits for a slot or looks hung, when you need the full log behind a spool summary line, when a Bash call was denied for slicing its output, or when a workspace has to declare its own measurement through `MST_TELEMETRY` and `OTEL_EXPORTER_OTLP_ENDPOINT`.
 metadata:
   type: core
   library: "@repo/ai-native"
@@ -10,7 +10,7 @@ sources:
   - "masseater/mst:tools/ai-native/src/throttle/usage.ts"
   - "masseater/mst:tools/ai-native/src/spool/run-spool.ts"
   - "masseater/mst:tools/ai-native/src/unabridged/find-slicing-commands.ts"
-  - "masseater/mst:tools/ai-native/src/telemetry/telemetry.ts"
+  - "masseater/mst:tools/ai-native-telemetry/src/telemetry/telemetry.ts"
   - "masseater/mst:tools/ai-native/AGENTS.md"
 ---
 
@@ -79,7 +79,7 @@ The hook denies the tool call when `head` or `tail` stands at a command position
 ### Start the provider once, at the process entry
 
 ```ts
-import { startTelemetry } from "@repo/ai-native/telemetry";
+import { startTelemetry } from "@repo/ai-native-telemetry";
 
 const telemetry = startTelemetry("my-command");
 ```
@@ -91,7 +91,7 @@ For Vitest, hand the shipped entry to `experimental.openTelemetry.sdkPath` as an
 ```ts
 import { fileURLToPath } from "node:url";
 
-const sdkPath = fileURLToPath(import.meta.resolve("@repo/ai-native/vitest-sdk"));
+const sdkPath = fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk"));
 ```
 
 ## Common Mistakes
@@ -197,7 +197,7 @@ const telemetry = startTelemetry("guard");
 
 `startTelemetry` is memoized, so the second call returns the provider the first one built and its service name is discarded — the spans still export, under the wrong service, and nothing reports the substitution.
 
-Source: masseater/mst:tools/ai-native/src/telemetry/telemetry.ts
+Source: masseater/mst:tools/ai-native-telemetry/src/telemetry/telemetry.ts
 
 ### [MEDIUM] unabridged expected to see inside a nested shell
 

@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "@opentelemetry/api": "catalog:",
-    "@repo/ai-native": "workspace:*",
+    "@repo/ai-native-telemetry": "workspace:*",
     "@repo/repository-checks": "workspace:*",
     "es-toolkit": "catalog:",
     "oxc-parser": "catalog:",
