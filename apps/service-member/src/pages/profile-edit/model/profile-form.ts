@@ -1,83 +1,75 @@
-import { useAtom } from "@effect/atom-react";
 import { useAction } from "@repo/ui";
-import { Atom } from "effect/unstable/reactivity";
+import { useForm } from "@tanstack/react-form";
+import { Schema } from "effect";
 
-import { saveProfile } from "#pages/profile-edit/api/profile.ts";
+import { saveProfile } from "#entities/profile/index.ts";
+import { ProfileUpdate } from "#shared/contracts/index.ts";
 
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
-import type { SubmitEventHandler } from "react";
+import type { Profile, ProfileDraft } from "#entities/profile/index.ts";
 
-type DraftLink = Readonly<{ id: string; url: string }>;
+type SocialLinkField = {
+  readonly id: string;
+  readonly url: string;
+};
 
-interface ProfileFields {
+type ProfileFormValues = {
   readonly name: string;
   readonly profile: string;
-  readonly socialLinks: readonly DraftLink[];
-}
+  readonly socialLinks: readonly SocialLinkField[];
+};
 
-interface ProfileForm extends ProfileFields {
-  readonly blocked: boolean;
-  readonly error: string;
-  readonly handleNameChange: (value: string) => void;
-  readonly handleProfileChange: (value: string) => void;
-  readonly handleSocialLinksChange: (values: readonly DraftLink[]) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly pending: boolean;
-}
-
-function toDrafts(urls: readonly string[]): readonly DraftLink[] {
-  if (urls.length === 0) {
+function socialLinksForEditor(links: readonly string[]): readonly SocialLinkField[] {
+  if (links.length === 0) {
     return [{ id: crypto.randomUUID(), url: "" }];
   }
-  return urls.map((url) => ({ id: crypto.randomUUID(), url }));
+  return links.map((url) => ({ id: crypto.randomUUID(), url }));
 }
 
-function savedLinks(drafts: readonly DraftLink[]): readonly string[] {
-  const links: string[] = [];
-  for (const draft of drafts) {
-    const url = draft.url.trim();
-    if (url !== "") {
-      links.push(url);
+function profileDraft(values: ProfileFormValues): ProfileDraft {
+  const socialLinks: string[] = [];
+  for (const link of values.socialLinks) {
+    const trimmed = link.url.trim();
+    if (trimmed !== "") {
+      socialLinks.push(trimmed);
     }
   }
-  return links;
+  return {
+    name: values.name,
+    profile: values.profile,
+    socialLinks,
+  };
 }
 
-const fieldsAtom = Atom.family((initial: Profile) =>
-  Atom.make<ProfileFields>({
-    name: initial.name,
-    profile: initial.profile,
-    socialLinks: toDrafts(initial.socialLinks),
-  }),
-);
-
-function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>): ProfileForm {
-  const [fields, setFields] = useAtom(fieldsAtom(initial));
+function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>) {
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(async () => {
-      await saveProfile(fields.name, fields.profile, savedLinks(fields.socialLinks));
-      await onSaved();
-    });
-  }
+  const form = useForm({
+    defaultValues: {
+      name: initial.name,
+      profile: initial.profile,
+      socialLinks: socialLinksForEditor(initial.socialLinks),
+    } satisfies ProfileFormValues,
+    onSubmit: ({ value }) => {
+      action.run(async () => {
+        await saveProfile(profileDraft(value));
+        await onSaved();
+      });
+    },
+    validators: {
+      onSubmit: ({ value }) => {
+        const decoded = Schema.decodeUnknownResult(ProfileUpdate)(profileDraft(value));
+        if (decoded._tag === "Failure") {
+          return decoded.failure.message;
+        }
+      },
+    },
+  });
   return {
-    ...fields,
     blocked: action.blocked,
     error: action.error ?? "",
-    handleNameChange: (name) => {
-      setFields((current) => ({ ...current, name }));
-    },
-    handleProfileChange: (profile) => {
-      setFields((current) => ({ ...current, profile }));
-    },
-    handleSocialLinksChange: (socialLinks) => {
-      setFields((current) => ({ ...current, socialLinks }));
-    },
-    handleSubmit,
+    form,
     pending: action.pending,
   };
 }
 
 export { useProfileForm };
-export type { DraftLink, ProfileForm };
+export type { SocialLinkField };
