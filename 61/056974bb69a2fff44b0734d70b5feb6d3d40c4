@@ -1,0 +1,6 @@
+Revision history for #1063:
+
+rev 2 (content) 2026-09-21 12:01 UTC — prepr was failing because lifecycle dropped precommit and prerelease checks, and the vocabulary test compared a lowercased temp path with the compiler path
+rev 1 (initial) 2026-09-21 12:01 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1063,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"e6a29e0d10f3b25f033d82a1f27ddd50accc266f","timestamp_iso":"2026-09-21T12:01:22Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"e6a29e0d10f3b25f033d82a1f27ddd50accc266f","new_sha":"40fe6042e4816ee168e8468d1f6128b3ac677778","timestamp_iso":"2026-09-21T12:01:22Z","reason":"prepr was failing because lifecycle dropped precommit and prerelease checks, and the vocabulary test compared a lowercased temp path with the compiler path","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/e6a29e0d10f3b25f033d82a1f27ddd50accc266f...40fe6042e4816ee168e8468d1f6128b3ac677778"}]} -->
