@@ -30,7 +30,6 @@
     "vite-plus": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
