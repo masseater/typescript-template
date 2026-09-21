@@ -1,4 +1,6 @@
-import { applyD1Migrations, reset, type D1Migration } from "cloudflare:test";
+/// <reference types="@cloudflare/vitest-plugin/types" />
+/// <reference types="@cloudflare/workers-types" />
+import { applyD1Migrations, reset } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { getColumns } from "drizzle-orm";
 import { Effect, Layer } from "effect";
@@ -8,6 +10,7 @@ import { Database } from "./database.ts";
 import { schema } from "./schema.ts";
 
 import type { D1Database, D1Result } from "@cloudflare/workers-types";
+import type { D1Migration } from "cloudflare:test";
 
 declare global {
   namespace Cloudflare {
@@ -18,36 +21,62 @@ declare global {
   }
 }
 
-const getSchemaShape = (): Record<string, string[]> =>
-  Object.fromEntries(
-    Object.entries(schema).map(([tableName, table]) => [tableName, Object.keys(getColumns(table))]),
+function getSchemaShape(): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(schema).map(([name, table]) => [name, Object.keys(getColumns(table))]),
   );
+}
 
-const runStatement = (
+function runStatement(
   sql: string,
-  ...statementParams: readonly (string | number)[]
-): Effect.Effect<D1Result, DatabaseFailure> =>
-  Effect.tryPromise({
+  ...params: readonly (string | number)[]
+): Effect.Effect<D1Result, DatabaseFailure> {
+  return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
-    try: async () =>
+    try: () =>
       env.DB.prepare(sql)
-        .bind(...statementParams)
+        .bind(...params)
         .run(),
   });
+}
 
-const testDatabase = (migrated: boolean): Layer.Layer<Database> =>
-  Layer.unwrap(
+function testDatabase(migrated: boolean): Layer.Layer<Database> {
+  return Layer.unwrap(
     Effect.gen(function* database() {
-      yield* Effect.promise(async () => reset());
+      yield* Effect.promise(() => reset());
       if (migrated) {
-        yield* Effect.promise(async () => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
+        yield* Effect.promise(() => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
       }
       return Database.layer(env.DB);
     }).pipe(Effect.orDie),
   );
+}
 
 const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
 
+function capturePrepares<Requirements>(
+  run: Effect.Effect<void, unknown, Requirements>,
+): Effect.Effect<readonly string[], unknown, Requirements> {
+  return Effect.gen(function* capturePreparesProgram() {
+    const statements: string[] = [];
+    const prepare = env.DB.prepare.bind(env.DB);
+    Object.defineProperty(env.DB, "prepare", {
+      configurable: true,
+      value: (sql: string) => {
+        statements.push(sql);
+        return prepare(sql);
+      },
+    });
+    yield* Effect.ensuring(
+      run,
+      Effect.sync(() => {
+        Object.defineProperty(env.DB, "prepare", { configurable: true, value: prepare });
+      }),
+    );
+    return statements;
+  });
+}
+
 export { bootstrapAdmin } from "./bootstrap-statement.ts";
-export { EmptyTestDatabase, TestDatabase, getSchemaShape, runStatement };
+export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement };

@@ -11,12 +11,6 @@
     ],
     "apps/internal-dashboard": [
       {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
         "file": "../../libs/runtime/src/account.ts",
         "code": "TS2345",
         "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
@@ -90,12 +84,6 @@
       },
       {
         "file": "src/shared/wiki/wiki-layer.worker.test.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-layer.worker.test.ts",
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
         "count": 1
@@ -158,12 +146,6 @@
       }
     ],
     "apps/service-member": [
-      {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
       {
         "file": "../../libs/runtime/src/account.ts",
         "code": "TS2345",
@@ -253,24 +235,6 @@
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
         "count": 1
-      },
-      {
-        "file": "src/shared/server-api/jobs-api.worker.test.ts",
-        "code": "TS18046",
-        "message": "'instance' is of type 'unknown'.",
-        "count": 4
-      },
-      {
-        "file": "src/shared/server-api/jobs-api.worker.test.ts",
-        "code": "TS18046",
-        "message": "'queueResult' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/jobs-api.worker.test.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
       }
     ],
     "infra/cloudflare": [
@@ -285,20 +249,6 @@
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 8
-      }
-    ],
-    "libs/auth": [
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:workers' or its corresponding type declarations.",
-        "count": 1
       }
     ],
     "libs/db": [
@@ -427,12 +377,6 @@
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 19
-      },
-      {
-        "file": "src/testing.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 3
       }
     ],
     "libs/feature-flags": [

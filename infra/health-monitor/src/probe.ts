@@ -1,4 +1,5 @@
 import { Effect, Option, Schema } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import type { Application as HealthService } from "@repo/config";
 
@@ -14,24 +15,11 @@ type ProbeResult = {
   readonly detail: string;
 };
 
-type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
-
-const REQUEST_TIMEOUT_MS = 10_000;
-
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
   release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u)),
   service: Schema.String,
 });
-
-const requestHealth = (healthTarget: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> =>
-  Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
-    fetch(healthTarget.healthEndpoint, {
-      headers: { accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-    }),
-  ).pipe(Effect.option);
 
 const observedProbe = (asked: {
   readonly healthTarget: HealthTarget;
@@ -45,11 +33,11 @@ const observedProbe = (asked: {
 
 const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHealthPayload(
   healthTarget: HealthTarget,
-  healthResponse: ProbeResponse,
+  healthResponse: HttpClientResponse.HttpClientResponse,
 ) {
-  const responseBody = yield* Effect.tryPromise(async (): Promise<unknown> =>
-    healthResponse.json(),
-  ).pipe(Effect.option);
+  const responseBody = yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(healthResponse).pipe(
+    Effect.option,
+  );
   if (Option.isNone(responseBody)) {
     return observedProbe({ detail: "body_unreadable", healthTarget, healthy: false });
   }
@@ -67,11 +55,13 @@ const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHea
 });
 
 const probeService = Effect.fn("probeService")(function* probeService(healthTarget: HealthTarget) {
-  const healthResponse = yield* requestHealth(healthTarget);
+  const healthResponse = yield* HttpClient.get(healthTarget.healthEndpoint, {
+    headers: { accept: "application/json" },
+  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.option);
   if (Option.isNone(healthResponse)) {
     return observedProbe({ detail: "unreachable", healthTarget, healthy: false });
   }
-  if (!healthResponse.value.ok) {
+  if (healthResponse.value.status < 200 || healthResponse.value.status >= 300) {
     return observedProbe({
       detail: `status_${healthResponse.value.status}`,
       healthTarget,

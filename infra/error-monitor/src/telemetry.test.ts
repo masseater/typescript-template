@@ -60,7 +60,7 @@ const telemetryEnvelope = {
 } as const;
 
 describe("fetchErrorGroups", () => {
-  const it = test.extend("observedGroups", async ({}, { onCleanup }) => {
+  const it = test.extend("observedGroups", ({}, { onCleanup }) => {
     const telemetryApi = setupServer(
       http.post(queryEndpoint, ({ request }) => {
         if (request.headers.get("authorization") !== `Bearer ${token}`) {
@@ -96,7 +96,7 @@ describe("fetchErrorGroups", () => {
 });
 
 describe("a response without calculations", () => {
-  const it = test.extend("queryFailure", async ({}, { onCleanup }) => {
+  const it = test.extend("queryFailure", ({}, { onCleanup }) => {
     const telemetryApi = setupServer(
       http.post(queryEndpoint, () =>
         HttpResponse.json({ ...telemetryEnvelope, result: { run: {}, statistics: {} } }),
@@ -117,7 +117,7 @@ describe("a response without calculations", () => {
 });
 
 describe("authorization failure", () => {
-  const it = test.extend("queryFailure", async ({}, { onCleanup }) => {
+  const it = test.extend("queryFailure", ({}, { onCleanup }) => {
     const telemetryApi = setupServer(
       http.post(queryEndpoint, () =>
         HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
@@ -138,7 +138,7 @@ describe("authorization failure", () => {
 });
 
 describe("a group with only a fingerprint", () => {
-  const it = test.extend("observedGroups", async ({}, { onCleanup }) => {
+  const it = test.extend("observedGroups", ({}, { onCleanup }) => {
     const telemetryApi = setupServer(
       http.post(queryEndpoint, () =>
         HttpResponse.json({

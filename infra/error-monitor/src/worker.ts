@@ -1,6 +1,6 @@
 import { monitorWorker, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 
 import {
   errorMonitorWorker,
@@ -17,7 +17,7 @@ const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseErrorMonitorConfig(env);
-      const observedAtMs = Date.now();
+      const observedAtMs = yield* Clock.currentTimeMillis;
       const { dropped, groups } = yield* fetchErrorGroups({
         accountId: config.CLOUDFLARE_ACCOUNT_ID,
         from: observedAtMs - LOOKBACK_MS,
@@ -25,7 +25,7 @@ const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
         to: observedAtMs,
         token: config.OBSERVABILITY_TOKEN,
       });
-      const seenFingerprints = yield* Effect.promise(async () =>
+      const seenFingerprints = yield* Effect.promise(() =>
         ctx.storage.get<SeenFingerprints>("seen"),
       );
       const decision = decideNotifications({
@@ -39,7 +39,7 @@ const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
           text: formatMessage(decision.notifications),
         });
       }
-      yield* Effect.promise(async () => ctx.storage.put("seen", decision.seen));
+      yield* Effect.promise(() => ctx.storage.put("seen", decision.seen));
       return { dropped, groups: groups.length, notified: decision.notifications.length };
     }).pipe(withSpan("ErrorMonitor.check"));
   },
