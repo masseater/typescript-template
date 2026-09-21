@@ -14,7 +14,8 @@
 | `<Activity>` | 隠しても状態を残す |
 | `<ViewTransition>` | Transition に乗るアニメーション |
 | `browser()` | ブラウザだけの部分。Suspense の内側 |
-| `useAction`（`@repo/ui`） | ミューテーションの pending と error。pending 中の `run` はキュー |
+| `useAction`（`@repo/ui`） | ミューテーションの pending と error。pending 中の `run` はキュー。`startTransition` に載る |
+| `Button` の `action` | クリック処理をトランジションに載せる。`onClick` で同じことを手書きしない |
 | TanStack Form | フォームの値 |
 | TanStack Query | サーバーデータ |
 | Effect Atom | 画面の一時状態 |

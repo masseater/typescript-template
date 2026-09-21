@@ -1,8 +1,8 @@
-import { useAtom, useAtomValue } from "@effect/atom-react";
+import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/unstable/reactivity";
-import { useId } from "react";
+import { startTransition, useId } from "react";
 
-import { makeActionQueue, type ActionQueueStatus, type Task } from "./action-queue.ts";
+import { makeActionQueue, type ActionQueue, type ActionQueueStatus, type Task } from "./action-queue.ts";
 
 type ActionState = {
   readonly blocked: boolean;
@@ -11,28 +11,29 @@ type ActionState = {
   readonly run: (task: Task) => void;
 };
 
+type ActionSlot = Atom.Atom<ActionQueueStatus> & {
+  readonly queue: ActionQueue;
+};
+
 const hydratedAtom = Atom.make(true).pipe(Atom.withServerValue(() => false));
 
-const actionAtom = Atom.family((slotId: string) => {
+const actionAtom = Atom.family((slotId: string): ActionSlot => {
   void slotId;
   const queue = makeActionQueue();
-  return Atom.writable(
-    (get): ActionQueueStatus => {
-      get.addFinalizer(
-        queue.subscribe((status) => {
-          get.setSelf(status);
-        }),
-      );
-      return queue.status();
-    },
-    (_ctx, task: Task) => {
-      queue.run(task);
-    },
-  );
+  const statusAtom = Atom.readable((get): ActionQueueStatus => {
+    get.addFinalizer(
+      queue.subscribe((status) => {
+        get.setSelf(status);
+      }),
+    );
+    return queue.status();
+  });
+  return Object.assign(statusAtom, { queue });
 });
 
 const useAction = (): ActionState => {
-  const [status, enqueue] = useAtom(actionAtom(useId()));
+  const slot = actionAtom(useId());
+  const status = useAtomValue(slot);
   const hydrated = useAtomValue(hydratedAtom);
   const pending = status.pending;
   const blocked = pending || !hydrated;
@@ -40,7 +41,9 @@ const useAction = (): ActionState => {
     if (!hydrated) {
       return;
     }
-    enqueue(task);
+    startTransition(async () => {
+      await slot.queue.run(task);
+    });
   };
   return { blocked, error: status.error, pending, run };
 };

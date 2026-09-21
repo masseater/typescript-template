@@ -46,6 +46,28 @@ describe("action queue", () => {
     expect(queue.status()).toEqual({ error: undefined, pending: false });
   });
 
+  it("resolves the promise returned by run when that task finishes", async () => {
+    expect.hasAssertions();
+    const queue = makeActionQueue();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let finished = false;
+
+    const done = queue.run(async () => {
+      await gate;
+    });
+    void done.then(() => {
+      finished = true;
+    });
+
+    expect(finished).toBe(false);
+    release();
+    await done;
+    expect(finished).toBe(true);
+  });
+
   it("keeps draining after a task fails and keeps that error until a later success", async () => {
     expect.hasAssertions();
     const queue = makeActionQueue();

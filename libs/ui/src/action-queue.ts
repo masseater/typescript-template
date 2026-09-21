@@ -6,7 +6,7 @@ type ActionQueueStatus = {
 };
 
 type ActionQueue = {
-  readonly run: (task: Task) => void;
+  readonly run: (task: Task) => Promise<void>;
   readonly status: () => ActionQueueStatus;
   readonly subscribe: (listener: (status: ActionQueueStatus) => void) => () => void;
 };
@@ -34,7 +34,7 @@ const makeActionQueue = (): ActionQueue => {
     run: (task) => {
       depth += 1;
       emit();
-      chain = chain.catch(() => undefined).then(async () => {
+      const finished = chain.catch(() => undefined).then(async () => {
         try {
           await task();
           error = undefined;
@@ -45,6 +45,8 @@ const makeActionQueue = (): ActionQueue => {
           emit();
         }
       });
+      chain = finished;
+      return finished;
     },
     status: () => ({ error, pending: depth > 0 }),
     subscribe: (listener) => {

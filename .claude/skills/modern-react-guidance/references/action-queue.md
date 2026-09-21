@@ -2,7 +2,7 @@
 
 大本: https://zenn.dev/uhyo/articles/async-react-action-queue
 
-出典は `useActionState` のキューイングで、同じ操作列を並行実行せず順番に処理し、そのあいだもユーザーの次の操作を受け付ける、という UX を示している。このリポジトリでは `useActionState` は `project/atom-state` が拒否する。同じ並びは `@repo/ui` の `useAction` が担う。`run` は pending 中でも受け付け、先に入れた task が終わってから次を実行する。
+出典は `useActionState` のキューイングで、同じ操作列を並行実行せず順番に処理し、そのあいだもユーザーの次の操作を受け付ける、という UX を示している。このリポジトリでは `useActionState` は `project/atom-state` が拒否する。同じ並びは `@repo/ui` の `useAction` が担う。`run` は pending 中でも受け付け、先に入れた task が終わってから次を実行し、`startTransition` に載る。設計論の位置づけは `design-theory.md`（https://speakerdeck.com/uhyo/react-no-sekkeiron ）。
 
 ## やる
 
