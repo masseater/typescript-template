@@ -18,11 +18,11 @@ function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
   });
   provideSessionLoader(queryClient, loadBrowserSession);
   const router = createAppRouter(routeTree, {
-    queryClient,
     rewrite: {
       input: ({ url }) => deLocalizeUrl(url),
       output: ({ url }) => localizeUrl(url),
     },
+    routerContext: { queryClient },
   });
   setupRouterSsrQueryIntegration({ queryClient, router });
   return router;
