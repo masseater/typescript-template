@@ -18,11 +18,8 @@ function monitorWorkerVite() {
         ...effectDiagnostics,
         build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
         ...lifecycle({
-          precommit: [],
           prepush: ["check:effect"],
           prepr: ["build"],
-          premerge: [],
-          prerelease: [],
         }),
       },
     },
