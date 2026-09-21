@@ -1,48 +1,88 @@
-import { build, type PluginOption } from "vite-plus";
-import { describe, expect, it } from "vite-plus/test";
+import path from "node:path";
+
+import { repositoryRoot } from "@repo/config/repository-root";
+import { build } from "vite-plus";
+import { describe, expect, test } from "vite-plus/test";
 
 import { failOnBrokenSourceMaps } from "./private-source-maps.ts";
 
-const bundleEntry = new URL("./source-maps.ts", import.meta.url).pathname;
+import type { PluginOption } from "vite-plus";
 
-const transformWithoutMap = (): PluginOption => ({
-  name: "transform-without-map",
-  transform: (code: string, moduleId: string) =>
-    moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
-});
-
-const bundle = (plugins: readonly PluginOption[]): Promise<unknown> =>
-  build({
-    build: {
-      lib: { entry: bundleEntry, fileName: "entry", formats: ["es"] },
-      sourcemap: true,
-      write: false,
-    },
-    configFile: false,
-    logLevel: "silent",
-    plugins: [...plugins],
-  });
+const bundleEntry = path.join(repositoryRoot, "libs/vite-config/src/source-maps.ts");
 
 describe("failOnBrokenSourceMaps", () => {
-  it("fails the build when a transform drops the source map", async () => {
-    expect.hasAssertions();
-    await expect(bundle([failOnBrokenSourceMaps(), transformWithoutMap()])).rejects.toThrow(
-      "SOURCEMAP_BROKEN",
-    );
+  const it = test
+    .extend("brokenMapReportsSourceMapBroken", async () => {
+      try {
+        await build({
+          build: {
+            lib: { entry: bundleEntry, fileName: "entry", formats: ["es"] },
+            sourcemap: true,
+            write: false,
+          },
+          configFile: false,
+          logLevel: "silent",
+          plugins: [
+            failOnBrokenSourceMaps(),
+            {
+              name: "transform-without-map",
+              transform: (code: string, moduleId: string): { readonly code: string } | null =>
+                moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
+            },
+          ],
+        });
+      } catch (buildFailure: unknown) {
+        const failureText =
+          buildFailure instanceof Error ? buildFailure.message : "unknown failure";
+        return failureText.includes("SOURCEMAP_BROKEN");
+      }
+      throw new Error("build kept a transform that dropped the source map");
+    })
+    .extend("keptMapBuild", async () => {
+      const built = await build({
+        build: {
+          lib: { entry: bundleEntry, fileName: "entry", formats: ["es"] },
+          sourcemap: true,
+          write: false,
+        },
+        configFile: false,
+        logLevel: "silent",
+        plugins: [failOnBrokenSourceMaps()],
+      });
+      const bundles = Array.isArray(built) ? built : [built];
+      return bundles.some((bundle) => "output" in bundle);
+    });
+
+  it("fails the build when a transform drops the source map", ({
+    brokenMapReportsSourceMapBroken,
+  }) => {
+    expect(brokenMapReportsSourceMapBroken).toBe(true);
   });
 
-  it("leaves a build whose transforms keep the source map alone", async () => {
-    expect.hasAssertions();
-    await expect(bundle([failOnBrokenSourceMaps()])).resolves.toBeDefined();
+  it("leaves a build whose transforms keep the source map alone", ({ keptMapBuild }) => {
+    expect(keptMapBuild).toBe(true);
   });
 
   it("does not fail Elysia AOT stub transforms that replace compile sources", async () => {
     expect.hasAssertions();
-    const aotStub = (): PluginOption => ({
-      name: "elysia-aot",
-      transform: (code: string, moduleId: string) =>
-        moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
+    const built = await build({
+      build: {
+        lib: { entry: bundleEntry, fileName: "entry", formats: ["es"] },
+        sourcemap: true,
+        write: false,
+      },
+      configFile: false,
+      logLevel: "silent",
+      plugins: [
+        failOnBrokenSourceMaps(),
+        {
+          name: "elysia-aot",
+          transform: (code: string, moduleId: string): { readonly code: string } | null =>
+            moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
+        } satisfies PluginOption,
+      ],
     });
-    await expect(bundle([failOnBrokenSourceMaps(), aotStub()])).resolves.toBeDefined();
+    const bundles = Array.isArray(built) ? built : [built];
+    expect(bundles.some((bundle) => "output" in bundle)).toBe(true);
   });
 });

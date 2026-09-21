@@ -22,26 +22,31 @@ import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite-plus";
+import {
+  defineConfig,
+  type ConfigEnv,
+  type Plugin,
+  type PluginOption,
+  type ServerOptions,
+  type UserConfig,
+} from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
 import { elysiaAot } from "./elysia-aot.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
-import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-
-async function readDevVars(appRoot: string): Promise<string | undefined> {
+const readDevVars = async (appRoot: string): Promise<string | undefined> => {
   try {
     return await readFile(path.join(appRoot, ".dev.vars"), "utf-8");
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+  } catch (readFailure: unknown) {
+    if (readFailure instanceof Error && "code" in readFailure && readFailure.code === "ENOENT") {
       return undefined;
     }
-    throw error;
+    throw readFailure;
   }
-}
+};
 
-function previewDevVars(appRoot: string): Plugin {
+const previewDevVars = (appRoot: string): Plugin => {
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
@@ -56,16 +61,16 @@ function previewDevVars(appRoot: string): Plugin {
     },
     name: "template-preview-dev-vars",
   };
-}
+};
 
-const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
   "libs/runtime/src/security.ts",
 ] as const;
+const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
+  ...serverOnlyPackages.map((packageDirectory) => `**/libs/${packageDirectory}/src/**`),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
@@ -89,44 +94,46 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
-  let removed = 0;
-  function strip(options: readonly PluginOption[]): PluginOption[] {
-    return options.flatMap((plugin: PluginOption): PluginOption[] => {
-      if (Array.isArray(plugin)) {
-        return [strip(plugin)];
-      }
-      if (
-        typeof plugin === "object" &&
-        plugin !== null &&
-        "name" in plugin &&
-        plugin.name === envFileLoader
-      ) {
-        removed += 1;
-        return [];
-      }
-      return [plugin];
-    });
-  }
-  const kept = strip(plugins);
+const pluginNamed = (plugin: PluginOption): string | undefined =>
+  typeof plugin === "object" &&
+  plugin !== null &&
+  "name" in plugin &&
+  typeof plugin.name === "string"
+    ? plugin.name
+    : undefined;
+
+const stripEnvFileLoader = (
+  pluginOptions: readonly PluginOption[],
+): readonly [PluginOption[], number] => {
+  const pieces = pluginOptions.map((plugin): readonly [PluginOption[], number] => {
+    if (Array.isArray(plugin)) {
+      const [nested, removedCount] = stripEnvFileLoader(plugin);
+      return [[...nested], removedCount];
+    }
+    return pluginNamed(plugin) === envFileLoader ? [[], 1] : [[plugin], 0];
+  });
+  return [
+    pieces.flatMap(([kept]) => kept),
+    pieces.reduce((removedSum, [, removedCount]) => removedSum + removedCount, 0),
+  ];
+};
+
+const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
+  const [kept, removed] = stripEnvFileLoader(plugins);
   if (removed === 0) {
     throw new Error(`${envFileLoader} plugin not found`);
   }
-  return kept;
-}
+  return [...kept];
+};
 
-function reactCompiler(): PluginOption[] {
-  return react({ compiler: { logDiagnostics: true } });
-}
+const reactCompiler = (): PluginOption[] => react({ compiler: { logDiagnostics: true } });
 
-function appServer(app: Application): ServerOptions {
-  return {
-    allowedHosts: [".local"],
-    host: loopbackAddress,
-    port: applicationPorts[app],
-    strictPort: true,
-  };
-}
+const appServer = (app: Application): ServerOptions => ({
+  allowedHosts: [".local"],
+  host: loopbackAddress,
+  port: applicationPorts[app],
+  strictPort: true,
+});
 
 const generatedDirectories = [
   "node_modules",
@@ -138,20 +145,44 @@ const generatedDirectories = [
   ".spool",
 ] as const;
 
+const withoutGenerated = (...directories: readonly string[]): string[] =>
+  directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
+
+const withoutLocalState = [
+  { base: "workspace", pattern: "!.local" },
+  { base: "workspace", pattern: "!.local/**" },
+] as const;
+
+type RunConfig = NonNullable<UserConfig["run"]>;
+type Tasks = NonNullable<RunConfig["tasks"]>;
+
 const taskInput = [
   { auto: true },
   { base: "workspace", pattern: "!node_modules/.modules.yaml" },
   { base: "workspace", pattern: "!**/node_modules/.bin/**" },
 ] as const;
 
-function withoutGenerated(...directories: readonly string[]): string[] {
-  return directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
-}
+const testRun = {
+  test: {
+    command: "vp test run",
+    input: [
+      ...taskInput,
+      "!coverage/**",
+      { base: "workspace", pattern: "!**/coverage/**" },
+      { base: "workspace", pattern: "pnpm-lock.yaml" },
+      { base: "workspace", pattern: "pnpm-workspace.yaml" },
+    ],
+    output: [],
+  },
+} satisfies Tasks;
 
-const withoutLocalState = [
-  { base: "workspace", pattern: "!.local" },
-  { base: "workspace", pattern: "!.local/**" },
-] as const;
+const sliceBoundaries = {
+  check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
+} satisfies Tasks;
+
+const intentValidation = {
+  check: { command: "intent validate", input: [...taskInput] },
+} satisfies Tasks;
 
 const typecheckInputs = [
   ...taskInput,
@@ -178,9 +209,6 @@ const effectDiagnostics = {
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
-type RunConfig = NonNullable<UserConfig["run"]>;
-type Tasks = NonNullable<RunConfig["tasks"]>;
-
 const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
 type Lifecycle = (typeof lifecycles)[number];
 
@@ -197,58 +225,36 @@ type LifecycleTask = {
   dependsOn: string[];
 };
 
-function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
+const lifecycle = (
+  stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {},
+): {
   readonly precommit: LifecycleTask;
   readonly prepush: LifecycleTask;
   readonly prepr: LifecycleTask;
   readonly premerge: LifecycleTask;
   readonly prerelease: LifecycleTask;
-} {
-  return {
-    precommit: {
-      command: [],
-      dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
-    },
-    prepush: {
-      command: [],
-      dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
-    },
-    prepr: {
-      command: [],
-      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
-    },
-    premerge: {
-      command: [],
-      dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
-    },
-    prerelease: {
-      command: [],
-      dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
-    },
-  };
-}
-
-const testRun = {
-  test: {
-    command: "vp test run",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
-    output: [],
+} => ({
+  precommit: {
+    command: [],
+    dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
   },
-} satisfies Tasks;
-
-const sliceBoundaries = {
-  check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
-} satisfies Tasks;
-
-const intentValidation = {
-  check: { command: "intent validate", input: [...taskInput] },
-} satisfies Tasks;
+  prepush: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+  },
+  prepr: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+  },
+  premerge: {
+    command: [],
+    dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+  },
+  prerelease: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+  },
+});
 
 const effectRun = {
   tasks: {
@@ -305,10 +311,10 @@ const coreDevWorker = {
   },
 };
 
-function appConfig(
+const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
-): (env: Readonly<ConfigEnv>) => UserConfig {
+): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const appRoot = path.join(repositoryRoot, "apps", app);
   const realtime = grants(app, "realtime");
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
@@ -380,7 +386,7 @@ function appConfig(
     run: appRun,
     server: appServer(app),
   });
-}
+};
 
 export {
   appConfig,
@@ -408,5 +414,6 @@ export {
 };
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
+export { runTypecheckGate } from "./effect-typecheck.ts";
 export type { Tasks };
 export { devBoundary };
