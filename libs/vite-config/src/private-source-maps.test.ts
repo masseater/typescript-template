@@ -35,4 +35,14 @@ describe("failOnBrokenSourceMaps", () => {
     expect.hasAssertions();
     await expect(bundle([failOnBrokenSourceMaps()])).resolves.toBeDefined();
   });
+
+  it("does not fail Elysia AOT stub transforms that replace compile sources", async () => {
+    expect.hasAssertions();
+    const aotStub = (): PluginOption => ({
+      name: "elysia-aot",
+      transform: (code: string, moduleId: string) =>
+        moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
+    });
+    await expect(bundle([failOnBrokenSourceMaps(), aotStub()])).resolves.toBeDefined();
+  });
 });

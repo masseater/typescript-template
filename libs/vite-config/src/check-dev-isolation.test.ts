@@ -54,5 +54,8 @@ describe("check:dev local D1", () => {
     expect(readFileSync(new URL("./elysia-aot.ts", import.meta.url), "utf8")).toMatch(
       /environment\.name === "ssr"/u,
     );
+    expect(readFileSync(new URL("./elysia-aot.ts", import.meta.url), "utf8")).toMatch(
+      /id === "elysia"/u,
+    );
   });
 });
