@@ -95,9 +95,57 @@
         "count": 1
       },
       {
+        "file": "../../libs/runtime/src/account.ts",
+        "code": "TS2345",
+        "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/account.ts",
+        "code": "TS2740",
+        "message": "Type 'Tagged' is missing the following properties from type 'EmailVerificationFailed': name, message, toJSON, [NodeInspectSymbol], and 4 more.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/bindings.ts",
+        "code": "TS2739",
+        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 5 more ...; MAILPIT_SEND_URL?: string; }' is missing the following properties from type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 9 more ...; MAILPIT_SEND_URL?: string; }': ASSETS, DB",
+        "count": 2
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, unknown>' is not assignable to type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, Requirements>'.",
+        "count": 1
+      },
+      {
         "file": "../../libs/runtime/src/http.ts",
         "code": "TS2322",
         "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'MaybePromise<Response>' is not assignable to type 'Promise<Response>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type '([string, string] | readonly [\"content-length\", string])[]' is not assignable to parameter of type 'HeadersInit | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'FailureTable<Exclude<Failures, CommonFailure>>' is not assignable to parameter of type 'FailureTable<Tagged>'.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/runtime/src/read-cache.ts",
+        "code": "TS2379",
+        "message": "Argument of type '{ decoded: string; settings: { readonly expirationTtl?: number; } | undefined; }' is not assignable to parameter of type '{ readonly decoded: string; readonly settings?: { readonly expirationTtl?: number; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
@@ -163,13 +211,13 @@
       {
         "file": "src/shared/server-api/flags-api.ts",
         "code": "TS2345",
-        "message": "Argument of type '(request: Request<unknown, CfProperties<unknown>>) => Effect<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | ... 8 more ... | SessionRequired, AppOrigin | ... 3 more ... | FlagEditorAccess>' is not assignable to parameter of type 'Handler<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | AdminRequired | ConfigurationInvalid | ... 6 more ... | SessionRequired, Requirements | WikiServices>'.",
+        "message": "Argument of type '(request: Request<unknown, CfProperties<unknown>>) => Effect<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | ... 8 more ... | SessionRequired, AppOrigin | ... 3 more ... | FlagEditorAccess>' is not assignable to parameter of type 'Handler<{ readonly description: string; readonly enabled: boolean; readonly key: \"member-board\"; }, Tagged, Requirements | WikiServices>'.",
         "count": 1
       },
       {
         "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS2741",
-        "message": "Property 'DatabaseFailure' is missing in type '{}' but required in type 'FailureTable<DatabaseFailure>'.",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `FlagEditorAccess`. effect(missingEffectContext)",
         "count": 1
       },
       {
@@ -247,9 +295,57 @@
         "count": 2
       },
       {
+        "file": "../../libs/runtime/src/account.ts",
+        "code": "TS2345",
+        "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/account.ts",
+        "code": "TS2740",
+        "message": "Type 'Tagged' is missing the following properties from type 'EmailVerificationFailed': name, message, toJSON, [NodeInspectSymbol], and 4 more.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/bindings.ts",
+        "code": "TS2739",
+        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 5 more ...; MAILPIT_SEND_URL?: string; }' is missing the following properties from type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 9 more ...; MAILPIT_SEND_URL?: string; }': ASSETS, DB",
+        "count": 2
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, unknown>' is not assignable to type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, Requirements>'.",
+        "count": 1
+      },
+      {
         "file": "../../libs/runtime/src/http.ts",
         "code": "TS2322",
         "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'MaybePromise<Response>' is not assignable to type 'Promise<Response>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type '([string, string] | readonly [\"content-length\", string])[]' is not assignable to parameter of type 'HeadersInit | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'FailureTable<Exclude<Failures, CommonFailure>>' is not assignable to parameter of type 'FailureTable<Tagged>'.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/runtime/src/read-cache.ts",
+        "code": "TS2379",
+        "message": "Argument of type '{ decoded: string; settings: { readonly expirationTtl?: number; } | undefined; }' is not assignable to parameter of type '{ readonly decoded: string; readonly settings?: { readonly expirationTtl?: number; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
@@ -315,15 +411,81 @@
         "count": 1
       },
       {
+        "file": "../../libs/runtime/src/account.ts",
+        "code": "TS2345",
+        "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/account.ts",
+        "code": "TS2740",
+        "message": "Type 'Tagged' is missing the following properties from type 'EmailVerificationFailed': name, message, toJSON, [NodeInspectSymbol], and 4 more.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/bindings.ts",
+        "code": "TS2739",
+        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 5 more ...; MAILPIT_SEND_URL?: string; }' is missing the following properties from type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 9 more ...; MAILPIT_SEND_URL?: string; }': ASSETS, DB",
+        "count": 2
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, unknown>' is not assignable to type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, Requirements>'.",
+        "count": 1
+      },
+      {
         "file": "../../libs/runtime/src/http.ts",
         "code": "TS2322",
         "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       },
       {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'MaybePromise<Response>' is not assignable to type 'Promise<Response>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type '([string, string] | readonly [\"content-length\", string])[]' is not assignable to parameter of type 'HeadersInit | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'FailureTable<Exclude<Failures, CommonFailure>>' is not assignable to parameter of type 'FailureTable<Tagged>'.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/runtime/src/read-cache.ts",
+        "code": "TS2379",
+        "message": "Argument of type '{ decoded: string; settings: { readonly expirationTtl?: number; } | undefined; }' is not assignable to parameter of type '{ readonly decoded: string; readonly settings?: { readonly expirationTtl?: number; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/board/api/board.ts",
+        "code": "TS2322",
+        "message": "Type '{} | null' is not assignable to type '{ readonly pageSize: 50; readonly posts: readonly { readonly author: { readonly id: string; readonly name: string; } | null; readonly body: string; readonly createdAt: number; readonly id: string; }[]; readonly thread: { ...; }; readonly total: number; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/profile-edit/api/profile.ts",
+        "code": "TS2322",
+        "message": "Type '{} | null' is not assignable to type '{ readonly email: string; readonly id: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/profile/api/load-member.ts",
+        "code": "TS2322",
+        "message": "Type '{} | null' is not assignable to type '{ readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }'.",
         "count": 1
       },
       {
@@ -365,13 +527,7 @@
       {
         "file": "src/shared/server-api/flags-api.ts",
         "code": "TS2345",
-        "message": "Argument of type '() => Effect<{ memberBoard: boolean; }, never, FeatureFlags>' is not assignable to parameter of type 'Handler<{ readonly memberBoard: boolean; }, never, Requirements | AppServices>'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS377004",
-        "message": "This Effect requires a service that is missing from the expected Effect context: `FeatureFlags`. effect(missingEffectContext)",
+        "message": "Argument of type '() => Effect<{ memberBoard: boolean; }, never, FeatureFlags>' is not assignable to parameter of type 'Handler<{ readonly memberBoard: boolean; }, Tagged, Requirements | AppServices>'.",
         "count": 1
       },
       {
@@ -649,9 +805,63 @@
         "count": 2
       },
       {
+        "file": "src/account.ts",
+        "code": "TS2345",
+        "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "src/account.ts",
+        "code": "TS2740",
+        "message": "Type 'Tagged' is missing the following properties from type 'EmailVerificationFailed': name, message, toJSON, [NodeInspectSymbol], and 4 more.",
+        "count": 1
+      },
+      {
+        "file": "src/bindings.ts",
+        "code": "TS2739",
+        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 5 more ...; MAILPIT_SEND_URL?: string; }' is missing the following properties from type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 9 more ...; MAILPIT_SEND_URL?: string; }': ASSETS, DB",
+        "count": 2
+      },
+      {
+        "file": "src/http.ts",
+        "code": "TS2322",
+        "message": "Type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, unknown>' is not assignable to type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, Requirements>'.",
+        "count": 1
+      },
+      {
         "file": "src/http.ts",
         "code": "TS2322",
         "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      },
+      {
+        "file": "src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'MaybePromise<Response>' is not assignable to type 'Promise<Response>'.",
+        "count": 1
+      },
+      {
+        "file": "src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type '([string, string] | readonly [\"content-length\", string])[]' is not assignable to parameter of type 'HeadersInit | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/http.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'FailureTable<Exclude<Failures, CommonFailure>>' is not assignable to parameter of type 'FailureTable<Tagged>'.",
+        "count": 2
+      },
+      {
+        "file": "src/http.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `unknown`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/read-cache.ts",
+        "code": "TS2379",
+        "message": "Argument of type '{ decoded: string; settings: { readonly expirationTtl?: number; } | undefined; }' is not assignable to parameter of type '{ readonly decoded: string; readonly settings?: { readonly expirationTtl?: number; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       }
     ],
