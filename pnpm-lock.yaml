@@ -1452,9 +1452,6 @@ importers:
 
   libs/user-inbox:
     dependencies:
-      '@repo/vite-config':
-        specifier: workspace:*
-        version: link:../vite-config
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1468,6 +1465,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../vite-config
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

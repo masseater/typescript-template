@@ -7,13 +7,13 @@
   },
   "scripts": {},
   "dependencies": {
-    "@repo/vite-config": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
+    "@repo/vite-config": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
