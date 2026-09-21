@@ -1,37 +1,70 @@
-import { mkdtemp, readFile, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
 import { applicationOrigins } from "@repo/config";
-import { Effect } from "effect";
+import { Effect, FileSystem, Path, PlatformError } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { layer } from "./platform.ts";
 import { replacePrivateFile } from "./private-files.ts";
 import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentials.ts";
 
-async function privateFile(name: string): Promise<URL> {
-  const base = await mkdtemp(path.join(tmpdir(), "private-files-"));
-  return new URL(`file://${path.join(base, name)}`);
+function privateFile(
+  name: string,
+): Effect.Effect<URL, PlatformError.PlatformError, FileSystem.FileSystem | Path.Path> {
+  return Effect.gen(function* privateFileProgram() {
+    const path = yield* Path.Path;
+    const fs = yield* FileSystem.FileSystem;
+    const base = yield* fs.makeTempDirectory({ prefix: "private-files-" });
+    return new URL(`file://${path.join(base, name)}`);
+  });
 }
 
 describe("replacing a private file", () => {
   it("leaves a file that already holds the content alone", async () => {
     expect.hasAssertions();
-    const location = await privateFile("kept");
-    await Effect.runPromise(replacePrivateFile(location, "same\n"));
-    const written = await stat(location);
-    await Effect.runPromise(replacePrivateFile(location, "same\n"));
-    const revisited = await stat(location);
-    expect(revisited.mtimeNs).toBe(written.mtimeNs);
-    expect(await readFile(location, "utf-8")).toBe("same\n");
+    const location = await Effect.runPromise(privateFile("kept").pipe(Effect.provide(layer)));
+    await Effect.runPromise(replacePrivateFile(location, "same\n").pipe(Effect.provide(layer)));
+    const written = await Effect.runPromise(
+      Effect.gen(function* program() {
+        const path = yield* Path.Path;
+        const fs = yield* FileSystem.FileSystem;
+        const resolved = yield* path.fromFileUrl(location);
+        return yield* fs.stat(resolved);
+      }).pipe(Effect.provide(layer)),
+    );
+    await Effect.runPromise(replacePrivateFile(location, "same\n").pipe(Effect.provide(layer)));
+    const revisited = await Effect.runPromise(
+      Effect.gen(function* program() {
+        const path = yield* Path.Path;
+        const fs = yield* FileSystem.FileSystem;
+        const resolved = yield* path.fromFileUrl(location);
+        return yield* fs.stat(resolved);
+      }).pipe(Effect.provide(layer)),
+    );
+    expect(revisited.mtime).toStrictEqual(written.mtime);
+    const content = await Effect.runPromise(
+      Effect.gen(function* program() {
+        const path = yield* Path.Path;
+        const fs = yield* FileSystem.FileSystem;
+        const resolved = yield* path.fromFileUrl(location);
+        return yield* fs.readFileString(resolved);
+      }).pipe(Effect.provide(layer)),
+    );
+    expect(content).toBe("same\n");
   });
 
   it("rewrites a file that holds different content", async () => {
     expect.hasAssertions();
-    const location = await privateFile("replaced");
-    await Effect.runPromise(replacePrivateFile(location, "before\n"));
-    await Effect.runPromise(replacePrivateFile(location, "after\n"));
-    expect(await readFile(location, "utf-8")).toBe("after\n");
+    const location = await Effect.runPromise(privateFile("replaced").pipe(Effect.provide(layer)));
+    await Effect.runPromise(replacePrivateFile(location, "before\n").pipe(Effect.provide(layer)));
+    await Effect.runPromise(replacePrivateFile(location, "after\n").pipe(Effect.provide(layer)));
+    const content = await Effect.runPromise(
+      Effect.gen(function* program() {
+        const path = yield* Path.Path;
+        const fs = yield* FileSystem.FileSystem;
+        const resolved = yield* path.fromFileUrl(location);
+        return yield* fs.readFileString(resolved);
+      }).pipe(Effect.provide(layer)),
+    );
+    expect(content).toBe("after\n");
   });
 });
 

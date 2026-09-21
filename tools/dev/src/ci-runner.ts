@@ -1,10 +1,9 @@
-import { readFile, writeFile } from "node:fs/promises";
 import { homedir, userInfo } from "node:os";
-import path from "node:path";
 
-import { Effect, Predicate } from "effect";
+import { Effect, FileSystem, Path, PlatformError } from "effect";
 
-import { failure, fileIo } from "./failure.ts";
+import { failure } from "./failure.ts";
+import { isNotFound, withFileSystem } from "./platform.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 
@@ -32,8 +31,11 @@ const sleepGuard = ["/usr/bin/caffeinate", "-s"] as const;
 const writeFlag = "--write";
 const plistSuffix = ".plist";
 
-function programArguments(root: string): readonly string[] {
-  return [...sleepGuard, path.join(root, "runsvc.sh")];
+function programArguments(root: string): Effect.Effect<readonly string[], never, Path.Path> {
+  return Effect.gen(function* programArgumentsProgram() {
+    const path = yield* Path.Path;
+    return [...sleepGuard, path.join(root, "runsvc.sh")];
+  });
 }
 
 const plistOpening = `<?xml version="1.0" encoding="UTF-8"?>
@@ -54,12 +56,17 @@ const plistClosing = `    <key>EnvironmentVariables</key>
 </plist>
 `;
 
-function plistDocument(service: RunnerService, user: string, home: string): string {
-  const program = programArguments(service.root)
-    .map((argument) => `      <string>${argument}</string>`)
-    .join("\n");
-  const logDirectory = path.join(home, "Library", "Logs", service.label);
-  return `${plistOpening}
+function plistDocument(
+  service: RunnerService,
+  user: string,
+  home: string,
+): Effect.Effect<string, never, Path.Path> {
+  return Effect.gen(function* plistDocumentProgram() {
+    const path = yield* Path.Path;
+    const arguments_ = yield* programArguments(service.root);
+    const program = arguments_.map((argument) => `      <string>${argument}</string>`).join("\n");
+    const logDirectory = path.join(home, "Library", "Logs", service.label);
+    return `${plistOpening}
     <key>Label</key>
     <string>${service.label}</string>
     <key>ProgramArguments</key>
@@ -77,69 +84,76 @@ ${program}
     <key>StandardErrorPath</key>
     <string>${path.join(logDirectory, "stderr.log")}</string>
 ${plistClosing}`;
-}
-
-function serviceOf(root: string): Effect.Effect<RunnerService, LocalCommandFailure> {
-  return fileIo(async () => readFile(path.join(root, ".service"), "utf-8")).pipe(
-    Effect.flatMap((content) => {
-      const plistFile = content.trim();
-      const label = path.basename(plistFile, plistSuffix);
-      return plistFile.endsWith(plistSuffix) && label !== ""
-        ? Effect.succeed({ label, plistFile, root: path.resolve(root) })
-        : Effect.fail(failure("ci_runner_service_invalid"));
-    }),
-  );
-}
-
-function isMissing(cause: unknown): boolean {
-  return Predicate.isObject(cause) && "code" in cause && cause.code === "ENOENT";
-}
-
-function installedDocument(plistFile: string): Effect.Effect<string, LocalCommandFailure> {
-  return Effect.tryPromise({
-    catch: () => failure("file_io_failed"),
-    try: async () => {
-      try {
-        return await readFile(plistFile, "utf-8");
-      } catch (cause) {
-        if (isMissing(cause)) {
-          return "";
-        }
-        throw cause;
-      }
-    },
   });
+}
+
+function serviceOf(
+  root: string,
+): Effect.Effect<RunnerService, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+  return Effect.gen(function* serviceOfProgram() {
+    const path = yield* Path.Path;
+    const fs = yield* FileSystem.FileSystem;
+    const content = yield* fs
+      .readFileString(path.join(root, ".service"))
+      .pipe(Effect.mapError(() => failure("file_io_failed")));
+    const plistFile = content.trim();
+    const label = path.basename(plistFile, plistSuffix);
+    return plistFile.endsWith(plistSuffix) && label !== ""
+      ? { label, plistFile, root: path.resolve(root) }
+      : yield* Effect.fail(failure("ci_runner_service_invalid"));
+  });
+}
+
+function installedDocument(
+  plistFile: string,
+): Effect.Effect<string, LocalCommandFailure, FileSystem.FileSystem> {
+  return FileSystem.FileSystem.pipe(
+    Effect.flatMap((fs) =>
+      fs.readFileString(plistFile).pipe(
+        Effect.catchIf(
+          (error): error is PlatformError.PlatformError => isNotFound(error),
+          () => Effect.succeed(""),
+        ),
+        Effect.mapError(() => failure("file_io_failed")),
+      ),
+    ),
+  );
 }
 
 function renderService(
   root: string,
   write: boolean,
-): Effect.Effect<ServiceReport, LocalCommandFailure> {
+): Effect.Effect<ServiceReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
   return serviceOf(root).pipe(
     Effect.flatMap((service) =>
       installedDocument(service.plistFile).pipe(
         Effect.map((installed) => ({ installed, service })),
       ),
     ),
-    Effect.flatMap(({ installed, service }) => {
-      const rendered = plistDocument(service, userInfo().username, homedir());
-      const changed = installed !== rendered;
-      const report = {
-        changed,
-        label: service.label,
-        plistFile: service.plistFile,
-        written: write && changed,
-      };
-      return write && changed
-        ? fileIo(async () => writeFile(service.plistFile, rendered, "utf-8")).pipe(
-            Effect.as(report),
-          )
-        : Effect.succeed(report);
-    }),
+    Effect.flatMap(({ installed, service }) =>
+      plistDocument(service, userInfo().username, homedir()).pipe(
+        Effect.flatMap((rendered) => {
+          const changed = installed !== rendered;
+          const report = {
+            changed,
+            label: service.label,
+            plistFile: service.plistFile,
+            written: write && changed,
+          };
+          return write && changed
+            ? withFileSystem((fs) => fs.writeFileString(service.plistFile, rendered)).pipe(
+                Effect.as(report),
+              )
+            : Effect.succeed(report);
+        }),
+      ),
+    ),
   );
 }
 
-function ciRunner(args: readonly string[]): Effect.Effect<CiRunnerReport, LocalCommandFailure> {
+function ciRunner(
+  args: readonly string[],
+): Effect.Effect<CiRunnerReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
   const write = args.includes(writeFlag);
   const roots = args.filter((argument) => argument !== writeFlag);
   return roots.length === 0

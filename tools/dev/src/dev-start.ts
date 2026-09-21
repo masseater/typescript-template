@@ -1,10 +1,4 @@
 #!/usr/bin/env node
-import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { promisify } from "node:util";
-
 import { reportFailed, runCli } from "@repo/cli";
 import {
   applicationReadyPaths,
@@ -14,8 +8,11 @@ import {
 } from "@repo/config";
 import { localDatabaseVariable } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Cause, Console, Effect, Result, Schema } from "effect";
+import { Cause, Console, Effect, FileSystem, Path, Result, Schema } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { createServer } from "vite-plus";
+
+import { layer } from "./platform.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,
@@ -27,34 +24,77 @@ const requestTimeoutMilliseconds = 120_000;
 const startTimeout = "5 minutes";
 const closeTimeoutMilliseconds = 30_000;
 const databasePrefix = "template-check-dev-";
-const runFile = promisify(execFile);
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-const isolatedDatabase = Effect.acquireRelease(
-  Effect.tryPromise({
-    catch: (error) =>
-      new DevStartFailure({ reason: `failed to prepare database: ${describe(error)}` }),
-    try: async () => {
-      const directory = await mkdtemp(path.join(tmpdir(), databasePrefix));
-      process.env[localDatabaseVariable] = directory;
-      await runFile(
-        path.join(repositoryRoot, "node_modules/.bin/vp"),
-        ["run", "--filter", "@repo/db-local", "db:migrate:local"],
-        {
+function workspaceName(): string {
+  const cwd = process.cwd();
+  const separator = cwd.lastIndexOf("/");
+  return separator === -1 ? cwd : cwd.slice(separator + 1);
+}
+
+function migrateDatabase(
+  vp: string,
+): Effect.Effect<void, DevStartFailure, ChildProcessSpawner.ChildProcessSpawner> {
+  return Effect.gen(function* migrate() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const handle = yield* spawner
+      .spawn(
+        ChildProcess.make(vp, ["run", "--filter", "@repo/db-local", "db:migrate:local"], {
           cwd: repositoryRoot,
-          env: process.env,
-        },
+          extendEnv: true,
+          stderr: "inherit",
+          stdin: "ignore",
+          stdout: "inherit",
+        }),
+      )
+      .pipe(
+        Effect.mapError(
+          (error) =>
+            new DevStartFailure({
+              reason: `failed to prepare database: ${describe(error)}`,
+            }),
+        ),
       );
-      return directory;
-    },
+    const exitCode = yield* handle.exitCode.pipe(
+      Effect.mapError(
+        (error) =>
+          new DevStartFailure({
+            reason: `failed to prepare database: ${describe(error)}`,
+          }),
+      ),
+    );
+    if (exitCode !== 0) {
+      return yield* Effect.fail(
+        new DevStartFailure({ reason: "failed to prepare database: migration failed" }),
+      );
+    }
+  }).pipe(Effect.scoped);
+}
+
+const isolatedDatabase = Effect.acquireRelease(
+  Effect.gen(function* prepareDatabase() {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const directory = yield* fs.makeTempDirectory({ prefix: databasePrefix }).pipe(
+      Effect.mapError(
+        (error) =>
+          new DevStartFailure({
+            reason: `failed to prepare database: ${describe(error)}`,
+          }),
+      ),
+    );
+    process.env[localDatabaseVariable] = directory;
+    yield* migrateDatabase(path.join(repositoryRoot, "node_modules/.bin/vp"));
+    return directory;
   }),
   (directory) =>
-    Effect.promise(async () => {
+    Effect.gen(function* cleanupDatabase() {
       delete process.env[localDatabaseVariable];
-      await rm(directory, { force: true, recursive: true });
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.remove(directory, { force: true, recursive: true }).pipe(Effect.ignore);
     }),
 );
 
@@ -68,22 +108,26 @@ const devServer = Effect.acquireRelease(
       }),
   }),
   (server) =>
-    Effect.promise(async () => {
-      await stopDescendants();
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      await Promise.race([
-        server.close().then(
-          () => undefined,
-          () => undefined,
-        ),
-        new Promise<void>((resolve) => {
-          timer = setTimeout(resolve, closeTimeoutMilliseconds);
+    stopDescendants.pipe(
+      Effect.orDie,
+      Effect.andThen(
+        Effect.promise(async () => {
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          await Promise.race([
+            server.close().then(
+              () => undefined,
+              () => undefined,
+            ),
+            new Promise<void>((resolve) => {
+              timer = setTimeout(resolve, closeTimeoutMilliseconds);
+            }),
+          ]);
+          if (timer !== undefined) {
+            clearTimeout(timer);
+          }
         }),
-      ]);
-      if (timer !== undefined) {
-        clearTimeout(timer);
-      }
-    }),
+      ),
+    ),
 );
 
 const listeningOrigin = isolatedDatabase.pipe(
@@ -161,39 +205,55 @@ function killQuietly(pid: number): void {
   }
 }
 
-async function stopDescendants(): Promise<void> {
-  const { stdout } = await runFile("ps", ["-ax", "-o", "pid=", "-o", "ppid="], {
-    encoding: "utf8",
-  });
-  for (const pid of descendantPids(process.pid, processRows(String(stdout)))) {
+const stopDescendants: Effect.Effect<
+  void,
+  DevStartFailure,
+  ChildProcessSpawner.ChildProcessSpawner
+> = Effect.gen(function* stopDescendantsProgram() {
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const table = yield* spawner
+    .string(
+      ChildProcess.make("ps", ["-ax", "-o", "pid=", "-o", "ppid="], {
+        stderr: "ignore",
+        stdin: "ignore",
+        stdout: "pipe",
+      }),
+    )
+    .pipe(
+      Effect.mapError(
+        (error) => new DevStartFailure({ reason: `failed to list processes: ${describe(error)}` }),
+      ),
+    );
+  for (const pid of descendantPids(process.pid, processRows(table))) {
     killQuietly(pid);
   }
+});
+
+const leave = stopDescendants.pipe(
+  Effect.catch(() =>
+    Effect.sync(() => {
+      process.exitCode = 1;
+    }),
+  ),
+  Effect.andThen(
+    Effect.sync(() => {
+      process.exit(process.exitCode ?? 0);
+    }),
+  ),
+);
+
+function failed(app: string, ...reasons: readonly string[]): Readonly<Record<string, unknown>> {
+  return { app, event: "quality.dev_start", ok: false, reasons };
 }
 
-async function leave(): Promise<never> {
-  try {
-    await stopDescendants();
-  } catch {
-    process.exitCode = 1;
-  } finally {
-    process.exit(process.exitCode ?? 0);
-  }
-}
-
-const line = { app: path.basename(process.cwd()), event: "quality.dev_start" };
-
-function failed(...reasons: readonly string[]): Readonly<Record<string, unknown>> {
-  return { ...line, ok: false, reasons };
-}
-
-function report(reasons: readonly string[]): Effect.Effect<void> {
+function report(app: string, reasons: readonly string[]): Effect.Effect<void> {
   return reasons.length === 0
-    ? Console.log(JSON.stringify({ ...line, ok: true }))
-    : reportFailed(failed(...reasons));
+    ? Console.log(JSON.stringify({ app, event: "quality.dev_start", ok: true }))
+    : reportFailed(failed(app, ...reasons));
 }
 
 const program = Effect.gen(function* program() {
-  const app = yield* Schema.decodeUnknownEffect(Application)(path.basename(process.cwd())).pipe(
+  const app = yield* Schema.decodeUnknownEffect(Application)(workspaceName()).pipe(
     Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
   );
   const origin = yield* listeningOrigin;
@@ -205,7 +265,7 @@ const program = Effect.gen(function* program() {
   const reasons = results.flatMap((result) =>
     Result.isFailure(result) ? [result.failure.reason] : [],
   );
-  yield* report(reasons);
+  yield* report(workspaceName(), reasons);
 }).pipe(
   Effect.scoped,
   Effect.timeoutOrElse({
@@ -217,8 +277,11 @@ const program = Effect.gen(function* program() {
 
 runCli(
   program.pipe(
-    Effect.catchTag("DevStartFailure", (failure) => reportFailed(failed(failure.reason))),
-    Effect.andThen(() => Effect.promise(() => leave())),
+    Effect.catchTag("DevStartFailure", (failure) =>
+      reportFailed(failed(workspaceName(), failure.reason)),
+    ),
+    Effect.andThen(() => leave),
+    Effect.provide(layer),
   ),
-  (cause) => failed(Cause.pretty(cause)),
+  (cause) => failed(workspaceName(), Cause.pretty(cause)),
 );

@@ -198,12 +198,6 @@
     "approver": "the owner of the package that wraps this Node callback"
   },
   {
-    "path": "tools/dev/src/prepare-browser.ts",
-    "rule": "strict-void-return",
-    "grounds": "promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits",
-    "approver": "the owner of the package that wraps this Node callback"
-  },
-  {
     "path": "tools/dev/src/private-files.ts",
     "rule": "no-bitwise",
     "grounds": "group and other permission bits are masked out of the file mode to refuse a credentials file others can read",

@@ -1,9 +1,7 @@
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-
 import { exitWith, markFailed } from "@repo/cli";
 import { applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
@@ -15,6 +13,7 @@ import {
   root,
   run,
 } from "./local-environment.ts";
+import { urlPath } from "./platform.ts";
 
 import type { App, Credentials } from "./local-environment.ts";
 
@@ -29,6 +28,7 @@ interface BrowserReport {
 type ChildExit =
   | { readonly started: false }
   | { readonly started: true; readonly code: number | null };
+
 function sessionName(app: App): string {
   return `template-local-${app}`;
 }
@@ -43,7 +43,8 @@ const sessionArguments = Effect.fn("sessionArguments")(function* sessionArgument
 ) {
   const launch =
     credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
-  return ["--config", fileURLToPath(browserConfig), ...launch, "--session", sessionName(app)];
+  const config = yield* urlPath(browserConfig);
+  return ["--config", config, ...launch, "--session", sessionName(app)];
 });
 
 const browser = Effect.fn("browser")(function* browser(app: App) {
@@ -66,25 +67,30 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   return report;
 });
 
-function runBrowser(args: readonly string[], socketDirectory: string): Effect.Effect<ChildExit> {
-  return Effect.callback<ChildExit>((resume) => {
-    const child = spawn("agent-browser", [...args], {
-      cwd: root,
-      env: { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory },
-      stdio: "inherit",
-    });
-    child.once("error", () => {
-      resume(Effect.succeed({ started: false }));
-    });
-    child.once("exit", (code) => {
-      resume(Effect.succeed({ code, started: true }));
-    });
-    return Effect.sync(() => {
-      if (child.exitCode === null && child.signalCode === null) {
-        child.kill();
-      }
-    });
-  });
+function runBrowser(
+  args: readonly string[],
+  socketDirectory: string,
+): Effect.Effect<ChildExit, never, ChildProcessSpawner.ChildProcessSpawner> {
+  return Effect.gen(function* runBrowserProgram() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const handle = yield* spawner
+      .spawn(
+        ChildProcess.make("agent-browser", [...args], {
+          cwd: root,
+          env: { AGENT_BROWSER_SOCKET_DIR: socketDirectory },
+          extendEnv: true,
+          stderr: "inherit",
+          stdin: "inherit",
+          stdout: "inherit",
+        }),
+      )
+      .pipe(Effect.catch(() => Effect.succeed(undefined)));
+    if (handle === undefined) {
+      return { started: false as const };
+    }
+    const exitCode = yield* handle.exitCode.pipe(Effect.catch(() => Effect.succeed(null)));
+    return { code: exitCode === null ? null : Number(exitCode), started: true as const };
+  }).pipe(Effect.scoped);
 }
 
 const browserCommand = Effect.fn("browserCommand")(function* browserCommand(
