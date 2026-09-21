@@ -18,3 +18,5 @@ queue_rules:
     merge_conditions:
       - check-success = merge-queue
       - check-success = e2e
+merge_queue:
+  mode: isolated
