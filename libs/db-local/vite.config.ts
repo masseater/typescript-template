@@ -10,4 +10,9 @@ export default defineConfig({
       ...lifecycle({ prepush: ["check:effect"] }),
     },
   },
+  test: {
+    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    mockReset: true,
+    restoreMocks: true,
+  },
 });
