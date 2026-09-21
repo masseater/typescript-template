@@ -46,6 +46,13 @@ const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/A
   defaultValue: (): ArtifactMode => "describe",
 });
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
+const clientPublishedExtensions: ReadonlySet<string> = new Set([
+  ".css",
+  ".otf",
+  ".ttf",
+  ".woff",
+  ".woff2",
+]);
 
 interface WorkerModule {
   readonly contentFile: string;
@@ -159,10 +166,10 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
   if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
     return yield* fail("worker_entry_missing_index_js");
   }
-  const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
+  const cssFiles = serverFiles.filter((file) => clientPublishedExtensions.has(path.extname(file)));
   const code = yield* Effect.all(
     serverFiles
-      .filter((file) => path.extname(file) !== ".css")
+      .filter((file) => !clientPublishedExtensions.has(path.extname(file)))
       .map((file) => workerModule(output.server, file)),
   );
   yield* assertServerCssPublished(output, cssFiles, clientFiles);
