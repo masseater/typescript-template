@@ -9,7 +9,7 @@ export { SignOutButton } from "./sign-out-button";
 export { VerifyEmailPage } from "./verify-email-page";
 export { useSession } from "./use-session";
 export { useSignOut } from "./use-sign-out";
-export { loadBrowserSession, provideSessionLoader, sessionOptions } from "./session";
+export { loadBrowserSession, provideSessionLoader, sessionOptions } from "./api/session";
 export { errorMessage, requireSuccess, SessionView } from "./protocol";
 export { loginPath, redirectTarget } from "./login-redirect";
 export { authClient } from "./client";

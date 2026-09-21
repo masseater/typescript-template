@@ -2,7 +2,7 @@ import { httpStatus } from "@repo/observability/http-status";
 import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import { Effect, Schema } from "effect";
 
-import { SessionView, decodeJson, type SessionView as SessionData } from "./protocol.ts";
+import { SessionView, decodeJson, type SessionView as SessionData } from "../protocol.ts";
 
 type SessionLoader = () => Promise<SessionData | undefined>;
 

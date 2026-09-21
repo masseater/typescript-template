@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { verifyEmailToken } from "./verify-email-token.ts";
+import { verifyEmailToken } from "../verify-email-token.ts";
 
 const verificationKey = ["auth", "email-verification"] as const;
 

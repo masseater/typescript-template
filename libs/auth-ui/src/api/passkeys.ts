@@ -1,9 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { authClient } from "./client.ts";
-import { requireSuccess } from "./protocol.ts";
+import { authClient } from "../client.ts";
+import { requireSuccess } from "../protocol.ts";
 
-import type { PasskeySummary } from "./mfa-types.ts";
+import type { PasskeySummary } from "../mfa-types.ts";
 
 const passkeysKey = ["auth", "passkeys"] as const;
 

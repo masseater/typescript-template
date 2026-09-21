@@ -2,7 +2,7 @@ import { StatusMessage, STATUS_VARIANT } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, type ReactElement } from "react";
 
-import { emailVerificationOptions } from "./verify-email.ts";
+import { emailVerificationOptions } from "./api/verify-email.ts";
 
 const EmailVerification = (): ReactElement => {
   const verification = useQuery(emailVerificationOptions);
