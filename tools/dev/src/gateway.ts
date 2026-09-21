@@ -68,4 +68,4 @@ const program = Effect.gen(function* gateway() {
   Effect.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
 ) as Effect.Effect<void, GatewayFailure, never>;
 
-runCli(program, (cause) => causeRecord("local.gateway_failed", cause));
+runCli(program, (cause) => causeRecord("local.gateway_failed", { cause }));
