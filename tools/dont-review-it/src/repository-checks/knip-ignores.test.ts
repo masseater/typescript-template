@@ -95,17 +95,14 @@ const extensionOf = (file: string): string => {
 
 const filesUnder = (directory: string, nested: boolean): readonly string[] => {
   if (!statSync(directory, { throwIfNoEntry: false })?.isDirectory()) return [];
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (SKIPPED_DIRECTORIES.has(entry.name)) return [];
-    const path = join(directory, entry.name);
-    const directoryEntry =
-      entry.isDirectory() ||
-      (!entry.isFile() &&
-        !entry.isSymbolicLink() &&
-        statSync(path, { throwIfNoEntry: false })?.isDirectory() === true);
-    if (directoryEntry) return nested ? filesUnder(path, true) : [];
-    if (!TEXT_EXTENSIONS.has(extensionOf(entry.name))) return [];
-    if (entry.name === "pnpm-lock.yaml") return [];
+  return readdirSync(directory).flatMap((name) => {
+    if (SKIPPED_DIRECTORIES.has(name)) return [];
+    const path = join(directory, name);
+    if (statSync(path, { throwIfNoEntry: false })?.isDirectory() === true) {
+      return nested ? filesUnder(path, true) : [];
+    }
+    if (!TEXT_EXTENSIONS.has(extensionOf(name))) return [];
+    if (name === "pnpm-lock.yaml") return [];
     return [path];
   });
 };
@@ -113,10 +110,14 @@ const filesUnder = (directory: string, nested: boolean): readonly string[] => {
 const workspaceDirectories = (workspace: string): readonly string[] => {
   if (workspace === ".") return [repositoryRoot];
   if (!workspace.includes("*")) return [join(repositoryRoot, workspace)];
-  const parent = workspace.slice(0, workspace.indexOf("*")).replace(/\/$/u, "");
-  return readdirSync(join(repositoryRoot, parent), { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory() ? [join(repositoryRoot, parent, entry.name)] : [],
+  const parent = join(
+    repositoryRoot,
+    workspace.slice(0, workspace.indexOf("*")).replace(/\/$/u, ""),
   );
+  return readdirSync(parent).flatMap((name) => {
+    const path = join(parent, name);
+    return statSync(path, { throwIfNoEntry: false })?.isDirectory() === true ? [path] : [];
+  });
 };
 
 const own = (value: object, key: string): unknown =>
@@ -290,12 +291,10 @@ const filesForDirectory = (directory: string, nested: boolean): readonly string[
   const owned = filesUnder(directory, nested).filter(
     (file) => relative(repositoryRoot, file) !== "knip.ts",
   );
+  const dependencies = nested ? workspaceDependencyEntries(directory) : [];
   const roots = owned.filter((file) => [".js", ".mjs", ".ts", ".tsx"].includes(extensionOf(file)));
   const files = [
-    ...new Set([
-      ...owned,
-      ...followedFiles([...roots, ...(nested ? workspaceDependencyEntries(directory) : [])]),
-    ]),
+    ...new Set([...owned, ...dependencies, ...followedFiles([...roots, ...dependencies])]),
   ];
   filesByDirectory.set(key, files);
   return files;
