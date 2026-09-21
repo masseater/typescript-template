@@ -7,6 +7,7 @@ import { Effect, Schema } from "effect";
 import { InterviewView, Utterance } from "#shared/interview/contracts.ts";
 import {
   openInterview,
+  respondHistoryConsent,
   restartInterview,
   saveInterview,
   takeTurn,
@@ -17,6 +18,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const Empty = Schema.Struct({});
+const HistoryConsent = Schema.Struct({ accept: Schema.Boolean });
 const failures = {
   ...unavailable,
   InterviewConflict: {
@@ -52,11 +54,20 @@ const restart = Effect.fn("interview.api.restart")(function* restart(request: Re
   return yield* restartInterview(user.id);
 });
 
+const historyConsent = Effect.fn("interview.api.historyConsent")(function* historyConsent(
+  request: Request,
+) {
+  const { user } = yield* verifySession(request.headers);
+  const { accept } = yield* readJsonBody(HistoryConsent, request);
+  return yield* respondHistoryConsent(user.id, accept);
+});
+
 function interviewApi(api: ApiRoutes<AppServices | Interviewer>) {
   return createApi("")
     .get("/interview", api.route(InterviewView, open, failures))
     .post("/interview/turns", api.route(InterviewView, turn, failures))
     .post("/interview/sheet", api.route(InterviewView, saveSheet, failures))
+    .post("/interview/history-consent", api.route(InterviewView, historyConsent, failures))
     .post("/interview/restart", api.route(InterviewView, restart, failures));
 }
 

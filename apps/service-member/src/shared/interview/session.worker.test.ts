@@ -98,7 +98,7 @@ it.effect("saving keeps the sheet and is refused while questions remain", () =>
     assert.strictEqual(early._tag, "TurnRejected");
     yield* takeTurn("member", { kind: "finish" });
     const saved = yield* saveInterview("member");
-    assert.strictEqual(saved.phase, "saved");
+    assert.strictEqual(saved.phase, "history_consent");
     assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "たろう" });
   }).pipe(Effect.provide(withoutModel)),
 );

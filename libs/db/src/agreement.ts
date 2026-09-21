@@ -5,6 +5,7 @@ import { Effect } from "effect";
 import { AgreementRequired } from "./agreement-required.ts";
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts";
+import { AgreementWithdrawalUnavailable } from "./agreement-withdrawal-unavailable.ts";
 import { query } from "./database.ts";
 
 interface PublishedAgreement {
@@ -181,15 +182,53 @@ const acceptedAgreements = Effect.fn("acceptedAgreements")(function* acceptedAgr
   return rows;
 });
 
+const hasAcceptedLatestAgreement = Effect.fn("hasAcceptedLatestAgreement")(
+  function* hasAcceptedLatestAgreement(userId: string, kind: AgreementKind) {
+    const pending = yield* pendingAgreements(userId);
+    return !pending.some((agreement) => agreement.kind === kind);
+  },
+);
+
+const withdrawAgreementKind = Effect.fn("withdrawAgreementKind")(
+  function* withdrawAgreementKind(withdrawn: {
+    readonly kind: AgreementKind;
+    readonly userId: string;
+  }) {
+    if (!agreementPolicies[withdrawn.kind].withdrawable) {
+      return yield* new AgreementWithdrawalUnavailable();
+    }
+    const accepted = yield* acceptedAgreements(withdrawn.userId);
+    const versionIds = accepted
+      .filter((agreement) => agreement.kind === withdrawn.kind)
+      .map((agreement) => agreement.versionId);
+    if (versionIds.length === 0) {
+      return yield* new AgreementWithdrawalUnavailable();
+    }
+    yield* query((database) =>
+      database
+        .delete(agreementAcceptance)
+        .where(
+          and(
+            eq(agreementAcceptance.userId, withdrawn.userId),
+            inArray(agreementAcceptance.versionId, versionIds),
+          ),
+        ),
+    );
+  },
+);
+
 export {
   AgreementRequired,
   AgreementVersionUnavailable,
+  AgreementWithdrawalUnavailable,
   acceptAgreementVersions,
   acceptedAgreements,
+  hasAcceptedLatestAgreement,
   pendingAgreementKinds,
   pendingAgreements,
   publishedAgreement,
   requireCurrentAgreements,
   requireSignupAgreements,
+  withdrawAgreementKind,
 };
 export type { AcceptedAgreement, PublishedAgreement };

@@ -3,7 +3,7 @@ title: 利用者アプリの設定
 description: 通知・セキュリティ・AI・プラン・退会など、設定の各ページ
 ---
 
-設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。プロフィールの編集は [プロフィール](/pages/member-profile) が、AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。
+設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。プロフィールの編集は [プロフィール](/pages/member-profile) が、AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。規約への同意（`/settings/agreements`）では、AI インタビューの履歴の利用への同意をあとから取り消せる。取り消したときは会話の履歴を消す。
 
 ## 一覧
 

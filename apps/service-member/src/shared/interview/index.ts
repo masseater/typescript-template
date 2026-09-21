@@ -1,2 +1,9 @@
 export { Interviewer } from "./interviewer.ts";
-export { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
+export {
+  openInterview,
+  respondHistoryConsent,
+  restartInterview,
+  saveInterview,
+  takeTurn,
+  withdrawInterviewHistoryConsent,
+} from "./session.ts";

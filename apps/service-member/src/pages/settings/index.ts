@@ -1,3 +1,4 @@
+export { loadInterviewView } from "./api/interview.ts";
 export { AgreementsPage } from "./ui/agreements-page.tsx";
 export { loadApiKeys } from "./api/api-keys.ts";
 export { AiPage } from "./ui/ai-page.tsx";

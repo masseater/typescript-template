@@ -1,11 +1,14 @@
 import { verifySession } from "@repo/auth";
+import { AGREEMENT_KIND, agreementPolicies } from "@repo/config";
 import {
   AgreementVersionUnavailable,
+  AgreementWithdrawalUnavailable,
   acceptAgreementVersions,
   acceptedAgreements,
   pendingAgreements,
   publishedAgreement,
   requireCurrentAgreements,
+  withdrawAgreementKind,
 } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
@@ -14,10 +17,12 @@ import { Effect } from "effect";
 
 import {
   AgreementAcceptance,
+  AgreementWithdrawal,
   AgreementsView,
   PublishedAgreementQuery,
   PublishedAgreementView,
 } from "#shared/contracts/index.ts";
+import { withdrawInterviewHistoryConsent } from "#shared/interview/index.ts";
 
 import type { AgreementRequired } from "@repo/db";
 import type { AppServices } from "@repo/runtime";
@@ -35,6 +40,10 @@ const failures = {
   AgreementVersionUnavailable: {
     message: "同意の対象となる規約が見つかりません。",
     status: httpStatus.notFound,
+  },
+  AgreementWithdrawalUnavailable: {
+    message: "この同意は取り消せません。",
+    status: httpStatus.conflict,
   },
 };
 
@@ -95,6 +104,26 @@ function agreementApi(api: ApiRoutes<AppServices>) {
               return yield* new AgreementVersionUnavailable();
             }
             return { ...published, publishedAt: published.publishedAt.getTime() };
+          }),
+        failures,
+      ),
+    )
+    .post(
+      "/agreements/withdraw",
+      api.route(
+        AgreementsView,
+        (request) =>
+          Effect.gen(function* handle() {
+            const { user } = yield* verifySession(request.headers);
+            const { kind } = yield* readJsonBody(AgreementWithdrawal, request);
+            if (!agreementPolicies[kind].withdrawable) {
+              return yield* new AgreementWithdrawalUnavailable();
+            }
+            yield* withdrawAgreementKind({ kind, userId: user.id });
+            if (kind === AGREEMENT_KIND.interview_history) {
+              yield* withdrawInterviewHistoryConsent(user.id);
+            }
+            return yield* agreementsOf(user.id);
           }),
         failures,
       ),

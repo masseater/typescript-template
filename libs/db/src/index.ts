@@ -54,13 +54,16 @@ export type { PhotoKeys, VisibilitySettings } from "./member-profile.ts";
 export {
   AgreementRequired,
   AgreementVersionUnavailable,
+  AgreementWithdrawalUnavailable,
   acceptAgreementVersions,
   acceptedAgreements,
+  hasAcceptedLatestAgreement,
   pendingAgreementKinds,
   pendingAgreements,
   publishedAgreement,
   requireCurrentAgreements,
   requireSignupAgreements,
+  withdrawAgreementKind,
 } from "./agreement.ts";
 export type { AcceptedAgreement, PublishedAgreement } from "./agreement.ts";
 export {
