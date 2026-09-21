@@ -9,7 +9,18 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 パス: `/settings`。
 
-プロフィール・メールアドレス・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+プロフィール・公開範囲・メールアドレス・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・規約への同意・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+
+## 公開範囲
+
+パス: `/settings/visibility`。既定は「全会員」で、一覧と検索には載せない側である。
+
+1. 見出し「公開範囲」
+2. 「プロフィールを見られる人」（全会員 / 自分だけ）
+3. 「会員一覧と検索に載せる」
+4. 「保存」
+
+「自分だけ」にすると、リンクを知っている会員にもプロフィールと写真を見せない。判定の実体は [会員のつながり](/data-model/member-graph) が持つ。
 
 ## メールアドレス
 
@@ -60,6 +71,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 2. 「AI に下書きの提案を許可する」
 3. 「利用状況を改善のために共有する」
 4. 「保存」
+5. 読み取り専用の API キーを発行・一覧・無効化する。発行直後に平文を一度だけ表示し、以後は先頭数文字だけを見せる。キーは発行した会員として、プロフィールと会員一覧の読み取りだけを許す
 
 ## プランと解約
 
@@ -72,21 +84,44 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 引き止めのページを挟まない。解約のボタンは、ほかの操作と同じ大きさと色の濃さにする。
 
+## 規約への同意
+
+パス: `/settings/agreements`。実体は [信頼と安全](/data-model/trust) の AgreementAcceptance が持つ。
+
+1. 見出し「規約への同意」
+2. 未同意の版。無ければ最新に同意していることを出し、あれば版の一覧と [規約への同意](/pages/member-agreement) へのリンクを出す
+3. 同意の履歴（種類・版・同意した日）
+
 ## 退会
 
 パス: `/settings/leave`。
 
 1. 見出し「退会」
 2. 退会後 30 日間は復旧できることの案内
-3. 「退会する」。確認のダイアログには何が起きるかだけを書く
+3. 「すぐに完全に削除する」の選択
+4. 「退会する」。確認のダイアログには何が起きるかだけを書く
 
 成功したらログアウトし、LP へ移る。
+
+## データの復旧
+
+パス: `/settings/recovery`。
+
+同じメールアドレスで再登録し、確認済みのログインセッションがあるときだけ、退会から 30 日以内の復旧を選べる。
+
+1. 見出し「過去のデータの復旧」
+2. 復旧できるときだけ、以前の表示名の案内
+3. 「過去のデータを復旧する」
+4. 「新しい会員として続ける」
+
+再登録直後は `/welcome/recovery` でも同じ選択を一度だけ出す。復旧しない場合は、退会時のスナップショットは `purgeAt` まで保持したあと削除する。
 
 ## 遷移
 
 ```mermaid
 flowchart TD
   settings["/settings"] --> profile["/settings/profile"]
+  settings --> visibility["/settings/visibility"]
   settings --> email["/settings/email"]
   email -- 新しいアドレスに届いたリンク --> verify["/verify-email-change"]
   settings --> notifications["/settings/notifications"]
@@ -94,6 +129,7 @@ flowchart TD
   settings --> interview["/settings/interview"]
   settings --> ai["/settings/ai"]
   settings --> plan["/settings/plan"]
+  settings --> agreements["/settings/agreements"]
   settings --> leave["/settings/leave"]
   settings --> support["/support"]
   plan -- 有料プランを見る --> upgrade["/upgrade"]

@@ -1,4 +1,4 @@
-import { type Application } from "@repo/config";
+import { type Application, type ProfileVisibility } from "@repo/config";
 import { AUTHENTICATION_METHOD, ROLE, type Role } from "@repo/config/identity";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -22,6 +22,8 @@ export const addUser = (added: {
   readonly userId: string;
   readonly role?: Role;
   readonly emailVerified?: boolean;
+  readonly searchable?: boolean;
+  readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> => {
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
@@ -32,6 +34,8 @@ export const addUser = (added: {
       name: added.userId,
       role: added.role ?? ROLE.member,
       updatedAt: recordedAt,
+      ...(added.searchable === undefined ? {} : { searchable: added.searchable }),
+      ...(added.visibility === undefined ? {} : { visibility: added.visibility }),
     });
   });
 };

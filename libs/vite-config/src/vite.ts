@@ -2,9 +2,16 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { APPLICATION, applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import {
+  APPLICATION,
+  applicationPorts,
+  grants,
+  loopbackAddress,
+  type Application,
+} from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { localPhotoBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -275,6 +282,7 @@ function appConfig(
           main: "./src/app/server.ts",
           ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
           name: `template-${app}`,
+          ...(grants(app, "storage") ? { r2_buckets: [localPhotoBucket] } : {}),
         },
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },

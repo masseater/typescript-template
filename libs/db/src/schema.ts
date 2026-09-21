@@ -1,11 +1,15 @@
 import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { apikey } from "./api-key-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
+import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -151,13 +155,20 @@ const auditEvent = sqliteTable(
 
 const schema = {
   account,
+  agreementAcceptance,
+  agreementVersion,
+  apikey,
   auditEvent,
   boardPost,
   boardThread,
   metricSnapshot,
   follow,
   interview,
+  leaveRequest,
   memberOnboarding,
+  notification,
+  notificationPreference,
+  withdrawnMember,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -174,7 +185,18 @@ const schema = {
   verification,
 };
 
-export { account, auditEvent, metricSnapshot, passkey, rateLimit, schema, twoFactor, verification };
+export {
+  account,
+  apikey,
+  auditEvent,
+  metricSnapshot,
+  passkey,
+  rateLimit,
+  schema,
+  twoFactor,
+  verification,
+};
+export { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 export {
   jwks,
   oauthAccessToken,
@@ -188,4 +210,8 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export { notification, notificationPreference } from "./notification-schema.ts";
+export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
+export type { NotificationKind } from "@repo/config";

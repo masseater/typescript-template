@@ -1,9 +1,15 @@
 /** @canonical-values db.audit-action */
-export const auditActions = ["flag_toggled", "role_changed", "user_deleted"] as const;
+export const auditActions = [
+  "flag_toggled",
+  "role_changed",
+  "user_deleted",
+  "agreement_published",
+] as const;
 export const AUDIT_ACTION = {
   flagToggled: auditActions[0],
   roleChanged: auditActions[1],
   userDeleted: auditActions[2],
+  agreementPublished: auditActions[3],
 } as const;
 
 /** @canonical-values db.client-kind */
