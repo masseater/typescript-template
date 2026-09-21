@@ -7,6 +7,7 @@ export {
   applicationPorts,
   applicationReadyPaths,
   applications,
+  audienceRoles,
   grants,
   loopbackAddress,
   loopbackHostSet,
@@ -19,13 +20,30 @@ export {
 } from "./applications.ts";
 export type { Application, Capability, CapabilityOf, ServiceName } from "./applications.ts";
 export {
+  ACCOUNT_STATE,
+  ADMIN_PERMISSION,
   AUTHENTICATION_METHOD,
   ROLE,
+  STAFF_PERMISSION,
+  accountPermissions,
+  accountStates,
+  adminPermissions,
   authenticationMethods,
+  grantsAdminLevel,
+  grantsStaffLevel,
   roles,
+  staffPermissions,
   strongAuthenticationMethods,
 } from "./identity.ts";
-export type { AuthenticationMethod, Role, StrongAuthenticationMethod } from "./identity.ts";
+export type {
+  AccountPermission,
+  AccountState,
+  AdminPermission,
+  AuthenticationMethod,
+  Role,
+  StaffPermission,
+  StrongAuthenticationMethod,
+} from "./identity.ts";
 export {
   memberApiKeyHeader,
   memberApiKeyRateLimitMax,

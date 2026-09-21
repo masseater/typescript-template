@@ -15,7 +15,7 @@ import {
   root,
   run,
 } from "./local-environment.ts";
-import { ensureOperator, operatorFile } from "./operator-account.ts";
+import { ensureOperators, operatorFile } from "./operator-account.ts";
 
 import type { App, Credentials } from "./local-environment.ts";
 import type { Operator } from "./operator-account.ts";
@@ -37,9 +37,11 @@ function sessionName(app: App): string {
   return `template-local-${app}`;
 }
 
-function postLoginPath(app: App): string {
-  return app === APPLICATION.admin ? "/members" : "/home";
-}
+const postLoginPaths: Readonly<Record<App, string>> = {
+  [APPLICATION.admin]: "/members",
+  [APPLICATION.user]: "/home",
+  [APPLICATION.wiki]: "/",
+};
 
 function configuredOrigin(app: App, credentials: Credentials): string {
   return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
@@ -107,7 +109,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     "document.querySelector('form')?.requestSubmit(); true",
   ]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
-  yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPath(app)}`]);
+  yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPaths[app]}`]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   return origin;
 });
@@ -117,7 +119,7 @@ const authenticate = Effect.fn("authenticate")(function* authenticate(
   _args: readonly string[] = [],
 ) {
   const credentials = yield* readCredentials();
-  const operator = yield* ensureOperator();
+  const operator = (yield* ensureOperators())[app];
   const origin = yield* signInThroughBrowser(app, credentials, operator).pipe(
     Effect.mapError(() => failure("browser_authentication_failed")),
   );

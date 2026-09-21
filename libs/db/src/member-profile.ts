@@ -1,4 +1,4 @@
-import { PHOTO_SLOT, PROFILE_VISIBILITY, ROLE } from "@repo/config";
+import { ACCOUNT_STATE, PHOTO_SLOT, PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { and, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -13,6 +13,7 @@ const openProfile: SQL | undefined = and(
   eq(user.visibility, PROFILE_VISIBILITY.allMembers),
   eq(user.emailVerified, true),
   eq(user.role, ROLE.member),
+  eq(user.accountState, ACCOUNT_STATE.active),
 );
 
 function profileVisibleTo(viewerId: string): SQL | undefined {

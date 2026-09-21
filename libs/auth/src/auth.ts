@@ -6,12 +6,14 @@ import { AuthIdentifiers } from "./auth-identifiers.ts";
 import { createAuth, type AuthOptions, type BetterAuthInstance } from "./create-auth.ts";
 
 import type { Application } from "@repo/config";
+import type { MailSettings } from "./email.ts";
 
 export class Auth extends Context.Service<
   Auth,
   {
     readonly audience: Application;
     readonly instance: BetterAuthInstance;
+    readonly mail: MailSettings;
   }
 >()("@repo/auth/Auth") {
   public static layer(authOptions: AuthOptions): Layer.Layer<Auth, AuthFailure, Database> {
@@ -30,7 +32,11 @@ export class Auth extends Context.Service<
           catch: (cause) => new AuthFailure({ cause }),
           try: async () => betterAuthInstance.$context,
         });
-        return Auth.of({ audience: authOptions.audience, instance: betterAuthInstance });
+        return Auth.of({
+          audience: authOptions.audience,
+          instance: betterAuthInstance,
+          mail: authOptions.mail,
+        });
       }),
     );
   }

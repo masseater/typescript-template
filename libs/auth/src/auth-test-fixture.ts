@@ -1,12 +1,23 @@
-import { APPLICATION, type Application, type Role } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  APPLICATION,
+  ROLE,
+  STAFF_PERMISSION,
+  type AccountPermission,
+  type Application,
+  type Role,
+} from "@repo/config";
 import {
   EmptyTestDatabase,
   TestDatabase,
+  BOOTSTRAP_KIND,
   bootstrapAdmin,
   getSchemaShape,
   runStatement,
+  type BootstrapKind,
 } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
+import { makeSignature } from "better-auth/crypto";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { URI } from "otpauth";
@@ -16,6 +27,7 @@ import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
 import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
+import { SessionRequired } from "./session-required.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
 import type { Database } from "@repo/db";
@@ -160,9 +172,16 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
+  kind: typeof BootstrapKind.Type = BOOTSTRAP_KIND.admin,
 ) {
   yield* registerVerified(email);
-  yield* bootstrapAdmin(email);
+  yield* bootstrapAdmin(email, kind);
+});
+
+const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* bootstrapVerifiedStaff(
+  email: string,
+) {
+  yield* bootstrapVerifiedAdmin(email, BOOTSTRAP_KIND.staff);
 });
 
 const signIn = (client: BrowserClient, email: string): Effect.Effect<number> => {
@@ -279,18 +298,47 @@ const audienceInputs = Effect.fn("audienceInputs")(function* audienceInputs(audi
   return [passkey?.fields["audience"]?.input, verification?.fields["audience"]?.input];
 });
 
+const topPermission: Readonly<Record<Role, AccountPermission | null>> = {
+  [ROLE.administrator]: ADMIN_PERMISSION.owner,
+  [ROLE.member]: null,
+  [ROLE.staff]: STAFF_PERMISSION.editor,
+};
+
 const assignRoleByEmail = Effect.fn("assignRoleByEmail")(function* assignRoleByEmail(
   email: string,
   role: Role,
 ) {
-  yield* runStatement("UPDATE user SET role = ? WHERE email = ?", role, email);
+  yield* runStatement(
+    "UPDATE user SET role = ?, permission = ? WHERE email = ?",
+    role,
+    topPermission[role],
+    email,
+  );
 });
 
 const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   userId: string,
   role: Role,
 ) {
-  yield* runStatement("UPDATE user SET role = ? WHERE id = ?", role, userId);
+  yield* runStatement(
+    "UPDATE user SET role = ?, permission = ? WHERE id = ?",
+    role,
+    topPermission[role],
+    userId,
+  );
+});
+
+const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSessionCookie(
+  token: string,
+) {
+  const { instance } = yield* Auth;
+  const cookiePrefix = instance.options.advanced?.cookiePrefix;
+  const secret = instance.options.secret;
+  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
+    return yield* new SessionRequired();
+  }
+  const signature = yield* Effect.promise(async () => makeSignature(token, secret));
+  return `${cookiePrefix}.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
 });
 
 export {
@@ -303,6 +351,7 @@ export {
   authTest,
   authTestSecret,
   bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   enableTotp,
   missingSchemaFields,
@@ -315,6 +364,7 @@ export {
   signIn,
   signInAgainAfterTotp,
   signInAs,
+  signedSessionCookie,
   spendSignInWindow,
   verifyEmail,
   withAuth,

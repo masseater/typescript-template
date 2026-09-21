@@ -8,6 +8,7 @@ export {
   audienceOnEmptyDatabase,
   authTest,
   bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   enableTotp,
   missingSchemaFields,
@@ -33,5 +34,6 @@ export {
   mailRecipients,
   receivedLink,
 } from "./mail-fixture.ts";
+export { signedSessionCookie } from "./auth-test-fixture.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";
-export { startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth-fixture.ts";
+export { startAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-fixture.ts";

@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD, applications } from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, accountPermissions, applications, roles } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
@@ -146,12 +146,33 @@ const auditEvent = sqliteTable(
   {
     action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
+    actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.administrator),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),
   },
 
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
+);
+
+const invite = sqliteTable(
+  "invite",
+  {
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    audience: text("audience", { enum: applications }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    email: text("email").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    inviterId: text("inviter_id").notNull(),
+    permission: text("permission", { enum: accountPermissions }).notNull(),
+    tokenHash: text("token_hash").notNull(),
+  },
+
+  (table) => [
+    uniqueIndex("invite_token_hash_unique").on(table.tokenHash),
+    index("invite_email_idx").on(table.audience, table.email),
+  ],
 );
 
 const schema = {
@@ -165,6 +186,7 @@ const schema = {
   metricSnapshot,
   follow,
   interview,
+  invite,
   leaveRequest,
   memberOnboarding,
   notification,
@@ -192,6 +214,7 @@ export {
   account,
   apikey,
   auditEvent,
+  invite,
   metricSnapshot,
   passkey,
   rateLimit,

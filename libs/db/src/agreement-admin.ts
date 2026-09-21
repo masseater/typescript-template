@@ -1,27 +1,30 @@
-import { type AgreementKind } from "@repo/config";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { ADMIN_PERMISSION, type AgreementKind } from "@repo/config";
+import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import { agreementVersion } from "./agreement-schema.ts";
 import { AgreementVersionTaken } from "./agreement-version-taken.ts";
 import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts";
 import { auditWhen } from "./audit.ts";
 import { AUDIT_ACTION } from "./dashboard-literals.ts";
-import { query } from "./database.ts";
+import { query, type DrizzleDatabase } from "./database.ts";
+import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 
-const requirePublishingAdmin = Effect.fn("requirePublishingAdmin")(function* requirePublishingAdmin(
-  sessionId: string,
-) {
-  return yield* requireAdmin(sessionId);
-});
+const requirePublishingAdmin = (sessionId: string): ReturnType<typeof requireAdmin> =>
+  requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+
+const livePublishingAdmin = (database: DrizzleDatabase, sessionId: string): SQL =>
+  liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
 
 const canPublishAgreements = Effect.fn("canPublishAgreements")(function* canPublishAgreements(
   sessionId: string,
 ) {
   return yield* requirePublishingAdmin(sessionId).pipe(
     Effect.as(true),
-    Effect.catchTag("AdminStrongSessionRequired", () => Effect.succeed(false)),
+    Effect.catchTags({
+      AdminStrongSessionRequired: () => Effect.succeed(false),
+      PermissionRequired: () => Effect.succeed(false),
+    }),
   );
 });
 
@@ -140,12 +143,12 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
         eq(agreementVersion.id, published.id),
         isNull(agreementVersion.publishedAt),
       );
-      const targeted = sql`SELECT 1 FROM ${agreementVersion} WHERE ${unpublishedDraft} AND ${liveAdmin(database, published.sessionId)}`;
+      const targeted = sql`SELECT 1 FROM ${agreementVersion} WHERE ${unpublishedDraft} AND ${livePublishingAdmin(database, published.sessionId)}`;
       const audit = database.run(auditWhen(change, targeted));
       const publication = database
         .update(agreementVersion)
         .set({ publishedAt, publishedBy: actor.user.id })
-        .where(and(unpublishedDraft, liveAdmin(database, published.sessionId)))
+        .where(and(unpublishedDraft, livePublishingAdmin(database, published.sessionId)))
         .returning({
           id: agreementVersion.id,
           kind: agreementVersion.kind,

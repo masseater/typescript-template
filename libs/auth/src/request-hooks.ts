@@ -1,7 +1,6 @@
 import {
-  APPLICATION,
   AUTHENTICATION_METHOD,
-  ROLE,
+  audienceRoles,
   loopbackHosts,
   type Application,
 } from "@repo/config";
@@ -18,6 +17,7 @@ import { Predicate } from "effect";
 import {
   deny,
   enrollmentPaths,
+  isPrivilegedRole,
   isRecentlyStrong,
   isStrongMethod,
   sessionIsLive,
@@ -188,13 +188,13 @@ const enforceAdminAccess = function enforceAdminAccess({
   role,
   strong,
 }: SessionPolicyInput): void {
-  if (role === ROLE.administrator && path === "/two-factor/get-totp-uri" && !strong) {
+  if (isPrivilegedRole(role) && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
-  if (audience === APPLICATION.user) {
+  if (!isPrivilegedRole(audienceRoles[audience])) {
     return;
   }
-  if (role !== ROLE.administrator) {
+  if (role !== audienceRoles[audience]) {
     deny("ADMIN_REQUIRED");
   }
   if (!strong && !enrollmentPaths.has(path)) {
@@ -212,7 +212,7 @@ const enforceFactorChanges = async function enforceFactorChanges(
   { audience, path, role, strong, userId }: SessionPolicyInput,
   run: Run,
 ): Promise<void> {
-  if (role !== ROLE.administrator) {
+  if (!isPrivilegedRole(role)) {
     return;
   }
   if (

@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { ROLE, type Role } from "./identity.ts";
+
 /** @canonical-values config.application */
 export const applications = ["service-member", "service-admin", "internal-dashboard"] as const;
 export const APPLICATION = {
@@ -39,6 +41,12 @@ export type CapabilityOf<App extends Application> = (typeof applicationCapabilit
 export const grants = (app: Application, capability: Capability): boolean => {
   const granted: readonly Capability[] = applicationCapabilities[app];
   return granted.includes(capability);
+};
+
+export const audienceRoles: Readonly<Record<Application, Role>> = {
+  "internal-dashboard": ROLE.staff,
+  "service-admin": ROLE.administrator,
+  "service-member": ROLE.member,
 };
 
 export const loopbackAddress = "127.0.0.1";

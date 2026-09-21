@@ -1,25 +1,35 @@
-import { roles, type Role } from "@repo/config/identity";
+import { APPLICATION } from "@repo/config";
+import {
+  ACCOUNT_STATE,
+  ADMIN_PERMISSION,
+  ROLE,
+  accountStates,
+  adminPermissions,
+  type AccountState,
+  type AdminPermission,
+} from "@repo/config/identity";
 import { maximumAdminPageSize } from "@repo/config/paging";
-import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, or, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
-import { liveAdmin, requireAdmin } from "./admin-session.ts";
-import { auditWhen, type AuditedChange } from "./audit.ts";
+import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { AUDIT_ACTION } from "./dashboard-literals.ts";
-import { query, type DrizzleDatabase } from "./database.ts";
+import { query } from "./database.ts";
+import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
+import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import { user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
 export const UserPage = Schema.Struct({
+  accountState: Schema.optionalKey(Schema.Literals(accountStates)),
   emailVerified: Schema.optionalKey(Schema.Boolean),
   keyword: Schema.optionalKey(Schema.String),
   limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  role: Schema.optionalKey(Schema.Literals(roles)),
 });
 
 const mentionsLastAdmin = (cause: unknown): boolean =>
@@ -37,14 +47,25 @@ const protectLastAdmin = <Value, Requirements>(
 };
 
 const matchesPage = (page: typeof UserPage.Type): SQL | undefined => {
-  const { emailVerified, keyword, role } = page;
+  const { accountState, emailVerified, keyword } = page;
   return and(
+    eq(user.role, ROLE.member),
     keyword === undefined
       ? undefined
       : or(containsKeyword(user.name, keyword), containsKeyword(user.email, keyword)),
-    role === undefined ? undefined : eq(user.role, role),
+    accountState === undefined ? undefined : eq(user.accountState, accountState),
     emailVerified === undefined ? undefined : eq(user.emailVerified, emailVerified),
   );
+};
+
+const memberColumns = {
+  accountState: user.accountState,
+  createdAt: user.createdAt,
+  email: user.email,
+  emailVerified: user.emailVerified,
+  id: user.id,
+  name: user.name,
+  twoFactorEnabled: user.twoFactorEnabled,
 };
 
 export const listUsers = Effect.fn("listUsers")(function* listUsers(
@@ -55,15 +76,7 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
 
   const users = yield* query((database) =>
     database
-      .select({
-        createdAt: user.createdAt,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        id: user.id,
-        name: user.name,
-        role: user.role,
-        twoFactorEnabled: user.twoFactorEnabled,
-      })
+      .select(memberColumns)
       .from(user)
       .where(and(liveAdmin(database, sessionId), matchesPage(page)))
       .orderBy(desc(user.createdAt), user.id)
@@ -80,69 +93,178 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   return { total: matching?.count ?? 0, users };
 });
 
-const auditWhenTargeted = (
-  database: DrizzleDatabase,
-  change: Readonly<AuditedChange & { sessionId: string }>,
-): SQL => {
-  const targeted = sql`SELECT 1 FROM ${user} WHERE ${user.id} = ${change.targetId} AND ${liveAdmin(database, change.sessionId)}`;
-  return auditWhen(change, targeted);
-};
+const adminActor = (
+  actor: Readonly<{ user: Readonly<{ id: string }> }>,
+  action: AuditEntry["action"],
+): Omit<AuditEntry, "targetId"> => ({
+  action,
+  actorId: actor.user.id,
+  actorKind: ROLE.administrator,
+});
 
-export const setUserRole = Effect.fn("setUserRole")(function* setUserRole(roleChange: {
+const adminEntry = (
+  actor: Readonly<{ user: Readonly<{ id: string }> }>,
+  action: AuditEntry["action"],
+  targetId: string,
+): AuditEntry => ({ ...adminActor(actor, action), targetId });
+
+export const setMemberState = Effect.fn("setMemberState")(function* setMemberState(change: {
   readonly sessionId: string;
-  readonly targetId: string;
-  readonly role: Role;
+  readonly memberId: string;
+  readonly accountState: AccountState;
 }) {
-  const { role, sessionId, targetId } = roleChange;
-  const actor = yield* requireAdmin(sessionId);
-  const change = {
-    action: AUDIT_ACTION.roleChanged,
-    actorId: actor.user.id,
-    sessionId,
-    targetId,
-  } as const;
-
-  const [, promotedUsers] = yield* query(async (database) => {
-    const audit = database.run(auditWhenTargeted(database, change));
-    const promotion = database
+  const { accountState, memberId, sessionId } = change;
+  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const action =
+    accountState === ACCOUNT_STATE.suspended
+      ? AUDIT_ACTION.memberSuspended
+      : AUDIT_ACTION.memberUnsuspended;
+  const [, changedMembers] = yield* query(async (database) => {
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
+    const audit = database.run(
+      auditWhenTargeted(database, adminEntry(actor, action, memberId), live),
+    );
+    const transition = database
       .update(user)
-      .set({ role, updatedAt: new Date() })
-      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
-      .returning({ id: user.id, role: user.role });
-    return database.batch([audit, promotion] as const);
-  }).pipe(protectLastAdmin);
-  const [promoted] = promotedUsers;
-  if (!promoted) {
+      .set({ accountState, updatedAt: new Date() })
+      .where(and(eq(user.id, memberId), eq(user.role, ROLE.member), live))
+      .returning({ accountState: user.accountState, id: user.id });
+    return database.batch([audit, transition] as const);
+  });
+  const [changed] = changedMembers;
+  if (!changed) {
     return yield* new TargetUnavailable();
   }
-  return promoted;
+  return changed;
 });
 
 export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   sessionId: string,
   targetId: string,
 ) {
-  const actor = yield* requireAdmin(sessionId);
-  const change = {
-    action: AUDIT_ACTION.userDeleted,
-    actorId: actor.user.id,
-    sessionId,
-    targetId,
-  } as const;
-
+  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
   const [, removedUsers] = yield* query(async (database) => {
-    const audit = database.run(auditWhenTargeted(database, change));
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
+    const audit = database.run(
+      auditWhenTargeted(database, adminEntry(actor, AUDIT_ACTION.userDeleted, targetId), live),
+    );
     const removal = database
       .delete(user)
-      .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
+      .where(and(eq(user.id, targetId), eq(user.role, ROLE.member), live))
       .returning({ id: user.id });
     return database.batch([audit, removal] as const);
-  }).pipe(protectLastAdmin);
+  });
   const [removed] = removedUsers;
   if (!removed) {
     return yield* new TargetUnavailable();
   }
   return removed;
+});
+
+const adminPermissionOf = (permission: string | null): AdminPermission | undefined =>
+  adminPermissions.find((level) => level === permission);
+
+export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {
+  yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
+  const admins = yield* query((database) =>
+    database
+      .select({
+        accountState: user.accountState,
+        createdAt: user.createdAt,
+        email: user.email,
+        id: user.id,
+        name: user.name,
+        permission: user.permission,
+      })
+      .from(user)
+      .where(
+        and(
+          eq(user.role, ROLE.administrator),
+          liveAdmin(database, sessionId, ADMIN_PERMISSION.owner),
+        ),
+      )
+      .orderBy(desc(user.createdAt), user.id),
+  );
+  return admins.map((admin) => ({ ...admin, permission: adminPermissionOf(admin.permission) }));
+});
+
+export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft: {
+  readonly email: string;
+  readonly permission: AdminPermission;
+  readonly sessionId: string;
+}) {
+  const actor = yield* requireAdmin(draft.sessionId, ADMIN_PERMISSION.owner);
+  return yield* issueInvite({
+    audience: APPLICATION.admin,
+    audit: adminActor(actor, AUDIT_ACTION.adminInvited),
+    email: draft.email,
+    permission: draft.permission,
+  });
+});
+
+export const setAdminPermission = Effect.fn("setAdminPermission")(
+  function* setAdminPermission(change: {
+    readonly adminId: string;
+    readonly permission: AdminPermission;
+    readonly sessionId: string;
+  }) {
+    const { adminId, permission, sessionId } = change;
+    const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
+    const [, changedAdmins] = yield* query(async (database) => {
+      const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.owner);
+      const audit = database.run(
+        auditWhenTargeted(
+          database,
+          adminEntry(actor, AUDIT_ACTION.adminPermissionChanged, adminId),
+          live,
+        ),
+      );
+      const transition = database
+        .update(user)
+        .set({ permission, updatedAt: new Date() })
+        .where(and(eq(user.id, adminId), eq(user.role, ROLE.administrator), live))
+        .returning({ id: user.id, permission: user.permission });
+      return database.batch([audit, transition] as const);
+    }).pipe(protectLastAdmin);
+    const [changed] = changedAdmins;
+    if (!changed) {
+      return yield* new TargetUnavailable();
+    }
+    return { id: changed.id, permission: adminPermissionOf(changed.permission) };
+  },
+);
+
+export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(change: {
+  readonly adminId: string;
+  readonly accountState: AccountState;
+  readonly sessionId: string;
+}) {
+  const { accountState, adminId, sessionId } = change;
+  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
+  if (actor.user.id === adminId) {
+    return yield* new TargetUnavailable();
+  }
+  const action =
+    accountState === ACCOUNT_STATE.suspended
+      ? AUDIT_ACTION.adminDisabled
+      : AUDIT_ACTION.adminEnabled;
+  const [, changedAdmins] = yield* query(async (database) => {
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.owner);
+    const audit = database.run(
+      auditWhenTargeted(database, adminEntry(actor, action, adminId), live),
+    );
+    const transition = database
+      .update(user)
+      .set({ accountState, updatedAt: new Date() })
+      .where(and(eq(user.id, adminId), eq(user.role, ROLE.administrator), live))
+      .returning({ accountState: user.accountState, id: user.id });
+    return database.batch([audit, transition] as const);
+  }).pipe(protectLastAdmin);
+  const [changed] = changedAdmins;
+  if (!changed) {
+    return yield* new TargetUnavailable();
+  }
+  return changed;
 });
 
 export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
@@ -155,5 +277,7 @@ export {
   readAgreementVersion,
   reviseAgreementDraft,
 } from "./agreement-admin.ts";
+export { InviteRejected } from "./invite-rejected.ts";
 export { LastAdminRequired } from "./last-admin-required.ts";
+export { PermissionRequired } from "./permission-required.ts";
 export { TargetUnavailable } from "./target-unavailable.ts";

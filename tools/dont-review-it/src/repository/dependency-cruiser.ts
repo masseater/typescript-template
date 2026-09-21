@@ -17,6 +17,7 @@ const anyOf = (values: readonly string[]): string => {
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
+const databaseStaff = String.raw`^libs/db/src/staff\.ts$`;
 const databaseOperations = String.raw`^libs/db(?:-local)?/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
 const databaseInternal = String.raw`^libs/db(?:-local)?/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
 const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
@@ -94,6 +95,17 @@ const configuration: IConfiguration = {
       name: "no-database-admin-outside-admin",
       severity: "error",
       to: { path: databaseAdmin },
+    },
+    {
+      comment:
+        "社内の利用者を管理する処理です。apps/internal-dashboard と libs/db の中だけで使い、他のアプリへ持ち込まないでください。",
+      from: {
+        path: "^(?:apps|libs)/",
+        pathNot: `^apps/internal-dashboard/|^libs/db/src/(?!index\\.ts$)|${testModule}`,
+      },
+      name: "no-database-staff-outside-wiki",
+      severity: "error",
+      to: { path: databaseStaff },
     },
     {
       comment:

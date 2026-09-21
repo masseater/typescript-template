@@ -32,6 +32,7 @@ erDiagram
     string email UK
     boolean emailVerified
     enum permission
+    enum status
     datetime createdAt
   }
   StaffAccount {
@@ -75,9 +76,11 @@ erDiagram
   }
   Invite {
     string id PK
-    string token UK
+    string tokenHash UK
+    string email
     enum targetKind
     enum permission
+    string inviterId FK
     datetime expiresAt
     datetime acceptedAt
   }
@@ -102,12 +105,17 @@ erDiagram
 
 ## 不変条件
 
-- 退会した会員は `user` に存在せず、`withdrawn_member` と `leave_request` にだけ残る。有料か無料かは [契約](/data-model/billing) の PlanSubscription が決める
-- AdminAccount の `permission` は「閲覧のみ」「操作できる」「管理者を追加できる」のどれか 1 つで、招待のときに決まる
-- StaffAccount の `permission` は「閲覧のみ」「変更できる」のどれか 1 つで、招待のときに決まる
-- Session の `audience` は、そのアカウントが入れるアプリのうち、実際に開いたアプリと一致する
+- MemberAccount の `status` は `active` / `suspended` のどちらか 1 つである。退会した会員は `user` に存在せず、`withdrawn_member` と `leave_request` にだけ残る。有料か無料かは [契約](/data-model/billing) の PlanSubscription が決める
+- `suspended` の MemberAccount はログインできず、開いていた Session は閉じ、他の利用者から見えない。データは残り、`active` に戻せば元どおりになる
+- AdminAccount の `permission` は「閲覧のみ」「操作できる」「管理者を追加できる」のどれか 1 つで、招待のときに決まる。DB のブートストラップで作る最初の AdminAccount は「管理者を追加できる」になる
+- AdminAccount の `status` は `active` / `suspended` のどちらかで、`suspended` の AdminAccount は管理者アプリにログインできない
+- StaffAccount の `permission` は「閲覧のみ」「変更できる」のどれか 1 つで、招待のときに決まる。DB のブートストラップで作る最初の StaffAccount は「変更できる」になる
+- 「管理者を追加できる」の有効な AdminAccount と「変更できる」の有効な StaffAccount は、それぞれ最後の 1 人を下げたり無効にしたり削除したりできない
+- Session の `audience` は、そのアカウントが入れるアプリのうち、実際に開いたアプリと一致する。会員は利用者アプリ、管理者は管理者アプリ、社内の利用者は wiki にだけ入れる
 - 管理者アプリと wiki の管理操作に入れる Session は、パスキー、またはパスワードに認証アプリを重ねた認証だけを強い認証とする。バックアップコードだけの Session は強くない
 - Invite の `targetKind` は `admin` か `staff` で、受け取り側のアプリが決まる。利用者の新規登録は Invite を使わない
+- Invite はトークンの SHA-256 ハッシュだけを持ち、平文のトークンは招待メールにしか現れない。有効期限は発行から 7 日で、`acceptedAt` が入った Invite は二度と受け取れない
+- 同じ `email` に開いている Invite は同時に 1 つまでで、すでに登録されている `email` には発行できない
 - MemberApiKey は利用者アプリだけが持つ。平文は発行直後の一度だけ見せ、保存するのはハッシュだけである。無効にしたキーは直ちに使えなくなる
 
 ## 画面
