@@ -10,14 +10,14 @@ import type { SettingsContext } from "./mfa-types";
 const PasskeySettings = ({ context }: Readonly<{ context: SettingsContext }>): ReactElement => {
   const { listError, passkeys, reload } = usePasskeys();
   const refresh = (): void => {
-    reload();
+    void reload();
   };
   return (
     <>
       <PasskeyRegisterForm
         context={context}
         onRegistered={() => {
-          reload();
+          void reload();
           return Promise.resolve();
         }}
       />
