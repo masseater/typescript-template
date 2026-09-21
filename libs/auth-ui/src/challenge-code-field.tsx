@@ -15,7 +15,6 @@ const ChallengeCodeField = ({
       name="backup-code"
       type={AUTHENTICATION_METHOD.password}
       autoComplete="off"
-      required
       value={code.value}
       onValueChange={code.handleChange}
     />

@@ -4,6 +4,7 @@ import { enterWelcomeFrame, welcomePath } from "#app/entry-conditions.ts";
 import { WelcomeShell } from "#widgets/welcome-shell/index.ts";
 
 import type { OnboardingStep } from "#shared/contracts/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 
 const progressLabel: Readonly<Record<Exclude<OnboardingStep, "done">, string>> = {
@@ -14,8 +15,13 @@ const progressLabel: Readonly<Record<Exclude<OnboardingStep, "done">, string>> =
 };
 
 const Route = createFileRoute("/_welcome")({
-  beforeLoad: async ({ location }: Readonly<{ location: Readonly<{ href: string }> }>) =>
-    enterWelcomeFrame(location.href),
+  beforeLoad: async ({
+    context,
+    location,
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    location: Readonly<{ href: string }>;
+  }>) => enterWelcomeFrame(context.queryClient, location.href),
   component: WelcomeLayout,
 });
 

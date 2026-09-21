@@ -15,9 +15,11 @@ interface Scan {
   readonly failed: boolean;
   readonly stderr: string;
   readonly stdout: string;
+  readonly timedOut: boolean;
 }
 
 const MAX_OUTPUT_BYTES = 33_554_432;
+const SCAN_TIMEOUT_MS = 360_000;
 
 const Diagnostic = Schema.Struct({
   filePath: Schema.String,
@@ -59,9 +61,19 @@ const scan = (args: readonly string[]): Effect.Effect<Scan> => {
         execFile(
           executable,
           [...args, "--no-score"],
-          { cwd: repositoryRoot, maxBuffer: MAX_OUTPUT_BYTES },
+          {
+            cwd: repositoryRoot,
+            killSignal: "SIGKILL",
+            maxBuffer: MAX_OUTPUT_BYTES,
+            timeout: SCAN_TIMEOUT_MS,
+          },
           (failure, stdout, stderr) => {
-            resolve({ failed: failure !== null, stderr, stdout });
+            resolve({
+              failed: failure !== null,
+              stderr,
+              stdout,
+              timedOut: failure?.killed === true,
+            });
           },
         );
       }),
@@ -106,12 +118,22 @@ const skippedIn = (report: typeof Scanned.Type): string[] => [
   ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
 ];
 
+const reportOf = Effect.fn("reportOf")(function* reportOf(scanned: Scan) {
+  if (scanned.timedOut) {
+    yield* Console.error(
+      JSON.stringify({ event: "quality.react_doctor_deadline", timeoutMs: SCAN_TIMEOUT_MS }),
+    );
+    return yield* Effect.fail(new Error("react-doctor scan exceeded deadline"));
+  }
+  return yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
+    Effect.tapError(() => Console.error(scanned.stdout)),
+  );
+});
+
 const scanProjects = Effect.fn("scanProjects")(function* scanProjects() {
   let attempt = 0;
   let scanned = yield* scan(["tools/dont-review-it", "--json"]);
-  let report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
-    Effect.tapError(() => Console.error(scanned.stdout)),
-  );
+  let report = yield* reportOf(scanned);
   while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
     attempt += 1;
     yield* Console.error(
@@ -122,9 +144,7 @@ const scanProjects = Effect.fn("scanProjects")(function* scanProjects() {
       }),
     );
     scanned = yield* scan(["tools/dont-review-it", "--json"]);
-    report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
-      Effect.tapError(() => Console.error(scanned.stdout)),
-    );
+    report = yield* reportOf(scanned);
   }
   return { report, scanned };
 });

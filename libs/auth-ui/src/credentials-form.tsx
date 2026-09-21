@@ -53,7 +53,6 @@ const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
           name="email"
           type="email"
           autoComplete="username"
-          required
           value={email.value}
           onValueChange={email.handleChange}
         />
@@ -62,7 +61,6 @@ const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
           name={AUTHENTICATION_METHOD.password}
           type="password"
           autoComplete="current-password"
-          required
           value={password.value}
           onValueChange={password.handleChange}
         />
