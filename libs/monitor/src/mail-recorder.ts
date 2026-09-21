@@ -8,14 +8,14 @@ interface SentMail {
 }
 
 class MailRecorder extends WorkerEntrypoint {
-  readonly #sent: SentMail[] = [];
+  static readonly #mailbox: SentMail[] = [];
 
   public send(message: SentMail): void {
-    this.#sent.push(message);
+    (this.constructor as typeof MailRecorder).#mailbox.push(message);
   }
 
   public taken(): SentMail[] {
-    return this.#sent.splice(0);
+    return (this.constructor as typeof MailRecorder).#mailbox.splice(0);
   }
 }
 
