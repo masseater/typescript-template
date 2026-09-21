@@ -15,11 +15,11 @@ const failed = (failureCode: string): Readonly<Record<string, unknown>> => ({
 runCli(
   Effect.gen(function* program() {
     const email = yield* Schema.decodeUnknownEffect(Email)(process.argv[2]);
-    const kind = yield* Schema.decodeUnknownEffect(BootstrapKind)(
+    const bootstrapKind = yield* Schema.decodeUnknownEffect(BootstrapKind)(
       process.argv[3] ?? BOOTSTRAP_KIND.admin,
     );
     const { env } = yield* localDatabasePlatform;
-    const promoted = yield* bootstrapAdmin(email, kind).pipe(
+    const promoted = yield* bootstrapAdmin(email, bootstrapKind).pipe(
       Effect.provide(Database.layer(env.DB)),
     );
     yield* Console.log(
