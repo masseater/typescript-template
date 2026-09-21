@@ -1,6 +1,6 @@
 ---
 title: Effect
-description: 成功値、失敗の種類、必要なサービスを型に持つ記述を、入口で実行するライブラリ
+description: 成功値、失敗の種類、必要なサービスを型に持つ記述を、呼び出し側が実行するライブラリ
 ---
 
 Effect は、成功の値と失敗と必要なサービスを型に載せた値を作り、その値を作った時点では処理を実行しない。文書とサンプルは v4 を見る。v3 の `Effect.gen` や Service の書き方は、この形と揃わない。
@@ -29,9 +29,9 @@ const findUser = Effect.fn("findUser")(function* (id: string) {
 });
 ```
 
-`findUser("123")` は `Effect` を返すだけで、`find` はまだ呼ばれない。`Effect.runPromise` したときに `find` が走り、行が無ければ `UserNotFound` が結果になる。例外にはならない。`Database` を渡さない `runPromise` は、その型の時点で TypeScript がコンパイルを失敗させる。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
+`findUser("123")` は `Effect` を返すだけで、`find` はまだ呼ばれない。`Effect.runPromise` したときに `find` が呼ばれ、行が無ければ `UserNotFound` が結果になる。例外にはならない。`Database` を渡さない `runPromise` は、その型の時点で TypeScript がコンパイルを失敗させる。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
 
-`findUser("123")` の戻り値を yield も `runPromise` もしていない呼び出しは、TypeScript だけでは通る。それを失敗させるのが `effect-tsgo`（`@effect/tsgo`）である。TypeScript のネイティブコンパイラに Effect の診断を足した実行ファイルで、`tsgo` と並べては使わない。未処理の失敗が残っていること、必要なサービスがまだ型に残っていること、yield していない Effect は、入口にたどり着く前にここで出る。TypeScript 7 では、エディタ側のプラグイン名は `tsconfig` の `@effect/language-service` のままで、中身は `@effect/tsgo` が提供する。`@effect/language-service` パッケージは TypeScript 7 より前向けである。
+`findUser("123")` の戻り値を yield も `runPromise` もしていない呼び出しは、TypeScript だけでは通る。それを失敗させるのが `effect-tsgo`（`@effect/tsgo`）である。TypeScript のネイティブコンパイラに Effect の診断を足した実行ファイルで、`tsgo` と並べては使わない。未処理の失敗が残っていること、必要なサービスがまだ型に残っていること、yield していない Effect は、実行が始まる前にここで出る。TypeScript 7 では、エディタ側のプラグイン名は `tsconfig` の `@effect/language-service` のままで、中身は `@effect/tsgo` が提供する。`@effect/language-service` パッケージは TypeScript 7 より前向けである。
 
 ```sh
 effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning
@@ -39,7 +39,7 @@ effect-tsgo diagnostics --project tsconfig.json --format text --strict --severit
 
 JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功するまでフィールドを読まない。
 
-画面の購読が、待っているか、値があるか、失敗したかを一つの値で持つときは Atom（`effect/unstable/reactivity`）を使う。同じキーを複数の部品が見るキャッシュは [TanStack Query](/tech-stack/tanstack-query) で、Atom はそれを持たない。実行の区間を span として残すときは [OpenTelemetry](/tech-stack/opentelemetry) の `withSpan` を使う。
+画面の購読が、待っているか、値があるか、失敗したかを一つの値で持つときは Atom（`effect/unstable/reactivity`）を使う。同じキーを複数のコンポーネントが見るキャッシュは [TanStack Query](/tech-stack/tanstack-query) で、Atom はそれを持たない。実行の区間を span として残すときは [OpenTelemetry](/tech-stack/opentelemetry) の `withSpan` を使う。
 
 ## 参考文献
 

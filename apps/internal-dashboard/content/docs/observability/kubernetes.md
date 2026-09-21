@@ -1,6 +1,6 @@
 ---
 title: Kubernetes
-description: Pod とノードの上で、Collector と入口のプロキシが動くクラスタ
+description: Pod とノードの上で、Collector と受信側のプロキシが動くクラスタ
 ---
 
 Kubernetes は、Pod とノードの集まりである。観測では、ノードごとに [OpenTelemetry Collector](/observability/collector) を置き、そのノードの Pod が OTLP をそこへ送る。クラスタの外から Pod へ入る宣言は [Gateway API](/observability/gateway-api) が持つ。

@@ -3,7 +3,7 @@ title: OpenTelemetry Collector
 description: OTLP を受け、加工し、別の送り先へ出すプロセス
 ---
 
-OpenTelemetry Collector は、OTLP を受け、加工し、別の送り先へ出すプロセスである。入口が receiver、加工が processor、出口が exporter で、service の pipeline が三つを信号ごとに繋ぐ。
+OpenTelemetry Collector は、OTLP を受け、加工し、別の送り先へ出すプロセスである。受ける側が receiver、加工が processor、出口が exporter で、service の pipeline が三つを信号ごとに繋ぐ。
 
 ```yaml
 receivers:
@@ -26,7 +26,7 @@ service:
 
 この pipeline は、4318 で受けた span をまとめて、別の OTLP HTTP エンドポイントへ出す。`batch` は一件ずつ送らず、溜めてから exporter を呼ぶ。traces と metrics と logs は pipeline を分けられる。
 
-終わった trace を見てから残すのが tail sampling である。span を開いた瞬間に決める head sampling では、遅かった trace を選べない。`decision_wait` のあいだ span を溜め、方針に合うものだけを exporter へ出す。
+終わった trace を見てから残すのが tail sampling である。span を開くときに決める head sampling では、遅かった trace を選べない。`decision_wait` のあいだ span を溜め、方針に合うものだけを exporter へ出す。
 
 ```yaml
 processors:

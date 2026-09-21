@@ -1,9 +1,9 @@
 ---
 title: TanStack Query
-description: サーバー上のデータをクライアントが保持し、再取得し、部品間で共有するライブラリ
+description: サーバー上のデータをクライアントが保持し、再取得し、コンポーネント間で共有するライブラリ
 ---
 
-TanStack Query は、サーバーから取った結果をクライアントがキーごとに保持する。`useState` と `fetch` を部品の中に書くと、同じデータを部品の数だけ持つ。`queryOptions` にキーと取得をまとめ、画面は `useQuery` でそのキーを購読する。同じ `queryKey` を読む部品は、同じ結果を見る。
+TanStack Query は、サーバーから取った結果をクライアントがキーごとに保持する。`useState` と `fetch` をコンポーネントの中に書くと、同じデータをコンポーネントの数だけ持つ。`queryOptions` にキーと取得をまとめ、画面は `useQuery` でそのキーを購読する。同じ `queryKey` を読むコンポーネントは、同じ結果を見る。
 
 ```ts
 const userOptions = queryOptions({

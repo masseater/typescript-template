@@ -5,9 +5,9 @@ description: URL を画面に対応させ、初期データとサーバー専用
 
 TanStack Start は、React の画面とサーバー側の処理を同じルーティングに載せる。実行は Cloudflare Workers で、開発時も workerd である。
 
-経路は `src/routes` のファイル名から決まる。`_member/users.$id.tsx` は `/users/123` になり、フォルダ `_member` は URL に出ない。`-form.tsx` のように名前が `-` で始まるファイルはルートにならないので、ルートの隣にコンポーネントを置ける。
+URL は `src/routes` のファイル名から決まる。`_member/users.$id.tsx` は `/users/123` になり、フォルダ `_member` は URL に出ない。`-form.tsx` のように名前が `-` で始まるファイルはルートにならないので、ルートの隣にコンポーネントを置ける。
 
-その URL を開いたときにサーバーで走るのが loader で、返すのは画面の初期データだけである。表示したあとに同じデータを取り直す処理は loader に書かない。[TanStack Query](/tech-stack/tanstack-query) の `queryKey` に書く。
+その URL を開いたときにサーバーで実行されるのが loader で、返すのは画面の初期データだけである。表示したあとに同じデータを取り直す処理は loader に書かない。[TanStack Query](/tech-stack/tanstack-query) の `queryKey` に書く。
 
 ブラウザから呼べて、本体がサーバーでだけ実行される関数は `createServerFn` である。`handler` は URL として公開されない。ブラウザ以外が HTTP で呼ぶ API は、サーバールートにマウントした [Elysia](/tech-stack/elysia) に置く。
 

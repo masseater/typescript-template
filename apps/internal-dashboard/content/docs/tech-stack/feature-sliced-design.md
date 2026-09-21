@@ -16,7 +16,7 @@ Feature-Sliced Design は、フロントエンドのコードをレイヤー、�
 | ファイル | 役割 |
 | --- | --- |
 | `src/app/routes/_member/users.$id.tsx` | `/users/123` とページを繋ぐ |
-| `src/pages/profile/index.ts` | スライスの外から import できる入口 |
+| `src/pages/profile/index.ts` | スライスの外から import できる公開 API |
 | `src/pages/profile/ui/` | その画面の表示 |
 | `src/pages/profile/api/` | その画面の取得 |
 | `src/pages/profile/model/` | その画面の型と検証 |
@@ -27,7 +27,7 @@ import { ProfilePage, loadMember } from "#pages/profile/index.ts";
 
 `loadMember` はルートの loader から呼ぶ。`ProfilePage` は、loader の結果を受け取って表示する。`pages/profile/ui/profile-page.tsx` をルートから直接 import しない。
 
-層の外のファイル、上の層への import、public API を通さない import は steiger が失敗させる。検査は `steiger src --fail-on-warnings` である。
+層の外のファイル、上の層への import、public API を通さない import は steiger が失敗させる。コマンドは `steiger src --fail-on-warnings` である。
 
 ## 参考文献
 
@@ -39,4 +39,4 @@ import { ProfilePage, loadMember } from "#pages/profile/index.ts";
 - 公式 — [Tutorial](https://fsd.how/docs/get-started/tutorial/)
 - サンプル — [feature-sliced/examples](https://github.com/feature-sliced/examples)
 - 記事 — [Migration from v2.0](https://fsd.how/docs/guides/migration/from-v2-0/)
-- 検査 — [steiger](https://github.com/feature-sliced/steiger)
+- 検証 — [steiger](https://github.com/feature-sliced/steiger)

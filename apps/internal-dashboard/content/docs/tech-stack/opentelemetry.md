@@ -1,6 +1,6 @@
 ---
 title: OpenTelemetry
-description: 処理の区間を span にし、同じ trace id のログと一緒に OTLP で送る。HTTP の入口は自動で開く
+description: 処理の区間を span にし、同じ trace id のログと一緒に OTLP で送る。HTTP を受けた span は自動で開く
 ---
 
 OpenTelemetry は、トレース、メトリクス、ログを一つのモデルで表し、OTLP で送る。トレースは span の木で、一本の trace id を共有する。span は名前と、開始から終了までの区間と、親の span id を持つ。ログは別の信号で、同じ trace id を持てる。この送り出しはトレースとログで、どちらも OTLP の JSON である。何を記録するかと深刻さは [観測性](/guidelines/observability) が持つ。
@@ -25,13 +25,13 @@ const handle = (_request: Request) =>
 const program = observeRequest(request, handle);
 ```
 
-`program` を作った時点では span は開かない。`runPromise` すると `http.server.request` が開き、`handle` はその中で走る。trace id `4bf92f3577b34da6a3ce929d0e0e4736` を引き継ぎ、親 span は `00f067aa0ba902b7` になる。`user.load` はその子である。応答の `traceparent` は同じ trace id と、この server span の span id を持ち、末尾の `01` は sampled を表す。同じリクエストのログにもその trace id が付く。実行には `Telemetry` の Layer が要る。Layer が tracer と logger を渡す。
+`program` を作った時点では span は開かない。`runPromise` すると `http.server.request` が開き、`handle` はその中で実行される。trace id `4bf92f3577b34da6a3ce929d0e0e4736` を引き継ぎ、親 span は `00f067aa0ba902b7` になる。`user.load` はその子である。応答の `traceparent` は同じ trace id と、この server span の span id を持ち、末尾の `01` は sampled を表す。同じリクエストのログにもその trace id が付く。実行には `Telemetry` の Layer が要る。Layer が tracer と logger を渡す。
 
 ## 自動計装
 
-自動計装は、呼び出し側が span を書かなくても、ライブラリの入口が span を開く。Node ではプロセスの起動時に `@opentelemetry/auto-instrumentations-node/register` を読み、`http` や `fetch` を包む。包む処理はアプリのモジュールより先に入る。後から読むと、既に束縛された関数は包まれない。
+自動計装は、呼び出し側が span を書かなくても、ライブラリの関数が span を開く。Node ではプロセスの起動時に `@opentelemetry/auto-instrumentations-node/register` を読み、`http` や `fetch` を包む。包む処理はアプリのモジュールより先に入る。後から読むと、既に束縛された関数は包まれない。
 
-Workers は Node の起動フラグでモジュールを差し替えない。入ってくる HTTP の span は、Worker の `fetch` が `observeRequest` を通すことで開く。データベースのクエリや画面の処理は、この入口では開かない。区間が要るときは `withSpan` で切る。
+Workers は Node の起動フラグでモジュールを差し替えない。入ってくる HTTP の span は、Worker の `fetch` が `observeRequest` を通すことで開く。データベースのクエリや画面の処理は、`observeRequest` では開かない。区間が要るときは `withSpan` で切る。
 
 ブラウザでは `globalThis.fetch` を差し替える。同じオリジンへの `fetch` は、呼び出し側がヘッダを書かなくても `traceparent` が付く。trace id と span id はその呼び出しで新しく切り、ページが既に持っている trace には繋がない。記録の名前は `http.client.request` で、OTLP には出さず `/api/telemetry` の JSON に載る。サーバーの `observeRequest` は、その `traceparent` を親にして同じ trace id を続ける。別オリジンと `/api/telemetry` 自身は差し替えない。
 

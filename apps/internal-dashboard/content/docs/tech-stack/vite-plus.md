@@ -1,6 +1,6 @@
 ---
 title: Vite+
-description: 開発サーバー、検査、テスト、依存関係のインストールを vp に統合したツールチェーン
+description: 開発サーバー、ビルド、テスト、依存関係のインストールを vp に統合したツールチェーン
 ---
 
 Vite+ のコマンド名は `vp` である。開発サーバー、ビルド、テスト、lint、フォーマット、モノレポのタスクをここから実行する。`vite` コマンドは使わない。中身は Vite、Rolldown、Vitest、Oxlint、Oxfmt である。

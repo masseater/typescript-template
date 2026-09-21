@@ -3,7 +3,7 @@ title: OTLP
 description: span、メトリクス、ログを同じスキーマで送るプロトコル
 ---
 
-OTLP は、span、メトリクス、ログを同じスキーマで送るプロトコルである。スキーマは protobuf で、運び方は HTTP のボディか gRPC のメソッドである。HTTP では信号ごとに経路が分かれる。
+OTLP は、span、メトリクス、ログを同じスキーマで送るプロトコルである。スキーマは protobuf で、運び方は HTTP のボディか gRPC のメソッドである。HTTP では信号ごとに URL が分かれる。
 
 ```http
 POST /v1/traces HTTP/1.1

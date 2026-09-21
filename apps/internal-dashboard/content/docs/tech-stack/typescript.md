@@ -1,6 +1,6 @@
 ---
 title: TypeScript
-description: 画面からインフラの宣言までを同一の型検査の下に置く言語
+description: 画面からインフラの宣言までを同一の型チェックの下に置く言語
 ---
 
 画面、サーバー、インフラの宣言は同じ TypeScript を通る。クライアントとサーバーが同じ型を参照するので、API の形を別の仕様として持たない。
@@ -19,9 +19,9 @@ type Profile = { name?: string };
 const assigned: Profile = { name: undefined };
 ```
 
-`verbatimModuleSyntax` では、型だけの名前を `import type` で入れる。`import { User }` のように値の import と混ぜると、型検査が失敗する。
+`verbatimModuleSyntax` では、型だけの名前を `import type` で入れる。`import { User }` のように値の import と混ぜると、型チェックが失敗する。
 
-実行時に外から入った値には型が無い。フィールドを読む前に、[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` へ通す。`runPromise` の型に失敗やサービスが残っているときは、TypeScript がコンパイルを失敗させる。yield していない Effect のように、入口より前で出す診断は [Effect](/tech-stack/effect) の `effect-tsgo` が持つ。
+実行時に外から入った値には型が無い。フィールドを読む前に、[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` へ通す。`runPromise` の型に失敗やサービスが残っているときは、TypeScript がコンパイルを失敗させる。yield していない Effect のように、実行が始まる前に出す診断は [Effect](/tech-stack/effect) の `effect-tsgo` が持つ。
 
 ## 参考文献
 
