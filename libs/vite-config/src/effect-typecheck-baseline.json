@@ -653,45 +653,9 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/member-social.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; profile: SQLiteColumn<...>; updat...'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/member-social.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/member-social.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { step: SQLiteColumn<{ name: string; tableName: \"member_onboarding\"; dataType: \"string enum\"; data: \"agreement\" | \"choose\" | \"done\" | \"interview\" | \"profile\"; driverParam: string; ... 8 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/member-social.ts",
-        "code": "TS2379",
-        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: string; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/member-social.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 6
-      },
-      {
         "file": "src/shared/server-api/ops-mail.ts",
         "code": "TS2353",
         "message": "Object literal may only specify known properties, and 'MAILPIT_URL' does not exist in type 'OpsMailShape'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/server-app.ts",
-        "code": "TS2375",
-        "message": "Type 'Effect<{ members: Readonly<{ id: string; joined: string; name: string; profile: string; socialLinks: readonly string[]; }>[]; total: {}; pageSize: 24; }, AdminMfaRequired | AdminRequired | DatabaseFailure | InputInvalid | SessionInvalid | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly members: readonly { readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }[]; readonly pageSize: 24; readonly total: number; }, AdminMfaRequired | ... 4 more ... | SessionRequired, FeatureFlags | ... 2 more ... | App...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
@@ -1038,12 +1002,6 @@
         "file": "../db/src/index.ts",
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       }
     ],
