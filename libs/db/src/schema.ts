@@ -2,6 +2,7 @@ import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { apikey } from "./api-key-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
@@ -142,6 +143,7 @@ const schema = {
   account,
   agreementAcceptance,
   agreementVersion,
+  apikey,
   auditEvent,
   boardPost,
   boardThread,
@@ -166,7 +168,7 @@ const schema = {
   verification,
 };
 
-export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export { account, apikey, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
 export { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 export {
   jwks,

@@ -2,6 +2,7 @@ import { ROLE, memberRetentionDays } from "@repo/config";
 import { and, desc, eq, gt, inArray, isNull, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { query } from "./database.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
@@ -13,6 +14,14 @@ import { UserNotFound } from "./user-not-found.ts";
 const retentionMilliseconds = memberRetentionDays * 24 * 60 * 60 * 1000;
 
 const MemberSnapshot = Schema.Struct({
+  agreements: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        acceptedAt: Schema.Number,
+        versionId: Schema.String,
+      }),
+    ),
+  ),
   followers: Schema.Array(Schema.String),
   following: Schema.Array(Schema.String),
   interview: Schema.optionalKey(
@@ -76,7 +85,20 @@ const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memb
       .from(follow)
       .where(eq(follow.followeeId, memberId)),
   );
+  const agreements = yield* query((database) =>
+    database
+      .select({
+        acceptedAt: agreementAcceptance.acceptedAt,
+        versionId: agreementAcceptance.versionId,
+      })
+      .from(agreementAcceptance)
+      .where(eq(agreementAcceptance.userId, memberId)),
+  );
   const snapshot: MemberSnapshot = {
+    agreements: agreements.map((row) => ({
+      acceptedAt: row.acceptedAt.getTime(),
+      versionId: row.versionId,
+    })),
     followers: followers.map((row) => row.followerId),
     following: following.map((row) => row.followeeId),
     ...(onboarding === undefined
@@ -160,6 +182,30 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
   ];
   if (followRows.length > 0) {
     yield* query((database) => database.insert(follow).values(followRows).onConflictDoNothing());
+  }
+  const keptAgreements = snapshot.agreements ?? [];
+  if (keptAgreements.length === 0) {
+    return;
+  }
+  const versionIds = keptAgreements.map((row) => row.versionId);
+  const surviving = yield* query((database) =>
+    database
+      .select({ id: agreementVersion.id })
+      .from(agreementVersion)
+      .where(inArray(agreementVersion.id, versionIds)),
+  );
+  const liveVersions = new Set(surviving.map((row) => row.id));
+  const acceptanceRows = keptAgreements
+    .filter((row) => liveVersions.has(row.versionId))
+    .map((row) => ({
+      acceptedAt: new Date(row.acceptedAt),
+      userId: memberId,
+      versionId: row.versionId,
+    }));
+  if (acceptanceRows.length > 0) {
+    yield* query((database) =>
+      database.insert(agreementAcceptance).values(acceptanceRows).onConflictDoNothing(),
+    );
   }
 });
 

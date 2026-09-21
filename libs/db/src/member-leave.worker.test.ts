@@ -3,6 +3,7 @@ import { count, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { Database, query } from "./database.ts";
 import { withdrawnMember } from "./member-leave-schema.ts";
 import {
@@ -272,6 +273,51 @@ describe("acceptRecovery", () => {
       expect(restoredMember.member?.profile).toBe("former profile");
       expect(restoredMember.withdrawn).toBe(0);
       expect(restoredMember.offer).toStrictEqual({ available: false });
+    });
+  });
+
+  describe("consent recorded before withdrawal", () => {
+    const it = test.extend("restoredConsent", async () =>
+      runTest(
+        Effect.gen(function* restoreConsent() {
+          const acceptedAt = new Date("2026-02-01T00:00:00.000Z");
+          yield* addMember({ email: "returning@example.com", userId: "former" });
+          yield* query((database) =>
+            database.insert(agreementAcceptance).values([
+              { acceptedAt, userId: "former", versionId: "agreement-terms-1" },
+              { acceptedAt, userId: "former", versionId: "agreement-privacy-1" },
+            ]),
+          );
+          yield* withdrawMember("former", { immediate: false });
+          yield* query((database) =>
+            database.delete(agreementVersion).where(eq(agreementVersion.id, "agreement-privacy-1")),
+          );
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          const gone = yield* query((database) =>
+            database
+              .select({ versionId: agreementAcceptance.versionId })
+              .from(agreementAcceptance)
+              .where(eq(agreementAcceptance.userId, "former")),
+          );
+          yield* acceptRecovery("newcomer");
+          const restored = yield* query((database) =>
+            database
+              .select({ versionId: agreementAcceptance.versionId })
+              .from(agreementAcceptance)
+              .where(eq(agreementAcceptance.userId, "newcomer")),
+          );
+          return {
+            gone: gone.map((row) => row.versionId),
+            restored: restored.map((row) => row.versionId).toSorted(),
+          };
+        }),
+      ));
+
+    it("puts the surviving version back on the new member and drops a deleted one", ({
+      restoredConsent,
+    }) => {
+      expect(restoredConsent.gone).toStrictEqual([]);
+      expect(restoredConsent.restored).toStrictEqual(["agreement-terms-1"]);
     });
   });
 });

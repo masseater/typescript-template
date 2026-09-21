@@ -26,6 +26,12 @@ export {
   strongAuthenticationMethods,
 } from "./identity.ts";
 export type { AuthenticationMethod, Role, StrongAuthenticationMethod } from "./identity.ts";
+export {
+  memberApiKeyHeader,
+  memberApiKeyRateLimitMax,
+  memberApiKeyRateLimitWindowMilliseconds,
+  memberApiKeyReadPermissions,
+} from "./member-api-key.ts";
 export { usageAllowanceRemains } from "./budget.ts";
 export {
   CloudflareApiToken,

@@ -1,7 +1,6 @@
-import { verifySession } from "@repo/auth";
+import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
 import { UserNotFound } from "@repo/db";
-import { httpStatus } from "@repo/observability";
-import { accountApi, unavailable } from "@repo/runtime/account";
+import { accountApi } from "@repo/runtime/account";
 import { apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -21,6 +20,7 @@ import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { leaveApi } from "./leave-api.ts";
+import { memberFailures } from "./member-failures.ts";
 import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
@@ -31,10 +31,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
 
-const failures = {
-  ...unavailable,
-  UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
-};
+const failures = { ...memberFailures, ...apiKeyWriteFailure };
 
 function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore>) {
   return createApi(apiRoot)
@@ -55,7 +52,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
         ProfileView,
         (request) =>
           Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySession(request.headers);
+            const { user } = yield* verifySessionOrApiKey(request.headers);
             const profile = yield* getProfile(user.id);
             if (profile === null) {
               return yield* new UserNotFound();
@@ -71,7 +68,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
         MemberView,
         (request) =>
           Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySession(request.headers);
+            const { user } = yield* verifySessionOrApiKey(request.headers);
             const { id } = yield* readSearchParams(MemberQuery, request);
             return yield* getMember(user.id, id);
           }),
@@ -84,7 +81,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
         MemberList,
         (request) =>
           Effect.gen(function* handleRequest() {
-            yield* verifySession(request.headers);
+            yield* verifySessionOrApiKey(request.headers);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
             const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
@@ -99,7 +96,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
         ProfileView,
         (request) =>
           Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySession(request.headers);
+            const { user } = yield* verifySessionWriter(request.headers);
             const values = yield* readJsonBody(ProfileUpdate, request);
             return yield* updateProfile(user.id, values);
           }),
