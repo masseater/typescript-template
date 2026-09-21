@@ -1,28 +1,37 @@
+import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import { loadRecoveryOffer } from "#pages/recovery/api/recovery.ts";
+import { useRecoveryOffer } from "#pages/recovery/model/recovery-offer.ts";
 import { RecoveryChoice } from "#pages/recovery/ui/recovery-choice.tsx";
-
-const agreementPath = "/welcome/agreement";
 
 import type { ReactElement } from "react";
 
-function WelcomeRecoveryPage(): ReactElement | null {
+const agreementPath = "/welcome/agreement";
+
+function WelcomeRecoveryPage(): ReactElement {
   const navigate = useNavigate();
-  const [offer, setOffer] = useState<
-    Readonly<{ available: false }> | Readonly<{ available: true; previousName: string }> | undefined
-  >(undefined);
+  const { error, offer } = useRecoveryOffer();
+  const available = offer?.available === true;
   useEffect(() => {
-    void loadRecoveryOffer().then((loaded) => {
-      setOffer(loaded);
-      if (!loaded.available) {
-        void navigate({ to: agreementPath });
-      }
-    });
-  }, [navigate]);
+    if (offer === undefined || available) {
+      return;
+    }
+    void navigate({ to: agreementPath, replace: true });
+  }, [available, navigate, offer]);
+  if (error !== undefined) {
+    return (
+      <Page title="過去のデータの復旧">
+        <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
+      </Page>
+    );
+  }
   if (offer === undefined || !offer.available) {
-    return null;
+    return (
+      <Page title="過去のデータの復旧">
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
+      </Page>
+    );
   }
   return (
     <RecoveryChoice

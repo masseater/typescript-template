@@ -1,6 +1,5 @@
 import { authClient, requireSuccess } from "@repo/auth-ui";
-import { useAction } from "@repo/ui";
-import { useState } from "react";
+import { localState, useAction } from "@repo/ui";
 
 import { submitLeave } from "#pages/settings/api/leave.ts";
 
@@ -15,9 +14,12 @@ interface LeaveFormState {
   readonly setImmediate: (checked: boolean) => void;
 }
 
+const useLeaveConfirming = localState(false);
+const useLeaveImmediate = localState(false);
+
 function useLeaveForm(): LeaveFormState {
-  const [confirming, setConfirming] = useState(false);
-  const [immediate, setImmediate] = useState(false);
+  const [confirming, setConfirming] = useLeaveConfirming();
+  const [immediate, setImmediate] = useLeaveImmediate();
   const action = useAction();
   function handleConfirm(): void {
     action.run(async () => {

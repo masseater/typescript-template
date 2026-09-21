@@ -1,8 +1,8 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION, readConfig } from "@repo/config";
+import { APPLICATION } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime";
+import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -23,7 +23,7 @@ function leaveApp() {
   const runtime = workerRuntime(() =>
     Layer.merge(
       Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.unwrap(readConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
+      Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
     ),
   );
   return createApi(apiRoot).use(leaveApi(apiRoutes(runtime, reporting)));
