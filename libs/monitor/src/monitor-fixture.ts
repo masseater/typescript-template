@@ -34,7 +34,7 @@ const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
-      const recordedProbe = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
+      const recordedProbe = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
       if (recordedProbe === probeOutcomes[1]) {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }
@@ -62,7 +62,7 @@ export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
 const workersHandler = {
   ...probeHandler,
-  queue: async (batch: MessageBatch, environment: unknown): Promise<void> =>
+  queue: (batch: MessageBatch, environment: unknown): Promise<void> =>
     consumeJobs(batch, environment as JobsBindings),
 };
 

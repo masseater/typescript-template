@@ -1,8 +1,8 @@
 import { monitorWorker, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
-import { Effect } from "effect";
+import { Clock, Effect, Schema } from "effect";
 
-import { billableUsageEndpoint, fetchUsage } from "./billing.ts";
+import { fetchUsage } from "./billing.ts";
 import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
 
@@ -10,26 +10,26 @@ const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
-      const snapshot = yield* fetchUsage({
-        accountId: config.CLOUDFLARE_ACCOUNT_ID,
-        observedAt: new Date(),
-        token: config.BILLING_READ_TOKEN,
-        usageEndpoint: billableUsageEndpoint(config.CLOUDFLARE_ACCOUNT_ID),
-      });
+      const snapshot = yield* fetchUsage(
+        config.CLOUDFLARE_ACCOUNT_ID,
+        config.BILLING_READ_TOKEN,
+        yield* Clock.currentTimeMillis,
+      );
       const decision = yield* evaluateBudget(snapshot, config);
-      const storedNotifications = yield* Effect.promise(async () =>
+      const previous = yield* Effect.promise(() =>
         ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
       );
-      const notificationKeys =
-        storedNotifications?.period === decision.periodStart ? storedNotifications.keys : [];
-      if (shouldNotify(decision, notificationKeys)) {
+      const keys = previous?.period === decision.periodStart ? previous.keys : [];
+      if (shouldNotify(decision, keys)) {
         yield* notify({
           subject: `Cloudflare budget: ${decision.level}% threshold`,
-          text: JSON.stringify(decision),
+          text: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(decision).pipe(
+            Effect.orDie,
+          ),
         });
-        yield* Effect.promise(async () =>
+        yield* Effect.promise(() =>
           ctx.storage.put("notifications", {
-            keys: [...notificationKeys, decision.notificationKey],
+            keys: [...keys, decision.notificationKey],
             period: decision.periodStart,
           }),
         );

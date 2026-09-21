@@ -6,9 +6,7 @@ import { Monitor, type Alert, type MonitorBindings, type Notify } from "./monito
 
 import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
 
-const monitorHandler = (
-  monitorEvent: string,
-): {
+type MonitorHandler = {
   readonly fetch: () => Response;
   readonly scheduled: (
     scheduledController: unknown,
@@ -16,16 +14,22 @@ const monitorHandler = (
       MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">>;
     }>,
   ) => Promise<void>;
-} => ({
+};
+
+const monitorHandler = (monitorEvent: string): MonitorHandler => ({
   fetch: () => new Response("Not found", { status: httpStatus.notFound }),
-  scheduled: async (_scheduledController, env) => {
+  scheduled: (_scheduledController, env) => {
     const stub = env.MONITOR.get(env.MONITOR.idFromName(monitorEvent));
-    const checked = await Effect.runPromise(
-      Effect.promise(async () => stub.fetch(monitorCheckUrl, { method: "POST" })),
+    return Effect.runPromise(
+      Effect.gen(function* scheduledCheck() {
+        const checked = yield* Effect.promise(() =>
+          stub.fetch(monitorCheckUrl, { method: "POST" }),
+        );
+        if (!checked.ok) {
+          return yield* Effect.die(`${monitorEvent}_schedule_failed`);
+        }
+      }),
     );
-    if (!checked.ok) {
-      await Effect.runPromise(Effect.die(`${monitorEvent}_schedule_failed`));
-    }
   },
 });
 
@@ -43,7 +47,7 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
   ) => {
     fetch(): Promise<Response>;
   };
-  readonly handler: ReturnType<typeof monitorHandler>;
+  readonly handler: MonitorHandler;
 } => {
   const { check, event: monitorEvent, failure } = definition;
   class Worker extends Monitor<Bindings> {

@@ -1,10 +1,10 @@
-import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { awaitingEffectDiagnostics, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...awaitingEffectDiagnostics,
       authenticate: { cache: false, command: "./src/cli.ts authenticate" },
       browser: { cache: false, command: "./src/cli.ts browser" },
       "browser-command": { cache: false, command: "./src/cli.ts browser-command" },

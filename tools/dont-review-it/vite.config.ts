@@ -1,13 +1,18 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
+import {
+  awaitingEffectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testRun,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...awaitingEffectDiagnostics,
       ...intentValidation,
       ...testRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
