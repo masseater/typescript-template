@@ -1,23 +1,23 @@
 ---
 title: TypeScript
-description: 画面だけでなく、インフラの宣言まで通す言語
+description: 画面からインフラの宣言までを同一の型検査の下に置く言語
 ---
 
-TypeScript は、画面だけの言語ではありません。インフラの宣言まで、同じ型検査を通します。クライアントとサーバーで同じ型を使い、API の形を別の仕様へ写しません。
+TypeScript は、画面からインフラの宣言までを同一の型検査の下に置く。クライアントとサーバーは同一の型を共有し、API の形状を別の仕様として重複して持たない。
 
-初めて読むときに引っかかりやすいのは、要素があることやプロパティの省略を、暗黙には認めない設定です。
+次のコンパイラオプションは、欠落を暗黙に成功として扱わない。
 
-- 配列やレコードを添字で読むと、結果は `T | undefined` です（`noUncheckedIndexedAccess`）。要素がある前提では書けません。
-- `exactOptionalPropertyTypes` により、プロパティを省略することと、`undefined` を代入することは別です。
-- `verbatimModuleSyntax` により、型だけの import は `import type` に分けます。実行時に残る import と混ざっていると型検査が落ちます。
+- `noUncheckedIndexedAccess` により、配列およびレコードの添字アクセスの型は `T | undefined` となる。要素の存在は型上保証されない。
+- `exactOptionalPropertyTypes` により、プロパティの省略と `undefined` の代入は区別される。
+- `verbatimModuleSyntax` により、型のみの import は `import type` とする。値として残る import と混在すると型検査は失敗する。
 
-外から来た未知の値を、その型へ入れる前に検証するのが Effect Schema です。検証の書き方は [Effect](/tech-stack/effect) にあります。
+外部から入力された未知の値は、型へ入れる前に Effect Schema で検証する。検証の定義は [Effect](/tech-stack/effect) に記載する。
 
-足りないサービスや、扱っていないエラーを落とすのは TypeScript の型検査です。エディタ上の補完と診断には `@effect/language-service` が乗ります。
+Effect におけるサービスの不足と、未処理のエラーは、TypeScript の型検査が検出する。エディタ上の補完と診断は `@effect/language-service` が提供する。
 
-## 公式と読みもの
+## 参照
 
-- 公式は [TypeScript](https://www.typescriptlang.org/) です。読み始めは [Handbook](https://www.typescriptlang.org/docs/handbook/intro.html) です。
-- 上の 3 つの設定は [noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)、[exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html)、[verbatimModuleSyntax](https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html) に説明があります。
-- その場で試すなら [Playground](https://www.typescriptlang.org/play) です。
-- いまのコンパイラが何であるかは [Announcing TypeScript 7.0](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/) にあります。型の意味はそれまでと同じで、実行がネイティブ実装になっています。
+- 公式ドキュメントは [TypeScript](https://www.typescriptlang.org/) である。言語の説明は [Handbook](https://www.typescriptlang.org/docs/handbook/intro.html) に記載される。
+- 上記のオプションは [noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)、[exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html)、[verbatimModuleSyntax](https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html) に定義される。
+- ブラウザ上で型検査を実行する環境は [Playground](https://www.typescriptlang.org/play) である。
+- コンパイラ実装の解説は [Announcing TypeScript 7.0](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/) である。型の意味は従来と同一であり、実装がネイティブコードへ移行している。
