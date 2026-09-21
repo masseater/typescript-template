@@ -1,7 +1,7 @@
 import { Button, Field, SelectField } from "@repo/ui";
 
 import { useUserFilterForm } from "#pages/users/model/user-filter-form.ts";
-import { roleOptions, verificationOptions } from "#pages/users/model/user-labels.ts";
+import { accountStateOptions, verificationOptions } from "#pages/users/model/user-labels.ts";
 import { maximumKeywordLength } from "#shared/contracts/index.ts";
 
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
@@ -27,11 +27,11 @@ function UserFilters({ search }: Readonly<{ search: UsersSearch }>): ReactElemen
       </div>
       <div className="w-32">
         <SelectField
-          label="権限"
-          name="role"
-          options={roleOptions}
-          value={form.role}
-          onValueChange={form.handleRoleChange}
+          label="状態"
+          name="status"
+          options={accountStateOptions}
+          value={form.status}
+          onValueChange={form.handleStatusChange}
         />
       </div>
       <div className="w-32">

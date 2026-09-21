@@ -10,7 +10,7 @@ import type { Enrollment, SettingsContext } from "./mfa-types";
 
 const adminLocked = (session: SessionView, recovery: string | undefined): boolean => {
   return (
-    session.user.role === ROLE.administrator &&
+    session.user.role !== ROLE.member &&
     (session.user.twoFactorEnabled || (recovery === "1" && !session.strong))
   );
 };

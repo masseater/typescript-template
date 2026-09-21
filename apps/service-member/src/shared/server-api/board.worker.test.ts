@@ -5,11 +5,12 @@ import { TestDatabase, runStatement } from "@repo/db/testing";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 
+import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { createBoardPost, createBoardThread, findBoardThread, listBoardThreads } from "./board.ts";
 
 import type { Database, DatabaseFailure } from "@repo/db";
 
-const { user } = schema;
+const { user, withdrawnMember } = schema;
 const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 
 const addUser = (added: {
@@ -164,6 +165,52 @@ describe("threads and posts", () => {
       assert.deepStrictEqual(
         found.posts.map((post) => [post.author, post.body]),
         [[null, draft.body]],
+      );
+    }).pipe(Effect.provide(TestDatabase)),
+  );
+
+  it.effect("labels posts by a withdrawn member and not by a deleted one", () =>
+    Effect.gen(function* program() {
+      yield* addUser({ userId: "withdrawn" });
+      yield* addUser({ userId: "deleted" });
+      yield* addUser({ userId: "reader" });
+      const withdrawnThread = yield* openThread("withdrawn", "退会前");
+      const deletedThread = yield* openThread("deleted", "削除前");
+      yield* query((database) =>
+        database.insert(withdrawnMember).values({
+          createdAt: recordedAt,
+          email: "withdrawn@example.com",
+          emailVerified: true,
+          memberId: "withdrawn",
+          name: "withdrawn",
+          profile: "",
+          securityVersion: 0,
+          snapshot: {},
+          socialLinks: [],
+          twoFactorEnabled: false,
+          withdrawnAt: recordedAt,
+        }),
+      );
+      yield* runStatement("DELETE FROM user WHERE id = ?", "withdrawn");
+      yield* runStatement("DELETE FROM user WHERE id = ?", "deleted");
+      const withdrawn = yield* findBoardThread("reader", withdrawnThread, wholePage);
+      const deleted = yield* findBoardThread("reader", deletedThread, wholePage);
+      const listed = yield* listBoardThreads("reader", { limit: 10, offset: 0 });
+      assert.deepStrictEqual(withdrawn.thread.author, {
+        name: withdrawnAuthorName,
+        withdrawn: true,
+      });
+      assert.deepStrictEqual(
+        withdrawn.posts.map((post) => post.author),
+        [{ name: withdrawnAuthorName, withdrawn: true }],
+      );
+      assert.strictEqual(deleted.thread.author, null);
+      assert.deepStrictEqual(
+        listed.threads.map((thread) => [thread.id, thread.author]),
+        [
+          [deletedThread, null],
+          [withdrawnThread, { name: withdrawnAuthorName, withdrawn: true }],
+        ],
       );
     }).pipe(Effect.provide(TestDatabase)),
   );

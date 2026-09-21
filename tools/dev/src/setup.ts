@@ -22,6 +22,7 @@ interface SetupReport {
   readonly ok: true;
   readonly origins: typeof OriginMode.Type;
   readonly secretsPrinted: false;
+  readonly stripeTestKeys: boolean;
 }
 
 const authSecretBytes = 48;
@@ -112,6 +113,7 @@ const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
     ok: true,
     origins: credentials.origins,
     secretsPrinted: false,
+    stripeTestKeys: credentials.stripe !== undefined,
   };
   return report;
 });

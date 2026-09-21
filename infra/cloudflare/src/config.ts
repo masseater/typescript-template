@@ -1,6 +1,7 @@
 import {
   CloudflareId,
   Email,
+  GoogleAnalyticsMeasurementId,
   HttpsOrigin,
   ROLE,
   distinctOrigins,
@@ -97,6 +98,7 @@ const SharedSettings = Schema.Struct({
     recipients: Recipients,
     reserveUsd: Nonnegative,
   }),
+  googleAnalyticsMeasurementId: Schema.optional(GoogleAnalyticsMeasurementId),
   mailFrom: Email,
   observabilitySampling: SamplingRate,
   origins: Schema.Struct({

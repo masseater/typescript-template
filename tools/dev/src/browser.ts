@@ -3,6 +3,7 @@ import { applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
 import {
@@ -54,10 +55,14 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const origin = configuredOrigin(app, credentials);
   // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
-    cwd: root,
-    env,
-  });
+  yield* run(
+    "agent-browser",
+    [...args, BROWSER_AGENT_COMMAND.open, `${origin}${applicationReadyPaths[app]}`],
+    {
+      cwd: root,
+      env,
+    },
+  );
   const report: BrowserReport = {
     event: "local.browser_opened",
     ok: true,

@@ -20,6 +20,7 @@ const member = {
   email: "member@example.com",
   id: "member-1",
   name: "会員",
+  permission: null,
   role: ROLE.member,
   twoFactorEnabled: false,
 } as const satisfies SessionView["user"];
@@ -27,10 +28,11 @@ const member = {
 const destinations = [
   { label: "ホーム", path: "/home" },
   { label: "プロフィール", path: "/users/member-1" },
+  { label: "探す", path: "/upgrade" },
   { label: "掲示板", path: "/board" },
+  { label: "メッセージ", path: "/messages" },
+  { label: "通知", path: "/notifications" },
 ] as const;
-
-const absent = ["探す", "メッセージ", "通知", "有料"] as const;
 
 async function markup(locale: Locale, path: string): Promise<string> {
   overwriteGetLocale(() => locale);
@@ -42,6 +44,7 @@ async function markup(locale: Locale, path: string): Promise<string> {
         createElement(MemberFrame, {
           children: createElement("p", null, "本文"),
           memberBoard: true,
+          navBadges: { notifications: 0 },
           user: member,
         }),
       ),
@@ -67,12 +70,27 @@ async function markup(locale: Locale, path: string): Promise<string> {
       createRoute({
         component: () => createElement("span"),
         getParentRoute: () => rootRoute,
+        path: "/messages",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/notifications",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
         path: "/settings",
       }),
       createRoute({
         component: () => createElement("span"),
         getParentRoute: () => rootRoute,
         path: "/support",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/upgrade",
       }),
       createRoute({
         component: () => createElement("span"),
@@ -91,7 +109,7 @@ describe("member navigation", () => {
     .extend("theProfileFrame", async () => markup("ja", "/users/member-1"))
     .extend("theEnglishFrame", async () => markup("en", "/home"));
 
-  it("lists home, profile, and the board on the compact rail", ({ theFrame }) => {
+  it("lists the primary destinations on the compact rail", ({ theFrame }) => {
     expect.hasAssertions();
     expect(theFrame).toContain("md:w-32");
     expect(theFrame).toContain("min-h-dvh bg-muted");
@@ -101,9 +119,6 @@ describe("member navigation", () => {
       expect(theFrame).toContain(`>${destination.label}<`);
       expect(theFrame).toContain(`href="${destination.path}"`);
     }
-    for (const label of absent) {
-      expect(theFrame).not.toContain(label);
-    }
   });
 
   it("names the phone destinations without putting their labels in one row", ({ theFrame }) => {
@@ -112,9 +127,6 @@ describe("member navigation", () => {
     for (const destination of destinations) {
       expect(tabs).toContain(`aria-label="${destination.label}"`);
       expect(tabs).not.toContain(`>${destination.label}<`);
-    }
-    for (const label of absent) {
-      expect(tabs).not.toContain(label);
     }
   });
 

@@ -12,8 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MemberRouteImport } from './routes/_member'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as WelcomeRouteImport } from './routes/_welcome'
+import { Route as ConsentRouteImport } from './routes/consent'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known.$'
+import { Route as MemberAgreementRouteImport } from './routes/_member/agreement'
 import { Route as MemberHomeRouteImport } from './routes/_member/home'
-import { Route as MemberMessagesRouteImport } from './routes/_member/messages'
 import { Route as MemberNotificationsRouteImport } from './routes/_member/notifications'
 import { Route as MemberSearchRouteImport } from './routes/_member/search'
 import { Route as MemberSecurityRouteImport } from './routes/_member/security'
@@ -22,13 +25,20 @@ import { Route as MemberUpgradeRouteImport } from './routes/_member/upgrade'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicContactRouteImport } from './routes/_public/contact'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as PublicPrivacyRouteImport } from './routes/_public/privacy'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
+import { Route as PublicTermsRouteImport } from './routes/_public/terms'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as PublicVerifyEmailChangeRouteImport } from './routes/_public/verify-email-change'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as MemberBoardIndexRouteImport } from './routes/_member/board.index'
 import { Route as MemberBoardIdRouteImport } from './routes/_member/board.$id'
+import { Route as MemberGroupsIdRouteImport } from './routes/_member/groups.$id'
+import { Route as MemberMessagesIndexRouteImport } from './routes/_member/messages.index'
+import { Route as MemberMessagesIdRouteImport } from './routes/_member/messages.$id'
+import { Route as MemberMessagesNewRouteImport } from './routes/_member/messages.new'
 import { Route as MemberSettingsIndexRouteImport } from './routes/_member/settings.index'
+import { Route as MemberSettingsAgreementsRouteImport } from './routes/_member/settings.agreements'
 import { Route as MemberSettingsAiRouteImport } from './routes/_member/settings.ai'
 import { Route as MemberSettingsEmailRouteImport } from './routes/_member/settings.email'
 import { Route as MemberSettingsInterviewRouteImport } from './routes/_member/settings.interview'
@@ -36,7 +46,10 @@ import { Route as MemberSettingsLeaveRouteImport } from './routes/_member/settin
 import { Route as MemberSettingsNotificationsRouteImport } from './routes/_member/settings.notifications'
 import { Route as MemberSettingsPlanRouteImport } from './routes/_member/settings.plan'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
+import { Route as MemberSettingsRecoveryRouteImport } from './routes/_member/settings.recovery'
 import { Route as MemberSettingsSecurityRouteImport } from './routes/_member/settings.security'
+import { Route as MemberSettingsVisibilityRouteImport } from './routes/_member/settings.visibility'
+import { Route as MemberSupportIdRouteImport } from './routes/_member/support.$id'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 import { Route as WelcomeWelcomeIndexRouteImport } from './routes/_welcome/welcome.index'
@@ -44,6 +57,7 @@ import { Route as WelcomeWelcomeAgreementRouteImport } from './routes/_welcome/w
 import { Route as WelcomeWelcomeChooseRouteImport } from './routes/_welcome/welcome.choose'
 import { Route as WelcomeWelcomeInterviewRouteImport } from './routes/_welcome/welcome.interview'
 import { Route as WelcomeWelcomeProfileRouteImport } from './routes/_welcome/welcome.profile'
+import { Route as WelcomeWelcomeRecoveryRouteImport } from './routes/_welcome/welcome.recovery'
 
 const MemberRoute = MemberRouteImport.update({
   id: '/_member',
@@ -57,14 +71,29 @@ const WelcomeRoute = WelcomeRouteImport.update({
   id: '/_welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConsentRoute = ConsentRouteImport.update({
+  id: '/consent',
+  path: '/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
+  id: '/.well-known/$',
+  path: '/.well-known/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberAgreementRoute = MemberAgreementRouteImport.update({
+  id: '/agreement',
+  path: '/agreement',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberHomeRoute = MemberHomeRouteImport.update({
   id: '/home',
   path: '/home',
-  getParentRoute: () => MemberRoute,
-} as any)
-const MemberMessagesRoute = MemberMessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
   getParentRoute: () => MemberRoute,
 } as any)
 const MemberNotificationsRoute = MemberNotificationsRouteImport.update({
@@ -107,9 +136,19 @@ const PublicLoginRoute = PublicLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicPrivacyRoute = PublicPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicSignupRoute = PublicSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicTermsRoute = PublicTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
@@ -137,11 +176,37 @@ const MemberBoardIdRoute = MemberBoardIdRouteImport.update({
   path: '/board/$id',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberGroupsIdRoute = MemberGroupsIdRouteImport.update({
+  id: '/groups/$id',
+  path: '/groups/$id',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberMessagesIndexRoute = MemberMessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberMessagesIdRoute = MemberMessagesIdRouteImport.update({
+  id: '/messages/$id',
+  path: '/messages/$id',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberMessagesNewRoute = MemberMessagesNewRouteImport.update({
+  id: '/messages/new',
+  path: '/messages/new',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberSettingsIndexRoute = MemberSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSettingsAgreementsRoute =
+  MemberSettingsAgreementsRouteImport.update({
+    id: '/settings/agreements',
+    path: '/settings/agreements',
+    getParentRoute: () => MemberRoute,
+  } as any)
 const MemberSettingsAiRoute = MemberSettingsAiRouteImport.update({
   id: '/settings/ai',
   path: '/settings/ai',
@@ -178,10 +243,26 @@ const MemberSettingsProfileRoute = MemberSettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSettingsRecoveryRoute = MemberSettingsRecoveryRouteImport.update({
+  id: '/settings/recovery',
+  path: '/settings/recovery',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberSettingsSecurityRoute = MemberSettingsSecurityRouteImport.update({
   id: '/settings/security',
   path: '/settings/security',
   getParentRoute: () => MemberRoute,
+} as any)
+const MemberSettingsVisibilityRoute =
+  MemberSettingsVisibilityRouteImport.update({
+    id: '/settings/visibility',
+    path: '/settings/visibility',
+    getParentRoute: () => MemberRoute,
+  } as any)
+const MemberSupportIdRoute = MemberSupportIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => MemberSupportRoute,
 } as any)
 const MemberUsersIndexRoute = MemberUsersIndexRouteImport.update({
   id: '/users/',
@@ -218,23 +299,37 @@ const WelcomeWelcomeProfileRoute = WelcomeWelcomeProfileRouteImport.update({
   path: '/welcome/profile',
   getParentRoute: () => WelcomeRoute,
 } as any)
+const WelcomeWelcomeRecoveryRoute = WelcomeWelcomeRecoveryRouteImport.update({
+  id: '/welcome/recovery',
+  path: '/welcome/recovery',
+  getParentRoute: () => WelcomeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/agreement': typeof MemberAgreementRoute
   '/home': typeof MemberHomeRoute
-  '/messages': typeof MemberMessagesRoute
   '/notifications': typeof MemberNotificationsRoute
   '/search': typeof MemberSearchRoute
   '/security': typeof MemberSecurityRoute
-  '/support': typeof MemberSupportRoute
+  '/support': typeof MemberSupportRouteWithChildren
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
+  '/privacy': typeof PublicPrivacyRoute
   '/signup': typeof PublicSignupRoute
+  '/terms': typeof PublicTermsRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/board/$id': typeof MemberBoardIdRoute
+  '/groups/$id': typeof MemberGroupsIdRoute
+  '/messages/$id': typeof MemberMessagesIdRoute
+  '/messages/new': typeof MemberMessagesNewRoute
+  '/settings/agreements': typeof MemberSettingsAgreementsRoute
   '/settings/ai': typeof MemberSettingsAiRoute
   '/settings/email': typeof MemberSettingsEmailRoute
   '/settings/interview': typeof MemberSettingsInterviewRoute
@@ -242,33 +337,47 @@ export interface FileRoutesByFullPath {
   '/settings/notifications': typeof MemberSettingsNotificationsRoute
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
+  '/settings/recovery': typeof MemberSettingsRecoveryRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/settings/visibility': typeof MemberSettingsVisibilityRoute
+  '/support/$id': typeof MemberSupportIdRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/welcome/profile': typeof WelcomeWelcomeProfileRoute
+  '/welcome/recovery': typeof WelcomeWelcomeRecoveryRoute
   '/board/': typeof MemberBoardIndexRoute
+  '/messages/': typeof MemberMessagesIndexRoute
   '/settings/': typeof MemberSettingsIndexRoute
   '/users/': typeof MemberUsersIndexRoute
   '/welcome/': typeof WelcomeWelcomeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/agreement': typeof MemberAgreementRoute
   '/home': typeof MemberHomeRoute
-  '/messages': typeof MemberMessagesRoute
   '/notifications': typeof MemberNotificationsRoute
   '/search': typeof MemberSearchRoute
   '/security': typeof MemberSecurityRoute
-  '/support': typeof MemberSupportRoute
+  '/support': typeof MemberSupportRouteWithChildren
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
+  '/privacy': typeof PublicPrivacyRoute
   '/signup': typeof PublicSignupRoute
+  '/terms': typeof PublicTermsRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/board/$id': typeof MemberBoardIdRoute
+  '/groups/$id': typeof MemberGroupsIdRoute
+  '/messages/$id': typeof MemberMessagesIdRoute
+  '/messages/new': typeof MemberMessagesNewRoute
+  '/settings/agreements': typeof MemberSettingsAgreementsRoute
   '/settings/ai': typeof MemberSettingsAiRoute
   '/settings/email': typeof MemberSettingsEmailRoute
   '/settings/interview': typeof MemberSettingsInterviewRoute
@@ -276,13 +385,18 @@ export interface FileRoutesByTo {
   '/settings/notifications': typeof MemberSettingsNotificationsRoute
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
+  '/settings/recovery': typeof MemberSettingsRecoveryRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/settings/visibility': typeof MemberSettingsVisibilityRoute
+  '/support/$id': typeof MemberSupportIdRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/welcome/profile': typeof WelcomeWelcomeProfileRoute
+  '/welcome/recovery': typeof WelcomeWelcomeRecoveryRoute
   '/board': typeof MemberBoardIndexRoute
+  '/messages': typeof MemberMessagesIndexRoute
   '/settings': typeof MemberSettingsIndexRoute
   '/users': typeof MemberUsersIndexRoute
   '/welcome': typeof WelcomeWelcomeIndexRoute
@@ -292,21 +406,30 @@ export interface FileRoutesById {
   '/_member': typeof MemberRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_welcome': typeof WelcomeRouteWithChildren
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/_member/agreement': typeof MemberAgreementRoute
   '/_member/home': typeof MemberHomeRoute
-  '/_member/messages': typeof MemberMessagesRoute
   '/_member/notifications': typeof MemberNotificationsRoute
   '/_member/search': typeof MemberSearchRoute
   '/_member/security': typeof MemberSecurityRoute
-  '/_member/support': typeof MemberSupportRoute
+  '/_member/support': typeof MemberSupportRouteWithChildren
   '/_member/upgrade': typeof MemberUpgradeRoute
   '/_public/contact': typeof PublicContactRoute
   '/_public/login': typeof PublicLoginRoute
+  '/_public/privacy': typeof PublicPrivacyRoute
   '/_public/signup': typeof PublicSignupRoute
+  '/_public/terms': typeof PublicTermsRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/_public/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/_public/': typeof PublicIndexRoute
   '/_member/board/$id': typeof MemberBoardIdRoute
+  '/_member/groups/$id': typeof MemberGroupsIdRoute
+  '/_member/messages/$id': typeof MemberMessagesIdRoute
+  '/_member/messages/new': typeof MemberMessagesNewRoute
+  '/_member/settings/agreements': typeof MemberSettingsAgreementsRoute
   '/_member/settings/ai': typeof MemberSettingsAiRoute
   '/_member/settings/email': typeof MemberSettingsEmailRoute
   '/_member/settings/interview': typeof MemberSettingsInterviewRoute
@@ -314,13 +437,18 @@ export interface FileRoutesById {
   '/_member/settings/notifications': typeof MemberSettingsNotificationsRoute
   '/_member/settings/plan': typeof MemberSettingsPlanRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
+  '/_member/settings/recovery': typeof MemberSettingsRecoveryRoute
   '/_member/settings/security': typeof MemberSettingsSecurityRoute
+  '/_member/settings/visibility': typeof MemberSettingsVisibilityRoute
+  '/_member/support/$id': typeof MemberSupportIdRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
   '/_welcome/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/_welcome/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/_welcome/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/_welcome/welcome/profile': typeof WelcomeWelcomeProfileRoute
+  '/_welcome/welcome/recovery': typeof WelcomeWelcomeRecoveryRoute
   '/_member/board/': typeof MemberBoardIndexRoute
+  '/_member/messages/': typeof MemberMessagesIndexRoute
   '/_member/settings/': typeof MemberSettingsIndexRoute
   '/_member/users/': typeof MemberUsersIndexRoute
   '/_welcome/welcome/': typeof WelcomeWelcomeIndexRoute
@@ -329,8 +457,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
+    | '/agreement'
     | '/home'
-    | '/messages'
     | '/notifications'
     | '/search'
     | '/security'
@@ -338,11 +469,17 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/verify-email-change'
     | '/api/$'
     | '/board/$id'
+    | '/groups/$id'
+    | '/messages/$id'
+    | '/messages/new'
+    | '/settings/agreements'
     | '/settings/ai'
     | '/settings/email'
     | '/settings/interview'
@@ -350,21 +487,29 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/plan'
     | '/settings/profile'
+    | '/settings/recovery'
     | '/settings/security'
+    | '/settings/visibility'
+    | '/support/$id'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
     | '/welcome/interview'
     | '/welcome/profile'
+    | '/welcome/recovery'
     | '/board/'
+    | '/messages/'
     | '/settings/'
     | '/users/'
     | '/welcome/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
+    | '/agreement'
     | '/home'
-    | '/messages'
     | '/notifications'
     | '/search'
     | '/security'
@@ -372,11 +517,17 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/verify-email-change'
     | '/api/$'
     | '/board/$id'
+    | '/groups/$id'
+    | '/messages/$id'
+    | '/messages/new'
+    | '/settings/agreements'
     | '/settings/ai'
     | '/settings/email'
     | '/settings/interview'
@@ -384,13 +535,18 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/plan'
     | '/settings/profile'
+    | '/settings/recovery'
     | '/settings/security'
+    | '/settings/visibility'
+    | '/support/$id'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
     | '/welcome/interview'
     | '/welcome/profile'
+    | '/welcome/recovery'
     | '/board'
+    | '/messages'
     | '/settings'
     | '/users'
     | '/welcome'
@@ -399,8 +555,11 @@ export interface FileRouteTypes {
     | '/_member'
     | '/_public'
     | '/_welcome'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
+    | '/_member/agreement'
     | '/_member/home'
-    | '/_member/messages'
     | '/_member/notifications'
     | '/_member/search'
     | '/_member/security'
@@ -408,12 +567,18 @@ export interface FileRouteTypes {
     | '/_member/upgrade'
     | '/_public/contact'
     | '/_public/login'
+    | '/_public/privacy'
     | '/_public/signup'
+    | '/_public/terms'
     | '/_public/verify-email'
     | '/_public/verify-email-change'
     | '/api/$'
     | '/_public/'
     | '/_member/board/$id'
+    | '/_member/groups/$id'
+    | '/_member/messages/$id'
+    | '/_member/messages/new'
+    | '/_member/settings/agreements'
     | '/_member/settings/ai'
     | '/_member/settings/email'
     | '/_member/settings/interview'
@@ -421,13 +586,18 @@ export interface FileRouteTypes {
     | '/_member/settings/notifications'
     | '/_member/settings/plan'
     | '/_member/settings/profile'
+    | '/_member/settings/recovery'
     | '/_member/settings/security'
+    | '/_member/settings/visibility'
+    | '/_member/support/$id'
     | '/_member/users/$id'
     | '/_welcome/welcome/agreement'
     | '/_welcome/welcome/choose'
     | '/_welcome/welcome/interview'
     | '/_welcome/welcome/profile'
+    | '/_welcome/welcome/recovery'
     | '/_member/board/'
+    | '/_member/messages/'
     | '/_member/settings/'
     | '/_member/users/'
     | '/_welcome/welcome/'
@@ -437,6 +607,9 @@ export interface RootRouteChildren {
   MemberRoute: typeof MemberRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   WelcomeRoute: typeof WelcomeRouteWithChildren
+  ConsentRoute: typeof ConsentRoute
+  McpRoute: typeof McpRoute
+  DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
 
@@ -463,18 +636,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/consent': {
+      id: '/consent'
+      path: '/consent'
+      fullPath: '/consent'
+      preLoaderRoute: typeof ConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/$': {
+      id: '/.well-known/$'
+      path: '/.well-known/$'
+      fullPath: '/.well-known/$'
+      preLoaderRoute: typeof DotwellKnownSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_member/agreement': {
+      id: '/_member/agreement'
+      path: '/agreement'
+      fullPath: '/agreement'
+      preLoaderRoute: typeof MemberAgreementRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/home': {
       id: '/_member/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof MemberHomeRouteImport
-      parentRoute: typeof MemberRoute
-    }
-    '/_member/messages': {
-      id: '/_member/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MemberMessagesRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_member/notifications': {
@@ -533,11 +727,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLoginRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/privacy': {
+      id: '/_public/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PublicPrivacyRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/signup': {
       id: '/_public/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof PublicSignupRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/terms': {
+      id: '/_public/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof PublicTermsRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/verify-email': {
@@ -575,11 +783,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberBoardIdRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_member/groups/$id': {
+      id: '/_member/groups/$id'
+      path: '/groups/$id'
+      fullPath: '/groups/$id'
+      preLoaderRoute: typeof MemberGroupsIdRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/messages/': {
+      id: '/_member/messages/'
+      path: '/messages'
+      fullPath: '/messages/'
+      preLoaderRoute: typeof MemberMessagesIndexRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/messages/$id': {
+      id: '/_member/messages/$id'
+      path: '/messages/$id'
+      fullPath: '/messages/$id'
+      preLoaderRoute: typeof MemberMessagesIdRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/messages/new': {
+      id: '/_member/messages/new'
+      path: '/messages/new'
+      fullPath: '/messages/new'
+      preLoaderRoute: typeof MemberMessagesNewRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/settings/': {
       id: '/_member/settings/'
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof MemberSettingsIndexRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/agreements': {
+      id: '/_member/settings/agreements'
+      path: '/settings/agreements'
+      fullPath: '/settings/agreements'
+      preLoaderRoute: typeof MemberSettingsAgreementsRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_member/settings/ai': {
@@ -631,12 +874,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberSettingsProfileRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_member/settings/recovery': {
+      id: '/_member/settings/recovery'
+      path: '/settings/recovery'
+      fullPath: '/settings/recovery'
+      preLoaderRoute: typeof MemberSettingsRecoveryRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/settings/security': {
       id: '/_member/settings/security'
       path: '/settings/security'
       fullPath: '/settings/security'
       preLoaderRoute: typeof MemberSettingsSecurityRouteImport
       parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/visibility': {
+      id: '/_member/settings/visibility'
+      path: '/settings/visibility'
+      fullPath: '/settings/visibility'
+      preLoaderRoute: typeof MemberSettingsVisibilityRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/support/$id': {
+      id: '/_member/support/$id'
+      path: '/$id'
+      fullPath: '/support/$id'
+      preLoaderRoute: typeof MemberSupportIdRouteImport
+      parentRoute: typeof MemberSupportRoute
     }
     '/_member/users/': {
       id: '/_member/users/'
@@ -687,18 +951,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeWelcomeProfileRouteImport
       parentRoute: typeof WelcomeRoute
     }
+    '/_welcome/welcome/recovery': {
+      id: '/_welcome/welcome/recovery'
+      path: '/welcome/recovery'
+      fullPath: '/welcome/recovery'
+      preLoaderRoute: typeof WelcomeWelcomeRecoveryRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
   }
 }
 
+interface MemberSupportRouteChildren {
+  MemberSupportIdRoute: typeof MemberSupportIdRoute
+}
+
+const MemberSupportRouteChildren: MemberSupportRouteChildren = {
+  MemberSupportIdRoute: MemberSupportIdRoute,
+}
+
+const MemberSupportRouteWithChildren = MemberSupportRoute._addFileChildren(
+  MemberSupportRouteChildren,
+)
+
 interface MemberRouteChildren {
+  MemberAgreementRoute: typeof MemberAgreementRoute
   MemberHomeRoute: typeof MemberHomeRoute
-  MemberMessagesRoute: typeof MemberMessagesRoute
   MemberNotificationsRoute: typeof MemberNotificationsRoute
   MemberSearchRoute: typeof MemberSearchRoute
   MemberSecurityRoute: typeof MemberSecurityRoute
-  MemberSupportRoute: typeof MemberSupportRoute
+  MemberSupportRoute: typeof MemberSupportRouteWithChildren
   MemberUpgradeRoute: typeof MemberUpgradeRoute
   MemberBoardIdRoute: typeof MemberBoardIdRoute
+  MemberGroupsIdRoute: typeof MemberGroupsIdRoute
+  MemberMessagesIdRoute: typeof MemberMessagesIdRoute
+  MemberMessagesNewRoute: typeof MemberMessagesNewRoute
+  MemberSettingsAgreementsRoute: typeof MemberSettingsAgreementsRoute
   MemberSettingsAiRoute: typeof MemberSettingsAiRoute
   MemberSettingsEmailRoute: typeof MemberSettingsEmailRoute
   MemberSettingsInterviewRoute: typeof MemberSettingsInterviewRoute
@@ -706,22 +993,29 @@ interface MemberRouteChildren {
   MemberSettingsNotificationsRoute: typeof MemberSettingsNotificationsRoute
   MemberSettingsPlanRoute: typeof MemberSettingsPlanRoute
   MemberSettingsProfileRoute: typeof MemberSettingsProfileRoute
+  MemberSettingsRecoveryRoute: typeof MemberSettingsRecoveryRoute
   MemberSettingsSecurityRoute: typeof MemberSettingsSecurityRoute
+  MemberSettingsVisibilityRoute: typeof MemberSettingsVisibilityRoute
   MemberUsersIdRoute: typeof MemberUsersIdRoute
   MemberBoardIndexRoute: typeof MemberBoardIndexRoute
+  MemberMessagesIndexRoute: typeof MemberMessagesIndexRoute
   MemberSettingsIndexRoute: typeof MemberSettingsIndexRoute
   MemberUsersIndexRoute: typeof MemberUsersIndexRoute
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
+  MemberAgreementRoute: MemberAgreementRoute,
   MemberHomeRoute: MemberHomeRoute,
-  MemberMessagesRoute: MemberMessagesRoute,
   MemberNotificationsRoute: MemberNotificationsRoute,
   MemberSearchRoute: MemberSearchRoute,
   MemberSecurityRoute: MemberSecurityRoute,
-  MemberSupportRoute: MemberSupportRoute,
+  MemberSupportRoute: MemberSupportRouteWithChildren,
   MemberUpgradeRoute: MemberUpgradeRoute,
   MemberBoardIdRoute: MemberBoardIdRoute,
+  MemberGroupsIdRoute: MemberGroupsIdRoute,
+  MemberMessagesIdRoute: MemberMessagesIdRoute,
+  MemberMessagesNewRoute: MemberMessagesNewRoute,
+  MemberSettingsAgreementsRoute: MemberSettingsAgreementsRoute,
   MemberSettingsAiRoute: MemberSettingsAiRoute,
   MemberSettingsEmailRoute: MemberSettingsEmailRoute,
   MemberSettingsInterviewRoute: MemberSettingsInterviewRoute,
@@ -729,9 +1023,12 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberSettingsNotificationsRoute: MemberSettingsNotificationsRoute,
   MemberSettingsPlanRoute: MemberSettingsPlanRoute,
   MemberSettingsProfileRoute: MemberSettingsProfileRoute,
+  MemberSettingsRecoveryRoute: MemberSettingsRecoveryRoute,
   MemberSettingsSecurityRoute: MemberSettingsSecurityRoute,
+  MemberSettingsVisibilityRoute: MemberSettingsVisibilityRoute,
   MemberUsersIdRoute: MemberUsersIdRoute,
   MemberBoardIndexRoute: MemberBoardIndexRoute,
+  MemberMessagesIndexRoute: MemberMessagesIndexRoute,
   MemberSettingsIndexRoute: MemberSettingsIndexRoute,
   MemberUsersIndexRoute: MemberUsersIndexRoute,
 }
@@ -742,7 +1039,9 @@ const MemberRouteWithChildren =
 interface PublicRouteChildren {
   PublicContactRoute: typeof PublicContactRoute
   PublicLoginRoute: typeof PublicLoginRoute
+  PublicPrivacyRoute: typeof PublicPrivacyRoute
   PublicSignupRoute: typeof PublicSignupRoute
+  PublicTermsRoute: typeof PublicTermsRoute
   PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
   PublicVerifyEmailChangeRoute: typeof PublicVerifyEmailChangeRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -751,7 +1050,9 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicContactRoute: PublicContactRoute,
   PublicLoginRoute: PublicLoginRoute,
+  PublicPrivacyRoute: PublicPrivacyRoute,
   PublicSignupRoute: PublicSignupRoute,
+  PublicTermsRoute: PublicTermsRoute,
   PublicVerifyEmailRoute: PublicVerifyEmailRoute,
   PublicVerifyEmailChangeRoute: PublicVerifyEmailChangeRoute,
   PublicIndexRoute: PublicIndexRoute,
@@ -765,6 +1066,7 @@ interface WelcomeRouteChildren {
   WelcomeWelcomeChooseRoute: typeof WelcomeWelcomeChooseRoute
   WelcomeWelcomeInterviewRoute: typeof WelcomeWelcomeInterviewRoute
   WelcomeWelcomeProfileRoute: typeof WelcomeWelcomeProfileRoute
+  WelcomeWelcomeRecoveryRoute: typeof WelcomeWelcomeRecoveryRoute
   WelcomeWelcomeIndexRoute: typeof WelcomeWelcomeIndexRoute
 }
 
@@ -773,6 +1075,7 @@ const WelcomeRouteChildren: WelcomeRouteChildren = {
   WelcomeWelcomeChooseRoute: WelcomeWelcomeChooseRoute,
   WelcomeWelcomeInterviewRoute: WelcomeWelcomeInterviewRoute,
   WelcomeWelcomeProfileRoute: WelcomeWelcomeProfileRoute,
+  WelcomeWelcomeRecoveryRoute: WelcomeWelcomeRecoveryRoute,
   WelcomeWelcomeIndexRoute: WelcomeWelcomeIndexRoute,
 }
 
@@ -783,6 +1086,9 @@ const rootRouteChildren: RootRouteChildren = {
   MemberRoute: MemberRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   WelcomeRoute: WelcomeRouteWithChildren,
+  ConsentRoute: ConsentRoute,
+  McpRoute: McpRoute,
+  DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport

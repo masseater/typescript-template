@@ -3,6 +3,7 @@ import { Schema } from "effect";
 const onboardingSteps = ["agreement", "choose", "profile", "interview", "done"] as const;
 
 const OnboardingStep = Schema.Literals(onboardingSteps);
+type OnboardingStep = typeof OnboardingStep.Type;
 
 const OnboardingView = Schema.Struct({
   step: OnboardingStep,

@@ -13,27 +13,32 @@ import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
-import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
+import { authSecret, otlpAuthorization, settings, stripeSettings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
+import type { BillingEnv, DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 function appEnv(
   target: Application,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shared: SharedEnv,
+  billing: BillingEnv | undefined,
 ): Effect.Effect<DeclaredEnv> {
-  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withAi: DeclaredEnv = grants(target, "workers-ai")
+    ? { ...shared, AI: Workers.AI("AI") }
+    : shared;
+  const withBilling: DeclaredEnv = { ...withAi, ...(billing ?? {}) };
   const withRealtime: DeclaredEnv = grants(target, "realtime")
     ? {
-        ...withAi,
+        ...withBilling,
         [userInboxBinding]: DurableObject(userInboxBinding, { className: userInboxClassName }),
       }
-    : withAi;
+    : withBilling;
   if (!grants(target, "storage")) {
     return Effect.succeed(withRealtime);
   }
@@ -53,30 +58,40 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const config: SharedConfig = yield* Effect.orDie(settings);
   const secret: Redacted.Redacted = yield* authSecret;
   const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
+  const billing: BillingEnv | undefined = grants(target, "billing")
+    ? yield* stripeSettings
+    : undefined;
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
   const jobsQueue = grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
-  const shared: DeclaredEnv = yield* appEnv(target, {
-    APP_ORIGIN: origin,
-    APP_RELEASE: artifacts.release,
-    AUTH_SECRET: secret,
-    DB: database,
-    EMAIL: email,
-    EMAIL_FROM: config.mailFrom,
-    FLAGSHIP_ACCOUNT_ID: config.accountId,
-    FLAGS: flags,
-    OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-    ...(config.otlp === undefined
-      ? {}
-      : {
-          OTLP_ENABLED: String(config.otlp.enabled),
-          OTLP_ENDPOINT: config.otlp.endpoint,
-          ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-        }),
-  });
+  const shared: DeclaredEnv = yield* appEnv(
+    target,
+    {
+      APP_ORIGIN: origin,
+      APP_RELEASE: artifacts.release,
+      AUTH_SECRET: secret,
+      DB: database,
+      EMAIL: email,
+      EMAIL_FROM: config.mailFrom,
+      FLAGSHIP_ACCOUNT_ID: config.accountId,
+      FLAGS: flags,
+      OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
+      ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+        ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
+        : {}),
+      ...(config.otlp === undefined
+        ? {}
+        : {
+            OTLP_ENABLED: String(config.otlp.enabled),
+            OTLP_ENDPOINT: config.otlp.endpoint,
+            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+          }),
+    },
+    billing,
+  );
   const env = {
     ...(target === APPLICATION.wiki
       ? {
@@ -98,6 +113,8 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
+    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
+    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,

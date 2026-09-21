@@ -54,9 +54,15 @@ const rootHash = Buffer.from(rootDigest).toString("hex").slice(0, ROOT_HASH_LENG
 const socket = `template-${rootHash}`;
 const AppName = Schema.Literals(applications);
 const OriginMode = Schema.Literals(["lan", "loopback"]);
+const StripeTestCredentials = Schema.Struct({
+  priceId: Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u)),
+  secretKey: Schema.String.check(Schema.isPattern(/^(?:sk|rk)_test_[A-Za-z0-9]+$/u)),
+  webhookSecret: Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u)),
+});
 const CredentialsFile = Schema.Struct({
   authSecret: Schema.String.check(Schema.isMinLength(minimumAuthSecretLength)),
   origins: Schema.optionalKey(OriginMode),
+  stripe: Schema.optionalKey(StripeTestCredentials),
 });
 const routes = { ...applicationPorts, mailpit: mailpitPort };
 const routeNames = [...applications, "mailpit"] as const;

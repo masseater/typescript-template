@@ -5,6 +5,7 @@
   "scripts": {},
   "devDependencies": {
     "@mergifyio/vitest": "catalog:",
+    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",

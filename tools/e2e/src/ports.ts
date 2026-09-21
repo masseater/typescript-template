@@ -1,7 +1,7 @@
 import { once } from "node:events";
 import { createServer } from "node:net";
 
-const loopback = "127.0.0.1";
+const loopback = "localhost";
 
 const freePort = async (): Promise<number> => {
   const probe = createServer();
