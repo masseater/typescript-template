@@ -37,6 +37,7 @@ import { Route as MemberSettingsNotificationsRouteImport } from './routes/_membe
 import { Route as MemberSettingsPlanRouteImport } from './routes/_member/settings.plan'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
 import { Route as MemberSettingsSecurityRouteImport } from './routes/_member/settings.security'
+import { Route as MemberSettingsVisibilityRouteImport } from './routes/_member/settings.visibility'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 import { Route as WelcomeWelcomeIndexRouteImport } from './routes/_welcome/welcome.index'
@@ -183,6 +184,12 @@ const MemberSettingsSecurityRoute = MemberSettingsSecurityRouteImport.update({
   path: '/settings/security',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSettingsVisibilityRoute =
+  MemberSettingsVisibilityRouteImport.update({
+    id: '/settings/visibility',
+    path: '/settings/visibility',
+    getParentRoute: () => MemberRoute,
+  } as any)
 const MemberUsersIndexRoute = MemberUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -243,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/settings/visibility': typeof MemberSettingsVisibilityRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
@@ -277,6 +285,7 @@ export interface FileRoutesByTo {
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/settings/visibility': typeof MemberSettingsVisibilityRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
@@ -315,6 +324,7 @@ export interface FileRoutesById {
   '/_member/settings/plan': typeof MemberSettingsPlanRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
   '/_member/settings/security': typeof MemberSettingsSecurityRoute
+  '/_member/settings/visibility': typeof MemberSettingsVisibilityRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
   '/_welcome/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/_welcome/welcome/choose': typeof WelcomeWelcomeChooseRoute
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/settings/plan'
     | '/settings/profile'
     | '/settings/security'
+    | '/settings/visibility'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/settings/plan'
     | '/settings/profile'
     | '/settings/security'
+    | '/settings/visibility'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
@@ -422,6 +434,7 @@ export interface FileRouteTypes {
     | '/_member/settings/plan'
     | '/_member/settings/profile'
     | '/_member/settings/security'
+    | '/_member/settings/visibility'
     | '/_member/users/$id'
     | '/_welcome/welcome/agreement'
     | '/_welcome/welcome/choose'
@@ -638,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberSettingsSecurityRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_member/settings/visibility': {
+      id: '/_member/settings/visibility'
+      path: '/settings/visibility'
+      fullPath: '/settings/visibility'
+      preLoaderRoute: typeof MemberSettingsVisibilityRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/users/': {
       id: '/_member/users/'
       path: '/users'
@@ -707,6 +727,7 @@ interface MemberRouteChildren {
   MemberSettingsPlanRoute: typeof MemberSettingsPlanRoute
   MemberSettingsProfileRoute: typeof MemberSettingsProfileRoute
   MemberSettingsSecurityRoute: typeof MemberSettingsSecurityRoute
+  MemberSettingsVisibilityRoute: typeof MemberSettingsVisibilityRoute
   MemberUsersIdRoute: typeof MemberUsersIdRoute
   MemberBoardIndexRoute: typeof MemberBoardIndexRoute
   MemberSettingsIndexRoute: typeof MemberSettingsIndexRoute
@@ -730,6 +751,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberSettingsPlanRoute: MemberSettingsPlanRoute,
   MemberSettingsProfileRoute: MemberSettingsProfileRoute,
   MemberSettingsSecurityRoute: MemberSettingsSecurityRoute,
+  MemberSettingsVisibilityRoute: MemberSettingsVisibilityRoute,
   MemberUsersIdRoute: MemberUsersIdRoute,
   MemberBoardIndexRoute: MemberBoardIndexRoute,
   MemberSettingsIndexRoute: MemberSettingsIndexRoute,

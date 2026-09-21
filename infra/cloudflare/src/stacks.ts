@@ -17,8 +17,9 @@ const stackReferences = {
   "error-monitor": ["tokens"],
   "health-monitor": [],
   observability: [],
+  storage: [],
   tokens: [],
-  "service-member": application,
+  "service-member": [...application, "storage"],
   "internal-dashboard": wikiApplication,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
@@ -46,6 +47,7 @@ const stackNames = [
   "zone",
   "email",
   "database",
+  "storage",
   "flagship",
   "observability",
   "tokens",
