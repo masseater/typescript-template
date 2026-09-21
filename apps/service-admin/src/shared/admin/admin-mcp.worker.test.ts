@@ -10,7 +10,7 @@ import { APPLICATION } from "@repo/config";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { addUser, auditActionsOf } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
-import { appLayer } from "@repo/runtime";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi, unavailable } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
