@@ -378,7 +378,7 @@ function appConfig(
       previewDevVars(appRoot),
       privateSourceMaps(app),
       devBoundary(app),
-      ...(process.env["VITEST"] === undefined)
+      ...(process.env["VITEST"] === undefined
         ? [
             cloudflare({
               config: {
