@@ -27,7 +27,7 @@ const previewInvitation = async (
   endpoint: string,
   token: string,
 ): Promise<
-  Readonly<{ email: string; status: "open" }> | Readonly<{ message: string; status: "closed" }>
+  Readonly<{ email: string; status: "available" }> | Readonly<{ message: string; status: "closed" }>
 > => {
   const closedMessage =
     "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
@@ -40,7 +40,7 @@ const previewInvitation = async (
       return { message: await inviteFailureOf(served, closedMessage), status: "closed" };
     }
     const servedInvite: unknown = await served.json();
-    return { email: decodeJson(InvitePreview, servedInvite).email, status: "open" };
+    return { email: decodeJson(InvitePreview, servedInvite).email, status: "available" };
   } catch (previewFailure) {
     return { message: errorMessage(previewFailure), status: "closed" };
   }
