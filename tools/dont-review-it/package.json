@@ -47,6 +47,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@effect/tsgo": "0.45.0",
     "@opentelemetry/api": "catalog:",
     "@repo/ai-native-telemetry": "workspace:*",
     "@repo/cli": "workspace:*",
@@ -62,6 +63,7 @@
     "oxc-parser": "catalog:",
     "oxfmt": "0.67.0",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "parse-git-diff": "0.0.20",
     "react-doctor": "0.9.14",
     "std-env": "4.2.0",

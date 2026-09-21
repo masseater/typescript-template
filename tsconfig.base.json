@@ -23,6 +23,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "plugins": [{ "name": "@effect/language-service" }]
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
   }
 }

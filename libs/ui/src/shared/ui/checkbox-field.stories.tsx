@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, fn, userEvent } from "storybook/test";
 
@@ -15,8 +16,13 @@ export const Checked = meta.story({ args: { checked: true } });
 
 export const Toggles = meta.story({
   args: { checked: false, onCheckedChange: fn() },
-  play: async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole("checkbox"));
-    await expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
-  },
+  play: ({ args, canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* toggleCheckbox() {
+        yield* Effect.promise(() => userEvent.click(canvas.getByRole("checkbox")));
+        yield* Effect.promise(() =>
+          expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything()),
+        );
+      }),
+    ),
 });

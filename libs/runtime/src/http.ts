@@ -268,12 +268,8 @@ function apiRoutes<Requirements>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-<<<<<<< HEAD
-  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed> {
-=======
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
->>>>>>> ff57726f (fix: fail prepush typecheck on every compiler diagnostic)
     const open = openStream(event, handler, failures);
     return async (context): Promise<EventStream<Encoded | FailedEvent> | Failed> => {
       const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));

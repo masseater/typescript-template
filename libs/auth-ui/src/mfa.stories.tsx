@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { expect } from "storybook/test";
 
@@ -23,9 +24,13 @@ const meta = preview.meta({
 });
 
 export const NotEnrolled = meta.story({
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("iPhone")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showRegisteredPasskey() {
+        const passkeyName = yield* Effect.promise(() => canvas.findByText("iPhone"));
+        yield* Effect.promise(() => expect(passkeyName).toBeInTheDocument());
+      }),
+    ),
 });
 
 export const Enrolled = meta.story({

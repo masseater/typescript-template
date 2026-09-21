@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen, userEvent } from "storybook/test";
 
@@ -12,10 +13,16 @@ import type { ReactElement } from "react";
 const meta = preview.meta({
   args: { children: "権限を変更", onClick: noop },
   component: DropdownMenuItem,
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "利用者の操作" }));
-    await expect(await screen.findByRole("menuitem")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* openMenuItem() {
+        yield* Effect.promise(() =>
+          userEvent.click(canvas.getByRole("button", { name: "利用者の操作" })),
+        );
+        const menuItem = yield* Effect.promise(() => screen.findByRole("menuitem"));
+        yield* Effect.promise(() => expect(menuItem).toBeInTheDocument());
+      }),
+    ),
   render: ({ children, disabled, onClick: handleClick, variant }): ReactElement => (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="利用者の操作">操作</DropdownMenuTrigger>

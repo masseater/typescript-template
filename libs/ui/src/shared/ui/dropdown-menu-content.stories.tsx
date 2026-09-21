@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen, userEvent } from "storybook/test";
 
@@ -19,10 +20,16 @@ const meta = preview.meta({
     ),
   },
   component: DropdownMenuContent,
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "利用者の操作" }));
-    await expect(await screen.findByRole("menu")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* openMenuContent() {
+        yield* Effect.promise(() =>
+          userEvent.click(canvas.getByRole("button", { name: "利用者の操作" })),
+        );
+        const menu = yield* Effect.promise(() => screen.findByRole("menu"));
+        yield* Effect.promise(() => expect(menu).toBeInTheDocument());
+      }),
+    ),
   render: ({ children }): ReactElement => (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="利用者の操作">操作</DropdownMenuTrigger>

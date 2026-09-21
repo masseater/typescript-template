@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { expect, screen, userEvent } from "storybook/test";
 
 import preview from "../../../storybook/preview";
@@ -34,8 +35,16 @@ export const Default = meta.story();
 
 export const Success = meta.story({
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" }));
-    await expect(await screen.findByText("利用者の権限を変更しました。")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showSuccessToast() {
+        yield* Effect.promise(() =>
+          userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" })),
+        );
+        const toast = yield* Effect.promise(() =>
+          screen.findByText("利用者の権限を変更しました。"),
+        );
+        yield* Effect.promise(() => expect(toast).toBeInTheDocument());
+      }),
+    ),
 });

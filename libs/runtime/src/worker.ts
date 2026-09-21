@@ -17,11 +17,7 @@ interface FetchWorker {
   readonly fetch: (
     request: Request,
     environment: unknown,
-<<<<<<< HEAD
     context: ExecutionContext,
-=======
-    context: { readonly waitUntil: (work: Promise<unknown>) => void },
->>>>>>> ff57726f (fix: fail prepush typecheck on every compiler diagnostic)
   ) => Promise<Response>;
 }
 type WorkerRoute<Requirements> = (

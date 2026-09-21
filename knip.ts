@@ -15,6 +15,8 @@ const workspaces = {
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
+      "oxlint",
+      "oxlint-tsgolint",
     ],
     project: ["*.{js,ts}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
@@ -40,9 +42,6 @@ const workspaces = {
   },
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
-  },
-  "libs/vite-config": {
-    entry: ["src/effect-typecheck.ts"],
   },
   "libs/monitor": {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
@@ -87,7 +86,13 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@repo/observability!", "@tanstack/intent"],
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/config!",
+      "@repo/observability!",
+      "effect!",
+      "oxlint-tsgolint",
+    ],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
