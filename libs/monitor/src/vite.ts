@@ -1,29 +1,16 @@
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 
-const monitorWorkerVite = (): {
-  readonly pack: {
-    readonly deps: {
-      alwaysBundle: string[];
-      onlyBundle: string[];
-    };
-    readonly entry: { readonly index: string };
-    readonly format: string;
-    readonly outExtensions: () => { readonly js: ".js" };
-    readonly platform: string;
-    readonly target: string;
-  };
-  readonly run: { readonly tasks: Readonly<Record<string, unknown>> };
-} => ({
+const monitorWorkerVite = () => ({
   pack: {
     deps: {
       alwaysBundle: ["effect", "@repo/monitor"],
       onlyBundle: ["effect", "@repo/monitor"],
     },
     entry: { index: "src/worker.ts" },
-    format: "esm",
+    format: "esm" as const,
     outExtensions: (): { readonly js: ".js" } => ({ js: ".js" }),
-    platform: "browser",
-    target: "es2023",
+    platform: "browser" as const,
+    target: "es2023" as const,
   },
   run: {
     tasks: {
