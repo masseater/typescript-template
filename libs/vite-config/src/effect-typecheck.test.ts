@@ -295,7 +295,7 @@ describe("effect typecheck gate", () => {
     expect(stored).not.toContain(`${checkout}/libs/a`);
   });
 
-  it("fails when a snapshotted diagnostic disappears", () => {
+  it("does not fail the gate when a snapshotted diagnostic disappears", () => {
     expect.hasAssertions();
     const cwd = createFixture({ "value.ts": "export const value = 1;\n" });
     try {
@@ -313,11 +313,87 @@ describe("effect typecheck gate", () => {
         },
       });
       const result = runGate({ cwd, baseline });
-      expect(result.code).toBe(1);
-      expect(result.printed).toMatch(/baselined diagnostics are gone/u);
+      expect(result.code).toBe(0);
+      expect(result.printed).not.toMatch(/typecheck gate:/u);
     } finally {
       rmSync(cwd, { force: true, recursive: true });
     }
+  });
+
+  it("matches a diagnostic listed under another workspace after resolving paths", () => {
+    expect.hasAssertions();
+    const repositoryRoot = "/repo";
+    const listed = serializeBaseline({
+      version: 1,
+      workspaces: {
+        "libs/auth": [
+          {
+            file: "src/session.ts",
+            code: "TS18046",
+            message: "'instance.options' is of type 'unknown'.",
+            count: 1,
+          },
+        ],
+      },
+    });
+    let printed = "";
+    expect(
+      runEffectTypecheck({
+        cwd: path.join(repositoryRoot, "apps/service-member"),
+        repositoryRoot,
+        args: [],
+        baselinePath: "baseline.json",
+        compile: () => ({
+          output:
+            "../../libs/auth/src/session.ts(18,18): error TS18046: 'instance.options' is of type 'unknown'.\n",
+          status: 1,
+        }),
+        readText: () => listed,
+        writeText: () => undefined,
+        print: (text) => {
+          printed += text;
+        },
+      }),
+    ).toBe(0);
+    expect(printed).not.toMatch(/typecheck gate:/u);
+  });
+
+  it("treats drizzle diagnostics that differ only by pnpm package folders as the same diagnostic", () => {
+    expect.hasAssertions();
+    const listed = serializeBaseline({
+      version: 1,
+      workspaces: {
+        "apps/service-member": [
+          {
+            file: "src/shared/members/members.ts",
+            code: "TS2345",
+            message:
+              "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_left/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_right/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+            count: 1,
+          },
+        ],
+      },
+    });
+    let printed = "";
+    expect(
+      runEffectTypecheck({
+        cwd: "/repo/apps/service-member",
+        repositoryRoot: "/repo",
+        args: [],
+        baselinePath: "baseline.json",
+        compile: () => ({
+          output:
+            "src/shared/members/members.ts(102,14): error TS2345: Argument of type 'import(\"/repo/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_left/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/repo/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_right/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.\n",
+          status: 1,
+        }),
+        readText: () => listed,
+        writeText: () => undefined,
+        print: (text) => {
+          printed += text;
+        },
+      }),
+    ).toBe(0);
+    expect(printed).not.toMatch(/typecheck gate:/u);
   });
 
   it("fails when the same snapshotted diagnostic appears an extra time", () => {
