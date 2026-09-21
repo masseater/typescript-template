@@ -1,7 +1,9 @@
 pull_request_rules:
-  - name: queue on label
+  - name: queue on label or renovate
     conditions:
-      - label = ready-to-merge
+      - or:
+          - label = ready-to-merge
+          - author = renovate[bot]
     actions:
       queue:
         name: default
